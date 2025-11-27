@@ -821,9 +821,17 @@ async def cancel_order(callback: CallbackQuery, state: FSMContext, bot: Bot, ses
 
     await state.clear()
 
-    await callback.message.edit_text(
-        "🌵  <b>Заявка отменена</b>\n\n"
-        "Возвращайся, когда будешь готов.",
+    # Удаляем старое сообщение и отправляем с картинкой
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    photo = FSInputFile(settings.CANCEL_IMAGE)
+    await callback.message.answer_photo(
+        photo=photo,
+        caption="🌵  <b>Заявка отменена</b>\n\n"
+                "Возвращайся, когда будешь готов, партнёр.",
         reply_markup=get_back_keyboard()
     )
 
