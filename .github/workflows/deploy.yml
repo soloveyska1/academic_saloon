@@ -18,7 +18,19 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/academic_saloon
-            git pull origin main
+            echo "=== Starting deploy ==="
+            echo "Current branch: $(git branch --show-current)"
+            echo "Current commit: $(git rev-parse --short HEAD)"
+
+            # Сброс локальных изменений и принудительное обновление
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+
+            echo "After pull commit: $(git rev-parse --short HEAD)"
+
+            # Перезапуск контейнеров
             docker-compose down
             docker-compose up -d --build
-            echo "Deployed at $(date)"
+
+            echo "=== Deploy completed at $(date) ==="
