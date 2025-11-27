@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     # Медиа файлы
     WELCOME_GIF: Path = BASE_DIR / "bot" / "media" / "rob_hi_saloon.gif"
+    WELCOME_VOICE: Path = BASE_DIR / "bot" / "media" / "voice_welcome.ogg"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str

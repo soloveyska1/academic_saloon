@@ -97,6 +97,9 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     await session.commit()
 
+    # Удаляем сообщение с офертой
+    await callback.message.delete()
+
     # Формируем приветственное сообщение
     if is_new_user:
         text = TERMS_ACCEPTED.format(name=callback.from_user.first_name)
@@ -104,6 +107,11 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         # Логируем нового пользователя
         await log_new_user(bot, callback.from_user, user)
         await notify_admins(bot, callback.from_user, user)
+
+        # Новым пользователям: сначала голосовое, потом гифка
+        voice = FSInputFile(settings.WELCOME_VOICE)
+        await callback.message.answer_voice(voice=voice)
+
     else:
         status, discount = user.loyalty_status
         discount_line = f"Твоя скидка — {discount}%" if discount > 0 else ""
@@ -114,8 +122,7 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             discount_line=discount_line
         )
 
-    # Удаляем сообщение с офертой и отправляем гифку
-    await callback.message.delete()
+    # Отправляем гифку с меню
     gif = FSInputFile(settings.WELCOME_GIF)
     await callback.message.answer_animation(animation=gif, caption=text, reply_markup=get_start_keyboard())
 
