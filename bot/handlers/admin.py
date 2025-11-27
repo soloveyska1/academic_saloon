@@ -1455,11 +1455,25 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
 
 @router.callback_query(F.data.startswith("price_ok:"))
 async def price_ok_callback(callback: CallbackQuery, session: AsyncSession):
-    """Клиент подтвердил цену"""
-    await callback.answer("👍 Отлично! Ожидай реквизиты")
+    """Клиент подтвердил цену — отправляем реквизиты"""
+    order_id = int(callback.data.split(":")[1])
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    await callback.answer("👍 Отлично! Отправляю реквизиты...")
 
     # Убираем кнопки
     await callback.message.edit_reply_markup(reply_markup=None)
+
+    # Отправляем реквизиты
+    await send_payment_details(callback.message, order)
 
 
 @router.callback_query(F.data.startswith("price_no_bonus:"))
@@ -1497,6 +1511,143 @@ async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession
 Реквизиты для оплаты пришлю следующим сообщением."""
 
     await callback.message.edit_text(new_text, reply_markup=None)
+
+    # Отправляем реквизиты
+    await send_payment_details(callback.message, order)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ
+# ══════════════════════════════════════════════════════════════
+
+def get_payment_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура для сообщения с реквизитами"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="✅ Я оплатил",
+                callback_data=f"client_paid:{order_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="💬 Написать в поддержку",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
+        ]
+    ])
+
+
+async def send_payment_details(message: Message, order: Order):
+    """Отправить красивое сообщение с реквизитами для оплаты"""
+
+    # Определяем финальную сумму
+    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+
+    # Формируем текст с бонусами если они применены
+    bonus_line = ""
+    if order.bonus_used and order.bonus_used > 0:
+        bonus_line = f"\n🎁 Бонусы: −{order.bonus_used:.0f}₽"
+
+    text = f"""
+💳 <b>Реквизиты для оплаты</b>
+
+━━━━━━━━━━━━━━━━━━━━━━
+📋 Заказ: <b>#{order.id}</b>
+💰 Сумма: <b>{order.price:.0f}₽</b>{bonus_line}
+
+✨ <b>К оплате: {final_price:.0f}₽</b>
+━━━━━━━━━━━━━━━━━━━━━━
+
+📱 <b>Номер для перевода:</b>
+<code>89196739120</code>
+<i>(нажми чтобы скопировать)</i>
+
+👤 <b>Получатель:</b>
+Семен Юрьевич С.
+
+🏦 <b>Банки:</b>
+Сбербанк • Т-Банк • БСПБ
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+После оплаты нажми кнопку ниже 👇"""
+
+    await message.answer(
+        text,
+        reply_markup=get_payment_keyboard(order.id)
+    )
+
+
+@router.callback_query(F.data.startswith("client_paid:"))
+async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Клиент нажал 'Я оплатил' — уведомляем админа"""
+    order_id = int(callback.data.split(":")[1])
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Проверяем что заказ ещё не оплачен
+    if order.status == OrderStatus.PAID.value:
+        await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
+        return
+
+    await callback.answer("👍 Отлично! Проверяю оплату...")
+
+    # Определяем финальную сумму
+    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+
+    # Обновляем сообщение клиенту
+    new_text = f"""
+✅ <b>Заявка на оплату отправлена!</b>
+
+━━━━━━━━━━━━━━━━━━━━━━
+📋 Заказ: <b>#{order.id}</b>
+💰 Сумма: <b>{final_price:.0f}₽</b>
+━━━━━━━━━━━━━━━━━━━━━━
+
+⏳ Проверяю поступление средств...
+Обычно это занимает пару минут.
+
+Напишу тебе сразу, как увижу перевод! 🚀"""
+
+    # Оставляем только кнопку поддержки
+    new_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="💬 Написать в поддержку",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
+        ]
+    ])
+
+    await callback.message.edit_text(new_text, reply_markup=new_keyboard)
+
+    # Уведомляем админов
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    admin_text = f"""💸 <b>Клиент заявил об оплате!</b>
+
+📋 Заказ: #{order.id}
+📝 {work_label}
+💰 Сумма: {final_price:.0f}₽
+
+👤 Клиент: @{callback.from_user.username or 'без username'}
+🆔 ID: <code>{callback.from_user.id}</code>
+
+Проверь поступление и подтверди: /paid {order.id}"""
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, admin_text)
+        except Exception:
+            pass
 
 
 # ══════════════════════════════════════════════════════════════
