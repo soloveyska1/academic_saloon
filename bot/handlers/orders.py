@@ -594,6 +594,15 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
 Скоро вернусь! 🤠
 
+━━━━━━━━━━━━━━━━━━━━━━
+💳  <b>Реквизиты для оплаты</b>
+
+📱  <code>89196739120</code>
+👤  Семен Юрьевич С.
+
+🏦  Сбербанк • Т-Банк • БСПБ
+━━━━━━━━━━━━━━━━━━━━━━
+
 Пиши: @{settings.SUPPORT_USERNAME}"""
 
     await callback.message.edit_text(text, reply_markup=get_back_keyboard())
