@@ -1815,7 +1815,12 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
     Использование: /paid <order_id>
     Пример: /paid 123
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[/paid] Команда вызвана пользователем {message.from_user.id}, args: {command.args}")
+
     if not is_admin(message.from_user.id):
+        logger.warning(f"[/paid] Пользователь {message.from_user.id} не админ")
         return
 
     # Очищаем FSM состояние (если было активно)
@@ -1834,6 +1839,8 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         await message.answer("❌ ID заказа должен быть числом")
         return
 
+    logger.info(f"[/paid] Ищем заказ #{order_id}")
+
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
     order_result = await session.execute(order_query)
@@ -1843,8 +1850,27 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         await message.answer(f"❌ Заказ #{order_id} не найден")
         return
 
+    logger.info(f"[/paid] Заказ #{order_id} найден, статус: {order.status}, цена: {order.price}")
+
+    # Проверка статуса - заказ должен быть подтверждён (ждёт оплаты)
     if order.status == OrderStatus.PAID.value:
         await message.answer(f"⚠️ Заказ #{order_id} уже оплачен")
+        return
+
+    if order.status not in [OrderStatus.CONFIRMED.value, OrderStatus.IN_PROGRESS.value]:
+        await message.answer(
+            f"⚠️ Заказ #{order_id} нельзя отметить как оплаченный\n"
+            f"Текущий статус: {order.status_label}\n\n"
+            f"Сначала установите цену командой /price {order_id} СУММА"
+        )
+        return
+
+    # Проверяем что цена установлена
+    if order.price <= 0:
+        await message.answer(
+            f"⚠️ У заказа #{order_id} не установлена цена\n"
+            f"Сначала установите цену: /price {order_id} СУММА"
+        )
         return
 
     # Находим пользователя
@@ -1856,9 +1882,12 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         await message.answer(f"❌ Пользователь заказа #{order_id} не найден")
         return
 
+    logger.info(f"[/paid] Пользователь найден: {user.telegram_id}, баланс: {user.balance}")
+
     # Списываем бонусы с баланса клиента (передаём user чтобы избежать проблем с сессией)
     bonus_deducted = 0
     if order.bonus_used > 0:
+        logger.info(f"[/paid] Списываем бонусы: {order.bonus_used}")
         success, _ = await BonusService.deduct_bonus(
             session=session,
             user_id=order.user_id,
@@ -1870,6 +1899,9 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         )
         if success:
             bonus_deducted = order.bonus_used
+            logger.info(f"[/paid] Бонусы списаны успешно")
+        else:
+            logger.warning(f"[/paid] Не удалось списать бонусы")
 
     # Обновляем статус заказа
     order.status = OrderStatus.PAID.value
@@ -1879,25 +1911,36 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
     user.orders_count += 1
     user.total_spent += order.paid_amount
 
+    logger.info(f"[/paid] Коммитим изменения в БД")
     await session.commit()
+    logger.info(f"[/paid] Заказ #{order_id} переведён в статус PAID")
 
     # Начисляем бонусы клиенту за оплаченный заказ (50₽)
-    order_bonus = await BonusService.process_order_bonus(
-        session=session,
-        bot=bot,
-        user_id=order.user_id,
-    )
+    order_bonus = 0
+    try:
+        order_bonus = await BonusService.process_order_bonus(
+            session=session,
+            bot=bot,
+            user_id=order.user_id,
+        )
+        logger.info(f"[/paid] Начислены бонусы за заказ: {order_bonus}")
+    except Exception as e:
+        logger.error(f"[/paid] Ошибка начисления бонусов за заказ: {e}")
 
     # Начисляем реферальные бонусы (если есть реферер)
     referral_bonus = 0
     if user.referrer_id:
-        referral_bonus = await BonusService.process_referral_bonus(
-            session=session,
-            bot=bot,
-            referrer_id=user.referrer_id,
-            order_amount=order.price,  # 5% от полной цены
-            referred_user_id=order.user_id,
-        )
+        try:
+            referral_bonus = await BonusService.process_referral_bonus(
+                session=session,
+                bot=bot,
+                referrer_id=user.referrer_id,
+                order_amount=order.price,  # 5% от полной цены
+                referred_user_id=order.user_id,
+            )
+            logger.info(f"[/paid] Начислен реферальный бонус: {referral_bonus}")
+        except Exception as e:
+            logger.error(f"[/paid] Ошибка начисления реферального бонуса: {e}")
 
     # Уведомляем клиента
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
@@ -1913,8 +1956,9 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     try:
         await bot.send_message(order.user_id, client_text)
-    except Exception:
-        pass  # Клиент мог заблокировать бота
+        logger.info(f"[/paid] Уведомление клиенту отправлено")
+    except Exception as e:
+        logger.warning(f"[/paid] Не удалось отправить уведомление клиенту: {e}")
 
     # Ответ админу
     response = f"✅ Заказ #{order_id} отмечен как оплаченный\n"
@@ -1930,3 +1974,4 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         response += f"👥 Реферальный бонус: +{referral_bonus:.0f}₽"
 
     await message.answer(response)
+    logger.info(f"[/paid] Команда выполнена успешно")
