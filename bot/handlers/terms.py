@@ -15,6 +15,7 @@ from bot.texts.terms import (
     get_time_greeting,
     VOICE_CAPTION,
 )
+from bot.handlers.start import send_and_pin_status
 from bot.keyboards.terms import (
     get_terms_short_keyboard,
     get_terms_full_keyboard,
@@ -172,3 +173,7 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         caption=text,
         reply_markup=get_main_menu_keyboard()
     )
+
+    # Статус салуна с закрепом — только для новых пользователей
+    if is_first_accept:
+        await send_and_pin_status(callback.message.chat.id, bot, pin=True)

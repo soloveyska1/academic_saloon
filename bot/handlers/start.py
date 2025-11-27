@@ -16,27 +16,27 @@ from core.saloon_status import saloon_manager, generate_status_message
 router = Router()
 
 
-async def send_and_pin_status(chat_id: int, bot: Bot):
+async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
     """
-    Отправляет статус салуна и закрепляет его в личном чате.
-    Если сообщение уже закреплено - обновляет его.
+    Отправляет статус салуна.
+    Закрепляет только если pin=True (для новых пользователей).
     """
     status = await saloon_manager.get_status()
     status_text = generate_status_message(status)
 
-    # Отправляем новое сообщение со статусом
+    # Отправляем сообщение со статусом
     status_msg = await bot.send_message(chat_id=chat_id, text=status_text)
 
-    # Пытаемся закрепить
-    try:
-        await bot.pin_chat_message(
-            chat_id=chat_id,
-            message_id=status_msg.message_id,
-            disable_notification=True
-        )
-    except Exception:
-        # Если не удалось закрепить (бот без прав) - ничего страшного
-        pass
+    # Закрепляем только если явно указано
+    if pin:
+        try:
+            await bot.pin_chat_message(
+                chat_id=chat_id,
+                message_id=status_msg.message_id,
+                disable_notification=True
+            )
+        except Exception:
+            pass
 
 
 @router.message(CommandStart(deep_link=True))
@@ -170,5 +170,4 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         reply_markup=get_main_menu_keyboard()
     )
 
-    # Отправляем статус салуна и закрепляем его
-    await send_and_pin_status(message.chat.id, bot)
+    # Статус не отправляем на каждый /start — только при первом принятии оферты
