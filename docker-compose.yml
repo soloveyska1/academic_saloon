@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  # --- THE VAULT (Database) ---
+  db:
+    image: postgres:15-alpine
+    container_name: saloon_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - saloon_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10       # Увеличено до 10 попыток
+      start_period: 30s # 30 секунд форы на старт
+
+  # --- THE HORSE (Cache & Speed) ---
+  redis:
+    image: redis:7-alpine
+    container_name: saloon_redis
+    restart: always
+    networks:
+      - saloon_net
+    volumes:
+      - redis_data:/data
+
+  # --- THE SHERIFF (Bot Application) ---
+  bot:
+    build: .
+    container_name: saloon_bot
+    restart: always
+    command: python main.py
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - saloon_net
+    volumes:
+      - .:/app
+
+volumes:
+  pg_data:
+  redis_data:
+
+networks:
+  saloon_net:
+    driver: bridge
