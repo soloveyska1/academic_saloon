@@ -266,3 +266,67 @@ async def show_user_info(callback: CallbackQuery, session: AsyncSession):
 📅  Регистрация: {user.created_at.strftime('%d.%m.%Y') if user.created_at else '—'}"""
 
     await callback.message.answer(text.strip())
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ОТВЕТ НА ЛОГ = СООБЩЕНИЕ ЮЗЕРУ
+# ══════════════════════════════════════════════════════════════
+
+import re
+
+def extract_user_id_from_log(text: str) -> int | None:
+    """Извлекает user_id из текста лога (ищет <code>ID</code>)"""
+    if not text:
+        return None
+    # Ищем паттерн: · <code>123456789</code>
+    match = re.search(r'·\s*<code>(\d+)</code>', text)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+@router.message(F.reply_to_message, F.chat.id == settings.LOG_CHANNEL_ID)
+async def reply_to_log(message: Message, bot: Bot):
+    """
+    Ответ на лог в канале = пересылка сообщения пользователю.
+    Админ отвечает на лог → юзер получает сообщение от бота.
+    """
+    # Проверяем что это админ
+    if message.from_user.id not in settings.ADMIN_IDS:
+        return
+
+    # Получаем текст оригинального лога
+    original_text = message.reply_to_message.text or message.reply_to_message.caption
+    user_id = extract_user_id_from_log(original_text)
+
+    if not user_id:
+        await message.reply("❌ Не удалось найти ID пользователя в логе")
+        return
+
+    # Формируем сообщение от имени бота
+    admin_text = message.text or message.caption
+
+    if not admin_text:
+        await message.reply("❌ Пустое сообщение")
+        return
+
+    # Отправляем пользователю
+    try:
+        sent = await bot.send_message(
+            chat_id=user_id,
+            text=f"💬  <b>Сообщение от Хозяина:</b>\n\n{admin_text}"
+        )
+        await message.reply(f"✅ Отправлено пользователю {user_id}")
+
+        # Логируем отправку
+        logger = BotLogger(bot)
+        await bot.send_message(
+            chat_id=settings.LOG_CHANNEL_ID,
+            text=f"📤  <b>Сообщение отправлено</b>\n\n"
+                 f"👤  ID: <code>{user_id}</code>\n"
+                 f"💬  {admin_text[:200]}",
+            disable_notification=True,
+        )
+
+    except Exception as e:
+        await message.reply(f"❌ Не удалось отправить: {e}")

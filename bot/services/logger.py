@@ -207,6 +207,38 @@ class BotLogger:
             ],
         ])
 
+    @staticmethod
+    def get_user_tags(user) -> list[str]:
+        """Генерирует авто-теги для пользователя"""
+        tags = []
+
+        # По количеству заказов
+        if user.orders_count >= 10:
+            tags.append("👑 VIP")
+        elif user.orders_count >= 5:
+            tags.append("⭐ Постоянный")
+        elif user.orders_count == 0:
+            tags.append("🌱 Новичок")
+
+        # По сумме
+        if user.total_spent >= 50000:
+            tags.append("💎 Крупный")
+
+        # По рефералам
+        if user.referrals_count >= 3:
+            tags.append("📢 Амбассадор")
+
+        # Проблемный (если есть заметки с ключевыми словами)
+        notes = getattr(user, 'admin_notes', '') or ''
+        if any(w in notes.lower() for w in ['проблем', 'жалоб', 'возврат', 'конфликт']):
+            tags.append("⚠️ Проблемный")
+
+        # Забанен
+        if getattr(user, 'is_banned', False):
+            tags.append("🚫 Бан")
+
+        return tags
+
     async def _get_user_stats(self, user_id: int, session: Optional[AsyncSession] = None) -> tuple[str, bool]:
         """
         Получает статистику пользователя из БД.
@@ -229,6 +261,11 @@ class BotLogger:
                     stats += f" · Баланс: {user.balance:.0f}₽"
                 if discount > 0:
                     stats += f" · Скидка: {discount}%"
+
+                # Авто-теги
+                tags = self.get_user_tags(user)
+                if tags:
+                    stats += f"\n🏷  {' · '.join(tags)}"
 
                 # Добавляем метку если пользователь на слежке
                 # (безопасная проверка - поле может не существовать)

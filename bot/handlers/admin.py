@@ -1,11 +1,13 @@
 from aiogram import Router, F, Bot
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, desc
 
 from database.models.users import User
+from database.models.orders import Order, WORK_TYPE_LABELS, WorkType
+from bot.services.logger import BotLogger
 from core.config import settings
 from core.saloon_status import (
     saloon_manager,
@@ -540,3 +542,132 @@ async def enable_newbie_mode(callback: CallbackQuery, session: AsyncSession):
 
     await callback.answer()
     await callback.message.edit_text(text, reply_markup=get_admin_back_keyboard())
+
+
+# ══════════════════════════════════════════════════════════════
+#                    КОМАНДА /user <id>
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("user"))
+async def cmd_user_info(message: Message, command: CommandObject, session: AsyncSession):
+    """
+    Показать полную информацию о пользователе.
+    Использование: /user 123456789 или /user @username
+    """
+    if not is_admin(message.from_user.id):
+        return
+
+    if not command.args:
+        await message.answer(
+            "📋  <b>Использование:</b>\n\n"
+            "<code>/user 123456789</code> — по Telegram ID\n"
+            "<code>/user @username</code> — по юзернейму"
+        )
+        return
+
+    arg = command.args.strip()
+
+    # Поиск пользователя
+    if arg.startswith("@"):
+        username = arg[1:]
+        query = select(User).where(User.username == username)
+    else:
+        try:
+            user_id = int(arg)
+            query = select(User).where(User.telegram_id == user_id)
+        except ValueError:
+            await message.answer("❌ Неверный формат. Используй ID (число) или @username")
+            return
+
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        await message.answer("❌ Пользователь не найден")
+        return
+
+    # Получаем последние заказы
+    orders_query = (
+        select(Order)
+        .where(Order.user_id == user.telegram_id)
+        .order_by(desc(Order.created_at))
+        .limit(5)
+    )
+    orders_result = await session.execute(orders_query)
+    orders = orders_result.scalars().all()
+
+    # Формируем теги
+    tags = BotLogger.get_user_tags(user)
+    tags_str = " · ".join(tags) if tags else "—"
+
+    # Формируем статус
+    status, discount = user.loyalty_status
+
+    # Проверяем флаги модерации
+    is_watched = getattr(user, 'is_watched', False)
+    is_banned = getattr(user, 'is_banned', False)
+    notes = getattr(user, 'admin_notes', None) or "—"
+
+    moderation_flags = []
+    if is_watched:
+        moderation_flags.append("👀 На слежке")
+    if is_banned:
+        moderation_flags.append("🚫 ЗАБАНЕН")
+    moderation_str = " · ".join(moderation_flags) if moderation_flags else "✅ Чисто"
+
+    # Формируем список заказов
+    orders_str = ""
+    if orders:
+        for o in orders:
+            work_label = WORK_TYPE_LABELS.get(WorkType(o.work_type), o.work_type)
+            date_str = o.created_at.strftime("%d.%m") if o.created_at else "?"
+            orders_str += f"\n  • #{o.id} {work_label} ({date_str}) — {o.status}"
+    else:
+        orders_str = "\n  Заказов пока нет"
+
+    text = f"""📋  <b>Профиль пользователя</b>
+
+👤  <b>{user.fullname or 'Без имени'}</b>
+🔗  @{user.username or '—'} · <code>{user.telegram_id}</code>
+
+🏷  <b>Теги:</b> {tags_str}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+📊  <b>Статистика</b>
+◈  Статус: {status}
+◈  Скидка: {discount}%
+◈  Заказов: {user.orders_count}
+◈  Потрачено: {user.total_spent:.0f} ₽
+◈  Баланс: {user.balance:.0f} ₽
+◈  Рефералов: {user.referrals_count}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+🔒  <b>Модерация:</b> {moderation_str}
+
+📌  <b>Заметки:</b>
+{notes}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+📝  <b>Последние заказы:</b>{orders_str}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+📅  Регистрация: {user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '—'}
+✅  Оферта: {user.terms_accepted_at.strftime('%d.%m.%Y') if user.terms_accepted_at else 'Не принята'}"""
+
+    # Кнопки быстрых действий
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="💬 Написать", url=f"tg://user?id={user.telegram_id}"),
+            InlineKeyboardButton(text="👀 Слежка", callback_data=f"log_watch:{user.telegram_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="📌 Заметка", callback_data=f"log_note:{user.telegram_id}"),
+            InlineKeyboardButton(text="🚫 Бан", callback_data=f"log_ban:{user.telegram_id}"),
+        ],
+    ])
+
+    await message.answer(text, reply_markup=kb)
