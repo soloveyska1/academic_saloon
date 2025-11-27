@@ -78,7 +78,8 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     result = await session.execute(query)
     user = result.scalar_one_or_none()
 
-    is_new_user = False
+    # Проверяем, принимал ли пользователь оферту раньше
+    is_first_accept = user is None or user.terms_accepted_at is None
 
     if not user:
         # Создаём нового пользователя
@@ -90,7 +91,6 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             terms_accepted_at=datetime.now(timezone.utc),
         )
         session.add(user)
-        is_new_user = True
     else:
         # Обновляем дату принятия
         user.terms_accepted_at = datetime.now(timezone.utc)
@@ -101,14 +101,14 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     await callback.message.delete()
 
     # Формируем приветственное сообщение
-    if is_new_user:
+    if is_first_accept:
         text = TERMS_ACCEPTED.format(name=callback.from_user.first_name)
 
         # Логируем нового пользователя
         await log_new_user(bot, callback.from_user, user)
         await notify_admins(bot, callback.from_user, user)
 
-        # Новым пользователям: сначала голосовое, потом гифка
+        # Новым пользователям: сначала голосовое, потом видео
         voice = FSInputFile(settings.WELCOME_VOICE)
         await callback.message.answer_voice(voice=voice)
 
@@ -122,9 +122,9 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             discount_line=discount_line
         )
 
-    # Отправляем гифку с меню
-    gif = FSInputFile(settings.WELCOME_GIF)
-    await callback.message.answer_animation(animation=gif, caption=text, reply_markup=get_start_keyboard())
+    # Отправляем видео с меню (зацикливается как анимация)
+    video = FSInputFile(settings.WELCOME_VIDEO)
+    await callback.message.answer_animation(animation=video, caption=text, reply_markup=get_start_keyboard())
 
 
 # ══════════════════════════════════════════════════════════════

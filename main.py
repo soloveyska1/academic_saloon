@@ -10,6 +10,7 @@ from bot.handlers.start import router as start_router
 from bot.handlers.terms import router as terms_router
 from bot.handlers.menu import router as menu_router
 from bot.handlers.orders import router as orders_router
+from bot.handlers.admin import router as admin_router
 from bot.middlewares import ErrorHandlerMiddleware, DbSessionMiddleware
 
 # Настройка логирования
@@ -35,6 +36,7 @@ async def main():
     # -------------------------------
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
+    dp.include_router(admin_router)   # Админка (до start, чтобы /admin обрабатывался)
     dp.include_router(start_router)
     dp.include_router(terms_router)   # Оферта
     dp.include_router(orders_router)  # FSM для заказов

@@ -119,6 +119,6 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             f"<i>Чем могу помочь?</i>"
         )
 
-    # Отправляем гифку с приветствием
-    gif = FSInputFile(settings.WELCOME_GIF)
-    await message.answer_animation(animation=gif, caption=text, reply_markup=get_start_keyboard())
+    # Отправляем видео с приветствием (зацикливается как анимация)
+    video = FSInputFile(settings.WELCOME_VIDEO)
+    await message.answer_animation(animation=video, caption=text, reply_markup=get_start_keyboard())
