@@ -106,10 +106,10 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     # Получаем приветствие по времени суток (МСК)
     text = get_time_greeting()
 
-    # Отправляем видео с приветствием (зацикливается как анимация) + Reply клавиатура
-    video = FSInputFile(settings.WELCOME_VIDEO)
-    await message.answer_animation(
-        animation=video,
+    # Отправляем картинку с приветствием + Reply клавиатура
+    photo = FSInputFile(settings.WELCOME_IMAGE)
+    await message.answer_photo(
+        photo=photo,
         caption=text,
         reply_markup=get_main_reply_keyboard()
     )

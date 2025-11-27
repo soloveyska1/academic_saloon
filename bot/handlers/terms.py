@@ -116,10 +116,10 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     # Получаем приветствие по времени суток (МСК)
     text = get_time_greeting()
 
-    # Отправляем видео с меню (зацикливается как анимация) + Reply клавиатура
-    video = FSInputFile(settings.WELCOME_VIDEO)
-    await callback.message.answer_animation(
-        animation=video,
+    # Отправляем картинку с меню + Reply клавиатура
+    photo = FSInputFile(settings.WELCOME_IMAGE)
+    await callback.message.answer_photo(
+        photo=photo,
         caption=text,
         reply_markup=get_main_reply_keyboard()
     )

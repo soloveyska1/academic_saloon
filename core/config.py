@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     SUPPORT_USERNAME: str = "Thisissaymoon"
 
     # Медиа файлы
-    WELCOME_VIDEO: Path = BASE_DIR / "bot" / "media" / "hello_saloon.mp4"
+    WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "image_saloon.jpg"
     WELCOME_VOICE: Path = BASE_DIR / "bot" / "media" / "voice_welcome.ogg"
 
     POSTGRES_USER: str

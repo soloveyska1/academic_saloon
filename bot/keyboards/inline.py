@@ -19,7 +19,9 @@ def get_main_reply_keyboard() -> ReplyKeyboardMarkup:
                 KeyboardButton(text="⚖️ Правила")
             ],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
+        is_persistent=True,
+        input_field_placeholder="Выбери действие или напиши сообщение..."
     )
     return kb
 
