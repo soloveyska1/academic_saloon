@@ -390,14 +390,43 @@ async def set_orders_count(message: Message, state: FSMContext):
 #                    ЗАКРЕПЛЕННОЕ СООБЩЕНИЕ
 # ══════════════════════════════════════════════════════════════
 
+def get_pin_destination_keyboard(admin_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура выбора куда отправить закреп"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="📱 Отправить мне",
+                callback_data=f"admin_pin_to:{admin_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="📢 В канал логов",
+                callback_data=f"admin_pin_to:{settings.LOG_CHANNEL_ID}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="✏️ Ввести ID вручную",
+                callback_data="admin_pin_manual"
+            )
+        ],
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="admin_status_menu")
+        ],
+    ])
+    return kb
+
+
 @router.callback_query(F.data == "admin_send_pin")
 async def ask_pin_chat_id(callback: CallbackQuery, state: FSMContext):
-    """Запросить ID чата для отправки закрепа"""
+    """Показать меню выбора куда отправить закреп"""
     if not is_admin(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
     await callback.answer()
+    await state.clear()
 
     # Предпросмотр сообщения
     status = await saloon_manager.get_status()
@@ -411,17 +440,89 @@ async def ask_pin_chat_id(callback: CallbackQuery, state: FSMContext):
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-Введи ID чата/канала (число со знаком минус для каналов):
+Куда отправить?"""
 
-<i>Например: -1001234567890</i>"""
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_pin_destination_keyboard(callback.from_user.id)
+    )
+
+
+@router.callback_query(F.data.startswith("admin_pin_to:"))
+async def send_pin_to_chat(callback: CallbackQuery, bot: Bot):
+    """Отправить закреп в выбранный чат"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    chat_id = int(callback.data.split(":")[1])
+    await _send_pin_message(callback, bot, chat_id)
+
+
+@router.callback_query(F.data == "admin_pin_manual")
+async def ask_pin_manual(callback: CallbackQuery, state: FSMContext):
+    """Запросить ID чата вручную"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    await callback.answer()
+
+    text = """✏️  <b>Ввод ID вручную</b>
+
+Введи ID чата/канала:
+
+<i>Для каналов — число со знаком минус
+Например: -1001234567890</i>"""
 
     await callback.message.edit_text(text, reply_markup=get_cancel_keyboard())
     await state.set_state(AdminStates.waiting_pin_chat_id)
 
 
+async def _send_pin_message(callback: CallbackQuery, bot: Bot, chat_id: int):
+    """Вспомогательная функция отправки закрепа"""
+    try:
+        status = await saloon_manager.get_status()
+        text = generate_status_message(status)
+
+        # Отправляем сообщение
+        sent_msg = await bot.send_message(chat_id=chat_id, text=text)
+
+        # Пытаемся закрепить
+        try:
+            await bot.pin_chat_message(
+                chat_id=chat_id,
+                message_id=sent_msg.message_id,
+                disable_notification=True
+            )
+            pin_status = "и закреплено ✅"
+        except Exception:
+            pin_status = "(закрепи вручную)"
+
+        # Сохраняем ID сообщения
+        await saloon_manager.set_pinned_message(chat_id, sent_msg.message_id)
+
+        await callback.answer(f"Отправлено {pin_status}", show_alert=True)
+
+        # Обновляем текст сообщения
+        result_text = f"""✅  <b>Готово!</b>
+
+Сообщение отправлено {pin_status}
+
+Chat ID: <code>{chat_id}</code>
+Message ID: <code>{sent_msg.message_id}</code>
+
+Теперь можешь обновлять его через «Обновить закреп»."""
+
+        await callback.message.edit_text(result_text, reply_markup=get_back_to_status_keyboard())
+
+    except Exception as e:
+        await callback.answer(f"Ошибка: {str(e)[:100]}", show_alert=True)
+
+
 @router.message(AdminStates.waiting_pin_chat_id)
-async def send_pin_message(message: Message, state: FSMContext, bot: Bot):
-    """Отправить закрепленное сообщение"""
+async def send_pin_message_manual(message: Message, state: FSMContext, bot: Bot):
+    """Отправить закрепленное сообщение (ручной ввод ID)"""
     if not is_admin(message.from_user.id):
         return
 
