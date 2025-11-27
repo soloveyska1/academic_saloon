@@ -12,9 +12,16 @@ from bot.handlers.menu import router as menu_router
 from bot.handlers.orders import router as orders_router
 from bot.handlers.admin import router as admin_router
 from bot.handlers.log_actions import router as log_actions_router
-from bot.middlewares import ErrorHandlerMiddleware, DbSessionMiddleware, BanCheckMiddleware
+from bot.middlewares import (
+    ErrorHandlerMiddleware,
+    DbSessionMiddleware,
+    BanCheckMiddleware,
+    AntiSpamMiddleware,
+    StopWordsMiddleware,
+)
 from bot.services.logger import init_logger
 from bot.services.abandoned_detector import init_abandoned_tracker
+from bot.services.daily_stats import init_daily_stats
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -37,12 +44,16 @@ async def main():
     dp.update.outer_middleware(ErrorHandlerMiddleware())
     dp.update.outer_middleware(DbSessionMiddleware())
     dp.update.outer_middleware(BanCheckMiddleware())  # Проверка бана
+    dp.update.outer_middleware(AntiSpamMiddleware())  # Защита от спама
+    dp.update.outer_middleware(StopWordsMiddleware())  # Стоп-слова
     # -------------------------------
 
     # --- ИНИЦИАЛИЗАЦИЯ СЕРВИСОВ ---
     init_logger(bot)
     abandoned_tracker = init_abandoned_tracker(bot, storage)
     logger.info("Abandoned order tracker started")
+    daily_stats = init_daily_stats(bot)
+    logger.info("Daily stats service started")
     # --------------------------------
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
@@ -64,6 +75,7 @@ async def main():
     finally:
         # Останавливаем фоновые задачи
         abandoned_tracker.stop()
+        daily_stats.stop()
         await bot.session.close()
 
 if __name__ == "__main__":
