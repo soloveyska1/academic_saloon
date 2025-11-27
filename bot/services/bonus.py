@@ -1,13 +1,16 @@
 """
 Сервис бонусной системы — начисление и списание бонусов
 """
+import logging
 from enum import Enum
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from aiogram import Bot
 
 from database.models.users import User
-from bot.services.logger import BotLogger, LogEvent
+
+
+logger = logging.getLogger(__name__)
 
 
 class BonusReason(str, Enum):
@@ -61,28 +64,11 @@ class BonusService:
         user.balance += amount
         await session.commit()
 
-        # Логируем в канал
-        if bot:
-            reason_labels = {
-                BonusReason.ORDER_CREATED: "🎁 Бонус за заказ",
-                BonusReason.REFERRAL_BONUS: "👥 Бонус за реферала",
-                BonusReason.ADMIN_ADJUSTMENT: "⚙️ Корректировка",
-                BonusReason.COMPENSATION: "🤝 Компенсация",
-            }
-
-            log_text = description or reason_labels.get(reason, "Начисление")
-
-            await BotLogger.log(
-                bot=bot,
-                event=LogEvent.BONUS_ADDED,
-                user_id=user_id,
-                extra_data={
-                    "amount": f"+{amount:.0f}₽",
-                    "reason": log_text,
-                    "balance": f"{old_balance:.0f}₽ → {user.balance:.0f}₽",
-                },
-                session=session,
-            )
+        # Логируем в консоль
+        logger.info(
+            f"Bonus added: user={user_id}, amount=+{amount:.0f}₽, "
+            f"reason={reason.value}, balance: {old_balance:.0f}₽ → {user.balance:.0f}₽"
+        )
 
         return user.balance
 
@@ -120,21 +106,11 @@ class BonusService:
         user.balance -= amount
         await session.commit()
 
-        # Логируем
-        if bot:
-            log_text = description or "Списание бонусов"
-
-            await BotLogger.log(
-                bot=bot,
-                event=LogEvent.BONUS_DEDUCTED,
-                user_id=user_id,
-                extra_data={
-                    "amount": f"-{amount:.0f}₽",
-                    "reason": log_text,
-                    "balance": f"{old_balance:.0f}₽ → {user.balance:.0f}₽",
-                },
-                session=session,
-            )
+        # Логируем в консоль
+        logger.info(
+            f"Bonus deducted: user={user_id}, amount=-{amount:.0f}₽, "
+            f"reason={reason.value}, balance: {old_balance:.0f}₽ → {user.balance:.0f}₽"
+        )
 
         return True, user.balance
 
