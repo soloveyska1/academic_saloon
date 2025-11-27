@@ -58,7 +58,7 @@ class BanCheckMiddleware(BaseMiddleware):
             result = await session.execute(query)
             db_user = result.scalar_one_or_none()
 
-            if db_user and db_user.is_banned:
+            if db_user and getattr(db_user, 'is_banned', False):
                 # Показываем заглушку
                 await self._send_ban_message(event)
                 return None

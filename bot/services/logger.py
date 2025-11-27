@@ -231,10 +231,12 @@ class BotLogger:
                     stats += f" · Скидка: {discount}%"
 
                 # Добавляем метку если пользователь на слежке
-                if user.is_watched:
+                # (безопасная проверка - поле может не существовать)
+                is_watched = getattr(user, 'is_watched', False)
+                if is_watched:
                     stats += "\n👀  <b>НА СЛЕЖКЕ</b>"
 
-                return stats, user.is_watched
+                return stats, is_watched
         except Exception:
             pass
 

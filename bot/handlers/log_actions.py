@@ -151,7 +151,7 @@ async def start_note(callback: CallbackQuery, state: FSMContext, session: AsyncS
         return
 
     # Показываем текущую заметку если есть
-    current_note = user.admin_notes or "Заметок нет"
+    current_note = getattr(user, 'admin_notes', None) or "Заметок нет"
 
     await callback.answer()
 
@@ -239,9 +239,9 @@ async def show_user_info(callback: CallbackQuery, session: AsyncSession):
 
     # Формируем информацию
     status, discount = user.loyalty_status
-    watch_status = "👀 На слежке" if user.is_watched else ""
-    ban_status = "🚫 ЗАБАНЕН" if user.is_banned else ""
-    notes = user.admin_notes or "—"
+    watch_status = "👀 На слежке" if getattr(user, 'is_watched', False) else ""
+    ban_status = "🚫 ЗАБАНЕН" if getattr(user, 'is_banned', False) else ""
+    notes = getattr(user, 'admin_notes', None) or "—"
 
     text = f"""📋  <b>Профиль пользователя</b>
 
