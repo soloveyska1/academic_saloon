@@ -1,5 +1,6 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
+from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -9,11 +10,147 @@ from bot.keyboards.inline import (
     get_codex_keyboard,
     get_codex_full_keyboard,
     get_referral_keyboard,
-    get_back_keyboard
+    get_back_keyboard,
+    get_main_reply_keyboard
 )
 from core.config import settings
 
 router = Router()
+
+
+# ══════════════════════════════════════════════════════════════
+#                    REPLY KEYBOARD HANDLERS
+# ══════════════════════════════════════════════════════════════
+
+@router.message(F.text == "📝 Заказать работу")
+async def reply_create_order(message: Message, state: FSMContext):
+    """Создать заказ (Reply keyboard)"""
+    from bot.handlers.orders import start_order_creation
+    await start_order_creation(message, state)
+
+
+@router.message(F.text == "👤 Мои заказы")
+async def reply_my_orders(message: Message, session: AsyncSession):
+    """Мои заказы (Reply keyboard)"""
+    telegram_id = message.from_user.id
+    query = select(User).where(User.telegram_id == telegram_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    orders_count = user.orders_count if user else 0
+
+    text = f"""👤  <b>Мои заказы</b>
+
+
+◈  Всего заказов: {orders_count}
+
+<i>Здесь будет история твоих заказов.</i>"""
+
+    await message.answer(text)
+
+
+@router.message(F.text == "💰 Мой баланс")
+async def reply_balance(message: Message, session: AsyncSession):
+    """Мой баланс (Reply keyboard)"""
+    telegram_id = message.from_user.id
+    query = select(User).where(User.telegram_id == telegram_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    balance = user.balance if user else 0
+
+    text = f"""💰  <b>Мой баланс</b>
+
+
+Баланс: <b>{balance:.0f} ₽</b>
+
+
+<i>Пополняется бонусами за друзей
+и компенсациями. Можно тратить
+на свои заказы.</i>"""
+
+    await message.answer(text)
+
+
+@router.message(F.text == "💬 Написать Хозяину")
+async def reply_contact_owner(message: Message):
+    """Написать Хозяину (Reply keyboard)"""
+    text = f"""💬  <b>Написать Хозяину</b>
+
+
+Пиши напрямую: @{settings.SUPPORT_USERNAME}
+
+Отзывы: <a href="{settings.REVIEWS_CHANNEL}">канал</a>
+
+
+<i>Отвечаю в течение пары часов,
+обычно быстрее.</i>"""
+
+    await message.answer(text, disable_web_page_preview=True)
+
+
+@router.message(F.text == "🤝 Привести друга")
+async def reply_referral(message: Message, session: AsyncSession):
+    """Привести друга (Reply keyboard)"""
+    telegram_id = message.from_user.id
+    referral_link = f"https://t.me/{settings.BOT_USERNAME}?start=ref{telegram_id}"
+
+    query = select(User).where(User.telegram_id == telegram_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    referrals_count = user.referrals_count if user else 0
+    referral_earnings = user.referral_earnings if user else 0
+
+    text = f"""🤝  <b>Привести друга</b>
+
+
+Твоя ссылка:
+<code>{referral_link}</code>
+
+
+<b>Как это работает</b>
+
+Друг переходит по ссылке и делает заказ.
+Ты получаешь 5% от суммы на баланс.
+Друг получает скидку 5% на первый заказ.
+
+
+<b>Твоя статистика</b>
+
+◈  Приглашено: {referrals_count}
+◈  Заработано: {referral_earnings:.0f} ₽"""
+
+    await message.answer(text)
+
+
+@router.message(F.text == "📜 Прайс-лист")
+async def reply_price_list(message: Message):
+    """Прайс-лист (Reply keyboard)"""
+    text = """📜  <b>Прайс-лист</b>
+
+
+<b>Базовые расценки:</b>
+
+◈  Реферат — от 800 ₽
+◈  Эссе — от 600 ₽
+◈  Контрольная — от 1000 ₽
+◈  Курсовая — от 3000 ₽
+◈  Дипломная — от 15000 ₽
+◈  Презентация — от 500 ₽
+
+
+<i>Точная цена зависит от объёма,
+сложности и сроков. Скидывай задачу —
+посчитаю индивидуально.</i>"""
+
+    await message.answer(text)
+
+
+@router.message(F.text == "⚖️ Правила")
+async def reply_rules(message: Message):
+    """Правила (Reply keyboard)"""
+    await message.answer(CODEX_SHORT)
 
 
 # ══════════════════════════════════════════════════════════════

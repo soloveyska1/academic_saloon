@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models.users import User
-from bot.keyboards.inline import get_start_keyboard
+from bot.keyboards.inline import get_start_keyboard, get_main_reply_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
-from bot.texts.terms import TERMS_SHORT
+from bot.texts.terms import TERMS_SHORT, get_time_greeting
 from core.config import settings
 
 router = Router()
@@ -103,22 +103,13 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     user.fullname = message.from_user.full_name
     await session.commit()
 
-    status, discount = user.loyalty_status
+    # Получаем приветствие по времени суток (МСК)
+    text = get_time_greeting()
 
-    if discount > 0:
-        text = (
-            f"🍸  <b>С возвращением, {user.fullname}.</b>\n\n"
-            f"{status}\n"
-            f"Твоя скидка — {discount}%\n\n"
-            f"<i>Чем могу помочь?</i>"
-        )
-    else:
-        text = (
-            f"🍸  <b>С возвращением, {user.fullname}.</b>\n\n"
-            f"Твой столик свободен.\n\n"
-            f"<i>Чем могу помочь?</i>"
-        )
-
-    # Отправляем видео с приветствием (зацикливается как анимация)
+    # Отправляем видео с приветствием (зацикливается как анимация) + Reply клавиатура
     video = FSInputFile(settings.WELCOME_VIDEO)
-    await message.answer_animation(animation=video, caption=text, reply_markup=get_start_keyboard())
+    await message.answer_animation(
+        animation=video,
+        caption=text,
+        reply_markup=get_main_reply_keyboard()
+    )

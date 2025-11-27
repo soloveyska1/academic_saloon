@@ -12,13 +12,15 @@ from bot.texts.terms import (
     TERMS_SECTIONS,
     TERMS_ACCEPTED,
     TERMS_ACCEPTED_RETURNING,
+    get_time_greeting,
+    VOICE_CAPTION,
 )
 from bot.keyboards.terms import (
     get_terms_short_keyboard,
     get_terms_full_keyboard,
     get_terms_section_keyboard,
 )
-from bot.keyboards.inline import get_start_keyboard
+from bot.keyboards.inline import get_start_keyboard, get_main_reply_keyboard
 from core.config import settings
 
 router = Router()
@@ -102,29 +104,25 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     # Формируем приветственное сообщение
     if is_first_accept:
-        text = TERMS_ACCEPTED.format(name=callback.from_user.first_name)
-
         # Логируем нового пользователя
         await log_new_user(bot, callback.from_user, user)
         await notify_admins(bot, callback.from_user, user)
 
-        # Новым пользователям: сначала голосовое, потом видео
+        # Новым пользователям: сначала текст-подводка, потом голосовое
+        await callback.message.answer(VOICE_CAPTION)
         voice = FSInputFile(settings.WELCOME_VOICE)
         await callback.message.answer_voice(voice=voice)
 
-    else:
-        status, discount = user.loyalty_status
-        discount_line = f"Твоя скидка — {discount}%" if discount > 0 else ""
+    # Получаем приветствие по времени суток (МСК)
+    text = get_time_greeting()
 
-        text = TERMS_ACCEPTED_RETURNING.format(
-            name=user.fullname or callback.from_user.first_name,
-            status=status,
-            discount_line=discount_line
-        )
-
-    # Отправляем видео с меню (зацикливается как анимация)
+    # Отправляем видео с меню (зацикливается как анимация) + Reply клавиатура
     video = FSInputFile(settings.WELCOME_VIDEO)
-    await callback.message.answer_animation(animation=video, caption=text, reply_markup=get_start_keyboard())
+    await callback.message.answer_animation(
+        animation=video,
+        caption=text,
+        reply_markup=get_main_reply_keyboard()
+    )
 
 
 # ══════════════════════════════════════════════════════════════

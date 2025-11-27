@@ -25,7 +25,7 @@ router = Router()
 
 @router.callback_query(F.data == "create_order")
 async def start_order(callback: CallbackQuery, state: FSMContext):
-    """Начать создание заказа — выбор типа работы"""
+    """Начать создание заказа — выбор типа работы (callback)"""
     await callback.answer()
 
     await state.set_state(OrderState.choosing_type)
@@ -35,6 +35,30 @@ async def start_order(callback: CallbackQuery, state: FSMContext):
 Выбери тип работы:"""
 
     await callback.message.edit_text(text, reply_markup=get_work_type_keyboard())
+
+
+async def start_order_creation(message: Message, state: FSMContext = None):
+    """Начать создание заказа — выбор типа работы (для Reply keyboard)"""
+    # Если state не передан через параметр, пробуем получить из middleware
+    if state is None:
+        # Заглушка — без FSM
+        text = """📝  <b>Заказать работу</b>
+
+Чтобы оформить заказ, напиши Хозяину напрямую:
+
+@""" + settings.SUPPORT_USERNAME + """
+
+Или нажми /start и выбери «🎯 Новый заказ»"""
+        await message.answer(text)
+        return
+
+    await state.set_state(OrderState.choosing_type)
+
+    text = """🎯  <b>Новый заказ</b>
+
+Выбери тип работы:"""
+
+    await message.answer(text, reply_markup=get_work_type_keyboard())
 
 
 @router.callback_query(OrderState.choosing_type, F.data.startswith("order_type:"))
