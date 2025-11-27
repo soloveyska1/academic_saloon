@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -95,23 +95,38 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
         level=LogLevel.ACTION,
     )
 
-    text = """🎯  <b>Новый заказ</b>
+    # Получаем скидку пользователя
+    user_query = select(User).where(User.telegram_id == callback.from_user.id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
 
-Выбери тип работы:
+    _, discount = user.loyalty_status if user else ("", 0)
+
+    # Проверяем скидку за реферала (первый заказ)
+    if user and user.referrer_id and user.orders_count == 0:
+        discount = max(discount, 5)
+
+    discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
+
+    text = f"""🎯  <b>Новый заказ</b>
+
+Выбери тип работы:{discount_line}
 
 <i>Цены указаны минимальные —
 точная стоимость зависит от темы и срока.</i>"""
 
-    # Проверяем, можно ли редактировать сообщение
-    if callback.message.text:
-        await callback.message.edit_text(text, reply_markup=get_work_type_keyboard())
-    else:
-        # Сообщение с медиа — удаляем и отправляем новое
-        try:
-            await callback.message.delete()
-        except Exception:
-            pass
-        await callback.message.answer(text, reply_markup=get_work_type_keyboard())
+    # Удаляем старое сообщение и отправляем с картинкой
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    photo = FSInputFile(settings.ORDER_IMAGE)
+    await callback.message.answer_photo(
+        photo=photo,
+        caption=text,
+        reply_markup=get_work_type_keyboard()
+    )
 
 
 @router.callback_query(OrderState.choosing_type, F.data.startswith("order_type:"))
@@ -649,19 +664,42 @@ def format_order_description(attachments: list) -> str:
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "order_back_to_type")
-async def back_to_type(callback: CallbackQuery, state: FSMContext):
+async def back_to_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Назад к выбору типа работы"""
     await callback.answer()
     await state.set_state(OrderState.choosing_type)
 
-    text = """🎯  <b>Новый заказ</b>
+    # Получаем скидку пользователя
+    user_query = select(User).where(User.telegram_id == callback.from_user.id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
 
-Выбери тип работы:
+    _, discount = user.loyalty_status if user else ("", 0)
+
+    if user and user.referrer_id and user.orders_count == 0:
+        discount = max(discount, 5)
+
+    discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
+
+    text = f"""🎯  <b>Новый заказ</b>
+
+Выбери тип работы:{discount_line}
 
 <i>Цены указаны минимальные —
 точная стоимость зависит от темы и срока.</i>"""
 
-    await callback.message.edit_text(text, reply_markup=get_work_type_keyboard())
+    # Удаляем старое и отправляем с картинкой
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    photo = FSInputFile(settings.ORDER_IMAGE)
+    await callback.message.answer_photo(
+        photo=photo,
+        caption=text,
+        reply_markup=get_work_type_keyboard()
+    )
 
 
 @router.callback_query(F.data == "order_back_to_subject")

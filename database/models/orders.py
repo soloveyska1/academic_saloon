@@ -48,18 +48,32 @@ WORK_TYPE_LABELS = {
 }
 
 
-# Минимальные цены для калькулятора
+# Минимальные цены для калькулятора (психологические)
 WORK_TYPE_PRICES = {
-    WorkType.MASTERS: "от 45 000₽",
-    WorkType.DIPLOMA: "от 35 000₽",
-    WorkType.COURSEWORK: "от 12 000₽",
-    WorkType.INDEPENDENT: "от 2 500₽",
-    WorkType.ESSAY: "от 1 500₽",
-    WorkType.REPORT: "от 1 000₽",
-    WorkType.CONTROL: "от 1 500₽",
-    WorkType.PRESENTATION: "от 2 000₽",
-    WorkType.PRACTICE: "от 5 000₽",
+    WorkType.MASTERS: "от 44 900₽",
+    WorkType.DIPLOMA: "от 34 900₽",
+    WorkType.COURSEWORK: "от 11 900₽",
+    WorkType.INDEPENDENT: "от 2 400₽",
+    WorkType.ESSAY: "от 1 400₽",
+    WorkType.REPORT: "от 900₽",
+    WorkType.CONTROL: "от 1 400₽",
+    WorkType.PRESENTATION: "от 1 900₽",
+    WorkType.PRACTICE: "от 4 900₽",
     WorkType.OTHER: "индивидуально",
+}
+
+# Типичные сроки выполнения
+WORK_TYPE_DEADLINES = {
+    WorkType.MASTERS: "от 3 нед",
+    WorkType.DIPLOMA: "от 2 нед",
+    WorkType.COURSEWORK: "5-7 дней",
+    WorkType.INDEPENDENT: "2-3 дня",
+    WorkType.ESSAY: "1-2 дня",
+    WorkType.REPORT: "1-2 дня",
+    WorkType.CONTROL: "1-2 дня",
+    WorkType.PRESENTATION: "2-3 дня",
+    WorkType.PRACTICE: "3-5 дней",
+    WorkType.OTHER: "",
 }
 
 
