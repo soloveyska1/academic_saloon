@@ -52,12 +52,21 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
     pending_orders = result.scalars().all()
 
     if len(pending_orders) >= MAX_PENDING_ORDERS:
-        await callback.message.edit_text(
+        limit_text = (
             f"⚠️ <b>У тебя уже {len(pending_orders)} активных заявок</b>\n\n"
             f"Дождись их обработки или напиши мне напрямую:\n"
-            f"@{settings.SUPPORT_USERNAME}",
-            reply_markup=get_back_keyboard()
+            f"@{settings.SUPPORT_USERNAME}"
         )
+        # Проверяем, можно ли редактировать сообщение
+        if callback.message.text:
+            await callback.message.edit_text(limit_text, reply_markup=get_back_keyboard())
+        else:
+            # Сообщение с медиа — удаляем и отправляем новое
+            try:
+                await callback.message.delete()
+            except Exception:
+                pass
+            await callback.message.answer(limit_text, reply_markup=get_back_keyboard())
         return
 
     await state.clear()  # Очищаем предыдущее состояние
@@ -93,11 +102,16 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
 <i>Цены указаны минимальные —
 точная стоимость зависит от темы и срока.</i>"""
 
-    if callback.message.photo:
-        await callback.message.delete()
-        await callback.message.answer(text, reply_markup=get_work_type_keyboard())
-    else:
+    # Проверяем, можно ли редактировать сообщение
+    if callback.message.text:
         await callback.message.edit_text(text, reply_markup=get_work_type_keyboard())
+    else:
+        # Сообщение с медиа — удаляем и отправляем новое
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+        await callback.message.answer(text, reply_markup=get_work_type_keyboard())
 
 
 @router.callback_query(OrderState.choosing_type, F.data.startswith("order_type:"))
