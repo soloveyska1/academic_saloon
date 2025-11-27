@@ -1,10 +1,15 @@
 """
 Модуль для управления статусом Салуна.
-Хранит данные в Redis: загруженность, клиенты онлайн, заказы в работе.
+Хранит данные в Redis: загруженность, клиенты, заказы в работе.
+Динамически генерирует правдоподобное "людей в боте сейчас".
 """
 import json
+import random
+import hashlib
 from enum import Enum
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from redis.asyncio import Redis
 
 from core.config import settings
@@ -29,8 +34,8 @@ LOAD_STATUS_DISPLAY = {
 class SaloonStatus:
     """Структура статуса салуна"""
     load_status: str = LoadStatus.MEDIUM.value
-    clients_online: int = 12
-    orders_in_progress: int = 5
+    clients_count: int = 3           # Клиентов сейчас (админ выставляет)
+    orders_in_progress: int = 5      # Заказов в работе (админ выставляет)
     pinned_message_id: int | None = None
     pinned_chat_id: int | None = None
 
@@ -39,6 +44,11 @@ class SaloonStatus:
 
     @classmethod
     def from_dict(cls, data: dict) -> "SaloonStatus":
+        # Миграция старого поля clients_online → clients_count
+        if "clients_online" in data and "clients_count" not in data:
+            data["clients_count"] = data.pop("clients_online")
+        elif "clients_online" in data:
+            data.pop("clients_online")
         return cls(**data)
 
 
@@ -81,10 +91,10 @@ class SaloonStatusManager:
         await self.save_status(status)
         return status
 
-    async def set_clients_online(self, count: int) -> SaloonStatus:
-        """Установить количество клиентов онлайн"""
+    async def set_clients_count(self, count: int) -> SaloonStatus:
+        """Установить количество клиентов сейчас (админ выставляет вручную)"""
         status = await self.get_status()
-        status.clients_online = max(0, count)
+        status.clients_count = max(0, count)
         await self.save_status(status)
         return status
 
@@ -109,17 +119,61 @@ class SaloonStatusManager:
             await self._redis.close()
 
 
+def generate_people_online() -> int:
+    """
+    Генерирует правдоподобное число "людей в боте сейчас".
+
+    Алгоритм:
+    - Зависит от времени суток (МСК)
+    - Меняется каждые 3-5 минут (на основе хэша времени)
+    - Плавные переходы, правдоподобный разброс
+    """
+    msk = ZoneInfo("Europe/Moscow")
+    now = datetime.now(msk)
+    hour = now.hour
+
+    # Базовые значения по времени суток (МСК)
+    # Ночь (0-6): мало людей
+    # Утро (7-11): нарастает
+    # День (12-17): пик
+    # Вечер (18-23): спад
+
+    base_by_hour = {
+        0: 3, 1: 2, 2: 1, 3: 1, 4: 1, 5: 2,
+        6: 4, 7: 7, 8: 12, 9: 18, 10: 22, 11: 25,
+        12: 28, 13: 30, 14: 32, 15: 30, 16: 27, 17: 24,
+        18: 21, 19: 18, 20: 15, 21: 12, 22: 8, 23: 5,
+    }
+
+    base = base_by_hour.get(hour, 15)
+
+    # Создаём "окно" времени (меняется каждые 3-5 минут)
+    # Хэш от текущего 4-минутного окна + даты
+    time_window = now.minute // 4
+    seed_str = f"{now.year}-{now.month}-{now.day}-{hour}-{time_window}-saloon"
+    seed = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
+
+    # Используем seed для стабильного, но "случайного" числа в пределах окна
+    random.seed(seed)
+
+    # Разброс ±30% от базы, но минимум ±2
+    variance = max(2, int(base * 0.3))
+    result = base + random.randint(-variance, variance)
+
+    # Минимум 1, максимум 50
+    return max(1, min(50, result))
+
+
 def generate_status_message(status: SaloonStatus) -> str:
     """
-    Генерация красивого сообщения для закрепа.
+    Генерация красивого сообщения для закрепа в боте.
     Убедительно, стильно, в духе Салуна.
     """
     load = LoadStatus(status.load_status)
     emoji, title, description = LOAD_STATUS_DISPLAY[load]
 
-    # Иконки для динамики
-    clients_icon = "👥"
-    orders_icon = "📋"
+    # Динамическое число "людей в боте"
+    people_online = generate_people_online()
 
     message = f"""🏚  <b>АКАДЕМИЧЕСКИЙ САЛУН</b>
 ━━━━━━━━━━━━━━━━━━━━━
@@ -129,8 +183,9 @@ def generate_status_message(status: SaloonStatus) -> str:
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-{clients_icon}  <b>Клиентов сейчас:</b> {status.clients_online}
-{orders_icon}  <b>Заказов в работе:</b> {status.orders_in_progress}
+👀  <b>Людей в боте:</b> {people_online}
+🧑‍💼  <b>Клиентов сейчас:</b> {status.clients_count}
+📋  <b>Заказов в работе:</b> {status.orders_in_progress}
 
 ━━━━━━━━━━━━━━━━━━━━━
 

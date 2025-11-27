@@ -12,6 +12,7 @@ from core.saloon_status import (
     LoadStatus,
     LOAD_STATUS_DISPLAY,
     generate_status_message,
+    generate_people_online,
 )
 from bot.states.admin import AdminStates
 
@@ -61,7 +62,7 @@ def get_status_menu_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🚦 Загруженность", callback_data="admin_load_status")
         ],
         [
-            InlineKeyboardButton(text="👥 Клиенты онлайн", callback_data="admin_clients_online"),
+            InlineKeyboardButton(text="🧑‍💼 Клиентов сейчас", callback_data="admin_clients_count"),
             InlineKeyboardButton(text="📋 Заказы в работе", callback_data="admin_orders_count")
         ],
         [
@@ -187,12 +188,16 @@ async def show_status_menu(callback: CallbackQuery, state: FSMContext):
     load = LoadStatus(status.load_status)
     emoji, title, _ = LOAD_STATUS_DISPLAY[load]
 
+    # Динамическое число "людей в боте"
+    people_online = generate_people_online()
+
     text = f"""📊  <b>Статус Салуна</b>
 
 <b>Текущие показатели:</b>
 
 {emoji}  Загруженность: <b>{title}</b>
-👥  Клиентов онлайн: <b>{status.clients_online}</b>
+👀  Людей в боте: <b>{people_online}</b> <i>(авто)</i>
+🧑‍💼  Клиентов сейчас: <b>{status.clients_count}</b>
 📋  Заказов в работе: <b>{status.orders_in_progress}</b>
 
 📌  Закреп: {"настроен" if status.pinned_message_id else "не настроен"}"""
@@ -255,12 +260,16 @@ async def set_load_status(callback: CallbackQuery):
     load = LoadStatus(status.load_status)
     emoji_new, title_new, _ = LOAD_STATUS_DISPLAY[load]
 
+    # Динамическое число "людей в боте"
+    people_online = generate_people_online()
+
     text = f"""📊  <b>Статус Салуна</b>
 
 <b>Текущие показатели:</b>
 
 {emoji_new}  Загруженность: <b>{title_new}</b>
-👥  Клиентов онлайн: <b>{status.clients_online}</b>
+👀  Людей в боте: <b>{people_online}</b> <i>(авто)</i>
+🧑‍💼  Клиентов сейчас: <b>{status.clients_count}</b>
 📋  Заказов в работе: <b>{status.orders_in_progress}</b>
 
 📌  Закреп: {"настроен" if status.pinned_message_id else "не настроен"}"""
@@ -269,12 +278,12 @@ async def set_load_status(callback: CallbackQuery):
 
 
 # ══════════════════════════════════════════════════════════════
-#                    УПРАВЛЕНИЕ КЛИЕНТАМИ ОНЛАЙН
+#                    УПРАВЛЕНИЕ КЛИЕНТАМИ СЕЙЧАС
 # ══════════════════════════════════════════════════════════════
 
-@router.callback_query(F.data == "admin_clients_online")
+@router.callback_query(F.data == "admin_clients_count")
 async def ask_clients_count(callback: CallbackQuery, state: FSMContext):
-    """Запросить количество клиентов онлайн"""
+    """Запросить количество клиентов сейчас"""
     if not is_admin(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
@@ -283,9 +292,12 @@ async def ask_clients_count(callback: CallbackQuery, state: FSMContext):
 
     status = await saloon_manager.get_status()
 
-    text = f"""👥  <b>Клиенты онлайн</b>
+    text = f"""🧑‍💼  <b>Клиентов сейчас</b>
 
-Текущее значение: <b>{status.clients_online}</b>
+Текущее значение: <b>{status.clients_count}</b>
+
+<i>Это число ты выставляешь вручную.
+«Людей в боте» генерируется автоматически.</i>
 
 Введи новое число:"""
 
@@ -295,7 +307,7 @@ async def ask_clients_count(callback: CallbackQuery, state: FSMContext):
 
 @router.message(AdminStates.waiting_clients_count)
 async def set_clients_count(message: Message, state: FSMContext):
-    """Установить количество клиентов"""
+    """Установить количество клиентов сейчас"""
     if not is_admin(message.from_user.id):
         return
 
@@ -304,12 +316,12 @@ async def set_clients_count(message: Message, state: FSMContext):
         if count < 0:
             raise ValueError("Число должно быть неотрицательным")
 
-        await saloon_manager.set_clients_online(count)
+        await saloon_manager.set_clients_count(count)
         await state.clear()
 
         text = f"""✅  <b>Готово!</b>
 
-Клиентов онлайн: <b>{count}</b>"""
+Клиентов сейчас: <b>{count}</b>"""
 
         await message.answer(text, reply_markup=get_back_to_status_keyboard())
 
