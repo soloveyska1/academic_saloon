@@ -80,6 +80,7 @@ class BonusService:
         reason: BonusReason,
         description: str | None = None,
         bot: Bot | None = None,
+        user: User | None = None,
     ) -> tuple[bool, float]:
         """
         Списывает бонусы с баланса
@@ -91,20 +92,23 @@ class BonusService:
             reason: Причина списания
             description: Описание для лога
             bot: Бот для логирования
+            user: Уже загруженный объект User (чтобы избежать проблем с сессией)
 
         Returns:
             (успех, новый баланс)
         """
-        query = select(User).where(User.telegram_id == user_id)
-        result = await session.execute(query)
-        user = result.scalar_one_or_none()
+        # Используем переданный user или загружаем новый
+        if user is None:
+            query = select(User).where(User.telegram_id == user_id)
+            result = await session.execute(query)
+            user = result.scalar_one_or_none()
 
         if not user or user.balance < amount:
             return False, user.balance if user else 0.0
 
         old_balance = user.balance
         user.balance -= amount
-        await session.commit()
+        # НЕ делаем commit здесь - пусть вызывающий код сам решает когда коммитить
 
         # Логируем в консоль
         logger.info(

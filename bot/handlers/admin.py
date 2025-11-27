@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.filters import Command, CommandObject
+from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -198,7 +198,7 @@ def get_confirm_delete_keyboard(order_id: int) -> InlineKeyboardMarkup:
 #                        ХЕНДЛЕРЫ
 # ══════════════════════════════════════════════════════════════
 
-@router.message(Command("admin"))
+@router.message(Command("admin"), StateFilter("*"))
 async def cmd_admin(message: Message, state: FSMContext):
     """Админ-панель"""
     if not is_admin(message.from_user.id):
@@ -219,11 +219,12 @@ async def cmd_admin(message: Message, state: FSMContext):
     await message.answer(text, reply_markup=get_admin_keyboard())
 
 
-@router.message(Command("orders"))
-async def cmd_orders(message: Message, session: AsyncSession):
+@router.message(Command("orders"), StateFilter("*"))
+async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext):
     """Быстрый просмотр заявок"""
     if not is_admin(message.from_user.id):
         return
+    await state.clear()
 
     # Получаем все активные заявки
     query = (
@@ -1209,14 +1210,15 @@ async def enable_newbie_mode(callback: CallbackQuery, session: AsyncSession):
 #                    КОМАНДА /user <id>
 # ══════════════════════════════════════════════════════════════
 
-@router.message(Command("user"))
-async def cmd_user_info(message: Message, command: CommandObject, session: AsyncSession):
+@router.message(Command("user"), StateFilter("*"))
+async def cmd_user_info(message: Message, command: CommandObject, session: AsyncSession, state: FSMContext):
     """
     Показать полную информацию о пользователе.
     Использование: /user 123456789 или /user @username
     """
     if not is_admin(message.from_user.id):
         return
+    await state.clear()
 
     if not command.args:
         await message.answer(
@@ -1338,8 +1340,8 @@ async def cmd_user_info(message: Message, command: CommandObject, session: Async
 #                    НАЗНАЧЕНИЕ ЦЕНЫ ЗАКАЗУ
 # ══════════════════════════════════════════════════════════════
 
-@router.message(Command("price"))
-async def cmd_price(message: Message, command: CommandObject, session: AsyncSession, bot: Bot):
+@router.message(Command("price"), StateFilter("*"))
+async def cmd_price(message: Message, command: CommandObject, session: AsyncSession, bot: Bot, state: FSMContext):
     """
     Назначить цену заказу и отправить клиенту
     Использование: /price <order_id> <цена>
@@ -1347,6 +1349,7 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
     """
     if not is_admin(message.from_user.id):
         return
+    await state.clear()
 
     if not command.args:
         await message.answer(
@@ -1412,19 +1415,14 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
         client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
 
 {work_label}
+{price:.0f}₽ − {bonus_to_use:.0f}₽ бонусы
 
-Стоимость: {price:.0f}₽
-🎁 Бонусы: −{bonus_to_use:.0f}₽
-
-━━━━━━━━━━━━━━━
-<b>Итого к оплате: {final_price:.0f}₽</b>
-
-Реквизиты для оплаты пришлю следующим сообщением."""
+<b>К оплате: {final_price:.0f}₽</b>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [
                 InlineKeyboardButton(text="✅ Понятно", callback_data=f"price_ok:{order.id}"),
-                InlineKeyboardButton(text="Не списывать бонусы", callback_data=f"price_no_bonus:{order.id}"),
+                InlineKeyboardButton(text="Без бонусов", callback_data=f"price_no_bonus:{order.id}"),
             ]
         ])
     else:
@@ -1432,9 +1430,7 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
 
 {work_label}
 
-<b>Стоимость: {price:.0f}₽</b>
-
-Реквизиты для оплаты пришлю следующим сообщением."""
+<b>К оплате: {price:.0f}₽</b>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="✅ Понятно", callback_data=f"price_ok:{order.id}")]
@@ -1539,7 +1535,7 @@ def get_payment_keyboard(order_id: int) -> InlineKeyboardMarkup:
 
 
 async def send_payment_details(message: Message, order: Order):
-    """Отправить красивое сообщение с реквизитами для оплаты"""
+    """Отправить сообщение с реквизитами для оплаты"""
 
     # Определяем финальную сумму
     final_price = order.price - order.bonus_used if order.bonus_used else order.price
@@ -1547,31 +1543,17 @@ async def send_payment_details(message: Message, order: Order):
     # Формируем текст с бонусами если они применены
     bonus_line = ""
     if order.bonus_used and order.bonus_used > 0:
-        bonus_line = f"\n🎁 Бонусы: −{order.bonus_used:.0f}₽"
+        bonus_line = f" − {order.bonus_used:.0f}₽ бонусы"
 
-    text = f"""
-💳 <b>Реквизиты для оплаты</b>
+    text = f"""💳 <b>Оплата заказа #{order.id}</b>
 
-━━━━━━━━━━━━━━━━━━━━━━
-📋 Заказ: <b>#{order.id}</b>
-💰 Сумма: <b>{order.price:.0f}₽</b>{bonus_line}
+<b>К оплате: {final_price:.0f}₽</b>{bonus_line}
 
-✨ <b>К оплате: {final_price:.0f}₽</b>
-━━━━━━━━━━━━━━━━━━━━━━
-
-📱 <b>Номер для перевода:</b>
-<code>89196739120</code>
-<i>(нажми чтобы скопировать)</i>
-
-👤 <b>Получатель:</b>
+📱 <code>89196739120</code>
 Семен Юрьевич С.
+Сбер · Т-Банк · БСПБ
 
-🏦 <b>Банки:</b>
-Сбербанк • Т-Банк • БСПБ
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-После оплаты нажми кнопку ниже 👇"""
+После оплаты нажми кнопку 👇"""
 
     await message.answer(
         text,
@@ -1604,18 +1586,12 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
     final_price = order.price - order.bonus_used if order.bonus_used else order.price
 
     # Обновляем сообщение клиенту
-    new_text = f"""
-✅ <b>Заявка на оплату отправлена!</b>
+    new_text = f"""✅ <b>Заявка отправлена!</b>
 
-━━━━━━━━━━━━━━━━━━━━━━
-📋 Заказ: <b>#{order.id}</b>
-💰 Сумма: <b>{final_price:.0f}₽</b>
-━━━━━━━━━━━━━━━━━━━━━━
+Заказ #{order.id} · {final_price:.0f}₽
 
-⏳ Проверяю поступление средств...
-Обычно это занимает пару минут.
-
-Напишу тебе сразу, как увижу перевод! 🚀"""
+⏳ Проверяю оплату, обычно пара минут.
+Напишу сразу как увижу перевод!"""
 
     # Оставляем только кнопку поддержки
     new_keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -1745,19 +1721,14 @@ async def process_order_price_input(message: Message, state: FSMContext, session
         client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
 
 {work_label}
+{price:.0f}₽ − {bonus_to_use:.0f}₽ бонусы
 
-Стоимость: {price:.0f}₽
-🎁 Бонусы: −{bonus_to_use:.0f}₽
-
-━━━━━━━━━━━━━━━
-<b>Итого к оплате: {final_price:.0f}₽</b>
-
-Реквизиты для оплаты пришлю следующим сообщением."""
+<b>К оплате: {final_price:.0f}₽</b>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [
                 InlineKeyboardButton(text="✅ Понятно", callback_data=f"price_ok:{order.id}"),
-                InlineKeyboardButton(text="Не списывать бонусы", callback_data=f"price_no_bonus:{order.id}"),
+                InlineKeyboardButton(text="Без бонусов", callback_data=f"price_no_bonus:{order.id}"),
             ]
         ])
     else:
@@ -1765,9 +1736,7 @@ async def process_order_price_input(message: Message, state: FSMContext, session
 
 {work_label}
 
-<b>Стоимость: {price:.0f}₽</b>
-
-Реквизиты для оплаты пришлю следующим сообщением."""
+<b>К оплате: {price:.0f}₽</b>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="✅ Понятно", callback_data=f"price_ok:{order.id}")]
@@ -1839,8 +1808,8 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
 #                    ПОДТВЕРЖДЕНИЕ ОПЛАТЫ
 # ══════════════════════════════════════════════════════════════
 
-@router.message(Command("paid"))
-async def cmd_paid(message: Message, command: CommandObject, session: AsyncSession, bot: Bot):
+@router.message(Command("paid"), StateFilter("*"))
+async def cmd_paid(message: Message, command: CommandObject, session: AsyncSession, bot: Bot, state: FSMContext):
     """
     Подтвердить оплату заказа
     Использование: /paid <order_id>
@@ -1848,6 +1817,9 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
     """
     if not is_admin(message.from_user.id):
         return
+
+    # Очищаем FSM состояние (если было активно)
+    await state.clear()
 
     if not command.args:
         await message.answer(
@@ -1884,7 +1856,7 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         await message.answer(f"❌ Пользователь заказа #{order_id} не найден")
         return
 
-    # Списываем бонусы с баланса клиента
+    # Списываем бонусы с баланса клиента (передаём user чтобы избежать проблем с сессией)
     bonus_deducted = 0
     if order.bonus_used > 0:
         success, _ = await BonusService.deduct_bonus(
@@ -1894,6 +1866,7 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
             reason=BonusReason.ORDER_DISCOUNT,
             description=f"Списание на заказ #{order.id}",
             bot=bot,
+            user=user,
         )
         if success:
             bonus_deducted = order.bonus_used
