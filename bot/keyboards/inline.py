@@ -1,5 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
+from core.config import settings
+
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """Компактная Inline клавиатура главного меню"""
@@ -18,6 +20,9 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(text="📜 Прайс-лист", callback_data="price_list"),
             InlineKeyboardButton(text="⚖️ Правила", callback_data="codex")
+        ],
+        [
+            InlineKeyboardButton(text="⭐ Отзывы", url=settings.REVIEWS_CHANNEL)
         ],
     ])
     return kb
