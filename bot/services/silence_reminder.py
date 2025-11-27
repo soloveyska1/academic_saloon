@@ -35,18 +35,17 @@ class SilenceReminder:
         self.session_maker = session_maker
         self._running = False
         self._task: Optional[asyncio.Task] = None
-        # Храним ID заказов, по которым уже отправили напоминание
-        self._notified_orders: set[int] = set()
 
     async def check_pending_orders(self):
         """Проверить заказы, ожидающие оценки"""
         async with self.session_maker() as session:
-            # Ищем заказы в статусе PENDING (ожидают оценки)
             threshold = datetime.now(MSK) - timedelta(minutes=SILENCE_THRESHOLD_MINUTES)
 
+            # Ищем заказы: PENDING, без цены, без отправленного напоминания
             query = select(Order).where(
                 Order.status == OrderStatus.PENDING.value,
-                Order.price == 0,  # Цена ещё не назначена
+                Order.price == 0,
+                Order.reminder_sent_at.is_(None),  # Напоминание ещё не отправлялось
             )
 
             result = await session.execute(query)
@@ -54,10 +53,6 @@ class SilenceReminder:
 
             for order in orders:
                 try:
-                    # Пропускаем если уже уведомляли
-                    if order.id in self._notified_orders:
-                        continue
-
                     # Проверяем время создания
                     created_at = order.created_at
                     if created_at.tzinfo is None:
@@ -65,14 +60,13 @@ class SilenceReminder:
 
                     if created_at < threshold:
                         # Прошло больше 15 минут — отправляем напоминание
-                        await self._send_reminder(order)
-                        self._notified_orders.add(order.id)
+                        await self._send_reminder(order, session)
 
                 except Exception as e:
                     logger.error(f"Error checking order {order.id}: {e}")
 
-    async def _send_reminder(self, order: Order):
-        """Отправить напоминание клиенту"""
+    async def _send_reminder(self, order: Order, session: AsyncSession):
+        """Отправить напоминание клиенту и записать в БД"""
         text = f"""⏳ <b>Хозяин сейчас занят</b>
 
 Твоя заявка #{order.id} в очереди.
@@ -88,6 +82,9 @@ class SilenceReminder:
                 chat_id=order.user_id,
                 text=text,
             )
+            # Записываем в БД что напоминание отправлено
+            order.reminder_sent_at = datetime.now(MSK)
+            await session.commit()
             logger.info(f"Silence reminder sent for order #{order.id} to user {order.user_id}")
         except Exception as e:
             logger.error(f"Failed to send silence reminder: {e}")
@@ -115,10 +112,6 @@ class SilenceReminder:
         self._running = False
         if self._task:
             self._task.cancel()
-
-    def clear_notification(self, order_id: int):
-        """Убрать заказ из списка уведомлённых (если нужно повторно уведомить)"""
-        self._notified_orders.discard(order_id)
 
 
 # Глобальный экземпляр
