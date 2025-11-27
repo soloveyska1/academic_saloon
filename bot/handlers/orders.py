@@ -56,7 +56,13 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
 
 Выбери тип работы:"""
 
-    await callback.message.edit_text(text, reply_markup=get_work_type_keyboard())
+    # Если сообщение с фото — удаляем и отправляем новое
+    # (edit_text не работает с фото-сообщениями)
+    if callback.message.photo:
+        await callback.message.delete()
+        await callback.message.answer(text, reply_markup=get_work_type_keyboard())
+    else:
+        await callback.message.edit_text(text, reply_markup=get_work_type_keyboard())
 
 
 async def start_order_creation(message: Message, state: FSMContext = None):
