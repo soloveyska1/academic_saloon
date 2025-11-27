@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -45,7 +45,10 @@ async def show_terms_short(callback: CallbackQuery, bot: Bot):
         details="Оферта: краткая версия",
     )
 
-    await callback.message.edit_text(TERMS_SHORT, reply_markup=get_terms_short_keyboard())
+    # Обновляем фото и caption
+    photo = FSInputFile(settings.OFFER_IMAGE)
+    media = InputMediaPhoto(media=photo, caption=TERMS_SHORT)
+    await callback.message.edit_media(media=media, reply_markup=get_terms_short_keyboard())
 
 
 @router.callback_query(F.data == "terms_full")
@@ -61,7 +64,10 @@ async def show_terms_full(callback: CallbackQuery, bot: Bot):
         details="Оферта: полная версия",
     )
 
-    await callback.message.edit_text(TERMS_FULL_INTRO, reply_markup=get_terms_full_keyboard())
+    # Обновляем фото и caption
+    photo = FSInputFile(settings.OFFER_IMAGE)
+    media = InputMediaPhoto(media=photo, caption=TERMS_FULL_INTRO)
+    await callback.message.edit_media(media=media, reply_markup=get_terms_full_keyboard())
 
 
 @router.callback_query(F.data.startswith("terms_section:"))
@@ -84,7 +90,10 @@ async def show_terms_section(callback: CallbackQuery, bot: Bot):
         details=f"Оферта: раздел «{section_name}»",
     )
 
-    await callback.message.edit_text(section_text, reply_markup=get_terms_section_keyboard(section_key))
+    # Обновляем фото и caption
+    photo = FSInputFile(settings.OFFER_IMAGE)
+    media = InputMediaPhoto(media=photo, caption=section_text)
+    await callback.message.edit_media(media=media, reply_markup=get_terms_section_keyboard(section_key))
 
 
 @router.callback_query(F.data == "noop")

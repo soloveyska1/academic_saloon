@@ -122,8 +122,13 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             level=LogLevel.ACTION,
         )
 
-        # Показываем оферту
-        await message.answer(TERMS_SHORT, reply_markup=get_terms_short_keyboard())
+        # Показываем оферту с картинкой
+        photo = FSInputFile(settings.OFFER_IMAGE)
+        await message.answer_photo(
+            photo=photo,
+            caption=TERMS_SHORT,
+            reply_markup=get_terms_short_keyboard()
+        )
         return
 
     # Пользователь существует, но не принял оферту
@@ -142,7 +147,13 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             session=session,
         )
 
-        await message.answer(TERMS_SHORT, reply_markup=get_terms_short_keyboard())
+        # Показываем оферту с картинкой
+        photo = FSInputFile(settings.OFFER_IMAGE)
+        await message.answer_photo(
+            photo=photo,
+            caption=TERMS_SHORT,
+            reply_markup=get_terms_short_keyboard()
+        )
         return
 
     # Пользователь принял оферту — показываем главное меню
