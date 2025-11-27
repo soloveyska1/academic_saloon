@@ -39,6 +39,9 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
     """Главное меню админки"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
+            InlineKeyboardButton(text="📋 Заявки", callback_data="admin_orders_list")
+        ],
+        [
             InlineKeyboardButton(text="📊 Статус Салуна", callback_data="admin_status_menu")
         ],
         [
@@ -143,6 +146,8 @@ async def cmd_admin(message: Message, state: FSMContext):
 
     text = """⚙️  <b>Админ-панель</b>
 
+◈  <b>Заявки</b> — список активных заказов
+
 ◈  <b>Статус Салуна</b> — управление загруженностью,
     клиентами и закрепом
 
@@ -150,6 +155,89 @@ async def cmd_admin(message: Message, state: FSMContext):
     чтобы увидеть флоу как новый пользователь"""
 
     await message.answer(text, reply_markup=get_admin_keyboard())
+
+
+@router.message(Command("orders"))
+async def cmd_orders(message: Message, session: AsyncSession):
+    """Быстрый просмотр заявок"""
+    if not is_admin(message.from_user.id):
+        return
+
+    # Получаем все активные заявки
+    query = (
+        select(Order)
+        .where(Order.status.in_([
+            OrderStatus.PENDING.value,
+            OrderStatus.CONFIRMED.value,
+            OrderStatus.PAID.value,
+            OrderStatus.IN_PROGRESS.value,
+        ]))
+        .order_by(desc(Order.created_at))
+        .limit(20)
+    )
+    result = await session.execute(query)
+    orders = result.scalars().all()
+
+    if not orders:
+        await message.answer(
+            "📋 <b>Заявок нет</b>\n\n"
+            "Все заказы обработаны! 🎉"
+        )
+        return
+
+    # Группируем по статусам
+    pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
+    confirmed = [o for o in orders if o.status == OrderStatus.CONFIRMED.value]
+    paid = [o for o in orders if o.status == OrderStatus.PAID.value]
+    in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
+
+    text = "📋 <b>Активные заявки</b>\n\n"
+
+    if pending:
+        text += f"⏳ <b>Ожидают оценки ({len(pending)}):</b>\n"
+        for o in pending[:5]:
+            work = WORK_TYPE_LABELS.get(WorkType(o.work_type), o.work_type) if o.work_type else "?"
+            time_str = o.created_at.strftime("%d.%m %H:%M") if o.created_at else ""
+            text += f"  • #{o.id} {work} ({time_str})\n"
+        if len(pending) > 5:
+            text += f"  <i>...и ещё {len(pending) - 5}</i>\n"
+        text += "\n"
+
+    if confirmed:
+        text += f"✅ <b>Ждут оплаты ({len(confirmed)}):</b>\n"
+        for o in confirmed[:5]:
+            text += f"  • #{o.id} — {o.price:.0f}₽\n"
+        text += "\n"
+
+    if paid:
+        text += f"💰 <b>Оплачены ({len(paid)}):</b>\n"
+        for o in paid[:5]:
+            text += f"  • #{o.id} — {o.paid_amount:.0f}₽\n"
+        text += "\n"
+
+    if in_progress:
+        text += f"⚙️ <b>В работе ({len(in_progress)}):</b>\n"
+        for o in in_progress[:5]:
+            text += f"  • #{o.id}\n"
+
+    text += "\n<i>Команды: /price ID ЦЕНА, /paid ID</i>"
+
+    # Кнопки для быстрых действий с pending заявками
+    buttons = []
+    for o in pending[:3]:
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"#{o.id} 💰 Цена",
+                callback_data=f"admin_set_price:{o.id}"
+            ),
+            InlineKeyboardButton(
+                text="❌",
+                callback_data=f"admin_reject:{o.id}"
+            ),
+        ])
+
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons) if buttons else None
+    await message.answer(text, reply_markup=kb)
 
 
 @router.callback_query(F.data == "admin_panel")
@@ -171,6 +259,103 @@ async def show_admin_panel(callback: CallbackQuery, state: FSMContext):
     чтобы увидеть флоу как новый пользователь"""
 
     await callback.message.edit_text(text, reply_markup=get_admin_keyboard())
+
+
+# ══════════════════════════════════════════════════════════════
+#                    СПИСОК ЗАЯВОК
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "admin_orders_list")
+async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
+    """Показать список активных заявок"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    await callback.answer()
+
+    # Получаем все активные заявки
+    query = (
+        select(Order)
+        .where(Order.status.in_([
+            OrderStatus.PENDING.value,
+            OrderStatus.CONFIRMED.value,
+            OrderStatus.PAID.value,
+            OrderStatus.IN_PROGRESS.value,
+        ]))
+        .order_by(desc(Order.created_at))
+        .limit(20)
+    )
+    result = await session.execute(query)
+    orders = result.scalars().all()
+
+    if not orders:
+        await callback.message.edit_text(
+            "📋 <b>Заявок нет</b>\n\n"
+            "Все заказы обработаны! 🎉",
+            reply_markup=get_admin_back_keyboard()
+        )
+        return
+
+    # Группируем по статусам
+    pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
+    confirmed = [o for o in orders if o.status == OrderStatus.CONFIRMED.value]
+    paid = [o for o in orders if o.status == OrderStatus.PAID.value]
+    in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
+
+    text = "📋 <b>Активные заявки</b>\n\n"
+
+    if pending:
+        text += f"⏳ <b>Ожидают оценки ({len(pending)}):</b>\n"
+        for o in pending[:5]:
+            work = WORK_TYPE_LABELS.get(WorkType(o.work_type), o.work_type) if o.work_type else "?"
+            time_str = o.created_at.strftime("%d.%m %H:%M") if o.created_at else ""
+            text += f"  • #{o.id} {work} ({time_str})\n"
+        if len(pending) > 5:
+            text += f"  <i>...и ещё {len(pending) - 5}</i>\n"
+        text += "\n"
+
+    if confirmed:
+        text += f"✅ <b>Ждут оплаты ({len(confirmed)}):</b>\n"
+        for o in confirmed[:5]:
+            text += f"  • #{o.id} — {o.price:.0f}₽\n"
+        text += "\n"
+
+    if paid:
+        text += f"💰 <b>Оплачены ({len(paid)}):</b>\n"
+        for o in paid[:5]:
+            text += f"  • #{o.id} — {o.paid_amount:.0f}₽\n"
+        text += "\n"
+
+    if in_progress:
+        text += f"⚙️ <b>В работе ({len(in_progress)}):</b>\n"
+        for o in in_progress[:5]:
+            text += f"  • #{o.id}\n"
+
+    # Кнопки для быстрых действий
+    buttons = []
+
+    # Добавляем кнопки для pending заявок
+    for o in pending[:3]:
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"#{o.id} 💰 Цена",
+                callback_data=f"admin_set_price:{o.id}"
+            ),
+            InlineKeyboardButton(
+                text="❌",
+                callback_data=f"admin_reject:{o.id}"
+            ),
+        ])
+
+    buttons.append([
+        InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_orders_list"),
+        InlineKeyboardButton(text="◀️ Назад", callback_data="admin_panel"),
+    ])
+
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    await callback.message.edit_text(text, reply_markup=kb)
 
 
 # ══════════════════════════════════════════════════════════════
