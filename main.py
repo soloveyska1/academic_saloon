@@ -22,6 +22,8 @@ from bot.middlewares import (
 from bot.services.logger import init_logger
 from bot.services.abandoned_detector import init_abandoned_tracker
 from bot.services.daily_stats import init_daily_stats
+from bot.services.silence_reminder import init_silence_reminder
+from database.db import async_session_maker
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +56,8 @@ async def main():
     logger.info("Abandoned order tracker started")
     daily_stats = init_daily_stats(bot)
     logger.info("Daily stats service started")
+    silence_reminder = init_silence_reminder(bot, async_session_maker)
+    logger.info("Silence reminder service started")
     # --------------------------------
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
@@ -76,6 +80,7 @@ async def main():
         # Останавливаем фоновые задачи
         abandoned_tracker.stop()
         daily_stats.stop()
+        silence_reminder.stop()
         await bot.session.close()
 
 if __name__ == "__main__":
