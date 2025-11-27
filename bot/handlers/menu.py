@@ -13,6 +13,7 @@ from bot.keyboards.inline import (
     get_back_keyboard,
     get_main_menu_keyboard
 )
+from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 
 router = Router()
@@ -139,9 +140,18 @@ CODEX_FULL = f"""📜  <b>Кодекс Салуна</b>
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "my_orders")
-async def show_my_orders(callback: CallbackQuery, session: AsyncSession):
+async def show_my_orders(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Мои заказы"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Мои заказы»",
+        session=session,
+    )
 
     telegram_id = callback.from_user.id
     query = select(User).where(User.telegram_id == telegram_id)
@@ -161,9 +171,18 @@ async def show_my_orders(callback: CallbackQuery, session: AsyncSession):
 
 
 @router.callback_query(F.data == "my_balance")
-async def show_my_balance(callback: CallbackQuery, session: AsyncSession):
+async def show_my_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Мой баланс"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Мой баланс»",
+        session=session,
+    )
 
     telegram_id = callback.from_user.id
     query = select(User).where(User.telegram_id == telegram_id)
@@ -186,9 +205,17 @@ async def show_my_balance(callback: CallbackQuery, session: AsyncSession):
 
 
 @router.callback_query(F.data == "contact_owner")
-async def show_contact_owner(callback: CallbackQuery):
+async def show_contact_owner(callback: CallbackQuery, bot: Bot):
     """Написать Хозяину"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Написать Хозяину»",
+    )
 
     text = f"""💬  <b>Написать Хозяину</b>
 
@@ -205,9 +232,17 @@ async def show_contact_owner(callback: CallbackQuery):
 
 
 @router.callback_query(F.data == "price_list")
-async def show_price_list(callback: CallbackQuery):
+async def show_price_list(callback: CallbackQuery, bot: Bot):
     """Прайс-лист"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Прайс-лист»",
+    )
 
     text = """📜  <b>Прайс-лист</b>
 
@@ -234,9 +269,18 @@ async def show_price_list(callback: CallbackQuery):
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "profile")
-async def show_profile(callback: CallbackQuery, session: AsyncSession):
+async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Досье пользователя"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Досье»",
+        session=session,
+    )
 
     telegram_id = callback.from_user.id
     query = select(User).where(User.telegram_id == telegram_id)
@@ -264,9 +308,18 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession):
 
 
 @router.callback_query(F.data == "finance")
-async def show_finance(callback: CallbackQuery, session: AsyncSession):
+async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Казна пользователя"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Казна»",
+        session=session,
+    )
 
     telegram_id = callback.from_user.id
     query = select(User).where(User.telegram_id == telegram_id)
@@ -289,9 +342,17 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession):
 
 
 @router.callback_query(F.data == "support")
-async def call_support(callback: CallbackQuery):
+async def call_support(callback: CallbackQuery, bot: Bot):
     """Связь с поддержкой"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Шериф на связи»",
+    )
 
     text = f"""⭐  <b>Шериф на связи</b>
 
@@ -308,21 +369,39 @@ async def call_support(callback: CallbackQuery):
 
 
 @router.callback_query(F.data == "codex")
-async def show_codex_short(callback: CallbackQuery):
+async def show_codex_short(callback: CallbackQuery, bot: Bot):
     """Краткая версия Кодекса"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Кодекс» (кратко)",
+    )
+
     await callback.message.answer(CODEX_SHORT, reply_markup=get_codex_keyboard())
 
 
 @router.callback_query(F.data == "codex_full")
-async def show_codex_full(callback: CallbackQuery):
+async def show_codex_full(callback: CallbackQuery, bot: Bot):
     """Полная версия Кодекса"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Кодекс» (полный)",
+    )
+
     await callback.message.answer(CODEX_FULL, reply_markup=get_codex_full_keyboard())
 
 
 @router.callback_query(F.data == "referral")
-async def show_referral(callback: CallbackQuery, session: AsyncSession):
+async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Реферальная программа"""
     await callback.answer()
 
@@ -335,6 +414,15 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession):
 
     referrals_count = user.referrals_count if user else 0
     referral_earnings = user.referral_earnings if user else 0
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Привести друга»",
+        session=session,
+    )
 
     text = f"""🤝  <b>Привести друга</b>
 
@@ -362,9 +450,17 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession):
 
 
 @router.callback_query(F.data == "about")
-async def show_about(callback: CallbackQuery):
+async def show_about(callback: CallbackQuery, bot: Bot):
     """О сервисе"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «О сервисе»",
+    )
 
     text = f"""🏚  <b>Академический Салун</b>
 
@@ -389,9 +485,18 @@ async def show_about(callback: CallbackQuery):
 
 
 @router.callback_query(F.data == "back_to_menu")
-async def back_to_menu(callback: CallbackQuery):
+async def back_to_menu(callback: CallbackQuery, bot: Bot):
     """Возврат в главное меню"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_MENU,
+        user=callback.from_user,
+        details="Вернулся в главное меню",
+    )
+
     await callback.message.answer(
         "🏚  <b>Салун</b>\n\n"
         "Чем могу помочь, партнёр?",
@@ -404,14 +509,25 @@ async def back_to_menu(callback: CallbackQuery):
 # ══════════════════════════════════════════════════════════════
 
 @router.message(F.text)
-async def handle_text_message(message: Message, bot: Bot):
+async def handle_text_message(message: Message, bot: Bot, session: AsyncSession):
     """
     Обработка текстовых сообщений — пересылка админу.
     Это ловушка для всех текстовых сообщений, которые не обработаны другими handlers.
     """
-    # Пересылаем сообщение админу
     user = message.from_user
 
+    # Логируем сообщение — важное событие
+    text_preview = message.text[:100] if len(message.text) > 100 else message.text
+    await log_action(
+        bot=bot,
+        event=LogEvent.MESSAGE_TEXT,
+        user=user,
+        details=f"«{text_preview}»",
+        session=session,
+        level=LogLevel.ACTION,
+    )
+
+    # Пересылаем сообщение админу
     for admin_id in settings.ADMIN_IDS:
         try:
             await bot.send_message(

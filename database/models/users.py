@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, Boolean, DateTime, Integer, Float, func
+from sqlalchemy import BigInteger, String, Boolean, DateTime, Integer, Float, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from database.db import Base
 from datetime import datetime
@@ -14,18 +14,25 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(20), default="user")
     balance: Mapped[float] = mapped_column(Float, default=0.0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    
+
     # Реферальная система
     referrer_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     referrals_count: Mapped[int] = mapped_column(Integer, default=0)
     referral_earnings: Mapped[float] = mapped_column(Float, default=0.0)
-    
+
     # Статистика заказов
     orders_count: Mapped[int] = mapped_column(Integer, default=0)
     total_spent: Mapped[float] = mapped_column(Float, default=0.0)
-    
+
     # Оферта
     terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Модерация
+    is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
+    banned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ban_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_watched: Mapped[bool] = mapped_column(Boolean, default=False)  # Режим слежки
+    admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)  # Заметки админа
 
     # Служебное
     deep_link: Mapped[str | None] = mapped_column(String(100), nullable=True)

@@ -14,6 +14,7 @@ from bot.keyboards.orders import (
     get_confirm_order_keyboard,
     get_cancel_order_keyboard,
 )
+from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 
 router = Router()
@@ -24,11 +25,21 @@ router = Router()
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "create_order")
-async def start_order(callback: CallbackQuery, state: FSMContext):
+async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Начать создание заказа — выбор типа работы (callback)"""
     await callback.answer()
 
     await state.set_state(OrderState.choosing_type)
+
+    # Логируем начало заказа — важное событие
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_START,
+        user=callback.from_user,
+        details="Начал создание заказа",
+        session=session,
+        level=LogLevel.ACTION,
+    )
 
     text = """🎯  <b>Новый заказ</b>
 
@@ -62,7 +73,7 @@ async def start_order_creation(message: Message, state: FSMContext = None):
 
 
 @router.callback_query(OrderState.choosing_type, F.data.startswith("order_type:"))
-async def process_work_type(callback: CallbackQuery, state: FSMContext):
+async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Обработка выбора типа работы"""
     await callback.answer()
 
@@ -71,6 +82,15 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext):
     await state.set_state(OrderState.entering_subject)
 
     work_label = WORK_TYPE_LABELS.get(WorkType(work_type), work_type)
+
+    # Логируем шаг
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_STEP,
+        user=callback.from_user,
+        details=f"Шаг 1/5: выбрал тип «{work_label}»",
+        session=session,
+    )
 
     text = f"""📚  <b>Тип:</b> {work_label}
 
@@ -82,10 +102,19 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(OrderState.entering_subject)
-async def process_subject(message: Message, state: FSMContext):
+async def process_subject(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Обработка ввода предмета"""
     await state.update_data(subject=message.text)
     await state.set_state(OrderState.entering_topic)
+
+    # Логируем шаг
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_STEP,
+        user=message.from_user,
+        details=f"Шаг 2/5: предмет «{message.text[:50]}»",
+        session=session,
+    )
 
     text = """📝  <b>Тема работы</b>
 
@@ -98,11 +127,20 @@ async def process_subject(message: Message, state: FSMContext):
 
 
 @router.callback_query(OrderState.entering_topic, F.data == "skip")
-async def skip_topic(callback: CallbackQuery, state: FSMContext):
+async def skip_topic(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Пропуск темы"""
     await callback.answer()
     await state.update_data(topic=None)
     await state.set_state(OrderState.entering_details)
+
+    # Логируем шаг
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_STEP,
+        user=callback.from_user,
+        details="Шаг 3/5: тема пропущена",
+        session=session,
+    )
 
     text = """📋  <b>Требования</b>
 
@@ -117,10 +155,19 @@ async def skip_topic(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(OrderState.entering_topic)
-async def process_topic(message: Message, state: FSMContext):
+async def process_topic(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Обработка ввода темы"""
     await state.update_data(topic=message.text)
     await state.set_state(OrderState.entering_details)
+
+    # Логируем шаг
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_STEP,
+        user=message.from_user,
+        details=f"Шаг 3/5: тема «{message.text[:50]}»",
+        session=session,
+    )
 
     text = """📋  <b>Требования</b>
 
@@ -135,11 +182,20 @@ async def process_topic(message: Message, state: FSMContext):
 
 
 @router.callback_query(OrderState.entering_details, F.data == "skip")
-async def skip_details(callback: CallbackQuery, state: FSMContext):
+async def skip_details(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Пропуск требований"""
     await callback.answer()
     await state.update_data(description=None)
     await state.set_state(OrderState.entering_deadline)
+
+    # Логируем шаг
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_STEP,
+        user=callback.from_user,
+        details="Шаг 4/5: требования пропущены",
+        session=session,
+    )
 
     text = """⏰  <b>Сроки</b>
 
@@ -151,10 +207,19 @@ async def skip_details(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(OrderState.entering_details)
-async def process_details(message: Message, state: FSMContext):
+async def process_details(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Обработка ввода требований"""
     await state.update_data(description=message.text)
     await state.set_state(OrderState.entering_deadline)
+
+    # Логируем шаг
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_STEP,
+        user=message.from_user,
+        details=f"Шаг 4/5: требования заполнены",
+        session=session,
+    )
 
     text = """⏰  <b>Сроки</b>
 
@@ -166,7 +231,7 @@ async def process_details(message: Message, state: FSMContext):
 
 
 @router.message(OrderState.entering_deadline)
-async def process_deadline(message: Message, state: FSMContext, session: AsyncSession):
+async def process_deadline(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
     """Обработка ввода сроков и показ превью"""
     await state.update_data(deadline=message.text)
     await state.set_state(OrderState.confirming)
@@ -185,6 +250,15 @@ async def process_deadline(message: Message, state: FSMContext, session: AsyncSe
         discount = max(discount, 5)  # Скидка 5% для приглашённых на первый заказ
 
     await state.update_data(discount=discount)
+
+    # Логируем шаг
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_STEP,
+        user=message.from_user,
+        details=f"Шаг 5/5: срок «{message.text}», ждём подтверждения",
+        session=session,
+    )
 
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
     topic_line = f"◈  <b>Тема:</b> {data.get('topic')}\n" if data.get("topic") else ""
@@ -229,6 +303,26 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
     await state.clear()
 
+    work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
+
+    # Логируем подтверждение заказа — ВАЖНОЕ событие со звуком
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_CONFIRM,
+        user=callback.from_user,
+        details=f"Заказ #{order.id} подтверждён",
+        extra_data={
+            "Тип": work_label,
+            "Предмет": data.get("subject"),
+            "Тема": data.get("topic") or "—",
+            "Срок": data.get("deadline"),
+            "Скидка": f"{data.get('discount', 0)}%",
+        },
+        session=session,
+        level=LogLevel.ACTION,
+        silent=False,  # Со звуком!
+    )
+
     text = f"""✅  <b>Заявка #{order.id} принята!</b>
 
 Шериф свяжется с тобой в течение
@@ -244,9 +338,20 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
 
 @router.callback_query(F.data == "cancel_order")
-async def cancel_order(callback: CallbackQuery, state: FSMContext):
+async def cancel_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Отмена создания заказа"""
     await callback.answer("Заявка отменена")
+
+    # Логируем отмену
+    await log_action(
+        bot=bot,
+        event=LogEvent.ORDER_CANCEL,
+        user=callback.from_user,
+        details="Отменил создание заказа",
+        session=session,
+        level=LogLevel.ACTION,
+    )
+
     await state.clear()
 
     await callback.message.edit_text(

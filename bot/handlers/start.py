@@ -9,6 +9,7 @@ from database.models.users import User
 from bot.keyboards.inline import get_main_menu_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
 from bot.texts.terms import TERMS_SHORT, get_time_greeting
+from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from core.saloon_status import saloon_manager, generate_status_message
 
@@ -108,6 +109,19 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         session.add(user)
         await session.commit()
 
+        # Логируем нового пользователя
+        event = LogEvent.USER_START_REF if deep_link else LogEvent.USER_START
+        extra = {"Реф-ссылка": deep_link} if deep_link else None
+        await log_action(
+            bot=bot,
+            event=event,
+            user=message.from_user,
+            details="Новый пользователь, показана оферта",
+            extra_data=extra,
+            session=session,
+            level=LogLevel.ACTION,
+        )
+
         # Показываем оферту
         await message.answer(TERMS_SHORT, reply_markup=get_terms_short_keyboard())
         return
@@ -119,6 +133,15 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         user.fullname = message.from_user.full_name
         await session.commit()
 
+        # Логируем возврат
+        await log_action(
+            bot=bot,
+            event=LogEvent.USER_RETURN,
+            user=message.from_user,
+            details="Вернулся, оферта не принята",
+            session=session,
+        )
+
         await message.answer(TERMS_SHORT, reply_markup=get_terms_short_keyboard())
         return
 
@@ -126,6 +149,15 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     user.username = message.from_user.username
     user.fullname = message.from_user.full_name
     await session.commit()
+
+    # Логируем возврат активного пользователя
+    await log_action(
+        bot=bot,
+        event=LogEvent.USER_RETURN,
+        user=message.from_user,
+        details="Вернулся в главное меню",
+        session=session,
+    )
 
     # Получаем приветствие по времени суток (МСК)
     text = get_time_greeting()

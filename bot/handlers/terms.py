@@ -21,6 +21,7 @@ from bot.keyboards.terms import (
     get_terms_section_keyboard,
 )
 from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard
+from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 
 router = Router()
@@ -31,21 +32,39 @@ router = Router()
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "terms_short")
-async def show_terms_short(callback: CallbackQuery):
+async def show_terms_short(callback: CallbackQuery, bot: Bot):
     """Показать краткую версию оферты"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Оферта: краткая версия",
+    )
+
     await callback.message.edit_text(TERMS_SHORT, reply_markup=get_terms_short_keyboard())
 
 
 @router.callback_query(F.data == "terms_full")
-async def show_terms_full(callback: CallbackQuery):
+async def show_terms_full(callback: CallbackQuery, bot: Bot):
     """Показать меню полной оферты"""
     await callback.answer()
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Оферта: полная версия",
+    )
+
     await callback.message.edit_text(TERMS_FULL_INTRO, reply_markup=get_terms_full_keyboard())
 
 
 @router.callback_query(F.data.startswith("terms_section:"))
-async def show_terms_section(callback: CallbackQuery):
+async def show_terms_section(callback: CallbackQuery, bot: Bot):
     """Показать конкретный раздел оферты"""
     await callback.answer()
 
@@ -54,7 +73,16 @@ async def show_terms_section(callback: CallbackQuery):
     if section_key not in TERMS_SECTIONS:
         return
 
-    _, section_text = TERMS_SECTIONS[section_key]
+    section_name, section_text = TERMS_SECTIONS[section_key]
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details=f"Оферта: раздел «{section_name}»",
+    )
+
     await callback.message.edit_text(section_text, reply_markup=get_terms_section_keyboard(section_key))
 
 
@@ -104,14 +132,35 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     # Формируем приветственное сообщение
     if is_first_accept:
-        # Логируем нового пользователя
-        await log_new_user(bot, callback.from_user, user)
-        await notify_admins(bot, callback.from_user, user)
+        # Логируем нового пользователя — ВАЖНОЕ событие
+        ref_info = None
+        if user.referrer_id:
+            ref_info = {"Пригласил": f"ID {user.referrer_id}"}
+
+        await log_action(
+            bot=bot,
+            event=LogEvent.USER_NEW,
+            user=callback.from_user,
+            details="Принял оферту, новый партнёр",
+            extra_data=ref_info,
+            session=session,
+            level=LogLevel.ACTION,
+            silent=False,  # Со звуком!
+        )
 
         # Новым пользователям: сначала текст-подводка, потом голосовое
         await callback.message.answer(VOICE_CAPTION)
         voice = FSInputFile(settings.WELCOME_VOICE)
         await callback.message.answer_voice(voice=voice)
+    else:
+        # Логируем повторное принятие
+        await log_action(
+            bot=bot,
+            event=LogEvent.USER_TERMS_ACCEPT,
+            user=callback.from_user,
+            details="Повторно принял оферту",
+            session=session,
+        )
 
     # Получаем приветствие по времени суток (МСК)
     text = get_time_greeting()
@@ -123,41 +172,3 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         caption=text,
         reply_markup=get_main_menu_keyboard()
     )
-
-
-# ══════════════════════════════════════════════════════════════
-#                    СЛУЖЕБНЫЕ ФУНКЦИИ
-# ══════════════════════════════════════════════════════════════
-
-async def log_new_user(bot: Bot, tg_user, db_user: User):
-    """Лог нового пользователя в канал"""
-    try:
-        ref_info = ""
-        if db_user.referrer_id:
-            ref_info = f"\n◈  Пригласил: ID {db_user.referrer_id}"
-
-        text = (
-            f"🆕  <b>Новый партнёр</b>\n\n"
-            f"◈  {tg_user.full_name}\n"
-            f"◈  @{tg_user.username}\n"
-            f"◈  ID: <code>{tg_user.id}</code>"
-            f"{ref_info}"
-        )
-
-        await bot.send_message(chat_id=settings.LOG_CHANNEL_ID, text=text)
-    except Exception:
-        pass
-
-
-async def notify_admins(bot: Bot, tg_user, db_user: User):
-    """Уведомление админов о новом пользователе"""
-    ref_info = f" (реферал)" if db_user.referrer_id else ""
-
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            await bot.send_message(
-                chat_id=admin_id,
-                text=f"🤝  Новый партнёр: {tg_user.full_name} (@{tg_user.username}){ref_info}"
-            )
-        except Exception:
-            pass

@@ -11,7 +11,9 @@ from bot.handlers.terms import router as terms_router
 from bot.handlers.menu import router as menu_router
 from bot.handlers.orders import router as orders_router
 from bot.handlers.admin import router as admin_router
-from bot.middlewares import ErrorHandlerMiddleware, DbSessionMiddleware
+from bot.handlers.log_actions import router as log_actions_router
+from bot.middlewares import ErrorHandlerMiddleware, DbSessionMiddleware, BanCheckMiddleware
+from bot.services.logger import init_logger
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -33,9 +35,15 @@ async def main():
     # --- РЕГИСТРАЦИЯ MIDDLEWARE ---
     dp.update.outer_middleware(ErrorHandlerMiddleware())
     dp.update.outer_middleware(DbSessionMiddleware())
+    dp.update.outer_middleware(BanCheckMiddleware())  # Проверка бана
     # -------------------------------
 
+    # --- ИНИЦИАЛИЗАЦИЯ ЛОГГЕРА ---
+    init_logger(bot)
+    # -----------------------------
+
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
+    dp.include_router(log_actions_router)  # Обработчики кнопок логов (первыми!)
     dp.include_router(admin_router)   # Админка (до start, чтобы /admin обрабатывался)
     dp.include_router(start_router)
     dp.include_router(terms_router)   # Оферта
