@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 
 from database.models.users import User
-from database.models.orders import Order, WORK_TYPE_LABELS, WorkType
-from bot.services.logger import BotLogger
+from database.models.orders import Order, WORK_TYPE_LABELS, WorkType, OrderStatus
+from bot.services.logger import BotLogger, LogEvent
+from bot.services.bonus import BonusService, BonusReason
 from core.config import settings
 from core.saloon_status import (
     saloon_manager,
@@ -772,3 +773,280 @@ async def cmd_user_info(message: Message, command: CommandObject, session: Async
     ])
 
     await message.answer(text, reply_markup=kb)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    НАЗНАЧЕНИЕ ЦЕНЫ ЗАКАЗУ
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("price"))
+async def cmd_price(message: Message, command: CommandObject, session: AsyncSession, bot: Bot):
+    """
+    Назначить цену заказу и отправить клиенту
+    Использование: /price <order_id> <цена>
+    Пример: /price 123 5000
+    """
+    if not is_admin(message.from_user.id):
+        return
+
+    if not command.args:
+        await message.answer(
+            "❌ Использование: /price <order_id> <цена>\n"
+            "Пример: /price 123 5000"
+        )
+        return
+
+    args = command.args.split()
+    if len(args) < 2:
+        await message.answer(
+            "❌ Укажите ID заказа и цену\n"
+            "Пример: /price 123 5000"
+        )
+        return
+
+    try:
+        order_id = int(args[0])
+        price = float(args[1])
+    except ValueError:
+        await message.answer("❌ ID заказа и цена должны быть числами")
+        return
+
+    if price <= 0:
+        await message.answer("❌ Цена должна быть больше 0")
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await message.answer(f"❌ Заказ #{order_id} не найден")
+        return
+
+    # Находим пользователя
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await message.answer(f"❌ Пользователь заказа #{order_id} не найден")
+        return
+
+    # Рассчитываем бонусы (макс 50% от цены)
+    max_bonus = price * 0.5
+    bonus_to_use = min(user.balance, max_bonus)
+
+    # Обновляем заказ
+    order.price = price
+    order.bonus_used = bonus_to_use
+    order.status = OrderStatus.CONFIRMED.value
+    await session.commit()
+
+    # Рассчитываем итоговую цену
+    final_price = price - bonus_to_use
+
+    # Формируем сообщение для клиента
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    if bonus_to_use > 0:
+        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+
+{work_label}
+
+Стоимость: {price:.0f}₽
+🎁 Бонусы: −{bonus_to_use:.0f}₽
+
+━━━━━━━━━━━━━━━
+<b>Итого к оплате: {final_price:.0f}₽</b>
+
+Реквизиты для оплаты пришлю следующим сообщением."""
+
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Понятно", callback_data=f"price_ok:{order.id}"),
+                InlineKeyboardButton(text="Не списывать бонусы", callback_data=f"price_no_bonus:{order.id}"),
+            ]
+        ])
+    else:
+        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+
+{work_label}
+
+<b>Стоимость: {price:.0f}₽</b>
+
+Реквизиты для оплаты пришлю следующим сообщением."""
+
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Понятно", callback_data=f"price_ok:{order.id}")]
+        ])
+
+    # Отправляем клиенту
+    try:
+        await bot.send_message(order.user_id, client_text, reply_markup=kb)
+        await message.answer(
+            f"✅ Цена {price:.0f}₽ назначена заказу #{order.id}\n"
+            f"Клиенту отправлено сообщение\n"
+            f"Бонусов применено: {bonus_to_use:.0f}₽\n"
+            f"Итого к оплате: {final_price:.0f}₽"
+        )
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить сообщение клиенту: {e}")
+
+
+@router.callback_query(F.data.startswith("price_ok:"))
+async def price_ok_callback(callback: CallbackQuery, session: AsyncSession):
+    """Клиент подтвердил цену"""
+    await callback.answer("👍 Отлично! Ожидай реквизиты")
+
+    # Убираем кнопки
+    await callback.message.edit_reply_markup(reply_markup=None)
+
+
+@router.callback_query(F.data.startswith("price_no_bonus:"))
+async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Клиент отказался от списания бонусов"""
+    order_id = int(callback.data.split(":")[1])
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Возвращаем бонусы (не списываем)
+    bonus_was = order.bonus_used
+    order.bonus_used = 0
+    await session.commit()
+
+    await callback.answer(f"✅ Бонусы сохранены на балансе (+{bonus_was:.0f}₽)")
+
+    # Обновляем сообщение
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    new_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+
+{work_label}
+
+<b>Стоимость: {order.price:.0f}₽</b>
+
+💎 Бонусы сохранены на балансе
+
+Реквизиты для оплаты пришлю следующим сообщением."""
+
+    await callback.message.edit_text(new_text, reply_markup=None)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ПОДТВЕРЖДЕНИЕ ОПЛАТЫ
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("paid"))
+async def cmd_paid(message: Message, command: CommandObject, session: AsyncSession, bot: Bot):
+    """
+    Подтвердить оплату заказа
+    Использование: /paid <order_id>
+    Пример: /paid 123
+    """
+    if not is_admin(message.from_user.id):
+        return
+
+    if not command.args:
+        await message.answer(
+            "❌ Использование: /paid <order_id>\n"
+            "Пример: /paid 123"
+        )
+        return
+
+    try:
+        order_id = int(command.args.strip())
+    except ValueError:
+        await message.answer("❌ ID заказа должен быть числом")
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await message.answer(f"❌ Заказ #{order_id} не найден")
+        return
+
+    if order.status == OrderStatus.PAID.value:
+        await message.answer(f"⚠️ Заказ #{order_id} уже оплачен")
+        return
+
+    # Находим пользователя
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await message.answer(f"❌ Пользователь заказа #{order_id} не найден")
+        return
+
+    # Списываем бонусы с баланса клиента
+    bonus_deducted = 0
+    if order.bonus_used > 0:
+        success, _ = await BonusService.deduct_bonus(
+            session=session,
+            user_id=order.user_id,
+            amount=order.bonus_used,
+            reason=BonusReason.ORDER_DISCOUNT,
+            description=f"Списание на заказ #{order.id}",
+            bot=bot,
+        )
+        if success:
+            bonus_deducted = order.bonus_used
+
+    # Обновляем статус заказа
+    order.status = OrderStatus.PAID.value
+    order.paid_amount = order.final_price
+
+    # Увеличиваем счётчик заказов и общую сумму
+    user.orders_count += 1
+    user.total_spent += order.paid_amount
+
+    await session.commit()
+
+    # Начисляем реферальные бонусы (если есть реферер)
+    referral_bonus = 0
+    if user.referrer_id:
+        referral_bonus = await BonusService.process_referral_bonus(
+            session=session,
+            bot=bot,
+            referrer_id=user.referrer_id,
+            order_amount=order.price,  # 5% от полной цены
+            referred_user_id=order.user_id,
+        )
+
+    # Уведомляем клиента
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    client_text = f"""✅ <b>Оплата получена!</b>
+
+Заказ #{order.id} — {work_label}
+
+Спасибо за доверие! 🤠
+Приступаю к работе."""
+
+    try:
+        await bot.send_message(order.user_id, client_text)
+    except Exception:
+        pass  # Клиент мог заблокировать бота
+
+    # Ответ админу
+    response = f"✅ Заказ #{order_id} отмечен как оплаченный\n"
+    response += f"💰 Сумма: {order.paid_amount:.0f}₽\n"
+
+    if bonus_deducted > 0:
+        response += f"🎁 Списано бонусов: {bonus_deducted:.0f}₽\n"
+
+    if referral_bonus > 0:
+        response += f"👥 Реферальный бонус: {referral_bonus:.0f}₽"
+
+    await message.answer(response)

@@ -80,6 +80,7 @@ class Order(Base):
     # Финансы
     price: Mapped[float] = mapped_column(Float, default=0.0)
     discount: Mapped[float] = mapped_column(Float, default=0.0)
+    bonus_used: Mapped[float] = mapped_column(Float, default=0.0)  # Списанные бонусы
     paid_amount: Mapped[float] = mapped_column(Float, default=0.0)
 
     # Статус
@@ -116,5 +117,6 @@ class Order(Base):
 
     @property
     def final_price(self) -> float:
-        """Итоговая цена с учётом скидки"""
-        return self.price * (1 - self.discount / 100)
+        """Итоговая цена с учётом скидки и бонусов"""
+        price_with_discount = self.price * (1 - self.discount / 100)
+        return max(0, price_with_discount - self.bonus_used)
