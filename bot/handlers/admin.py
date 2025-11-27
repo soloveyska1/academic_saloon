@@ -1344,7 +1344,7 @@ async def cmd_user_info(message: Message, command: CommandObject, session: Async
 async def cmd_price(message: Message, command: CommandObject, session: AsyncSession, bot: Bot, state: FSMContext):
     """
     Назначить цену заказу и отправить клиенту
-    Использование: /price <order_id> <цена>
+    Использование: /price [order_id] [цена]
     Пример: /price 123 5000
     """
     if not is_admin(message.from_user.id):
@@ -1353,7 +1353,7 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
 
     if not command.args:
         await message.answer(
-            "❌ Использование: /price <order_id> <цена>\n"
+            "❌ Использование: /price [order_id] [цена]\n"
             "Пример: /price 123 5000"
         )
         return
@@ -1812,7 +1812,7 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
 async def cmd_paid(message: Message, command: CommandObject, session: AsyncSession, bot: Bot, state: FSMContext):
     """
     Подтвердить оплату заказа
-    Использование: /paid <order_id>
+    Использование: /paid [order_id]
     Пример: /paid 123
     """
     import logging
@@ -1828,7 +1828,7 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     if not command.args:
         await message.answer(
-            "❌ Использование: /paid <order_id>\n"
+            "❌ Использование: /paid [order_id]\n"
             "Пример: /paid 123"
         )
         return
