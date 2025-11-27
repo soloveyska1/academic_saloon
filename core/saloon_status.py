@@ -182,7 +182,6 @@ def generate_status_message(status: SaloonStatus) -> str:
 
 ━━━━━━━━━━━━━━━
 
-👀  В боте: <b>{people_online}</b>
 🧑‍💼  Клиентов: <b>{status.clients_count}</b>
 📋  В работе: <b>{status.orders_in_progress}</b>
 
