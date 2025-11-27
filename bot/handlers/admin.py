@@ -1112,10 +1112,17 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
     await callback.answer(f"Заказ #{order_id} отклонён")
 
     # Обновляем сообщение
-    await callback.message.edit_text(
-        callback.message.text + "\n\n❌ <b>ОТКЛОНЁН</b>",
-        reply_markup=None
-    )
+    try:
+        if callback.message.text:
+            await callback.message.edit_text(
+                callback.message.text + "\n\n❌ <b>ОТКЛОНЁН</b>",
+                reply_markup=None
+            )
+        else:
+            # Если сообщение без текста — просто убираем кнопки
+            await callback.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass  # Сообщение могло быть удалено
 
 
 # ══════════════════════════════════════════════════════════════
