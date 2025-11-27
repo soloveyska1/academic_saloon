@@ -1,28 +1,25 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 
-def get_main_reply_keyboard() -> ReplyKeyboardMarkup:
-    """Reply клавиатура главного меню"""
-    kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📝 Заказать работу")],
-            [
-                KeyboardButton(text="👤 Мои заказы"),
-                KeyboardButton(text="💰 Мой баланс")
-            ],
-            [
-                KeyboardButton(text="💬 Написать Хозяину"),
-                KeyboardButton(text="🤝 Привести друга")
-            ],
-            [
-                KeyboardButton(text="📜 Прайс-лист"),
-                KeyboardButton(text="⚖️ Правила")
-            ],
+def get_main_menu_keyboard() -> InlineKeyboardMarkup:
+    """Компактная Inline клавиатура главного меню"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📝 Заказать работу", callback_data="create_order")
         ],
-        resize_keyboard=True,
-        is_persistent=True,
-        input_field_placeholder="Выбери действие или напиши сообщение..."
-    )
+        [
+            InlineKeyboardButton(text="👤 Мои заказы", callback_data="my_orders"),
+            InlineKeyboardButton(text="💰 Мой баланс", callback_data="my_balance")
+        ],
+        [
+            InlineKeyboardButton(text="💬 Написать Хозяину", callback_data="contact_owner"),
+            InlineKeyboardButton(text="🤝 Привести друга", callback_data="referral")
+        ],
+        [
+            InlineKeyboardButton(text="📜 Прайс-лист", callback_data="price_list"),
+            InlineKeyboardButton(text="⚖️ Правила", callback_data="codex")
+        ],
+    ])
     return kb
 
 

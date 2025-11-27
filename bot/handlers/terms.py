@@ -20,7 +20,7 @@ from bot.keyboards.terms import (
     get_terms_full_keyboard,
     get_terms_section_keyboard,
 )
-from bot.keyboards.inline import get_start_keyboard, get_main_reply_keyboard
+from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard
 from core.config import settings
 
 router = Router()
@@ -116,12 +116,12 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     # Получаем приветствие по времени суток (МСК)
     text = get_time_greeting()
 
-    # Отправляем картинку с меню + Reply клавиатура
+    # Отправляем картинку с меню + Inline клавиатура
     photo = FSInputFile(settings.WELCOME_IMAGE)
     await callback.message.answer_photo(
         photo=photo,
         caption=text,
-        reply_markup=get_main_reply_keyboard()
+        reply_markup=get_main_menu_keyboard()
     )
 
 

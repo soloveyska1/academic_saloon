@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,146 +11,11 @@ from bot.keyboards.inline import (
     get_codex_full_keyboard,
     get_referral_keyboard,
     get_back_keyboard,
-    get_main_reply_keyboard
+    get_main_menu_keyboard
 )
 from core.config import settings
 
 router = Router()
-
-
-# ══════════════════════════════════════════════════════════════
-#                    REPLY KEYBOARD HANDLERS
-# ══════════════════════════════════════════════════════════════
-
-@router.message(F.text == "📝 Заказать работу")
-async def reply_create_order(message: Message, state: FSMContext):
-    """Создать заказ (Reply keyboard)"""
-    from bot.handlers.orders import start_order_creation
-    await start_order_creation(message, state)
-
-
-@router.message(F.text == "👤 Мои заказы")
-async def reply_my_orders(message: Message, session: AsyncSession):
-    """Мои заказы (Reply keyboard)"""
-    telegram_id = message.from_user.id
-    query = select(User).where(User.telegram_id == telegram_id)
-    result = await session.execute(query)
-    user = result.scalar_one_or_none()
-
-    orders_count = user.orders_count if user else 0
-
-    text = f"""👤  <b>Мои заказы</b>
-
-
-◈  Всего заказов: {orders_count}
-
-<i>Здесь будет история твоих заказов.</i>"""
-
-    await message.answer(text)
-
-
-@router.message(F.text == "💰 Мой баланс")
-async def reply_balance(message: Message, session: AsyncSession):
-    """Мой баланс (Reply keyboard)"""
-    telegram_id = message.from_user.id
-    query = select(User).where(User.telegram_id == telegram_id)
-    result = await session.execute(query)
-    user = result.scalar_one_or_none()
-
-    balance = user.balance if user else 0
-
-    text = f"""💰  <b>Мой баланс</b>
-
-
-Баланс: <b>{balance:.0f} ₽</b>
-
-
-<i>Пополняется бонусами за друзей
-и компенсациями. Можно тратить
-на свои заказы.</i>"""
-
-    await message.answer(text)
-
-
-@router.message(F.text == "💬 Написать Хозяину")
-async def reply_contact_owner(message: Message):
-    """Написать Хозяину (Reply keyboard)"""
-    text = f"""💬  <b>Написать Хозяину</b>
-
-
-Пиши напрямую: @{settings.SUPPORT_USERNAME}
-
-Отзывы: <a href="{settings.REVIEWS_CHANNEL}">канал</a>
-
-
-<i>Отвечаю в течение пары часов,
-обычно быстрее.</i>"""
-
-    await message.answer(text, disable_web_page_preview=True)
-
-
-@router.message(F.text == "🤝 Привести друга")
-async def reply_referral(message: Message, session: AsyncSession):
-    """Привести друга (Reply keyboard)"""
-    telegram_id = message.from_user.id
-    referral_link = f"https://t.me/{settings.BOT_USERNAME}?start=ref{telegram_id}"
-
-    query = select(User).where(User.telegram_id == telegram_id)
-    result = await session.execute(query)
-    user = result.scalar_one_or_none()
-
-    referrals_count = user.referrals_count if user else 0
-    referral_earnings = user.referral_earnings if user else 0
-
-    text = f"""🤝  <b>Привести друга</b>
-
-
-Твоя ссылка:
-<code>{referral_link}</code>
-
-
-<b>Как это работает</b>
-
-Друг переходит по ссылке и делает заказ.
-Ты получаешь 5% от суммы на баланс.
-Друг получает скидку 5% на первый заказ.
-
-
-<b>Твоя статистика</b>
-
-◈  Приглашено: {referrals_count}
-◈  Заработано: {referral_earnings:.0f} ₽"""
-
-    await message.answer(text)
-
-
-@router.message(F.text == "📜 Прайс-лист")
-async def reply_price_list(message: Message):
-    """Прайс-лист (Reply keyboard)"""
-    text = """📜  <b>Прайс-лист</b>
-
-
-<b>Базовые расценки:</b>
-
-◈  Реферат — от 800 ₽
-◈  Эссе — от 600 ₽
-◈  Контрольная — от 1000 ₽
-◈  Курсовая — от 3000 ₽
-◈  Дипломная — от 15000 ₽
-◈  Презентация — от 500 ₽
-
-
-<i>Точная цена зависит от объёма,
-сложности и сроков. Скидывай задачу —
-посчитаю индивидуально.</i>"""
-
-    await message.answer(text)
-
-
-@router.message(F.text == "⚖️ Правила")
-async def reply_rules(message: Message):
-    """Правила (Reply keyboard)"""
-    await message.answer(CODEX_SHORT)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -185,7 +50,7 @@ CODEX_SHORT = """📜  <b>Кодекс Салуна</b>
 <i>Оплачивая заказ, принимаешь эти условия.</i>"""
 
 
-CODEX_FULL = """📜  <b>Кодекс Салуна</b>
+CODEX_FULL = f"""📜  <b>Кодекс Салуна</b>
 <i>полная версия</i>
 
 
@@ -270,21 +135,116 @@ CODEX_FULL = """📜  <b>Кодекс Салуна</b>
 
 
 # ══════════════════════════════════════════════════════════════
-#                         ХЕНДЛЕРЫ
+#                    НОВЫЕ CALLBACK HANDLERS
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "my_orders")
+async def show_my_orders(callback: CallbackQuery, session: AsyncSession):
+    """Мои заказы"""
+    await callback.answer()
+
+    telegram_id = callback.from_user.id
+    query = select(User).where(User.telegram_id == telegram_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    orders_count = user.orders_count if user else 0
+
+    text = f"""👤  <b>Мои заказы</b>
+
+
+◈  Всего заказов: {orders_count}
+
+<i>Здесь будет история твоих заказов.</i>"""
+
+    await callback.message.answer(text, reply_markup=get_back_keyboard())
+
+
+@router.callback_query(F.data == "my_balance")
+async def show_my_balance(callback: CallbackQuery, session: AsyncSession):
+    """Мой баланс"""
+    await callback.answer()
+
+    telegram_id = callback.from_user.id
+    query = select(User).where(User.telegram_id == telegram_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    balance = user.balance if user else 0
+
+    text = f"""💰  <b>Мой баланс</b>
+
+
+Баланс: <b>{balance:.0f} ₽</b>
+
+
+<i>Пополняется бонусами за друзей
+и компенсациями. Можно тратить
+на свои заказы.</i>"""
+
+    await callback.message.answer(text, reply_markup=get_back_keyboard())
+
+
+@router.callback_query(F.data == "contact_owner")
+async def show_contact_owner(callback: CallbackQuery):
+    """Написать Хозяину"""
+    await callback.answer()
+
+    text = f"""💬  <b>Написать Хозяину</b>
+
+
+Пиши напрямую: @{settings.SUPPORT_USERNAME}
+
+Отзывы: <a href="{settings.REVIEWS_CHANNEL}">канал</a>
+
+
+<i>Отвечаю в течение пары часов,
+обычно быстрее.</i>"""
+
+    await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
+
+
+@router.callback_query(F.data == "price_list")
+async def show_price_list(callback: CallbackQuery):
+    """Прайс-лист"""
+    await callback.answer()
+
+    text = """📜  <b>Прайс-лист</b>
+
+
+<b>Базовые расценки:</b>
+
+◈  Реферат — от 800 ₽
+◈  Эссе — от 600 ₽
+◈  Контрольная — от 1000 ₽
+◈  Курсовая — от 3000 ₽
+◈  Дипломная — от 15000 ₽
+◈  Презентация — от 500 ₽
+
+
+<i>Точная цена зависит от объёма,
+сложности и сроков. Скидывай задачу —
+посчитаю индивидуально.</i>"""
+
+    await callback.message.answer(text, reply_markup=get_back_keyboard())
+
+
+# ══════════════════════════════════════════════════════════════
+#                    СУЩЕСТВУЮЩИЕ CALLBACK HANDLERS
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "profile")
 async def show_profile(callback: CallbackQuery, session: AsyncSession):
     """Досье пользователя"""
     await callback.answer()
-    
+
     telegram_id = callback.from_user.id
     query = select(User).where(User.telegram_id == telegram_id)
     result = await session.execute(query)
     user = result.scalar_one_or_none()
 
     if not user:
-        await callback.message.edit_text("Досье не найдено.", reply_markup=get_back_keyboard())
+        await callback.message.answer("Досье не найдено.", reply_markup=get_back_keyboard())
         return
 
     status, discount = user.loyalty_status
@@ -300,19 +260,19 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession):
 {status}
 {discount_line}"""
 
-    await callback.message.edit_text(text.strip(), reply_markup=get_back_keyboard())
+    await callback.message.answer(text.strip(), reply_markup=get_back_keyboard())
 
 
 @router.callback_query(F.data == "finance")
 async def show_finance(callback: CallbackQuery, session: AsyncSession):
     """Казна пользователя"""
     await callback.answer()
-    
+
     telegram_id = callback.from_user.id
     query = select(User).where(User.telegram_id == telegram_id)
     result = await session.execute(query)
     user = result.scalar_one_or_none()
-    
+
     balance = user.balance if user else 0
 
     text = f"""💰  <b>Казна</b>
@@ -325,14 +285,14 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession):
 и компенсациями. Можно тратить
 на свои заказы.</i>"""
 
-    await callback.message.edit_text(text, reply_markup=get_back_keyboard())
+    await callback.message.answer(text, reply_markup=get_back_keyboard())
 
 
 @router.callback_query(F.data == "support")
 async def call_support(callback: CallbackQuery):
     """Связь с поддержкой"""
     await callback.answer()
-    
+
     text = f"""⭐  <b>Шериф на связи</b>
 
 
@@ -344,39 +304,39 @@ async def call_support(callback: CallbackQuery):
 <i>Отвечаю в течение пары часов,
 обычно быстрее.</i>"""
 
-    await callback.message.edit_text(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
+    await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
 
 
 @router.callback_query(F.data == "codex")
 async def show_codex_short(callback: CallbackQuery):
     """Краткая версия Кодекса"""
     await callback.answer()
-    await callback.message.edit_text(CODEX_SHORT, reply_markup=get_codex_keyboard())
+    await callback.message.answer(CODEX_SHORT, reply_markup=get_codex_keyboard())
 
 
 @router.callback_query(F.data == "codex_full")
 async def show_codex_full(callback: CallbackQuery):
     """Полная версия Кодекса"""
     await callback.answer()
-    await callback.message.edit_text(CODEX_FULL, reply_markup=get_codex_full_keyboard())
+    await callback.message.answer(CODEX_FULL, reply_markup=get_codex_full_keyboard())
 
 
 @router.callback_query(F.data == "referral")
 async def show_referral(callback: CallbackQuery, session: AsyncSession):
     """Реферальная программа"""
     await callback.answer()
-    
+
     telegram_id = callback.from_user.id
     referral_link = f"https://t.me/{settings.BOT_USERNAME}?start=ref{telegram_id}"
-    
+
     query = select(User).where(User.telegram_id == telegram_id)
     result = await session.execute(query)
     user = result.scalar_one_or_none()
-    
+
     referrals_count = user.referrals_count if user else 0
     referral_earnings = user.referral_earnings if user else 0
 
-    text = f"""🐎  <b>Позови друга</b>
+    text = f"""🤝  <b>Привести друга</b>
 
 
 Твоя ссылка:
@@ -395,7 +355,7 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession):
 ◈  Приглашено: {referrals_count}
 ◈  Заработано: {referral_earnings:.0f} ₽"""
 
-    await callback.message.edit_text(
+    await callback.message.answer(
         text,
         reply_markup=get_referral_keyboard(f"Помощь с учёбой — {referral_link}")
     )
@@ -405,7 +365,7 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession):
 async def show_about(callback: CallbackQuery):
     """О сервисе"""
     await callback.answer()
-    
+
     text = f"""🏚  <b>Академический Салун</b>
 
 
@@ -425,15 +385,49 @@ async def show_about(callback: CallbackQuery):
 Пишем качественно.
 Не подводим.</i>"""
 
-    await callback.message.edit_text(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
+    await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
 
 
 @router.callback_query(F.data == "back_to_menu")
 async def back_to_menu(callback: CallbackQuery):
     """Возврат в главное меню"""
     await callback.answer()
-    await callback.message.edit_text(
+    await callback.message.answer(
         "🏚  <b>Салун</b>\n\n"
         "Чем могу помочь, партнёр?",
-        reply_markup=get_start_keyboard()
+        reply_markup=get_main_menu_keyboard()
+    )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ОБРАБОТКА ТЕКСТОВЫХ СООБЩЕНИЙ
+# ══════════════════════════════════════════════════════════════
+
+@router.message(F.text)
+async def handle_text_message(message: Message, bot: Bot):
+    """
+    Обработка текстовых сообщений — пересылка админу.
+    Это ловушка для всех текстовых сообщений, которые не обработаны другими handlers.
+    """
+    # Пересылаем сообщение админу
+    user = message.from_user
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(
+                chat_id=admin_id,
+                text=f"💬  <b>Сообщение от клиента</b>\n\n"
+                     f"◈  {user.full_name} (@{user.username})\n"
+                     f"◈  ID: <code>{user.id}</code>\n\n"
+                     f"<i>{message.text}</i>"
+            )
+        except Exception:
+            pass
+
+    # Отвечаем пользователю
+    await message.answer(
+        "📨  <b>Сообщение получено!</b>\n\n"
+        "Хозяин скоро ответит. Обычно в течение пары часов.\n\n"
+        f"Или напиши напрямую: @{settings.SUPPORT_USERNAME}",
+        reply_markup=get_main_menu_keyboard()
     )

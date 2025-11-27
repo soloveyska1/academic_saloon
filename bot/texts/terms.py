@@ -30,7 +30,17 @@ STATIC_USP = """\n\nТы слышал голосовое — ты попал в 
 Выдыхай, путник. Скидывай задание, а мы позаботимся об остальном. Жми кнопку ниже 👇"""
 
 
-def get_time_greeting(with_quote: bool = True) -> str:
+# Дата открытия салуна (для счётчика)
+SALOON_OPENING_DATE = datetime(2024, 9, 1, tzinfo=MSK_TZ)
+
+
+def get_saloon_stats() -> str:
+    """Возвращает строку со статистикой салуна"""
+    days_open = (datetime.now(MSK_TZ) - SALOON_OPENING_DATE).days
+    return f"📊 Салун работает {days_open} дней • 150+ довольных клиентов"
+
+
+def get_time_greeting(with_quote: bool = True, with_stats: bool = True) -> str:
     """
     Возвращает приветствие в зависимости от текущего времени суток (МСК).
 
@@ -50,8 +60,14 @@ def get_time_greeting(with_quote: bool = True) -> str:
     else:  # 0 <= msk_hour < 6
         base = GREETING_NIGHT + STATIC_USP
 
+    # Добавляем статистику
+    if with_stats:
+        base += f"\n\n{get_saloon_stats()}"
+
+    # Добавляем случайную цитату
     if with_quote:
-        return base + f"\n\n<i>{get_random_quote()}</i>"
+        base += f"\n\n<i>{get_random_quote()}</i>"
+
     return base
 
 

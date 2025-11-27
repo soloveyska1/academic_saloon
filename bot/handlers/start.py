@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models.users import User
-from bot.keyboards.inline import get_start_keyboard, get_main_reply_keyboard
+from bot.keyboards.inline import get_main_menu_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
 from bot.texts.terms import TERMS_SHORT, get_time_greeting
 from core.config import settings
@@ -106,10 +106,10 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     # Получаем приветствие по времени суток (МСК)
     text = get_time_greeting()
 
-    # Отправляем картинку с приветствием + Reply клавиатура
+    # Отправляем картинку с приветствием + Inline клавиатура
     photo = FSInputFile(settings.WELCOME_IMAGE)
     await message.answer_photo(
         photo=photo,
         caption=text,
-        reply_markup=get_main_reply_keyboard()
+        reply_markup=get_main_menu_keyboard()
     )
