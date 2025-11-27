@@ -14,6 +14,7 @@ from bot.handlers.admin import router as admin_router
 from bot.handlers.log_actions import router as log_actions_router
 from bot.middlewares import ErrorHandlerMiddleware, DbSessionMiddleware, BanCheckMiddleware
 from bot.services.logger import init_logger
+from bot.services.abandoned_detector import init_abandoned_tracker
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -38,9 +39,11 @@ async def main():
     dp.update.outer_middleware(BanCheckMiddleware())  # Проверка бана
     # -------------------------------
 
-    # --- ИНИЦИАЛИЗАЦИЯ ЛОГГЕРА ---
+    # --- ИНИЦИАЛИЗАЦИЯ СЕРВИСОВ ---
     init_logger(bot)
-    # -----------------------------
+    abandoned_tracker = init_abandoned_tracker(bot, storage)
+    logger.info("Abandoned order tracker started")
+    # --------------------------------
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
     dp.include_router(log_actions_router)  # Обработчики кнопок логов (первыми!)
@@ -59,6 +62,8 @@ async def main():
     except Exception as e:
         logger.error(f"Error occurred: {e}")
     finally:
+        # Останавливаем фоновые задачи
+        abandoned_tracker.stop()
         await bot.session.close()
 
 if __name__ == "__main__":

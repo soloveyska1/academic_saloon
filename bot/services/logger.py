@@ -207,10 +207,15 @@ class BotLogger:
             ],
         ])
 
-    async def _get_user_stats(self, user_id: int, session: Optional[AsyncSession] = None) -> str:
-        """Получает статистику пользователя из БД"""
+    async def _get_user_stats(self, user_id: int, session: Optional[AsyncSession] = None) -> tuple[str, bool]:
+        """
+        Получает статистику пользователя из БД.
+
+        Returns:
+            (stats_str, is_watched) — строка статистики и флаг слежки
+        """
         if not session:
-            return ""
+            return "", False
 
         try:
             query = select(User).where(User.telegram_id == user_id)
@@ -224,11 +229,16 @@ class BotLogger:
                     stats += f" · Баланс: {user.balance:.0f}₽"
                 if discount > 0:
                     stats += f" · Скидка: {discount}%"
-                return stats
+
+                # Добавляем метку если пользователь на слежке
+                if user.is_watched:
+                    stats += "\n👀  <b>НА СЛЕЖКЕ</b>"
+
+                return stats, user.is_watched
         except Exception:
             pass
 
-        return ""
+        return "", False
 
     async def log(
         self,
@@ -264,6 +274,9 @@ class BotLogger:
             user_mention = self.get_user_mention(user)
             time_str = self.get_msk_time()
 
+            # Статистика из БД и флаг слежки
+            stats, is_watched = await self._get_user_stats(user.id, session)
+
             # Основной текст
             text_parts = [
                 f"{icon}  <b>{event_name}</b>",
@@ -273,7 +286,6 @@ class BotLogger:
             ]
 
             # Статистика из БД
-            stats = await self._get_user_stats(user.id, session)
             if stats:
                 text_parts.append(stats)
 
@@ -294,12 +306,14 @@ class BotLogger:
             text = "\n".join(text_parts)
 
             # Определяем нужна ли клавиатура
+            # Для пользователей на слежке — всегда показываем кнопки
             keyboard = None
-            if level in (LogLevel.ACTION, LogLevel.WARNING, LogLevel.ERROR, LogLevel.CRITICAL):
+            if level in (LogLevel.ACTION, LogLevel.WARNING, LogLevel.ERROR, LogLevel.CRITICAL) or is_watched:
                 keyboard = self.get_action_keyboard(user.id)
 
             # Важные события со звуком
-            if level in (LogLevel.ERROR, LogLevel.CRITICAL):
+            # Пользователи на слежке — все логи со звуком
+            if level in (LogLevel.ERROR, LogLevel.CRITICAL) or is_watched:
                 silent = False
 
             # Отправляем

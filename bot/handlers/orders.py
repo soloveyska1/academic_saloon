@@ -15,6 +15,7 @@ from bot.keyboards.orders import (
     get_cancel_order_keyboard,
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
+from bot.services.abandoned_detector import get_abandoned_tracker
 from core.config import settings
 
 router = Router()
@@ -30,6 +31,16 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
     await callback.answer()
 
     await state.set_state(OrderState.choosing_type)
+
+    # Начинаем отслеживание для детектора брошенных заказов
+    tracker = get_abandoned_tracker()
+    if tracker:
+        await tracker.start_tracking(
+            user_id=callback.from_user.id,
+            username=callback.from_user.username,
+            fullname=callback.from_user.full_name,
+            step="Выбор типа работы",
+        )
 
     # Логируем начало заказа — важное событие
     await log_action(
@@ -82,6 +93,11 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
     await state.set_state(OrderState.entering_subject)
 
     work_label = WORK_TYPE_LABELS.get(WorkType(work_type), work_type)
+
+    # Обновляем шаг в трекере
+    tracker = get_abandoned_tracker()
+    if tracker:
+        await tracker.update_step(callback.from_user.id, f"Ввод предмета (тип: {work_label})")
 
     # Логируем шаг
     await log_action(
@@ -301,6 +317,11 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     await session.commit()
     await session.refresh(order)
 
+    # Удаляем из трекера брошенных заказов
+    tracker = get_abandoned_tracker()
+    if tracker:
+        await tracker.complete_order(user_id)
+
     await state.clear()
 
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
@@ -341,6 +362,11 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 async def cancel_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Отмена создания заказа"""
     await callback.answer("Заявка отменена")
+
+    # Удаляем из трекера брошенных заказов
+    tracker = get_abandoned_tracker()
+    if tracker:
+        await tracker.cancel_order(callback.from_user.id)
 
     # Логируем отмену
     await log_action(
