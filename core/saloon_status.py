@@ -164,36 +164,51 @@ def generate_people_online() -> int:
     return max(1, min(50, result))
 
 
+def _get_activity_indicator(people: int) -> str:
+    """Визуальный индикатор активности"""
+    if people >= 25:
+        return "◉◉◉"  # Высокая
+    elif people >= 15:
+        return "◉◉○"  # Средняя
+    elif people >= 5:
+        return "◉○○"  # Низкая
+    else:
+        return "○○○"  # Тихо
+
+
 def generate_status_message(status: SaloonStatus) -> str:
     """
     Генерация красивого сообщения для закрепа в боте.
-    Минималистично, аккуратно, в духе Салуна.
+    Стильно и атмосферно.
     """
     load = LoadStatus(status.load_status)
     emoji, title, description = LOAD_STATUS_DISPLAY[load]
 
     # Динамическое число "людей в боте"
     people_online = generate_people_online()
+    activity = _get_activity_indicator(people_online)
 
-    message = f"""<b>🏚 АКАДЕМИЧЕСКИЙ САЛУН</b>
+    message = f"""        ✧  <b>АКАДЕМИЧЕСКИЙ САЛУН</b>  ✧
 
-{emoji}  {title}
+{emoji}  <b>{title}</b>
 <i>{description}</i>
 
-·  ·  ·
 
-👀  В боте сейчас  <b>{people_online}</b>
-🧑‍💼  Клиентов  <b>{status.clients_count}</b>
-📋  В работе  <b>{status.orders_in_progress}</b>
+<b>СЕЙЧАС</b>
 
-·  ·  ·
+    {activity}   <code>{people_online}</code>  в боте
+    🧑‍💼          <code>{status.clients_count}</code>  клиентов
+    📋          <code>{status.orders_in_progress}</code>  в работе
 
-📊  <code>6 лет</code>  на рынке
-⭐  <code>1000+</code>  довольных клиентов
-✅  <code>3</code>  бесплатные правки
 
-<i>Выдыхай, партнёр.
-Ты в надёжных руках.</i>"""
+<b>О НАС</b>
+
+    📊  6 лет на рынке
+    ⭐  1000+ довольных клиентов
+    ✅  3 бесплатные правки
+
+
+<i>Выдыхай, партнёр. Ты в надёжных руках.</i>"""
 
     return message
 
