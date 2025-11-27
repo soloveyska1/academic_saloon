@@ -1,6 +1,6 @@
 from aiogram import Router, Bot
 from aiogram.filters import CommandStart, CommandObject
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message, ReplyKeyboardRemove, FSInputFile
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -119,4 +119,6 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             f"<i>Чем могу помочь?</i>"
         )
 
-    await message.answer(text, reply_markup=get_start_keyboard())
+    # Отправляем гифку с приветствием
+    gif = FSInputFile(settings.WELCOME_GIF)
+    await message.answer_animation(animation=gif, caption=text, reply_markup=get_start_keyboard())

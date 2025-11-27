@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -114,7 +114,10 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             discount_line=discount_line
         )
 
-    await callback.message.edit_text(text, reply_markup=get_start_keyboard())
+    # Удаляем сообщение с офертой и отправляем гифку
+    await callback.message.delete()
+    gif = FSInputFile(settings.WELCOME_GIF)
+    await callback.message.answer_animation(animation=gif, caption=text, reply_markup=get_start_keyboard())
 
 
 # ══════════════════════════════════════════════════════════════

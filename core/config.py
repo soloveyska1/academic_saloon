@@ -1,5 +1,10 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr
+
+# Базовая директория проекта
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     BOT_TOKEN: SecretStr
@@ -10,6 +15,9 @@ class Settings(BaseSettings):
     REVIEWS_CHANNEL: str = "https://t.me/+Cls1cEPgPcMyZDJi"
     LOG_CHANNEL_ID: int = -1003300275622
     SUPPORT_USERNAME: str = "Thisissaymoon"
+
+    # Медиа файлы
+    WELCOME_GIF: Path = BASE_DIR / "bot" / "media" / "rob_hi_saloon.gif"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
