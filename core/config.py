@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "image_saloon.jpg"
     WELCOME_VOICE: Path = BASE_DIR / "bot" / "media" / "voice_welcome.ogg"
     OFFER_IMAGE: Path = BASE_DIR / "bot" / "media" / "saloon_welcome.jpg"
+    ORDER_IMAGE: Path = BASE_DIR / "bot" / "media" / "bar_saloon.jpg"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str

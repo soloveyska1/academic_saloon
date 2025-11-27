@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from database.models.orders import WorkType, WORK_TYPE_LABELS, WORK_TYPE_PRICES
+from database.models.orders import WorkType, WORK_TYPE_LABELS, WORK_TYPE_PRICES, WORK_TYPE_DEADLINES
+from core.config import settings
 
 
 # ══════════════════════════════════════════════════════════════
@@ -9,18 +10,70 @@ from database.models.orders import WorkType, WORK_TYPE_LABELS, WORK_TYPE_PRICES
 
 def get_work_type_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура выбора типа работы с ценами.
-    Флоу 'Ленивый Ковбой' — показываем цены сразу.
+    Клавиатура выбора типа работы с ценами и сроками.
+    Оптимизирована для конверсии.
     """
     buttons = []
 
-    # Крупные работы (дорогие) — по одной в ряд
+    # 🆘 ГОРИТ! — для паникующих, сразу сверху
     buttons.append([
         InlineKeyboardButton(
-            text=f"🎩 Магистерская • {WORK_TYPE_PRICES[WorkType.MASTERS]}",
-            callback_data=f"order_type:{WorkType.MASTERS.value}"
+            text="🆘 Горит! Нужно срочно!",
+            callback_data=f"order_type:{WorkType.PHOTO_TASK.value}"
         ),
     ])
+
+    # 📸 Просто скинь фото — киллер-фича для ленивых
+    buttons.append([
+        InlineKeyboardButton(
+            text="📸 Просто скинь фото — разберёмся",
+            callback_data=f"order_type:{WorkType.PHOTO_TASK.value}"
+        ),
+    ])
+
+    # Популярные работы (курсовая, контрольная) — вверху
+    buttons.append([
+        InlineKeyboardButton(
+            text=f"📚 Курсовая • {WORK_TYPE_PRICES[WorkType.COURSEWORK]} • {WORK_TYPE_DEADLINES[WorkType.COURSEWORK]}",
+            callback_data=f"order_type:{WorkType.COURSEWORK.value}"
+        ),
+    ])
+
+    # Мелкие работы — по две в ряд (самые частые)
+    buttons.append([
+        InlineKeyboardButton(
+            text=f"✏️ Контрольная • {WORK_TYPE_DEADLINES[WorkType.CONTROL]}",
+            callback_data=f"order_type:{WorkType.CONTROL.value}"
+        ),
+        InlineKeyboardButton(
+            text=f"📝 Эссе • {WORK_TYPE_DEADLINES[WorkType.ESSAY]}",
+            callback_data=f"order_type:{WorkType.ESSAY.value}"
+        ),
+    ])
+    buttons.append([
+        InlineKeyboardButton(
+            text=f"📄 Реферат • {WORK_TYPE_DEADLINES[WorkType.REPORT]}",
+            callback_data=f"order_type:{WorkType.REPORT.value}"
+        ),
+        InlineKeyboardButton(
+            text=f"📊 Презентация • {WORK_TYPE_DEADLINES[WorkType.PRESENTATION]}",
+            callback_data=f"order_type:{WorkType.PRESENTATION.value}"
+        ),
+    ])
+
+    # Средние работы
+    buttons.append([
+        InlineKeyboardButton(
+            text=f"📖 Самостоятельная • {WORK_TYPE_DEADLINES[WorkType.INDEPENDENT]}",
+            callback_data=f"order_type:{WorkType.INDEPENDENT.value}"
+        ),
+        InlineKeyboardButton(
+            text=f"🏢 Практика • {WORK_TYPE_DEADLINES[WorkType.PRACTICE]}",
+            callback_data=f"order_type:{WorkType.PRACTICE.value}"
+        ),
+    ])
+
+    # Крупные работы (дорогие) — внизу
     buttons.append([
         InlineKeyboardButton(
             text=f"🎓 Диплом (ВКР) • {WORK_TYPE_PRICES[WorkType.DIPLOMA]}",
@@ -29,57 +82,24 @@ def get_work_type_keyboard() -> InlineKeyboardMarkup:
     ])
     buttons.append([
         InlineKeyboardButton(
-            text=f"📚 Курсовая • {WORK_TYPE_PRICES[WorkType.COURSEWORK]}",
-            callback_data=f"order_type:{WorkType.COURSEWORK.value}"
+            text=f"🎩 Магистерская • {WORK_TYPE_PRICES[WorkType.MASTERS]}",
+            callback_data=f"order_type:{WorkType.MASTERS.value}"
         ),
     ])
 
-    # Средние работы — по две в ряд
-    buttons.append([
-        InlineKeyboardButton(
-            text=f"📖 Самостоятельная",
-            callback_data=f"order_type:{WorkType.INDEPENDENT.value}"
-        ),
-        InlineKeyboardButton(
-            text=f"🏢 Практика",
-            callback_data=f"order_type:{WorkType.PRACTICE.value}"
-        ),
-    ])
-
-    # Мелкие работы — по две в ряд
-    buttons.append([
-        InlineKeyboardButton(
-            text="📝 Эссе",
-            callback_data=f"order_type:{WorkType.ESSAY.value}"
-        ),
-        InlineKeyboardButton(
-            text="📄 Реферат",
-            callback_data=f"order_type:{WorkType.REPORT.value}"
-        ),
-    ])
-    buttons.append([
-        InlineKeyboardButton(
-            text="✏️ Контрольная",
-            callback_data=f"order_type:{WorkType.CONTROL.value}"
-        ),
-        InlineKeyboardButton(
-            text="📊 Презентация",
-            callback_data=f"order_type:{WorkType.PRESENTATION.value}"
-        ),
-    ])
-
-    # Киллер-кнопка для ленивых + Другое
-    buttons.append([
-        InlineKeyboardButton(
-            text="📸 Просто скинуть фото задания",
-            callback_data=f"order_type:{WorkType.PHOTO_TASK.value}"
-        ),
-    ])
-
+    # Другое
     buttons.append([
         InlineKeyboardButton(
             text="📎 Другое",
             callback_data=f"order_type:{WorkType.OTHER.value}"
+        ),
+    ])
+
+    # 💬 Спросить — для тех, кто не знает что выбрать
+    buttons.append([
+        InlineKeyboardButton(
+            text="💬 Не знаю что выбрать — спросить",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
         ),
     ])
 
