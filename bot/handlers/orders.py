@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -23,7 +23,6 @@ from bot.keyboards.orders import (
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
-from bot.services.bonus import BonusService
 from core.config import settings
 
 router = Router()
@@ -33,10 +32,34 @@ router = Router()
 #                    ШАГ 1: ВЫБОР ТИПА РАБОТЫ
 # ══════════════════════════════════════════════════════════════
 
+MAX_PENDING_ORDERS = 3  # Максимум активных заказов на пользователя
+
+
 @router.callback_query(F.data == "create_order")
 async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Начать создание заказа — выбор типа работы"""
     await callback.answer()
+
+    # Проверяем количество активных заказов пользователя
+    pending_query = select(Order).where(
+        Order.user_id == callback.from_user.id,
+        Order.status.in_([
+            OrderStatus.PENDING.value,
+            OrderStatus.CONFIRMED.value,
+        ])
+    )
+    result = await session.execute(pending_query)
+    pending_orders = result.scalars().all()
+
+    if len(pending_orders) >= MAX_PENDING_ORDERS:
+        await callback.message.edit_text(
+            f"⚠️ <b>У тебя уже {len(pending_orders)} активных заявок</b>\n\n"
+            f"Дождись их обработки или напиши мне напрямую:\n"
+            f"@{settings.SUPPORT_USERNAME}",
+            reply_markup=get_back_keyboard()
+        )
+        return
+
     await state.clear()  # Очищаем предыдущее состояние
     await state.set_state(OrderState.choosing_type)
 
@@ -549,21 +572,11 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         silent=False,
     )
 
-    # Начисляем бонусы за создание заказа
-    await BonusService.process_order_bonus(
-        session=session,
-        bot=bot,
-        user_id=user_id,
-    )
-
     text = f"""✅  <b>Заявка #{order.id} принята!</b>
 
 Я уже открыл материалы и оцениваю объём.
 Дай мне 10-15 минут — посчитаю честную цену
 и напишу тебе лично.
-
-🎁  Начислил тебе <b>50 бонусов</b> в тайник за доверие.
-Проверь в меню «💰 Мой баланс».
 
 Скоро вернусь! 🤠
 
@@ -758,6 +771,32 @@ async def cancel_order(callback: CallbackQuery, state: FSMContext, bot: Bot, ses
 #                    УВЕДОМЛЕНИЯ АДМИНАМ
 # ══════════════════════════════════════════════════════════════
 
+def get_order_admin_keyboard(order_id: int, user_id: int) -> InlineKeyboardMarkup:
+    """Кнопки действий с заказом для админа"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="💰 Назначить цену",
+                callback_data=f"admin_set_price:{order_id}"
+            ),
+            InlineKeyboardButton(
+                text="❌ Отклонить",
+                callback_data=f"admin_reject:{order_id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="💬 Написать",
+                url=f"tg://user?id={user_id}"
+            ),
+            InlineKeyboardButton(
+                text="📋 Инфо",
+                callback_data=f"log_info:{user_id}"
+            ),
+        ],
+    ])
+
+
 async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     """Уведомление админов о новой заявке со всеми вложениями"""
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
@@ -779,11 +818,12 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
 {discount_line}"""
 
     attachments = data.get("attachments", [])
+    admin_keyboard = get_order_admin_keyboard(order.id, user.id)
 
     for admin_id in settings.ADMIN_IDS:
         try:
-            # Сначала отправляем текст заявки
-            await bot.send_message(chat_id=admin_id, text=text)
+            # Сначала отправляем текст заявки с кнопками
+            await bot.send_message(chat_id=admin_id, text=text, reply_markup=admin_keyboard)
 
             # Затем все вложения
             for att in attachments:

@@ -15,6 +15,7 @@ class OrderStatus(str, enum.Enum):
     REVIEW = "review"            # На проверке у клиента
     COMPLETED = "completed"      # Завершён
     CANCELLED = "cancelled"      # Отменён
+    REJECTED = "rejected"        # Отклонён админом
 
 
 class WorkType(str, enum.Enum):
@@ -104,6 +105,7 @@ class Order(Base):
             OrderStatus.REVIEW.value: "🔍 На проверке",
             OrderStatus.COMPLETED.value: "✨ Завершён",
             OrderStatus.CANCELLED.value: "❌ Отменён",
+            OrderStatus.REJECTED.value: "🚫 Отклонён",
         }
         return labels.get(self.status, self.status)
 

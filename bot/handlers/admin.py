@@ -941,6 +941,184 @@ async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession
 
 
 # ══════════════════════════════════════════════════════════════
+#                    КНОПКИ ЗАЯВОК
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("admin_set_price:"))
+async def admin_set_price_callback(callback: CallbackQuery, state: FSMContext):
+    """Админ нажал кнопку 'Назначить цену'"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = int(callback.data.split(":")[1])
+    await state.update_data(price_order_id=order_id)
+    await state.set_state(AdminStates.waiting_order_price)
+
+    await callback.answer()
+    await callback.message.answer(
+        f"💰 <b>Введи цену для заказа #{order_id}</b>\n\n"
+        f"Напиши просто число (например: 5000)",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_cancel_price")]
+        ])
+    )
+
+
+@router.callback_query(F.data == "admin_cancel_price")
+async def admin_cancel_price(callback: CallbackQuery, state: FSMContext):
+    """Отмена ввода цены"""
+    await state.clear()
+    await callback.answer("Отменено")
+    await callback.message.delete()
+
+
+@router.message(AdminStates.waiting_order_price)
+async def process_order_price_input(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+    """Обработка ввода цены заказа"""
+    if not is_admin(message.from_user.id):
+        return
+
+    data = await state.get_data()
+    order_id = data.get("price_order_id")
+
+    if not order_id:
+        await state.clear()
+        await message.answer("❌ Ошибка: заказ не выбран")
+        return
+
+    try:
+        price = float(message.text.strip())
+        if price <= 0:
+            raise ValueError("Цена должна быть положительной")
+    except ValueError:
+        await message.answer("❌ Введи корректную цену (положительное число)")
+        return
+
+    await state.clear()
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await message.answer(f"❌ Заказ #{order_id} не найден")
+        return
+
+    # Находим пользователя
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await message.answer(f"❌ Пользователь заказа #{order_id} не найден")
+        return
+
+    # Рассчитываем бонусы (макс 50% от цены)
+    max_bonus = price * 0.5
+    bonus_to_use = min(user.balance, max_bonus)
+
+    # Обновляем заказ
+    order.price = price
+    order.bonus_used = bonus_to_use
+    order.status = OrderStatus.CONFIRMED.value
+    await session.commit()
+
+    # Рассчитываем итоговую цену
+    final_price = price - bonus_to_use
+
+    # Формируем сообщение для клиента
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    if bonus_to_use > 0:
+        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+
+{work_label}
+
+Стоимость: {price:.0f}₽
+🎁 Бонусы: −{bonus_to_use:.0f}₽
+
+━━━━━━━━━━━━━━━
+<b>Итого к оплате: {final_price:.0f}₽</b>
+
+Реквизиты для оплаты пришлю следующим сообщением."""
+
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Понятно", callback_data=f"price_ok:{order.id}"),
+                InlineKeyboardButton(text="Не списывать бонусы", callback_data=f"price_no_bonus:{order.id}"),
+            ]
+        ])
+    else:
+        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+
+{work_label}
+
+<b>Стоимость: {price:.0f}₽</b>
+
+Реквизиты для оплаты пришлю следующим сообщением."""
+
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Понятно", callback_data=f"price_ok:{order.id}")]
+        ])
+
+    # Отправляем клиенту
+    try:
+        await bot.send_message(order.user_id, client_text, reply_markup=kb)
+        await message.answer(
+            f"✅ Цена {price:.0f}₽ назначена заказу #{order.id}\n"
+            f"Клиенту отправлено сообщение\n"
+            f"Бонусов применено: {bonus_to_use:.0f}₽\n"
+            f"Итого к оплате: {final_price:.0f}₽"
+        )
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить сообщение клиенту: {e}")
+
+
+@router.callback_query(F.data.startswith("admin_reject:"))
+async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Отклонить заказ"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = int(callback.data.split(":")[1])
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Обновляем статус
+    order.status = OrderStatus.REJECTED.value
+    await session.commit()
+
+    # Уведомляем клиента
+    try:
+        await bot.send_message(
+            order.user_id,
+            f"❌ <b>Заказ #{order.id} отклонён</b>\n\n"
+            f"К сожалению, не смогу взяться за эту работу.\n"
+            f"Если есть вопросы — пиши: @{settings.SUPPORT_USERNAME}"
+        )
+    except Exception:
+        pass
+
+    await callback.answer(f"Заказ #{order_id} отклонён")
+
+    # Обновляем сообщение
+    await callback.message.edit_text(
+        callback.message.text + "\n\n❌ <b>ОТКЛОНЁН</b>",
+        reply_markup=None
+    )
+
+
+# ══════════════════════════════════════════════════════════════
 #                    ПОДТВЕРЖДЕНИЕ ОПЛАТЫ
 # ══════════════════════════════════════════════════════════════
 
@@ -1013,6 +1191,13 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     await session.commit()
 
+    # Начисляем бонусы клиенту за оплаченный заказ (50₽)
+    order_bonus = await BonusService.process_order_bonus(
+        session=session,
+        bot=bot,
+        user_id=order.user_id,
+    )
+
     # Начисляем реферальные бонусы (если есть реферер)
     referral_bonus = 0
     if user.referrer_id:
@@ -1027,12 +1212,14 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
     # Уведомляем клиента
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
+    bonus_line = f"\n\n🎁 +{order_bonus:.0f}₽ бонусов на баланс!" if order_bonus > 0 else ""
+
     client_text = f"""✅ <b>Оплата получена!</b>
 
 Заказ #{order.id} — {work_label}
 
 Спасибо за доверие! 🤠
-Приступаю к работе."""
+Приступаю к работе.{bonus_line}"""
 
     try:
         await bot.send_message(order.user_id, client_text)
@@ -1044,9 +1231,12 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
     response += f"💰 Сумма: {order.paid_amount:.0f}₽\n"
 
     if bonus_deducted > 0:
-        response += f"🎁 Списано бонусов: {bonus_deducted:.0f}₽\n"
+        response += f"🔻 Списано бонусов: {bonus_deducted:.0f}₽\n"
+
+    if order_bonus > 0:
+        response += f"🎁 Начислено клиенту: +{order_bonus:.0f}₽\n"
 
     if referral_bonus > 0:
-        response += f"👥 Реферальный бонус: {referral_bonus:.0f}₽"
+        response += f"👥 Реферальный бонус: +{referral_bonus:.0f}₽"
 
     await message.answer(response)
