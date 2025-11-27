@@ -10,9 +10,6 @@ from core.config import settings
 
 router = Router()
 
-# ID канала для логов
-LOG_CHANNEL_ID = -1003300275622
-
 
 @router.message(CommandStart(deep_link=True))
 async def cmd_start_with_ref(message: Message, command: CommandObject, session: AsyncSession, bot: Bot):
@@ -136,7 +133,7 @@ async def log_new_user(bot: Bot, user, referrer: User | None):
             f"{ref_info}"
         )
         
-        await bot.send_message(chat_id=LOG_CHANNEL_ID, text=text)
+        await bot.send_message(chat_id=settings.LOG_CHANNEL_ID, text=text)
     except Exception:
         pass
 

@@ -11,11 +11,9 @@ from bot.keyboards.inline import (
     get_referral_keyboard,
     get_back_keyboard
 )
+from core.config import settings
 
 router = Router()
-
-BOT_USERNAME = "Kladovaya_GIPSR_bot"
-REVIEWS_CHANNEL = "https://t.me/+Cls1cEPgPcMyZDJi"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -131,7 +129,7 @@ CODEX_FULL = """📜  <b>Кодекс Салуна</b>
 <i>Оплачивая заказ, подтверждаешь согласие с условиями.</i>
 
 
-Вопросы — @Thisissaymoon"""
+Вопросы — @{settings.SUPPORT_USERNAME}"""
 
 
 # ══════════════════════════════════════════════════════════════
@@ -168,17 +166,6 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession):
     await callback.message.answer(text.strip(), reply_markup=get_back_keyboard())
 
 
-@router.callback_query(F.data == "create_order")
-async def start_order(callback: CallbackQuery):
-    """Начать создание заказа"""
-    await callback.answer()
-    await callback.message.answer(
-        "🎯  <b>Новый заказ</b>\n\n"
-        "<i>Скоро здесь можно будет оформить заявку.</i>",
-        reply_markup=get_back_keyboard()
-    )
-
-
 @router.callback_query(F.data == "finance")
 async def show_finance(callback: CallbackQuery, session: AsyncSession):
     """Казна пользователя"""
@@ -212,9 +199,9 @@ async def call_support(callback: CallbackQuery):
     text = f"""⭐  <b>Шериф на связи</b>
 
 
-Пиши: @Thisissaymoon
+Пиши: @{settings.SUPPORT_USERNAME}
 
-Отзывы: <a href="{REVIEWS_CHANNEL}">канал</a>
+Отзывы: <a href="{settings.REVIEWS_CHANNEL}">канал</a>
 
 
 <i>Отвечаю в течение пары часов,
@@ -243,7 +230,7 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession):
     await callback.answer()
     
     telegram_id = callback.from_user.id
-    referral_link = f"https://t.me/{BOT_USERNAME}?start=ref{telegram_id}"
+    referral_link = f"https://t.me/{settings.BOT_USERNAME}?start=ref{telegram_id}"
     
     query = select(User).where(User.telegram_id == telegram_id)
     result = await session.execute(query)
@@ -294,7 +281,7 @@ async def show_about(callback: CallbackQuery):
 ◈  Презентации и отчёты
 
 
-Отзывы: <a href="{REVIEWS_CHANNEL}">канал</a>
+Отзывы: <a href="{settings.REVIEWS_CHANNEL}">канал</a>
 
 
 <i>Работаем честно.

@@ -3,7 +3,13 @@ from pydantic import SecretStr
 
 class Settings(BaseSettings):
     BOT_TOKEN: SecretStr
+    BOT_USERNAME: str
     ADMIN_IDS: list[int]
+
+    # Ссылки и контакты
+    REVIEWS_CHANNEL: str = "https://t.me/+Cls1cEPgPcMyZDJi"
+    LOG_CHANNEL_ID: int = -1003300275622
+    SUPPORT_USERNAME: str = "Thisissaymoon"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str

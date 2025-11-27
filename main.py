@@ -3,11 +3,13 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.fsm.storage.redis import RedisStorage
 
 from core.config import settings
 from bot.handlers.start import router as start_router
-from bot.handlers.menu import router as menu_router # <-- Подключили меню с кнопками
-from database.db import async_session_maker
+from bot.handlers.menu import router as menu_router
+from bot.handlers.orders import router as orders_router
+from bot.middlewares import ErrorHandlerMiddleware, DbSessionMiddleware
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -22,19 +24,20 @@ async def main():
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 
-    dp = Dispatcher()
+    # FSM storage в Redis
+    storage = RedisStorage.from_url(settings.REDIS_URL)
+    dp = Dispatcher(storage=storage)
+
+    # --- РЕГИСТРАЦИЯ MIDDLEWARE ---
+    dp.update.outer_middleware(ErrorHandlerMiddleware())
+    dp.update.outer_middleware(DbSessionMiddleware())
+    # -------------------------------
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
     dp.include_router(start_router)
+    dp.include_router(orders_router)  # FSM для заказов (до menu!)
     dp.include_router(menu_router)
     # ----------------------------
-
-    # Middleware для сессии БД (внедряем session в хендлеры)
-    @dp.update.outer_middleware
-    async def db_session_middleware(handler, event, data):
-        async with async_session_maker() as session:
-            data['session'] = session
-            return await handler(event, data)
 
     try:
         # Удаляем вебхук, чтобы не было конфликтов
