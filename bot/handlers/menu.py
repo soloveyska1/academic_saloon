@@ -147,7 +147,7 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession):
     user = result.scalar_one_or_none()
 
     if not user:
-        await callback.message.answer("Досье не найдено.", reply_markup=get_back_keyboard())
+        await callback.message.edit_text("Досье не найдено.", reply_markup=get_back_keyboard())
         return
 
     status, discount = user.loyalty_status
@@ -163,7 +163,7 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession):
 {status}
 {discount_line}"""
 
-    await callback.message.answer(text.strip(), reply_markup=get_back_keyboard())
+    await callback.message.edit_text(text.strip(), reply_markup=get_back_keyboard())
 
 
 @router.callback_query(F.data == "finance")
@@ -188,7 +188,7 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession):
 и компенсациями. Можно тратить
 на свои заказы.</i>"""
 
-    await callback.message.answer(text, reply_markup=get_back_keyboard())
+    await callback.message.edit_text(text, reply_markup=get_back_keyboard())
 
 
 @router.callback_query(F.data == "support")
@@ -207,21 +207,21 @@ async def call_support(callback: CallbackQuery):
 <i>Отвечаю в течение пары часов,
 обычно быстрее.</i>"""
 
-    await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
+    await callback.message.edit_text(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
 
 
 @router.callback_query(F.data == "codex")
 async def show_codex_short(callback: CallbackQuery):
     """Краткая версия Кодекса"""
     await callback.answer()
-    await callback.message.answer(CODEX_SHORT, reply_markup=get_codex_keyboard())
+    await callback.message.edit_text(CODEX_SHORT, reply_markup=get_codex_keyboard())
 
 
 @router.callback_query(F.data == "codex_full")
 async def show_codex_full(callback: CallbackQuery):
     """Полная версия Кодекса"""
     await callback.answer()
-    await callback.message.answer(CODEX_FULL, reply_markup=get_codex_full_keyboard())
+    await callback.message.edit_text(CODEX_FULL, reply_markup=get_codex_full_keyboard())
 
 
 @router.callback_query(F.data == "referral")
@@ -258,7 +258,7 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession):
 ◈  Приглашено: {referrals_count}
 ◈  Заработано: {referral_earnings:.0f} ₽"""
 
-    await callback.message.answer(
+    await callback.message.edit_text(
         text,
         reply_markup=get_referral_keyboard(f"Помощь с учёбой — {referral_link}")
     )
@@ -288,14 +288,14 @@ async def show_about(callback: CallbackQuery):
 Пишем качественно.
 Не подводим.</i>"""
 
-    await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
+    await callback.message.edit_text(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
 
 
 @router.callback_query(F.data == "back_to_menu")
 async def back_to_menu(callback: CallbackQuery):
     """Возврат в главное меню"""
     await callback.answer()
-    await callback.message.answer(
+    await callback.message.edit_text(
         "🏚  <b>Салун</b>\n\n"
         "Чем могу помочь, партнёр?",
         reply_markup=get_start_keyboard()

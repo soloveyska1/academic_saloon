@@ -34,7 +34,7 @@ async def start_order(callback: CallbackQuery, state: FSMContext):
 
 Выбери тип работы:"""
 
-    await callback.message.answer(text, reply_markup=get_work_type_keyboard())
+    await callback.message.edit_text(text, reply_markup=get_work_type_keyboard())
 
 
 @router.callback_query(OrderState.choosing_type, F.data.startswith("order_type:"))
@@ -54,7 +54,7 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext):
 
 <i>Например: Экономика, Программирование, История</i>"""
 
-    await callback.message.answer(text, reply_markup=get_cancel_order_keyboard())
+    await callback.message.edit_text(text, reply_markup=get_cancel_order_keyboard())
 
 
 @router.message(OrderState.entering_subject)
@@ -89,7 +89,7 @@ async def skip_topic(callback: CallbackQuery, state: FSMContext):
 
 Или нажми «Пропустить»."""
 
-    await callback.message.answer(text, reply_markup=get_skip_keyboard())
+    await callback.message.edit_text(text, reply_markup=get_skip_keyboard())
 
 
 @router.message(OrderState.entering_topic)
@@ -123,7 +123,7 @@ async def skip_details(callback: CallbackQuery, state: FSMContext):
 
 <i>Например: до 15 декабря, через 2 недели</i>"""
 
-    await callback.message.answer(text, reply_markup=get_cancel_order_keyboard())
+    await callback.message.edit_text(text, reply_markup=get_cancel_order_keyboard())
 
 
 @router.message(OrderState.entering_details)
@@ -213,7 +213,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
 Пиши: @{settings.SUPPORT_USERNAME}"""
 
-    await callback.message.answer(text, reply_markup=get_back_keyboard())
+    await callback.message.edit_text(text, reply_markup=get_back_keyboard())
 
     # Уведомление админам
     await notify_admins_new_order(bot, callback.from_user, order, data)
@@ -225,7 +225,7 @@ async def cancel_order(callback: CallbackQuery, state: FSMContext):
     await callback.answer("Заявка отменена")
     await state.clear()
 
-    await callback.message.answer(
+    await callback.message.edit_text(
         "🌵  <b>Заявка отменена</b>\n\n"
         "Возвращайся, когда будешь готов.",
         reply_markup=get_back_keyboard()
