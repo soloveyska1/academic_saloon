@@ -8,3 +8,4 @@ class AdminStates(StatesGroup):
     waiting_orders_count = State()     # Ожидание ввода кол-ва заказов
     waiting_pin_chat_id = State()      # Ожидание ввода ID чата для закрепа
     waiting_order_price = State()      # Ожидание ввода цены заказа
+    confirm_delete_order = State()     # Подтверждение удаления заказа

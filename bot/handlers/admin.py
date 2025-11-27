@@ -132,6 +132,68 @@ def get_cancel_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
+# Метки статусов для отображения
+ORDER_STATUS_LABELS = {
+    OrderStatus.DRAFT.value: ("📝", "Черновик"),
+    OrderStatus.PENDING.value: ("⏳", "Ожидает оценки"),
+    OrderStatus.CONFIRMED.value: ("✅", "Ждёт оплаты"),
+    OrderStatus.PAID.value: ("💰", "Оплачен"),
+    OrderStatus.IN_PROGRESS.value: ("⚙️", "В работе"),
+    OrderStatus.REVIEW.value: ("🔍", "На проверке"),
+    OrderStatus.COMPLETED.value: ("✨", "Завершён"),
+    OrderStatus.CANCELLED.value: ("❌", "Отменён"),
+    OrderStatus.REJECTED.value: ("🚫", "Отклонён"),
+}
+
+
+def get_order_detail_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура управления заказом"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔄 Сменить статус", callback_data=f"admin_change_status:{order_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="💰 Назначить цену", callback_data=f"admin_set_price:{order_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="❌ Отменить", callback_data=f"admin_cancel_order:{order_id}"),
+            InlineKeyboardButton(text="🗑 Удалить", callback_data=f"admin_delete_order:{order_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list"),
+        ],
+    ])
+    return kb
+
+
+def get_status_select_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура выбора нового статуса"""
+    buttons = []
+    for status in OrderStatus:
+        emoji, label = ORDER_STATUS_LABELS.get(status.value, ("", status.value))
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{emoji} {label}",
+                callback_data=f"admin_set_status:{order_id}:{status.value}"
+            )
+        ])
+    buttons.append([
+        InlineKeyboardButton(text="◀️ Назад", callback_data=f"admin_order_detail:{order_id}")
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_confirm_delete_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    """Подтверждение удаления заказа"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Да, удалить", callback_data=f"admin_confirm_delete:{order_id}"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_order_detail:{order_id}"),
+        ],
+    ])
+    return kb
+
+
 # ══════════════════════════════════════════════════════════════
 #                        ХЕНДЛЕРЫ
 # ══════════════════════════════════════════════════════════════
@@ -282,6 +344,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
             OrderStatus.CONFIRMED.value,
             OrderStatus.PAID.value,
             OrderStatus.IN_PROGRESS.value,
+            OrderStatus.REVIEW.value,
         ]))
         .order_by(desc(Order.created_at))
         .limit(20)
@@ -302,6 +365,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
     confirmed = [o for o in orders if o.status == OrderStatus.CONFIRMED.value]
     paid = [o for o in orders if o.status == OrderStatus.PAID.value]
     in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
+    review = [o for o in orders if o.status == OrderStatus.REVIEW.value]
 
     text = "📋 <b>Активные заявки</b>\n\n"
 
@@ -319,32 +383,47 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
         text += f"✅ <b>Ждут оплаты ({len(confirmed)}):</b>\n"
         for o in confirmed[:5]:
             text += f"  • #{o.id} — {o.price:.0f}₽\n"
+        if len(confirmed) > 5:
+            text += f"  <i>...и ещё {len(confirmed) - 5}</i>\n"
         text += "\n"
 
     if paid:
         text += f"💰 <b>Оплачены ({len(paid)}):</b>\n"
         for o in paid[:5]:
             text += f"  • #{o.id} — {o.paid_amount:.0f}₽\n"
+        if len(paid) > 5:
+            text += f"  <i>...и ещё {len(paid) - 5}</i>\n"
         text += "\n"
 
     if in_progress:
         text += f"⚙️ <b>В работе ({len(in_progress)}):</b>\n"
         for o in in_progress[:5]:
             text += f"  • #{o.id}\n"
+        if len(in_progress) > 5:
+            text += f"  <i>...и ещё {len(in_progress) - 5}</i>\n"
+        text += "\n"
 
-    # Кнопки для быстрых действий
+    if review:
+        text += f"🔍 <b>На проверке ({len(review)}):</b>\n"
+        for o in review[:5]:
+            text += f"  • #{o.id}\n"
+        if len(review) > 5:
+            text += f"  <i>...и ещё {len(review) - 5}</i>\n"
+
+    text += "\n<i>Нажми на заказ для управления</i>"
+
+    # Кнопки для каждого заказа
     buttons = []
 
-    # Добавляем кнопки для pending заявок
-    for o in pending[:3]:
+    # Добавляем кнопки для всех заказов (до 10)
+    all_orders = orders[:10]
+    for o in all_orders:
+        emoji, status_label = ORDER_STATUS_LABELS.get(o.status, ("", o.status))
+        price_str = f" • {o.price:.0f}₽" if o.price else ""
         buttons.append([
             InlineKeyboardButton(
-                text=f"#{o.id} 💰 Цена",
-                callback_data=f"admin_set_price:{o.id}"
-            ),
-            InlineKeyboardButton(
-                text="❌",
-                callback_data=f"admin_reject:{o.id}"
+                text=f"#{o.id} {emoji} {status_label}{price_str}",
+                callback_data=f"admin_order_detail:{o.id}"
             ),
         ])
 
@@ -356,6 +435,301 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
     kb = InlineKeyboardMarkup(inline_keyboard=buttons)
 
     await callback.message.edit_text(text, reply_markup=kb)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ДЕТАЛИ ЗАКАЗА
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("admin_order_detail:"))
+async def show_order_detail(callback: CallbackQuery, session: AsyncSession):
+    """Показать детали заказа с кнопками управления"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = int(callback.data.split(":")[1])
+    await callback.answer()
+
+    # Получаем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.message.edit_text(
+            f"❌ Заказ #{order_id} не найден",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")]
+            ])
+        )
+        return
+
+    # Получаем пользователя
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    # Формируем информацию
+    emoji, status_label = ORDER_STATUS_LABELS.get(order.status, ("", order.status))
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
+
+    user_info = "—"
+    if user:
+        username = f"@{user.username}" if user.username else ""
+        user_info = f"{user.fullname or 'Без имени'} {username}\n<code>{user.telegram_id}</code>"
+
+    text = f"""📋 <b>Заказ #{order.id}</b>
+
+{emoji} <b>Статус:</b> {status_label}
+
+<b>Тип работы:</b> {work_label}
+<b>Предмет:</b> {order.subject or '—'}
+<b>Тема:</b> {order.topic or '—'}
+<b>Дедлайн:</b> {order.deadline or '—'}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💰 <b>Финансы:</b>
+◈ Цена: {order.price:.0f}₽
+◈ Бонусы: -{order.bonus_used:.0f}₽
+◈ Итого: {order.final_price:.0f}₽
+◈ Оплачено: {order.paid_amount:.0f}₽
+
+━━━━━━━━━━━━━━━━━━━━━
+
+👤 <b>Клиент:</b>
+{user_info}
+
+📅 Создан: {order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else '—'}"""
+
+    await callback.message.edit_text(text, reply_markup=get_order_detail_keyboard(order_id))
+
+
+@router.callback_query(F.data.startswith("admin_change_status:"))
+async def show_status_change_menu(callback: CallbackQuery):
+    """Показать меню выбора нового статуса"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = int(callback.data.split(":")[1])
+    await callback.answer()
+
+    text = f"""🔄 <b>Смена статуса заказа #{order_id}</b>
+
+Выбери новый статус:"""
+
+    await callback.message.edit_text(text, reply_markup=get_status_select_keyboard(order_id))
+
+
+@router.callback_query(F.data.startswith("admin_set_status:"))
+async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Установить новый статус заказа"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    order_id = int(parts[1])
+    new_status = parts[2]
+
+    # Получаем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    old_status = order.status
+    order.status = new_status
+
+    # Если статус изменён на "completed", записываем время завершения
+    if new_status == OrderStatus.COMPLETED.value:
+        from datetime import datetime, timezone
+        order.completed_at = datetime.now(timezone.utc)
+
+    await session.commit()
+
+    old_emoji, old_label = ORDER_STATUS_LABELS.get(old_status, ("", old_status))
+    new_emoji, new_label = ORDER_STATUS_LABELS.get(new_status, ("", new_status))
+
+    await callback.answer(f"✅ Статус изменён: {new_emoji} {new_label}", show_alert=True)
+
+    # Уведомляем клиента о смене статуса (опционально для важных статусов)
+    notify_statuses = [
+        OrderStatus.PAID.value,
+        OrderStatus.IN_PROGRESS.value,
+        OrderStatus.REVIEW.value,
+        OrderStatus.COMPLETED.value,
+        OrderStatus.CANCELLED.value,
+    ]
+
+    if new_status in notify_statuses:
+        try:
+            status_messages = {
+                OrderStatus.PAID.value: "💰 Оплата получена! Приступаю к работе.",
+                OrderStatus.IN_PROGRESS.value: "⚙️ Твой заказ в работе!",
+                OrderStatus.REVIEW.value: "🔍 Работа готова и ждёт твоей проверки!",
+                OrderStatus.COMPLETED.value: "✨ Заказ успешно завершён! Спасибо за доверие 🤝",
+                OrderStatus.CANCELLED.value: "❌ Заказ отменён.",
+            }
+            msg = status_messages.get(new_status, f"Статус заказа изменён на: {new_label}")
+            await bot.send_message(order.user_id, f"<b>Заказ #{order.id}</b>\n\n{msg}")
+        except Exception:
+            pass  # Клиент мог заблокировать бота
+
+    # Возвращаемся к деталям заказа
+    # Перечитываем заказ для актуальных данных
+    await session.refresh(order)
+
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    emoji, status_label = ORDER_STATUS_LABELS.get(order.status, ("", order.status))
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
+
+    user_info = "—"
+    if user:
+        username = f"@{user.username}" if user.username else ""
+        user_info = f"{user.fullname or 'Без имени'} {username}\n<code>{user.telegram_id}</code>"
+
+    text = f"""📋 <b>Заказ #{order.id}</b>
+
+{emoji} <b>Статус:</b> {status_label}
+
+<b>Тип работы:</b> {work_label}
+<b>Предмет:</b> {order.subject or '—'}
+<b>Тема:</b> {order.topic or '—'}
+<b>Дедлайн:</b> {order.deadline or '—'}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💰 <b>Финансы:</b>
+◈ Цена: {order.price:.0f}₽
+◈ Бонусы: -{order.bonus_used:.0f}₽
+◈ Итого: {order.final_price:.0f}₽
+◈ Оплачено: {order.paid_amount:.0f}₽
+
+━━━━━━━━━━━━━━━━━━━━━
+
+👤 <b>Клиент:</b>
+{user_info}
+
+📅 Создан: {order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else '—'}"""
+
+    await callback.message.edit_text(text, reply_markup=get_order_detail_keyboard(order_id))
+
+
+@router.callback_query(F.data.startswith("admin_cancel_order:"))
+async def cancel_order(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Отменить заказ"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = int(callback.data.split(":")[1])
+
+    # Получаем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    if order.status == OrderStatus.CANCELLED.value:
+        await callback.answer("Заказ уже отменён", show_alert=True)
+        return
+
+    # Возвращаем бонусы, если они были использованы
+    bonus_returned = 0
+    if order.bonus_used > 0:
+        user_query = select(User).where(User.telegram_id == order.user_id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        if user:
+            user.balance += order.bonus_used
+            bonus_returned = order.bonus_used
+
+    # Отменяем заказ
+    order.status = OrderStatus.CANCELLED.value
+    await session.commit()
+
+    # Уведомляем клиента
+    try:
+        cancel_msg = f"❌ <b>Заказ #{order.id} отменён</b>"
+        if bonus_returned > 0:
+            cancel_msg += f"\n\n💎 Бонусы возвращены на баланс: +{bonus_returned:.0f}₽"
+        await bot.send_message(order.user_id, cancel_msg)
+    except Exception:
+        pass
+
+    await callback.answer(f"✅ Заказ #{order_id} отменён", show_alert=True)
+
+    # Возвращаемся к списку заказов
+    await callback.message.edit_text(
+        f"❌ <b>Заказ #{order_id} отменён</b>" +
+        (f"\n\n💎 Бонусы возвращены клиенту: {bonus_returned:.0f}₽" if bonus_returned > 0 else ""),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")]
+        ])
+    )
+
+
+@router.callback_query(F.data.startswith("admin_delete_order:"))
+async def confirm_delete_order(callback: CallbackQuery):
+    """Запросить подтверждение удаления"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = int(callback.data.split(":")[1])
+    await callback.answer()
+
+    text = f"""🗑 <b>Удаление заказа #{order_id}</b>
+
+⚠️ <b>Внимание!</b>
+Заказ будет удалён безвозвратно.
+
+Ты уверен?"""
+
+    await callback.message.edit_text(text, reply_markup=get_confirm_delete_keyboard(order_id))
+
+
+@router.callback_query(F.data.startswith("admin_confirm_delete:"))
+async def delete_order(callback: CallbackQuery, session: AsyncSession):
+    """Удалить заказ"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = int(callback.data.split(":")[1])
+
+    # Получаем и удаляем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    await session.delete(order)
+    await session.commit()
+
+    await callback.answer(f"🗑 Заказ #{order_id} удалён", show_alert=True)
+
+    await callback.message.edit_text(
+        f"🗑 <b>Заказ #{order_id} удалён</b>",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")]
+        ])
+    )
 
 
 # ══════════════════════════════════════════════════════════════
