@@ -23,6 +23,7 @@ from bot.keyboards.terms import (
 from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
+from bot.handlers.start import send_and_pin_status
 
 router = Router()
 
@@ -173,4 +174,6 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         reply_markup=get_main_menu_keyboard()
     )
 
-    # Статус салуна НЕ отправляем автоматически — управляется через админку
+    # Статус салуна с закрепом — только для НОВЫХ пользователей (один раз)
+    if is_first_accept:
+        await send_and_pin_status(callback.message.chat.id, bot, pin=True)
