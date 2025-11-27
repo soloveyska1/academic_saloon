@@ -63,6 +63,10 @@ class LogEvent(Enum):
     USER_UNWATCH = "user_unwatch"
     USER_NOTE = "user_note"
 
+    # Бонусы
+    BONUS_ADDED = "bonus_added"
+    BONUS_DEDUCTED = "bonus_deducted"
+
     # Система
     ERROR = "error"
     SPAM_DETECTED = "spam_detected"
@@ -97,6 +101,9 @@ EVENT_ICONS = {
     LogEvent.USER_UNWATCH: "👁️‍🗨️",
     LogEvent.USER_NOTE: "📌",
 
+    LogEvent.BONUS_ADDED: "💎",
+    LogEvent.BONUS_DEDUCTED: "💸",
+
     LogEvent.ERROR: "❌",
     LogEvent.SPAM_DETECTED: "🤖",
     LogEvent.STOP_WORD: "🚨",
@@ -129,6 +136,9 @@ EVENT_NAMES = {
     LogEvent.USER_WATCH: "На слежке",
     LogEvent.USER_UNWATCH: "Снят со слежки",
     LogEvent.USER_NOTE: "Добавлена заметка",
+
+    LogEvent.BONUS_ADDED: "Начислены бонусы",
+    LogEvent.BONUS_DEDUCTED: "Списаны бонусы",
 
     LogEvent.ERROR: "Ошибка",
     LogEvent.SPAM_DETECTED: "Обнаружен спам",

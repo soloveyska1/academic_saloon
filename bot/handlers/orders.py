@@ -23,6 +23,7 @@ from bot.keyboards.orders import (
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
+from bot.services.bonus import BonusService
 from core.config import settings
 
 router = Router()
@@ -546,6 +547,13 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         session=session,
         level=LogLevel.ACTION,
         silent=False,
+    )
+
+    # Начисляем бонусы за создание заказа
+    await BonusService.process_order_bonus(
+        session=session,
+        bot=bot,
+        user_id=user_id,
     )
 
     text = f"""✅  <b>Заявка #{order.id} принята!</b>
