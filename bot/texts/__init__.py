@@ -1,0 +1,15 @@
+from .terms import (
+    TERMS_SHORT,
+    TERMS_FULL_INTRO,
+    TERMS_SECTIONS,
+    TERMS_ACCEPTED,
+    TERMS_ACCEPTED_RETURNING,
+)
+
+__all__ = [
+    "TERMS_SHORT",
+    "TERMS_FULL_INTRO",
+    "TERMS_SECTIONS",
+    "TERMS_ACCEPTED",
+    "TERMS_ACCEPTED_RETURNING",
+]

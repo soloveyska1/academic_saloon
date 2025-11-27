@@ -7,6 +7,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 
 from core.config import settings
 from bot.handlers.start import router as start_router
+from bot.handlers.terms import router as terms_router
 from bot.handlers.menu import router as menu_router
 from bot.handlers.orders import router as orders_router
 from bot.middlewares import ErrorHandlerMiddleware, DbSessionMiddleware
@@ -35,7 +36,8 @@ async def main():
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
     dp.include_router(start_router)
-    dp.include_router(orders_router)  # FSM для заказов (до menu!)
+    dp.include_router(terms_router)   # Оферта
+    dp.include_router(orders_router)  # FSM для заказов
     dp.include_router(menu_router)
     # ----------------------------
 

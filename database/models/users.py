@@ -24,10 +24,18 @@ class User(Base):
     orders_count: Mapped[int] = mapped_column(Integer, default=0)
     total_spent: Mapped[float] = mapped_column(Float, default=0.0)
     
+    # Оферта
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Служебное
     deep_link: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    @property
+    def has_accepted_terms(self) -> bool:
+        """Проверяет, принял ли пользователь оферту"""
+        return self.terms_accepted_at is not None
 
     @property
     def loyalty_status(self) -> tuple[str, int]:
