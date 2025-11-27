@@ -2,11 +2,20 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class OrderState(StatesGroup):
-    """Состояния для создания заказа"""
+    """Состояния для создания заказа — флоу 'Ленивый Ковбой'"""
 
-    choosing_type = State()      # Выбор типа работы
-    entering_subject = State()   # Ввод предмета
-    entering_topic = State()     # Ввод темы
-    entering_details = State()   # Описание / требования
-    entering_deadline = State()  # Сроки
-    confirming = State()         # Подтверждение заявки
+    # Шаг 1: Выбор типа работы (с ценами)
+    choosing_type = State()
+
+    # Шаг 2: Выбор направления/предмета (кнопки)
+    choosing_subject = State()
+
+    # Шаг 3: Ввод задания (текст/файл/фото/голос/пересылка)
+    # Объединяет тему + требования в один шаг
+    entering_task = State()
+
+    # Шаг 4: Выбор сроков (эмоциональные кнопки)
+    choosing_deadline = State()
+
+    # Шаг 5: Подтверждение заявки
+    confirming = State()

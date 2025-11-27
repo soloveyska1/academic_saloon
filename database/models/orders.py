@@ -19,25 +19,46 @@ class OrderStatus(str, enum.Enum):
 
 class WorkType(str, enum.Enum):
     """Типы работ"""
+    MASTERS = "masters"              # Магистерская
+    DIPLOMA = "diploma"              # Дипломная (ВКР)
     COURSEWORK = "coursework"        # Курсовая
-    DIPLOMA = "diploma"              # Дипломная
+    INDEPENDENT = "independent"      # Самостоятельная
     ESSAY = "essay"                  # Эссе
     REPORT = "report"                # Реферат
     CONTROL = "control"              # Контрольная
     PRESENTATION = "presentation"    # Презентация
     PRACTICE = "practice"            # Отчёт по практике
     OTHER = "other"                  # Другое
+    PHOTO_TASK = "photo_task"        # Просто фото задания (быстрый заказ)
 
 
 WORK_TYPE_LABELS = {
+    WorkType.MASTERS: "🎩 Магистерская",
+    WorkType.DIPLOMA: "🎓 Диплом (ВКР)",
     WorkType.COURSEWORK: "📚 Курсовая",
-    WorkType.DIPLOMA: "🎓 Дипломная",
+    WorkType.INDEPENDENT: "📖 Самостоятельная",
     WorkType.ESSAY: "📝 Эссе",
     WorkType.REPORT: "📄 Реферат",
     WorkType.CONTROL: "✏️ Контрольная",
     WorkType.PRESENTATION: "📊 Презентация",
     WorkType.PRACTICE: "🏢 Отчёт по практике",
     WorkType.OTHER: "📎 Другое",
+    WorkType.PHOTO_TASK: "📸 Фото задания",
+}
+
+
+# Минимальные цены для калькулятора
+WORK_TYPE_PRICES = {
+    WorkType.MASTERS: "от 45 000₽",
+    WorkType.DIPLOMA: "от 35 000₽",
+    WorkType.COURSEWORK: "от 12 000₽",
+    WorkType.INDEPENDENT: "от 2 500₽",
+    WorkType.ESSAY: "от 1 500₽",
+    WorkType.REPORT: "от 1 000₽",
+    WorkType.CONTROL: "от 1 500₽",
+    WorkType.PRESENTATION: "от 2 000₽",
+    WorkType.PRACTICE: "от 5 000₽",
+    WorkType.OTHER: "индивидуально",
 }
 
 
