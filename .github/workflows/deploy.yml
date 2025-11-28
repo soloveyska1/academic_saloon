@@ -19,18 +19,17 @@ jobs:
           script: |
             cd /root/academic_saloon
             echo "=== Starting deploy ==="
-            echo "Current branch: $(git branch --show-current)"
             echo "Current commit: $(git rev-parse --short HEAD)"
 
-            # Сброс локальных изменений и принудительное обновление
-            git fetch origin main
-            git checkout main
+            # Полный fetch всех веток и принудительный reset
+            git fetch --all --prune
+            git checkout main 2>/dev/null || true
             git reset --hard origin/main
 
-            echo "After pull commit: $(git rev-parse --short HEAD)"
+            echo "After reset commit: $(git rev-parse --short HEAD)"
 
-            # Перезапуск контейнеров
-            docker-compose down
-            docker-compose up -d --build
+            # Удаляем старые контейнеры и пересоздаём
+            docker rm -f saloon_bot saloon_redis saloon_postgres 2>/dev/null || true
+            docker-compose up -d --build --force-recreate
 
             echo "=== Deploy completed at $(date) ==="
