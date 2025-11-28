@@ -615,7 +615,7 @@ async def show_task_input_screen(
 
 <i>Можно несколько файлов.</i>"""
 
-    elif work_type in (WorkType.CONTROL, WorkType.TEST, WorkType.HOMEWORK):
+    elif work_type == WorkType.CONTROL:
         text = """📝  <b>Кидай задание</b>
 
 • Фото задачек
