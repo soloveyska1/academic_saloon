@@ -28,6 +28,7 @@ from bot.keyboards.orders import (
     SUBJECTS,
     DEADLINES,
     WORK_CATEGORIES,
+    WORKS_REQUIRE_SUBJECT,
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
@@ -287,34 +288,45 @@ async def back_to_categories(callback: CallbackQuery, state: FSMContext, session
 
 @router.callback_query(OrderState.choosing_type, F.data.startswith("order_type:"))
 async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
-    """Обработка выбора типа работы → переход к направлению"""
+    """
+    Обработка выбора типа работы.
+
+    Умный flow:
+    - Крупные работы (диплом, курсовая, практика, магистерская) → спрашиваем направление
+    - Мелкие работы (эссе, реферат, контрольная...) → сразу к заданию
+    """
     await callback.answer()
 
-    work_type = callback.data.split(":")[1]
-    await state.update_data(work_type=work_type)
+    work_type_value = callback.data.split(":")[1]
+    work_type = WorkType(work_type_value)
+    await state.update_data(work_type=work_type_value)
 
-    work_label = WORK_TYPE_LABELS.get(WorkType(work_type), work_type)
+    work_label = WORK_TYPE_LABELS.get(work_type, work_type_value)
 
-    # Обновляем шаг в трекере
-    tracker = get_abandoned_tracker()
-    if tracker:
-        await tracker.update_step(callback.from_user.id, f"Выбор направления (тип: {work_label})")
+    # Некритичные операции — если упадут, не блокируем
+    try:
+        tracker = get_abandoned_tracker()
+        if tracker:
+            await tracker.update_step(callback.from_user.id, f"Тип: {work_label}")
+    except Exception:
+        pass
 
-    # Логируем шаг
-    await log_action(
-        bot=bot,
-        event=LogEvent.ORDER_STEP,
-        user=callback.from_user,
-        details=f"Шаг 1/4: выбрал тип «{work_label}»",
-        session=session,
-    )
+    try:
+        await log_action(
+            bot=bot,
+            event=LogEvent.ORDER_STEP,
+            user=callback.from_user,
+            details=f"Шаг 1: выбрал тип «{work_label}»",
+            session=session,
+        )
+    except Exception:
+        pass
 
     # Если выбрали "Просто скинуть фото" — сразу к вводу задания
-    if work_type == WorkType.PHOTO_TASK.value:
-        await state.update_data(subject="photo_task")
+    if work_type == WorkType.PHOTO_TASK:
+        await state.update_data(subject="photo_task", subject_label="📸 Фото задания")
         await state.set_state(OrderState.entering_task)
 
-        # Удаляем старое сообщение с фото
         try:
             await callback.message.delete()
         except Exception:
@@ -323,13 +335,33 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
         await show_task_input_screen(callback.message, is_photo_task=True, send_new=True)
         return
 
+    # УМНЫЙ FLOW: для мелких работ пропускаем направление
+    if work_type not in WORKS_REQUIRE_SUBJECT:
+        await state.update_data(subject="skip", subject_label="—")
+        await state.set_state(OrderState.entering_task)
+
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        # Typing эффект для плавности
+        try:
+            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+            await asyncio.sleep(0.3)
+        except Exception:
+            pass
+
+        await show_task_input_screen(callback.message, send_new=True)
+        return
+
+    # Крупные работы — спрашиваем направление
     await state.set_state(OrderState.choosing_subject)
 
-    text = f"""📚  <b>Тип:</b> {work_label}
+    text = f"""📚  <b>{work_label}</b>
 
-Выбери направление:"""
+Укажи направление — это поможет подобрать специалиста:"""
 
-    # Удаляем старое сообщение с фото и отправляем новое текстовое
     try:
         await callback.message.delete()
     except Exception:
@@ -344,30 +376,55 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
 
 @router.callback_query(OrderState.choosing_subject, F.data.startswith("subject:"))
 async def process_subject(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
-    """Обработка выбора направления → переход к вводу задания"""
+    """
+    Обработка выбора направления → переход к вводу задания.
+    Поддерживает subject:skip для пропуска этого шага.
+    """
     await callback.answer()
 
     subject_key = callback.data.split(":")[1]
-    subject_label = SUBJECTS.get(subject_key, subject_key)
+
+    # Пропуск выбора направления
+    if subject_key == "skip":
+        subject_label = "—"
+    else:
+        subject_label = SUBJECTS.get(subject_key, subject_key)
+
     await state.update_data(subject=subject_key, subject_label=subject_label)
     await state.set_state(OrderState.entering_task)
 
     data = await state.get_data()
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
 
-    # Обновляем шаг в трекере
-    tracker = get_abandoned_tracker()
-    if tracker:
-        await tracker.update_step(callback.from_user.id, f"Ввод задания ({work_label}, {subject_label})")
+    # Некритичные операции
+    try:
+        tracker = get_abandoned_tracker()
+        if tracker:
+            step_info = f"Ввод задания ({work_label})"
+            if subject_key != "skip":
+                step_info += f", {subject_label}"
+            await tracker.update_step(callback.from_user.id, step_info)
+    except Exception:
+        pass
 
-    # Логируем шаг
-    await log_action(
-        bot=bot,
-        event=LogEvent.ORDER_STEP,
-        user=callback.from_user,
-        details=f"Шаг 2/4: направление «{subject_label}»",
-        session=session,
-    )
+    try:
+        log_details = f"Шаг 2: направление «{subject_label}»" if subject_key != "skip" else "Шаг 2: направление пропущено"
+        await log_action(
+            bot=bot,
+            event=LogEvent.ORDER_STEP,
+            user=callback.from_user,
+            details=log_details,
+            session=session,
+        )
+    except Exception:
+        pass
+
+    # Typing для плавного перехода
+    try:
+        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+        await asyncio.sleep(0.3)
+    except Exception:
+        pass
 
     await show_task_input_screen(callback.message)
 
@@ -638,10 +695,12 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     # Формируем текст превью
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
 
-    # Направление
-    if data.get("subject") == "photo_task":
+    # Направление — показываем только если было указано
+    subject = data.get("subject")
+    subject_line = None
+    if subject == "photo_task":
         subject_line = "📸 Фото задания"
-    else:
+    elif subject and subject != "skip":
         subject_line = data.get("subject_label", "Не указано")
 
     # Срок
@@ -653,24 +712,29 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
 
     discount_line = f"\n🎁  <b>Твоя скидка:</b> {discount}%" if discount > 0 else ""
 
+    # Формируем текст — направление только если указано
+    subject_text = f"\n◈  <b>Направление:</b> {subject_line}" if subject_line else ""
+
     text = f"""📋  <b>Проверь заявку</b>
 
-◈  <b>Тип:</b> {work_label}
-◈  <b>Направление:</b> {subject_line}
+◈  <b>Тип:</b> {work_label}{subject_text}
 ◈  <b>Задание:</b> {attachments_summary}
 ◈  <b>Срок:</b> {deadline_label}
 {discount_line}
 
 Всё верно?"""
 
-    # Логируем шаг
-    await log_action(
-        bot=bot,
-        event=LogEvent.ORDER_STEP,
-        user=callback.from_user,
-        details=f"Шаг 4/4: срок «{deadline_label}», ждём подтверждения",
-        session=session,
-    )
+    # Логируем шаг (некритично)
+    try:
+        await log_action(
+            bot=bot,
+            event=LogEvent.ORDER_STEP,
+            user=callback.from_user,
+            details=f"Шаг: срок «{deadline_label}», ждём подтверждения",
+            session=session,
+        )
+    except Exception:
+        pass
 
     if send_new:
         await callback.message.answer(text, reply_markup=get_confirm_order_keyboard())
@@ -872,17 +936,34 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
 
 
 @router.callback_query(F.data == "order_back_to_subject")
-async def back_to_subject(callback: CallbackQuery, state: FSMContext):
-    """Назад к выбору направления"""
+async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """
+    Назад к выбору направления.
+    Для мелких работ — сразу к выбору типа.
+    """
     await callback.answer()
-    await state.set_state(OrderState.choosing_subject)
 
     data = await state.get_data()
-    work_label = WORK_TYPE_LABELS.get(WorkType(data.get("work_type", "")), "")
+    work_type_value = data.get("work_type", "")
 
-    text = f"""📚  <b>Тип:</b> {work_label}
+    try:
+        work_type = WorkType(work_type_value)
+    except ValueError:
+        work_type = None
 
-Выбери направление:"""
+    # Для мелких работ (не требующих направления) — возврат к типу
+    if work_type and work_type not in WORKS_REQUIRE_SUBJECT:
+        await back_to_type(callback, state, session)
+        return
+
+    # Для крупных — показываем выбор направления
+    await state.set_state(OrderState.choosing_subject)
+
+    work_label = WORK_TYPE_LABELS.get(work_type, work_type_value)
+
+    text = f"""📚  <b>{work_label}</b>
+
+Укажи направление — это поможет подобрать специалиста:"""
 
     await callback.message.edit_text(text, reply_markup=get_subject_keyboard())
 
@@ -914,9 +995,20 @@ async def edit_order(callback: CallbackQuery, state: FSMContext):
     """Редактирование заказа — выбор что изменить"""
     await callback.answer()
 
+    # Определяем, нужна ли кнопка направления
+    data = await state.get_data()
+    work_type_value = data.get("work_type", "")
+    show_subject = True
+
+    try:
+        work_type = WorkType(work_type_value)
+        show_subject = work_type in WORKS_REQUIRE_SUBJECT
+    except ValueError:
+        pass
+
     text = """✏️  <b>Что изменить?</b>"""
 
-    await callback.message.edit_text(text, reply_markup=get_edit_order_keyboard())
+    await callback.message.edit_text(text, reply_markup=get_edit_order_keyboard(show_subject=show_subject))
 
 
 @router.callback_query(F.data == "back_to_confirm")
@@ -935,11 +1027,11 @@ async def edit_type(callback: CallbackQuery, state: FSMContext, session: AsyncSe
 
 
 @router.callback_query(F.data == "edit_subject")
-async def edit_subject(callback: CallbackQuery, state: FSMContext):
+async def edit_subject(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Изменить направление"""
     await callback.answer()
     await state.set_state(OrderState.choosing_subject)
-    await back_to_subject(callback, state)
+    await back_to_subject(callback, state, session)
 
 
 @router.callback_query(F.data == "edit_task")

@@ -234,38 +234,51 @@ def get_work_type_keyboard() -> InlineKeyboardMarkup:
 #                    ШАГ 2: ВЫБОР НАПРАВЛЕНИЯ
 # ══════════════════════════════════════════════════════════════
 
-# Направления/предметы для быстрого выбора
+# Типы работ, для которых спрашиваем направление (крупные)
+WORKS_REQUIRE_SUBJECT = {
+    WorkType.COURSEWORK,
+    WorkType.DIPLOMA,
+    WorkType.MASTERS,
+    WorkType.PRACTICE,
+}
+
+# Направления/предметы
 SUBJECTS = {
-    "economics": "📊 Экономика / Менеджмент",
-    "law": "⚖️ Право",
+    "economics": "📊 Экономика / Менеджмент / Финансы",
+    "law": "⚖️ Юриспруденция",
     "it": "💻 IT / Программирование",
-    "technical": "🔧 Технические",
-    "humanities": "📖 Гуманитарные",
-    "natural": "🧪 Естественные науки",
-    "other": "❓ Другое / Не знаю",
+    "technical": "🔧 Инженерное / Техническое",
+    "pedagogy": "👨‍🏫 Педагогика / Психология",
+    "humanities": "📖 История / Философия / Социология",
+    "natural": "🧪 Физика / Химия / Биология",
+    "medicine": "🏥 Медицина / Фармация",
+    "other": "❓ Другое",
 }
 
 
 def get_subject_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура выбора направления/предмета"""
+    """
+    Клавиатура выбора направления.
+    С кнопкой "Пропустить" для тех, кто не хочет выбирать.
+    """
     buttons = []
 
-    # По две кнопки в ряд
-    row = []
+    # Кнопка "Пропустить" сверху — быстрый путь
+    buttons.append([
+        InlineKeyboardButton(
+            text="⏭ Пропустить — укажу в задании",
+            callback_data="subject:skip"
+        ),
+    ])
+
+    # Направления по одному в ряд (лучше читается на мобильных)
     for key, label in SUBJECTS.items():
-        row.append(
+        buttons.append([
             InlineKeyboardButton(
                 text=label,
                 callback_data=f"subject:{key}"
             )
-        )
-        if len(row) == 2:
-            buttons.append(row)
-            row = []
-
-    # Остаток
-    if row:
-        buttons.append(row)
+        ])
 
     # Назад и отмена
     buttons.append([
@@ -371,21 +384,36 @@ def get_confirm_order_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-def get_edit_order_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура редактирования заказа — что изменить"""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
+def get_edit_order_keyboard(show_subject: bool = True) -> InlineKeyboardMarkup:
+    """
+    Клавиатура редактирования заказа.
+    show_subject=False скрывает кнопку направления для мелких работ.
+    """
+    buttons = []
+
+    # Первый ряд — адаптивный
+    if show_subject:
+        buttons.append([
             InlineKeyboardButton(text="📋 Тип работы", callback_data="edit_type"),
             InlineKeyboardButton(text="📚 Направление", callback_data="edit_subject"),
-        ],
-        [
-            InlineKeyboardButton(text="📝 Задание", callback_data="edit_task"),
-            InlineKeyboardButton(text="⏰ Сроки", callback_data="edit_deadline"),
-        ],
-        [
-            InlineKeyboardButton(text="◀️ Назад к заявке", callback_data="back_to_confirm"),
-        ]
+        ])
+    else:
+        buttons.append([
+            InlineKeyboardButton(text="📋 Тип работы", callback_data="edit_type"),
+        ])
+
+    # Второй ряд — задание и сроки
+    buttons.append([
+        InlineKeyboardButton(text="📝 Задание", callback_data="edit_task"),
+        InlineKeyboardButton(text="⏰ Сроки", callback_data="edit_deadline"),
     ])
+
+    # Назад
+    buttons.append([
+        InlineKeyboardButton(text="◀️ Назад к заявке", callback_data="back_to_confirm"),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 # ══════════════════════════════════════════════════════════════
