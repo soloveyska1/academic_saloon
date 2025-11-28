@@ -758,11 +758,11 @@ async def back_to_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot, 
 
 
 @router.callback_query(F.data == "edit_type")
-async def edit_type(callback: CallbackQuery, state: FSMContext):
+async def edit_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Изменить тип работы"""
     await callback.answer()
     await state.set_state(OrderState.choosing_type)
-    await back_to_type(callback, state)
+    await back_to_type(callback, state, session)
 
 
 @router.callback_query(F.data == "edit_subject")
