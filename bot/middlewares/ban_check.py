@@ -1,7 +1,7 @@
 """
 Middleware для проверки бана пользователя.
 Заблокированные пользователи получают заглушку.
-Кэширует статус бана в Redis на 60 секунд.
+Кэширует статус бана в Redis на 15 секунд.
 """
 
 from typing import Any, Awaitable, Callable, Dict, Optional
@@ -16,7 +16,7 @@ from database.models.users import User
 from core.config import settings
 
 # Кэш банов в Redis
-BAN_CACHE_TTL = 60  # секунд
+BAN_CACHE_TTL = 15  # секунд (короткий TTL для security)
 BAN_CACHE_PREFIX = "ban:"
 
 

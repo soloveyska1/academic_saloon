@@ -1,3 +1,5 @@
+from typing import Optional
+
 from aiogram import Router, F, Bot
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
@@ -32,6 +34,23 @@ router = Router()
 def is_admin(user_id: int) -> bool:
     """Проверка, является ли пользователь админом"""
     return user_id in settings.ADMIN_IDS
+
+
+def parse_callback_data(data: str, index: int, separator: str = ":") -> Optional[str]:
+    """Безопасный парсинг callback_data по индексу"""
+    parts = data.split(separator)
+    return parts[index] if len(parts) > index else None
+
+
+def parse_callback_int(data: str, index: int, separator: str = ":") -> Optional[int]:
+    """Безопасный парсинг callback_data с преобразованием в int"""
+    value = parse_callback_data(data, index, separator)
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 
 # ══════════════════════════════════════════════════════════════
@@ -422,7 +441,7 @@ async def show_admin_panel(callback: CallbackQuery, state: FSMContext):
         return
 
     await state.clear()
-    await callback.answer()
+    await callback.answer("⏳")
 
     text = """⚙️  <b>Админ-панель</b>
 
@@ -446,7 +465,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Получаем все активные заявки
     query = (
@@ -560,8 +579,11 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    order_id = int(callback.data.split(":")[1])
-    await callback.answer()
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+    await callback.answer("⏳")
 
     # Получаем заказ
     query = select(Order).where(Order.id == order_id)
@@ -625,8 +647,11 @@ async def show_status_change_menu(callback: CallbackQuery):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    order_id = int(callback.data.split(":")[1])
-    await callback.answer()
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+    await callback.answer("⏳")
 
     text = f"""🔄 <b>Смена статуса заказа #{order_id}</b>
 
@@ -743,7 +768,10 @@ async def cancel_order(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Получаем заказ
     query = select(Order).where(Order.id == order_id)
@@ -800,8 +828,11 @@ async def confirm_delete_order(callback: CallbackQuery):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    order_id = int(callback.data.split(":")[1])
-    await callback.answer()
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+    await callback.answer("⏳")
 
     text = f"""🗑 <b>Удаление заказа #{order_id}</b>
 
@@ -820,7 +851,10 @@ async def delete_order(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Получаем и удаляем заказ
     query = select(Order).where(Order.id == order_id)
@@ -856,7 +890,7 @@ async def show_status_menu(callback: CallbackQuery, state: FSMContext):
         return
 
     await state.clear()
-    await callback.answer()
+    await callback.answer("⏳")
 
     status = await saloon_manager.get_status()
     load = LoadStatus(status.load_status)
@@ -900,7 +934,7 @@ async def show_load_status_menu(callback: CallbackQuery):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     status = await saloon_manager.get_status()
     load = LoadStatus(status.load_status)
@@ -981,7 +1015,7 @@ async def show_clients_menu(callback: CallbackQuery):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
     status = await saloon_manager.get_status()
 
     text = f"""👥  <b>КЛИЕНТЫ</b>
@@ -1029,7 +1063,7 @@ async def ask_clients_manual(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
     status = await saloon_manager.get_status()
 
     text = f"""👥  <b>Ввод числа клиентов</b>
@@ -1080,7 +1114,7 @@ async def show_orders_menu(callback: CallbackQuery):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
     status = await saloon_manager.get_status()
 
     text = f"""📋  <b>ЗАКАЗЫ В РАБОТЕ</b>
@@ -1128,7 +1162,7 @@ async def ask_orders_manual(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
     status = await saloon_manager.get_status()
 
     text = f"""📋  <b>Ввод числа заказов</b>
@@ -1179,7 +1213,7 @@ async def show_owner_status_menu(callback: CallbackQuery):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
     status = await saloon_manager.get_status()
     owner_emoji, owner_text = get_owner_status(status)
 
@@ -1302,7 +1336,7 @@ async def preview_pin(callback: CallbackQuery):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
     status = await saloon_manager.get_status()
     preview = generate_status_message(status)
 
@@ -1320,7 +1354,7 @@ async def show_quote_info(callback: CallbackQuery):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
     quote = get_random_saloon_quote()
 
     text = f"""💬  <b>ЦИТАТА В ЗАКРЕПЕ</b>
@@ -1372,7 +1406,7 @@ async def ask_pin_chat_id(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
     await state.clear()
 
     # Предпросмотр сообщения
@@ -1402,7 +1436,10 @@ async def send_pin_to_chat(callback: CallbackQuery, bot: Bot):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    chat_id = int(callback.data.split(":")[1])
+    chat_id = parse_callback_int(callback.data, 1)
+    if chat_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
     await _send_pin_message(callback, bot, chat_id)
 
 
@@ -1413,7 +1450,7 @@ async def ask_pin_manual(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     text = """✏️  <b>Ввод ID вручную</b>
 
@@ -1588,7 +1625,7 @@ async def enable_newbie_mode(callback: CallbackQuery, session: AsyncSession):
 
 Нажми /start чтобы создать запись."""
 
-    await callback.answer()
+    await callback.answer("⏳")
     await callback.message.edit_text(text, reply_markup=get_admin_back_keyboard())
 
 
@@ -1928,12 +1965,15 @@ async def bonus_custom_callback(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    user_id = int(callback.data.split(":")[1])
+    user_id = parse_callback_int(callback.data, 1)
+    if user_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     await state.set_state(AdminStates.waiting_bonus_amount)
     await state.update_data(bonus_user_id=user_id)
 
-    await callback.answer()
+    await callback.answer("⏳")
     await callback.message.edit_text(
         "✏️  <b>Введи сумму</b>\n\n"
         "Положительное число — начислить\n"
@@ -1952,7 +1992,10 @@ async def bonus_custom_callback(callback: CallbackQuery, state: FSMContext):
 async def bonus_cancel_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Отмена ввода суммы"""
     await state.clear()
-    user_id = int(callback.data.split(":")[1])
+    user_id = parse_callback_int(callback.data, 1)
+    if user_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Находим пользователя для отображения
     query = select(User).where(User.telegram_id == user_id)
@@ -2085,8 +2128,11 @@ async def process_bonus_amount(message: Message, state: FSMContext, session: Asy
 @router.callback_query(F.data.startswith("bonus_profile:"))
 async def bonus_profile_callback(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
     """Перейти к профилю пользователя"""
-    user_id = int(callback.data.split(":")[1])
-    await callback.answer()
+    user_id = parse_callback_int(callback.data, 1)
+    if user_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+    await callback.answer("⏳")
 
     # Имитируем команду /user
     from aiogram.types import Message as FakeMessage
@@ -2234,7 +2280,7 @@ async def pay_scheme_callback(callback: CallbackQuery, session: AsyncSession):
     order.payment_scheme = scheme
     await session.commit()
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Рассчитываем сумму к оплате
     final_price = order.price - order.bonus_used if order.bonus_used else order.price
@@ -2272,7 +2318,10 @@ async def pay_scheme_callback(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data.startswith("pay_back:"))
 async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
     """Вернуться к выбору схемы оплаты"""
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     order_query = select(Order).where(Order.id == order_id)
     order_result = await session.execute(order_query)
@@ -2282,7 +2331,7 @@ async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     final_price = order.price - order.bonus_used if order.bonus_used else order.price
     half_amount = final_price / 2
@@ -2318,7 +2367,10 @@ async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
 @router.callback_query(F.data.startswith("price_no_bonus:"))
 async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Клиент отказался от списания бонусов"""
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
@@ -2453,7 +2505,7 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
 
     elif method == "sbp":
         # СБП по номеру телефона
-        await callback.answer()
+        await callback.answer("⏳")
 
         text = f"""📲 <b>Оплата по СБП</b>
 
@@ -2476,7 +2528,7 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
 
     elif method == "transfer":
         # Перевод на карту
-        await callback.answer()
+        await callback.answer("⏳")
 
         # Форматируем номер карты для читаемости
         card = settings.PAYMENT_CARD
@@ -2504,7 +2556,10 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
 @router.callback_query(F.data.startswith("client_paid:"))
 async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Клиент нажал 'Я оплатил' — уведомляем админа"""
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
@@ -2591,11 +2646,14 @@ async def admin_set_price_callback(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
     await state.update_data(price_order_id=order_id)
     await state.set_state(AdminStates.waiting_order_price)
 
-    await callback.answer()
+    await callback.answer("⏳")
     await callback.message.answer(
         f"💰 <b>Введи цену для заказа #{order_id}</b>\n\n"
         f"Напиши просто число (например: 5000)",
@@ -2722,7 +2780,10 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
@@ -2775,7 +2836,10 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
@@ -2958,7 +3022,10 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
 @router.callback_query(F.data.startswith("retry_payment_check:"))
 async def retry_payment_check_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Клиент настаивает что оплатил — уведомляем админа повторно"""
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
@@ -3025,7 +3092,10 @@ async def retry_payment_check_callback(callback: CallbackQuery, session: AsyncSe
 @router.callback_query(F.data.startswith("show_requisites:"))
 async def show_requisites_callback(callback: CallbackQuery, session: AsyncSession):
     """Показать реквизиты клиенту повторно"""
-    order_id = int(callback.data.split(":")[1])
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
 
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
@@ -3065,7 +3135,7 @@ async def show_requisites_callback(callback: CallbackQuery, session: AsyncSessio
         )],
     ])
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     try:
         await callback.message.edit_text(requisites_text, reply_markup=keyboard)

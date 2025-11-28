@@ -43,7 +43,7 @@ def parse_callback_data(data: str, index: int) -> Optional[str]:
 @router.callback_query(F.data == "terms_short")
 async def show_terms_short(callback: CallbackQuery, bot: Bot):
     """Показать краткую версию оферты"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -62,7 +62,7 @@ async def show_terms_short(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "terms_full")
 async def show_terms_full(callback: CallbackQuery, bot: Bot):
     """Показать меню полной оферты"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -81,7 +81,7 @@ async def show_terms_full(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data.startswith("terms_section:"))
 async def show_terms_section(callback: CallbackQuery, bot: Bot):
     """Показать конкретный раздел оферты"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     section_key = parse_callback_data(callback.data, 1)
     if not section_key or section_key not in TERMS_SECTIONS:
@@ -106,7 +106,7 @@ async def show_terms_section(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "noop")
 async def noop_handler(callback: CallbackQuery):
     """Пустой обработчик для некликабельных кнопок"""
-    await callback.answer()
+    await callback.answer("⏳")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -205,7 +205,7 @@ async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
     Отправляет голосовое приветствие по нажатию кнопки.
     После голосового — меню и закреп (для новых пользователей).
     """
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Определяем chat_id
     chat_id = callback.message.chat.id if callback.message else callback.from_user.id
