@@ -3048,7 +3048,7 @@ async def show_requisites_callback(callback: CallbackQuery, session: AsyncSessio
 Заказ #{order.id} · <b>{final_price:.0f}₽</b>
 
 <code>{settings.PAYMENT_CARD}</code>
-{settings.PAYMENT_BANK}
+{settings.PAYMENT_BANKS}
 {settings.PAYMENT_NAME}
 
 📌 Скопируй номер карты и переведи точную сумму.
