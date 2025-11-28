@@ -1,15 +1,15 @@
 import asyncio
 
-from aiogram import Router, Bot
+from aiogram import Router, Bot, F
 from aiogram.filters import CommandStart, CommandObject
-from aiogram.types import Message, ReplyKeyboardRemove, FSInputFile
+from aiogram.types import Message, ReplyKeyboardRemove, FSInputFile, CallbackQuery
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models.users import User
-from bot.keyboards.inline import get_main_menu_keyboard
+from bot.keyboards.inline import get_main_menu_keyboard, get_saloon_status_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
 from bot.texts.terms import (
     TERMS_SHORT,
@@ -28,14 +28,18 @@ router = Router()
 
 async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
     """
-    Отправляет статус салуна.
+    Отправляет статус салуна с интерактивными кнопками.
     Закрепляет только если pin=True (для новых пользователей).
     """
     status = await saloon_manager.get_status()
     status_text = generate_status_message(status)
 
-    # Отправляем сообщение со статусом
-    status_msg = await bot.send_message(chat_id=chat_id, text=status_text)
+    # Отправляем сообщение со статусом и кнопками
+    status_msg = await bot.send_message(
+        chat_id=chat_id,
+        text=status_text,
+        reply_markup=get_saloon_status_keyboard()
+    )
 
     # Закрепляем только если явно указано
     if pin:
@@ -214,3 +218,29 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         caption=full_text,
         reply_markup=get_main_menu_keyboard()
     )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ОБНОВЛЕНИЕ СТАТУСА САЛУНА
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "refresh_saloon_status")
+async def refresh_saloon_status(callback: CallbackQuery):
+    """
+    Обновляет закреплённое сообщение со статусом салуна.
+    Редактирует текущее сообщение с актуальными данными.
+    """
+    # Получаем актуальный статус
+    status = await saloon_manager.get_status()
+    status_text = generate_status_message(status)
+
+    try:
+        # Редактируем сообщение с новыми данными
+        await callback.message.edit_text(
+            text=status_text,
+            reply_markup=get_saloon_status_keyboard()
+        )
+        await callback.answer("✅ Статус обновлён!")
+    except Exception:
+        # Если текст не изменился — просто уведомляем
+        await callback.answer("Статус актуален 👍")
