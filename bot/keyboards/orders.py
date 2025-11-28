@@ -307,7 +307,8 @@ def get_task_continue_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура после получения задания — добавить ещё или продолжить"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="➕ Добавить ещё файл", callback_data="task_add_more"),
+            InlineKeyboardButton(text="➕ Ещё файл", callback_data="task_add_more"),
+            InlineKeyboardButton(text="🗑 Очистить", callback_data="task_clear"),
         ],
         [
             InlineKeyboardButton(text="✅ Готово, продолжить", callback_data="task_done"),
