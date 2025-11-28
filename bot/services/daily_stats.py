@@ -184,3 +184,56 @@ def init_daily_stats(bot: Bot) -> DailyStatsService:
 def get_daily_stats_service() -> Optional[DailyStatsService]:
     """Получить сервис статистики"""
     return _stats_service
+
+
+async def get_live_stats_line() -> str:
+    """
+    Получить строку с живой статистикой для приветствия.
+    Показывает активность салуна: заказы за сегодня и время последнего.
+    """
+    async with async_session_maker() as session:
+        now = datetime.now(MSK)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Заказы за сегодня
+        today_orders_query = select(func.count(Order.id)).where(
+            Order.created_at >= today_start
+        )
+        today_orders_result = await session.execute(today_orders_query)
+        today_orders = today_orders_result.scalar() or 0
+
+        # Последний заказ
+        last_order_query = select(Order.created_at).order_by(
+            Order.created_at.desc()
+        ).limit(1)
+        last_order_result = await session.execute(last_order_query)
+        last_order_time = last_order_result.scalar()
+
+        # Формируем строку
+        parts = []
+
+        if today_orders > 0:
+            # Склонение: "помогли X студентам"
+            if today_orders == 1:
+                parts.append(f"🔥 Сегодня помогли <b>1</b> студенту")
+            elif today_orders < 5:
+                parts.append(f"🔥 Сегодня помогли <b>{today_orders}</b> студентам")
+            else:
+                parts.append(f"🔥 Сегодня помогли <b>{today_orders}</b> студентам")
+
+        if last_order_time:
+            # Время с последнего заказа
+            if last_order_time.tzinfo is None:
+                last_order_time = MSK.localize(last_order_time)
+            diff = now - last_order_time
+            minutes = int(diff.total_seconds() // 60)
+
+            if minutes < 5:
+                parts.append("⏱ Последний заказ: только что")
+            elif minutes < 60:
+                parts.append(f"⏱ Последний заказ: {minutes} мин назад")
+            elif minutes < 1440:  # меньше суток
+                hours = minutes // 60
+                parts.append(f"⏱ Последний заказ: {hours} ч назад")
+
+        return "\n".join(parts) if parts else ""
