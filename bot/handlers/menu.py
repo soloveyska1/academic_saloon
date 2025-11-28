@@ -3,6 +3,7 @@ import random
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, Message, FSInputFile
 from aiogram.fsm.context import FSMContext
+from aiogram.filters import StateFilter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -572,11 +573,11 @@ async def back_to_menu(callback: CallbackQuery, bot: Bot):
 #                    ОБРАБОТКА ТЕКСТОВЫХ СООБЩЕНИЙ
 # ══════════════════════════════════════════════════════════════
 
-@router.message(F.text)
+@router.message(F.text, StateFilter(None))
 async def handle_text_message(message: Message, bot: Bot, session: AsyncSession):
     """
     Обработка текстовых сообщений — пересылка админу.
-    Это ловушка для всех текстовых сообщений, которые не обработаны другими handlers.
+    Срабатывает ТОЛЬКО когда нет активного FSM состояния (чтобы не перехватывать ввод заказа).
     """
     user = message.from_user
 
