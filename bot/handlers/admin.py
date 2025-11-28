@@ -2000,20 +2000,39 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
 
     final_price = order.price - order.bonus_used if order.bonus_used else order.price
 
-    # Уведомляем клиента
-    client_text = f"""⏳ <b>Оплата пока не найдена</b>
+    # Уведомляем клиента с интерактивными кнопками
+    client_text = f"""🔍 <b>Хм, пока не вижу перевод...</b>
 
 Заказ #{order.id} · {final_price:.0f}₽
 
-Проверь:
-• Правильность реквизитов
-• Что перевод отправлен
+Бывает! Проверь:
+• Правильные ли реквизиты
+• Ушёл ли перевод (иногда банк задерживает)
 
-Если уже оплатил — напиши @{settings.SUPPORT_USERNAME}
-и скинь скриншот перевода."""
+Если точно оплатил — жми кнопку 👇"""
+
+    # Клавиатура с действиями для клиента
+    client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="✅ Я точно оплатил!",
+                callback_data=f"retry_payment_check:{order.id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="📸 Скинуть скриншот",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            ),
+            InlineKeyboardButton(
+                text="💳 Реквизиты",
+                callback_data=f"show_requisites:{order.id}"
+            ),
+        ],
+    ])
 
     try:
-        await bot.send_message(user_id, client_text)
+        await bot.send_message(user_id, client_text, reply_markup=client_keyboard)
     except Exception:
         pass
 
@@ -2025,6 +2044,124 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
         await callback.message.edit_text(new_text, reply_markup=callback.message.reply_markup)
     except Exception:
         pass
+
+
+@router.callback_query(F.data.startswith("retry_payment_check:"))
+async def retry_payment_check_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Клиент настаивает что оплатил — уведомляем админа повторно"""
+    order_id = int(callback.data.split(":")[1])
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    if order.status == OrderStatus.PAID.value:
+        await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
+        # Обновляем сообщение
+        try:
+            await callback.message.edit_text(
+                "✅ <b>Оплата уже подтверждена!</b>\n\n"
+                f"Заказ #{order.id} в работе.",
+                reply_markup=None
+            )
+        except Exception:
+            pass
+        return
+
+    await callback.answer("👍 Передал! Проверю ещё раз")
+
+    # Обновляем сообщение клиенту
+    try:
+        await callback.message.edit_text(
+            f"🔄 <b>Проверяю ещё раз...</b>\n\n"
+            f"Заказ #{order.id}\n\n"
+            f"Передал информацию, скоро отвечу!",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="💬 Написать в поддержку",
+                    url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+                )]
+            ])
+        )
+    except Exception:
+        pass
+
+    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+
+    # Уведомляем админов
+    admin_text = f"""🔄 <b>Клиент настаивает на оплате!</b>
+
+📋 Заказ: #{order.id}
+💰 Сумма: {final_price:.0f}₽
+
+👤 Клиент: @{callback.from_user.username or 'без username'}
+🆔 ID: <code>{callback.from_user.id}</code>
+
+⚠️ Говорит что точно оплатил — проверь внимательнее"""
+
+    keyboard = get_payment_confirm_keyboard(order.id, callback.from_user.id)
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, admin_text, reply_markup=keyboard)
+        except Exception:
+            pass
+
+
+@router.callback_query(F.data.startswith("show_requisites:"))
+async def show_requisites_callback(callback: CallbackQuery, session: AsyncSession):
+    """Показать реквизиты клиенту повторно"""
+    order_id = int(callback.data.split(":")[1])
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    if order.status == OrderStatus.PAID.value:
+        await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
+        return
+
+    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+
+    # Показываем реквизиты
+    requisites_text = f"""💳 <b>Реквизиты для оплаты</b>
+
+Заказ #{order.id} · <b>{final_price:.0f}₽</b>
+
+<code>{settings.PAYMENT_CARD}</code>
+{settings.PAYMENT_BANK}
+{settings.PAYMENT_NAME}
+
+📌 Скопируй номер карты и переведи точную сумму.
+После оплаты нажми «Я оплатил» 👇"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="✅ Я оплатил",
+            callback_data=f"client_paid:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text="💬 Нужна помощь",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+    ])
+
+    await callback.answer()
+
+    try:
+        await callback.message.edit_text(requisites_text, reply_markup=keyboard)
+    except Exception:
+        await callback.message.answer(requisites_text, reply_markup=keyboard)
 
 
 # ══════════════════════════════════════════════════════════════
