@@ -9,6 +9,10 @@ from bot.services.daily_stats import (
     init_daily_stats,
     get_daily_stats_service,
 )
+from bot.services.yookassa import (
+    YooKassaService,
+    get_yookassa_service,
+)
 
 __all__ = [
     "BotLogger",
@@ -19,4 +23,6 @@ __all__ = [
     "DailyStatsService",
     "init_daily_stats",
     "get_daily_stats_service",
+    "YooKassaService",
+    "get_yookassa_service",
 ]
