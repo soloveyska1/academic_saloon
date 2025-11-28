@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto
@@ -27,6 +28,12 @@ from core.config import settings
 from bot.handlers.start import send_and_pin_status
 
 router = Router()
+
+
+def parse_callback_data(data: str, index: int) -> Optional[str]:
+    """Безопасный парсинг callback_data по индексу"""
+    parts = data.split(":")
+    return parts[index] if len(parts) > index else None
 
 
 # ══════════════════════════════════════════════════════════════
@@ -76,9 +83,8 @@ async def show_terms_section(callback: CallbackQuery, bot: Bot):
     """Показать конкретный раздел оферты"""
     await callback.answer()
 
-    section_key = callback.data.split(":")[1]
-
-    if section_key not in TERMS_SECTIONS:
+    section_key = parse_callback_data(callback.data, 1)
+    if not section_key or section_key not in TERMS_SECTIONS:
         return
 
     section_name, section_text = TERMS_SECTIONS[section_key]
@@ -139,7 +145,11 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     await session.commit()
 
     # Удаляем сообщение с офертой
-    await callback.message.delete()
+    if callback.message:
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
 
     # Формируем приветственное сообщение
     if is_first_accept:
@@ -197,15 +207,19 @@ async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
     """
     await callback.answer()
 
+    # Определяем chat_id
+    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
+
     # Удаляем сообщение с кнопкой
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
+    if callback.message:
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
 
     # Отправляем голосовое
     voice = FSInputFile(settings.WELCOME_VOICE)
-    await callback.message.answer_voice(voice=voice, caption=VOICE_CAPTION)
+    await bot.send_voice(chat_id=chat_id, voice=voice, caption=VOICE_CAPTION)
 
     # Логируем
     await log_action(
@@ -218,11 +232,12 @@ async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
     # Теперь отправляем меню
     text = get_time_greeting()
     photo = FSInputFile(settings.WELCOME_IMAGE)
-    await callback.message.answer_photo(
+    await bot.send_photo(
+        chat_id=chat_id,
         photo=photo,
         caption=text,
         reply_markup=get_main_menu_keyboard()
     )
 
     # И закреп со статусом салуна
-    await send_and_pin_status(callback.message.chat.id, bot, pin=True)
+    await send_and_pin_status(chat_id, bot, pin=True)
