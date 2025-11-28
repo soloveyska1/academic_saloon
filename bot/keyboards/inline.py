@@ -91,3 +91,14 @@ def get_back_keyboard() -> InlineKeyboardMarkup:
         ]
     ])
     return kb
+
+
+def get_saloon_status_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура для закреплённого сообщения со статусом салуна"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔄 Обновить", callback_data="refresh_saloon_status"),
+            InlineKeyboardButton(text="📝 Заказать", callback_data="create_order")
+        ]
+    ])
+    return kb

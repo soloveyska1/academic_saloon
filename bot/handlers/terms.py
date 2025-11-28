@@ -158,10 +158,9 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             silent=False,  # Со звуком!
         )
 
-        # Новым пользователям: сначала текст-подводка, потом голосовое
-        await callback.message.answer(VOICE_CAPTION)
+        # Новым пользователям: голосовое с красивым caption
         voice = FSInputFile(settings.WELCOME_VOICE)
-        await callback.message.answer_voice(voice=voice)
+        await callback.message.answer_voice(voice=voice, caption=VOICE_CAPTION)
     else:
         # Логируем повторное принятие
         await log_action(
