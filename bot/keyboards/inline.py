@@ -102,3 +102,13 @@ def get_saloon_status_keyboard() -> InlineKeyboardMarkup:
         ]
     ])
     return kb
+
+
+def get_voice_teaser_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура с кнопкой для прослушивания голосового приветствия"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🎧 Послушать", callback_data="play_welcome_voice")
+        ]
+    ])
+    return kb

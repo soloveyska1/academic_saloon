@@ -30,6 +30,13 @@ LOAD_STATUS_DISPLAY = {
 }
 
 
+class OwnerStatusOverride(str, Enum):
+    """Ручное переопределение статуса Хозяина"""
+    AUTO = "auto"           # Автоматика (по времени + активности)
+    ONLINE = "online"       # Принудительно на связи
+    OFFLINE = "offline"     # Принудительно отдыхает (выходной)
+
+
 @dataclass
 class SaloonStatus:
     """Структура статуса салуна"""
@@ -38,6 +45,9 @@ class SaloonStatus:
     orders_in_progress: int = 5      # Заказов в работе (админ выставляет)
     pinned_message_id: int | None = None
     pinned_chat_id: int | None = None
+    # Статус Хозяина
+    owner_status_override: str = OwnerStatusOverride.AUTO.value
+    owner_last_activity: str | None = None  # ISO timestamp последней активности
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -113,6 +123,20 @@ class SaloonStatusManager:
         await self.save_status(status)
         return status
 
+    async def set_owner_status(self, override: OwnerStatusOverride) -> SaloonStatus:
+        """Установить ручной статус Хозяина (auto/online/offline)"""
+        status = await self.get_status()
+        status.owner_status_override = override.value
+        await self.save_status(status)
+        return status
+
+    async def update_owner_activity(self) -> SaloonStatus:
+        """Обновить время последней активности Хозяина"""
+        status = await self.get_status()
+        status.owner_last_activity = datetime.now(ZoneInfo("Europe/Moscow")).isoformat()
+        await self.save_status(status)
+        return status
+
     async def close(self):
         """Закрыть соединение с Redis"""
         if self._redis:
@@ -164,6 +188,19 @@ def generate_people_online() -> int:
     return max(1, min(50, result))
 
 
+# Ковбойские цитаты для закрепа
+SALOON_QUOTES = [
+    "«Хороший ковбой всегда держит слово»",
+    "«В этих краях дела делаются быстро»",
+    "«Один выстрел — одна пятёрка»",
+    "«Шериф следит за порядком»",
+    "«Закат красив, но дедлайн важнее»",
+    "«Быстрее ветра, точнее пули»",
+    "«С нами ты всегда в выигрыше»",
+    "«Доверься профессионалам»",
+]
+
+
 def generate_load_bar(load_status: LoadStatus) -> str:
     """Генерирует визуальный прогресс-бар загрузки"""
     bars = {
@@ -174,16 +211,71 @@ def generate_load_bar(load_status: LoadStatus) -> str:
     return bars.get(load_status, ("▓▓▓▓▓░░░░░", "50%"))
 
 
+def get_owner_status(status: SaloonStatus) -> tuple[str, str]:
+    """
+    Определяет статус Хозяина.
+    Приоритет: ручной override > активность за 30 мин > время МСК.
+    Возвращает (emoji, текст).
+    """
+    msk = ZoneInfo("Europe/Moscow")
+    now = datetime.now(msk)
+
+    # 1. Ручное переопределение
+    override = OwnerStatusOverride(status.owner_status_override)
+    if override == OwnerStatusOverride.ONLINE:
+        return ("🟢", "Хозяин на связи")
+    elif override == OwnerStatusOverride.OFFLINE:
+        return ("🌙", "Хозяин отдыхает")
+
+    # 2. Проверяем активность за последние 30 минут
+    if status.owner_last_activity:
+        try:
+            last_activity = datetime.fromisoformat(status.owner_last_activity)
+            if last_activity.tzinfo is None:
+                last_activity = last_activity.replace(tzinfo=msk)
+            minutes_ago = (now - last_activity).total_seconds() / 60
+            if minutes_ago <= 30:
+                return ("🟢", "Хозяин на связи")
+        except (ValueError, TypeError):
+            pass
+
+    # 3. По времени МСК (9:00 - 22:00)
+    if 9 <= now.hour < 22:
+        return ("🟡", "Хозяин скорее всего на связи")
+    else:
+        return ("🌙", "Хозяин отдыхает")
+
+
+def get_random_saloon_quote() -> str:
+    """Возвращает случайную цитату для закрепа (стабильную в течение 10 минут)"""
+    msk = ZoneInfo("Europe/Moscow")
+    now = datetime.now(msk)
+
+    # Меняем цитату каждые 10 минут
+    time_window = now.minute // 10
+    seed_str = f"{now.year}-{now.month}-{now.day}-{now.hour}-{time_window}-quote"
+    seed = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
+
+    random.seed(seed)
+    return random.choice(SALOON_QUOTES)
+
+
 def generate_status_message(status: SaloonStatus) -> str:
     """
     Генерация красивого сообщения для закрепа в боте.
-    Минималистичный дизайн без уродливых линий.
+    Минималистичный дизайн с интерактивными элементами.
     """
     load = LoadStatus(status.load_status)
     emoji, title, description = LOAD_STATUS_DISPLAY[load]
 
     # Прогресс-бар загрузки
     bar, percent = generate_load_bar(load)
+
+    # Статус Хозяина (учитывает override, активность и время)
+    owner_emoji, owner_status = get_owner_status(status)
+
+    # Случайная цитата
+    quote = get_random_saloon_quote()
 
     # Время обновления (МСК)
     msk = ZoneInfo("Europe/Moscow")
@@ -197,14 +289,20 @@ def generate_status_message(status: SaloonStatus) -> str:
 
 Загрузка: {bar} {percent}
 
-╭─────────────────╮
-│  👥  Клиентов: <b>{status.clients_count}</b>
-│  📋  В работе: <b>{status.orders_in_progress}</b>
-╰─────────────────╯
+┌ 👥 Клиентов: <b>{status.clients_count}</b>
+└ 📋 В работе: <b>{status.orders_in_progress}</b>
 
-📊 6 лет  ·  ⭐ 1000+  ·  ✅ 3 правки
+───────────
 
-<i>Выдыхай, партнёр. Ты в надёжных руках</i> 🤝
+📊 6 лет в деле
+⭐ 1000+ довольных клиентов
+✅ Доводим до идеала
+
+───────────
+
+{owner_emoji} <b>{owner_status}</b>
+
+💬 <i>{quote}</i>
 
 <i>Обновлено: {time_str} МСК</i>"""
 
