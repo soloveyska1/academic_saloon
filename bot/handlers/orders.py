@@ -865,23 +865,35 @@ async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, sessio
 
     await state.set_state(OrderState.choosing_deadline)
 
-    # Логируем шаг
-    await log_action(
-        bot=bot,
-        event=LogEvent.ORDER_STEP,
-        user=callback.from_user,
-        details=f"Шаг 3/4: задание ({len(attachments)} файл(ов))",
-        session=session,
-    )
+    # Некритичные операции
+    try:
+        await log_action(
+            bot=bot,
+            event=LogEvent.ORDER_STEP,
+            user=callback.from_user,
+            details=f"Шаг: задание ({pluralize_files(len(attachments))})",
+            session=session,
+        )
+    except Exception:
+        pass
 
-    # Обновляем шаг в трекере
-    tracker = get_abandoned_tracker()
-    if tracker:
-        await tracker.update_step(callback.from_user.id, "Выбор сроков")
+    try:
+        tracker = get_abandoned_tracker()
+        if tracker:
+            await tracker.update_step(callback.from_user.id, "Выбор сроков")
+    except Exception:
+        pass
 
-    text = """⏰  <b>Когда нужно сдать?</b>
+    # Typing для плавного перехода
+    try:
+        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+        await asyncio.sleep(0.3)
+    except Exception:
+        pass
 
-Чтобы тебя не повесили 💀"""
+    text = """⏰  <b>Когда нужна готовая работа?</b>
+
+Точный срок — точная цена."""
 
     await callback.message.edit_text(text, reply_markup=get_deadline_keyboard())
 
@@ -897,18 +909,25 @@ async def process_deadline_choice(callback: CallbackQuery, state: FSMContext, bo
 
     deadline_key = callback.data.split(":")[1]
 
-    # Если выбрали "Ввести дату" — просим ввести текстом
+    # Если выбрали "Указать дату" — просим ввести текстом
     if deadline_key == "custom":
-        text = """📅  <b>Введи дату</b>
+        text = """📅  <b>Укажи дату</b>
 
-Напиши когда нужно сдать.
+Напиши когда нужно получить работу.
 
-<i>Например: до 15 декабря, через 2 недели</i>"""
+<i>Например: до 15 декабря, к понедельнику</i>"""
         await callback.message.edit_text(text, reply_markup=get_custom_deadline_keyboard())
         return
 
     deadline_label = DEADLINES.get(deadline_key, deadline_key)
     await state.update_data(deadline=deadline_key, deadline_label=deadline_label)
+
+    # Typing для плавного перехода к подтверждению
+    try:
+        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+        await asyncio.sleep(0.3)
+    except Exception:
+        pass
 
     # Переходим к подтверждению
     await show_order_confirmation(callback, state, bot, session)
@@ -919,9 +938,9 @@ async def back_to_deadline_buttons(callback: CallbackQuery, state: FSMContext):
     """Назад к кнопкам выбора срока"""
     await callback.answer()
 
-    text = """⏰  <b>Когда нужно сдать?</b>
+    text = """⏰  <b>Когда нужна готовая работа?</b>
 
-Чтобы тебя не повесили 💀"""
+Точный срок — точная цена."""
 
     await callback.message.edit_text(text, reply_markup=get_deadline_keyboard())
 
@@ -1337,9 +1356,9 @@ async def edit_deadline(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await state.set_state(OrderState.choosing_deadline)
 
-    text = """⏰  <b>Когда нужно сдать?</b>
+    text = """⏰  <b>Когда нужна готовая работа?</b>
 
-Чтобы тебя не повесили 💀"""
+Точный срок — точная цена."""
 
     await callback.message.edit_text(text, reply_markup=get_deadline_keyboard())
 
