@@ -47,6 +47,9 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(text="👶 Режим новичка", callback_data="admin_newbie_mode")
         ],
+        [
+            InlineKeyboardButton(text="🔧 Превью ошибки", callback_data="admin_error_preview")
+        ],
     ])
     return kb
 
@@ -232,6 +235,23 @@ async def cmd_error_preview(message: Message, bot: Bot):
         bot=bot,
         chat_id=message.chat.id,
         user_name=message.from_user.first_name or "Партнёр"
+    )
+
+
+@router.callback_query(F.data == "admin_error_preview")
+async def admin_error_preview(callback: CallbackQuery, bot: Bot):
+    """Превью сообщения об ошибке — кнопка в админке"""
+    if not is_admin(callback.from_user.id):
+        return
+
+    await callback.answer("Отправляю превью...")
+
+    from bot.middlewares.error_handler import send_error_preview
+
+    await send_error_preview(
+        bot=bot,
+        chat_id=callback.message.chat.id,
+        user_name=callback.from_user.first_name or "Партнёр"
     )
 
 
