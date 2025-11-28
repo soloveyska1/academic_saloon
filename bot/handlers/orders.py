@@ -10,6 +10,8 @@ from bot.states.order import OrderState
 from bot.keyboards.inline import get_back_keyboard
 from bot.keyboards.orders import (
     get_work_type_keyboard,
+    get_work_category_keyboard,
+    get_category_works_keyboard,
     get_subject_keyboard,
     get_task_input_keyboard,
     get_task_continue_keyboard,
@@ -20,6 +22,7 @@ from bot.keyboards.orders import (
     get_cancel_order_keyboard,
     SUBJECTS,
     DEADLINES,
+    WORK_CATEGORIES,
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
@@ -130,10 +133,7 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
 
     text = f"""🎯  <b>Новый заказ</b>
 
-Выбери тип работы:{discount_line}
-
-<i>Цены указаны минимальные —
-точная стоимость зависит от темы и срока.</i>"""
+Что нужно сделать?{discount_line}"""
 
     # Удаляем старое сообщение и отправляем с картинкой
     try:
@@ -145,7 +145,88 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
     await callback.message.answer_photo(
         photo=photo,
         caption=text,
-        reply_markup=get_work_type_keyboard()
+        reply_markup=get_work_category_keyboard()
+    )
+
+
+@router.callback_query(OrderState.choosing_type, F.data.startswith("work_category:"))
+async def process_work_category(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """
+    Обработка выбора категории работ.
+    Показывает конкретные типы в выбранной категории.
+    """
+    await callback.answer()
+
+    category_key = callback.data.split(":")[1]
+    category = WORK_CATEGORIES.get(category_key)
+
+    if not category:
+        # Неизвестная категория — показываем полный список
+        await callback.message.edit_caption(
+            caption="🎯  <b>Новый заказ</b>\n\nВыбери тип работы:",
+            reply_markup=get_work_type_keyboard()
+        )
+        return
+
+    # Для срочных заказов — сразу переходим к photo_task (единственный тип в категории)
+    if category_key == "urgent" and len(category["types"]) == 1:
+        work_type = category["types"][0]
+        # Имитируем выбор типа работы
+        await state.update_data(work_type=work_type.value)
+        await state.set_state(OrderState.entering_task)
+
+        # Обновляем трекер
+        tracker = get_abandoned_tracker()
+        if tracker:
+            await tracker.update_step(callback.from_user.id, "Ввод задания (срочно)")
+
+        # Показываем экран ввода задания
+        text = """🔥  <b>Срочный заказ!</b>
+
+Скинь фото задания или опиши что нужно.
+Можно несколько файлов.
+
+<i>Разберусь и быстро отвечу с ценой.</i>"""
+
+        await callback.message.edit_caption(
+            caption=text,
+            reply_markup=get_task_input_keyboard()
+        )
+        return
+
+    # Показываем типы работ в категории
+    text = f"""🎯  <b>{category['label']}</b>
+
+<i>{category['description']}</i>
+
+Выбери тип работы:"""
+
+    await callback.message.edit_caption(
+        caption=text,
+        reply_markup=get_category_works_keyboard(category_key)
+    )
+
+
+@router.callback_query(OrderState.choosing_type, F.data == "back_to_categories")
+async def back_to_categories(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Назад к выбору категории"""
+    await callback.answer()
+
+    # Получаем скидку пользователя
+    user_query = select(User).where(User.telegram_id == callback.from_user.id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    discount = calculate_user_discount(user)
+    discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
+
+    text = f"""🎯  <b>Новый заказ</b>
+
+Что нужно сделать?{discount_line}"""
+
+    await callback.message.edit_caption(
+        caption=text,
+        reply_markup=get_work_category_keyboard()
     )
 
 
@@ -696,7 +777,7 @@ def format_order_description(attachments: list) -> str:
 
 @router.callback_query(F.data == "order_back_to_type")
 async def back_to_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    """Назад к выбору типа работы"""
+    """Назад к выбору типа работы (категории)"""
     await callback.answer()
     await state.set_state(OrderState.choosing_type)
 
@@ -710,10 +791,7 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
 
     text = f"""🎯  <b>Новый заказ</b>
 
-Выбери тип работы:{discount_line}
-
-<i>Цены указаны минимальные —
-точная стоимость зависит от темы и срока.</i>"""
+Что нужно сделать?{discount_line}"""
 
     # Удаляем старое и отправляем с картинкой
     try:
@@ -725,7 +803,7 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
     await callback.message.answer_photo(
         photo=photo,
         caption=text,
-        reply_markup=get_work_type_keyboard()
+        reply_markup=get_work_category_keyboard()
     )
 
 
@@ -999,9 +1077,6 @@ async def start_order_creation(message: Message, state: FSMContext = None):
 
     text = """🎯  <b>Новый заказ</b>
 
-Выбери тип работы:
+Что нужно сделать?"""
 
-<i>Цены указаны минимальные —
-точная стоимость зависит от темы и срока.</i>"""
-
-    await message.answer(text, reply_markup=get_work_type_keyboard())
+    await message.answer(text, reply_markup=get_work_category_keyboard())
