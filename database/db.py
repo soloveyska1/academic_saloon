@@ -5,7 +5,7 @@ from core.config import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True,
+    echo=False,  # Отключено для production (было True)
     future=True
 )
 
