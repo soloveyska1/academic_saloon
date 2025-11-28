@@ -1,7 +1,12 @@
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from database.models.orders import WorkType, WORK_TYPE_LABELS, WORK_TYPE_PRICES, WORK_TYPE_DEADLINES
 from core.config import settings
+
+MSK_TZ = ZoneInfo("Europe/Moscow")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -323,26 +328,82 @@ def get_task_continue_keyboard() -> InlineKeyboardMarkup:
 #                    ШАГ 4: ВЫБОР СРОКОВ
 # ══════════════════════════════════════════════════════════════
 
-# Варианты сроков (эмоциональные)
+# Названия дней недели и месяцев на русском
+WEEKDAYS_SHORT = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
+MONTHS_SHORT = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"]
+
+
+def format_date_short(dt: datetime) -> str:
+    """Форматирует дату: 'пт, 6 дек'"""
+    weekday = WEEKDAYS_SHORT[dt.weekday()]
+    month = MONTHS_SHORT[dt.month - 1]
+    return f"{weekday}, {dt.day} {month}"
+
+
+def get_deadline_options() -> list[tuple[str, str, str]]:
+    """
+    Генерирует варианты сроков с реальными датами.
+    Returns: [(key, label, callback_data), ...]
+    """
+    now = datetime.now(MSK_TZ)
+    today = now.date()
+
+    options = []
+
+    # Сегодня (если ещё не поздно — до 20:00)
+    if now.hour < 20:
+        options.append(("today", "⚡ Сегодня", "deadline:today"))
+
+    # Завтра
+    tomorrow = today + timedelta(days=1)
+    tomorrow_dt = datetime.combine(tomorrow, datetime.min.time())
+    options.append(("tomorrow", f"🔥 Завтра, {format_date_short(tomorrow_dt)}", "deadline:tomorrow"))
+
+    # 2-3 дня
+    in_3_days = today + timedelta(days=3)
+    in_3_days_dt = datetime.combine(in_3_days, datetime.min.time())
+    options.append(("3_days", f"📅 2-3 дня (до {format_date_short(in_3_days_dt)})", "deadline:3_days"))
+
+    # Неделя
+    in_week = today + timedelta(days=7)
+    in_week_dt = datetime.combine(in_week, datetime.min.time())
+    options.append(("week", f"🗓 Неделя (до {format_date_short(in_week_dt)})", "deadline:week"))
+
+    # 2 недели
+    in_2_weeks = today + timedelta(days=14)
+    in_2_weeks_dt = datetime.combine(in_2_weeks, datetime.min.time())
+    options.append(("2_weeks", f"📆 2 недели (до {format_date_short(in_2_weeks_dt)})", "deadline:2_weeks"))
+
+    # Месяц
+    in_month = today + timedelta(days=30)
+    in_month_dt = datetime.combine(in_month, datetime.min.time())
+    options.append(("month", f"🐢 Месяц (до {format_date_short(in_month_dt)})", "deadline:month"))
+
+    # Указать свою дату
+    options.append(("custom", "✏️ Указать точную дату", "deadline:custom"))
+
+    return options
+
+
+# Статический словарь для обратной совместимости (используется в handlers)
 DEADLINES = {
-    "urgent": "🔥 Вчера (SOS!!!)",
-    "3_5_days": "🗓 3-5 дней",
-    "week": "📅 Неделя",
-    "month": "🐢 Пока терпит (месяц)",
-    "custom": "🔢 Ввести дату",
+    "today": "Сегодня",
+    "tomorrow": "Завтра",
+    "3_days": "2-3 дня",
+    "week": "Неделя",
+    "2_weeks": "2 недели",
+    "month": "Месяц",
+    "custom": "Своя дата",
 }
 
 
 def get_deadline_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура выбора сроков — эмоциональные кнопки"""
+    """Клавиатура выбора сроков с реальными датами"""
     buttons = []
 
-    for key, label in DEADLINES.items():
+    for key, label, callback_data in get_deadline_options():
         buttons.append([
-            InlineKeyboardButton(
-                text=label,
-                callback_data=f"deadline:{key}"
-            )
+            InlineKeyboardButton(text=label, callback_data=callback_data)
         ])
 
     # Назад и отмена
