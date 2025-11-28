@@ -25,6 +25,7 @@ from bot.keyboards.orders import (
     get_confirm_order_keyboard,
     get_edit_order_keyboard,
     get_cancel_order_keyboard,
+    get_deadline_with_date,
     SUBJECTS,
     DEADLINES,
     WORK_CATEGORIES,
@@ -970,7 +971,10 @@ async def process_deadline_text(message: Message, state: FSMContext, bot: Bot, s
 # ══════════════════════════════════════════════════════════════
 
 async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session: AsyncSession, send_new: bool = False):
-    """Показать превью заказа для подтверждения"""
+    """
+    Показать превью заказа для подтверждения.
+    Персонализированный текст с реальными датами.
+    """
     await state.set_state(OrderState.confirming)
 
     data = await state.get_data()
@@ -983,6 +987,9 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     discount = calculate_user_discount(user)
     await state.update_data(discount=discount)
 
+    # Персонализация — имя пользователя
+    first_name = get_first_name(callback.from_user.full_name)
+
     # Формируем текст превью
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
 
@@ -994,26 +1001,33 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     elif subject and subject != "skip":
         subject_line = data.get("subject_label", "Не указано")
 
-    # Срок
+    # Срок с реальной датой
+    deadline_key = data.get("deadline", "")
     deadline_label = data.get("deadline_label", "Не указан")
 
-    # Вложения
+    # Для стандартных сроков показываем дату, для custom — как ввели
+    if deadline_key and deadline_key != "custom":
+        deadline_display = get_deadline_with_date(deadline_key)
+    else:
+        deadline_display = deadline_label
+
+    # Вложения — улучшенный формат
     attachments = data.get("attachments", [])
-    attachments_summary = format_attachments_summary(attachments)
+    attachments_preview = format_attachments_preview(attachments)
 
-    discount_line = f"\n🎁  <b>Твоя скидка:</b> {discount}%" if discount > 0 else ""
-
-    # Формируем текст — направление только если указано
+    # Формируем строки
     subject_text = f"\n◈  <b>Направление:</b> {subject_line}" if subject_line else ""
+    discount_line = f"\n🎁  <b>Скидка:</b> {discount}%" if discount > 0 else ""
 
-    text = f"""📋  <b>Проверь заявку</b>
+    text = f"""📋  <b>Проверь и отправляй, {first_name}!</b>
 
 ◈  <b>Тип:</b> {work_label}{subject_text}
-◈  <b>Задание:</b> {attachments_summary}
-◈  <b>Срок:</b> {deadline_label}
+◈  <b>Срок:</b> {deadline_display}
+◈  <b>Задание:</b>
+{attachments_preview}
 {discount_line}
 
-Всё верно?"""
+После отправки отвечу за 5-15 мин."""
 
     # Логируем шаг (некритично)
     try:
@@ -1021,7 +1035,7 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
             bot=bot,
             event=LogEvent.ORDER_STEP,
             user=callback.from_user,
-            details=f"Шаг: срок «{deadline_label}», ждём подтверждения",
+            details=f"Шаг: подтверждение, срок «{deadline_display}»",
             session=session,
         )
     except Exception:

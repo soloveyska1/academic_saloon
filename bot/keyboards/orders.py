@@ -385,6 +385,39 @@ def get_deadline_options() -> list[tuple[str, str, str]]:
     return options
 
 
+def get_deadline_with_date(deadline_key: str) -> str:
+    """
+    Возвращает срок с реальной датой для отображения в подтверждении.
+    Например: "Неделя" → "до чт, 5 дек"
+    """
+    now = datetime.now(MSK_TZ)
+    today = now.date()
+
+    days_map = {
+        "today": 0,
+        "tomorrow": 1,
+        "3_days": 3,
+        "week": 7,
+        "2_weeks": 14,
+        "month": 30,
+    }
+
+    if deadline_key not in days_map:
+        # Для custom или неизвестных — возвращаем как есть
+        return DEADLINES.get(deadline_key, deadline_key)
+
+    days = days_map[deadline_key]
+    target_date = today + timedelta(days=days)
+    target_dt = datetime.combine(target_date, datetime.min.time())
+
+    if deadline_key == "today":
+        return "сегодня"
+    elif deadline_key == "tomorrow":
+        return f"завтра, {format_date_short(target_dt)}"
+    else:
+        return f"до {format_date_short(target_dt)}"
+
+
 # Статический словарь для обратной совместимости (используется в handlers)
 DEADLINES = {
     "today": "Сегодня",
@@ -435,14 +468,12 @@ def get_confirm_order_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура подтверждения заказа"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="✅ Всё верно, отправить", callback_data="confirm_order")
+            InlineKeyboardButton(text="✅ Отправить заявку", callback_data="confirm_order")
         ],
         [
             InlineKeyboardButton(text="✏️ Изменить", callback_data="order_edit"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
         ],
-        [
-            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order")
-        ]
     ])
 
 
