@@ -197,6 +197,20 @@ def get_confirm_delete_keyboard(order_id: int) -> InlineKeyboardMarkup:
     return kb
 
 
+def get_payment_confirm_keyboard(order_id: int, user_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура подтверждения оплаты для админа"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"confirm_payment:{order_id}"),
+            InlineKeyboardButton(text="❌ Не пришло", callback_data=f"reject_payment:{order_id}:{user_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="💬 Написать клиенту", url=f"tg://user?id={user_id}"),
+        ],
+    ])
+    return kb
+
+
 # ══════════════════════════════════════════════════════════════
 #                        ХЕНДЛЕРЫ
 # ══════════════════════════════════════════════════════════════
@@ -1651,13 +1665,14 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
 💰 Сумма: {final_price:.0f}₽
 
 👤 Клиент: @{callback.from_user.username or 'без username'}
-🆔 ID: <code>{callback.from_user.id}</code>
+🆔 ID: <code>{callback.from_user.id}</code>"""
 
-Проверь поступление и подтверди: /paid {order.id}"""
+    # Клавиатура с кнопками подтверждения
+    keyboard = get_payment_confirm_keyboard(order.id, callback.from_user.id)
 
     for admin_id in settings.ADMIN_IDS:
         try:
-            await bot.send_message(admin_id, admin_text)
+            await bot.send_message(admin_id, admin_text, reply_markup=keyboard)
         except Exception:
             pass
 
@@ -1841,7 +1856,179 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
 
 
 # ══════════════════════════════════════════════════════════════
-#                    ПОДТВЕРЖДЕНИЕ ОПЛАТЫ
+#                    КНОПКИ ПОДТВЕРЖДЕНИЯ ОПЛАТЫ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("confirm_payment:"))
+async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Админ подтвердил оплату кнопкой"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = int(callback.data.split(":")[1])
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Проверка статуса
+    if order.status == OrderStatus.PAID.value:
+        await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
+        return
+
+    if order.status not in [OrderStatus.CONFIRMED.value, OrderStatus.IN_PROGRESS.value]:
+        await callback.answer(
+            f"Заказ нельзя отметить как оплаченный\nСтатус: {order.status_label}",
+            show_alert=True
+        )
+        return
+
+    if order.price <= 0:
+        await callback.answer("У заказа не установлена цена!", show_alert=True)
+        return
+
+    # Находим пользователя
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await callback.answer("Пользователь не найден", show_alert=True)
+        return
+
+    # Списываем бонусы с баланса клиента
+    bonus_deducted = 0
+    if order.bonus_used > 0:
+        success, _ = await BonusService.deduct_bonus(
+            session=session,
+            user_id=order.user_id,
+            amount=order.bonus_used,
+            reason=BonusReason.ORDER_DISCOUNT,
+            description=f"Списание на заказ #{order.id}",
+            bot=bot,
+            user=user,
+        )
+        if success:
+            bonus_deducted = order.bonus_used
+
+    # Обновляем статус заказа
+    order.status = OrderStatus.PAID.value
+    order.paid_amount = order.final_price
+
+    # Увеличиваем счётчик заказов и общую сумму
+    user.orders_count += 1
+    user.total_spent += order.paid_amount
+
+    await session.commit()
+
+    # Начисляем бонусы клиенту за оплаченный заказ (50₽)
+    order_bonus = 0
+    try:
+        order_bonus = await BonusService.process_order_bonus(
+            session=session,
+            bot=bot,
+            user_id=order.user_id,
+        )
+    except Exception:
+        pass
+
+    # Начисляем реферальные бонусы (если есть реферер)
+    if user.referrer_id:
+        try:
+            await BonusService.process_referral_bonus(
+                session=session,
+                bot=bot,
+                referrer_id=user.referrer_id,
+                order_amount=order.price,
+                referred_user_id=order.user_id,
+            )
+        except Exception:
+            pass
+
+    # Уведомляем клиента
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    bonus_line = f"\n\n🎁 +{order_bonus:.0f}₽ бонусов на баланс!" if order_bonus > 0 else ""
+
+    client_text = f"""✅ <b>Оплата получена!</b>
+
+Заказ #{order.id} — {work_label}
+
+Спасибо за доверие! 🤠
+Приступаю к работе.{bonus_line}"""
+
+    try:
+        await bot.send_message(order.user_id, client_text)
+    except Exception:
+        pass
+
+    # Обновляем сообщение админу
+    await callback.answer("✅ Оплата подтверждена!")
+
+    new_text = callback.message.text + f"\n\n✅ <b>ОПЛАЧЕНО</b> ({order.paid_amount:.0f}₽)"
+    try:
+        await callback.message.edit_text(new_text, reply_markup=None)
+    except Exception:
+        pass
+
+
+@router.callback_query(F.data.startswith("reject_payment:"))
+async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Админ указал что оплата не пришла"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    order_id = int(parts[1])
+    user_id = int(parts[2])
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+
+    # Уведомляем клиента
+    client_text = f"""⏳ <b>Оплата пока не найдена</b>
+
+Заказ #{order.id} · {final_price:.0f}₽
+
+Проверь:
+• Правильность реквизитов
+• Что перевод отправлен
+
+Если уже оплатил — напиши @{settings.SUPPORT_USERNAME}
+и скинь скриншот перевода."""
+
+    try:
+        await bot.send_message(user_id, client_text)
+    except Exception:
+        pass
+
+    await callback.answer("Клиент уведомлён")
+
+    # Обновляем сообщение админу — оставляем кнопки для повторной проверки
+    new_text = callback.message.text + "\n\n⏳ <i>Клиент уведомлён что оплата не найдена</i>"
+    try:
+        await callback.message.edit_text(new_text, reply_markup=callback.message.reply_markup)
+    except Exception:
+        pass
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ПОДТВЕРЖДЕНИЕ ОПЛАТЫ (КОМАНДА)
 # ══════════════════════════════════════════════════════════════
 
 @router.message(Command("paid"), StateFilter("*"))
