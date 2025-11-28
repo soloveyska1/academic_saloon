@@ -15,6 +15,7 @@ from sqlalchemy import select
 
 from database.models.users import User
 from bot.services.logger import log_action, LogEvent, LogLevel, BotLogger
+from bot.middlewares.ban_check import invalidate_ban_cache
 from core.config import settings
 
 router = Router()
@@ -112,6 +113,9 @@ async def toggle_ban(callback: CallbackQuery, session: AsyncSession, bot: Bot):
         user.ban_reason = None
         await session.commit()
 
+        # Сбрасываем кэш бана
+        await invalidate_ban_cache(user_id)
+
         await callback.answer("✅ Пользователь разбанен", show_alert=True)
 
         # Логируем
@@ -128,6 +132,9 @@ async def toggle_ban(callback: CallbackQuery, session: AsyncSession, bot: Bot):
         user.is_banned = True
         user.banned_at = datetime.now(timezone.utc)
         await session.commit()
+
+        # Сбрасываем кэш бана
+        await invalidate_ban_cache(user_id)
 
         await callback.answer("🚫 Пользователь забанен", show_alert=True)
 

@@ -4,9 +4,11 @@
 """
 
 import asyncio
+import json
 from datetime import datetime, timedelta
 from typing import Optional
 import pytz
+from redis.asyncio import Redis
 
 from aiogram import Bot
 from sqlalchemy import select, func, and_
@@ -15,6 +17,20 @@ from core.config import settings
 from database.db import async_session_maker
 from database.models.users import User
 from database.models.orders import Order
+
+# Redis для кэширования статистики
+_stats_redis: Optional[Redis] = None
+STATS_CACHE_KEY = "bot:live_stats"
+STATS_CACHE_TTL = 90  # 1.5 минуты
+
+
+async def _get_stats_redis() -> Redis:
+    """Ленивая инициализация Redis для кэша статистики"""
+    global _stats_redis
+    if _stats_redis is None:
+        redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
+        _stats_redis = Redis.from_url(redis_url, decode_responses=True)
+    return _stats_redis
 
 MSK = pytz.timezone("Europe/Moscow")
 
@@ -190,7 +206,19 @@ async def get_live_stats_line() -> str:
     """
     Получить строку с живой статистикой для приветствия.
     Показывает активность салуна: заказы за сегодня и время последнего.
+    Кэшируется в Redis на 90 секунд для быстрого /start.
     """
+    # Пробуем получить из кэша
+    try:
+        redis = await _get_stats_redis()
+        cached = await redis.get(STATS_CACHE_KEY)
+        if cached:
+            data = json.loads(cached)
+            return _format_stats_line(data["today_orders"], data.get("last_order_iso"))
+    except Exception:
+        pass  # Кэш недоступен — идём в БД
+
+    # Запрос в БД
     async with async_session_maker() as session:
         now = datetime.now(MSK)
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -209,22 +237,40 @@ async def get_live_stats_line() -> str:
         last_order_result = await session.execute(last_order_query)
         last_order_time = last_order_result.scalar()
 
-        # Формируем строку
-        parts = []
-
-        if today_orders > 0:
-            # Склонение: "помогли X студентам"
-            if today_orders == 1:
-                parts.append(f"🔥 Сегодня помогли <b>1</b> студенту")
-            elif today_orders < 5:
-                parts.append(f"🔥 Сегодня помогли <b>{today_orders}</b> студентам")
-            else:
-                parts.append(f"🔥 Сегодня помогли <b>{today_orders}</b> студентам")
-
+        # Сохраняем в кэш
+        last_order_iso = None
         if last_order_time:
-            # Время с последнего заказа
             if last_order_time.tzinfo is None:
                 last_order_time = MSK.localize(last_order_time)
+            last_order_iso = last_order_time.isoformat()
+
+        try:
+            redis = await _get_stats_redis()
+            cache_data = {"today_orders": today_orders, "last_order_iso": last_order_iso}
+            await redis.set(STATS_CACHE_KEY, json.dumps(cache_data), ex=STATS_CACHE_TTL)
+        except Exception:
+            pass
+
+        return _format_stats_line(today_orders, last_order_iso)
+
+
+def _format_stats_line(today_orders: int, last_order_iso: Optional[str]) -> str:
+    """Форматирует строку статистики из данных"""
+    now = datetime.now(MSK)
+    parts = []
+
+    if today_orders > 0:
+        # Склонение: "помогли X студентам"
+        if today_orders == 1:
+            parts.append(f"🔥 Сегодня помогли <b>1</b> студенту")
+        elif today_orders < 5:
+            parts.append(f"🔥 Сегодня помогли <b>{today_orders}</b> студентам")
+        else:
+            parts.append(f"🔥 Сегодня помогли <b>{today_orders}</b> студентам")
+
+    if last_order_iso:
+        try:
+            last_order_time = datetime.fromisoformat(last_order_iso)
             diff = now - last_order_time
             minutes = int(diff.total_seconds() // 60)
 
@@ -235,8 +281,10 @@ async def get_live_stats_line() -> str:
             elif minutes < 1440:  # меньше суток
                 hours = minutes // 60
                 parts.append(f"⏱ Последний заказ: {hours} ч назад")
+        except (ValueError, TypeError):
+            pass
 
-        return "\n".join(parts) if parts else ""
+    return "\n".join(parts) if parts else ""
 
 
 async def get_urgent_stats_line() -> str:
