@@ -112,32 +112,41 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
     # Инициализируем хранилище для файлов
     await state.update_data(attachments=[])
 
-    # Начинаем отслеживание для детектора брошенных заказов
-    tracker = get_abandoned_tracker()
-    if tracker:
-        await tracker.start_tracking(
-            user_id=callback.from_user.id,
-            username=callback.from_user.username,
-            fullname=callback.from_user.full_name,
-            step="Выбор типа работы",
+    # Некритичные операции — если упадут, не блокируем пользователя
+    try:
+        tracker = get_abandoned_tracker()
+        if tracker:
+            await tracker.start_tracking(
+                user_id=callback.from_user.id,
+                username=callback.from_user.username,
+                fullname=callback.from_user.full_name,
+                step="Выбор типа работы",
+            )
+    except Exception:
+        pass
+
+    try:
+        await log_action(
+            bot=bot,
+            event=LogEvent.ORDER_START,
+            user=callback.from_user,
+            details="Начал создание заказа",
+            session=session,
+            level=LogLevel.ACTION,
         )
+    except Exception:
+        pass
 
-    # Логируем начало заказа
-    await log_action(
-        bot=bot,
-        event=LogEvent.ORDER_START,
-        user=callback.from_user,
-        details="Начал создание заказа",
-        session=session,
-        level=LogLevel.ACTION,
-    )
+    # Получаем скидку пользователя (с защитой от ошибок)
+    discount = 0
+    try:
+        user_query = select(User).where(User.telegram_id == callback.from_user.id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        discount = calculate_user_discount(user)
+    except Exception:
+        pass
 
-    # Получаем скидку пользователя
-    user_query = select(User).where(User.telegram_id == callback.from_user.id)
-    user_result = await session.execute(user_query)
-    user = user_result.scalar_one_or_none()
-
-    discount = calculate_user_discount(user)
     discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
 
     text = f"""🎯  <b>Новый заказ</b>
@@ -183,10 +192,13 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         await state.update_data(work_type=work_type.value, is_urgent=True)
         await state.set_state(OrderState.entering_task)
 
-        # Обновляем трекер
-        tracker = get_abandoned_tracker()
-        if tracker:
-            await tracker.update_step(callback.from_user.id, "Ввод задания (срочно)")
+        # Обновляем трекер (некритично)
+        try:
+            tracker = get_abandoned_tracker()
+            if tracker:
+                await tracker.update_step(callback.from_user.id, "Ввод задания (срочно)")
+        except Exception:
+            pass
 
         # === ДИАЛОГОВЫЙ ЭФФЕКТ ===
 
@@ -196,26 +208,34 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         except Exception:
             pass
 
-        # 2. Typing... (ощущение что человек читает)
-        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-        await asyncio.sleep(0.8)
+        # 2. Typing + первое сообщение
+        try:
+            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+            await asyncio.sleep(0.7)
+        except Exception:
+            pass
 
-        # 3. Первое сообщение — персональная реакция
         first_name = get_first_name(callback.from_user.full_name)
         await callback.message.answer(f"🔥 <b>Понял, {first_name}!</b>")
 
-        # 4. Typing... (как будто печатает ответ)
-        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-        await asyncio.sleep(0.6)
+        # 3. Typing + основное сообщение
+        try:
+            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+            await asyncio.sleep(0.5)
+        except Exception:
+            pass
 
-        # 5. Основное сообщение с триггерами
         # Время суток — ночью особый текст
         msk_hour = datetime.now(MSK_TZ).hour
         night_line = "\n🌙 Да, работаем даже сейчас." if 0 <= msk_hour < 6 else ""
 
-        # Статистика срочных
-        urgent_stats = await get_urgent_stats_line()
-        stats_line = f"\n{urgent_stats}" if urgent_stats else ""
+        # Статистика срочных (некритично)
+        stats_line = ""
+        try:
+            urgent_stats = await get_urgent_stats_line()
+            stats_line = f"\n{urgent_stats}" if urgent_stats else ""
+        except Exception:
+            pass
 
         text = f"""Выдыхай — разберёмся.{night_line}
 
