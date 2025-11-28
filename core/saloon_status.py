@@ -30,6 +30,13 @@ LOAD_STATUS_DISPLAY = {
 }
 
 
+class OwnerStatusOverride(str, Enum):
+    """Ручное переопределение статуса Хозяина"""
+    AUTO = "auto"           # Автоматика (по времени + активности)
+    ONLINE = "online"       # Принудительно на связи
+    OFFLINE = "offline"     # Принудительно отдыхает (выходной)
+
+
 @dataclass
 class SaloonStatus:
     """Структура статуса салуна"""
@@ -38,6 +45,9 @@ class SaloonStatus:
     orders_in_progress: int = 5      # Заказов в работе (админ выставляет)
     pinned_message_id: int | None = None
     pinned_chat_id: int | None = None
+    # Статус Хозяина
+    owner_status_override: str = OwnerStatusOverride.AUTO.value
+    owner_last_activity: str | None = None  # ISO timestamp последней активности
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -110,6 +120,20 @@ class SaloonStatusManager:
         status = await self.get_status()
         status.pinned_chat_id = chat_id
         status.pinned_message_id = message_id
+        await self.save_status(status)
+        return status
+
+    async def set_owner_status(self, override: OwnerStatusOverride) -> SaloonStatus:
+        """Установить ручной статус Хозяина (auto/online/offline)"""
+        status = await self.get_status()
+        status.owner_status_override = override.value
+        await self.save_status(status)
+        return status
+
+    async def update_owner_activity(self) -> SaloonStatus:
+        """Обновить время последней активности Хозяина"""
+        status = await self.get_status()
+        status.owner_last_activity = datetime.now(ZoneInfo("Europe/Moscow")).isoformat()
         await self.save_status(status)
         return status
 
@@ -187,17 +211,37 @@ def generate_load_bar(load_status: LoadStatus) -> str:
     return bars.get(load_status, ("▓▓▓▓▓░░░░░", "50%"))
 
 
-def get_owner_status() -> tuple[str, str]:
+def get_owner_status(status: SaloonStatus) -> tuple[str, str]:
     """
-    Определяет статус Хозяина по времени МСК.
+    Определяет статус Хозяина.
+    Приоритет: ручной override > активность за 30 мин > время МСК.
     Возвращает (emoji, текст).
     """
     msk = ZoneInfo("Europe/Moscow")
-    hour = datetime.now(msk).hour
+    now = datetime.now(msk)
 
-    # 9:00 - 22:00 МСК = на связи
-    if 9 <= hour < 22:
+    # 1. Ручное переопределение
+    override = OwnerStatusOverride(status.owner_status_override)
+    if override == OwnerStatusOverride.ONLINE:
         return ("🟢", "Хозяин на связи")
+    elif override == OwnerStatusOverride.OFFLINE:
+        return ("🌙", "Хозяин отдыхает")
+
+    # 2. Проверяем активность за последние 30 минут
+    if status.owner_last_activity:
+        try:
+            last_activity = datetime.fromisoformat(status.owner_last_activity)
+            if last_activity.tzinfo is None:
+                last_activity = last_activity.replace(tzinfo=msk)
+            minutes_ago = (now - last_activity).total_seconds() / 60
+            if minutes_ago <= 30:
+                return ("🟢", "Хозяин на связи")
+        except (ValueError, TypeError):
+            pass
+
+    # 3. По времени МСК (9:00 - 22:00)
+    if 9 <= now.hour < 22:
+        return ("🟡", "Хозяин скорее всего на связи")
     else:
         return ("🌙", "Хозяин отдыхает")
 
@@ -227,8 +271,8 @@ def generate_status_message(status: SaloonStatus) -> str:
     # Прогресс-бар загрузки
     bar, percent = generate_load_bar(load)
 
-    # Статус Хозяина
-    owner_emoji, owner_status = get_owner_status()
+    # Статус Хозяина (учитывает override, активность и время)
+    owner_emoji, owner_status = get_owner_status(status)
 
     # Случайная цитата
     quote = get_random_saloon_quote()
