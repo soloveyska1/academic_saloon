@@ -182,34 +182,35 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
 
     # === ДИАЛОГОВЫЙ ЭФФЕКТ ===
 
-    # 1. Отправляем картинку (визуальный якорь)
-    photo = FSInputFile(settings.WELCOME_IMAGE)
-    await message.answer_photo(photo=photo)
-
-    # 2. Typing... (создаёт ощущение живого общения)
+    # 1. Typing... (создаёт ощущение живого общения)
     await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-    await asyncio.sleep(1.2)
+    await asyncio.sleep(1.0)
 
-    # 3. Персонализированное приветствие по имени
+    # 2. Персонализированное приветствие по имени
     first_name = get_first_name(user.fullname)
     greeting = get_time_greeting(name=first_name)
 
-    # 4. Получаем скидку пользователя
+    # 3. Получаем скидку пользователя
     _, discount = user.loyalty_status
     if user.referrer_id and user.orders_count == 0:
         discount = max(discount, 5)
 
-    # 5. Живая статистика (социальное доказательство)
-    stats_line = await get_live_stats_line()
+    # 4. Живая статистика (социальное доказательство)
+    try:
+        stats_line = await get_live_stats_line()
+    except Exception:
+        stats_line = ""
 
-    # 6. Основной текст + цитата
+    # 5. Основной текст + цитата
     main_text = get_main_text(stats_line=stats_line, discount=discount)
     quote = get_welcome_quote()
 
-    # 7. Отправляем текст с кнопками (второе сообщение = диалог)
+    # 6. Отправляем картинку с текстом и кнопками (одно сообщение!)
     full_text = f"{greeting}\n\n{main_text}{quote}"
+    photo = FSInputFile(settings.WELCOME_IMAGE)
 
-    await message.answer(
-        text=full_text,
+    await message.answer_photo(
+        photo=photo,
+        caption=full_text,
         reply_markup=get_main_menu_keyboard()
     )
