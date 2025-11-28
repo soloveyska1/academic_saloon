@@ -1,5 +1,10 @@
+import asyncio
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
+from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -26,7 +31,11 @@ from bot.keyboards.orders import (
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
+from bot.services.daily_stats import get_urgent_stats_line
+from bot.texts.terms import get_first_name
 from core.config import settings
+
+MSK_TZ = ZoneInfo("Europe/Moscow")
 
 router = Router()
 
@@ -168,11 +177,10 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         )
         return
 
-    # Для срочных заказов — сразу переходим к photo_task (единственный тип в категории)
+    # Для срочных заказов — диалоговый эффект с психологическими триггерами
     if category_key == "urgent" and len(category["types"]) == 1:
         work_type = category["types"][0]
-        # Имитируем выбор типа работы
-        await state.update_data(work_type=work_type.value)
+        await state.update_data(work_type=work_type.value, is_urgent=True)
         await state.set_state(OrderState.entering_task)
 
         # Обновляем трекер
@@ -180,16 +188,43 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         if tracker:
             await tracker.update_step(callback.from_user.id, "Ввод задания (срочно)")
 
-        # Показываем экран ввода задания
-        text = """🔥  <b>Срочный заказ!</b>
+        # === ДИАЛОГОВЫЙ ЭФФЕКТ ===
 
-Скинь фото задания или опиши что нужно.
-Можно несколько файлов.
+        # 1. Удаляем старое сообщение
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
 
-<i>Разберусь и быстро отвечу с ценой.</i>"""
+        # 2. Typing... (ощущение что человек читает)
+        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+        await asyncio.sleep(0.8)
 
-        await callback.message.edit_caption(
-            caption=text,
+        # 3. Первое сообщение — персональная реакция
+        first_name = get_first_name(callback.from_user.full_name)
+        await callback.message.answer(f"🔥 <b>Понял, {first_name}!</b>")
+
+        # 4. Typing... (как будто печатает ответ)
+        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+        await asyncio.sleep(0.6)
+
+        # 5. Основное сообщение с триггерами
+        # Время суток — ночью особый текст
+        msk_hour = datetime.now(MSK_TZ).hour
+        night_line = "\n🌙 Да, работаем даже сейчас." if 0 <= msk_hour < 6 else ""
+
+        # Статистика срочных
+        urgent_stats = await get_urgent_stats_line()
+        stats_line = f"\n{urgent_stats}" if urgent_stats else ""
+
+        text = f"""Выдыхай — разберёмся.{night_line}
+
+Кидай задание: фото, файл, голосовое.
+{stats_line}
+⏱ Обычно отвечаю за 5-15 мин"""
+
+        await callback.message.answer(
+            text=text,
             reply_markup=get_task_input_keyboard()
         )
         return
@@ -435,10 +470,19 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
         attachments.append(attachment)
         await state.update_data(attachments=attachments)
 
+        # Для срочных заказов — typing эффект (как будто смотрим файл)
+        is_urgent = data.get("is_urgent", False)
+        if is_urgent:
+            await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
+            await asyncio.sleep(1.0)
+
         # Формируем текст подтверждения
         count = len(attachments)
         if count == 1:
-            confirm_text = "✅ Получил! Это всё или будет ещё?"
+            if is_urgent:
+                confirm_text = "✅ Получил, смотрю! Это всё или будет ещё?"
+            else:
+                confirm_text = "✅ Получил! Это всё или будет ещё?"
         else:
             confirm_text = f"✅ Принял! Уже {count} файл(ов). Ещё?"
 
