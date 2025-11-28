@@ -26,11 +26,14 @@ from bot.keyboards.orders import (
     get_edit_order_keyboard,
     get_cancel_order_keyboard,
     get_deadline_with_date,
+    get_urgent_order_keyboard,
+    get_urgent_task_keyboard,
     SUBJECTS,
     DEADLINES,
     WORK_CATEGORIES,
     WORKS_REQUIRE_SUBJECT,
 )
+from core.saloon_status import saloon_manager, get_owner_status
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
 from bot.services.daily_stats import get_urgent_stats_line
@@ -96,9 +99,20 @@ def get_attachment_confirm_text(attachment: dict, count: int, is_urgent: bool = 
             else:
                 extra = f" ({secs} сек)"
 
-    # Для срочных — более живой текст
+    # Для срочных — особое подтверждение
     if is_urgent and count == 1:
-        return f"{base_text}{extra}, смотрю!"
+        return f"""✅ <b>Задание получено!</b>
+
+{base_text}{extra}
+
+⏳ Оцениваю объём...
+<i>Напишу через пару минут с ценой и сроком</i>
+
+Можешь добавить ещё файлы или нажми «Готово»"""
+
+    # Для срочных при добавлении
+    if is_urgent:
+        return f"{base_text}{extra}\n📎 Всего: {pluralize_files(count)}\n\n<i>Добавь ещё или жми «Готово»</i>"
 
     # Счётчик если больше одного
     if count > 1:
@@ -357,7 +371,10 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         except Exception:
             pass
 
-        # === ДИАЛОГОВЫЙ ЭФФЕКТ ===
+        # === СРОЧНЫЙ ЗАКАЗ — НОВЫЙ ДИЗАЙН ===
+
+        # Сохраняем что это срочный заказ
+        await state.update_data(is_urgent=True, work_type=WorkType.PHOTO_TASK.value)
 
         # 1. Удаляем старое сообщение
         try:
@@ -365,44 +382,69 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         except Exception:
             pass
 
-        # 2. Typing + первое сообщение
-        try:
-            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-            await asyncio.sleep(0.7)
-        except Exception:
-            pass
-
-        first_name = get_first_name(callback.from_user.full_name)
-        await callback.message.answer(f"🔥 <b>Понял, {first_name}!</b>")
-
-        # 3. Typing + основное сообщение
+        # 2. Typing + первое сообщение (эмпатия)
         try:
             await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
             await asyncio.sleep(0.5)
         except Exception:
             pass
 
-        # Время суток — ночью особый текст
-        msk_hour = datetime.now(MSK_TZ).hour
-        night_line = "\n🌙 Да, работаем даже сейчас." if 0 <= msk_hour < 6 else ""
+        first_name = get_first_name(callback.from_user.full_name)
+        await callback.message.answer(f"🔥 <b>Понял, {first_name}! Разберёмся.</b>")
 
-        # Статистика срочных (некритично)
-        stats_line = ""
+        # 3. Typing + основное сообщение
         try:
-            urgent_stats = await get_urgent_stats_line()
-            stats_line = f"\n{urgent_stats}" if urgent_stats else ""
+            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+            await asyncio.sleep(0.4)
         except Exception:
             pass
 
-        text = f"""Выдыхай — разберёмся.{night_line}
+        # Получаем статус Хозяина
+        status = await saloon_manager.get_status()
+        owner_emoji, owner_text = get_owner_status(status)
 
-Кидай задание: фото, файл, голосовое.
+        # Адаптивный текст по статусу
+        if owner_emoji == "🟢":
+            response_time = "⏱ Отвечу за 5-15 минут"
+        elif owner_emoji == "🟡":
+            response_time = "⏱ Скорее всего отвечу быстро"
+        else:
+            # Ночь или offline
+            msk_hour = datetime.now(MSK_TZ).hour
+            if msk_hour < 9:
+                response_time = "⏱ Отвечу до 9:00 МСК"
+            else:
+                response_time = "⏱ Отвечу как только смогу"
+
+        # Статистика срочных (социальное доказательство)
+        stats_line = ""
+        try:
+            urgent_stats = await get_urgent_stats_line()
+            if urgent_stats:
+                stats_line = f"\n{urgent_stats}"
+        except Exception:
+            pass
+
+        # Время суток — ночью особый текст
+        msk_hour = datetime.now(MSK_TZ).hour
+        night_line = "\n🌙 Да, работаем даже сейчас!" if 0 <= msk_hour < 6 else ""
+
+        text = f"""🚨 <b>СРОЧНЫЙ ЗАКАЗ</b>
+
+Выдыхай — справимся!{night_line}
+
+{owner_emoji} <b>{owner_text}</b>
+{response_time}
 {stats_line}
-⏱ Обычно отвечаю за 5-15 мин"""
+
+───────────
+
+<b>Когда нужно сдать?</b>
+<i>Выбери срок — это влияет на цену</i>"""
 
         await callback.message.answer(
             text=text,
-            reply_markup=get_task_input_keyboard()
+            reply_markup=get_urgent_order_keyboard()
         )
         return
 
@@ -441,6 +483,153 @@ async def back_to_categories(callback: CallbackQuery, state: FSMContext, session
         reply_markup=get_work_category_keyboard()
     )
 
+
+# ══════════════════════════════════════════════════════════════
+#                    СРОЧНЫЙ ЗАКАЗ — ВЫБОР ДЕДЛАЙНА
+# ══════════════════════════════════════════════════════════════
+
+# Наценки за срочность
+URGENT_SURCHARGES = {
+    "today": 50,
+    "tomorrow": 30,
+    "3_days": 15,
+    "asap": 0,  # Определим после оценки
+}
+
+URGENT_DEADLINE_LABELS = {
+    "today": "сегодня",
+    "tomorrow": "завтра",
+    "3_days": "2-3 дня",
+    "asap": "как можно скорее",
+}
+
+
+@router.callback_query(OrderState.choosing_type, F.data.startswith("urgent_deadline:"))
+async def process_urgent_deadline(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Обработка выбора дедлайна для срочного заказа"""
+    await callback.answer()
+
+    deadline_key = callback.data.split(":")[1]
+    surcharge = URGENT_SURCHARGES.get(deadline_key, 0)
+    deadline_label = URGENT_DEADLINE_LABELS.get(deadline_key, deadline_key)
+
+    # Сохраняем данные
+    await state.update_data(
+        urgent_deadline=deadline_key,
+        urgent_surcharge=surcharge,
+        deadline=deadline_key if deadline_key != "asap" else "today"
+    )
+    await state.set_state(OrderState.entering_task)
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Typing эффект
+    try:
+        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+        await asyncio.sleep(0.3)
+    except Exception:
+        pass
+
+    # Формируем текст с чек-листом
+    if deadline_key == "asap":
+        deadline_text = "⚡ <b>Как можно скорее</b>\n<i>Наценку определим после оценки объёма</i>"
+    else:
+        deadline_text = f"⏰ <b>Срок:</b> {deadline_label}\n💰 <b>Наценка:</b> +{surcharge}%"
+
+    text = f"""📝 <b>Отлично! Теперь кидай задание</b>
+
+{deadline_text}
+
+───────────
+
+<b>📎 Что приложить:</b>
+∙ Фото/скан задания
+∙ Методичку (если есть)
+∙ Точное время сдачи
+
+<i>Можно отправить фото, файл, голосовое или текст</i>"""
+
+    await callback.message.answer(
+        text=text,
+        reply_markup=get_urgent_task_keyboard()
+    )
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details=f"Срочный заказ: дедлайн {deadline_label}",
+    )
+
+
+@router.callback_query(OrderState.choosing_type, F.data == "back_to_urgent")
+@router.callback_query(OrderState.entering_task, F.data == "back_to_urgent")
+async def back_to_urgent(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Возврат к экрану выбора дедлайна срочного заказа"""
+    await callback.answer()
+    await state.set_state(OrderState.choosing_type)
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Получаем статус Хозяина
+    status = await saloon_manager.get_status()
+    owner_emoji, owner_text = get_owner_status(status)
+
+    # Адаптивный текст по статусу
+    if owner_emoji == "🟢":
+        response_time = "⏱ Отвечу за 5-15 минут"
+    elif owner_emoji == "🟡":
+        response_time = "⏱ Скорее всего отвечу быстро"
+    else:
+        msk_hour = datetime.now(MSK_TZ).hour
+        if msk_hour < 9:
+            response_time = "⏱ Отвечу до 9:00 МСК"
+        else:
+            response_time = "⏱ Отвечу как только смогу"
+
+    # Статистика
+    stats_line = ""
+    try:
+        urgent_stats = await get_urgent_stats_line()
+        if urgent_stats:
+            stats_line = f"\n{urgent_stats}"
+    except Exception:
+        pass
+
+    msk_hour = datetime.now(MSK_TZ).hour
+    night_line = "\n🌙 Да, работаем даже сейчас!" if 0 <= msk_hour < 6 else ""
+
+    text = f"""🚨 <b>СРОЧНЫЙ ЗАКАЗ</b>
+
+Выдыхай — справимся!{night_line}
+
+{owner_emoji} <b>{owner_text}</b>
+{response_time}
+{stats_line}
+
+───────────
+
+<b>Когда нужно сдать?</b>
+<i>Выбери срок — это влияет на цену</i>"""
+
+    await callback.message.answer(
+        text=text,
+        reply_markup=get_urgent_order_keyboard()
+    )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ВЫБОР ТИПА РАБОТЫ (ОБЫЧНЫЙ FLOW)
+# ══════════════════════════════════════════════════════════════
 
 @router.callback_query(OrderState.choosing_type, F.data.startswith("order_type:"))
 async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
@@ -1145,20 +1334,28 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     await state.clear()
 
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
+    is_urgent = data.get("is_urgent", False)
 
     # Логируем подтверждение заказа
+    urgent_prefix = "🚨 СРОЧНЫЙ " if is_urgent else ""
+    extra_data = {
+        "Тип": work_label,
+        "Направление": data.get("subject_label", "—"),
+        "Срок": data.get("deadline_label", "—"),
+        "Скидка": f"{data.get('discount', 0)}%",
+        "Вложений": len(data.get("attachments", [])),
+    }
+    if is_urgent:
+        surcharge = data.get("urgent_surcharge", 0)
+        if surcharge > 0:
+            extra_data["Наценка"] = f"+{surcharge}%"
+
     await log_action(
         bot=bot,
         event=LogEvent.ORDER_CONFIRM,
         user=callback.from_user,
-        details=f"Заказ #{order.id} подтверждён",
-        extra_data={
-            "Тип": work_label,
-            "Направление": data.get("subject_label", "—"),
-            "Срок": data.get("deadline_label", "—"),
-            "Скидка": f"{data.get('discount', 0)}%",
-            "Вложений": len(data.get("attachments", [])),
-        },
+        details=f"{urgent_prefix}Заказ #{order.id} подтверждён",
+        extra_data=extra_data,
         session=session,
         level=LogLevel.ACTION,
         silent=False,
@@ -1469,6 +1666,7 @@ def get_order_admin_keyboard(order_id: int, user_id: int) -> InlineKeyboardMarku
 async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     """Уведомление админов о новой заявке со всеми вложениями"""
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
+    is_urgent = data.get("is_urgent", False)
 
     subject_label = data.get("subject_label", "—")
     if data.get("subject") == "photo_task":
@@ -1476,10 +1674,28 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
 
     discount_line = f"◈  Скидка: {data.get('discount', 0)}%\n" if data.get("discount", 0) > 0 else ""
 
+    # Для срочных — наценка
+    urgent_line = ""
+    if is_urgent:
+        surcharge = data.get("urgent_surcharge", 0)
+        urgent_deadline = URGENT_DEADLINE_LABELS.get(data.get("urgent_deadline", ""), "")
+        if surcharge > 0:
+            urgent_line = f"◈  ⚡ Наценка за срочность: +{surcharge}%\n"
+        elif urgent_deadline:
+            urgent_line = f"◈  ⚡ Срочный: {urgent_deadline}\n"
+
     # Формируем строку с username или без
     username_str = f"@{user.username}" if user.username else "без username"
 
-    text = f"""🆕  <b>Новая заявка #{order.id}</b>
+    # Разный заголовок для срочных и обычных заказов
+    if is_urgent:
+        header = f"""🚨🚨🚨  <b>СРОЧНАЯ ЗАЯВКА #{order.id}</b>  🚨🚨🚨
+
+⚡ <b>ТРЕБУЕТ БЫСТРОГО ОТВЕТА!</b>"""
+    else:
+        header = f"""🆕  <b>Новая заявка #{order.id}</b>"""
+
+    text = f"""{header}
 
 ◈  Клиент: {user.full_name} ({username_str})
 ◈  ID: <code>{user.id}</code>
@@ -1487,7 +1703,7 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
 ◈  Тип: {work_label}
 ◈  Направление: {subject_label}
 ◈  Срок: {data.get('deadline_label', '—')}
-{discount_line}"""
+{urgent_line}{discount_line}"""
 
     attachments = data.get("attachments", [])
     admin_keyboard = get_order_admin_keyboard(order.id, user.id)

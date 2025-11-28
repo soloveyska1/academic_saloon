@@ -295,6 +295,71 @@ def get_subject_keyboard() -> InlineKeyboardMarkup:
 
 
 # ══════════════════════════════════════════════════════════════
+#                    СРОЧНЫЙ ЗАКАЗ
+# ══════════════════════════════════════════════════════════════
+
+def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура для срочного заказа.
+    Быстрый выбор дедлайна + возможность сразу скинуть задание.
+    """
+    now = datetime.now(MSK_TZ)
+
+    buttons = []
+
+    # Кнопка "Сегодня" только если ещё не поздно (до 20:00)
+    if now.hour < 20:
+        buttons.append([
+            InlineKeyboardButton(
+                text="⚡ Сдать сегодня (+50%)",
+                callback_data="urgent_deadline:today"
+            )
+        ])
+
+    # Завтра
+    buttons.append([
+        InlineKeyboardButton(
+            text="🔥 Сдать завтра (+30%)",
+            callback_data="urgent_deadline:tomorrow"
+        )
+    ])
+
+    # 2-3 дня
+    buttons.append([
+        InlineKeyboardButton(
+            text="📅 2-3 дня (+15%)",
+            callback_data="urgent_deadline:3_days"
+        )
+    ])
+
+    # Просто скинуть — для тех кто в панике
+    buttons.append([
+        InlineKeyboardButton(
+            text="📸 Просто скинуть — разберёмся",
+            callback_data="urgent_deadline:asap"
+        )
+    ])
+
+    # Назад и отмена
+    buttons.append([
+        InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_categories"),
+        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_urgent_task_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура после выбора дедлайна в срочном заказе"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_urgent"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ]
+    ])
+
+
+# ══════════════════════════════════════════════════════════════
 #                    ШАГ 3: ВВОД ЗАДАНИЯ
 # ══════════════════════════════════════════════════════════════
 
