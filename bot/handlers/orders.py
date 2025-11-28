@@ -45,6 +45,143 @@ router = Router()
 #                    ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ══════════════════════════════════════════════════════════════
 
+MAX_ATTACHMENTS = 10  # Максимум вложений в заказе
+
+
+def pluralize_files(n: int) -> str:
+    """Правильное склонение слова 'файл'"""
+    if n % 10 == 1 and n % 100 != 11:
+        return f"{n} файл"
+    elif 2 <= n % 10 <= 4 and not (12 <= n % 100 <= 14):
+        return f"{n} файла"
+    return f"{n} файлов"
+
+
+def get_attachment_confirm_text(attachment: dict, count: int, is_urgent: bool = False) -> str:
+    """
+    Генерирует умное подтверждение в зависимости от типа вложения.
+    Показывает что именно получили + сколько всего.
+    """
+    att_type = attachment.get("type", "unknown")
+
+    # Эмодзи и текст по типу
+    type_confirms = {
+        "text": "💬 Текст сохранил",
+        "photo": "📸 Фото получил",
+        "document": "📄 Файл получил",
+        "voice": "🎤 Голосовое записал",
+        "audio": "🎵 Аудио получил",
+        "video": "🎬 Видео получил",
+        "video_note": "⚪ Кружок получил",
+    }
+
+    base_text = type_confirms.get(att_type, "✅ Получил")
+
+    # Дополнительная инфа по типу
+    extra = ""
+    if att_type == "document":
+        fname = attachment.get("file_name", "")
+        if fname:
+            # Обрезаем длинные имена
+            if len(fname) > 25:
+                fname = fname[:22] + "..."
+            extra = f": {fname}"
+    elif att_type == "voice":
+        duration = attachment.get("duration", 0)
+        if duration:
+            mins, secs = divmod(duration, 60)
+            if mins:
+                extra = f" ({mins}:{secs:02d})"
+            else:
+                extra = f" ({secs} сек)"
+
+    # Для срочных — более живой текст
+    if is_urgent and count == 1:
+        return f"{base_text}{extra}, смотрю!"
+
+    # Счётчик если больше одного
+    if count > 1:
+        return f"{base_text}{extra}\n📎 Всего: {pluralize_files(count)}"
+
+    return f"{base_text}{extra}"
+
+
+def format_attachments_preview(attachments: list) -> str:
+    """
+    Форматирует мини-превью загруженных файлов.
+    Показывает что уже есть в заказе.
+    """
+    if not attachments:
+        return ""
+
+    # Считаем по типам
+    counts = {}
+    text_preview = None
+    doc_names = []
+
+    for att in attachments:
+        att_type = att.get("type", "unknown")
+        counts[att_type] = counts.get(att_type, 0) + 1
+
+        # Сохраняем превью текста
+        if att_type == "text" and not text_preview:
+            content = att.get("content", "")
+            if len(content) > 40:
+                text_preview = content[:37] + "..."
+            else:
+                text_preview = content
+
+        # Имена документов (первые 2)
+        if att_type == "document" and len(doc_names) < 2:
+            fname = att.get("file_name", "файл")
+            if len(fname) > 20:
+                fname = fname[:17] + "..."
+            doc_names.append(fname)
+
+    # Формируем строки
+    lines = []
+
+    type_icons = {
+        "text": "💬",
+        "photo": "📸",
+        "document": "📄",
+        "voice": "🎤",
+        "audio": "🎵",
+        "video": "🎬",
+        "video_note": "⚪",
+    }
+
+    type_labels = {
+        "text": "текст",
+        "photo": "фото",
+        "document": "файл",
+        "voice": "голосовое",
+        "audio": "аудио",
+        "video": "видео",
+        "video_note": "кружок",
+    }
+
+    for att_type, count in counts.items():
+        icon = type_icons.get(att_type, "📎")
+        label = type_labels.get(att_type, att_type)
+
+        if count > 1:
+            lines.append(f"{icon} {count} {label}")
+        else:
+            lines.append(f"{icon} {label}")
+
+    # Добавляем превью текста
+    if text_preview:
+        lines.append(f"   «{text_preview}»")
+
+    # Добавляем имена файлов
+    if doc_names:
+        for name in doc_names:
+            lines.append(f"   • {name}")
+
+    return "\n".join(lines)
+
+
 def calculate_user_discount(user: User | None) -> int:
     """
     Рассчитывает скидку пользователя на основе:
@@ -352,7 +489,7 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
         except Exception:
             pass
 
-        await show_task_input_screen(callback.message, send_new=True)
+        await show_task_input_screen(callback.message, send_new=True, work_type=work_type)
         return
 
     # Крупные работы — спрашиваем направление
@@ -426,32 +563,97 @@ async def process_subject(callback: CallbackQuery, state: FSMContext, bot: Bot, 
     except Exception:
         pass
 
-    await show_task_input_screen(callback.message)
+    # Передаём work_type для контекстного текста
+    try:
+        work_type = WorkType(data["work_type"])
+    except (KeyError, ValueError):
+        work_type = None
+
+    await show_task_input_screen(callback.message, work_type=work_type)
 
 
-async def show_task_input_screen(message: Message, is_photo_task: bool = False, is_edit: bool = False, send_new: bool = False):
-    """Показать экран ввода задания"""
+async def show_task_input_screen(
+    message: Message,
+    is_photo_task: bool = False,
+    send_new: bool = False,
+    work_type: WorkType | None = None,
+):
+    """
+    Показать экран ввода задания.
+    Контекстный текст зависит от типа работы.
+    """
     if is_photo_task:
-        text = """📸  <b>Просто скинь фото задания</b>
+        text = """📸  <b>Кидай задание</b>
 
-Кидай прямо сюда — разберёмся вместе:
-◈  Фото методички
-◈  Скриншот из чата
-◈  Файл с заданием
-◈  Или просто опиши словами
+Что угодно:
+• Фото методички
+• Скриншот из чата
+• Файл с требованиями
+• Или просто опиши словами
 
-<i>Можно прислать несколько файлов.</i>"""
+<i>Можно несколько файлов.</i>"""
+
+    # Контекстные подсказки под тип работы
+    elif work_type == WorkType.DIPLOMA:
+        text = """📝  <b>Кидай задание</b>
+
+Для диплома желательно:
+• Тема (если утверждена)
+• Методичка / требования
+• План или содержание
+
+<i>Можно несколько файлов.</i>"""
+
+    elif work_type == WorkType.COURSEWORK:
+        text = """📝  <b>Кидай задание</b>
+
+Для курсовой полезно:
+• Тема
+• Методичка
+• Требования к оформлению
+
+<i>Можно несколько файлов.</i>"""
+
+    elif work_type in (WorkType.CONTROL, WorkType.TEST, WorkType.HOMEWORK):
+        text = """📝  <b>Кидай задание</b>
+
+• Фото задачек
+• Скриншот из чата
+• Файл с вариантом
+
+<i>Можно несколько файлов.</i>"""
+
+    elif work_type == WorkType.PRESENTATION:
+        text = """📝  <b>Кидай задание</b>
+
+Для презентации:
+• Тема
+• Сколько слайдов нужно
+• Какой стиль (строгий/креативный)
+
+<i>Можно несколько файлов.</i>"""
+
+    elif work_type == WorkType.ESSAY:
+        text = """📝  <b>Кидай задание</b>
+
+Для эссе:
+• Тема
+• Объём (страниц/слов)
+• Стиль (если есть требования)
+
+<i>Можно несколько файлов.</i>"""
+
     else:
-        text = """📝  <b>Опиши задание</b>
+        # Универсальный текст
+        text = """📝  <b>Кидай задание</b>
 
-Как тебе удобнее:
-1️⃣  Напиши тему (если знаешь)
-2️⃣  Перешли сообщение от старосты/препода
-3️⃣  Скинь фото/файл методички
-4️⃣  Запиши голосовое (если лень печатать)
+Что угодно:
+• Тема или описание
+• Фото/скриншот задания
+• Файл с требованиями
+• Голосовое (если лень печатать)
 
-<i>Кидай прямо сюда 👇
-Можно прислать несколько файлов.</i>"""
+<i>Можно несколько файлов.</i>"""
 
     if send_new:
         await message.answer(text, reply_markup=get_task_input_keyboard())
@@ -470,13 +672,30 @@ async def show_task_input_screen(message: Message, is_photo_task: bool = False, 
 async def process_task_input(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """
     Обработка ввода задания — принимаем всё:
-    текст, фото, документы, голосовые, видео, пересылки
+    текст, фото, документы, голосовые, видео, пересылки.
+
+    Особенности:
+    - Typing эффект для "живости"
+    - Умные подтверждения по типу контента
+    - Защита от дублей (по file_id)
+    - Лимит вложений
     """
     data = await state.get_data()
     attachments = data.get("attachments", [])
+    is_urgent = data.get("is_urgent", False)
+
+    # Проверка лимита
+    if len(attachments) >= MAX_ATTACHMENTS:
+        await message.answer(
+            f"⚠️ Максимум {MAX_ATTACHMENTS} вложений.\n"
+            "Нажми «Готово» или очисти и начни заново.",
+            reply_markup=get_task_continue_keyboard()
+        )
+        return
 
     # Определяем тип контента и сохраняем
     attachment = None
+    file_id = None
 
     if message.text:
         # Текстовое сообщение
@@ -487,45 +706,51 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
     elif message.photo:
         # Фото — берём самое большое
         photo = message.photo[-1]
+        file_id = photo.file_id
         attachment = {
             "type": "photo",
-            "file_id": photo.file_id,
+            "file_id": file_id,
             "caption": message.caption or "",
         }
     elif message.document:
         # Документ/файл
+        file_id = message.document.file_id
         attachment = {
             "type": "document",
-            "file_id": message.document.file_id,
+            "file_id": file_id,
             "file_name": message.document.file_name or "файл",
             "caption": message.caption or "",
         }
     elif message.voice:
         # Голосовое сообщение
+        file_id = message.voice.file_id
         attachment = {
             "type": "voice",
-            "file_id": message.voice.file_id,
+            "file_id": file_id,
             "duration": message.voice.duration,
         }
     elif message.audio:
         # Аудио файл
+        file_id = message.audio.file_id
         attachment = {
             "type": "audio",
-            "file_id": message.audio.file_id,
+            "file_id": file_id,
             "file_name": message.audio.file_name or "аудио",
         }
     elif message.video:
         # Видео
+        file_id = message.video.file_id
         attachment = {
             "type": "video",
-            "file_id": message.video.file_id,
+            "file_id": file_id,
             "caption": message.caption or "",
         }
     elif message.video_note:
         # Видео-кружок
+        file_id = message.video_note.file_id
         attachment = {
             "type": "video_note",
-            "file_id": message.video_note.file_id,
+            "file_id": file_id,
         }
     elif message.sticker:
         # Стикер — игнорируем, но не ругаемся
@@ -536,6 +761,16 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
         return
 
     if attachment:
+        # Защита от дублей (по file_id)
+        if file_id:
+            existing_ids = {att.get("file_id") for att in attachments if att.get("file_id")}
+            if file_id in existing_ids:
+                await message.answer(
+                    "☝️ Этот файл уже добавлен!",
+                    reply_markup=get_task_continue_keyboard()
+                )
+                return
+
         # Если это пересланное сообщение — добавляем информацию
         if message.forward_from or message.forward_from_chat:
             attachment["forwarded"] = True
@@ -547,21 +782,28 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
         attachments.append(attachment)
         await state.update_data(attachments=attachments)
 
-        # Для срочных заказов — typing эффект (как будто смотрим файл)
-        is_urgent = data.get("is_urgent", False)
-        if is_urgent:
+        # Typing эффект для всех — создаёт ощущение что кто-то смотрит
+        try:
             await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-            await asyncio.sleep(1.0)
+            delay = 0.8 if is_urgent else 0.5
+            await asyncio.sleep(delay)
+        except Exception:
+            pass
 
-        # Формируем текст подтверждения
+        # Умное подтверждение по типу контента
         count = len(attachments)
-        if count == 1:
-            if is_urgent:
-                confirm_text = "✅ Получил, смотрю! Это всё или будет ещё?"
-            else:
-                confirm_text = "✅ Получил! Это всё или будет ещё?"
-        else:
-            confirm_text = f"✅ Принял! Уже {count} файл(ов). Ещё?"
+        confirm_text = get_attachment_confirm_text(attachment, count, is_urgent)
+
+        # Добавляем инфо о пересылке
+        if attachment.get("forwarded"):
+            forward_from = attachment.get("forward_from", "")
+            if forward_from:
+                confirm_text += f"\n📨 Переслано от: {forward_from}"
+
+        # Предупреждение о приближении к лимиту
+        if count >= MAX_ATTACHMENTS - 2:
+            remaining = MAX_ATTACHMENTS - count
+            confirm_text += f"\n\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
 
         await message.answer(confirm_text, reply_markup=get_task_continue_keyboard())
 
@@ -571,12 +813,42 @@ async def task_add_more(callback: CallbackQuery, state: FSMContext):
     """Пользователь хочет добавить ещё файлов"""
     await callback.answer("Кидай ещё!")
 
-    text = """📎  <b>Добавь ещё</b>
+    data = await state.get_data()
+    attachments = data.get("attachments", [])
+
+    # Показываем превью того что уже есть
+    if attachments:
+        preview = format_attachments_preview(attachments)
+        text = f"""📎  <b>Добавь ещё</b>
+
+Уже есть:
+{preview}
+
+Кидай ещё или нажми «Готово»."""
+    else:
+        text = """📎  <b>Добавь ещё</b>
 
 Кидай файлы, фото или текст.
 Когда всё — нажми «Готово»."""
 
     await callback.message.edit_text(text, reply_markup=get_task_input_keyboard())
+
+
+@router.callback_query(OrderState.entering_task, F.data == "task_clear")
+async def task_clear(callback: CallbackQuery, state: FSMContext):
+    """Очистить все вложения и начать заново"""
+    await callback.answer("Очищено!")
+
+    data = await state.get_data()
+    await state.update_data(attachments=[])
+
+    # Получаем work_type для контекста
+    try:
+        work_type = WorkType(data.get("work_type", ""))
+    except ValueError:
+        work_type = None
+
+    await show_task_input_screen(callback.message, work_type=work_type)
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_done")
@@ -977,17 +1249,24 @@ async def back_to_task(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     attachments = data.get("attachments", [])
 
+    # Получаем work_type для контекста
+    try:
+        work_type = WorkType(data.get("work_type", ""))
+    except ValueError:
+        work_type = None
+
     if attachments:
-        # Уже есть вложения — показываем кнопки продолжения
-        count = len(attachments)
+        # Уже есть вложения — показываем превью
+        preview = format_attachments_preview(attachments)
         text = f"""📝  <b>Задание</b>
 
-Уже получено: {count} файл(ов)
+Уже получено:
+{preview}
 
 Добавить ещё или продолжить?"""
         await callback.message.edit_text(text, reply_markup=get_task_continue_keyboard())
     else:
-        await show_task_input_screen(callback.message)
+        await show_task_input_screen(callback.message, work_type=work_type)
 
 
 @router.callback_query(OrderState.confirming, F.data == "order_edit")
@@ -1038,9 +1317,18 @@ async def edit_subject(callback: CallbackQuery, state: FSMContext, session: Asyn
 async def edit_task(callback: CallbackQuery, state: FSMContext):
     """Изменить задание — очищаем вложения"""
     await callback.answer()
+
+    data = await state.get_data()
+
+    # Получаем work_type для контекста
+    try:
+        work_type = WorkType(data.get("work_type", ""))
+    except ValueError:
+        work_type = None
+
     await state.update_data(attachments=[])
     await state.set_state(OrderState.entering_task)
-    await show_task_input_screen(callback.message)
+    await show_task_input_screen(callback.message, work_type=work_type)
 
 
 @router.callback_query(F.data == "edit_deadline")
