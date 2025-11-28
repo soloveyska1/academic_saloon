@@ -517,7 +517,8 @@ async def process_urgent_deadline(callback: CallbackQuery, state: FSMContext, bo
     await state.update_data(
         urgent_deadline=deadline_key,
         urgent_surcharge=surcharge,
-        deadline=deadline_key if deadline_key != "asap" else "today"
+        deadline=deadline_key if deadline_key != "asap" else "today",
+        deadline_label=deadline_label,
     )
     await state.set_state(OrderState.entering_task)
 
@@ -1061,7 +1062,7 @@ async def task_clear(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(OrderState.entering_task, F.data == "task_done")
 async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
-    """Пользователь закончил ввод задания → переход к срокам"""
+    """Пользователь закончил ввод задания → переход к срокам или подтверждению"""
     data = await state.get_data()
     attachments = data.get("attachments", [])
 
@@ -1070,8 +1071,6 @@ async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, sessio
         return
 
     await callback.answer()
-
-    await state.set_state(OrderState.choosing_deadline)
 
     # Некритичные операции
     try:
@@ -1084,6 +1083,28 @@ async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, sessio
         )
     except Exception:
         pass
+
+    # Для срочных заказов срок уже выбран — сразу к подтверждению
+    if data.get("is_urgent"):
+        try:
+            tracker = get_abandoned_tracker()
+            if tracker:
+                await tracker.update_step(callback.from_user.id, "Подтверждение заказа")
+        except Exception:
+            pass
+
+        # Typing для плавного перехода
+        try:
+            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+            await asyncio.sleep(0.3)
+        except Exception:
+            pass
+
+        await show_order_confirmation(callback, state, bot, session)
+        return
+
+    # Обычный заказ — переход к выбору срока
+    await state.set_state(OrderState.choosing_deadline)
 
     try:
         tracker = get_abandoned_tracker()
