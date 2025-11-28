@@ -11,11 +11,18 @@ class OrderStatus(str, enum.Enum):
     PENDING = "pending"          # Ожидает оценки
     CONFIRMED = "confirmed"      # Подтверждён, ждёт оплаты
     PAID = "paid"                # Оплачен аванс
+    PAID_FULL = "paid_full"      # Оплачен полностью
     IN_PROGRESS = "in_progress"  # В работе
     REVIEW = "review"            # На проверке у клиента
     COMPLETED = "completed"      # Завершён
     CANCELLED = "cancelled"      # Отменён
     REJECTED = "rejected"        # Отклонён админом
+
+
+class PaymentScheme(str, enum.Enum):
+    """Схемы оплаты"""
+    FULL = "full"        # 100% сразу
+    HALF = "half"        # 50% аванс + 50% после
 
 
 class WorkType(str, enum.Enum):
@@ -98,6 +105,11 @@ class Order(Base):
     bonus_used: Mapped[float] = mapped_column(Float, default=0.0)  # Списанные бонусы
     paid_amount: Mapped[float] = mapped_column(Float, default=0.0)
 
+    # Схема и способ оплаты
+    payment_scheme: Mapped[str | None] = mapped_column(String(20), nullable=True)  # full / half
+    payment_method: Mapped[str | None] = mapped_column(String(20), nullable=True)  # card / sbp / transfer
+    yookassa_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)  # ID платежа в ЮKassa
+
     # Статус
     status: Mapped[str] = mapped_column(String(20), default=OrderStatus.DRAFT.value)
 
@@ -115,7 +127,8 @@ class Order(Base):
             OrderStatus.DRAFT.value: "📝 Черновик",
             OrderStatus.PENDING.value: "⏳ Ожидает оценки",
             OrderStatus.CONFIRMED.value: "✅ Подтверждён",
-            OrderStatus.PAID.value: "💰 Оплачен",
+            OrderStatus.PAID.value: "💰 Аванс оплачен",
+            OrderStatus.PAID_FULL.value: "💰 Полностью оплачен",
             OrderStatus.IN_PROGRESS.value: "⚙️ В работе",
             OrderStatus.REVIEW.value: "🔍 На проверке",
             OrderStatus.COMPLETED.value: "✨ Завершён",

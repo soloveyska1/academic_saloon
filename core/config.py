@@ -16,10 +16,16 @@ class Settings(BaseSettings):
     LOG_CHANNEL_ID: int = -1003300275622
     SUPPORT_USERNAME: str = "Thisissaymoon"
 
-    # Реквизиты для оплаты
-    PAYMENT_CARD: str = "2200 0000 0000 0000"  # Номер карты
-    PAYMENT_BANK: str = "Сбербанк"              # Название банка
-    PAYMENT_NAME: str = "Александр С."          # Имя получателя
+    # Реквизиты для оплаты (ручной перевод)
+    PAYMENT_PHONE: str = "89196739120"          # Номер для СБП
+    PAYMENT_CARD: str = "5469750015908836"      # Номер карты
+    PAYMENT_BANKS: str = "Сбер · Т-Банк · БСПБ" # Банки для СБП
+    PAYMENT_NAME: str = "Семен Юрьевич С."      # Имя получателя
+
+    # ЮKassa (онлайн-оплата)
+    YOOKASSA_SHOP_ID: str | None = None         # ID магазина
+    YOOKASSA_SECRET_KEY: str | None = None      # Секретный ключ
+    YOOKASSA_RETURN_URL: str = "https://t.me/{bot_username}"  # URL возврата после оплаты
 
     # Медиа файлы
     WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "image_saloon.jpg"
