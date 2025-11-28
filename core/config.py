@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     LOG_CHANNEL_ID: int = -1003300275622
     SUPPORT_USERNAME: str = "Thisissaymoon"
 
+    # Реквизиты для оплаты
+    PAYMENT_CARD: str = "2200 0000 0000 0000"  # Номер карты
+    PAYMENT_BANK: str = "Сбербанк"              # Название банка
+    PAYMENT_NAME: str = "Александр С."          # Имя получателя
+
     # Медиа файлы
     WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "image_saloon.jpg"
     WELCOME_VOICE: Path = BASE_DIR / "bot" / "media" / "voice_welcome.ogg"
