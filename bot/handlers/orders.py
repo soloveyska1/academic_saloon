@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from datetime import datetime
 from typing import Optional
 from zoneinfo import ZoneInfo
 
 from aiogram import Router, F, Bot
+
+logger = logging.getLogger(__name__)
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -51,6 +54,34 @@ router = Router()
 # ══════════════════════════════════════════════════════════════
 
 MAX_ATTACHMENTS = 10  # Максимум вложений в заказе
+
+# Rate limiting
+RATE_LIMIT_ORDERS = 5  # Максимум заказов в минуту
+RATE_LIMIT_WINDOW = 60  # Окно в секундах
+
+
+async def check_rate_limit(user_id: int) -> bool:
+    """
+    Проверяет rate limit для создания заказов.
+    Возвращает True если можно создавать, False если лимит превышен.
+    """
+    from redis.asyncio import Redis
+
+    try:
+        redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
+        redis = Redis.from_url(redis_url, decode_responses=True)
+
+        key = f"rate:order:{user_id}"
+        count = await redis.incr(key)
+
+        if count == 1:
+            await redis.expire(key, RATE_LIMIT_WINDOW)
+
+        await redis.close()
+        return count <= RATE_LIMIT_ORDERS
+    except Exception as e:
+        logger.warning(f"Rate limit check failed: {e}")
+        return True  # При ошибке Redis — разрешаем
 
 
 def parse_callback_data(data: str, index: int, separator: str = ":") -> Optional[str]:
@@ -242,6 +273,14 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
         await _proceed_to_order_creation(callback, state, bot, session)
         return
 
+    # Rate limiting — защита от спама
+    if not await check_rate_limit(callback.from_user.id):
+        await callback.message.answer(
+            "⏳ <b>Подожди немного</b>\n\n"
+            "Слишком много запросов. Попробуй через минуту."
+        )
+        return
+
     # Проверяем количество НЕОБРАБОТАННЫХ заказов (только PENDING)
     pending_query = select(Order).where(
         Order.user_id == callback.from_user.id,
@@ -284,6 +323,9 @@ async def force_create_order(callback: CallbackQuery, state: FSMContext, bot: Bo
 
 async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Общая логика начала создания заказа"""
+    # Показываем typing пока готовим экран
+    await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+
     await state.clear()  # Очищаем предыдущее состояние
     await state.set_state(OrderState.choosing_type)
 
@@ -300,8 +342,8 @@ async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext,
                 fullname=callback.from_user.full_name,
                 step="Выбор типа работы",
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Ошибка трекера заказов: {e}")
 
     try:
         await log_action(
@@ -312,8 +354,8 @@ async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext,
             session=session,
             level=LogLevel.ACTION,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Ошибка логирования ORDER_START: {e}")
 
     # Получаем скидку пользователя (с защитой от ошибок)
     discount = 0
@@ -322,8 +364,8 @@ async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext,
         user_result = await session.execute(user_query)
         user = user_result.scalar_one_or_none()
         discount = calculate_user_discount(user)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Ошибка получения скидки: {e}")
 
     discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
 
@@ -1148,6 +1190,10 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     Показать превью заказа для подтверждения.
     Персонализированный текст с реальными датами.
     """
+    # Показываем typing пока формируем превью
+    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
+    await bot.send_chat_action(chat_id, ChatAction.TYPING)
+
     await state.set_state(OrderState.confirming)
 
     data = await state.get_data()
