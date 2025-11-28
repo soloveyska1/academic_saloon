@@ -13,6 +13,7 @@ from bot.texts.terms import (
     TERMS_ACCEPTED,
     TERMS_ACCEPTED_RETURNING,
     get_time_greeting,
+    VOICE_TEASER,
     VOICE_CAPTION,
 )
 from bot.keyboards.terms import (
@@ -20,7 +21,7 @@ from bot.keyboards.terms import (
     get_terms_full_keyboard,
     get_terms_section_keyboard,
 )
-from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard
+from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard, get_voice_teaser_keyboard
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from bot.handlers.start import send_and_pin_status
@@ -158,9 +159,11 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             silent=False,  # Со звуком!
         )
 
-        # Новым пользователям: голосовое с красивым caption
-        voice = FSInputFile(settings.WELCOME_VOICE)
-        await callback.message.answer_voice(voice=voice, caption=VOICE_CAPTION)
+        # Новым пользователям: интрига с кнопкой для голосового
+        await callback.message.answer(
+            VOICE_TEASER,
+            reply_markup=get_voice_teaser_keyboard()
+        )
     else:
         # Логируем повторное принятие
         await log_action(
@@ -185,3 +188,31 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     # Статус салуна с закрепом — только для НОВЫХ пользователей (один раз)
     if is_first_accept:
         await send_and_pin_status(callback.message.chat.id, bot, pin=True)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ГОЛОСОВОЕ ПРИВЕТСТВИЕ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "play_welcome_voice")
+async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
+    """Отправляет голосовое приветствие по нажатию кнопки"""
+    await callback.answer()
+
+    # Удаляем сообщение с кнопкой
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Отправляем голосовое
+    voice = FSInputFile(settings.WELCOME_VOICE)
+    await callback.message.answer_voice(voice=voice, caption=VOICE_CAPTION)
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Прослушал голосовое приветствие",
+    )
