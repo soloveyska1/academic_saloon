@@ -1,31 +1,65 @@
+"""
+Продающий обработчик ошибок.
+Превращает ошибку в возможность продажи.
+"""
+
 import logging
 import traceback
-from typing import Any, Awaitable, Callable, Dict
+from datetime import datetime, timedelta
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 from aiogram import BaseMiddleware, Bot
-from aiogram.types import TelegramObject, Update, Message, CallbackQuery
+from aiogram.types import (
+    TelegramObject, Update, Message, CallbackQuery,
+    InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, User as TgUser
+)
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from core.config import settings
 from bot.services.logger import BotLogger
+from database.models.users import User
 
 logger = logging.getLogger(__name__)
 
+# Бонус за ошибку
+ERROR_COMPENSATION_BONUS = 50
 
-# Текст заглушки для пользователя при ошибке
-ERROR_USER_MESSAGE = f"""😔  <b>Упс, что-то пошло не так...</b>
 
-Мы уже знаем о проблеме и скоро всё починим!
+def get_error_message(user_name: str) -> str:
+    """Генерирует продающее сообщение об ошибке"""
+    return f"""🤠  <b>Эй, {user_name}!</b>
 
-Попробуй ещё раз через пару минут.
-Если не поможет — напиши Хозяину: @{settings.SUPPORT_USERNAME}"""
+Салун обновляется, но твой заказ важнее.
+
+Напиши Хозяину — он примет заявку лично
+и накинет <b>скидку 10%</b> за терпение.
+
+⏰  <b>Только следующие 30 минут.</b>
+
+💰  Тебе начислено <b>{ERROR_COMPENSATION_BONUS}₽</b> на баланс за ожидание."""
+
+
+def get_error_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура с одной продающей кнопкой"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🔥 Забрать скидку 10% →",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
+        ]
+    ])
 
 
 class ErrorHandlerMiddleware(BaseMiddleware):
     """
-    Middleware для перехвата и логирования ошибок.
-    - Отправляет красивый лог в канал
-    - Показывает заглушку пользователю
-    - Не раскрывает детали ошибки клиенту
+    Middleware для перехвата ошибок.
+    Превращает ошибку в продажу:
+    - Показывает продающее сообщение с картинкой
+    - Начисляет бонус за ожидание
+    - Направляет к живому контакту
+    - Отправляет детальный лог админу
     """
 
     async def __call__(
@@ -38,7 +72,6 @@ class ErrorHandlerMiddleware(BaseMiddleware):
             return await handler(event, data)
         except Exception as e:
             await self._handle_error(event, data, e)
-            # Не пробрасываем ошибку дальше, чтобы бот продолжал работать
             return None
 
     async def _handle_error(
@@ -47,10 +80,11 @@ class ErrorHandlerMiddleware(BaseMiddleware):
         data: Dict[str, Any],
         error: Exception
     ) -> None:
-        """Обработка ошибки: логирование в канал и заглушка юзеру"""
+        """Обработка ошибки: бонус, продающее сообщение, лог админу"""
 
         bot: Bot = data.get("bot")
-        user = None
+        session: AsyncSession = data.get("session")
+        user: Optional[TgUser] = None
         context = "Unknown"
 
         # Извлекаем информацию о пользователе и контексте
@@ -62,7 +96,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
                 user = event.callback_query.from_user
                 context = f"Callback: {event.callback_query.data}"
 
-        # Получаем полный traceback
+        # Получаем traceback
         tb_str = traceback.format_exc()
 
         # Логируем в консоль
@@ -75,53 +109,161 @@ class ErrorHandlerMiddleware(BaseMiddleware):
             exc_info=True
         )
 
-        # Отправляем лог в канал
+        # Начисляем бонус пользователю
+        bonus_added = False
+        if user and session:
+            bonus_added = await self._add_error_bonus(session, user.id)
+
+        # Отправляем продающее сообщение пользователю
+        if bot and user:
+            await self._send_selling_message(event, bot, user, bonus_added)
+
+        # Отправляем улучшенный лог админу
         if bot:
-            try:
-                bot_logger = BotLogger(bot)
-                await bot_logger.log_error(
-                    user=user,
-                    error=error,
-                    context=context,
-                    traceback_str=tb_str,
-                )
-            except Exception as log_error:
-                logger.error(f"Failed to send error to log channel: {log_error}")
+            await self._send_admin_notification(
+                bot=bot,
+                user=user,
+                error=error,
+                context=context,
+                traceback_str=tb_str,
+                bonus_added=bonus_added,
+            )
 
-        # Показываем заглушку пользователю
-        await self._send_error_to_user(event, bot)
+    async def _add_error_bonus(
+        self,
+        session: AsyncSession,
+        user_id: int
+    ) -> bool:
+        """Начисляет бонус за ошибку"""
+        try:
+            query = select(User).where(User.telegram_id == user_id)
+            result = await session.execute(query)
+            db_user = result.scalar_one_or_none()
 
-    async def _send_error_to_user(
+            if db_user:
+                db_user.balance += ERROR_COMPENSATION_BONUS
+                await session.commit()
+                logger.info(f"Error bonus +{ERROR_COMPENSATION_BONUS}₽ added to user {user_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to add error bonus: {e}")
+
+        return False
+
+    async def _send_selling_message(
         self,
         event: TelegramObject,
-        bot: Bot
+        bot: Bot,
+        user: TgUser,
+        bonus_added: bool
     ) -> None:
-        """Отправляет заглушку пользователю"""
-        if not bot:
-            return
-
+        """Отправляет продающее сообщение с картинкой"""
         try:
+            # Имя пользователя для персонализации
+            user_name = user.first_name or "партнёр"
+
+            # Текст сообщения
+            message_text = get_error_message(user_name)
+            if not bonus_added:
+                # Убираем строку про бонус если не начислился
+                message_text = message_text.replace(
+                    f"\n\n💰  Тебе начислено <b>{ERROR_COMPENSATION_BONUS}₽</b> на баланс за ожидание.",
+                    ""
+                )
+
+            # Клавиатура
+            keyboard = get_error_keyboard()
+
+            # Отправляем с картинкой
             if isinstance(event, Update):
-                # Обработка Message
+                chat_id = None
+
                 if event.message:
-                    await event.message.answer(ERROR_USER_MESSAGE)
-
-                # Обработка CallbackQuery
+                    chat_id = event.message.chat.id
                 elif event.callback_query:
-                    # Сначала отвечаем на callback чтобы убрать "часики"
+                    # Сначала убираем "часики"
                     try:
-                        await event.callback_query.answer(
-                            "Произошла ошибка, попробуй ещё раз",
-                            show_alert=True
-                        )
+                        await event.callback_query.answer()
                     except Exception:
                         pass
+                    chat_id = event.callback_query.message.chat.id
 
-                    # Отправляем сообщение
+                if chat_id:
                     try:
-                        await event.callback_query.message.answer(ERROR_USER_MESSAGE)
-                    except Exception:
-                        pass
+                        # Пробуем отправить с картинкой
+                        photo = FSInputFile(settings.ERROR_IMAGE)
+                        await bot.send_photo(
+                            chat_id=chat_id,
+                            photo=photo,
+                            caption=message_text,
+                            reply_markup=keyboard
+                        )
+                    except Exception as img_error:
+                        # Если картинка не найдена — отправляем без неё
+                        logger.warning(f"Error image not found: {img_error}")
+                        await bot.send_message(
+                            chat_id=chat_id,
+                            text=message_text,
+                            reply_markup=keyboard
+                        )
 
         except Exception as e:
-            logger.error(f"Failed to send error message to user: {e}")
+            logger.error(f"Failed to send selling error message: {e}")
+
+    async def _send_admin_notification(
+        self,
+        bot: Bot,
+        user: Optional[TgUser],
+        error: Exception,
+        context: str,
+        traceback_str: str,
+        bonus_added: bool,
+    ) -> None:
+        """Отправляет улучшенное уведомление админу"""
+        try:
+            bot_logger = BotLogger(bot)
+
+            # Формируем расширенный контекст
+            extra_info = f"""
+🎯  <b>Показана скидка 10%</b>
+💰  Бонус {ERROR_COMPENSATION_BONUS}₽: {'✅ начислен' if bonus_added else '❌ не начислен'}
+🔗  Клиент направлен к @{settings.SUPPORT_USERNAME}"""
+
+            # Модифицируем контекст
+            enhanced_context = f"{context}\n{extra_info}"
+
+            await bot_logger.log_error(
+                user=user,
+                error=error,
+                context=enhanced_context,
+                traceback_str=traceback_str,
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to send admin notification: {e}")
+
+
+# === Функция для превью ошибки в админке ===
+
+async def send_error_preview(bot: Bot, chat_id: int, user_name: str = "Александр") -> None:
+    """
+    Отправляет превью сообщения об ошибке.
+    Используется в админке для просмотра.
+    """
+    message_text = get_error_message(user_name)
+    keyboard = get_error_keyboard()
+
+    try:
+        photo = FSInputFile(settings.ERROR_IMAGE)
+        await bot.send_photo(
+            chat_id=chat_id,
+            photo=photo,
+            caption=message_text,
+            reply_markup=keyboard
+        )
+    except Exception:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=message_text,
+            reply_markup=keyboard
+        )

@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     ORDER_IMAGE: Path = BASE_DIR / "bot" / "media" / "bar_saloon.jpg"
     MENU_IMAGE: Path = BASE_DIR / "bot" / "media" / "back_saloon.jpg"
     CANCEL_IMAGE: Path = BASE_DIR / "bot" / "media" / "cancel_saloon.jpg"
+    ERROR_IMAGE: Path = BASE_DIR / "bot" / "media" / "tech_pause.jpg"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str

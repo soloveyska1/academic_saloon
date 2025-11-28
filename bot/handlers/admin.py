@@ -219,6 +219,22 @@ async def cmd_admin(message: Message, state: FSMContext):
     await message.answer(text, reply_markup=get_admin_keyboard())
 
 
+@router.message(Command("error_preview"), StateFilter("*"))
+async def cmd_error_preview(message: Message, bot: Bot):
+    """Превью сообщения об ошибке — для проверки как выглядит"""
+    if not is_admin(message.from_user.id):
+        return
+
+    from bot.middlewares.error_handler import send_error_preview
+
+    await message.answer("📤  Отправляю превью сообщения об ошибке...")
+    await send_error_preview(
+        bot=bot,
+        chat_id=message.chat.id,
+        user_name=message.from_user.first_name or "Партнёр"
+    )
+
+
 @router.message(Command("orders"), StateFilter("*"))
 async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext):
     """Быстрый просмотр заявок"""
