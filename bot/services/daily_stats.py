@@ -237,3 +237,34 @@ async def get_live_stats_line() -> str:
                 parts.append(f"⏱ Последний заказ: {hours} ч назад")
 
         return "\n".join(parts) if parts else ""
+
+
+async def get_urgent_stats_line() -> str:
+    """
+    Статистика срочных заказов для экрана "Горит!".
+    Показывает сколько срочных закрыли сегодня.
+    """
+    async with async_session_maker() as session:
+        now = datetime.now(MSK)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Срочные заказы (photo_task) за сегодня
+        urgent_query = select(func.count(Order.id)).where(
+            and_(
+                Order.created_at >= today_start,
+                Order.work_type == "photo_task"
+            )
+        )
+        urgent_result = await session.execute(urgent_query)
+        urgent_count = urgent_result.scalar() or 0
+
+        if urgent_count > 0:
+            # Склонение
+            if urgent_count == 1:
+                return f"⚡ Сегодня закрыли <b>1</b> срочный"
+            elif urgent_count < 5:
+                return f"⚡ Сегодня закрыли <b>{urgent_count}</b> срочных"
+            else:
+                return f"⚡ Сегодня закрыли <b>{urgent_count}</b> срочных"
+
+        return ""
