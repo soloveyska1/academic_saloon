@@ -4,15 +4,15 @@
 """
 
 import asyncio
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 from typing import Optional
 import pytz
 
 from aiogram import Bot
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import select, func, and_
 
 from core.config import settings
+from database.db import async_session_maker
 from database.models.users import User
 from database.models.orders import Order
 
@@ -30,12 +30,10 @@ class DailyStatsService:
         self.bot = bot
         self._running = False
         self._task: Optional[asyncio.Task] = None
-        self._engine = create_async_engine(settings.DATABASE_URL)
-        self._session_maker = async_sessionmaker(self._engine, expire_on_commit=False)
 
     async def _get_daily_stats(self) -> dict:
         """Получить статистику за сегодня"""
-        async with self._session_maker() as session:
+        async with async_session_maker() as session:
             now = datetime.now(MSK)
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -74,12 +72,12 @@ class DailyStatsService:
             accepted_terms = accepted_terms_result.scalar() or 0
 
             # Пользователи на слежке
-            watched_query = select(func.count(User.id)).where(User.is_watched == True)
+            watched_query = select(func.count(User.id)).where(User.is_watched.is_(True))
             watched_result = await session.execute(watched_query)
             watched_users = watched_result.scalar() or 0
 
             # Забаненные пользователи
-            banned_query = select(func.count(User.id)).where(User.is_banned == True)
+            banned_query = select(func.count(User.id)).where(User.is_banned.is_(True))
             banned_result = await session.execute(banned_query)
             banned_users = banned_result.scalar() or 0
 

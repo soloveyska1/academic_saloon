@@ -1,15 +1,16 @@
 """
 Антиспам middleware.
 Отслеживает частоту сообщений и блокирует спамеров.
+Данные хранятся в Redis для персистентности и экономии памяти.
 """
 
-import asyncio
+import json
 from datetime import datetime, timedelta
-from typing import Any, Awaitable, Callable, Dict
-from collections import defaultdict
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 from aiogram import BaseMiddleware, Bot
-from aiogram.types import TelegramObject, Update, Message
+from aiogram.types import TelegramObject, Update
+from redis.asyncio import Redis
 
 from core.config import settings
 from bot.services.logger import BotLogger, LogEvent, LogLevel
@@ -18,15 +19,24 @@ from bot.services.logger import BotLogger, LogEvent, LogLevel
 MAX_MESSAGES_PER_MINUTE = 10  # Максимум сообщений в минуту
 MUTE_DURATION_SECONDS = 300   # Время мута (5 минут)
 
-# Хранилище для отслеживания сообщений (user_id -> list of timestamps)
-_message_history: Dict[int, list] = defaultdict(list)
-_muted_users: Dict[int, datetime] = {}
+# Глобальное соединение Redis (инициализируется лениво)
+_redis: Optional[Redis] = None
+
+
+async def get_antispam_redis() -> Redis:
+    """Получить соединение с Redis для антиспама"""
+    global _redis
+    if _redis is None:
+        redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
+        _redis = Redis.from_url(redis_url, decode_responses=True)
+    return _redis
 
 
 class AntiSpamMiddleware(BaseMiddleware):
     """
     Middleware для защиты от спама.
     Блокирует пользователей, которые отправляют слишком много сообщений.
+    Данные хранятся в Redis для персистентности.
     """
 
     async def __call__(
@@ -49,13 +59,19 @@ class AntiSpamMiddleware(BaseMiddleware):
 
         user_id = user.id
         now = datetime.now()
+        redis = await get_antispam_redis()
+
+        # Ключи в Redis
+        mute_key = f"antispam:mute:{user_id}"
+        history_key = f"antispam:history:{user_id}"
 
         # Проверяем, замучен ли пользователь
-        if user_id in _muted_users:
-            mute_until = _muted_users[user_id]
+        mute_until_str = await redis.get(mute_key)
+        if mute_until_str:
+            mute_until = datetime.fromisoformat(mute_until_str)
             if now < mute_until:
                 # Всё ещё замучен — игнорируем сообщение
-                remaining = (mute_until - now).seconds
+                remaining = int((mute_until - now).total_seconds())
                 if isinstance(event, Update) and event.message:
                     await event.message.answer(
                         f"⏳ Слишком много сообщений!\n"
@@ -63,24 +79,32 @@ class AntiSpamMiddleware(BaseMiddleware):
                     )
                 return None
             else:
-                # Мут закончился
-                del _muted_users[user_id]
+                # Мут закончился — удаляем ключ
+                await redis.delete(mute_key)
+
+        # Получаем историю сообщений (список timestamp'ов)
+        history_raw = await redis.get(history_key)
+        if history_raw:
+            history = json.loads(history_raw)
+        else:
+            history = []
 
         # Очищаем старые записи (старше минуты)
-        cutoff = now - timedelta(minutes=1)
-        _message_history[user_id] = [
-            ts for ts in _message_history[user_id]
-            if ts > cutoff
-        ]
+        cutoff = (now - timedelta(minutes=1)).timestamp()
+        history = [ts for ts in history if ts > cutoff]
 
         # Добавляем текущее сообщение
-        _message_history[user_id].append(now)
+        history.append(now.timestamp())
+
+        # Сохраняем историю с TTL 2 минуты
+        await redis.set(history_key, json.dumps(history), ex=120)
 
         # Проверяем количество сообщений
-        if len(_message_history[user_id]) > MAX_MESSAGES_PER_MINUTE:
+        if len(history) > MAX_MESSAGES_PER_MINUTE:
             # Спам! Мутим пользователя
-            _muted_users[user_id] = now + timedelta(seconds=MUTE_DURATION_SECONDS)
-            _message_history[user_id] = []  # Очищаем историю
+            mute_until = now + timedelta(seconds=MUTE_DURATION_SECONDS)
+            await redis.set(mute_key, mute_until.isoformat(), ex=MUTE_DURATION_SECONDS + 60)
+            await redis.delete(history_key)  # Очищаем историю
 
             # Логируем в канал
             bot: Bot = data.get("bot")

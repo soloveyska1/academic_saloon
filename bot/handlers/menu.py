@@ -180,6 +180,14 @@ CODEX_FULL = f"""📜  <b>Кодекс Салуна</b>
 #                    НОВЫЕ CALLBACK HANDLERS
 # ══════════════════════════════════════════════════════════════
 
+async def safe_delete_message(callback: CallbackQuery) -> None:
+    """Безопасное удаление сообщения"""
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+
 @router.callback_query(F.data == "my_orders")
 async def show_my_orders(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Мои заказы"""
@@ -208,6 +216,7 @@ async def show_my_orders(callback: CallbackQuery, session: AsyncSession, bot: Bo
 
 <i>Здесь будет история твоих заказов.</i>"""
 
+    await safe_delete_message(callback)
     await callback.message.answer(text, reply_markup=get_back_keyboard())
 
 
@@ -242,6 +251,7 @@ async def show_my_balance(callback: CallbackQuery, session: AsyncSession, bot: B
 и компенсациями. Можно тратить
 на свои заказы.</i>"""
 
+    await safe_delete_message(callback)
     await callback.message.answer(text, reply_markup=get_back_keyboard())
 
 
@@ -269,6 +279,7 @@ async def show_contact_owner(callback: CallbackQuery, bot: Bot):
 <i>Отвечаю в течение пары часов,
 обычно быстрее.</i>"""
 
+    await safe_delete_message(callback)
     await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
 
 
@@ -302,6 +313,7 @@ async def show_price_list(callback: CallbackQuery, bot: Bot):
 сложности и сроков. Скидывай задачу —
 посчитаю индивидуально.</i>"""
 
+    await safe_delete_message(callback)
     await callback.message.answer(text, reply_markup=get_back_keyboard())
 
 
@@ -327,6 +339,8 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     query = select(User).where(User.telegram_id == telegram_id)
     result = await session.execute(query)
     user = result.scalar_one_or_none()
+
+    await safe_delete_message(callback)
 
     if not user:
         await callback.message.answer("Досье не найдено.", reply_markup=get_back_keyboard())
@@ -379,6 +393,7 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 и компенсациями. Можно тратить
 на свои заказы.</i>"""
 
+    await safe_delete_message(callback)
     await callback.message.answer(text, reply_markup=get_back_keyboard())
 
 
@@ -406,6 +421,7 @@ async def call_support(callback: CallbackQuery, bot: Bot):
 <i>Отвечаю в течение пары часов,
 обычно быстрее.</i>"""
 
+    await safe_delete_message(callback)
     await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
 
 
@@ -422,6 +438,7 @@ async def show_codex_short(callback: CallbackQuery, bot: Bot):
         details="Открыл «Кодекс» (кратко)",
     )
 
+    await safe_delete_message(callback)
     await callback.message.answer(CODEX_SHORT, reply_markup=get_codex_keyboard())
 
 
@@ -438,6 +455,7 @@ async def show_codex_full(callback: CallbackQuery, bot: Bot):
         details="Открыл «Кодекс» (полный)",
     )
 
+    await safe_delete_message(callback)
     await callback.message.answer(CODEX_FULL, reply_markup=get_codex_full_keyboard())
 
 
@@ -484,6 +502,7 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
 ◈  Приглашено: {referrals_count}
 ◈  Заработано: {referral_earnings:.0f} ₽"""
 
+    await safe_delete_message(callback)
     await callback.message.answer(
         text,
         reply_markup=get_referral_keyboard(f"Помощь с учёбой — {referral_link}")
@@ -522,6 +541,7 @@ async def show_about(callback: CallbackQuery, bot: Bot):
 Пишем качественно.
 Не подводим.</i>"""
 
+    await safe_delete_message(callback)
     await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
 
 
@@ -538,7 +558,8 @@ async def back_to_menu(callback: CallbackQuery, bot: Bot):
         details="Вернулся в главное меню",
     )
 
-    # Отправляем атмосферную картинку с меню
+    # Удаляем старое сообщение и отправляем картинку с меню
+    await safe_delete_message(callback)
     photo = FSInputFile(settings.MENU_IMAGE)
     await callback.message.answer_photo(
         photo=photo,
