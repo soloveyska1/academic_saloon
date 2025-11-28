@@ -1,6 +1,9 @@
+import asyncio
+
 from aiogram import Router, Bot
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.types import Message, ReplyKeyboardRemove, FSInputFile
+from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,8 +11,15 @@ from sqlalchemy import select
 from database.models.users import User
 from bot.keyboards.inline import get_main_menu_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
-from bot.texts.terms import TERMS_SHORT, get_time_greeting
+from bot.texts.terms import (
+    TERMS_SHORT,
+    get_time_greeting,
+    get_first_name,
+    get_main_text,
+    get_welcome_quote,
+)
 from bot.services.logger import log_action, LogEvent, LogLevel
+from bot.services.daily_stats import get_live_stats_line
 from core.config import settings
 from core.saloon_status import saloon_manager, generate_status_message
 
@@ -170,15 +180,36 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         session=session,
     )
 
-    # Получаем приветствие по времени суток (МСК)
-    text = get_time_greeting()
+    # === ДИАЛОГОВЫЙ ЭФФЕКТ ===
 
-    # Отправляем картинку с приветствием + Inline клавиатура
+    # 1. Отправляем картинку (визуальный якорь)
     photo = FSInputFile(settings.WELCOME_IMAGE)
-    await message.answer_photo(
-        photo=photo,
-        caption=text,
+    await message.answer_photo(photo=photo)
+
+    # 2. Typing... (создаёт ощущение живого общения)
+    await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
+    await asyncio.sleep(1.2)
+
+    # 3. Персонализированное приветствие по имени
+    first_name = get_first_name(user.fullname)
+    greeting = get_time_greeting(name=first_name)
+
+    # 4. Получаем скидку пользователя
+    _, discount = user.loyalty_status
+    if user.referrer_id and user.orders_count == 0:
+        discount = max(discount, 5)
+
+    # 5. Живая статистика (социальное доказательство)
+    stats_line = await get_live_stats_line()
+
+    # 6. Основной текст + цитата
+    main_text = get_main_text(stats_line=stats_line, discount=discount)
+    quote = get_welcome_quote()
+
+    # 7. Отправляем текст с кнопками (второе сообщение = диалог)
+    full_text = f"{greeting}\n\n{main_text}{quote}"
+
+    await message.answer(
+        text=full_text,
         reply_markup=get_main_menu_keyboard()
     )
-
-    # Статус не отправляем на каждый /start — только при первом принятии оферты
