@@ -188,7 +188,7 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
 
     # 1. Typing... (создаёт ощущение живого общения)
     await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-    await asyncio.sleep(1.0)
+    await asyncio.sleep(0.15)  # Минимальная задержка для UX
 
     # 2. Персонализированное приветствие по имени
     first_name = get_first_name(user.fullname)

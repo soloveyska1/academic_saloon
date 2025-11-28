@@ -1,8 +1,10 @@
 """
 Продающий обработчик ошибок.
 Превращает ошибку в возможность продажи.
++ Retry механизм для сетевых ошибок.
 """
 
+import asyncio
 import logging
 import traceback
 from datetime import datetime, timedelta
@@ -13,6 +15,7 @@ from aiogram.types import (
     TelegramObject, Update, Message, CallbackQuery,
     InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, User as TgUser
 )
+from aiogram.exceptions import TelegramNetworkError, TelegramRetryAfter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -21,6 +24,10 @@ from bot.services.logger import BotLogger
 from database.models.users import User
 
 logger = logging.getLogger(__name__)
+
+# Настройки retry для сетевых ошибок
+MAX_RETRIES = 3
+RETRY_DELAYS = [0.5, 1.0, 2.0]  # Экспоненциальная задержка
 
 # Бонус за ошибку
 ERROR_COMPENSATION_BONUS = 50
@@ -68,11 +75,37 @@ class ErrorHandlerMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        try:
-            return await handler(event, data)
-        except Exception as e:
-            await self._handle_error(event, data, e)
-            return None
+        last_error = None
+
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                return await handler(event, data)
+            except TelegramRetryAfter as e:
+                # Telegram просит подождать — ждём и повторяем
+                logger.warning(f"Rate limited, waiting {e.retry_after}s")
+                await asyncio.sleep(e.retry_after)
+                continue
+            except TelegramNetworkError as e:
+                # Сетевая ошибка — retry с задержкой
+                last_error = e
+                if attempt < MAX_RETRIES:
+                    delay = RETRY_DELAYS[min(attempt, len(RETRY_DELAYS) - 1)]
+                    logger.warning(f"Network error, retry {attempt + 1}/{MAX_RETRIES} in {delay}s: {e}")
+                    await asyncio.sleep(delay)
+                    continue
+                # Все попытки исчерпаны
+                logger.error(f"Network error after {MAX_RETRIES} retries: {e}")
+                await self._handle_error(event, data, e)
+                return None
+            except Exception as e:
+                # Прочие ошибки — без retry
+                await self._handle_error(event, data, e)
+                return None
+
+        # Fallback если вышли из цикла
+        if last_error:
+            await self._handle_error(event, data, last_error)
+        return None
 
     async def _handle_error(
         self,

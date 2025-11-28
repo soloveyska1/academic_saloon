@@ -4,6 +4,7 @@
 """
 
 from datetime import datetime, timezone
+from typing import Optional
 
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, Message
@@ -17,6 +18,12 @@ from bot.services.logger import log_action, LogEvent, LogLevel, BotLogger
 from core.config import settings
 
 router = Router()
+
+
+def parse_callback_data(data: str, index: int) -> Optional[str]:
+    """Безопасный парсинг callback_data по индексу"""
+    parts = data.split(":")
+    return parts[index] if len(parts) > index else None
 
 
 class NoteState(StatesGroup):
@@ -36,7 +43,11 @@ async def toggle_watch(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         await callback.answer("Нет доступа", show_alert=True)
         return
 
-    user_id = int(callback.data.split(":")[1])
+    user_id_str = parse_callback_data(callback.data, 1)
+    if not user_id_str:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+    user_id = int(user_id_str)
 
     # Получаем пользователя из БД
     query = select(User).where(User.telegram_id == user_id)
@@ -78,7 +89,11 @@ async def toggle_ban(callback: CallbackQuery, session: AsyncSession, bot: Bot):
         await callback.answer("Нет доступа", show_alert=True)
         return
 
-    user_id = int(callback.data.split(":")[1])
+    user_id_str = parse_callback_data(callback.data, 1)
+    if not user_id_str:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+    user_id = int(user_id_str)
 
     # Получаем пользователя из БД
     query = select(User).where(User.telegram_id == user_id)
@@ -139,7 +154,11 @@ async def start_note(callback: CallbackQuery, state: FSMContext, session: AsyncS
         await callback.answer("Нет доступа", show_alert=True)
         return
 
-    user_id = int(callback.data.split(":")[1])
+    user_id_str = parse_callback_data(callback.data, 1)
+    if not user_id_str:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+    user_id = int(user_id_str)
 
     # Получаем пользователя из БД
     query = select(User).where(User.telegram_id == user_id)
@@ -224,7 +243,11 @@ async def show_user_info(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("Нет доступа", show_alert=True)
         return
 
-    user_id = int(callback.data.split(":")[1])
+    user_id_str = parse_callback_data(callback.data, 1)
+    if not user_id_str:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+    user_id = int(user_id_str)
 
     # Получаем пользователя из БД
     query = select(User).where(User.telegram_id == user_id)

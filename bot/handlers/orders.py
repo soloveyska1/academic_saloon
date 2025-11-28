@@ -383,21 +383,8 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
             pass
 
         # 2. Typing + первое сообщение (эмпатия)
-        try:
-            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-            await asyncio.sleep(0.5)
-        except Exception:
-            pass
-
         first_name = get_first_name(callback.from_user.full_name)
         await callback.message.answer(f"🔥 <b>Понял, {first_name}! Разберёмся.</b>")
-
-        # 3. Typing + основное сообщение
-        try:
-            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-            await asyncio.sleep(0.4)
-        except Exception:
-            pass
 
         # Получаем статус Хозяина
         status = await saloon_manager.get_status()
@@ -529,12 +516,6 @@ async def process_urgent_deadline(callback: CallbackQuery, state: FSMContext, bo
         pass
 
     # Typing эффект
-    try:
-        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-        await asyncio.sleep(0.3)
-    except Exception:
-        pass
-
     # Формируем текст с чек-листом
     if deadline_key == "asap":
         deadline_text = "⚡ <b>Как можно скорее</b>\n<i>Наценку определим после оценки объёма</i>"
@@ -691,13 +672,6 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
         except Exception:
             pass
 
-        # Typing эффект для плавности
-        try:
-            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-            await asyncio.sleep(0.3)
-        except Exception:
-            pass
-
         await show_task_input_screen(callback.message, send_new=True, work_type=work_type)
         return
 
@@ -762,13 +736,6 @@ async def process_subject(callback: CallbackQuery, state: FSMContext, bot: Bot, 
             details=log_details,
             session=session,
         )
-    except Exception:
-        pass
-
-    # Typing для плавного перехода
-    try:
-        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-        await asyncio.sleep(0.3)
     except Exception:
         pass
 
@@ -991,14 +958,6 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
         attachments.append(attachment)
         await state.update_data(attachments=attachments)
 
-        # Typing эффект для всех — создаёт ощущение что кто-то смотрит
-        try:
-            await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-            delay = 0.8 if is_urgent else 0.5
-            await asyncio.sleep(delay)
-        except Exception:
-            pass
-
         # Умное подтверждение по типу контента
         count = len(attachments)
         confirm_text = get_attachment_confirm_text(attachment, count, is_urgent)
@@ -1093,13 +1052,6 @@ async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, sessio
         except Exception:
             pass
 
-        # Typing для плавного перехода
-        try:
-            await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-            await asyncio.sleep(0.3)
-        except Exception:
-            pass
-
         await show_order_confirmation(callback, state, bot, session)
         return
 
@@ -1110,13 +1062,6 @@ async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, sessio
         tracker = get_abandoned_tracker()
         if tracker:
             await tracker.update_step(callback.from_user.id, "Выбор сроков")
-    except Exception:
-        pass
-
-    # Typing для плавного перехода
-    try:
-        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-        await asyncio.sleep(0.3)
     except Exception:
         pass
 
@@ -1150,13 +1095,6 @@ async def process_deadline_choice(callback: CallbackQuery, state: FSMContext, bo
 
     deadline_label = DEADLINES.get(deadline_key, deadline_key)
     await state.update_data(deadline=deadline_key, deadline_label=deadline_label)
-
-    # Typing для плавного перехода к подтверждению
-    try:
-        await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
-        await asyncio.sleep(0.3)
-    except Exception:
-        pass
 
     # Переходим к подтверждению
     await show_order_confirmation(callback, state, bot, session)
