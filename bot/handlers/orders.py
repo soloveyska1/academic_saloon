@@ -361,7 +361,7 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
     if category_key == "urgent" and len(category["types"]) == 1:
         work_type = category["types"][0]
         await state.update_data(work_type=work_type.value, is_urgent=True)
-        await state.set_state(OrderState.entering_task)
+        # Состояние остаётся choosing_type для обработки выбора срока
 
         # Обновляем трекер (некритично)
         try:
