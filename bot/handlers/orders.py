@@ -1667,7 +1667,8 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     attachments = data.get("attachments", [])
     admin_keyboard = get_order_admin_keyboard(order.id, user.id)
 
-    for admin_id in settings.ADMIN_IDS:
+    async def notify_single_admin(admin_id: int):
+        """Отправить уведомление одному админу"""
         try:
             # Сначала отправляем текст заявки с кнопками
             await bot.send_message(chat_id=admin_id, text=text, reply_markup=admin_keyboard)
@@ -1719,9 +1720,11 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
                         )
                 except Exception:
                     pass
-
         except Exception:
             pass
+
+    # Отправляем всем админам параллельно
+    await asyncio.gather(*[notify_single_admin(admin_id) for admin_id in settings.ADMIN_IDS])
 
 
 # ══════════════════════════════════════════════════════════════
