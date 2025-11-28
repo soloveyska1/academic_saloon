@@ -1387,6 +1387,379 @@ async def cmd_user_info(message: Message, command: CommandObject, session: Async
 
 
 # ══════════════════════════════════════════════════════════════
+#                    УПРАВЛЕНИЕ БОНУСАМИ
+# ══════════════════════════════════════════════════════════════
+
+def get_bonus_keyboard(user_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура управления бонусами"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="➕ 50", callback_data=f"bonus_add:{user_id}:50"),
+            InlineKeyboardButton(text="➕ 100", callback_data=f"bonus_add:{user_id}:100"),
+            InlineKeyboardButton(text="➕ 500", callback_data=f"bonus_add:{user_id}:500"),
+        ],
+        [
+            InlineKeyboardButton(text="➖ 50", callback_data=f"bonus_sub:{user_id}:50"),
+            InlineKeyboardButton(text="➖ 100", callback_data=f"bonus_sub:{user_id}:100"),
+            InlineKeyboardButton(text="➖ 500", callback_data=f"bonus_sub:{user_id}:500"),
+        ],
+        [
+            InlineKeyboardButton(text="✏️ Ввести сумму", callback_data=f"bonus_custom:{user_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="💬 Написать", url=f"tg://user?id={user_id}"),
+            InlineKeyboardButton(text="📋 Профиль", callback_data=f"bonus_profile:{user_id}"),
+        ],
+    ])
+
+
+@router.message(Command("bonus"), StateFilter("*"))
+async def cmd_bonus(message: Message, command: CommandObject, session: AsyncSession, state: FSMContext):
+    """
+    Управление бонусами пользователя.
+    Использование: /bonus 123456789 или /bonus @username
+    """
+    if not is_admin(message.from_user.id):
+        return
+    await state.clear()
+
+    if not command.args:
+        await message.answer(
+            "💰  <b>Управление бонусами</b>\n\n"
+            "<code>/bonus 123456789</code> — по Telegram ID\n"
+            "<code>/bonus @username</code> — по юзернейму"
+        )
+        return
+
+    arg = command.args.strip()
+
+    # Поиск пользователя
+    if arg.startswith("@"):
+        username = arg[1:]
+        query = select(User).where(User.username == username)
+    else:
+        try:
+            user_id = int(arg)
+            query = select(User).where(User.telegram_id == user_id)
+        except ValueError:
+            await message.answer("❌ Неверный формат. Используй ID (число) или @username")
+            return
+
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        await message.answer("❌ Пользователь не найден")
+        return
+
+    text = f"""💰  <b>Бонусы пользователя</b>
+
+👤  <b>{user.fullname or 'Без имени'}</b>
+🔗  @{user.username or '—'} · <code>{user.telegram_id}</code>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💳  <b>Баланс: {user.balance:.0f} ₽</b>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+Выбери действие 👇"""
+
+    await message.answer(text, reply_markup=get_bonus_keyboard(user.telegram_id))
+
+
+@router.callback_query(F.data.startswith("bonus_add:"))
+async def bonus_add_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Добавить бонусы"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    user_id = int(parts[1])
+    amount = int(parts[2])
+
+    # Находим пользователя
+    query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        await callback.answer("Пользователь не найден", show_alert=True)
+        return
+
+    # Начисляем бонусы
+    new_balance = await BonusService.add_bonus(
+        session=session,
+        user_id=user_id,
+        amount=amount,
+        reason=BonusReason.ADMIN_ADJUSTMENT,
+        description=f"Начисление админом: +{amount}₽",
+        bot=bot,
+    )
+
+    await callback.answer(f"✅ +{amount}₽ начислено")
+
+    # Обновляем сообщение
+    text = f"""💰  <b>Бонусы пользователя</b>
+
+👤  <b>{user.fullname or 'Без имени'}</b>
+🔗  @{user.username or '—'} · <code>{user.telegram_id}</code>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💳  <b>Баланс: {new_balance:.0f} ₽</b>
+✅  <i>+{amount}₽ начислено</i>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+Выбери действие 👇"""
+
+    await callback.message.edit_text(text, reply_markup=get_bonus_keyboard(user_id))
+
+    # Уведомляем пользователя
+    try:
+        await bot.send_message(
+            user_id,
+            f"🎁 <b>Тебе начислено {amount}₽ бонусов!</b>\n\n"
+            f"Баланс: {new_balance:.0f}₽\n"
+            f"Используй при следующем заказе 🤠"
+        )
+    except Exception:
+        pass
+
+
+@router.callback_query(F.data.startswith("bonus_sub:"))
+async def bonus_sub_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Списать бонусы"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    user_id = int(parts[1])
+    amount = int(parts[2])
+
+    # Находим пользователя
+    query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        await callback.answer("Пользователь не найден", show_alert=True)
+        return
+
+    if user.balance < amount:
+        await callback.answer(f"Недостаточно бонусов! Баланс: {user.balance:.0f}₽", show_alert=True)
+        return
+
+    # Списываем бонусы
+    success, new_balance = await BonusService.deduct_bonus(
+        session=session,
+        user_id=user_id,
+        amount=amount,
+        reason=BonusReason.ADMIN_ADJUSTMENT,
+        description=f"Списание админом: -{amount}₽",
+        bot=bot,
+        user=user,
+    )
+    await session.commit()
+
+    await callback.answer(f"✅ -{amount}₽ списано")
+
+    # Обновляем сообщение
+    text = f"""💰  <b>Бонусы пользователя</b>
+
+👤  <b>{user.fullname or 'Без имени'}</b>
+🔗  @{user.username or '—'} · <code>{user.telegram_id}</code>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💳  <b>Баланс: {new_balance:.0f} ₽</b>
+🔻  <i>-{amount}₽ списано</i>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+Выбери действие 👇"""
+
+    await callback.message.edit_text(text, reply_markup=get_bonus_keyboard(user_id))
+
+
+@router.callback_query(F.data.startswith("bonus_custom:"))
+async def bonus_custom_callback(callback: CallbackQuery, state: FSMContext):
+    """Ввести произвольную сумму"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    user_id = int(callback.data.split(":")[1])
+
+    await state.set_state(AdminStates.waiting_bonus_amount)
+    await state.update_data(bonus_user_id=user_id)
+
+    await callback.answer()
+    await callback.message.edit_text(
+        "✏️  <b>Введи сумму</b>\n\n"
+        "Положительное число — начислить\n"
+        "Отрицательное число — списать\n\n"
+        "Примеры:\n"
+        "<code>250</code> — начислить 250₽\n"
+        "<code>-150</code> — списать 150₽\n\n"
+        "Для отмены: /cancel",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Отмена", callback_data=f"bonus_cancel:{user_id}")]
+        ])
+    )
+
+
+@router.callback_query(F.data.startswith("bonus_cancel:"))
+async def bonus_cancel_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Отмена ввода суммы"""
+    await state.clear()
+    user_id = int(callback.data.split(":")[1])
+
+    # Находим пользователя для отображения
+    query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    if user:
+        text = f"""💰  <b>Бонусы пользователя</b>
+
+👤  <b>{user.fullname or 'Без имени'}</b>
+🔗  @{user.username or '—'} · <code>{user.telegram_id}</code>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💳  <b>Баланс: {user.balance:.0f} ₽</b>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+Выбери действие 👇"""
+        await callback.message.edit_text(text, reply_markup=get_bonus_keyboard(user_id))
+    else:
+        await callback.message.edit_text("❌ Пользователь не найден")
+
+    await callback.answer("Отменено")
+
+
+@router.message(AdminStates.waiting_bonus_amount)
+async def process_bonus_amount(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+    """Обработка ввода суммы бонусов"""
+    if not is_admin(message.from_user.id):
+        return
+
+    try:
+        amount = int(message.text.strip())
+    except ValueError:
+        await message.answer("❌ Введи число. Пример: <code>250</code> или <code>-150</code>")
+        return
+
+    data = await state.get_data()
+    user_id = data.get("bonus_user_id")
+
+    if not user_id:
+        await message.answer("❌ Ошибка. Попробуй снова: /bonus")
+        await state.clear()
+        return
+
+    # Находим пользователя
+    query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        await message.answer("❌ Пользователь не найден")
+        await state.clear()
+        return
+
+    await state.clear()
+
+    if amount > 0:
+        # Начисление
+        new_balance = await BonusService.add_bonus(
+            session=session,
+            user_id=user_id,
+            amount=amount,
+            reason=BonusReason.ADMIN_ADJUSTMENT,
+            description=f"Начисление админом: +{amount}₽",
+            bot=bot,
+        )
+        action_text = f"✅ +{amount}₽ начислено"
+
+        # Уведомляем пользователя
+        try:
+            await bot.send_message(
+                user_id,
+                f"🎁 <b>Тебе начислено {amount}₽ бонусов!</b>\n\n"
+                f"Баланс: {new_balance:.0f}₽\n"
+                f"Используй при следующем заказе 🤠"
+            )
+        except Exception:
+            pass
+
+    elif amount < 0:
+        # Списание
+        abs_amount = abs(amount)
+        if user.balance < abs_amount:
+            await message.answer(
+                f"❌ Недостаточно бонусов!\n"
+                f"Баланс: {user.balance:.0f}₽, пытаешься списать: {abs_amount}₽",
+                reply_markup=get_bonus_keyboard(user_id)
+            )
+            return
+
+        success, new_balance = await BonusService.deduct_bonus(
+            session=session,
+            user_id=user_id,
+            amount=abs_amount,
+            reason=BonusReason.ADMIN_ADJUSTMENT,
+            description=f"Списание админом: -{abs_amount}₽",
+            bot=bot,
+            user=user,
+        )
+        await session.commit()
+        action_text = f"🔻 -{abs_amount}₽ списано"
+    else:
+        await message.answer("❌ Сумма должна быть не равна нулю")
+        return
+
+    # Обновляем баланс в объекте для отображения
+    query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(query)
+    user = result.scalar_one_or_none()
+
+    text = f"""💰  <b>Бонусы пользователя</b>
+
+👤  <b>{user.fullname or 'Без имени'}</b>
+🔗  @{user.username or '—'} · <code>{user.telegram_id}</code>
+
+━━━━━━━━━━━━━━━━━━━━━
+
+💳  <b>Баланс: {user.balance:.0f} ₽</b>
+{action_text}
+
+━━━━━━━━━━━━━━━━━━━━━
+
+Выбери действие 👇"""
+
+    await message.answer(text, reply_markup=get_bonus_keyboard(user_id))
+
+
+@router.callback_query(F.data.startswith("bonus_profile:"))
+async def bonus_profile_callback(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
+    """Перейти к профилю пользователя"""
+    user_id = int(callback.data.split(":")[1])
+    await callback.answer()
+
+    # Имитируем команду /user
+    from aiogram.types import Message as FakeMessage
+
+    # Просто покажем сообщение с предложением
+    await callback.message.answer(f"👤 Профиль: <code>/user {user_id}</code>")
+
+
+# ══════════════════════════════════════════════════════════════
 #                    НАЗНАЧЕНИЕ ЦЕНЫ ЗАКАЗУ
 # ══════════════════════════════════════════════════════════════
 
