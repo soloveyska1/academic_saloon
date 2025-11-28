@@ -1062,14 +1062,14 @@ async def task_clear(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(OrderState.entering_task, F.data == "task_done")
 async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Пользователь закончил ввод задания → переход к срокам"""
-    await callback.answer()
-
     data = await state.get_data()
     attachments = data.get("attachments", [])
 
     if not attachments:
         await callback.answer("Сначала скинь хотя бы что-нибудь!", show_alert=True)
         return
+
+    await callback.answer()
 
     await state.set_state(OrderState.choosing_deadline)
 
