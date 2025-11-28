@@ -55,6 +55,21 @@ class StopWordsMiddleware(BaseMiddleware):
     def __init__(self):
         self.stop_words = [w.lower() for w in STOP_WORDS]
         self.patterns = [re.compile(p, re.IGNORECASE) for p in STOP_PATTERNS]
+        # Белый список - свои username и ссылки, которые не должны вызывать алерт
+        self.whitelist = [
+            f"@{settings.SUPPORT_USERNAME}".lower(),
+            f"@{settings.BOT_USERNAME}".lower(),
+            f"t.me/{settings.BOT_USERNAME}".lower(),
+            settings.REVIEWS_CHANNEL.lower(),
+        ]
+
+    def _is_whitelisted(self, match: str) -> bool:
+        """Проверяет, находится ли совпадение в белом списке"""
+        match_lower = match.lower()
+        for allowed in self.whitelist:
+            if match_lower in allowed or allowed in match_lower:
+                return True
+        return False
 
     async def __call__(
         self,
@@ -79,8 +94,10 @@ class StopWordsMiddleware(BaseMiddleware):
                 # Проверяем паттерны
                 for pattern in self.patterns:
                     matches = pattern.findall(event.message.text)
-                    if matches:
-                        found_words.extend(matches[:3])  # Максимум 3 совпадения
+                    for match in matches[:3]:  # Максимум 3 совпадения
+                        # Исключаем свои username и ссылки
+                        if not self._is_whitelisted(match):
+                            found_words.append(match)
 
                 # Если нашли что-то подозрительное — уведомляем
                 if found_words:

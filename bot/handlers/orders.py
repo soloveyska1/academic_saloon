@@ -29,6 +29,31 @@ router = Router()
 
 
 # ══════════════════════════════════════════════════════════════
+#                    ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# ══════════════════════════════════════════════════════════════
+
+def calculate_user_discount(user: User | None) -> int:
+    """
+    Рассчитывает скидку пользователя на основе:
+    - Статуса лояльности
+    - Реферальной скидки (5% для первого заказа по реф-ссылке)
+
+    Returns:
+        Процент скидки (0-15)
+    """
+    if not user:
+        return 0
+
+    _, discount = user.loyalty_status
+
+    # Скидка 5% за первый заказ по реферальной ссылке
+    if user.referrer_id and user.orders_count == 0:
+        discount = max(discount, 5)
+
+    return discount
+
+
+# ══════════════════════════════════════════════════════════════
 #                    ШАГ 1: ВЫБОР ТИПА РАБОТЫ
 # ══════════════════════════════════════════════════════════════
 
@@ -100,12 +125,7 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
 
-    _, discount = user.loyalty_status if user else ("", 0)
-
-    # Проверяем скидку за реферала (первый заказ)
-    if user and user.referrer_id and user.orders_count == 0:
-        discount = max(discount, 5)
-
+    discount = calculate_user_discount(user)
     discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
 
     text = f"""🎯  <b>Новый заказ</b>
@@ -467,12 +487,7 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     result = await session.execute(user_query)
     user = result.scalar_one_or_none()
 
-    _, discount = user.loyalty_status if user else ("", 0)
-
-    # Проверяем скидку за реферала
-    if user and user.referrer_id and user.orders_count == 0:
-        discount = max(discount, 5)
-
+    discount = calculate_user_discount(user)
     await state.update_data(discount=discount)
 
     # Формируем текст превью
@@ -690,11 +705,7 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
 
-    _, discount = user.loyalty_status if user else ("", 0)
-
-    if user and user.referrer_id and user.orders_count == 0:
-        discount = max(discount, 5)
-
+    discount = calculate_user_discount(user)
     discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
 
     text = f"""🎯  <b>Новый заказ</b>
@@ -892,9 +903,12 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
 
     discount_line = f"◈  Скидка: {data.get('discount', 0)}%\n" if data.get("discount", 0) > 0 else ""
 
+    # Формируем строку с username или без
+    username_str = f"@{user.username}" if user.username else "без username"
+
     text = f"""🆕  <b>Новая заявка #{order.id}</b>
 
-◈  Клиент: {user.full_name} (@{user.username})
+◈  Клиент: {user.full_name} ({username_str})
 ◈  ID: <code>{user.id}</code>
 
 ◈  Тип: {work_label}
