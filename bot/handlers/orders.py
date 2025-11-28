@@ -208,7 +208,7 @@ def calculate_user_discount(user: User | None) -> int:
 #                    ШАГ 1: ВЫБОР ТИПА РАБОТЫ
 # ══════════════════════════════════════════════════════════════
 
-MAX_PENDING_ORDERS = 3  # Максимум активных заказов на пользователя
+MAX_PENDING_ORDERS = 5  # Мягкий лимит необработанных заказов
 
 
 @router.callback_query(F.data == "create_order")
@@ -216,35 +216,53 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
     """Начать создание заказа — выбор типа работы"""
     await callback.answer()
 
-    # Проверяем количество активных заказов пользователя
+    # Админы без ограничений
+    if callback.from_user.id in settings.ADMIN_IDS:
+        await _proceed_to_order_creation(callback, state, bot, session)
+        return
+
+    # Проверяем количество НЕОБРАБОТАННЫХ заказов (только PENDING)
     pending_query = select(Order).where(
         Order.user_id == callback.from_user.id,
-        Order.status.in_([
-            OrderStatus.PENDING.value,
-            OrderStatus.CONFIRMED.value,
-        ])
+        Order.status == OrderStatus.PENDING.value,  # Только необработанные
     )
     result = await session.execute(pending_query)
     pending_orders = result.scalars().all()
 
+    # Мягкий лимит — показываем предупреждение, но даём продолжить
     if len(pending_orders) >= MAX_PENDING_ORDERS:
         limit_text = (
-            f"⚠️ <b>У тебя уже {len(pending_orders)} активных заявок</b>\n\n"
-            f"Дождись их обработки или напиши мне напрямую:\n"
-            f"@{settings.SUPPORT_USERNAME}"
+            f"🤔 <b>У тебя уже {len(pending_orders)} заявок в очереди</b>\n\n"
+            f"Они ещё не обработаны — скоро посмотрю!\n\n"
+            f"Можешь подождать или создать ещё одну 👇"
         )
-        # Проверяем, можно ли редактировать сообщение
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="➕ Всё равно создать", callback_data="force_create_order")],
+            [InlineKeyboardButton(text="⏳ Подожду", callback_data="back_to_menu")],
+        ])
+
         if callback.message.text:
-            await callback.message.edit_text(limit_text, reply_markup=get_back_keyboard())
+            await callback.message.edit_text(limit_text, reply_markup=keyboard)
         else:
-            # Сообщение с медиа — удаляем и отправляем новое
             try:
                 await callback.message.delete()
             except Exception:
                 pass
-            await callback.message.answer(limit_text, reply_markup=get_back_keyboard())
+            await callback.message.answer(limit_text, reply_markup=keyboard)
         return
 
+    await _proceed_to_order_creation(callback, state, bot, session)
+
+
+@router.callback_query(F.data == "force_create_order")
+async def force_create_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
+    """Создать заказ несмотря на лимит"""
+    await callback.answer()
+    await _proceed_to_order_creation(callback, state, bot, session)
+
+
+async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
+    """Общая логика начала создания заказа"""
     await state.clear()  # Очищаем предыдущее состояние
     await state.set_state(OrderState.choosing_type)
 
