@@ -179,7 +179,7 @@ async def start_note(callback: CallbackQuery, state: FSMContext, session: AsyncS
     # Показываем текущую заметку если есть
     current_note = getattr(user, 'admin_notes', None) or "Заметок нет"
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Сохраняем user_id в состояние
     await state.set_state(NoteState.waiting_for_note)
@@ -265,7 +265,7 @@ async def show_user_info(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("Пользователь не найден", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Формируем информацию
     status, discount = user.loyalty_status

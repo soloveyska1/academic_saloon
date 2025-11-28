@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from typing import Optional
 from zoneinfo import ZoneInfo
 
 from aiogram import Router, F, Bot
@@ -50,6 +51,12 @@ router = Router()
 # ══════════════════════════════════════════════════════════════
 
 MAX_ATTACHMENTS = 10  # Максимум вложений в заказе
+
+
+def parse_callback_data(data: str, index: int, separator: str = ":") -> Optional[str]:
+    """Безопасный парсинг callback_data по индексу"""
+    parts = data.split(separator)
+    return parts[index] if len(parts) > index else None
 
 
 def pluralize_files(n: int) -> str:
@@ -228,7 +235,7 @@ MAX_PENDING_ORDERS = 5  # Мягкий лимит необработанных �
 @router.callback_query(F.data == "create_order")
 async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Начать создание заказа — выбор типа работы"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Админы без ограничений
     if callback.from_user.id in settings.ADMIN_IDS:
@@ -271,7 +278,7 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
 @router.callback_query(F.data == "force_create_order")
 async def force_create_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Создать заказ несмотря на лимит"""
-    await callback.answer()
+    await callback.answer("⏳")
     await _proceed_to_order_creation(callback, state, bot, session)
 
 
@@ -344,9 +351,9 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
     Обработка выбора категории работ.
     Показывает конкретные типы в выбранной категории.
     """
-    await callback.answer()
+    await callback.answer("⏳")
 
-    category_key = callback.data.split(":")[1]
+    category_key = parse_callback_data(callback.data, 1)
     category = WORK_CATEGORIES.get(category_key)
 
     if not category:
@@ -451,7 +458,7 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
 @router.callback_query(OrderState.choosing_type, F.data == "back_to_categories")
 async def back_to_categories(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Назад к выбору категории"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Получаем скидку пользователя
     user_query = select(User).where(User.telegram_id == callback.from_user.id)
@@ -494,9 +501,9 @@ URGENT_DEADLINE_LABELS = {
 @router.callback_query(OrderState.choosing_type, F.data.startswith("urgent_deadline:"))
 async def process_urgent_deadline(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Обработка выбора дедлайна для срочного заказа"""
-    await callback.answer()
+    await callback.answer("⏳")
 
-    deadline_key = callback.data.split(":")[1]
+    deadline_key = parse_callback_data(callback.data, 1)
     surcharge = URGENT_SURCHARGES.get(deadline_key, 0)
     deadline_label = URGENT_DEADLINE_LABELS.get(deadline_key, deadline_key)
 
@@ -553,7 +560,7 @@ async def process_urgent_deadline(callback: CallbackQuery, state: FSMContext, bo
 @router.callback_query(OrderState.entering_task, F.data == "back_to_urgent")
 async def back_to_urgent(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Возврат к экрану выбора дедлайна срочного заказа"""
-    await callback.answer()
+    await callback.answer("⏳")
     await state.set_state(OrderState.choosing_type)
 
     # Удаляем старое сообщение
@@ -622,9 +629,9 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
     - Крупные работы (диплом, курсовая, практика, магистерская) → спрашиваем направление
     - Мелкие работы (эссе, реферат, контрольная...) → сразу к заданию
     """
-    await callback.answer()
+    await callback.answer("⏳")
 
-    work_type_value = callback.data.split(":")[1]
+    work_type_value = parse_callback_data(callback.data, 1)
     work_type = WorkType(work_type_value)
     await state.update_data(work_type=work_type_value)
 
@@ -700,9 +707,9 @@ async def process_subject(callback: CallbackQuery, state: FSMContext, bot: Bot, 
     Обработка выбора направления → переход к вводу задания.
     Поддерживает subject:skip для пропуска этого шага.
     """
-    await callback.answer()
+    await callback.answer("⏳")
 
-    subject_key = callback.data.split(":")[1]
+    subject_key = parse_callback_data(callback.data, 1)
 
     # Пропуск выбора направления
     if subject_key == "skip":
@@ -1029,7 +1036,7 @@ async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, sessio
         await callback.answer("Сначала скинь хотя бы что-нибудь!", show_alert=True)
         return
 
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Некритичные операции
     try:
@@ -1079,9 +1086,9 @@ async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, sessio
 @router.callback_query(OrderState.choosing_deadline, F.data.startswith("deadline:"))
 async def process_deadline_choice(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Обработка выбора срока из кнопок"""
-    await callback.answer()
+    await callback.answer("⏳")
 
-    deadline_key = callback.data.split(":")[1]
+    deadline_key = parse_callback_data(callback.data, 1)
 
     # Если выбрали "Указать дату" — просим ввести текстом
     if deadline_key == "custom":
@@ -1103,7 +1110,7 @@ async def process_deadline_choice(callback: CallbackQuery, state: FSMContext, bo
 @router.callback_query(OrderState.choosing_deadline, F.data == "order_back_to_deadline_buttons")
 async def back_to_deadline_buttons(callback: CallbackQuery, state: FSMContext):
     """Назад к кнопкам выбора срока"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     text = """⏰  <b>Когда нужна готовая работа?</b>
 
@@ -1262,7 +1269,7 @@ def format_attachments_summary(attachments: list) -> str:
 @router.callback_query(OrderState.confirming, F.data == "confirm_order")
 async def confirm_order(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """Подтверждение и сохранение заказа"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     data = await state.get_data()
     user_id = callback.from_user.id
@@ -1385,7 +1392,7 @@ def format_order_description(attachments: list) -> str:
 @router.callback_query(F.data == "order_back_to_type")
 async def back_to_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Назад к выбору типа работы (категории)"""
-    await callback.answer()
+    await callback.answer("⏳")
     await state.set_state(OrderState.choosing_type)
 
     # Получаем скидку пользователя
@@ -1420,7 +1427,7 @@ async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: A
     Назад к выбору направления.
     Для мелких работ — сразу к выбору типа.
     """
-    await callback.answer()
+    await callback.answer("⏳")
 
     data = await state.get_data()
     work_type_value = data.get("work_type", "")
@@ -1450,7 +1457,7 @@ async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: A
 @router.callback_query(F.data == "order_back_to_task")
 async def back_to_task(callback: CallbackQuery, state: FSMContext):
     """Назад к вводу задания"""
-    await callback.answer()
+    await callback.answer("⏳")
     await state.set_state(OrderState.entering_task)
 
     data = await state.get_data()
@@ -1479,7 +1486,7 @@ async def back_to_task(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(OrderState.confirming, F.data == "order_edit")
 async def edit_order(callback: CallbackQuery, state: FSMContext):
     """Редактирование заказа — выбор что изменить"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Определяем, нужна ли кнопка направления
     data = await state.get_data()
@@ -1500,14 +1507,14 @@ async def edit_order(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "back_to_confirm")
 async def back_to_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Назад к подтверждению"""
-    await callback.answer()
+    await callback.answer("⏳")
     await show_order_confirmation(callback, state, bot, session)
 
 
 @router.callback_query(F.data == "edit_type")
 async def edit_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Изменить тип работы"""
-    await callback.answer()
+    await callback.answer("⏳")
     await state.set_state(OrderState.choosing_type)
     await back_to_type(callback, state, session)
 
@@ -1515,7 +1522,7 @@ async def edit_type(callback: CallbackQuery, state: FSMContext, session: AsyncSe
 @router.callback_query(F.data == "edit_subject")
 async def edit_subject(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Изменить направление"""
-    await callback.answer()
+    await callback.answer("⏳")
     await state.set_state(OrderState.choosing_subject)
     await back_to_subject(callback, state, session)
 
@@ -1523,7 +1530,7 @@ async def edit_subject(callback: CallbackQuery, state: FSMContext, session: Asyn
 @router.callback_query(F.data == "edit_task")
 async def edit_task(callback: CallbackQuery, state: FSMContext):
     """Изменить задание — очищаем вложения"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     data = await state.get_data()
 
@@ -1541,7 +1548,7 @@ async def edit_task(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "edit_deadline")
 async def edit_deadline(callback: CallbackQuery, state: FSMContext):
     """Изменить сроки"""
-    await callback.answer()
+    await callback.answer("⏳")
     await state.set_state(OrderState.choosing_deadline)
 
     text = """⏰  <b>Когда нужна готовая работа?</b>

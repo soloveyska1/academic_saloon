@@ -16,11 +16,11 @@ class Settings(BaseSettings):
     LOG_CHANNEL_ID: int = -1003300275622
     SUPPORT_USERNAME: str = "Thisissaymoon"
 
-    # Реквизиты для оплаты (ручной перевод)
-    PAYMENT_PHONE: str = "89196739120"          # Номер для СБП
-    PAYMENT_CARD: str = "5469750015908836"      # Номер карты
-    PAYMENT_BANKS: str = "Сбер · Т-Банк · БСПБ" # Банки для СБП
-    PAYMENT_NAME: str = "Семен Юрьевич С."      # Имя получателя
+    # Реквизиты для оплаты (ручной перевод) — из .env
+    PAYMENT_PHONE: str  # Номер для СБП
+    PAYMENT_CARD: str   # Номер карты
+    PAYMENT_BANKS: str  # Банки для СБП
+    PAYMENT_NAME: str   # Имя получателя
 
     # ЮKassa (онлайн-оплата)
     YOOKASSA_SHOP_ID: str | None = None         # ID магазина

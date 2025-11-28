@@ -194,7 +194,7 @@ async def safe_delete_message(callback: CallbackQuery) -> None:
 @router.callback_query(F.data == "my_orders")
 async def show_my_orders(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Мои заказы"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -226,7 +226,7 @@ async def show_my_orders(callback: CallbackQuery, session: AsyncSession, bot: Bo
 @router.callback_query(F.data == "my_balance")
 async def show_my_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Мой баланс"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -261,7 +261,7 @@ async def show_my_balance(callback: CallbackQuery, session: AsyncSession, bot: B
 @router.callback_query(F.data == "contact_owner")
 async def show_contact_owner(callback: CallbackQuery, bot: Bot):
     """Написать Хозяину"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -289,7 +289,7 @@ async def show_contact_owner(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "price_list")
 async def show_price_list(callback: CallbackQuery, bot: Bot):
     """Прайс-лист"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -330,7 +330,7 @@ async def show_price_list(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "profile")
 async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Досье пользователя"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -371,7 +371,7 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 @router.callback_query(F.data == "finance")
 async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Казна пользователя"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -406,7 +406,7 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 @router.callback_query(F.data == "support")
 async def call_support(callback: CallbackQuery, bot: Bot):
     """Связь с поддержкой"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -434,7 +434,7 @@ async def call_support(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "codex")
 async def show_codex_short(callback: CallbackQuery, bot: Bot):
     """Краткая версия Кодекса"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -451,7 +451,7 @@ async def show_codex_short(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "codex_full")
 async def show_codex_full(callback: CallbackQuery, bot: Bot):
     """Полная версия Кодекса"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -468,7 +468,7 @@ async def show_codex_full(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "referral")
 async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Реферальная программа"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     telegram_id = callback.from_user.id
     referral_link = f"https://t.me/{settings.BOT_USERNAME}?start=ref{telegram_id}"
@@ -518,7 +518,7 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
 @router.callback_query(F.data == "about")
 async def show_about(callback: CallbackQuery, bot: Bot):
     """О сервисе"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
@@ -554,7 +554,7 @@ async def show_about(callback: CallbackQuery, bot: Bot):
 @router.callback_query(F.data == "back_to_menu")
 async def back_to_menu(callback: CallbackQuery, bot: Bot):
     """Возврат в главное меню с атмосферной картинкой"""
-    await callback.answer()
+    await callback.answer("⏳")
 
     # Логируем
     await log_action(
