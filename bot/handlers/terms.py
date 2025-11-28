@@ -159,7 +159,8 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             silent=False,  # Со звуком!
         )
 
-        # Новым пользователям: интрига с кнопкой для голосового
+        # Новым пользователям: ТОЛЬКО интрига с кнопкой для голосового
+        # Меню и закреп отправятся после прослушивания
         await callback.message.answer(
             VOICE_TEASER,
             reply_markup=get_voice_teaser_keyboard()
@@ -174,20 +175,14 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             session=session,
         )
 
-    # Получаем приветствие по времени суток (МСК)
-    text = get_time_greeting()
-
-    # Отправляем картинку с меню + Inline клавиатура
-    photo = FSInputFile(settings.WELCOME_IMAGE)
-    await callback.message.answer_photo(
-        photo=photo,
-        caption=text,
-        reply_markup=get_main_menu_keyboard()
-    )
-
-    # Статус салуна с закрепом — только для НОВЫХ пользователей (один раз)
-    if is_first_accept:
-        await send_and_pin_status(callback.message.chat.id, bot, pin=True)
+        # Старым пользователям: сразу меню
+        text = get_time_greeting()
+        photo = FSInputFile(settings.WELCOME_IMAGE)
+        await callback.message.answer_photo(
+            photo=photo,
+            caption=text,
+            reply_markup=get_main_menu_keyboard()
+        )
 
 
 # ══════════════════════════════════════════════════════════════
@@ -196,7 +191,10 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
 @router.callback_query(F.data == "play_welcome_voice")
 async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
-    """Отправляет голосовое приветствие по нажатию кнопки"""
+    """
+    Отправляет голосовое приветствие по нажатию кнопки.
+    После голосового — меню и закреп (для новых пользователей).
+    """
     await callback.answer()
 
     # Удаляем сообщение с кнопкой
@@ -216,3 +214,15 @@ async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
         user=callback.from_user,
         details="Прослушал голосовое приветствие",
     )
+
+    # Теперь отправляем меню
+    text = get_time_greeting()
+    photo = FSInputFile(settings.WELCOME_IMAGE)
+    await callback.message.answer_photo(
+        photo=photo,
+        caption=text,
+        reply_markup=get_main_menu_keyboard()
+    )
+
+    # И закреп со статусом салуна
+    await send_and_pin_status(callback.message.chat.id, bot, pin=True)
