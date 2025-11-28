@@ -157,7 +157,14 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
     if work_type == WorkType.PHOTO_TASK.value:
         await state.update_data(subject="photo_task")
         await state.set_state(OrderState.entering_task)
-        await show_task_input_screen(callback.message, is_photo_task=True)
+
+        # Удаляем старое сообщение с фото
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        await show_task_input_screen(callback.message, is_photo_task=True, send_new=True)
         return
 
     await state.set_state(OrderState.choosing_subject)
@@ -166,7 +173,13 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
 
 Выбери направление:"""
 
-    await callback.message.edit_text(text, reply_markup=get_subject_keyboard())
+    # Удаляем старое сообщение с фото и отправляем новое текстовое
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await callback.message.answer(text, reply_markup=get_subject_keyboard())
 
 
 # ══════════════════════════════════════════════════════════════
@@ -203,7 +216,7 @@ async def process_subject(callback: CallbackQuery, state: FSMContext, bot: Bot, 
     await show_task_input_screen(callback.message)
 
 
-async def show_task_input_screen(message: Message, is_photo_task: bool = False, is_edit: bool = False):
+async def show_task_input_screen(message: Message, is_photo_task: bool = False, is_edit: bool = False, send_new: bool = False):
     """Показать экран ввода задания"""
     if is_photo_task:
         text = """📸  <b>Просто скинь фото задания</b>
@@ -227,10 +240,13 @@ async def show_task_input_screen(message: Message, is_photo_task: bool = False, 
 <i>Кидай прямо сюда 👇
 Можно прислать несколько файлов.</i>"""
 
-    try:
-        await message.edit_text(text, reply_markup=get_task_input_keyboard())
-    except Exception:
+    if send_new:
         await message.answer(text, reply_markup=get_task_input_keyboard())
+    else:
+        try:
+            await message.edit_text(text, reply_markup=get_task_input_keyboard())
+        except Exception:
+            await message.answer(text, reply_markup=get_task_input_keyboard())
 
 
 # ══════════════════════════════════════════════════════════════
