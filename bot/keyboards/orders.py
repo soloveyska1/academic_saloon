@@ -5,8 +5,127 @@ from core.config import settings
 
 
 # ══════════════════════════════════════════════════════════════
-#                    ШАГ 1: ВЫБОР ТИПА РАБОТЫ
+#                    ШАГ 1: ВЫБОР ТИПА РАБОТЫ (ДВУХУРОВНЕВОЕ МЕНЮ)
 # ══════════════════════════════════════════════════════════════
+
+# Категории работ для первого уровня меню
+WORK_CATEGORIES = {
+    "urgent": {
+        "label": "🔥 Срочно! Горит!",
+        "description": "Сдать сегодня-завтра",
+        "types": [WorkType.PHOTO_TASK],
+    },
+    "small": {
+        "label": "📝 Мелкие работы",
+        "description": "Эссе, реферат, контрольная...",
+        "types": [
+            WorkType.CONTROL,
+            WorkType.ESSAY,
+            WorkType.REPORT,
+            WorkType.PRESENTATION,
+            WorkType.INDEPENDENT,
+        ],
+    },
+    "medium": {
+        "label": "📚 Курсовая / Практика",
+        "description": "Курсовые, отчёты по практике",
+        "types": [WorkType.COURSEWORK, WorkType.PRACTICE],
+    },
+    "large": {
+        "label": "🎓 Дипломы",
+        "description": "ВКР, магистерские",
+        "types": [WorkType.DIPLOMA, WorkType.MASTERS],
+    },
+    "other": {
+        "label": "📎 Другое / Не знаю",
+        "description": "Нестандартные задачи",
+        "types": [WorkType.OTHER],
+    },
+}
+
+
+def get_work_category_keyboard() -> InlineKeyboardMarkup:
+    """
+    Первый уровень: выбор категории работ.
+    Компактное меню из 5 кнопок + отмена.
+    """
+    buttons = []
+
+    for key, category in WORK_CATEGORIES.items():
+        buttons.append([
+            InlineKeyboardButton(
+                text=category["label"],
+                callback_data=f"work_category:{key}"
+            ),
+        ])
+
+    # Кнопка "Спросить" для тех, кто не определился
+    buttons.append([
+        InlineKeyboardButton(
+            text="💬 Спросить — помогу выбрать",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        ),
+    ])
+
+    # Кнопка отмены
+    buttons.append([
+        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order")
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_category_works_keyboard(category_key: str) -> InlineKeyboardMarkup:
+    """
+    Второй уровень: типы работ в выбранной категории.
+    Показывает цены и сроки для каждого типа.
+    """
+    category = WORK_CATEGORIES.get(category_key)
+    if not category:
+        # Fallback — полный список
+        return get_work_type_keyboard()
+
+    buttons = []
+
+    for work_type in category["types"]:
+        # Формируем текст кнопки с ценой и сроком
+        label = WORK_TYPE_LABELS.get(work_type, work_type.value)
+        price = WORK_TYPE_PRICES.get(work_type, "")
+        deadline = WORK_TYPE_DEADLINES.get(work_type, "")
+
+        # Компактный формат: "📝 Эссе • от 1400₽ • 1-2 дня"
+        parts = [label]
+        if price:
+            parts.append(price)
+        if deadline:
+            parts.append(deadline)
+
+        text = " • ".join(parts)
+
+        buttons.append([
+            InlineKeyboardButton(
+                text=text,
+                callback_data=f"order_type:{work_type.value}"
+            ),
+        ])
+
+    # Для категории "other" добавляем кнопку спросить
+    if category_key == "other":
+        buttons.append([
+            InlineKeyboardButton(
+                text="💬 Описать задачу менеджеру",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            ),
+        ])
+
+    # Назад и отмена
+    buttons.append([
+        InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_categories"),
+        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
 
 def get_work_type_keyboard() -> InlineKeyboardMarkup:
     """
