@@ -191,7 +191,7 @@ def get_medium_works_keyboard() -> InlineKeyboardMarkup:
 
 def get_large_works_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура для Дипломов — самый крупный калибр.
+    Клавиатура для Дипломов — Premium-стиль "Большой куш".
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -208,7 +208,7 @@ def get_large_works_keyboard() -> InlineKeyboardMarkup:
         ],
         # Навигация
         [
-            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_categories"),
+            InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_categories"),
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
         ],
     ])
