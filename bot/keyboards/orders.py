@@ -162,6 +162,59 @@ def get_small_works_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
+def get_medium_works_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура для Курсовых/Практики — крупный калибр.
+    Чистые кнопки с ценами.
+    """
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="📜 Курсовая работа | от 11 900 ₽",
+                callback_data=f"order_type:{WorkType.COURSEWORK.value}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="💼 Отчёт по практике | от 4 900 ₽",
+                callback_data=f"order_type:{WorkType.PRACTICE.value}"
+            ),
+        ],
+        # Навигация
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_categories"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ],
+    ])
+    return kb
+
+
+def get_large_works_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура для Дипломов — самый крупный калибр.
+    """
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🎓 Диплом (ВКР) | от 34 900 ₽",
+                callback_data=f"order_type:{WorkType.DIPLOMA.value}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="🎩 Магистерская | от 44 900 ₽",
+                callback_data=f"order_type:{WorkType.MASTERS.value}"
+            ),
+        ],
+        # Навигация
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_categories"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ],
+    ])
+    return kb
+
+
 def get_work_type_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура выбора типа работы с ценами и сроками.
