@@ -44,24 +44,16 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_codex_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура для Кодекса — URL на Telegraph + навигация"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📖 Полная версия", callback_data="codex_full")
+            InlineKeyboardButton(
+                text="📜 Полный свод законов (Telegraph)",
+                url="https://telegra.ph/Kodeks-Saluna-Polnaya-versiya-11-29"
+            )
         ],
         [
-            InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")
-        ]
-    ])
-    return kb
-
-
-def get_codex_full_keyboard() -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="📋 Коротко", callback_data="codex")
-        ],
-        [
-            InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")
+            InlineKeyboardButton(text="🔙 В главное меню", callback_data="back_to_menu")
         ]
     ])
     return kb
