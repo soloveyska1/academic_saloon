@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # Пути к изображениям для заказа
 ZAKAZ_IMAGE_PATH = Path(__file__).parent.parent / "media" / "zakaz.jpg"
 SMALL_TASKS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "small_tasks.jpg"
-KURS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "kurs.jpg"
+KURS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "kurs_otc.jpg"
 DIPLOMA_IMAGE_PATH = Path(__file__).parent.parent / "media" / "diploma.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
