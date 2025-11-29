@@ -215,10 +215,13 @@ def get_balance_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_referral_keyboard(ref_link: str) -> InlineKeyboardMarkup:
-    """Реферальная программа"""
+    """Реферальная программа — кнопки для шаринга"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Поделиться", switch_inline_query=f"Помощь с учёбой — {ref_link}")],
-        [InlineKeyboardButton(text="← Назад", callback_data="my_profile")],
+        [InlineKeyboardButton(
+            text="📨 Переслать приглашение",
+            switch_inline_query=f"🤠 Заходи в Академический Салун!\n\n💎 Скидка 5% на первый заказ по моей ссылке:\n{ref_link}"
+        )],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="my_profile")],
     ])
 
 
