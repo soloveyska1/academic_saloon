@@ -20,13 +20,13 @@ GREETING_EVENING = "🌅 <b>Добрый вечер в Салуне, {name}!</b>
 GREETING_NIGHT = "🌙 <b>Доброй ночи, {name}!</b>"
 
 # Основной текст (компактный, с ценностью)
-MAIN_USP = """Здесь всё по-честному: даёшь задачу — мы берём пыльную работу на себя.
+MAIN_USP_TEMPLATE = """Здесь всё по-честному: даёшь задачу — мы берём пыльную работу на себя.
 
 🏆 <b>Наши регалии:</b>
 ├ 🤠 <b>6 лет</b> в деле
 ├ 👥 <b>1000+</b> довольных клиентов
-└ 🔥 {stats_line}
-{discount_line}
+└ {stats_line}
+
 👇 <i>Садись за стойку — жми кнопку!</i>"""
 
 
@@ -64,15 +64,17 @@ def get_main_text(
     if stats_line and stats_line.strip():
         live_stats = stats_line.strip()
     else:
-        live_stats = "<b>Доводим до идеала</b>"
+        live_stats = "🔥 <b>Доводим до идеала</b>"
 
-    # Скидка
-    discount_line = f"\n🎁 Твоя скидка: <b>−{discount}%</b>\n" if discount > 0 else "\n"
+    # Базовый текст
+    text = MAIN_USP_TEMPLATE.format(stats_line=live_stats)
 
-    return MAIN_USP.format(
-        stats_line=live_stats,
-        discount_line=discount_line,
-    ).strip()
+    # Вставляем скидку перед CTA если есть
+    if discount > 0:
+        discount_line = f"🎁 Твоя скидка: <b>−{discount}%</b>\n\n"
+        text = text.replace("\n👇", f"\n{discount_line}👇")
+
+    return text.strip()
 
 
 def get_welcome_quote() -> str:
