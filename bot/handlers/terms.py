@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto
+from aiogram.types import CallbackQuery, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -26,7 +26,7 @@ from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard, get
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from bot.handlers.start import send_and_pin_status
-from core.media_cache import send_cached_photo
+from core.media_cache import send_cached_photo, get_cached_input_media_photo
 
 router = Router()
 
@@ -54,9 +54,8 @@ async def show_terms_short(callback: CallbackQuery, bot: Bot):
         details="Оферта: краткая версия",
     )
 
-    # Обновляем фото и caption
-    photo = FSInputFile(settings.OFFER_IMAGE)
-    media = InputMediaPhoto(media=photo, caption=TERMS_SHORT)
+    # Обновляем фото и caption (с кэшированием file_id)
+    media = await get_cached_input_media_photo(settings.OFFER_IMAGE, caption=TERMS_SHORT)
     await callback.message.edit_media(media=media, reply_markup=get_terms_short_keyboard())
 
 
@@ -73,9 +72,8 @@ async def show_terms_full(callback: CallbackQuery, bot: Bot):
         details="Оферта: полная версия",
     )
 
-    # Обновляем фото и caption
-    photo = FSInputFile(settings.OFFER_IMAGE)
-    media = InputMediaPhoto(media=photo, caption=TERMS_FULL_INTRO)
+    # Обновляем фото и caption (с кэшированием file_id)
+    media = await get_cached_input_media_photo(settings.OFFER_IMAGE, caption=TERMS_FULL_INTRO)
     await callback.message.edit_media(media=media, reply_markup=get_terms_full_keyboard())
 
 
@@ -98,9 +96,8 @@ async def show_terms_section(callback: CallbackQuery, bot: Bot):
         details=f"Оферта: раздел «{section_name}»",
     )
 
-    # Обновляем фото и caption
-    photo = FSInputFile(settings.OFFER_IMAGE)
-    media = InputMediaPhoto(media=photo, caption=section_text)
+    # Обновляем фото и caption (с кэшированием file_id)
+    media = await get_cached_input_media_photo(settings.OFFER_IMAGE, caption=section_text)
     await callback.message.edit_media(media=media, reply_markup=get_terms_section_keyboard(section_key))
 
 

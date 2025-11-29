@@ -1613,19 +1613,19 @@ async def back_to_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot, 
 
 
 @router.callback_query(F.data == "edit_type")
-async def edit_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def edit_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """Изменить тип работы"""
     await callback.answer("⏳")
     await state.set_state(OrderState.choosing_type)
-    await back_to_type(callback, state, session)
+    await back_to_type(callback, state, session, bot)
 
 
 @router.callback_query(F.data == "edit_subject")
-async def edit_subject(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def edit_subject(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """Изменить направление"""
     await callback.answer("⏳")
     await state.set_state(OrderState.choosing_subject)
-    await back_to_subject(callback, state, session)
+    await back_to_subject(callback, state, session, bot)
 
 
 @router.callback_query(F.data == "edit_task")
