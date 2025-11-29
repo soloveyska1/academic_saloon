@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     CANCEL_IMAGE: Path = BASE_DIR / "bot" / "media" / "otmena.jpg"
     ERROR_IMAGE: Path = BASE_DIR / "bot" / "media" / "tech_pause.jpg"
     TASK_INPUT_IMAGE: Path = BASE_DIR / "bot" / "media" / "Kontr.jpg"
-    KURS_IMAGE: Path = BASE_DIR / "bot" / "media" / "kurs.jpg"
+    KURS_IMAGE: Path = BASE_DIR / "bot" / "media" / "kurs_otc.jpg"
     DIPLOMA_IMAGE: Path = BASE_DIR / "bot" / "media" / "diploma.jpg"
 
     POSTGRES_USER: str

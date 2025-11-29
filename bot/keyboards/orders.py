@@ -176,13 +176,13 @@ def get_medium_works_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(
-                text="💼 Отчёт по практике | от 4 900 ₽",
+                text="💼 Отчет по практике | от 4 900 ₽",
                 callback_data=f"order_type:{WorkType.PRACTICE.value}"
             ),
         ],
         # Навигация
         [
-            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_categories"),
+            InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_categories"),
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
         ],
     ])
