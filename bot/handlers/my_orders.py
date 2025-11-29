@@ -17,6 +17,8 @@ from sqlalchemy import select, func, desc, case
 
 # Путь к изображению для ЛК
 PROFILE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cab_saloon.jpg"
+# Путь к изображению для списка заказов
+ORDERS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "my_order.jpg"
 
 from database.models.users import User
 from database.models.orders import (
@@ -41,7 +43,7 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
-ORDERS_PER_PAGE = 10
+ORDERS_PER_PAGE = 6  # Уменьшено для лучшего UX
 
 
 # ══════════════════════════════════════════════════════════════
@@ -244,18 +246,51 @@ async def paginate_orders(callback: CallbackQuery, session: AsyncSession):
     await show_orders_list(callback, session, filter_type, page)
 
 
+def build_orders_caption(counts: dict, filter_type: str) -> str:
+    """Формирует caption для списка заказов — dashboard summary"""
+    lines = ["🗄 <b>Твои текущие дела</b>", ""]
+
+    total = counts["all"]
+    active = counts["active"]
+    done = counts["history"]
+
+    lines.append(f"Всего: <b>{total}</b> | В работе: <b>{active}</b> | Готово: <b>{done}</b>")
+    lines.append("")
+    lines.append("<i>Нажми на заказ для деталей</i>")
+
+    return "\n".join(lines)
+
+
 async def show_orders_list(callback: CallbackQuery, session: AsyncSession,
-                           filter_type: str, page: int):
-    """Список заказов"""
+                           filter_type: str, page: int, bot: Bot = None):
+    """Список заказов с фото"""
     telegram_id = callback.from_user.id
     counts = await get_order_counts(session, telegram_id)
 
+    # Пустой список
     if counts["all"] == 0:
-        text = "<b>Мои заказы</b>\n\nПока пусто"
+        caption = "🗄 <b>Твои текущие дела</b>\n\nПока пусто — самое время сделать первый заказ!"
+        keyboard = get_empty_orders_keyboard()
+
         try:
-            await callback.message.edit_text(text, reply_markup=get_empty_orders_keyboard())
+            await callback.message.delete()
         except Exception:
-            await callback.message.answer(text, reply_markup=get_empty_orders_keyboard())
+            pass
+
+        if ORDERS_IMAGE_PATH.exists():
+            try:
+                photo = FSInputFile(ORDERS_IMAGE_PATH)
+                await callback.message.answer_photo(
+                    photo=photo,
+                    caption=caption,
+                    reply_markup=keyboard,
+                    parse_mode=ParseMode.HTML,
+                )
+                return
+            except Exception:
+                pass
+
+        await callback.message.answer(caption, reply_markup=keyboard, parse_mode=ParseMode.HTML)
         return
 
     active_statuses = get_active_statuses()
@@ -282,21 +317,30 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession,
     orders_result = await session.execute(orders_query)
     orders = orders_result.scalars().all()
 
-    text = "<b>Мои заказы</b>"
-    if not orders:
-        empty_msg = {"all": "Пока пусто", "active": "Нет активных", "history": "Нет завершённых"}
-        text += f"\n\n{empty_msg.get(filter_type, 'Пусто')}"
-
+    caption = build_orders_caption(counts, filter_type)
     keyboard = get_orders_list_keyboard(orders, page, total_pages, filter_type, counts)
 
+    # Удаляем старое и отправляем фото
     try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.message.delete()
     except Exception:
+        pass
+
+    if ORDERS_IMAGE_PATH.exists():
         try:
-            await callback.message.delete()
-        except Exception:
-            pass
-        await callback.message.answer(text, reply_markup=keyboard)
+            photo = FSInputFile(ORDERS_IMAGE_PATH)
+            await callback.message.answer_photo(
+                photo=photo,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото заказов: {e}")
+
+    # Fallback на текст
+    await callback.message.answer(caption, reply_markup=keyboard, parse_mode=ParseMode.HTML)
 
 
 # ══════════════════════════════════════════════════════════════

@@ -47,6 +47,44 @@ def get_profile_dashboard_keyboard(active_orders: int = 0) -> InlineKeyboardMark
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
+def get_order_status_emoji(order: Order) -> str:
+    """Emoji по статусу заказа для кнопки"""
+    status = order.status
+
+    # Приоритет: срочный -> статус
+    if order.work_type == "photo_task":
+        return "🔥"
+
+    # По статусу
+    if status in ("completed", "done"):
+        return "✅"
+    elif status in ("waiting_payment", "waiting_for_payment"):
+        return "💰"
+    elif status in ("in_progress", "confirmed", "pending"):
+        return "⏳"
+    elif status in ("cancelled", "rejected"):
+        return "❌"
+
+    return "📋"
+
+
+def format_order_button_text(order: Order, max_length: int = 28) -> str:
+    """Форматирует текст кнопки заказа: {emoji} {type} | {subject}"""
+    emoji = get_order_status_emoji(order)
+    work_type = WORK_TYPE_SHORT.get(order.work_type, "Заказ")
+
+    subject = order.subject.strip() if order.subject else "Без темы"
+
+    # Считаем доступное место для subject
+    prefix = f"{emoji} {work_type} | "
+    available = max_length - len(prefix)
+
+    if len(subject) > available:
+        subject = subject[:available - 1] + "…"
+
+    return f"{prefix}{subject}"
+
+
 def get_orders_list_keyboard(
     orders: list[Order],
     page: int,
@@ -54,62 +92,54 @@ def get_orders_list_keyboard(
     filter_type: str = "all",
     counts: dict = None
 ) -> InlineKeyboardMarkup:
-    """Список заказов"""
+    """Список заказов — улучшенный UX"""
     buttons = []
     counts = counts or {"all": 0, "active": 0, "history": 0}
 
-    # Фильтры
+    # Row 1: Фильтры
     filters = []
 
-    all_label = f"Все {counts['all']}" if counts['all'] > 0 else "Все"
+    all_label = f"📋 Все ({counts['all']})" if counts['all'] > 0 else "📋 Все"
     if filter_type == "all":
         all_label = f"• {all_label}"
     filters.append(InlineKeyboardButton(text=all_label, callback_data="orders_filter:all:0"))
 
-    active_label = f"⏳ {counts['active']}" if counts['active'] > 0 else "⏳"
+    active_label = f"⏳ ({counts['active']})" if counts['active'] > 0 else "⏳"
     if filter_type == "active":
         active_label = f"• {active_label}"
     filters.append(InlineKeyboardButton(text=active_label, callback_data="orders_filter:active:0"))
 
-    history_label = f"✓ {counts['history']}" if counts['history'] > 0 else "✓"
+    done_label = f"✅ ({counts['history']})" if counts['history'] > 0 else "✅"
     if filter_type == "history":
-        history_label = f"• {history_label}"
-    filters.append(InlineKeyboardButton(text=history_label, callback_data="orders_filter:history:0"))
+        done_label = f"• {done_label}"
+    filters.append(InlineKeyboardButton(text=done_label, callback_data="orders_filter:history:0"))
 
     buttons.append(filters)
 
-    # Заказы
+    # Rows 2-7: Заказы (до 6 шт)
     for order in orders:
-        meta = get_status_meta(order.status)
-        emoji = meta.get("emoji", "")
-        if emoji == "—":
-            emoji = ""
-
-        work_short = WORK_TYPE_SHORT.get(order.work_type, order.work_type)
-
-        if order.subject:
-            subj = order.subject[:10] + "…" if len(order.subject) > 10 else order.subject
-            btn_text = f"{work_short} · {subj}"
-        else:
-            btn_text = work_short
-
-        if emoji:
-            btn_text = f"{emoji} {btn_text}"
-
+        btn_text = format_order_button_text(order)
         buttons.append([InlineKeyboardButton(text=btn_text, callback_data=f"order_detail:{order.id}")])
 
-    # Пагинация
+    # Row: Пагинация (если > 1 страницы)
     if total_pages > 1:
         pagination = []
         if page > 0:
-            pagination.append(InlineKeyboardButton(text="←", callback_data=f"orders_page:{filter_type}:{page - 1}"))
-        pagination.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="noop"))
+            pagination.append(InlineKeyboardButton(text="⬅️", callback_data=f"orders_page:{filter_type}:{page - 1}"))
+        else:
+            pagination.append(InlineKeyboardButton(text=" ", callback_data="noop"))
+
+        pagination.append(InlineKeyboardButton(text=f"Стр. {page + 1}/{total_pages}", callback_data="noop"))
+
         if page < total_pages - 1:
-            pagination.append(InlineKeyboardButton(text="→", callback_data=f"orders_page:{filter_type}:{page + 1}"))
+            pagination.append(InlineKeyboardButton(text="➡️", callback_data=f"orders_page:{filter_type}:{page + 1}"))
+        else:
+            pagination.append(InlineKeyboardButton(text=" ", callback_data="noop"))
+
         buttons.append(pagination)
 
-    # Назад
-    buttons.append([InlineKeyboardButton(text="← Назад", callback_data="my_profile")])
+    # Row: Назад
+    buttons.append([InlineKeyboardButton(text="🔙 Назад", callback_data="my_profile")])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
