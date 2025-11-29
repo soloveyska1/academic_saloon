@@ -84,6 +84,139 @@ WORK_TYPE_DEADLINES = {
 }
 
 
+# ══════════════════════════════════════════════════════════════
+#           ЦЕНТРАЛИЗОВАННЫЕ МЕТАДАННЫЕ СТАТУСОВ
+# ══════════════════════════════════════════════════════════════
+
+ORDER_STATUS_META = {
+    OrderStatus.DRAFT: {
+        "emoji": "📝",
+        "label": "Черновик",
+        "short_label": "Черновик",
+        "description": "Заказ ещё заполняется",
+        "is_active": False,
+        "is_final": False,
+        "user_can_cancel": True,
+        "show_in_history": False,
+    },
+    OrderStatus.PENDING: {
+        "emoji": "⏳",
+        "label": "Ожидает оценки",
+        "short_label": "Ожидает",
+        "description": "Скоро посмотрю и назначу цену",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": True,
+        "show_in_history": False,
+    },
+    OrderStatus.CONFIRMED: {
+        "emoji": "✅",
+        "label": "Подтверждён",
+        "short_label": "Подтверждён",
+        "description": "Цена назначена — можно оплачивать",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": True,
+        "show_in_history": False,
+    },
+    OrderStatus.PAID: {
+        "emoji": "💳",
+        "label": "Аванс оплачен",
+        "short_label": "Аванс",
+        "description": "Аванс получен — приступаю к работе",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": False,
+        "show_in_history": False,
+    },
+    OrderStatus.PAID_FULL: {
+        "emoji": "💰",
+        "label": "Полностью оплачен",
+        "short_label": "Оплачен",
+        "description": "Полная оплата — в приоритете",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": False,
+        "show_in_history": False,
+    },
+    OrderStatus.IN_PROGRESS: {
+        "emoji": "⚙️",
+        "label": "В работе",
+        "short_label": "В работе",
+        "description": "Работа кипит — скоро будет готово",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": False,
+        "show_in_history": False,
+    },
+    OrderStatus.REVIEW: {
+        "emoji": "🔍",
+        "label": "На проверке",
+        "short_label": "Проверка",
+        "description": "Готово — проверь и подтверди",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": False,
+        "show_in_history": False,
+    },
+    OrderStatus.COMPLETED: {
+        "emoji": "✨",
+        "label": "Завершён",
+        "short_label": "Готово",
+        "description": "Заказ выполнен — спасибо!",
+        "is_active": False,
+        "is_final": True,
+        "user_can_cancel": False,
+        "show_in_history": True,
+    },
+    OrderStatus.CANCELLED: {
+        "emoji": "❌",
+        "label": "Отменён",
+        "short_label": "Отменён",
+        "description": "Заказ отменён",
+        "is_active": False,
+        "is_final": True,
+        "user_can_cancel": False,
+        "show_in_history": True,
+    },
+    OrderStatus.REJECTED: {
+        "emoji": "🚫",
+        "label": "Отклонён",
+        "short_label": "Отклонён",
+        "description": "К сожалению, не могу взять этот заказ",
+        "is_active": False,
+        "is_final": True,
+        "user_can_cancel": False,
+        "show_in_history": True,
+    },
+}
+
+
+def get_status_meta(status: str | OrderStatus) -> dict:
+    """Получить метаданные статуса"""
+    if isinstance(status, str):
+        try:
+            status = OrderStatus(status)
+        except ValueError:
+            return ORDER_STATUS_META.get(OrderStatus.PENDING, {})
+    return ORDER_STATUS_META.get(status, {})
+
+
+def get_active_statuses() -> list[str]:
+    """Получить список активных статусов"""
+    return [s.value for s, meta in ORDER_STATUS_META.items() if meta.get("is_active")]
+
+
+def get_history_statuses() -> list[str]:
+    """Получить список статусов для истории (завершённые)"""
+    return [s.value for s, meta in ORDER_STATUS_META.items() if meta.get("show_in_history")]
+
+
+def get_cancelable_statuses() -> list[str]:
+    """Получить список статусов, которые пользователь может отменить"""
+    return [s.value for s, meta in ORDER_STATUS_META.items() if meta.get("user_can_cancel")]
+
+
 class Order(Base):
     __tablename__ = "orders"
 
@@ -122,20 +255,26 @@ class Order(Base):
 
     @property
     def status_label(self) -> str:
-        """Человекочитаемый статус"""
-        labels = {
-            OrderStatus.DRAFT.value: "📝 Черновик",
-            OrderStatus.PENDING.value: "⏳ Ожидает оценки",
-            OrderStatus.CONFIRMED.value: "✅ Подтверждён",
-            OrderStatus.PAID.value: "💰 Аванс оплачен",
-            OrderStatus.PAID_FULL.value: "💰 Полностью оплачен",
-            OrderStatus.IN_PROGRESS.value: "⚙️ В работе",
-            OrderStatus.REVIEW.value: "🔍 На проверке",
-            OrderStatus.COMPLETED.value: "✨ Завершён",
-            OrderStatus.CANCELLED.value: "❌ Отменён",
-            OrderStatus.REJECTED.value: "🚫 Отклонён",
-        }
-        return labels.get(self.status, self.status)
+        """Человекочитаемый статус с emoji"""
+        meta = get_status_meta(self.status)
+        emoji = meta.get("emoji", "📋")
+        label = meta.get("label", self.status)
+        return f"{emoji} {label}"
+
+    @property
+    def status_meta(self) -> dict:
+        """Полные метаданные текущего статуса"""
+        return get_status_meta(self.status)
+
+    @property
+    def can_be_cancelled(self) -> bool:
+        """Может ли пользователь отменить этот заказ"""
+        return self.status in get_cancelable_statuses()
+
+    @property
+    def is_active(self) -> bool:
+        """Является ли заказ активным"""
+        return self.status in get_active_statuses()
 
     @property
     def work_type_label(self) -> str:

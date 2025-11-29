@@ -10,18 +10,15 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="📝 Заказать работу", callback_data="create_order")
         ],
         [
-            InlineKeyboardButton(text="👤 Мои заказы", callback_data="my_orders"),
-            InlineKeyboardButton(text="💰 Мой баланс", callback_data="my_balance")
-        ],
-        [
-            InlineKeyboardButton(text="💬 Написать Хозяину", callback_data="contact_owner"),
+            InlineKeyboardButton(text="👤 Личный кабинет", callback_data="my_profile"),
             InlineKeyboardButton(text="🤝 Привести друга", callback_data="referral")
         ],
         [
-            InlineKeyboardButton(text="📜 Прайс-лист", callback_data="price_list"),
-            InlineKeyboardButton(text="⚖️ Правила", callback_data="codex")
+            InlineKeyboardButton(text="💬 Написать Хозяину", callback_data="contact_owner"),
+            InlineKeyboardButton(text="📜 Прайс-лист", callback_data="price_list")
         ],
         [
+            InlineKeyboardButton(text="⚖️ Правила", callback_data="codex"),
             InlineKeyboardButton(text="⭐ Отзывы", url=settings.REVIEWS_CHANNEL)
         ],
     ])
