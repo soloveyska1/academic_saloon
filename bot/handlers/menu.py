@@ -191,38 +191,6 @@ async def safe_delete_message(callback: CallbackQuery) -> None:
         pass
 
 
-@router.callback_query(F.data == "my_orders")
-async def show_my_orders(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Мои заказы"""
-    await callback.answer("⏳")
-
-    # Логируем
-    await log_action(
-        bot=bot,
-        event=LogEvent.NAV_BUTTON,
-        user=callback.from_user,
-        details="Открыл «Мои заказы»",
-        session=session,
-    )
-
-    telegram_id = callback.from_user.id
-    query = select(User).where(User.telegram_id == telegram_id)
-    result = await session.execute(query)
-    user = result.scalar_one_or_none()
-
-    orders_count = user.orders_count if user else 0
-
-    text = f"""👤  <b>Мои заказы</b>
-
-
-◈  Всего заказов: {orders_count}
-
-<i>Здесь будет история твоих заказов.</i>"""
-
-    await safe_delete_message(callback)
-    await callback.message.answer(text, reply_markup=get_back_keyboard())
-
-
 @router.callback_query(F.data == "my_balance")
 async def show_my_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Мой баланс"""
