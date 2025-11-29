@@ -68,19 +68,30 @@ def get_order_status_emoji(order: Order) -> str:
     return "📋"
 
 
-def format_order_button_text(order: Order, max_length: int = 28) -> str:
-    """Форматирует текст кнопки заказа: {emoji} {type} | {subject}"""
+def format_order_button_text(order: Order, max_length: int = 18) -> str:
+    """
+    Форматирует текст кнопки заказа:
+    - Если есть subject: "{emoji} {type} | {subject_short}"
+    - Если нет subject: "{emoji} {type}"
+    """
     emoji = get_order_status_emoji(order)
     work_type = WORK_TYPE_SHORT.get(order.work_type, "Заказ")
 
-    subject = order.subject.strip() if order.subject else "Без темы"
+    subject = order.subject.strip() if order.subject else ""
 
-    # Считаем доступное место для subject
+    # Если subject пустой — только emoji + type
+    if not subject:
+        return f"{emoji} {work_type}"
+
+    # Если есть subject — добавляем с разделителем
     prefix = f"{emoji} {work_type} | "
     available = max_length - len(prefix)
 
-    if len(subject) > available:
+    if available > 3 and len(subject) > available:
         subject = subject[:available - 1] + "…"
+    elif available <= 3:
+        # Слишком мало места — не показываем subject
+        return f"{emoji} {work_type}"
 
     return f"{prefix}{subject}"
 
@@ -116,10 +127,16 @@ def get_orders_list_keyboard(
 
     buttons.append(filters)
 
-    # Rows 2-7: Заказы (до 6 шт)
+    # Rows: Заказы в 2-колоночной сетке
+    order_buttons = []
     for order in orders:
         btn_text = format_order_button_text(order)
-        buttons.append([InlineKeyboardButton(text=btn_text, callback_data=f"order_detail:{order.id}")])
+        order_buttons.append(InlineKeyboardButton(text=btn_text, callback_data=f"order_detail:{order.id}"))
+
+    # Разбиваем по 2 кнопки в ряд
+    for i in range(0, len(order_buttons), 2):
+        row = order_buttons[i:i + 2]
+        buttons.append(row)
 
     # Row: Пагинация (если > 1 страницы)
     if total_pages > 1:
