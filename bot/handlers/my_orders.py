@@ -48,17 +48,32 @@ CANCELLED_STATUSES = [
     OrderStatus.REJECTED.value,
 ]
 
-# Эмодзи статусов для списка
+# Эмодзи статусов для кнопок (компактные)
 STATUS_EMOJI = {
-    OrderStatus.PENDING.value: "🆕",
+    OrderStatus.PENDING.value: "⏳",
     OrderStatus.CONFIRMED.value: "✅",
     OrderStatus.PAID.value: "💳",
     OrderStatus.PAID_FULL.value: "💰",
-    OrderStatus.IN_PROGRESS.value: "🔄",
-    OrderStatus.REVIEW.value: "📝",
+    OrderStatus.IN_PROGRESS.value: "⚙️",
+    OrderStatus.REVIEW.value: "🔍",
     OrderStatus.COMPLETED.value: "✨",
     OrderStatus.CANCELLED.value: "❌",
     OrderStatus.REJECTED.value: "🚫",
+}
+
+# Короткие названия типов работ для кнопок
+WORK_TYPE_SHORT = {
+    "masters": "Магистерская",
+    "diploma": "Диплом",
+    "coursework": "Курсовая",
+    "independent": "Самостоят.",
+    "essay": "Эссе",
+    "report": "Реферат",
+    "control": "Контрольная",
+    "presentation": "Презентация",
+    "practice": "Практика",
+    "other": "Другое",
+    "photo_task": "Срочное",
 }
 
 # Пояснения статусов
@@ -125,115 +140,74 @@ def format_price_breakdown(order: Order) -> str:
     return "\n".join(lines)
 
 
-def get_order_preview(order: Order) -> str:
-    """Краткое превью заказа для списка — чистый дизайн для мобилки"""
-    emoji = STATUS_EMOJI.get(order.status, "📋")
-    work_label = order.work_type_label.split(" ", 1)[-1]  # Убираем эмодзи из типа
-
-    # Первая строка: номер, тип, статус
-    line1 = f"<b>#{order.id}</b> · {work_label} · {emoji}"
-
-    # Вторая строка: цена и дата/дедлайн
-    parts = []
-
-    if order.price > 0:
-        parts.append(f"{order.final_price:.0f}₽")
-    else:
-        parts.append("оценка")
-
-    # Для активных показываем дедлайн, для остальных — дату
-    if order.status in ACTIVE_STATUSES and order.deadline:
-        parts.append(f"до {order.deadline}")
-    else:
-        parts.append(format_smart_date(order.created_at))
-
-    line2 = " · ".join(parts)
-
-    return f"{line1}\n{line2}"
-
-
 # ══════════════════════════════════════════════════════════════
 #                    КЛАВИАТУРЫ
 # ══════════════════════════════════════════════════════════════
-
-def get_orders_filter_keyboard(active_filter: str = "all") -> InlineKeyboardMarkup:
-    """Клавиатура фильтров"""
-    filters = [
-        ("all", "🔵 Все"),
-        ("active", "⏳ Активные"),
-        ("completed", "✅ Завершённые"),
-    ]
-
-    buttons = []
-    for key, label in filters:
-        if key == active_filter:
-            label = f"[{label}]"
-        buttons.append(InlineKeyboardButton(
-            text=label,
-            callback_data=f"orders_filter:{key}"
-        ))
-
-    return InlineKeyboardMarkup(inline_keyboard=[
-        buttons,
-        [InlineKeyboardButton(text="◀️ В меню", callback_data="back_to_menu")]
-    ])
 
 
 def get_orders_list_keyboard(
     orders: list[Order],
     page: int,
     total_pages: int,
-    filter_type: str = "all"
+    filter_type: str = "all",
+    counts: dict = None
 ) -> InlineKeyboardMarkup:
-    """Клавиатура списка заказов с пагинацией"""
+    """Клавиатура списка заказов — чистый универсальный дизайн"""
     buttons = []
+    counts = counts or {"all": 0, "active": 0, "completed": 0}
 
-    # Кнопки фильтров
-    filters = [
-        ("all", "🔵 Все"),
-        ("active", "⏳"),
-        ("completed", "✅"),
-    ]
+    # Фильтры со счётчиками — информативно и компактно
     filter_buttons = []
-    for key, label in filters:
-        if key == filter_type:
-            label = f"[{label}]"
-        filter_buttons.append(InlineKeyboardButton(
-            text=label,
-            callback_data=f"orders_filter:{key}:0"
-        ))
+
+    # Все
+    all_label = f"Все · {counts['all']}" if counts['all'] > 0 else "Все"
+    if filter_type == "all":
+        all_label = f"• {all_label}"
+    filter_buttons.append(InlineKeyboardButton(text=all_label, callback_data="orders_filter:all:0"))
+
+    # Активные
+    active_label = f"⏳ {counts['active']}" if counts['active'] > 0 else "⏳"
+    if filter_type == "active":
+        active_label = f"• {active_label}"
+    filter_buttons.append(InlineKeyboardButton(text=active_label, callback_data="orders_filter:active:0"))
+
+    # История (завершённые)
+    completed_label = f"✨ {counts['completed']}" if counts['completed'] > 0 else "✨"
+    if filter_type == "completed":
+        completed_label = f"• {completed_label}"
+    filter_buttons.append(InlineKeyboardButton(text=completed_label, callback_data="orders_filter:completed:0"))
+
     buttons.append(filter_buttons)
 
-    # Кнопки заказов
+    # Кнопки заказов — тип + предмет + статус
     for order in orders:
         emoji = STATUS_EMOJI.get(order.status, "📋")
-        work_label = order.work_type_label.split(" ", 1)[-1][:15]
+        work_short = WORK_TYPE_SHORT.get(order.work_type, order.work_type)
+
+        # Добавляем предмет если есть (сокращаем)
+        if order.subject:
+            subj = order.subject[:12] + "…" if len(order.subject) > 12 else order.subject
+            btn_text = f"{work_short} · {subj} {emoji}"
+        else:
+            btn_text = f"{work_short} {emoji}"
+
         buttons.append([InlineKeyboardButton(
-            text=f"#{order.id} · {work_label} · {emoji}",
+            text=btn_text,
             callback_data=f"order_detail:{order.id}"
         )])
 
-    # Пагинация
+    # Пагинация — компактная
     if total_pages > 1:
         pagination = []
         if page > 0:
-            pagination.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"orders_page:{filter_type}:{page - 1}"
-            ))
-        pagination.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="noop"
-        ))
+            pagination.append(InlineKeyboardButton(text="◀️", callback_data=f"orders_page:{filter_type}:{page - 1}"))
+        pagination.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="noop"))
         if page < total_pages - 1:
-            pagination.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"orders_page:{filter_type}:{page + 1}"
-            ))
+            pagination.append(InlineKeyboardButton(text="▶️", callback_data=f"orders_page:{filter_type}:{page + 1}"))
         buttons.append(pagination)
 
-    # Кнопка назад
-    buttons.append([InlineKeyboardButton(text="◀️ В меню", callback_data="back_to_menu")])
+    # Назад
+    buttons.append([InlineKeyboardButton(text="◀️ Меню", callback_data="back_to_menu")])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -278,9 +252,8 @@ def get_empty_orders_keyboard() -> InlineKeyboardMarkup:
 
 @router.callback_query(F.data == "my_orders")
 async def show_my_orders(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Главный экран истории заказов"""
+    """Главный экран истории заказов — минималистичный"""
     await callback.answer("⏳")
-    await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
 
     # Логируем
     try:
@@ -296,36 +269,18 @@ async def show_my_orders(callback: CallbackQuery, session: AsyncSession, bot: Bo
 
     telegram_id = callback.from_user.id
 
-    # Получаем пользователя
-    user_query = select(User).where(User.telegram_id == telegram_id)
-    user_result = await session.execute(user_query)
-    user = user_result.scalar_one_or_none()
-
-    if not user:
-        await callback.message.edit_text(
-            "❌ Пользователь не найден",
-            reply_markup=get_empty_orders_keyboard()
-        )
-        return
-
-    # Считаем заказы по статусам
+    # Считаем заказы
     all_count_query = select(func.count(Order.id)).where(Order.user_id == telegram_id)
     all_result = await session.execute(all_count_query)
     all_count = all_result.scalar() or 0
 
-    # Если заказов нет — показываем пустое состояние
+    # Если заказов нет — пустое состояние
     if all_count == 0:
-        text = """📋  <b>Мои заказы</b>
-
-У тебя пока нет заказов.
-Давай это исправим! 😉
-
-Нажми кнопку ниже, чтобы создать первый заказ."""
-
+        text = "📋 <b>Мои заказы</b>\n\n<i>Заказов пока нет</i>"
         await callback.message.edit_text(text, reply_markup=get_empty_orders_keyboard())
         return
 
-    # Показываем список с фильтром "все"
+    # Показываем список
     await show_orders_list(callback, session, "all", 0)
 
 
@@ -359,68 +314,70 @@ async def show_orders_list(
     filter_type: str,
     page: int
 ):
-    """Показать список заказов с фильтром и пагинацией"""
+    """Показать список заказов — чистый универсальный дизайн"""
     telegram_id = callback.from_user.id
 
-    # Получаем пользователя для статистики
-    user_query = select(User).where(User.telegram_id == telegram_id)
-    user_result = await session.execute(user_query)
-    user = user_result.scalar_one_or_none()
+    # Считаем заказы для всех фильтров (для отображения в кнопках)
+    all_count_q = select(func.count(Order.id)).where(Order.user_id == telegram_id)
+    active_count_q = select(func.count(Order.id)).where(
+        Order.user_id == telegram_id,
+        Order.status.in_(ACTIVE_STATUSES)
+    )
+    completed_count_q = select(func.count(Order.id)).where(
+        Order.user_id == telegram_id,
+        Order.status.in_(COMPLETED_STATUSES)
+    )
 
-    # Формируем запрос в зависимости от фильтра
-    base_query = select(Order).where(Order.user_id == telegram_id)
+    all_result = await session.execute(all_count_q)
+    active_result = await session.execute(active_count_q)
+    completed_result = await session.execute(completed_count_q)
 
+    counts = {
+        "all": all_result.scalar() or 0,
+        "active": active_result.scalar() or 0,
+        "completed": completed_result.scalar() or 0,
+    }
+
+    # Определяем какой фильтр применить
     if filter_type == "active":
-        base_query = base_query.where(Order.status.in_(ACTIVE_STATUSES))
+        total_count = counts["active"]
+        status_filter = Order.status.in_(ACTIVE_STATUSES)
     elif filter_type == "completed":
-        base_query = base_query.where(Order.status.in_(COMPLETED_STATUSES))
-    # "all" — без фильтра по статусу
-
-    # Считаем общее количество
-    count_query = select(func.count()).select_from(base_query.subquery())
-    count_result = await session.execute(count_query)
-    total_count = count_result.scalar() or 0
+        total_count = counts["completed"]
+        status_filter = Order.status.in_(COMPLETED_STATUSES)
+    else:
+        total_count = counts["all"]
+        status_filter = None
 
     total_pages = max(1, (total_count + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE)
     page = min(page, total_pages - 1)
 
     # Получаем заказы для текущей страницы
-    orders_query = (
-        base_query
-        .order_by(desc(Order.created_at))
-        .offset(page * ORDERS_PER_PAGE)
-        .limit(ORDERS_PER_PAGE)
-    )
+    orders_query = select(Order).where(Order.user_id == telegram_id)
+    if status_filter is not None:
+        orders_query = orders_query.where(status_filter)
+    orders_query = orders_query.order_by(desc(Order.created_at)).offset(page * ORDERS_PER_PAGE).limit(ORDERS_PER_PAGE)
+
     orders_result = await session.execute(orders_query)
     orders = orders_result.scalars().all()
 
-    # Формируем текст — чистый дизайн без рамок
-    loyalty_status, discount = user.loyalty_status if user else ("Новичок", 0)
-    orders_count = user.orders_count if user else 0
-    total_spent = user.total_spent if user else 0
+    # Минимальный header — одна строка
+    text = "📋 <b>Мои заказы</b>"
 
-    # Компактный заголовок
-    discount_str = f" · {discount}% скидка" if discount > 0 else ""
-    header = f"""📋  <b>Мои заказы</b>
-
-🏆 {loyalty_status}{discount_str}
-📦 {orders_count} заказов на {total_spent:.0f}₽
-
-"""
-
+    # Пустое состояние для конкретного фильтра
     if not orders:
-        filter_names = {"all": "заказов", "active": "активных заказов", "completed": "завершённых"}
-        text = header + f"\n<i>Нет {filter_names.get(filter_type, 'заказов')}</i>"
-    else:
-        orders_text = "\n\n".join([get_order_preview(o) for o in orders])
-        text = header + "\n" + orders_text
+        filter_empty = {
+            "all": "Заказов пока нет",
+            "active": "Нет активных заказов",
+            "completed": "Нет завершённых заказов"
+        }
+        text += f"\n\n<i>{filter_empty.get(filter_type, 'Пусто')}</i>"
 
-    keyboard = get_orders_list_keyboard(orders, page, total_pages, filter_type)
+    keyboard = get_orders_list_keyboard(orders, page, total_pages, filter_type, counts)
 
     try:
         await callback.message.edit_text(text, reply_markup=keyboard)
     except Exception:
-        # Если не удалось отредактировать — отправляем новое
         await callback.message.delete()
         await callback.message.answer(text, reply_markup=keyboard)
 
