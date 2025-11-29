@@ -19,6 +19,8 @@ from sqlalchemy import select, func, desc, case
 PROFILE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cab_saloon.jpg"
 # Путь к изображению для списка заказов
 ORDERS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "my_order.jpg"
+# Путь к изображению для деталей заказа
+ORDER_DETAIL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "delo.jpg"
 
 from database.models.users import User
 from database.models.orders import (
@@ -347,8 +349,92 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession,
 #                    ДЕТАЛИ ЗАКАЗА
 # ══════════════════════════════════════════════════════════════
 
+def get_status_display(status: str) -> tuple[str, str]:
+    """Возвращает emoji и текст статуса для отображения"""
+    status_map = {
+        "pending": ("⏳", "Ожидает оценки"),
+        "confirmed": ("🔨", "В работе"),
+        "in_progress": ("🔨", "В работе"),
+        "waiting_payment": ("💰", "Ждёт оплаты"),
+        "waiting_for_payment": ("💰", "Ждёт оплаты"),
+        "completed": ("✅", "Готово"),
+        "done": ("✅", "Готово"),
+        "cancelled": ("❌", "Отменён"),
+        "rejected": ("❌", "Отклонён"),
+    }
+    return status_map.get(status, ("📋", status))
+
+
+def build_order_detail_caption(order: Order) -> str:
+    """Формирует caption для деталей заказа — стиль 'Дело'"""
+    lines = [f"📁 <b>Дело #{order.id}</b>", ""]
+
+    # Статус
+    emoji, status_text = get_status_display(order.status)
+    lines.append(f"Статус: {emoji} <b>{status_text}</b>")
+    lines.append("")
+
+    # Суть задачи
+    lines.append("📚 <b>Суть задачи:</b>")
+
+    # Тип работы (без emoji)
+    work_type = order.work_type_label
+    if work_type and work_type[0] in "🎩🎓📚📖📝📄✏️📊🏢📎📸🔥":
+        work_type = work_type[2:].strip()
+    lines.append(f"— {work_type}")
+
+    # Предмет
+    subject = order.subject if order.subject else "Не указан"
+    lines.append(f"— {subject}")
+
+    # Дедлайн
+    if order.deadline:
+        lines.append(f"⏳ <b>Дедлайн:</b> {order.deadline}")
+
+    lines.append("")
+
+    # Финансы
+    lines.append("💰 <b>Финансы:</b>")
+
+    if order.price > 0:
+        # Базовая цена
+        if order.discount > 0 or order.bonus_used > 0:
+            lines.append(f"▪️ Цена: <s>{format_number(order.price)}₽</s>")
+        else:
+            lines.append(f"▪️ Цена: {format_number(order.price)}₽")
+
+        # Скидка
+        if order.discount > 0:
+            discount_amount = order.price * order.discount / 100
+            lines.append(f"▪️ Скидка: <b>−{order.discount:.0f}%</b> (−{format_number(discount_amount)}₽)")
+
+        # Бонусы
+        if order.bonus_used > 0:
+            lines.append(f"▪️ Бонусы: <b>−{format_number(order.bonus_used)}₽</b>")
+
+        lines.append("—————————————")
+
+        # Итог
+        if order.paid_amount >= order.final_price and order.paid_amount > 0:
+            lines.append(f"✅ <b>Оплачено: {format_number(order.paid_amount)}₽</b>")
+        elif order.paid_amount > 0:
+            lines.append(f"💳 Оплачено: {format_number(order.paid_amount)}₽ из {format_number(order.final_price)}₽")
+        else:
+            lines.append(f"💳 <b>К оплате: {format_number(order.final_price)}₽</b>")
+    else:
+        lines.append("▪️ Цена: <i>ожидает оценки</i>")
+
+    # Дата создания
+    if order.created_at:
+        lines.append("")
+        lines.append(f"<i>Создано: {format_date(order.created_at)}</i>")
+
+    return "\n".join(lines)
+
+
 @router.callback_query(F.data.startswith("order_detail:"))
 async def show_order_detail(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Детали заказа — фото с caption в стиле 'Дело'"""
     await callback.answer()
     await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
 
@@ -372,53 +458,36 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession, bot:
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    meta = get_status_meta(order.status)
-
-    # Компактный текст
-    lines = [f"<b>Заказ #{order.id}</b>"]
-    lines.append("")
-
-    # Статус
-    status_line = f"{meta.get('emoji', '')} {meta.get('label', order.status)}"
-    if meta.get('description'):
-        status_line += f" — {meta.get('description')}"
-    lines.append(status_line)
-
-    lines.append("")
-
-    # Основная инфа
-    # Убираем emoji из work_type_label для чистоты
-    work_type = order.work_type_label
-    if work_type and work_type[0] in "🎩🎓📚📖📝📄✏️📊🏢📎📸":
-        work_type = work_type[2:].strip()
-    lines.append(work_type)
-
-    if order.subject:
-        lines.append(order.subject)
-
-    if order.deadline:
-        lines.append(f"Срок: {order.deadline}")
-
-    # Цена
-    lines.append("")
-    lines.append(format_price(order))
-
-    # Дата создания — только если есть смысл
-    if order.created_at:
-        lines.append("")
-        lines.append(f"<i>Создан {format_date(order.created_at)}</i>")
-
-    text = "\n".join(lines)
+    caption = build_order_detail_caption(order)
     keyboard = get_order_detail_keyboard(order)
 
+    # Удаляем старое и отправляем фото
     try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.message.delete()
     except Exception:
+        pass
+
+    if ORDER_DETAIL_IMAGE_PATH.exists():
         try:
-            await callback.message.delete()
-        except Exception:
-            pass
-        await callback.message.answer(text, reply_markup=keyboard)
+            photo = FSInputFile(ORDER_DETAIL_IMAGE_PATH)
+            await bot.send_photo(
+                chat_id=callback.message.chat.id,
+                photo=photo,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото дела: {e}")
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
 
 
 # ══════════════════════════════════════════════════════════════
