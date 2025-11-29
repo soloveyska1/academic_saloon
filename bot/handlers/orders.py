@@ -1,12 +1,16 @@
 import asyncio
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
 
 from aiogram import Router, F, Bot
 
 logger = logging.getLogger(__name__)
+
+# Путь к изображению для заказа
+ZAKAZ_IMAGE_PATH = Path(__file__).parent.parent / "media" / "zakaz.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -380,7 +384,7 @@ async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext,
     await send_cached_photo(
         bot=bot,
         chat_id=callback.message.chat.id,
-        photo_path=settings.ORDER_IMAGE,
+        photo_path=ZAKAZ_IMAGE_PATH,
         caption=text,
         reply_markup=get_work_category_keyboard()
     )
@@ -1461,7 +1465,7 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
     await send_cached_photo(
         bot=bot,
         chat_id=callback.message.chat.id,
-        photo_path=settings.ORDER_IMAGE,
+        photo_path=ZAKAZ_IMAGE_PATH,
         caption=text,
         reply_markup=get_work_category_keyboard()
     )
