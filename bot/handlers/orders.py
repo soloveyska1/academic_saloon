@@ -365,11 +365,11 @@ async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext,
     except Exception as e:
         logger.warning(f"Ошибка получения скидки: {e}")
 
-    discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
+    discount_line = f"\n\n🎁 Твоя скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
-    text = f"""🎯  <b>Новый заказ</b>
+    text = f"""🎯 <b>Оформление заказа</b>
 
-Что нужно сделать?{discount_line}"""
+Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
 
     # Удаляем старое сообщение и отправляем с картинкой (с кэшированием file_id)
     try:
@@ -400,7 +400,7 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
     if not category:
         # Неизвестная категория — показываем полный список
         await callback.message.edit_caption(
-            caption="🎯  <b>Новый заказ</b>\n\nВыбери тип работы:",
+            caption="🎯 <b>Оформление заказа</b>\n\nВыбери тип работы:",
             reply_markup=get_work_type_keyboard()
         )
         return
@@ -507,11 +507,11 @@ async def back_to_categories(callback: CallbackQuery, state: FSMContext, session
     user = user_result.scalar_one_or_none()
 
     discount = calculate_user_discount(user)
-    discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
+    discount_line = f"\n\n🎁 Твоя скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
-    text = f"""🎯  <b>Новый заказ</b>
+    text = f"""🎯 <b>Оформление заказа</b>
 
-Что нужно сделать?{discount_line}"""
+Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
 
     await callback.message.edit_caption(
         caption=text,
@@ -1446,11 +1446,11 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
     user = user_result.scalar_one_or_none()
 
     discount = calculate_user_discount(user)
-    discount_line = f"\n🎁 <b>Твоя скидка: −{discount}%</b>" if discount > 0 else ""
+    discount_line = f"\n\n🎁 Твоя скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
-    text = f"""🎯  <b>Новый заказ</b>
+    text = f"""🎯 <b>Оформление заказа</b>
 
-Что нужно сделать?{discount_line}"""
+Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
 
     # Удаляем старое и отправляем с картинкой (с кэшированием file_id)
     try:
@@ -1794,7 +1794,7 @@ async def start_order_creation(message: Message, state: FSMContext = None):
 
 @""" + settings.SUPPORT_USERNAME + """
 
-Или нажми /start и выбери «🎯 Новый заказ»"""
+Или нажми /start и выбери «📝 Оформить заказ»"""
         await message.answer(text)
         return
 
@@ -1802,8 +1802,8 @@ async def start_order_creation(message: Message, state: FSMContext = None):
     await state.set_state(OrderState.choosing_type)
     await state.update_data(attachments=[])
 
-    text = """🎯  <b>Новый заказ</b>
+    text = """🎯 <b>Оформление заказа</b>
 
-Что нужно сделать?"""
+Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете."""
 
     await message.answer(text, reply_markup=get_work_category_keyboard())
