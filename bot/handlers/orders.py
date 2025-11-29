@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 # Пути к изображениям для заказа
 ZAKAZ_IMAGE_PATH = Path(__file__).parent.parent / "media" / "zakaz.jpg"
 SMALL_TASKS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "small_tasks.jpg"
+KURS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "kurs.jpg"
+DIPLOMA_IMAGE_PATH = Path(__file__).parent.parent / "media" / "diploma.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -27,6 +29,8 @@ from bot.keyboards.orders import (
     get_work_category_keyboard,
     get_category_works_keyboard,
     get_small_works_keyboard,
+    get_medium_works_keyboard,
+    get_large_works_keyboard,
     get_subject_keyboard,
     get_task_input_keyboard,
     get_task_continue_keyboard,
@@ -529,7 +533,77 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         )
         return
 
-    # Показываем типы работ в категории (для остальных категорий)
+    # Для курсовых/практик — крупный калибр
+    if category_key == "medium":
+        caption = """🧨 <b>Крупный калибр</b>
+
+Это тебе не реферат за ночь накатать. Тут нужен системный подход и крепкие нервы.
+
+Выбирай, какой «висяк» нужно закрыть, и мы подготовим всё по ГОСТу, пока ты отдыхаешь."""
+
+        # Удаляем старое и отправляем с фото
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        if KURS_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=KURS_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_medium_works_keyboard(),
+                )
+                return
+            except Exception as e:
+                logger.warning(f"Не удалось отправить фото kurs: {e}")
+
+        # Fallback на текст
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_medium_works_keyboard(),
+        )
+        return
+
+    # Для дипломов — самый крупный калибр
+    if category_key == "large":
+        caption = """🎓 <b>Дипломные работы</b>
+
+Главный босс всей учёбы. ВКР, магистерская — это не просто текст, это финальный аккорд.
+
+Мы делаем дипломы, которые проходят антиплагиат и защищаются с первого раза."""
+
+        # Удаляем старое и отправляем с фото
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        if DIPLOMA_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=DIPLOMA_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_large_works_keyboard(),
+                )
+                return
+            except Exception as e:
+                logger.warning(f"Не удалось отправить фото diploma: {e}")
+
+        # Fallback на текст
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_large_works_keyboard(),
+        )
+        return
+
+    # Показываем типы работ в категории (для остальных категорий — other)
     text = f"""🎯  <b>{category['label']}</b>
 
 <i>{category['description']}</i>
@@ -1457,8 +1531,7 @@ def format_order_description(attachments: list) -> str:
 async def back_to_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """
     Назад к выбору типа работы.
-    Для мелких работ — возврат к списку мелких работ.
-    Для остальных — к корневому меню категорий.
+    Возвращает в родительскую категорию, а не в корневое меню.
     """
     await callback.answer("⏳")
     await state.set_state(OrderState.choosing_type)
@@ -1467,13 +1540,23 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
     data = await state.get_data()
     work_type_value = data.get("work_type", "")
 
-    # Типы мелких работ
+    # Определяем категорию по типу работы
     SMALL_WORK_TYPES = {
         WorkType.CONTROL.value,
         WorkType.ESSAY.value,
         WorkType.REPORT.value,
         WorkType.PRESENTATION.value,
         WorkType.INDEPENDENT.value,
+    }
+
+    MEDIUM_WORK_TYPES = {
+        WorkType.COURSEWORK.value,
+        WorkType.PRACTICE.value,
+    }
+
+    LARGE_WORK_TYPES = {
+        WorkType.DIPLOMA.value,
+        WorkType.MASTERS.value,
     }
 
     # Удаляем старое сообщение
@@ -1508,7 +1591,6 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
             except Exception:
                 pass
 
-        # Fallback на текст
         await bot.send_message(
             chat_id=callback.message.chat.id,
             text=caption,
@@ -1516,7 +1598,63 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
         )
         return
 
-    # Для остальных — корневое меню категорий
+    # Для курсовых/практик — показываем список курсовых
+    if work_type_value in MEDIUM_WORK_TYPES:
+        caption = """🧨 <b>Крупный калибр</b>
+
+Это тебе не реферат за ночь накатать. Тут нужен системный подход и крепкие нервы.
+
+Выбирай, какой «висяк» нужно закрыть, и мы подготовим всё по ГОСТу, пока ты отдыхаешь."""
+
+        if KURS_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=KURS_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_medium_works_keyboard(),
+                )
+                return
+            except Exception:
+                pass
+
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_medium_works_keyboard(),
+        )
+        return
+
+    # Для дипломов — показываем список дипломов
+    if work_type_value in LARGE_WORK_TYPES:
+        caption = """🎓 <b>Дипломные работы</b>
+
+Главный босс всей учёбы. ВКР, магистерская — это не просто текст, это финальный аккорд.
+
+Мы делаем дипломы, которые проходят антиплагиат и защищаются с первого раза."""
+
+        if DIPLOMA_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=DIPLOMA_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_large_works_keyboard(),
+                )
+                return
+            except Exception:
+                pass
+
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_large_works_keyboard(),
+        )
+        return
+
+    # Для остальных (other, urgent) — корневое меню категорий
     user_query = select(User).where(User.telegram_id == callback.from_user.id)
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
