@@ -21,7 +21,7 @@ from sqlalchemy import select
 from database.models.users import User
 from database.models.orders import Order, WorkType, WORK_TYPE_LABELS, OrderStatus
 from bot.states.order import OrderState
-from bot.keyboards.inline import get_back_keyboard
+from bot.keyboards.inline import get_back_keyboard, get_cancel_complete_keyboard
 from bot.keyboards.orders import (
     get_work_type_keyboard,
     get_work_category_keyboard,
@@ -1455,11 +1455,68 @@ def format_order_description(attachments: list) -> str:
 
 @router.callback_query(F.data == "order_back_to_type")
 async def back_to_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
-    """Назад к выбору типа работы (категории)"""
+    """
+    Назад к выбору типа работы.
+    Для мелких работ — возврат к списку мелких работ.
+    Для остальных — к корневому меню категорий.
+    """
     await callback.answer("⏳")
     await state.set_state(OrderState.choosing_type)
 
-    # Получаем скидку пользователя
+    # Проверяем, из какой категории был выбран тип работы
+    data = await state.get_data()
+    work_type_value = data.get("work_type", "")
+
+    # Типы мелких работ
+    SMALL_WORK_TYPES = {
+        WorkType.CONTROL.value,
+        WorkType.ESSAY.value,
+        WorkType.REPORT.value,
+        WorkType.PRESENTATION.value,
+        WorkType.INDEPENDENT.value,
+    }
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Для мелких работ — показываем список мелких работ
+    if work_type_value in SMALL_WORK_TYPES:
+        caption = """📝 <b>Малые формы</b>
+
+Быстрые задачи. Обычно делаем за 1-3 дня.
+
+🔹 <b>Контрольная</b> ......... от 1 400 ₽
+🔹 <b>Эссе / Реферат</b> ..... от 900 ₽
+🔹 <b>Презентация</b> ........ от 1 900 ₽
+🔹 <b>Самостоятельная</b> .. от 2 400 ₽
+
+<i>Выбери тип работы ниже:</i>"""
+
+        if SMALL_TASKS_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=SMALL_TASKS_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_small_works_keyboard(),
+                )
+                return
+            except Exception:
+                pass
+
+        # Fallback на текст
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_small_works_keyboard(),
+        )
+        return
+
+    # Для остальных — корневое меню категорий
     user_query = select(User).where(User.telegram_id == callback.from_user.id)
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
@@ -1470,12 +1527,6 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
     text = f"""🎯 <b>Оформление заказа</b>
 
 Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
-
-    # Удаляем старое и отправляем с картинкой (с кэшированием file_id)
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
 
     await send_cached_photo(
         bot=bot,
@@ -1659,9 +1710,11 @@ async def cancel_order(callback: CallbackQuery, state: FSMContext, bot: Bot, ses
         bot=bot,
         chat_id=callback.message.chat.id,
         photo_path=settings.CANCEL_IMAGE,
-        caption="🌵  <b>Заявка отменена</b>\n\n"
-                "Возвращайся, когда будешь готов, партнёр.",
-        reply_markup=get_back_keyboard()
+        caption="🌵  <b>Отбой тревоги</b>\n\n"
+                "Понял-принял.\n"
+                "Не сегодня — значит не сегодня.\n\n"
+                "Заходи, когда созреешь — я тут всегда.",
+        reply_markup=get_cancel_complete_keyboard()
     )
 
 

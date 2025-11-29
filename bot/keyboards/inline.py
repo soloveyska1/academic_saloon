@@ -80,6 +80,19 @@ def get_back_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
+def get_cancel_complete_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура после отмены заказа — два варианта действий"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🍺 К барной стойке", callback_data="back_to_menu")
+        ],
+        [
+            InlineKeyboardButton(text="📜 Посмотреть примеры", url=settings.REVIEWS_CHANNEL)
+        ]
+    ])
+    return kb
+
+
 def get_price_list_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура для прайс-листа — CTA, правила, навигация"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
