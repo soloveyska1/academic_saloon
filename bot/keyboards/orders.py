@@ -512,35 +512,31 @@ def get_deadline_options() -> list[tuple[str, str, str]]:
 
     # Сегодня (если ещё не поздно — до 20:00)
     if now.hour < 20:
-        options.append(("today", "⚡ Сегодня", "deadline:today"))
+        options.append(("today", "🔥 ГОРИТ! (Сегодня)", "deadline:today"))
 
     # Завтра
     tomorrow = today + timedelta(days=1)
     tomorrow_dt = datetime.combine(tomorrow, datetime.min.time())
-    options.append(("tomorrow", f"🔥 Завтра, {format_date_short(tomorrow_dt)}", "deadline:tomorrow"))
+    options.append(("tomorrow", f"⚡️ Срочно (Завтра, {format_date_short(tomorrow_dt)})", "deadline:tomorrow"))
 
     # 2-3 дня
     in_3_days = today + timedelta(days=3)
     in_3_days_dt = datetime.combine(in_3_days, datetime.min.time())
-    options.append(("3_days", f"📅 2-3 дня (до {format_date_short(in_3_days_dt)})", "deadline:3_days"))
+    options.append(("3_days", f"🐎 В темпе (2-3 дня, до {format_date_short(in_3_days_dt)})", "deadline:3_days"))
 
     # Неделя
     in_week = today + timedelta(days=7)
     in_week_dt = datetime.combine(in_week, datetime.min.time())
-    options.append(("week", f"🗓 Неделя (до {format_date_short(in_week_dt)})", "deadline:week"))
+    options.append(("week", f"📅 Стандарт (Неделя, до {format_date_short(in_week_dt)})", "deadline:week"))
 
     # 2 недели
-    in_2_weeks = today + timedelta(days=14)
-    in_2_weeks_dt = datetime.combine(in_2_weeks, datetime.min.time())
-    options.append(("2_weeks", f"📆 2 недели (до {format_date_short(in_2_weeks_dt)})", "deadline:2_weeks"))
+    options.append(("2_weeks", "🐢 На расслабоне (2 недели)", "deadline:2_weeks"))
 
     # Месяц
-    in_month = today + timedelta(days=30)
-    in_month_dt = datetime.combine(in_month, datetime.min.time())
-    options.append(("month", f"🐢 Месяц (до {format_date_short(in_month_dt)})", "deadline:month"))
+    options.append(("month", "🐌 Вообще не к спеху (Месяц)", "deadline:month"))
 
     # Указать свою дату
-    options.append(("custom", "✏️ Указать точную дату", "deadline:custom"))
+    options.append(("custom", "✏️ Своя дата", "deadline:custom"))
 
     return options
 
@@ -601,7 +597,7 @@ def get_deadline_keyboard() -> InlineKeyboardMarkup:
 
     # Назад и отмена
     buttons.append([
-        InlineKeyboardButton(text="◀️ Назад", callback_data="order_back_to_task"),
+        InlineKeyboardButton(text="🔙 Назад", callback_data="order_back_to_task"),
         InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
     ])
 
