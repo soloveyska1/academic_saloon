@@ -1472,7 +1472,7 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
 
 
 @router.callback_query(F.data == "order_back_to_subject")
-async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """
     Назад к выбору направления.
     Для мелких работ — сразу к выбору типа.
@@ -1489,7 +1489,7 @@ async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: A
 
     # Для мелких работ (не требующих направления) — возврат к типу
     if work_type and work_type not in WORKS_REQUIRE_SUBJECT:
-        await back_to_type(callback, state, session)
+        await back_to_type(callback, state, session, bot)
         return
 
     # Для крупных — показываем выбор направления
