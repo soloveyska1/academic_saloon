@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -108,25 +109,22 @@ def pluralize_files(n: int) -> str:
     return f"{n} файлов"
 
 
+# Рандомные ответы в стиле Салуна
+SALOON_CONFIRMATIONS = [
+    "Записал в блокнот. 📝",
+    "Так, это принял. Ещё что-то? 🧐",
+    "Улику подшил к делу. 📂",
+    "Добро. Клади ещё, если есть. 👌",
+    "Понял. Информация принята. 🤠",
+]
+
+
 def get_attachment_confirm_text(attachment: dict, count: int, is_urgent: bool = False) -> str:
     """
     Генерирует умное подтверждение в зависимости от типа вложения.
-    Показывает что именно получили + сколько всего.
+    Использует рандомные ответы в стиле Салуна.
     """
     att_type = attachment.get("type", "unknown")
-
-    # Эмодзи и текст по типу
-    type_confirms = {
-        "text": "💬 Текст сохранил",
-        "photo": "📸 Фото получил",
-        "document": "📄 Файл получил",
-        "voice": "🎤 Голосовое записал",
-        "audio": "🎵 Аудио получил",
-        "video": "🎬 Видео получил",
-        "video_note": "⚪ Кружок получил",
-    }
-
-    base_text = type_confirms.get(att_type, "✅ Получил")
 
     # Дополнительная инфа по типу
     extra = ""
@@ -136,15 +134,18 @@ def get_attachment_confirm_text(attachment: dict, count: int, is_urgent: bool = 
             # Обрезаем длинные имена
             if len(fname) > 25:
                 fname = fname[:22] + "..."
-            extra = f": {fname}"
+            extra = f"\n📄 <i>{fname}</i>"
     elif att_type == "voice":
         duration = attachment.get("duration", 0)
         if duration:
             mins, secs = divmod(duration, 60)
             if mins:
-                extra = f" ({mins}:{secs:02d})"
+                extra = f"\n🎤 <i>Голосовое {mins}:{secs:02d}</i>"
             else:
-                extra = f" ({secs} сек)"
+                extra = f"\n🎤 <i>Голосовое {secs} сек</i>"
+
+    # Рандомный ответ из списка
+    base_text = random.choice(SALOON_CONFIRMATIONS)
 
     # Для срочных — особое подтверждение
     if is_urgent and count == 1:
@@ -153,13 +154,11 @@ def get_attachment_confirm_text(attachment: dict, count: int, is_urgent: bool = 
 {base_text}{extra}
 
 ⏳ Оцениваю объём...
-<i>Напишу через пару минут с ценой и сроком</i>
-
-Можешь добавить ещё файлы или нажми «Готово»"""
+<i>Напишу через пару минут с ценой и сроком</i>"""
 
     # Для срочных при добавлении
     if is_urgent:
-        return f"{base_text}{extra}\n📎 Всего: {pluralize_files(count)}\n\n<i>Добавь ещё или жми «Готово»</i>"
+        return f"{base_text}{extra}\n📎 Всего: {pluralize_files(count)}"
 
     # Счётчик если больше одного
     if count > 1:
