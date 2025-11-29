@@ -190,10 +190,10 @@ def get_empty_orders_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_balance_keyboard() -> InlineKeyboardMarkup:
-    """Баланс"""
+    """Баланс — акцент на заработке"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Позвать друга", callback_data="profile_referral")],
-        [InlineKeyboardButton(text="← Назад", callback_data="my_profile")],
+        [InlineKeyboardButton(text="🤝 Позвать друга (Заработать)", callback_data="profile_referral")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="my_profile")],
     ])
 
 

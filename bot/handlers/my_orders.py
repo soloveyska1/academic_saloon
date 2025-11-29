@@ -15,12 +15,11 @@ from aiogram.enums import ChatAction, ParseMode
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, case
 
-# Путь к изображению для ЛК
+# Пути к изображениям
 PROFILE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cab_saloon.jpg"
-# Путь к изображению для списка заказов
 ORDERS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "my_order.jpg"
-# Путь к изображению для деталей заказа
 ORDER_DETAIL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "delo.jpg"
+WALLET_IMAGE_PATH = Path(__file__).parent.parent / "media" / "wallet.jpg"
 
 from database.models.users import User
 from database.models.orders import (
@@ -656,8 +655,32 @@ async def reorder(callback: CallbackQuery, state: FSMContext, session: AsyncSess
 #                    БАЛАНС
 # ══════════════════════════════════════════════════════════════
 
+def build_balance_caption(balance: float, earnings: float) -> str:
+    """Формирует caption для баланса — стиль 'Сейф'"""
+    lines = ["🏦 <b>Твой личный сейф</b>", ""]
+
+    # Hero — баланс крупно
+    lines.append(f"💰 Баланс: <b>{format_number(balance)} ₽</b>")
+
+    if earnings > 0:
+        lines.append(f"<i>(из них {format_number(earnings)}₽ с друзей)</i>")
+
+    lines.append("")
+
+    # Как это работает
+    lines.append("💎 <b>Как это работает:</b>")
+    lines.append("📉 Оплачивай бонусами до <b>50%</b> от суммы заказа")
+    lines.append("🤝 Приводи друзей — получай % с их заказов")
+
+    lines.append("")
+    lines.append("<i>Копи монеты, шериф!</i>")
+
+    return "\n".join(lines)
+
+
 @router.callback_query(F.data == "profile_balance")
 async def show_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Баланс — фото с caption в стиле 'Сейф'"""
     await callback.answer()
 
     try:
@@ -674,27 +697,36 @@ async def show_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     balance = user.balance if user else 0
     earnings = user.referral_earnings if user else 0
 
-    lines = [
-        "💰 <b>Ваш счёт</b>",
-        "",
-        f"<b>{format_number(balance)}₽</b>",
-    ]
+    caption = build_balance_caption(balance, earnings)
+    keyboard = get_balance_keyboard()
 
-    if earnings > 0:
-        lines.append(f"из них {format_number(earnings)}₽ с друзей")
-
-    lines.extend([
-        "",
-        "Списывается при оплате — до 50% от суммы.",
-        "Пополняется за приглашённых друзей.",
-    ])
-
-    text = "\n".join(lines)
-
+    # Удаляем старое и отправляем фото
     try:
-        await callback.message.edit_text(text, reply_markup=get_balance_keyboard())
+        await callback.message.delete()
     except Exception:
-        await callback.message.answer(text, reply_markup=get_balance_keyboard())
+        pass
+
+    if WALLET_IMAGE_PATH.exists():
+        try:
+            photo = FSInputFile(WALLET_IMAGE_PATH)
+            await bot.send_photo(
+                chat_id=callback.message.chat.id,
+                photo=photo,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото сейфа: {e}")
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
 
 
 # ══════════════════════════════════════════════════════════════
