@@ -4,22 +4,20 @@ from core.config import settings
 
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
-    """Компактная Inline клавиатура главного меню — стиль Салуна"""
+    """Компактная Inline клавиатура главного меню — стиль Салуна (5 кнопок)"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="📝 Оформить заказ", callback_data="create_order")
         ],
         [
-            InlineKeyboardButton(text="👤 Личный кабинет", callback_data="my_profile"),
-            InlineKeyboardButton(text="🤝 Привести друга", callback_data="referral")
+            InlineKeyboardButton(text="👤 Личный кабинет", callback_data="my_profile")
         ],
         [
-            InlineKeyboardButton(text="🤠 Написать Шерифу", callback_data="contact_owner"),
-            InlineKeyboardButton(text="📜 Прайс-лист", callback_data="price_list")
+            InlineKeyboardButton(text="⭐ Отзывы ↗️", url=settings.REVIEWS_CHANNEL),
+            InlineKeyboardButton(text="💰 Прайс & Инфо", callback_data="price_list")
         ],
         [
-            InlineKeyboardButton(text="⚖️ Правила", callback_data="codex"),
-            InlineKeyboardButton(text="⭐ Отзывы ↗️", url=settings.REVIEWS_CHANNEL)
+            InlineKeyboardButton(text="🤠 Написать Шерифу", callback_data="contact_owner")
         ],
     ])
     return kb
