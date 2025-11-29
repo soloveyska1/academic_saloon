@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     MENU_IMAGE: Path = BASE_DIR / "bot" / "media" / "back_saloon.jpg"
     CANCEL_IMAGE: Path = BASE_DIR / "bot" / "media" / "cancel_saloon.jpg"
     ERROR_IMAGE: Path = BASE_DIR / "bot" / "media" / "tech_pause.jpg"
+    TASK_INPUT_IMAGE: Path = BASE_DIR / "bot" / "media" / "Kontr.jpg"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
