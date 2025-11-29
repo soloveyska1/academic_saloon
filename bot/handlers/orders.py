@@ -16,6 +16,7 @@ SMALL_TASKS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "small_tasks.j
 KURS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "kurs_otc.jpg"
 DIPLOMA_IMAGE_PATH = Path(__file__).parent.parent / "media" / "diploma.jpg"
 DIRECTIONS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "directions.jpg"
+DEADLINE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "deadline.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -1222,11 +1223,38 @@ async def task_done(callback: CallbackQuery, state: FSMContext, bot: Bot, sessio
     except Exception:
         pass
 
-    text = """⏰  <b>Когда нужна готовая работа?</b>
+    caption = """⏳ <b>Часики тикают...</b>
 
-Точный срок — точная цена."""
+Скажи честно, сколько у нас времени до расстрела?
 
-    await callback.message.edit_text(text, reply_markup=get_deadline_keyboard())
+Если нужно «вчера» — готовься доплатить за скорость.
+Если время терпит — сэкономишь патроны."""
+
+    # Удаляем старое и отправляем с фото
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    if DEADLINE_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=DEADLINE_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_deadline_keyboard(),
+            )
+            return
+        except Exception:
+            pass
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_deadline_keyboard()
+    )
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1258,15 +1286,41 @@ async def process_deadline_choice(callback: CallbackQuery, state: FSMContext, bo
 
 
 @router.callback_query(OrderState.choosing_deadline, F.data == "order_back_to_deadline_buttons")
-async def back_to_deadline_buttons(callback: CallbackQuery, state: FSMContext):
+async def back_to_deadline_buttons(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Назад к кнопкам выбора срока"""
     await callback.answer("⏳")
 
-    text = """⏰  <b>Когда нужна готовая работа?</b>
+    caption = """⏳ <b>Часики тикают...</b>
 
-Точный срок — точная цена."""
+Скажи честно, сколько у нас времени до расстрела?
 
-    await callback.message.edit_text(text, reply_markup=get_deadline_keyboard())
+Если нужно «вчера» — готовься доплатить за скорость.
+Если время терпит — сэкономишь патроны."""
+
+    # Удаляем старое и отправляем с фото
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    if DEADLINE_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=DEADLINE_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_deadline_keyboard(),
+            )
+            return
+        except Exception:
+            pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_deadline_keyboard()
+    )
 
 
 @router.message(OrderState.choosing_deadline)
@@ -1855,16 +1909,42 @@ async def edit_task(callback: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == "edit_deadline")
-async def edit_deadline(callback: CallbackQuery, state: FSMContext):
+async def edit_deadline(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Изменить сроки"""
     await callback.answer("⏳")
     await state.set_state(OrderState.choosing_deadline)
 
-    text = """⏰  <b>Когда нужна готовая работа?</b>
+    caption = """⏳ <b>Часики тикают...</b>
 
-Точный срок — точная цена."""
+Скажи честно, сколько у нас времени до расстрела?
 
-    await callback.message.edit_text(text, reply_markup=get_deadline_keyboard())
+Если нужно «вчера» — готовься доплатить за скорость.
+Если время терпит — сэкономишь патроны."""
+
+    # Удаляем старое и отправляем с фото
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    if DEADLINE_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=DEADLINE_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_deadline_keyboard(),
+            )
+            return
+        except Exception:
+            pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_deadline_keyboard()
+    )
 
 
 # ══════════════════════════════════════════════════════════════
