@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, Message, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 from aiogram.enums import ParseMode
@@ -21,6 +21,7 @@ from bot.keyboards.inline import (
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
+from core.media_cache import send_cached_photo
 
 logger = logging.getLogger(__name__)
 
@@ -284,10 +285,11 @@ async def show_contact_owner(callback: CallbackQuery, bot: Bot):
 
     if SUPPORT_IMAGE_PATH.exists():
         try:
-            photo = FSInputFile(SUPPORT_IMAGE_PATH)
-            await bot.send_photo(
+            # Используем кэширование file_id
+            await send_cached_photo(
+                bot=bot,
                 chat_id=callback.message.chat.id,
-                photo=photo,
+                photo_path=SUPPORT_IMAGE_PATH,
                 caption=caption,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -583,11 +585,12 @@ async def back_to_menu(callback: CallbackQuery, bot: Bot):
         details="Вернулся в главное меню",
     )
 
-    # Удаляем старое сообщение и отправляем картинку с меню
+    # Удаляем старое сообщение и отправляем картинку с меню (с кэшированием file_id)
     await safe_delete_message(callback)
-    photo = FSInputFile(settings.MENU_IMAGE)
-    await callback.message.answer_photo(
-        photo=photo,
+    await send_cached_photo(
+        bot=bot,
+        chat_id=callback.message.chat.id,
+        photo_path=settings.MENU_IMAGE,
         caption=get_menu_text(),
         reply_markup=get_main_menu_keyboard()
     )

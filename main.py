@@ -25,6 +25,7 @@ from bot.services.abandoned_detector import init_abandoned_tracker
 from bot.services.daily_stats import init_daily_stats
 from bot.services.silence_reminder import init_silence_reminder
 from database.db import async_session_maker
+from core.redis_pool import close_redis
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -83,7 +84,10 @@ async def main():
         abandoned_tracker.stop()
         daily_stats.stop()
         silence_reminder.stop()
+        # Закрываем Redis пул
+        await close_redis()
         await bot.session.close()
+        logger.info("Bot shutdown complete")
 
 if __name__ == "__main__":
     try:

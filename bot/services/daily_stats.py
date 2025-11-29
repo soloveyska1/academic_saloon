@@ -8,29 +8,19 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional
 import pytz
-from redis.asyncio import Redis
 
 from aiogram import Bot
 from sqlalchemy import select, func, and_
 
 from core.config import settings
+from core.redis_pool import get_redis
 from database.db import async_session_maker
 from database.models.users import User
 from database.models.orders import Order
 
-# Redis для кэширования статистики
-_stats_redis: Optional[Redis] = None
+# Ключи кэша статистики
 STATS_CACHE_KEY = "bot:live_stats"
 STATS_CACHE_TTL = 90  # 1.5 минуты
-
-
-async def _get_stats_redis() -> Redis:
-    """Ленивая инициализация Redis для кэша статистики"""
-    global _stats_redis
-    if _stats_redis is None:
-        redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
-        _stats_redis = Redis.from_url(redis_url, decode_responses=True)
-    return _stats_redis
 
 MSK = pytz.timezone("Europe/Moscow")
 
@@ -210,7 +200,7 @@ async def get_live_stats_line() -> str:
     """
     # Пробуем получить из кэша
     try:
-        redis = await _get_stats_redis()
+        redis = await get_redis()
         cached = await redis.get(STATS_CACHE_KEY)
         if cached:
             data = json.loads(cached)
@@ -245,7 +235,7 @@ async def get_live_stats_line() -> str:
             last_order_iso = last_order_time.isoformat()
 
         try:
-            redis = await _get_stats_redis()
+            redis = await get_redis()
             cache_data = {"today_orders": today_orders, "last_order_iso": last_order_iso}
             await redis.set(STATS_CACHE_KEY, json.dumps(cache_data), ex=STATS_CACHE_TTL)
         except Exception:

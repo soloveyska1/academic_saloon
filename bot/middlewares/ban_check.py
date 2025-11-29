@@ -4,16 +4,16 @@ Middleware для проверки бана пользователя.
 Кэширует статус бана в Redis на 15 секунд.
 """
 
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Update, Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from redis.asyncio import Redis
 
 from database.models.users import User
 from core.config import settings
+from core.redis_pool import get_redis
 
 # Кэш банов в Redis
 BAN_CACHE_TTL = 15  # секунд (короткий TTL для security)
@@ -36,24 +36,13 @@ class BanCheckMiddleware(BaseMiddleware):
     Кэширует статус бана в Redis для быстрой проверки.
     """
 
-    def __init__(self):
-        super().__init__()
-        self._redis: Optional[Redis] = None
-
-    async def _get_redis(self) -> Redis:
-        """Ленивая инициализация Redis"""
-        if self._redis is None:
-            redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
-            self._redis = Redis.from_url(redis_url, decode_responses=True)
-        return self._redis
-
     async def _check_ban_cached(self, user_id: int, session: AsyncSession) -> bool:
         """Проверяет бан с кэшированием в Redis"""
         cache_key = f"{BAN_CACHE_PREFIX}{user_id}"
 
         # Пробуем получить из кэша
         try:
-            redis = await self._get_redis()
+            redis = await get_redis()
             cached = await redis.get(cache_key)
             if cached is not None:
                 return cached == "1"
@@ -67,7 +56,7 @@ class BanCheckMiddleware(BaseMiddleware):
 
         # Сохраняем в кэш
         try:
-            redis = await self._get_redis()
+            redis = await get_redis()
             await redis.set(cache_key, "1" if is_banned else "0", ex=BAN_CACHE_TTL)
         except Exception:
             pass
@@ -124,9 +113,7 @@ async def invalidate_ban_cache(user_id: int) -> None:
     Вызывать после бана/разбана из админки.
     """
     try:
-        redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
-        redis = Redis.from_url(redis_url, decode_responses=True)
+        redis = await get_redis()
         await redis.delete(f"{BAN_CACHE_PREFIX}{user_id}")
-        await redis.close()
     except Exception:
         pass
