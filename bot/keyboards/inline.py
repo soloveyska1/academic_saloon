@@ -88,6 +88,22 @@ def get_back_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
+def get_price_list_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура для прайс-листа — CTA, правила, навигация"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📝 Заказать точный расчет", callback_data="create_order")
+        ],
+        [
+            InlineKeyboardButton(text="⚖️ Читать правила", callback_data="codex")
+        ],
+        [
+            InlineKeyboardButton(text="🔙 В главное меню", callback_data="back_to_menu")
+        ]
+    ])
+    return kb
+
+
 def get_saloon_status_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура для закреплённого сообщения со статусом салуна"""
     kb = InlineKeyboardMarkup(inline_keyboard=[

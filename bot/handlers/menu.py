@@ -17,7 +17,8 @@ from bot.keyboards.inline import (
     get_codex_full_keyboard,
     get_referral_keyboard,
     get_back_keyboard,
-    get_main_menu_keyboard
+    get_main_menu_keyboard,
+    get_price_list_keyboard
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
@@ -25,8 +26,9 @@ from core.media_cache import send_cached_photo
 
 logger = logging.getLogger(__name__)
 
-# Путь к изображению поддержки
+# Пути к изображениям
 SUPPORT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "support.jpg"
+PRICE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "price.jpg"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -307,10 +309,35 @@ async def show_contact_owner(callback: CallbackQuery, bot: Bot):
     )
 
 
+def build_price_list_caption() -> str:
+    """Формирует caption для прайс-листа в стиле меню"""
+    lines = [
+        "📜 <b>Прейскурант Салуна</b>",
+        "",
+        "🎓 <b>Для разминки:</b>",
+        "▪️ Реферат ............... от <b>900 ₽</b>",
+        "▪️ Эссе ...................... от <b>1 400 ₽</b>",
+        "▪️ Контрольная ....... от <b>1 400 ₽</b>",
+        "▪️ Самостоятельная .. от <b>2 400 ₽</b>",
+        "",
+        "📚 <b>Тяжелая артиллерия:</b>",
+        "▪️ Курсовая .............. от <b>11 900 ₽</b>",
+        "▪️ Диплом (ВКР) ....... от <b>34 900 ₽</b>",
+        "▪️ Магистерская ...... от <b>44 900 ₽</b>",
+        "",
+        "📂 <b>Прочее:</b>",
+        "▪️ Отчет по практике .. от <b>4 900 ₽</b>",
+        "▪️ Презентация ........... от <b>1 900 ₽</b>",
+        "",
+        "<i>⚠️ Цены — стартовые. Точный расчет зависит от сложности и сроков.</i>",
+    ]
+    return "\n".join(lines)
+
+
 @router.callback_query(F.data == "price_list")
 async def show_price_list(callback: CallbackQuery, bot: Bot):
-    """Прайс-лист"""
-    await callback.answer("⏳")
+    """Прайс-лист — фото с caption в стиле меню"""
+    await callback.answer()
 
     # Логируем
     await log_action(
@@ -320,28 +347,33 @@ async def show_price_list(callback: CallbackQuery, bot: Bot):
         details="Открыл «Прайс-лист»",
     )
 
-    text = """📜  <b>Прайс-лист</b>
+    caption = build_price_list_caption()
+    keyboard = get_price_list_keyboard()
 
-
-<b>Базовые расценки:</b>
-
-◈  Реферат — от 900 ₽
-◈  Эссе — от 1 400 ₽
-◈  Контрольная — от 1 400 ₽
-◈  Самостоятельная — от 2 400 ₽
-◈  Презентация — от 1 900 ₽
-◈  Отчёт по практике — от 4 900 ₽
-◈  Курсовая — от 11 900 ₽
-◈  Диплом (ВКР) — от 34 900 ₽
-◈  Магистерская — от 44 900 ₽
-
-
-<i>Точная цена зависит от объёма,
-сложности и сроков. Скидывай задачу —
-посчитаю индивидуально.</i>"""
-
+    # Удаляем старое и отправляем фото
     await safe_delete_message(callback)
-    await callback.message.answer(text, reply_markup=get_back_keyboard())
+
+    if PRICE_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=PRICE_IMAGE_PATH,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото прайс-листа: {e}")
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
 
 
 # ══════════════════════════════════════════════════════════════
