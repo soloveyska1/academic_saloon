@@ -352,12 +352,13 @@ def get_status_display(status: str) -> tuple[str, str]:
     """Возвращает emoji и текст статуса для отображения"""
     status_map = {
         "pending": ("⏳", "Ожидает оценки"),
-        "confirmed": ("🔨", "В работе"),
+        "confirmed": ("🔨", "Подтверждён"),
         "in_progress": ("🔨", "В работе"),
+        "paid": ("✅", "Оплачено (в очереди)"),
         "waiting_payment": ("💰", "Ждёт оплаты"),
         "waiting_for_payment": ("💰", "Ждёт оплаты"),
-        "completed": ("✅", "Готово"),
-        "done": ("✅", "Готово"),
+        "completed": ("🏁", "Готово"),
+        "done": ("🏁", "Готово"),
         "cancelled": ("❌", "Отменён"),
         "rejected": ("❌", "Отклонён"),
     }
@@ -380,15 +381,16 @@ def build_order_detail_caption(order: Order) -> str:
     work_type = order.work_type_label
     if work_type and work_type[0] in "🎩🎓📚📖📝📄✏️📊🏢📎📸🔥":
         work_type = work_type[2:].strip()
-    lines.append(f"— {work_type}")
+    lines.append(f"• {work_type}")
 
-    # Предмет
-    subject = order.subject if order.subject else "Не указан"
-    lines.append(f"— {subject}")
+    # Предмет — только если указан
+    subject = order.subject.strip() if order.subject else ""
+    if subject:
+        lines.append(f"• {subject}")
 
     # Дедлайн
     if order.deadline:
-        lines.append(f"⏳ <b>Дедлайн:</b> {order.deadline}")
+        lines.append(f"• Дедлайн: {order.deadline}")
 
     lines.append("")
 
@@ -398,20 +400,20 @@ def build_order_detail_caption(order: Order) -> str:
     if order.price > 0:
         # Базовая цена
         if order.discount > 0 or order.bonus_used > 0:
-            lines.append(f"▪️ Цена: <s>{format_number(order.price)}₽</s>")
+            lines.append(f"🔹 Цена: <s>{format_number(order.price)}₽</s>")
         else:
-            lines.append(f"▪️ Цена: {format_number(order.price)}₽")
+            lines.append(f"🔹 Цена: {format_number(order.price)}₽")
 
         # Скидка
         if order.discount > 0:
             discount_amount = order.price * order.discount / 100
-            lines.append(f"▪️ Скидка: <b>−{order.discount:.0f}%</b> (−{format_number(discount_amount)}₽)")
+            lines.append(f"🔹 Скидка: <b>−{order.discount:.0f}%</b> (−{format_number(discount_amount)}₽)")
 
         # Бонусы
         if order.bonus_used > 0:
-            lines.append(f"▪️ Бонусы: <b>−{format_number(order.bonus_used)}₽</b>")
+            lines.append(f"🔸 Бонусы: <b>−{format_number(order.bonus_used)}₽</b>")
 
-        lines.append("—————————————")
+        lines.append("")
 
         # Итог
         if order.paid_amount >= order.final_price and order.paid_amount > 0:
@@ -421,7 +423,7 @@ def build_order_detail_caption(order: Order) -> str:
         else:
             lines.append(f"💳 <b>К оплате: {format_number(order.final_price)}₽</b>")
     else:
-        lines.append("▪️ Цена: <i>ожидает оценки</i>")
+        lines.append("🔹 Цена: <i>ожидает оценки</i>")
 
     # Дата создания
     if order.created_at:
