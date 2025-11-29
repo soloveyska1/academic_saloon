@@ -1,9 +1,12 @@
 import random
+import logging
+from pathlib import Path
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, Message, FSInputFile
+from aiogram.types import CallbackQuery, Message, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
+from aiogram.enums import ParseMode
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -18,6 +21,11 @@ from bot.keyboards.inline import (
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
+
+logger = logging.getLogger(__name__)
+
+# Путь к изображению поддержки
+SUPPORT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "support.jpg"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -226,32 +234,75 @@ async def show_my_balance(callback: CallbackQuery, session: AsyncSession, bot: B
     await callback.message.answer(text, reply_markup=get_back_keyboard())
 
 
+def build_support_caption() -> str:
+    """Формирует caption для связи с Шерифом"""
+    lines = [
+        "📬 <b>Прямая линия с Шерифом</b>",
+        "",
+        "Есть вопрос по заказу? Хочешь обсудить сложную задачу? Или что-то пошло не так?",
+        "",
+        "Я на связи. Пиши смело — разрулим любую ситуацию.",
+        "",
+        "<i>⚡️ Ответ прилетит быстрее пули (обычно за 5-15 минут).</i>",
+    ]
+    return "\n".join(lines)
+
+
+def get_support_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура для связи с Шерифом — URL кнопки"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text=f"✈️ Написать лично (@{settings.SUPPORT_USERNAME})",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+        [InlineKeyboardButton(
+            text="⭐ Почитать отзывы (Канал)",
+            url=settings.REVIEWS_CHANNEL
+        )],
+        [InlineKeyboardButton(text="🌵 Обратно в салун", callback_data="back_to_menu")],
+    ])
+
+
 @router.callback_query(F.data == "contact_owner")
 async def show_contact_owner(callback: CallbackQuery, bot: Bot):
-    """Написать Хозяину"""
-    await callback.answer("⏳")
+    """Написать Шерифу — фото с caption"""
+    await callback.answer()
 
     # Логируем
     await log_action(
         bot=bot,
         event=LogEvent.NAV_BUTTON,
         user=callback.from_user,
-        details="Открыл «Написать Хозяину»",
+        details="Открыл «Написать Шерифу»",
     )
 
-    text = f"""💬  <b>Написать Хозяину</b>
+    caption = build_support_caption()
+    keyboard = get_support_keyboard()
 
-
-Пиши напрямую: @{settings.SUPPORT_USERNAME}
-
-Отзывы: <a href="{settings.REVIEWS_CHANNEL}">канал</a>
-
-
-<i>Отвечаю в течение пары часов,
-обычно быстрее.</i>"""
-
+    # Удаляем старое и отправляем фото
     await safe_delete_message(callback)
-    await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
+
+    if SUPPORT_IMAGE_PATH.exists():
+        try:
+            photo = FSInputFile(SUPPORT_IMAGE_PATH)
+            await bot.send_photo(
+                chat_id=callback.message.chat.id,
+                photo=photo,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото поддержки: {e}")
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
 
 
 @router.callback_query(F.data == "price_list")
