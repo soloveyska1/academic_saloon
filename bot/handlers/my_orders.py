@@ -1,18 +1,22 @@
 """
 Личный кабинет пользователя.
-Компактный дизайн без лишних элементов.
+Премиальный дизайн с фото и визуальным прогресс-баром.
 """
 
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.fsm.context import FSMContext
-from aiogram.enums import ChatAction
+from aiogram.enums import ChatAction, ParseMode
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, case
+
+# Путь к изображению для ЛК
+PROFILE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cab_saloon.jpg"
 
 from database.models.users import User
 from database.models.orders import (
@@ -116,9 +120,52 @@ def format_number(n: float) -> str:
     return f"{n:,.0f}".replace(",", " ")
 
 
+def build_profile_caption(user: User | None, first_name: str, counts: dict) -> str:
+    """Формирует caption для Личного кабинета"""
+    if not user:
+        return f"🤠 <b>Приветствую, {first_name}!</b>\n\nДобро пожаловать в салун!"
+
+    status, discount = user.loyalty_status
+    progress = user.loyalty_progress
+
+    lines = [f"🤠 <b>Приветствую, {first_name}!</b>", ""]
+
+    # Статус и скидка
+    if discount > 0:
+        lines.append(f"Твой статус: <b>{status}</b> (скидка <b>{discount}%</b>)")
+    else:
+        lines.append(f"Твой статус: <b>{status}</b>")
+
+    # Прогресс-бар до следующего уровня
+    lines.append("")
+    if progress["has_next"]:
+        bar = progress["progress_bar"]
+        progress_text = progress["progress_text"]
+        next_name = progress["next_name"]
+        lines.append(f"До «{next_name}»: [{bar}] {progress_text}")
+    else:
+        lines.append(f"[{progress['progress_bar']}] {progress['progress_text']}")
+
+    lines.append("")
+
+    # Финансы
+    lines.append(f"💳 В казне: <b>{format_number(user.balance)}₽</b>")
+
+    saved = user.total_saved
+    if saved > 100:
+        lines.append(f"💰 Добыча: <b>~{format_number(saved)}₽</b>")
+
+    # Активные заказы
+    if counts["active"] > 0:
+        lines.append("")
+        lines.append(f"📦 В работе: <b>{counts['active']}</b> заказов")
+
+    return "\n".join(lines)
+
+
 @router.callback_query(F.data.in_(["my_profile", "my_orders"]))
 async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Главный экран личного кабинета"""
+    """Главный экран личного кабинета — фото с caption"""
     await callback.answer()
 
     try:
@@ -136,57 +183,37 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     user = user_result.scalar_one_or_none()
 
     counts = await get_order_counts(session, telegram_id)
+    caption = build_profile_caption(user, first_name, counts)
+    keyboard = get_profile_dashboard_keyboard(counts["active"])
 
-    if user:
-        status, discount = user.loyalty_status
-        progress = user.loyalty_progress
-
-        lines = [f"Здорово, {first_name} 🤠", ""]
-
-        # Статус и скидка
-        lines.append(f"<b>{status}</b>")
-        if discount > 0:
-            lines.append(f"скидка {discount}% на всё")
-
-        # Прогресс до следующего уровня
-        if progress["has_next"]:
-            lines.append("")
-            orders_left = progress["orders_needed"]
-            next_name = progress["next_name"]
-            word = "заказ" if orders_left == 1 else "заказа" if orders_left < 5 else "заказов"
-            lines.append(f"<i>Ещё {orders_left} {word} до «{next_name}»</i>")
-
-        lines.append("")
-
-        # Счёт
-        lines.append(f"На счету <b>{format_number(user.balance)}₽</b>")
-
-        # Заказы
-        if counts["active"] > 0:
-            lines.append(f"В работе {counts['active']} заказов")
-
-        # Сэкономлено (если есть)
-        saved = user.total_saved
-        if saved > 100:
-            lines.append("")
-            lines.append(f"💰 Сэкономлено ~{format_number(saved)}₽")
-
-        text = "\n".join(lines)
-        balance = user.balance
-    else:
-        text = f"Здорово, {first_name} 🤠\n\nДобро пожаловать в салун!"
-        balance = 0
-
-    keyboard = get_profile_dashboard_keyboard(counts["active"], balance)
-
+    # Удаляем старое сообщение и отправляем фото
     try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.message.delete()
     except Exception:
+        pass
+
+    # Пробуем отправить с фото, иначе — текстом
+    if PROFILE_IMAGE_PATH.exists():
         try:
-            await callback.message.delete()
-        except Exception:
-            pass
-        await callback.message.answer(text, reply_markup=keyboard)
+            photo = FSInputFile(PROFILE_IMAGE_PATH)
+            await bot.send_photo(
+                chat_id=callback.message.chat.id,
+                photo=photo,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото ЛК: {e}")
+
+    # Fallback на текстовое сообщение
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
 
 
 # ══════════════════════════════════════════════════════════════
