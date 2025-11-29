@@ -44,14 +44,67 @@ class User(Base):
         """Проверяет, принял ли пользователь оферту"""
         return self.terms_accepted_at is not None
 
+    # Пороги лояльности: (мин. заказов, название, emoji, скидка %)
+    LOYALTY_LEVELS = [
+        (15, "Легенда салуна", "🏆", 15),
+        (7, "Шериф", "⭐", 10),
+        (3, "Завсегдатай", "🤠", 5),
+        (0, "Новичок", "🌵", 0),
+    ]
+
     @property
     def loyalty_status(self) -> tuple[str, int]:
         """Возвращает статус лояльности и процент скидки"""
-        if self.orders_count >= 15:
-            return "🥇  Легенда", 15
-        elif self.orders_count >= 7:
-            return "🥈  Старожил", 10
-        elif self.orders_count >= 3:
-            return "🥉  Свой человек", 5
-        else:
-            return "🌵  Новичок", 0
+        for min_orders, name, emoji, discount in self.LOYALTY_LEVELS:
+            if self.orders_count >= min_orders:
+                return f"{emoji} {name}", discount
+        return "🌵 Новичок", 0
+
+    @property
+    def loyalty_progress(self) -> dict:
+        """Прогресс до следующего статуса"""
+        current_level = None
+        next_level = None
+
+        for i, (min_orders, name, emoji, discount) in enumerate(self.LOYALTY_LEVELS):
+            if self.orders_count >= min_orders:
+                current_level = (min_orders, name, emoji, discount)
+                if i > 0:
+                    next_level = self.LOYALTY_LEVELS[i - 1]
+                break
+
+        if not next_level:
+            return {
+                "has_next": False,
+                "current_name": current_level[1] if current_level else "Новичок",
+            }
+
+        orders_needed = next_level[0] - self.orders_count
+        return {
+            "has_next": True,
+            "current_name": current_level[1],
+            "next_name": next_level[1],
+            "next_emoji": next_level[2],
+            "next_discount": next_level[3],
+            "orders_needed": orders_needed,
+            "orders_current": self.orders_count,
+            "orders_target": next_level[0],
+        }
+
+    @property
+    def total_saved(self) -> float:
+        """Примерная сумма сэкономленного по скидкам"""
+        # Грубый расчёт: если total_spent это сумма после скидок,
+        # восстанавливаем примерную экономию
+        _, current_discount = self.loyalty_status
+        if current_discount == 0 or self.total_spent == 0:
+            return 0.0
+        # Средняя скидка примерно половина от текущей (рос постепенно)
+        avg_discount = current_discount / 2
+        # total_spent = original * (1 - avg_discount/100)
+        # original = total_spent / (1 - avg_discount/100)
+        # saved = original - total_spent
+        if avg_discount >= 100:
+            return 0.0
+        original = self.total_spent / (1 - avg_discount / 100)
+        return original - self.total_spent
