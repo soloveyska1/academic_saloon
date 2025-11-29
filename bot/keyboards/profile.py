@@ -145,26 +145,28 @@ def get_orders_list_keyboard(
 
 
 def get_order_detail_keyboard(order: Order) -> InlineKeyboardMarkup:
-    """Детали заказа"""
+    """Детали заказа — упрощённая клавиатура"""
     buttons = []
 
-    # Написать — главное действие
+    # Row 1: Написать по заказу (контекстная ссылка)
     buttons.append([InlineKeyboardButton(
-        text="Написать нам",
-        url=f"https://t.me/{settings.SUPPORT_USERNAME}?text=Заказ%20{order.id}"
+        text="💬 Написать по заказу",
+        url=f"https://t.me/{settings.SUPPORT_USERNAME}?text=Дело%20%23{order.id}"
     )])
 
-    # Повторить — для завершённых
+    # Row 2 (опционально): Действия по статусу
     meta = get_status_meta(order.status)
+
+    # Повторить — для завершённых/отменённых
     if meta.get("is_final"):
-        buttons.append([InlineKeyboardButton(text="Заказать снова", callback_data=f"reorder:{order.id}")])
+        buttons.append([InlineKeyboardButton(text="🔄 Заказать снова", callback_data=f"reorder:{order.id}")])
 
-    # Отмена — только для отменяемых (менее заметно)
+    # Отмена — только для отменяемых
     if order.can_be_cancelled:
-        buttons.append([InlineKeyboardButton(text="Отменить заказ", callback_data=f"cancel_user_order:{order.id}")])
+        buttons.append([InlineKeyboardButton(text="❌ Отменить", callback_data=f"cancel_user_order:{order.id}")])
 
-    # Назад
-    buttons.append([InlineKeyboardButton(text="← К заказам", callback_data="profile_orders")])
+    # Row: Назад к списку
+    buttons.append([InlineKeyboardButton(text="🔙 К списку заказов", callback_data="profile_orders")])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
