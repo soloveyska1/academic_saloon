@@ -1,6 +1,6 @@
 """
 Клавиатуры для Личного кабинета.
-Минималистичный дизайн.
+Стиль салуна — тёплый и дружелюбный.
 """
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -35,11 +35,10 @@ def get_profile_dashboard_keyboard(active_orders: int = 0, balance: float = 0) -
         orders_text += f" ({active_orders})"
     buttons.append([InlineKeyboardButton(text=orders_text, callback_data="profile_orders")])
 
-    # Баланс и друзья в ряд
-    balance_text = f"Баланс {balance:.0f}₽" if balance > 0 else "Баланс"
+    # Счёт и друзья в ряд (без дублирования баланса)
     buttons.append([
-        InlineKeyboardButton(text=balance_text, callback_data="profile_balance"),
-        InlineKeyboardButton(text="Друзья", callback_data="profile_referral"),
+        InlineKeyboardButton(text="Счёт", callback_data="profile_balance"),
+        InlineKeyboardButton(text="Позвать друга", callback_data="profile_referral"),
     ])
 
     # Назад
@@ -110,7 +109,7 @@ def get_orders_list_keyboard(
         buttons.append(pagination)
 
     # Назад
-    buttons.append([InlineKeyboardButton(text="← Кабинет", callback_data="my_profile")])
+    buttons.append([InlineKeyboardButton(text="← Назад", callback_data="my_profile")])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -119,20 +118,20 @@ def get_order_detail_keyboard(order: Order) -> InlineKeyboardMarkup:
     """Детали заказа"""
     buttons = []
 
-    # Отмена — только для отменяемых
-    if order.can_be_cancelled:
-        buttons.append([InlineKeyboardButton(text="Отменить", callback_data=f"cancel_user_order:{order.id}")])
-
-    # Написать
+    # Написать — главное действие
     buttons.append([InlineKeyboardButton(
-        text="Написать",
+        text="Написать нам",
         url=f"https://t.me/{settings.SUPPORT_USERNAME}?text=Заказ%20{order.id}"
     )])
 
     # Повторить — для завершённых
     meta = get_status_meta(order.status)
     if meta.get("is_final"):
-        buttons.append([InlineKeyboardButton(text="Повторить", callback_data=f"reorder:{order.id}")])
+        buttons.append([InlineKeyboardButton(text="Заказать снова", callback_data=f"reorder:{order.id}")])
+
+    # Отмена — только для отменяемых (менее заметно)
+    if order.can_be_cancelled:
+        buttons.append([InlineKeyboardButton(text="Отменить заказ", callback_data=f"cancel_user_order:{order.id}")])
 
     # Назад
     buttons.append([InlineKeyboardButton(text="← К заказам", callback_data="profile_orders")])
@@ -153,28 +152,29 @@ def get_cancel_order_confirm_keyboard(order_id: int) -> InlineKeyboardMarkup:
 def get_empty_orders_keyboard() -> InlineKeyboardMarkup:
     """Пустой список"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Создать заказ", callback_data="create_order")],
-        [InlineKeyboardButton(text="← Кабинет", callback_data="my_profile")]
+        [InlineKeyboardButton(text="Сделать заказ", callback_data="create_order")],
+        [InlineKeyboardButton(text="← Назад", callback_data="my_profile")]
     ])
 
 
 def get_balance_keyboard() -> InlineKeyboardMarkup:
     """Баланс"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="← Кабинет", callback_data="my_profile")],
+        [InlineKeyboardButton(text="Позвать друга", callback_data="profile_referral")],
+        [InlineKeyboardButton(text="← Назад", callback_data="my_profile")],
     ])
 
 
 def get_referral_keyboard(ref_link: str) -> InlineKeyboardMarkup:
     """Реферальная программа"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Отправить другу", switch_inline_query=f"Помощь с учёбой — {ref_link}")],
-        [InlineKeyboardButton(text="← Кабинет", callback_data="my_profile")],
+        [InlineKeyboardButton(text="Поделиться", switch_inline_query=f"Помощь с учёбой — {ref_link}")],
+        [InlineKeyboardButton(text="← Назад", callback_data="my_profile")],
     ])
 
 
 def get_back_to_profile_keyboard() -> InlineKeyboardMarkup:
     """Назад в кабинет"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="← Кабинет", callback_data="my_profile")]
+        [InlineKeyboardButton(text="← Назад", callback_data="my_profile")]
     ])

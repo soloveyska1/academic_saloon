@@ -111,6 +111,11 @@ async def get_order_counts(session: AsyncSession, user_id: int) -> dict:
 #                    ДАШБОРД
 # ══════════════════════════════════════════════════════════════
 
+def format_number(n: float) -> str:
+    """Форматирование числа с разделителями тысяч"""
+    return f"{n:,.0f}".replace(",", " ")
+
+
 @router.callback_query(F.data.in_(["my_profile", "my_orders"]))
 async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Главный экран личного кабинета"""
@@ -123,6 +128,7 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         pass
 
     telegram_id = callback.from_user.id
+    first_name = callback.from_user.first_name or "партнёр"
 
     user_result = await session.execute(
         select(User).where(User.telegram_id == telegram_id)
@@ -133,23 +139,42 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     if user:
         status, discount = user.loyalty_status
+        progress = user.loyalty_progress
 
-        lines = [f"<b>Личный кабинет</b>", "", status]
+        lines = [f"Здорово, {first_name} 🤠", ""]
 
+        # Статус и скидка
+        lines.append(f"<b>{status}</b>")
         if discount > 0:
-            lines.append(f"Скидка {discount}%")
+            lines.append(f"скидка {discount}% на всё")
+
+        # Прогресс до следующего уровня
+        if progress["has_next"]:
+            lines.append("")
+            orders_left = progress["orders_needed"]
+            next_name = progress["next_name"]
+            word = "заказ" if orders_left == 1 else "заказа" if orders_left < 5 else "заказов"
+            lines.append(f"<i>Ещё {orders_left} {word} до «{next_name}»</i>")
 
         lines.append("")
-        lines.append(f"Баланс: <b>{user.balance:.0f}₽</b>")
-        lines.append(f"Заказов: {user.orders_count}")
 
-        if user.total_spent > 0:
-            lines.append(f"Потрачено: {user.total_spent:.0f}₽")
+        # Счёт
+        lines.append(f"На счету <b>{format_number(user.balance)}₽</b>")
+
+        # Заказы
+        if counts["active"] > 0:
+            lines.append(f"В работе {counts['active']} заказов")
+
+        # Сэкономлено (если есть)
+        saved = user.total_saved
+        if saved > 100:
+            lines.append("")
+            lines.append(f"💰 Сэкономлено ~{format_number(saved)}₽")
 
         text = "\n".join(lines)
         balance = user.balance
     else:
-        text = "<b>Личный кабинет</b>\n\nДобро пожаловать!"
+        text = f"Здорово, {first_name} 🤠\n\nДобро пожаловать в салун!"
         balance = 0
 
     keyboard = get_profile_dashboard_keyboard(counts["active"], balance)
@@ -510,17 +535,17 @@ async def show_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     earnings = user.referral_earnings if user else 0
 
     lines = [
-        "<b>Баланс</b>",
+        "💰 <b>Ваш счёт</b>",
         "",
-        f"<b>{balance:.0f}₽</b>",
+        f"<b>{format_number(balance)}₽</b>",
     ]
 
     if earnings > 0:
-        lines.append(f"Из них с друзей: {earnings:.0f}₽")
+        lines.append(f"из них {format_number(earnings)}₽ с друзей")
 
     lines.extend([
         "",
-        "Списывается при оплате (до 50%).",
+        "Списывается при оплате — до 50% от суммы.",
         "Пополняется за приглашённых друзей.",
     ])
 
@@ -558,16 +583,20 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
         pass
 
     lines = [
-        "<b>Пригласи друга</b>",
+        "👥 <b>Позови друга в салун</b>",
         "",
         f"<code>{ref_link}</code>",
         "",
-        "Друг получит скидку 5%.",
-        "Ты — 5% с его заказов на баланс.",
+        "Другу — скидка 5% на первый заказ.",
+        "Тебе — 5% с каждого его заказа на счёт.",
     ]
 
     if count > 0 or earnings > 0:
-        lines.extend(["", f"Приглашено: {count}", f"Заработано: {earnings:.0f}₽"])
+        lines.extend([
+            "",
+            f"Друзей приведено: {count}",
+            f"Заработано: {format_number(earnings)}₽",
+        ])
 
     text = "\n".join(lines)
 
