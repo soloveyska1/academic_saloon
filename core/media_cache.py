@@ -131,3 +131,24 @@ async def answer_cached_photo(
         reply_markup=reply_markup,
         **kwargs
     )
+
+
+async def get_cached_input_media_photo(
+    photo_path: Path,
+    caption: str = None,
+    **kwargs
+):
+    """
+    Получить InputMediaPhoto с использованием кэша file_id.
+    Если file_id закэширован — использует его, иначе — FSInputFile.
+    """
+    from aiogram.types import InputMediaPhoto
+
+    # Пробуем получить из кэша
+    cached_id = await get_cached_file_id(photo_path)
+
+    if cached_id:
+        return InputMediaPhoto(media=cached_id, caption=caption, **kwargs)
+
+    # Fallback на FSInputFile
+    return InputMediaPhoto(media=FSInputFile(photo_path), caption=caption, **kwargs)

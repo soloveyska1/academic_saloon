@@ -9,7 +9,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.enums import ChatAction, ParseMode
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,6 +40,7 @@ from bot.keyboards.profile import (
 from bot.services.logger import log_action, LogEvent
 from bot.states.order import OrderState
 from core.config import settings
+from core.media_cache import send_cached_photo
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -196,13 +197,13 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     except Exception:
         pass
 
-    # Пробуем отправить с фото, иначе — текстом
+    # Пробуем отправить с фото (с кэшированием file_id), иначе — текстом
     if PROFILE_IMAGE_PATH.exists():
         try:
-            photo = FSInputFile(PROFILE_IMAGE_PATH)
-            await bot.send_photo(
+            await send_cached_photo(
+                bot=bot,
                 chat_id=callback.message.chat.id,
-                photo=photo,
+                photo_path=PROFILE_IMAGE_PATH,
                 caption=caption,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -264,8 +265,8 @@ def build_orders_caption(counts: dict, filter_type: str) -> str:
 
 
 async def show_orders_list(callback: CallbackQuery, session: AsyncSession,
-                           filter_type: str, page: int, bot: Bot = None):
-    """Список заказов с фото"""
+                           filter_type: str, page: int):
+    """Список заказов с фото (с кэшированием file_id)"""
     telegram_id = callback.from_user.id
     counts = await get_order_counts(session, telegram_id)
 
@@ -281,9 +282,10 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession,
 
         if ORDERS_IMAGE_PATH.exists():
             try:
-                photo = FSInputFile(ORDERS_IMAGE_PATH)
-                await callback.message.answer_photo(
-                    photo=photo,
+                await send_cached_photo(
+                    bot=callback.bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=ORDERS_IMAGE_PATH,
                     caption=caption,
                     reply_markup=keyboard,
                     parse_mode=ParseMode.HTML,
@@ -330,9 +332,10 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession,
 
     if ORDERS_IMAGE_PATH.exists():
         try:
-            photo = FSInputFile(ORDERS_IMAGE_PATH)
-            await callback.message.answer_photo(
-                photo=photo,
+            await send_cached_photo(
+                bot=callback.bot,
+                chat_id=callback.message.chat.id,
+                photo_path=ORDERS_IMAGE_PATH,
                 caption=caption,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -471,10 +474,10 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession, bot:
 
     if ORDER_DETAIL_IMAGE_PATH.exists():
         try:
-            photo = FSInputFile(ORDER_DETAIL_IMAGE_PATH)
-            await bot.send_photo(
+            await send_cached_photo(
+                bot=bot,
                 chat_id=callback.message.chat.id,
-                photo=photo,
+                photo_path=ORDER_DETAIL_IMAGE_PATH,
                 caption=caption,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -711,10 +714,10 @@ async def show_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     if WALLET_IMAGE_PATH.exists():
         try:
-            photo = FSInputFile(WALLET_IMAGE_PATH)
-            await bot.send_photo(
+            await send_cached_photo(
+                bot=bot,
                 chat_id=callback.message.chat.id,
-                photo=photo,
+                photo_path=WALLET_IMAGE_PATH,
                 caption=caption,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -797,10 +800,10 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
 
     if REFERRAL_IMAGE_PATH.exists():
         try:
-            photo = FSInputFile(REFERRAL_IMAGE_PATH)
-            await bot.send_photo(
+            await send_cached_photo(
+                bot=bot,
                 chat_id=callback.message.chat.id,
-                photo=photo,
+                photo_path=REFERRAL_IMAGE_PATH,
                 caption=caption,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
