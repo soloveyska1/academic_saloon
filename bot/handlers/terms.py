@@ -26,6 +26,7 @@ from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard, get
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from bot.handlers.start import send_and_pin_status
+from core.media_cache import send_cached_photo
 
 router = Router()
 
@@ -185,11 +186,12 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             session=session,
         )
 
-        # Старым пользователям: сразу меню
+        # Старым пользователям: сразу меню (с кэшированием file_id)
         text = get_time_greeting()
-        photo = FSInputFile(settings.WELCOME_IMAGE)
-        await callback.message.answer_photo(
-            photo=photo,
+        await send_cached_photo(
+            bot=bot,
+            chat_id=callback.message.chat.id,
+            photo_path=settings.WELCOME_IMAGE,
             caption=text,
             reply_markup=get_main_menu_keyboard()
         )
@@ -229,12 +231,12 @@ async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
         details="Прослушал голосовое приветствие",
     )
 
-    # Теперь отправляем меню
+    # Теперь отправляем меню (с кэшированием file_id)
     text = get_time_greeting()
-    photo = FSInputFile(settings.WELCOME_IMAGE)
-    await bot.send_photo(
+    await send_cached_photo(
+        bot=bot,
         chat_id=chat_id,
-        photo=photo,
+        photo_path=settings.WELCOME_IMAGE,
         caption=text,
         reply_markup=get_main_menu_keyboard()
     )

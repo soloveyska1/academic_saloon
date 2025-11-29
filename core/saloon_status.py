@@ -7,12 +7,12 @@ import json
 import random
 import hashlib
 from enum import Enum
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from redis.asyncio import Redis
 
 from core.config import settings
+from core.redis_pool import get_redis
 
 
 class LoadStatus(str, Enum):
@@ -67,20 +67,9 @@ class SaloonStatusManager:
 
     REDIS_KEY = "saloon:status"
 
-    def __init__(self):
-        self._redis: Redis | None = None
-
-    async def _get_redis(self) -> Redis:
-        """Ленивая инициализация Redis соединения"""
-        if self._redis is None:
-            # Используем REDIS_DB_CACHE для кеша статуса
-            redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
-            self._redis = Redis.from_url(redis_url, decode_responses=True)
-        return self._redis
-
     async def get_status(self) -> SaloonStatus:
         """Получить текущий статус салуна"""
-        redis = await self._get_redis()
+        redis = await get_redis()
         data = await redis.get(self.REDIS_KEY)
 
         if data:
@@ -91,7 +80,7 @@ class SaloonStatusManager:
 
     async def save_status(self, status: SaloonStatus) -> None:
         """Сохранить статус салуна"""
-        redis = await self._get_redis()
+        redis = await get_redis()
         await redis.set(self.REDIS_KEY, json.dumps(status.to_dict()))
 
     async def set_load_status(self, load_status: LoadStatus) -> SaloonStatus:
@@ -136,11 +125,6 @@ class SaloonStatusManager:
         status.owner_last_activity = datetime.now(ZoneInfo("Europe/Moscow")).isoformat()
         await self.save_status(status)
         return status
-
-    async def close(self):
-        """Закрыть соединение с Redis"""
-        if self._redis:
-            await self._redis.close()
 
 
 def generate_people_online() -> int:

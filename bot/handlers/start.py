@@ -1,8 +1,6 @@
-import asyncio
-
 from aiogram import Router, Bot, F
 from aiogram.filters import CommandStart, CommandObject
-from aiogram.types import Message, ReplyKeyboardRemove, FSInputFile, CallbackQuery
+from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +20,7 @@ from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.daily_stats import get_live_stats_line
 from core.config import settings
 from core.saloon_status import saloon_manager, generate_status_message
+from core.media_cache import send_cached_photo
 
 router = Router()
 
@@ -136,10 +135,11 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             level=LogLevel.ACTION,
         )
 
-        # Показываем оферту с картинкой
-        photo = FSInputFile(settings.OFFER_IMAGE)
-        await message.answer_photo(
-            photo=photo,
+        # Показываем оферту с картинкой (с кэшированием file_id)
+        await send_cached_photo(
+            bot=bot,
+            chat_id=message.chat.id,
+            photo_path=settings.OFFER_IMAGE,
             caption=TERMS_SHORT,
             reply_markup=get_terms_short_keyboard()
         )
@@ -161,10 +161,11 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             session=session,
         )
 
-        # Показываем оферту с картинкой
-        photo = FSInputFile(settings.OFFER_IMAGE)
-        await message.answer_photo(
-            photo=photo,
+        # Показываем оферту с картинкой (с кэшированием file_id)
+        await send_cached_photo(
+            bot=bot,
+            chat_id=message.chat.id,
+            photo_path=settings.OFFER_IMAGE,
             caption=TERMS_SHORT,
             reply_markup=get_terms_short_keyboard()
         )
@@ -184,11 +185,10 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         session=session,
     )
 
-    # === ДИАЛОГОВЫЙ ЭФФЕКТ ===
+    # === БЫСТРЫЙ ОТВЕТ (оптимизировано) ===
 
-    # 1. Typing... (создаёт ощущение живого общения)
+    # 1. Typing для визуального отклика
     await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-    await asyncio.sleep(0.15)  # Минимальная задержка для UX
 
     # 2. Персонализированное приветствие по имени
     first_name = get_first_name(user.fullname)
@@ -209,12 +209,13 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     main_text = get_main_text(stats_line=stats_line, discount=discount)
     quote = get_welcome_quote()
 
-    # 6. Отправляем картинку с текстом и кнопками (одно сообщение!)
+    # 6. Отправляем картинку с текстом и кнопками (с кэшированием file_id)
     full_text = f"{greeting}\n\n{main_text}{quote}"
-    photo = FSInputFile(settings.WELCOME_IMAGE)
 
-    await message.answer_photo(
-        photo=photo,
+    await send_cached_photo(
+        bot=bot,
+        chat_id=message.chat.id,
+        photo_path=settings.WELCOME_IMAGE,
         caption=full_text,
         reply_markup=get_main_menu_keyboard()
     )

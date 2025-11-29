@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from aiogram import Router, F, Bot
 
 logger = logging.getLogger(__name__)
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,6 +43,7 @@ from bot.services.abandoned_detector import get_abandoned_tracker
 from bot.services.daily_stats import get_urgent_stats_line
 from bot.texts.terms import get_first_name
 from core.config import settings
+from core.media_cache import send_cached_photo
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -65,19 +66,16 @@ async def check_rate_limit(user_id: int) -> bool:
     Проверяет rate limit для создания заказов.
     Возвращает True если можно создавать, False если лимит превышен.
     """
-    from redis.asyncio import Redis
+    from core.redis_pool import get_redis
 
     try:
-        redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
-        redis = Redis.from_url(redis_url, decode_responses=True)
-
+        redis = await get_redis()
         key = f"rate:order:{user_id}"
         count = await redis.incr(key)
 
         if count == 1:
             await redis.expire(key, RATE_LIMIT_WINDOW)
 
-        await redis.close()
         return count <= RATE_LIMIT_ORDERS
     except Exception as e:
         logger.warning(f"Rate limit check failed: {e}")
@@ -373,15 +371,16 @@ async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext,
 
 Что нужно сделать?{discount_line}"""
 
-    # Удаляем старое сообщение и отправляем с картинкой
+    # Удаляем старое сообщение и отправляем с картинкой (с кэшированием file_id)
     try:
         await callback.message.delete()
     except Exception:
         pass
 
-    photo = FSInputFile(settings.ORDER_IMAGE)
-    await callback.message.answer_photo(
-        photo=photo,
+    await send_cached_photo(
+        bot=bot,
+        chat_id=callback.message.chat.id,
+        photo_path=settings.ORDER_IMAGE,
         caption=text,
         reply_markup=get_work_category_keyboard()
     )
@@ -1436,7 +1435,7 @@ def format_order_description(attachments: list) -> str:
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "order_back_to_type")
-async def back_to_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def back_to_type(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """Назад к выбору типа работы (категории)"""
     await callback.answer("⏳")
     await state.set_state(OrderState.choosing_type)
@@ -1453,15 +1452,16 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
 
 Что нужно сделать?{discount_line}"""
 
-    # Удаляем старое и отправляем с картинкой
+    # Удаляем старое и отправляем с картинкой (с кэшированием file_id)
     try:
         await callback.message.delete()
     except Exception:
         pass
 
-    photo = FSInputFile(settings.ORDER_IMAGE)
-    await callback.message.answer_photo(
-        photo=photo,
+    await send_cached_photo(
+        bot=bot,
+        chat_id=callback.message.chat.id,
+        photo_path=settings.ORDER_IMAGE,
         caption=text,
         reply_markup=get_work_category_keyboard()
     )
@@ -1630,15 +1630,16 @@ async def cancel_order(callback: CallbackQuery, state: FSMContext, bot: Bot, ses
 
     await state.clear()
 
-    # Удаляем старое сообщение и отправляем с картинкой
+    # Удаляем старое сообщение и отправляем с картинкой (с кэшированием file_id)
     try:
         await callback.message.delete()
     except Exception:
         pass
 
-    photo = FSInputFile(settings.CANCEL_IMAGE)
-    await callback.message.answer_photo(
-        photo=photo,
+    await send_cached_photo(
+        bot=bot,
+        chat_id=callback.message.chat.id,
+        photo_path=settings.CANCEL_IMAGE,
         caption="🌵  <b>Заявка отменена</b>\n\n"
                 "Возвращайся, когда будешь готов, партнёр.",
         reply_markup=get_back_keyboard()

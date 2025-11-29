@@ -6,30 +6,18 @@
 
 import json
 from datetime import datetime, timedelta
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware, Bot
 from aiogram.types import TelegramObject, Update
-from redis.asyncio import Redis
 
 from core.config import settings
+from core.redis_pool import get_redis
 from bot.services.logger import BotLogger, LogEvent, LogLevel
 
 # Настройки антиспама
 MAX_MESSAGES_PER_MINUTE = 10  # Максимум сообщений в минуту
 MUTE_DURATION_SECONDS = 300   # Время мута (5 минут)
-
-# Глобальное соединение Redis (инициализируется лениво)
-_redis: Optional[Redis] = None
-
-
-async def get_antispam_redis() -> Redis:
-    """Получить соединение с Redis для антиспама"""
-    global _redis
-    if _redis is None:
-        redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB_CACHE}"
-        _redis = Redis.from_url(redis_url, decode_responses=True)
-    return _redis
 
 
 class AntiSpamMiddleware(BaseMiddleware):
@@ -59,7 +47,7 @@ class AntiSpamMiddleware(BaseMiddleware):
 
         user_id = user.id
         now = datetime.now()
-        redis = await get_antispam_redis()
+        redis = await get_redis()
 
         # Ключи в Redis
         mute_key = f"antispam:mute:{user_id}"
