@@ -543,7 +543,7 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
 
 
 @router.callback_query(OrderState.choosing_type, F.data == "back_to_categories")
-async def back_to_categories(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def back_to_categories(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """Назад к выбору категории"""
     await callback.answer("⏳")
 
@@ -559,7 +559,16 @@ async def back_to_categories(callback: CallbackQuery, state: FSMContext, session
 
 Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
 
-    await callback.message.edit_caption(
+    # Удаляем старое и отправляем новое фото (универсально работает для любых сообщений)
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await send_cached_photo(
+        bot=bot,
+        chat_id=callback.message.chat.id,
+        photo_path=ZAKAZ_IMAGE_PATH,
         caption=text,
         reply_markup=get_work_category_keyboard()
     )
