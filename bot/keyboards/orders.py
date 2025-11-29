@@ -330,51 +330,63 @@ WORKS_REQUIRE_SUBJECT = {
     WorkType.PRACTICE,
 }
 
-# Направления/предметы
+# Направления/предметы — короткие и понятные названия
 SUBJECTS = {
-    "economics": "📊 Экономика / Менеджмент / Финансы",
-    "law": "⚖️ Юриспруденция",
-    "it": "💻 IT / Программирование",
-    "technical": "🔧 Инженерное / Техническое",
-    "pedagogy": "👨‍🏫 Педагогика / Психология",
-    "humanities": "📖 История / Философия / Социология",
-    "natural": "🧪 Физика / Химия / Биология",
-    "medicine": "🏥 Медицина / Фармация",
-    "other": "❓ Другое",
+    "economics": "💰 Экономика",
+    "law": "⚖️ Право",
+    "it": "💻 IT и Код",
+    "technical": "⚙️ Технарь",
+    "psychology": "🧠 Психология",
+    "humanities": "📚 Гуманитарные",
+    "natural": "🧪 Естеств. науки",
+    "medicine": "🏥 Медицина",
+    "other": "🤠 Другое / Не нашел",
 }
 
 
 def get_subject_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура выбора направления.
-    С кнопкой "Пропустить" для тех, кто не хочет выбирать.
+    Клавиатура выбора направления — компактная 2-колоночная сетка.
     """
-    buttons = []
-
-    # Кнопка "Пропустить" сверху — быстрый путь
-    buttons.append([
-        InlineKeyboardButton(
-            text="⏭ Пропустить — укажу в задании",
-            callback_data="subject:skip"
-        ),
-    ])
-
-    # Направления по одному в ряд (лучше читается на мобильных)
-    for key, label in SUBJECTS.items():
-        buttons.append([
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        # Row 1: Пропустить (full width)
+        [
             InlineKeyboardButton(
-                text=label,
-                callback_data=f"subject:{key}"
-            )
-        ])
-
-    # Назад и отмена
-    buttons.append([
-        InlineKeyboardButton(text="◀️ Назад", callback_data="order_back_to_type"),
-        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+                text="⏩ Пропустить (Сам опишу)",
+                callback_data="subject:skip"
+            ),
+        ],
+        # Row 2: Экономика | Право
+        [
+            InlineKeyboardButton(text="💰 Экономика", callback_data="subject:economics"),
+            InlineKeyboardButton(text="⚖️ Право", callback_data="subject:law"),
+        ],
+        # Row 3: IT | Технарь
+        [
+            InlineKeyboardButton(text="💻 IT и Код", callback_data="subject:it"),
+            InlineKeyboardButton(text="⚙️ Технарь", callback_data="subject:technical"),
+        ],
+        # Row 4: Психология | Гуманитарные
+        [
+            InlineKeyboardButton(text="🧠 Психология", callback_data="subject:psychology"),
+            InlineKeyboardButton(text="📚 Гуманитарные", callback_data="subject:humanities"),
+        ],
+        # Row 5: Естеств. науки | Медицина
+        [
+            InlineKeyboardButton(text="🧪 Естеств. науки", callback_data="subject:natural"),
+            InlineKeyboardButton(text="🏥 Медицина", callback_data="subject:medicine"),
+        ],
+        # Row 6: Другое (full width)
+        [
+            InlineKeyboardButton(text="🤠 Другое / Не нашел", callback_data="subject:other"),
+        ],
+        # Row 7: Навигация
+        [
+            InlineKeyboardButton(text="🔙 Назад", callback_data="order_back_to_type"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ],
     ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
+    return kb
 
 
 # ══════════════════════════════════════════════════════════════

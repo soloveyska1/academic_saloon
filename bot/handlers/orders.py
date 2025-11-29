@@ -14,6 +14,7 @@ ZAKAZ_IMAGE_PATH = Path(__file__).parent.parent / "media" / "zakaz.jpg"
 SMALL_TASKS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "small_tasks.jpg"
 KURS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "kurs_otc.jpg"
 DIPLOMA_IMAGE_PATH = Path(__file__).parent.parent / "media" / "diploma.jpg"
+DIRECTIONS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "directions.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -855,16 +856,32 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
     # Крупные работы — спрашиваем направление
     await state.set_state(OrderState.choosing_subject)
 
-    text = f"""📚  <b>{work_label}</b>
+    caption = f"""🎯 <b>Выбирай мишень</b>
 
-Укажи направление — это поможет подобрать специалиста:"""
+В какой сфере проблема, ковбой?
+Укажи тему, чтобы я знал, какого специалиста поднимать с постели."""
 
     try:
         await callback.message.delete()
     except Exception:
         pass
 
-    await callback.message.answer(text, reply_markup=get_subject_keyboard())
+    # Отправляем с фото если есть
+    if DIRECTIONS_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=DIRECTIONS_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_subject_keyboard(),
+            )
+            return
+        except Exception:
+            pass
+
+    # Fallback на текст
+    await callback.message.answer(caption, reply_markup=get_subject_keyboard())
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1699,21 +1716,34 @@ async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: A
     # Для крупных — показываем выбор направления
     await state.set_state(OrderState.choosing_subject)
 
-    work_label = WORK_TYPE_LABELS.get(work_type, work_type_value)
+    caption = """🎯 <b>Выбирай мишень</b>
 
-    text = f"""📚  <b>{work_label}</b>
+В какой сфере проблема, ковбой?
+Укажи тему, чтобы я знал, какого специалиста поднимать с постели."""
 
-Укажи направление — это поможет подобрать специалиста:"""
-
-    # Удаляем старое (может быть фото) и отправляем текст
+    # Удаляем старое (может быть фото)
     try:
         await callback.message.delete()
     except Exception:
         pass
 
+    # Отправляем с фото если есть
+    if DIRECTIONS_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=DIRECTIONS_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_subject_keyboard(),
+            )
+            return
+        except Exception:
+            pass
+
     await bot.send_message(
         chat_id=callback.message.chat.id,
-        text=text,
+        text=caption,
         reply_markup=get_subject_keyboard()
     )
 
