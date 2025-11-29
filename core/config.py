@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     OFFER_IMAGE: Path = BASE_DIR / "bot" / "media" / "saloon_welcome.jpg"
     ORDER_IMAGE: Path = BASE_DIR / "bot" / "media" / "bar_saloon.jpg"
     MENU_IMAGE: Path = BASE_DIR / "bot" / "media" / "back_saloon.jpg"
-    CANCEL_IMAGE: Path = BASE_DIR / "bot" / "media" / "cancel_saloon.jpg"
+    CANCEL_IMAGE: Path = BASE_DIR / "bot" / "media" / "otmena.jpg"
     ERROR_IMAGE: Path = BASE_DIR / "bot" / "media" / "tech_pause.jpg"
     TASK_INPUT_IMAGE: Path = BASE_DIR / "bot" / "media" / "Kontr.jpg"
     KURS_IMAGE: Path = BASE_DIR / "bot" / "media" / "kurs.jpg"
