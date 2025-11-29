@@ -9,8 +9,9 @@ from aiogram import Router, F, Bot
 
 logger = logging.getLogger(__name__)
 
-# Путь к изображению для заказа
+# Пути к изображениям для заказа
 ZAKAZ_IMAGE_PATH = Path(__file__).parent.parent / "media" / "zakaz.jpg"
+SMALL_TASKS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "small_tasks.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -25,6 +26,7 @@ from bot.keyboards.orders import (
     get_work_type_keyboard,
     get_work_category_keyboard,
     get_category_works_keyboard,
+    get_small_works_keyboard,
     get_subject_keyboard,
     get_task_input_keyboard,
     get_task_continue_keyboard,
@@ -487,7 +489,47 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         )
         return
 
-    # Показываем типы работ в категории
+    # Для мелких работ — специальный layout с фото и ценами в caption
+    if category_key == "small":
+        caption = """📝 <b>Малые формы</b>
+
+Быстрые задачи. Обычно делаем за 1-3 дня.
+
+🔹 <b>Контрольная</b> ......... от 1 400 ₽
+🔹 <b>Эссе / Реферат</b> ..... от 900 ₽
+🔹 <b>Презентация</b> ........ от 1 900 ₽
+🔹 <b>Самостоятельная</b> .. от 2 400 ₽
+
+<i>Выбери тип работы ниже:</i>"""
+
+        # Удаляем старое и отправляем с фото
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        if SMALL_TASKS_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=SMALL_TASKS_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_small_works_keyboard(),
+                )
+                return
+            except Exception as e:
+                logger.warning(f"Не удалось отправить фото small_tasks: {e}")
+
+        # Fallback на текст
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_small_works_keyboard(),
+        )
+        return
+
+    # Показываем типы работ в категории (для остальных категорий)
     text = f"""🎯  <b>{category['label']}</b>
 
 <i>{category['description']}</i>

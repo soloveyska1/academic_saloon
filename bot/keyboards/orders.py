@@ -133,6 +133,35 @@ def get_category_works_keyboard(category_key: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
+def get_small_works_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура для мелких работ — чистая 2-колоночная сетка.
+    Без цен и сроков в кнопках (информация в caption).
+    """
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        # Row 1
+        [
+            InlineKeyboardButton(text="📝 Контрольная", callback_data=f"order_type:{WorkType.CONTROL.value}"),
+            InlineKeyboardButton(text="📄 Реферат", callback_data=f"order_type:{WorkType.REPORT.value}"),
+        ],
+        # Row 2
+        [
+            InlineKeyboardButton(text="✍️ Эссе", callback_data=f"order_type:{WorkType.ESSAY.value}"),
+            InlineKeyboardButton(text="📊 Презентация", callback_data=f"order_type:{WorkType.PRESENTATION.value}"),
+        ],
+        # Row 3
+        [
+            InlineKeyboardButton(text="📖 Самостоятельная", callback_data=f"order_type:{WorkType.INDEPENDENT.value}"),
+        ],
+        # Row 4: Навигация
+        [
+            InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_categories"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ],
+    ])
+    return kb
+
+
 def get_work_type_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура выбора типа работы с ценами и сроками.
