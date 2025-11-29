@@ -905,7 +905,21 @@ async def process_subject(callback: CallbackQuery, state: FSMContext, bot: Bot, 
     await state.set_state(OrderState.entering_task)
 
     data = await state.get_data()
-    work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
+
+    # Защита от потери state
+    work_type_value = data.get("work_type")
+    if not work_type_value:
+        # State потерян — возвращаем к началу
+        await callback.message.answer(
+            "⚠️ Что-то пошло не так. Давай начнём заново.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="📝 Оформить заказ", callback_data="create_order")]
+            ])
+        )
+        await state.clear()
+        return
+
+    work_label = WORK_TYPE_LABELS.get(WorkType(work_type_value), work_type_value)
 
     # Некритичные операции
     try:
@@ -932,8 +946,8 @@ async def process_subject(callback: CallbackQuery, state: FSMContext, bot: Bot, 
 
     # Передаём work_type для контекстного текста
     try:
-        work_type = WorkType(data["work_type"])
-    except (KeyError, ValueError):
+        work_type = WorkType(work_type_value)
+    except ValueError:
         work_type = None
 
     await show_task_input_screen(callback.message, work_type=work_type)
