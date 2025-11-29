@@ -77,18 +77,31 @@ class User(Base):
             return {
                 "has_next": False,
                 "current_name": current_level[1] if current_level else "Новичок",
+                "progress_bar": "▓▓▓▓▓▓▓▓▓▓",
+                "progress_text": "MAX",
             }
 
         orders_needed = next_level[0] - self.orders_count
+        current_min = current_level[0] if current_level else 0
+        progress_in_level = self.orders_count - current_min
+        level_size = next_level[0] - current_min
+
+        # Визуальный прогресс-бар (10 символов)
+        filled = int((progress_in_level / level_size) * 10) if level_size > 0 else 0
+        filled = min(filled, 10)
+        progress_bar = "▓" * filled + "░" * (10 - filled)
+
         return {
             "has_next": True,
-            "current_name": current_level[1],
+            "current_name": current_level[1] if current_level else "Новичок",
             "next_name": next_level[1],
             "next_emoji": next_level[2],
             "next_discount": next_level[3],
             "orders_needed": orders_needed,
             "orders_current": self.orders_count,
             "orders_target": next_level[0],
+            "progress_bar": progress_bar,
+            "progress_text": f"{self.orders_count}/{next_level[0]}",
         }
 
     @property

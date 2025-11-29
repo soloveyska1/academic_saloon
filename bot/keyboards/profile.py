@@ -25,24 +25,24 @@ WORK_TYPE_SHORT = {
 }
 
 
-def get_profile_dashboard_keyboard(active_orders: int = 0, balance: float = 0) -> InlineKeyboardMarkup:
-    """Главная клавиатура ЛК"""
+def get_profile_dashboard_keyboard(active_orders: int = 0) -> InlineKeyboardMarkup:
+    """Главная клавиатура ЛК — премиальная раскладка"""
     buttons = []
 
-    # Заказы
-    orders_text = "Мои заказы"
+    # Row 1: Главное действие — заказы (на всю ширину)
+    orders_text = "📦 Мои заказы"
     if active_orders > 0:
         orders_text += f" ({active_orders})"
     buttons.append([InlineKeyboardButton(text=orders_text, callback_data="profile_orders")])
 
-    # Счёт и друзья в ряд (без дублирования баланса)
+    # Row 2: Вторичные действия (два столбца)
     buttons.append([
-        InlineKeyboardButton(text="Счёт", callback_data="profile_balance"),
-        InlineKeyboardButton(text="Позвать друга", callback_data="profile_referral"),
+        InlineKeyboardButton(text="💳 Пополнить счёт", callback_data="profile_balance"),
+        InlineKeyboardButton(text="🤝 Позвать друга", callback_data="profile_referral"),
     ])
 
-    # Назад
-    buttons.append([InlineKeyboardButton(text="← Меню", callback_data="back_to_menu")])
+    # Row 3: Навигация (на всю ширину)
+    buttons.append([InlineKeyboardButton(text="🔙 В главное меню", callback_data="back_to_menu")])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
