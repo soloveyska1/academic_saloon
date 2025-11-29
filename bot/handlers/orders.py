@@ -17,6 +17,7 @@ KURS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "kurs_otc.jpg"
 DIPLOMA_IMAGE_PATH = Path(__file__).parent.parent / "media" / "diploma.jpg"
 DIRECTIONS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "directions.jpg"
 DEADLINE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "deadline.jpg"
+URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "urgent.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -50,10 +51,8 @@ from bot.keyboards.orders import (
     WORK_CATEGORIES,
     WORKS_REQUIRE_SUBJECT,
 )
-from core.saloon_status import saloon_manager, get_owner_status
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
-from bot.services.daily_stats import get_urgent_stats_line
 from bot.texts.terms import get_first_name
 from core.config import settings
 from core.media_cache import send_cached_photo
@@ -435,56 +434,42 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         except Exception:
             pass
 
-        # 2. Typing + первое сообщение (эмпатия)
-        first_name = get_first_name(callback.from_user.full_name)
-        await callback.message.answer(f"🔥 <b>Понял, {first_name}! Разберёмся.</b>")
-
-        # Получаем статус Хозяина
-        status = await saloon_manager.get_status()
-        owner_emoji, owner_text = get_owner_status(status)
-
-        # Адаптивный текст по статусу
-        if owner_emoji == "🟢":
-            response_time = "⏱ Отвечу за 5-15 минут"
-        elif owner_emoji == "🟡":
-            response_time = "⏱ Скорее всего отвечу быстро"
-        else:
-            # Ночь или offline
-            msk_hour = datetime.now(MSK_TZ).hour
-            if msk_hour < 9:
-                response_time = "⏱ Отвечу до 9:00 МСК"
-            else:
-                response_time = "⏱ Отвечу как только смогу"
-
-        # Статистика срочных (социальное доказательство)
-        stats_line = ""
-        try:
-            urgent_stats = await get_urgent_stats_line()
-            if urgent_stats:
-                stats_line = f"\n{urgent_stats}"
-        except Exception:
-            pass
+        # === СРОЧНЫЙ ЗАКАЗ — КОД КРАСНЫЙ ===
 
         # Время суток — ночью особый текст
         msk_hour = datetime.now(MSK_TZ).hour
-        night_line = "\n🌙 Да, работаем даже сейчас!" if 0 <= msk_hour < 6 else ""
+        night_line = "\n🌙 Да, работаем даже ночью!" if 0 <= msk_hour < 6 else ""
 
-        text = f"""🚨 <b>СРОЧНЫЙ ЗАКАЗ</b>
+        caption = f"""🚨 <b>КОД КРАСНЫЙ</b>
 
-Выдыхай — справимся!{night_line}
+Горит? Понял. Это наша специализация.{night_line}
 
-{owner_emoji} <b>{owner_text}</b>
-{response_time}
-{stats_line}
+Пока другие спят — мы вытаскиваем из задницы тех, кто дотянул до последнего. Без осуждения, без лишних вопросов. Только результат.
 
 ───────────
 
 <b>Когда нужно сдать?</b>
-<i>Выбери срок — это влияет на цену</i>"""
+<i>Надбавка за скорость — честная плата за бессонные ночи:</i>"""
 
-        await callback.message.answer(
-            text=text,
-            reply_markup=get_urgent_order_keyboard()
+        # Пробуем отправить с картинкой
+        if URGENT_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=URGENT_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_urgent_order_keyboard(),
+                )
+                return
+            except Exception as e:
+                logger.warning(f"Не удалось отправить фото urgent: {e}")
+
+        # Fallback на текст
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_urgent_order_keyboard(),
         )
         return
 
@@ -737,50 +722,40 @@ async def back_to_urgent(callback: CallbackQuery, state: FSMContext, bot: Bot):
     except Exception:
         pass
 
-    # Получаем статус Хозяина
-    status = await saloon_manager.get_status()
-    owner_emoji, owner_text = get_owner_status(status)
-
-    # Адаптивный текст по статусу
-    if owner_emoji == "🟢":
-        response_time = "⏱ Отвечу за 5-15 минут"
-    elif owner_emoji == "🟡":
-        response_time = "⏱ Скорее всего отвечу быстро"
-    else:
-        msk_hour = datetime.now(MSK_TZ).hour
-        if msk_hour < 9:
-            response_time = "⏱ Отвечу до 9:00 МСК"
-        else:
-            response_time = "⏱ Отвечу как только смогу"
-
-    # Статистика
-    stats_line = ""
-    try:
-        urgent_stats = await get_urgent_stats_line()
-        if urgent_stats:
-            stats_line = f"\n{urgent_stats}"
-    except Exception:
-        pass
-
+    # Время суток — ночью особый текст
     msk_hour = datetime.now(MSK_TZ).hour
-    night_line = "\n🌙 Да, работаем даже сейчас!" if 0 <= msk_hour < 6 else ""
+    night_line = "\n🌙 Да, работаем даже ночью!" if 0 <= msk_hour < 6 else ""
 
-    text = f"""🚨 <b>СРОЧНЫЙ ЗАКАЗ</b>
+    caption = f"""🚨 <b>КОД КРАСНЫЙ</b>
 
-Выдыхай — справимся!{night_line}
+Горит? Понял. Это наша специализация.{night_line}
 
-{owner_emoji} <b>{owner_text}</b>
-{response_time}
-{stats_line}
+Пока другие спят — мы вытаскиваем из задницы тех, кто дотянул до последнего. Без осуждения, без лишних вопросов. Только результат.
 
 ───────────
 
 <b>Когда нужно сдать?</b>
-<i>Выбери срок — это влияет на цену</i>"""
+<i>Надбавка за скорость — честная плата за бессонные ночи:</i>"""
 
-    await callback.message.answer(
-        text=text,
-        reply_markup=get_urgent_order_keyboard()
+    # Пробуем отправить с картинкой
+    if URGENT_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=URGENT_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_urgent_order_keyboard(),
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото urgent: {e}")
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_urgent_order_keyboard(),
     )
 
 

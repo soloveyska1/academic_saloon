@@ -406,7 +406,7 @@ def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
     if now.hour < 20:
         buttons.append([
             InlineKeyboardButton(
-                text="⚡ Сдать сегодня (+50%)",
+                text="🚀 Нужно вчера (+50%)",
                 callback_data="urgent_deadline:today"
             )
         ])
@@ -422,7 +422,7 @@ def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
     # 2-3 дня
     buttons.append([
         InlineKeyboardButton(
-            text="📅 2-3 дня (+15%)",
+            text="🏎 Турбо (2-3 дня, +15%)",
             callback_data="urgent_deadline:3_days"
         )
     ])
@@ -430,7 +430,7 @@ def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
     # Просто скинуть — для тех кто в панике
     buttons.append([
         InlineKeyboardButton(
-            text="📸 Просто скинуть — разберёмся",
+            text="🤷‍♂️ Не знаю / Просто начни",
             callback_data="urgent_deadline:asap"
         )
     ])
