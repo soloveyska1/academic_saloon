@@ -52,32 +52,33 @@ WORK_CATEGORIES = {
 def get_work_category_keyboard() -> InlineKeyboardMarkup:
     """
     Первый уровень: выбор категории работ.
-    Компактное меню из 5 кнопок + отмена.
+    Компактная 2-колоночная сетка для экономии места.
     """
-    buttons = []
-
-    for key, category in WORK_CATEGORIES.items():
-        buttons.append([
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        # Row 1: Популярные
+        [
+            InlineKeyboardButton(text="📝 Мелкие работы", callback_data="work_category:small"),
+            InlineKeyboardButton(text="📚 Курсовая / Практика", callback_data="work_category:medium"),
+        ],
+        # Row 2: Крупные и срочные
+        [
+            InlineKeyboardButton(text="🎓 Дипломы", callback_data="work_category:large"),
+            InlineKeyboardButton(text="🔥 Срочно! Горит!", callback_data="work_category:urgent"),
+        ],
+        # Row 3: Прочее и помощь
+        [
+            InlineKeyboardButton(text="📎 Другое / Не знаю", callback_data="work_category:other"),
             InlineKeyboardButton(
-                text=category["label"],
-                callback_data=f"work_category:{key}"
+                text="💬 Помощь с выбором",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             ),
-        ])
-
-    # Кнопка "Спросить" для тех, кто не определился
-    buttons.append([
-        InlineKeyboardButton(
-            text="💬 Спросить — помогу выбрать",
-            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
-        ),
+        ],
+        # Row 4: Отмена (полная ширина)
+        [
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ],
     ])
-
-    # Кнопка отмены
-    buttons.append([
-        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order")
-    ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
+    return kb
 
 
 def get_category_works_keyboard(category_key: str) -> InlineKeyboardMarkup:
