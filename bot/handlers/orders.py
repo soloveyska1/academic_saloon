@@ -1705,7 +1705,17 @@ async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: A
 
 Укажи направление — это поможет подобрать специалиста:"""
 
-    await callback.message.edit_text(text, reply_markup=get_subject_keyboard())
+    # Удаляем старое (может быть фото) и отправляем текст
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=text,
+        reply_markup=get_subject_keyboard()
+    )
 
 
 @router.callback_query(F.data == "order_back_to_task")
@@ -1732,7 +1742,15 @@ async def back_to_task(callback: CallbackQuery, state: FSMContext):
 {preview}
 
 Добавить ещё или продолжить?"""
-        await callback.message.edit_text(text, reply_markup=get_task_continue_keyboard())
+        # Безопасное редактирование (может быть фото или текст)
+        try:
+            await callback.message.edit_text(text, reply_markup=get_task_continue_keyboard())
+        except Exception:
+            try:
+                await callback.message.delete()
+            except Exception:
+                pass
+            await callback.message.answer(text, reply_markup=get_task_continue_keyboard())
     else:
         await show_task_input_screen(callback.message, work_type=work_type)
 
@@ -1755,7 +1773,15 @@ async def edit_order(callback: CallbackQuery, state: FSMContext):
 
     text = """✏️  <b>Что изменить?</b>"""
 
-    await callback.message.edit_text(text, reply_markup=get_edit_order_keyboard(show_subject=show_subject))
+    # Безопасное редактирование (может быть фото или текст)
+    try:
+        await callback.message.edit_text(text, reply_markup=get_edit_order_keyboard(show_subject=show_subject))
+    except Exception:
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+        await callback.message.answer(text, reply_markup=get_edit_order_keyboard(show_subject=show_subject))
 
 
 @router.callback_query(F.data == "back_to_confirm")
