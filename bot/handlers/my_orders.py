@@ -126,25 +126,30 @@ def format_price_breakdown(order: Order) -> str:
 
 
 def get_order_preview(order: Order) -> str:
-    """Краткое превью заказа для списка"""
+    """Краткое превью заказа для списка — чистый дизайн для мобилки"""
     emoji = STATUS_EMOJI.get(order.status, "📋")
     work_label = order.work_type_label.split(" ", 1)[-1]  # Убираем эмодзи из типа
 
-    # Цена или статус
+    # Первая строка: номер, тип, статус
+    line1 = f"<b>#{order.id}</b> · {work_label} · {emoji}"
+
+    # Вторая строка: цена и дата/дедлайн
+    parts = []
+
     if order.price > 0:
-        price_str = f"{order.final_price:.0f}₽"
+        parts.append(f"{order.final_price:.0f}₽")
     else:
-        price_str = "оценка"
+        parts.append("оценка")
 
-    # Дата
-    date_str = format_smart_date(order.created_at)
-
-    # Дедлайн для активных
-    deadline_str = ""
+    # Для активных показываем дедлайн, для остальных — дату
     if order.status in ACTIVE_STATUSES and order.deadline:
-        deadline_str = f" · до {order.deadline}"
+        parts.append(f"до {order.deadline}")
+    else:
+        parts.append(format_smart_date(order.created_at))
 
-    return f"<b>#{order.id}</b> · {work_label} · {emoji}\n    {price_str} · {date_str}{deadline_str}"
+    line2 = " · ".join(parts)
+
+    return f"{line1}\n{line2}"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -389,17 +394,18 @@ async def show_orders_list(
     orders_result = await session.execute(orders_query)
     orders = orders_result.scalars().all()
 
-    # Формируем текст
+    # Формируем текст — чистый дизайн без рамок
     loyalty_status, discount = user.loyalty_status if user else ("Новичок", 0)
+    orders_count = user.orders_count if user else 0
+    total_spent = user.total_spent if user else 0
 
+    # Компактный заголовок
+    discount_str = f" · {discount}% скидка" if discount > 0 else ""
     header = f"""📋  <b>Мои заказы</b>
 
-┌─────────────────────────┐
-│ 🏆 Статус: {loyalty_status}
-│ 📦 Заказов: {user.orders_count if user else 0}
-│ 💰 Потрачено: {user.total_spent:.0f}₽
-│ 🎁 Скидка: {discount}%
-└─────────────────────────┘
+🏆 {loyalty_status}{discount_str}
+📦 {orders_count} заказов на {total_spent:.0f}₽
+
 """
 
     if not orders:
@@ -454,44 +460,41 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession, bot:
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    # Формируем текст деталей
+    # Формируем текст деталей — чистый дизайн
     emoji = STATUS_EMOJI.get(order.status, "📋")
     status_desc = STATUS_DESCRIPTIONS.get(order.status, "")
 
-    # Основная информация
+    # Заголовок и статус
     text = f"""📋  <b>Заказ #{order.id}</b>
 
-◈ <b>Тип:</b> {order.work_type_label}"""
+{emoji} <b>{order.status_label}</b>
+<i>{status_desc}</i>
+
+"""
+
+    # Информация о заказе
+    text += f"<b>Тип:</b> {order.work_type_label}"
 
     if order.subject:
-        text += f"\n◈ <b>Направление:</b> {order.subject}"
-
-    text += f"""
-◈ <b>Статус:</b> {emoji} {order.status_label}
-<i>{status_desc}</i>
-"""
+        text += f"\n<b>Направление:</b> {order.subject}"
 
     if order.deadline:
-        text += f"\n◈ <b>Срок:</b> {order.deadline}"
+        text += f"\n<b>Срок:</b> {order.deadline}"
 
-    # Финансы
-    text += f"""
+    # Финансы — компактно
+    text += f"\n\n<b>Стоимость</b>\n{format_price_breakdown(order)}"
 
-━━━ Финансы ━━━
-{format_price_breakdown(order)}
-"""
-
-    # История статусов
-    text += "\n━━━ История ━━━"
+    # История — компактно
+    text += "\n\n<b>История</b>"
 
     if order.created_at:
-        text += f"\n{format_smart_date(order.created_at)} · 🆕 Создан"
+        text += f"\n🆕 {format_smart_date(order.created_at)} — создан"
 
     if order.status != OrderStatus.PENDING.value and order.updated_at:
-        text += f"\n{format_smart_date(order.updated_at)} · {emoji} {order.status_label}"
+        text += f"\n{emoji} {format_smart_date(order.updated_at)}"
 
     if order.completed_at:
-        text += f"\n{format_smart_date(order.completed_at)} · ✨ Завершён"
+        text += f"\n✨ {format_smart_date(order.completed_at)} — завершён"
 
     keyboard = get_order_detail_keyboard(order)
 
