@@ -20,6 +20,7 @@ PROFILE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cab_saloon.jpg"
 ORDERS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "my_order.jpg"
 ORDER_DETAIL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "delo.jpg"
 WALLET_IMAGE_PATH = Path(__file__).parent.parent / "media" / "wallet.jpg"
+REFERRAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "ref.jpg"
 
 from database.models.users import User
 from database.models.orders import (
@@ -735,8 +736,37 @@ async def show_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 #                    ДРУЗЬЯ
 # ══════════════════════════════════════════════════════════════
 
+def build_referral_caption(ref_link: str, count: int, earnings: float) -> str:
+    """Формирует caption для реферальной программы — стиль 'Банда'"""
+    lines = [
+        "🤠 <b>Сколоти свою банду!</b>",
+        "",
+        "В одиночку на Диком Западе сложно.",
+        "Зови друзей — будем грабить знания вместе!",
+        "",
+        "💎 <b>Другу:</b> Скидка <b>5%</b> на первый заказ",
+        "💰 <b>Тебе:</b> Пожизненные <b>5%</b> с его оплат",
+    ]
+
+    # Статистика (если есть)
+    if count > 0 or earnings > 0:
+        lines.append("")
+        lines.append(f"📊 В банде: <b>{count}</b> | Добыча: <b>{format_number(earnings)}₽</b>")
+
+    lines.extend([
+        "",
+        "👇 <i>Твоя ссылка (жми, чтобы скопировать):</i>",
+        f"<code>{ref_link}</code>",
+        "",
+        "<i>Чем больше банда, тем больше добыча!</i>",
+    ])
+
+    return "\n".join(lines)
+
+
 @router.callback_query(F.data == "profile_referral")
 async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Реферальная программа — фото с caption в стиле 'Банда'"""
     await callback.answer()
 
     telegram_id = callback.from_user.id
@@ -756,28 +786,36 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
     except Exception:
         pass
 
-    lines = [
-        "👥 <b>Позови друга в салун</b>",
-        "",
-        f"<code>{ref_link}</code>",
-        "",
-        "Другу — скидка 5% на первый заказ.",
-        "Тебе — 5% с каждого его заказа на счёт.",
-    ]
+    caption = build_referral_caption(ref_link, count, earnings)
+    keyboard = get_referral_keyboard(ref_link)
 
-    if count > 0 or earnings > 0:
-        lines.extend([
-            "",
-            f"Друзей приведено: {count}",
-            f"Заработано: {format_number(earnings)}₽",
-        ])
-
-    text = "\n".join(lines)
-
+    # Удаляем старое и отправляем фото
     try:
-        await callback.message.edit_text(text, reply_markup=get_referral_keyboard(ref_link))
+        await callback.message.delete()
     except Exception:
-        await callback.message.answer(text, reply_markup=get_referral_keyboard(ref_link))
+        pass
+
+    if REFERRAL_IMAGE_PATH.exists():
+        try:
+            photo = FSInputFile(REFERRAL_IMAGE_PATH)
+            await bot.send_photo(
+                chat_id=callback.message.chat.id,
+                photo=photo,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото рефералки: {e}")
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
 
 
 # ══════════════════════════════════════════════════════════════
