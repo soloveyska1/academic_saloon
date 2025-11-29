@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     TASK_INPUT_IMAGE: Path = BASE_DIR / "bot" / "media" / "Kontr.jpg"
     KURS_IMAGE: Path = BASE_DIR / "bot" / "media" / "kurs_otc.jpg"
     DIPLOMA_IMAGE: Path = BASE_DIR / "bot" / "media" / "diploma.jpg"
+    DIRECTIONS_IMAGE: Path = BASE_DIR / "bot" / "media" / "directions.jpg"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
