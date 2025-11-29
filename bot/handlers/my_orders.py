@@ -41,6 +41,7 @@ from bot.services.logger import log_action, LogEvent
 from bot.states.order import OrderState
 from core.config import settings
 from core.media_cache import send_cached_photo
+from bot.utils.message_helpers import safe_edit_or_send
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -500,7 +501,7 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession, bot:
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data.startswith("cancel_user_order:"))
-async def cancel_order_request(callback: CallbackQuery, session: AsyncSession):
+async def cancel_order_request(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     await callback.answer()
 
     parts = callback.data.split(":")
@@ -536,10 +537,7 @@ async def cancel_order_request(callback: CallbackQuery, session: AsyncSession):
 
     keyboard = get_cancel_order_confirm_keyboard(order_id)
 
-    try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
-    except Exception:
-        await callback.message.answer(text, reply_markup=keyboard)
+    await safe_edit_or_send(callback, text, reply_markup=keyboard, bot=bot)
 
 
 @router.callback_query(F.data.startswith("confirm_cancel_order:"))
@@ -593,10 +591,7 @@ async def confirm_cancel_order(callback: CallbackQuery, session: AsyncSession, b
         [InlineKeyboardButton(text="К заказам", callback_data="profile_orders")],
     ])
 
-    try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
-    except Exception:
-        await callback.message.answer(text, reply_markup=keyboard)
+    await safe_edit_or_send(callback, text, reply_markup=keyboard, bot=bot)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -604,7 +599,7 @@ async def confirm_cancel_order(callback: CallbackQuery, session: AsyncSession, b
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data.startswith("reorder:"))
-async def reorder(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def reorder(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     await callback.answer()
 
     parts = callback.data.split(":")
@@ -647,14 +642,7 @@ async def reorder(callback: CallbackQuery, state: FSMContext, session: AsyncSess
 
     from bot.keyboards.orders import get_deadline_keyboard
 
-    try:
-        await callback.message.edit_text(text, reply_markup=get_deadline_keyboard())
-    except Exception:
-        try:
-            await callback.message.delete()
-        except Exception:
-            pass
-        await callback.message.answer(text, reply_markup=get_deadline_keyboard())
+    await safe_edit_or_send(callback, text, reply_markup=get_deadline_keyboard(), bot=bot)
 
 
 # ══════════════════════════════════════════════════════════════

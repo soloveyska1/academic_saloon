@@ -57,6 +57,7 @@ from bot.services.daily_stats import get_urgent_stats_line
 from bot.texts.terms import get_first_name
 from core.config import settings
 from core.media_cache import send_cached_photo
+from bot.utils.message_helpers import safe_edit_or_send
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -310,14 +311,7 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
             [InlineKeyboardButton(text="⏳ Подожду", callback_data="back_to_menu")],
         ])
 
-        if callback.message.text:
-            await callback.message.edit_text(limit_text, reply_markup=keyboard)
-        else:
-            try:
-                await callback.message.delete()
-            except Exception:
-                pass
-            await callback.message.answer(limit_text, reply_markup=keyboard)
+        await safe_edit_or_send(callback, limit_text, reply_markup=keyboard, bot=bot)
         return
 
     await _proceed_to_order_creation(callback, state, bot, session)
@@ -1135,7 +1129,7 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_add_more")
-async def task_add_more(callback: CallbackQuery, state: FSMContext):
+async def task_add_more(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Пользователь хочет добавить ещё файлов"""
     await callback.answer("Кидай ещё!")
 
@@ -1157,7 +1151,7 @@ async def task_add_more(callback: CallbackQuery, state: FSMContext):
 Кидай файлы, фото или текст.
 Когда всё — нажми «Готово»."""
 
-    await callback.message.edit_text(text, reply_markup=get_task_input_keyboard())
+    await safe_edit_or_send(callback, text, reply_markup=get_task_input_keyboard(), bot=bot)
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_clear")
@@ -1275,7 +1269,7 @@ async def process_deadline_choice(callback: CallbackQuery, state: FSMContext, bo
 Напиши когда нужно получить работу.
 
 <i>Например: до 15 декабря, к понедельнику</i>"""
-        await callback.message.edit_text(text, reply_markup=get_custom_deadline_keyboard())
+        await safe_edit_or_send(callback, text, reply_markup=get_custom_deadline_keyboard(), bot=bot)
         return
 
     deadline_label = DEADLINES.get(deadline_key, deadline_key)
@@ -1425,7 +1419,7 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     if send_new:
         await callback.message.answer(text, reply_markup=get_confirm_order_keyboard())
     else:
-        await callback.message.edit_text(text, reply_markup=get_confirm_order_keyboard())
+        await safe_edit_or_send(callback, text, reply_markup=get_confirm_order_keyboard(), bot=bot)
 
 
 def format_attachments_summary(attachments: list) -> str:
@@ -1554,7 +1548,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
 Пиши: @{settings.SUPPORT_USERNAME}"""
 
-    await callback.message.edit_text(text, reply_markup=get_back_keyboard())
+    await safe_edit_or_send(callback, text, reply_markup=get_back_keyboard(), bot=bot)
 
     # Уведомление админам со всеми вложениями
     await notify_admins_new_order(bot, callback.from_user, order, data)
@@ -1802,7 +1796,7 @@ async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: A
 
 
 @router.callback_query(F.data == "order_back_to_task")
-async def back_to_task(callback: CallbackQuery, state: FSMContext):
+async def back_to_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Назад к вводу задания"""
     await callback.answer("⏳")
     await state.set_state(OrderState.entering_task)
@@ -1825,21 +1819,13 @@ async def back_to_task(callback: CallbackQuery, state: FSMContext):
 {preview}
 
 Добавить ещё или продолжить?"""
-        # Безопасное редактирование (может быть фото или текст)
-        try:
-            await callback.message.edit_text(text, reply_markup=get_task_continue_keyboard())
-        except Exception:
-            try:
-                await callback.message.delete()
-            except Exception:
-                pass
-            await callback.message.answer(text, reply_markup=get_task_continue_keyboard())
+        await safe_edit_or_send(callback, text, reply_markup=get_task_continue_keyboard(), bot=bot)
     else:
         await show_task_input_screen(callback.message, work_type=work_type)
 
 
 @router.callback_query(OrderState.confirming, F.data == "order_edit")
-async def edit_order(callback: CallbackQuery, state: FSMContext):
+async def edit_order(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Редактирование заказа — выбор что изменить"""
     await callback.answer("⏳")
 
@@ -1856,15 +1842,7 @@ async def edit_order(callback: CallbackQuery, state: FSMContext):
 
     text = """✏️  <b>Что изменить?</b>"""
 
-    # Безопасное редактирование (может быть фото или текст)
-    try:
-        await callback.message.edit_text(text, reply_markup=get_edit_order_keyboard(show_subject=show_subject))
-    except Exception:
-        try:
-            await callback.message.delete()
-        except Exception:
-            pass
-        await callback.message.answer(text, reply_markup=get_edit_order_keyboard(show_subject=show_subject))
+    await safe_edit_or_send(callback, text, reply_markup=get_edit_order_keyboard(show_subject=show_subject), bot=bot)
 
 
 @router.callback_query(F.data == "back_to_confirm")
