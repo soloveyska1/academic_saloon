@@ -293,6 +293,7 @@ async def cmd_error_preview(message: Message, bot: Bot):
 async def admin_error_preview(callback: CallbackQuery, bot: Bot):
     """Превью сообщения об ошибке — кнопка в админке"""
     if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
         return
 
     await callback.answer("Отправляю превью...")
@@ -2793,7 +2794,7 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
 <i>Можешь пока расслабиться в салуне, партнёр.</i>"""
 
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🌵 В салун (Главное меню)", callback_data="main_menu")],
+        [InlineKeyboardButton(text="🌵 В салун (Главное меню)", callback_data="back_to_menu")],
         [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
     ])
 
