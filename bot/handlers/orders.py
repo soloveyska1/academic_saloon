@@ -1477,14 +1477,6 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     # Формируем общие данные превью
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
 
-    # Направление — показываем только если было указано
-    subject = data.get("subject")
-    subject_line = None
-    if subject == "photo_task":
-        subject_line = "📸 Фото задания"
-    elif subject and subject != "skip":
-        subject_line = data.get("subject_label", "Не указано")
-
     # Срок с реальной датой
     deadline_key = data.get("deadline", "")
     deadline_label = data.get("deadline_label", "Не указан")
@@ -1494,53 +1486,67 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     else:
         deadline_display = deadline_label
 
-    # Вложения — улучшенный формат
+    # Вложения — подсчитываем количество файлов
     attachments = data.get("attachments", [])
-    attachments_preview = format_attachments_preview(attachments)
+    file_count = len(attachments)
 
-    # Формируем общие строки
-    subject_text = f"\n◈  <b>Направление:</b> {subject_line}" if subject_line else ""
-    discount_line = f"\n🎁  <b>Скидка:</b> {discount}%" if discount > 0 else ""
+    # Извлекаем текстовый комментарий пользователя (если есть)
+    user_comment = None
+    for att in attachments:
+        if att.get("type") == "text":
+            user_comment = att.get("content", "")
+            break
 
-    # Блок деталей заказа (общий для всех)
-    details_block = f"""◈  <b>Тип:</b> {work_label}{subject_text}
-◈  <b>Срок:</b> {deadline_display}
-◈  <b>Материалы:</b>
-{attachments_preview}
-{discount_line}"""
+    # ═══════════════════════════════════════════════════════════════
+    #   SCENARIO A: SPECIAL ORDER (🕵️‍♂️ Dossier Style)
+    # ═══════════════════════════════════════════════════════════════
+    if is_special:
+        # Форматируем комментарий как цитату
+        comment_block = ""
+        if user_comment:
+            comment_block = f"\n\n<i>«{user_comment[:200]}{'...' if len(user_comment) > 200 else ''}»</i>"
 
-    # === SCENARIO A: URGENT ORDER ===
-    if is_urgent:
-        caption = f"""🚨 <b>Готовность к запуску...</b>
+        caption = f"""📂 <b>МАТЕРИАЛЫ ДЕЛА</b>
 
-{details_block}
+<b>Статус:</b> 🦄 Спецзадача
+<b>Дедлайн:</b> <code>{deadline_display}</code>
+<b>Улики:</b> {file_count} файл(ов){comment_block}
 
-Времени в обрез. Проверь вводные беглым взглядом.
-Если всё верно — жми на газ, и мы начинаем."""
-
-        confirm_btn_text = "🚀 ПУСК (Отправить)"
-        image_path = CONFIRM_URGENT_IMAGE_PATH
-
-    # === SCENARIO B: SPECIAL/UNIQUE ORDER ===
-    elif is_special:
-        caption = f"""🕵️‍♂️ <b>Досье собрано</b>
-
-{details_block}
-
-Так, я всё зафиксировал. Проверь, не упустили ли мы чего важного в этой схеме.
-Если всё чисто — отправляю шифровку Шерифу лично в руки."""
+<i>Так, я всё зафиксировал. Проверь, не упустили ли мы чего...</i>"""
 
         confirm_btn_text = "📮 Отправить шифровку"
         image_path = CONFIRM_SPECIAL_IMAGE_PATH
 
-    # === SCENARIO C: STANDARD ORDER ===
+    # ═══════════════════════════════════════════════════════════════
+    #   SCENARIO B: URGENT ORDER (🚀 Launch Protocol)
+    # ═══════════════════════════════════════════════════════════════
+    elif is_urgent:
+        caption = f"""🚀 <b>ПРЕДПОЛЁТНАЯ ПРОВЕРКА</b>
+
+✅ <b>Задача:</b> {work_label}
+⏱ <b>Таймер:</b> <code>{deadline_display}</code>
+📦 <b>Груз:</b> {file_count} файл(ов)
+
+⚠️ <b>Режим:</b> ФОРСАЖ <code>(Priority High)</code>
+
+<i>Времени в обрез. Проверь вводные беглым взглядом...</i>"""
+
+        confirm_btn_text = "🚀 ПУСК (Отправить)"
+        image_path = CONFIRM_URGENT_IMAGE_PATH
+
+    # ═══════════════════════════════════════════════════════════════
+    #   SCENARIO C: STANDARD ORDER (📄 Contract Style)
+    # ═══════════════════════════════════════════════════════════════
     else:
-        caption = f"""🤝 <b>Сверим часы, партнёр</b>
+        # Скидка показывается ТОЛЬКО для стандартных заказов
+        discount_line = f"\n🎁 <b>Бонус:</b> Скидка {discount}%" if discount > 0 else ""
 
-{details_block}
+        caption = f"""📄 <b>ЧЕРНОВИК КОНТРАКТА</b>
 
-Проверь, всё ли верно записано в контракте.
-Если да — ударяем по рукам, и я запускаю процесс."""
+📌 <b>Тип:</b> {work_label}
+📅 <b>Срок:</b> <code>{deadline_display}</code>{discount_line}
+
+<i>Проверь, всё ли верно записано...</i>"""
 
         confirm_btn_text = "✅ Всё верно (Отправить)"
         image_path = CONFIRM_STD_IMAGE_PATH
