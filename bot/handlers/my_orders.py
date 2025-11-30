@@ -414,8 +414,9 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     else:
         caption = build_gamified_profile_caption(user, telegram_id)
 
-    # Daily luck cooldown check (VIP Muse = always available)
-    if vip_muse:
+    # Daily luck cooldown check (Admins and VIP Muse = always available for testing)
+    can_bypass_cooldown = vip_muse or is_admin(callback.from_user)
+    if can_bypass_cooldown:
         daily_luck_available = True
         cooldown_text = None
     else:
@@ -1103,11 +1104,14 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Сначала создай профиль!", show_alert=True)
         return
 
-    # Check for VIP Muse status
+    # Check for VIP Muse status (affects UI display)
     vip_muse = is_vip_muse(callback.from_user)
 
-    # Check cooldown (VIP Muse bypasses cooldown)
-    if not vip_muse and not user.can_claim_daily_bonus:
+    # Check if user can bypass cooldown (Admins + Muse = unlimited for testing)
+    can_bypass_cooldown = vip_muse or is_admin(callback.from_user)
+
+    # Check cooldown (Admins and VIP Muse bypass cooldown)
+    if not can_bypass_cooldown and not user.can_claim_daily_bonus:
         cooldown = user.daily_bonus_cooldown
         await callback.answer(
             f"Барабан ещё остывает! Попробуй через {cooldown['remaining_text']}",
@@ -1148,8 +1152,8 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
     # Update user balance
     user.balance += bonus_amount
 
-    # Only set cooldown for non-VIP users
-    if not vip_muse:
+    # Only set cooldown for regular users (Admins and VIP Muse bypass)
+    if not can_bypass_cooldown:
         try:
             user.last_daily_bonus_at = datetime.now(MSK_TZ)
         except Exception:
