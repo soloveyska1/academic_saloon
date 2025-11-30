@@ -20,6 +20,7 @@ DEADLINE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "deadline.jpg"
 URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "urgent_bell.jpg"
 SECRET_IMAGE_PATH = Path(__file__).parent.parent / "media" / "secret.jpg"
 FAST_UPLOAD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "fast_upload.jpg"
+INVESTIGATION_IMAGE_PATH = Path(__file__).parent.parent / "media" / "investigation.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -983,8 +984,51 @@ async def show_task_input_screen(
     """
     Показать экран ввода задания с фото.
     Дружелюбный интерфейс с инструкциями.
+    Для спецзаказов (OTHER) — особый экран "Материалы дела".
     """
-    # Универсальный текст — дружелюбный и информативный
+    bot = message.bot
+    chat_id = message.chat.id
+
+    # === СПЕЦЗАКАЗ: Особый экран "Материалы дела" ===
+    if work_type == WorkType.OTHER:
+        caption = """🕵️‍♂️ <b>Материалы дела</b>
+
+Так, давай подробности. Раз задача нестандартная, мне нужно понять, во что мы ввязываемся.
+
+Не стесняйся. Скидывай всё: черновики, фото доски, или запиши голосовое с объяснениями на пальцах. Чем страннее задача — тем интереснее вызов.
+
+<i>Жду улики...</i>"""
+
+        # Удаляем старое сообщение
+        if not send_new:
+            try:
+                await message.delete()
+            except Exception:
+                pass
+
+        # Пробуем отправить с картинкой investigation.jpg
+        if INVESTIGATION_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=chat_id,
+                    photo_path=INVESTIGATION_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_task_input_keyboard(),
+                )
+                return
+            except Exception:
+                pass
+
+        # Fallback на текст
+        await bot.send_message(
+            chat_id=chat_id,
+            text=caption,
+            reply_markup=get_task_input_keyboard(),
+        )
+        return
+
+    # === СТАНДАРТНЫЙ ЭКРАН ===
     caption = """📥  <b>Приём материалов</b>
 
 Выкладывай всё, что есть по задаче.
@@ -997,9 +1041,6 @@ async def show_task_input_screen(
 ✍️ <b>Или просто напиши тему и требования текстом</b>
 
 <i>Жду твои файлы... Можно кидать по одному или пачкой.</i>"""
-
-    bot = message.bot
-    chat_id = message.chat.id
 
     # Удаляем старое сообщение
     if not send_new:
