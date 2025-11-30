@@ -2320,3 +2320,199 @@ async def start_order_creation(message: Message, state: FSMContext = None):
 Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете."""
 
     await message.answer(text, reply_markup=get_work_category_keyboard())
+
+
+# ══════════════════════════════════════════════════════════════
+#               P2P PAYMENT: RECEIPT HANDLER
+# ══════════════════════════════════════════════════════════════
+
+@router.message(OrderState.waiting_for_receipt, F.photo)
+async def receive_payment_receipt(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+    """Получен скриншот чека — пересылаем админам для проверки"""
+    data = await state.get_data()
+    order_id = data.get("receipt_order_id")
+
+    if not order_id:
+        await message.answer("❌ Ошибка: заказ не найден. Попробуй ещё раз.")
+        await state.clear()
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await message.answer("❌ Заказ не найден")
+        await state.clear()
+        return
+
+    # Проверяем что заказ ещё не оплачен
+    if order.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]:
+        await message.answer("✅ Этот заказ уже оплачен!")
+        await state.clear()
+        return
+
+    # Очищаем состояние
+    await state.clear()
+
+    # Отправляем подтверждение клиенту
+    client_text = f"""✅ <b>Чек получен!</b>
+
+Заказ #{order.id} · {order.price:.0f}₽
+
+⏳ Проверяю оплату, обычно пара минут.
+Напишу сразу как увижу перевод! 🤠"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💬 Написать в поддержку",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )]
+    ])
+
+    await message.answer(client_text, reply_markup=keyboard)
+
+    # Пересылаем чек админам с кнопками подтверждения
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    admin_caption = f"""📸 <b>Получен чек об оплате!</b>
+
+📋 Заказ: #{order.id}
+📝 {work_label}
+💰 Сумма: {order.price:.0f}₽
+
+👤 Клиент: @{message.from_user.username or 'без username'}
+🆔 ID: <code>{message.from_user.id}</code>"""
+
+    # Клавиатура с кнопками подтверждения
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="✅ Подтвердить",
+                callback_data=f"confirm_payment:{order.id}"
+            ),
+            InlineKeyboardButton(
+                text="❌ Не пришло",
+                callback_data=f"reject_payment:{order.id}:{message.from_user.id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="💬 Написать клиенту",
+                url=f"tg://user?id={message.from_user.id}"
+            )
+        ],
+    ])
+
+    # Отправляем фото чека всем админам
+    photo = message.photo[-1]  # Берём самое большое качество
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_photo(
+                chat_id=admin_id,
+                photo=photo.file_id,
+                caption=admin_caption,
+                reply_markup=admin_keyboard,
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить чек админу {admin_id}: {e}")
+
+
+@router.message(OrderState.waiting_for_receipt, F.document)
+async def receive_payment_receipt_document(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+    """Получен документ (PDF чека) — пересылаем админам"""
+    data = await state.get_data()
+    order_id = data.get("receipt_order_id")
+
+    if not order_id:
+        await message.answer("❌ Ошибка: заказ не найден. Попробуй ещё раз.")
+        await state.clear()
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await message.answer("❌ Заказ не найден")
+        await state.clear()
+        return
+
+    # Проверяем что заказ ещё не оплачен
+    if order.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]:
+        await message.answer("✅ Этот заказ уже оплачен!")
+        await state.clear()
+        return
+
+    # Очищаем состояние
+    await state.clear()
+
+    # Отправляем подтверждение клиенту
+    client_text = f"""✅ <b>Чек получен!</b>
+
+Заказ #{order.id} · {order.price:.0f}₽
+
+⏳ Проверяю оплату, обычно пара минут.
+Напишу сразу как увижу перевод! 🤠"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💬 Написать в поддержку",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )]
+    ])
+
+    await message.answer(client_text, reply_markup=keyboard)
+
+    # Пересылаем документ админам
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    admin_caption = f"""📄 <b>Получен чек об оплате!</b>
+
+📋 Заказ: #{order.id}
+📝 {work_label}
+💰 Сумма: {order.price:.0f}₽
+
+👤 Клиент: @{message.from_user.username or 'без username'}
+🆔 ID: <code>{message.from_user.id}</code>"""
+
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="✅ Подтвердить",
+                callback_data=f"confirm_payment:{order.id}"
+            ),
+            InlineKeyboardButton(
+                text="❌ Не пришло",
+                callback_data=f"reject_payment:{order.id}:{message.from_user.id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="💬 Написать клиенту",
+                url=f"tg://user?id={message.from_user.id}"
+            )
+        ],
+    ])
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_document(
+                chat_id=admin_id,
+                document=message.document.file_id,
+                caption=admin_caption,
+                reply_markup=admin_keyboard,
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить документ админу {admin_id}: {e}")
+
+
+@router.message(OrderState.waiting_for_receipt)
+async def waiting_for_receipt_invalid(message: Message):
+    """Пользователь отправил что-то кроме фото/документа"""
+    await message.answer(
+        "📸 <b>Жду скриншот чека!</b>\n\n"
+        "Пожалуйста, отправь фото или файл с чеком об оплате."
+    )

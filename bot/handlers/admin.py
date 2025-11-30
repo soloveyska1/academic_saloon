@@ -1,9 +1,13 @@
 import logging
+from pathlib import Path
 from typing import Optional
 
 from aiogram import Router, F, Bot
 
 logger = logging.getLogger(__name__)
+
+# Пути к изображениям для P2P оплаты
+PAYMENT_REQUEST_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_request.jpg"
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
@@ -26,6 +30,8 @@ from core.saloon_status import (
     get_random_saloon_quote,
 )
 from bot.states.admin import AdminStates
+from bot.states.order import OrderState
+from core.media_cache import send_cached_photo
 
 router = Router()
 
@@ -3317,3 +3323,282 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     await message.answer(response)
     logger.info(f"[/paid] Команда выполнена успешно")
+
+
+# ══════════════════════════════════════════════════════════════
+#               P2P PAYMENT FLOW: /offer COMMAND
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("offer"), StateFilter("*"))
+async def cmd_offer(message: Message, command: CommandObject, session: AsyncSession, bot: Bot, state: FSMContext):
+    """
+    Отправить клиенту предложение с ценой (P2P Payment Flow)
+    Использование: /offer [order_id] [сумма] [комментарий]
+    Пример: /offer 123 5000 Курсовая по экономике, 30 страниц
+    """
+    if not is_admin(message.from_user.id):
+        return
+    await state.clear()
+
+    if not command.args:
+        await message.answer(
+            "❌ <b>Использование:</b>\n"
+            "<code>/offer [order_id] [сумма] [комментарий]</code>\n\n"
+            "<b>Пример:</b>\n"
+            "<code>/offer 123 5000 Курсовая по экономике</code>"
+        )
+        return
+
+    args = command.args.split(maxsplit=2)
+    if len(args) < 2:
+        await message.answer(
+            "❌ Укажите ID заказа и сумму\n"
+            "Пример: /offer 123 5000 Комментарий"
+        )
+        return
+
+    try:
+        order_id = int(args[0])
+        amount = float(args[1])
+    except ValueError:
+        await message.answer("❌ ID заказа и сумма должны быть числами")
+        return
+
+    if amount <= 0:
+        await message.answer("❌ Сумма должна быть больше 0")
+        return
+
+    # Комментарий опционален
+    admin_comment = args[2] if len(args) > 2 else ""
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await message.answer(f"❌ Заказ #{order_id} не найден")
+        return
+
+    # Обновляем заказ
+    order.price = amount
+    order.admin_notes = admin_comment
+    order.status = OrderStatus.CONFIRMED.value
+    await session.commit()
+
+    # Формируем сообщение для клиента
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    comment_line = f"\n💬 <b>Комментарий:</b> {admin_comment}" if admin_comment else ""
+
+    client_text = f"""🪙 <b>Цена вопроса</b>
+
+Эксперты оценили объём работ. Чтобы мы начали стрелять (писать), нужно зарядить обойму.
+
+💰 <b>Сумма:</b> <code>{amount:.0f}</code> руб.{comment_line}
+
+<i>Если устраивает — жми кнопку, дам реквизиты.</i>"""
+
+    # Клавиатура с кнопкой принятия
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💰 Ударить по рукам (Оплатить)",
+            callback_data=f"accept_offer:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="💬 Есть вопрос",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+    ])
+
+    # Отправляем клиенту с картинкой
+    try:
+        if PAYMENT_REQUEST_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=order.user_id,
+                    photo_path=PAYMENT_REQUEST_IMAGE_PATH,
+                    caption=client_text,
+                    reply_markup=keyboard,
+                )
+            except Exception as e:
+                logger.warning(f"Не удалось отправить payment_request image: {e}")
+                await bot.send_message(order.user_id, client_text, reply_markup=keyboard)
+        else:
+            await bot.send_message(order.user_id, client_text, reply_markup=keyboard)
+
+        await message.answer(
+            f"✅ Предложение отправлено!\n\n"
+            f"📋 Заказ: #{order.id}\n"
+            f"💰 Сумма: {amount:.0f}₽\n"
+            f"💬 Комментарий: {admin_comment or '—'}"
+        )
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить сообщение клиенту: {e}")
+
+
+@router.callback_query(F.data.startswith("accept_offer:"))
+async def accept_offer_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Клиент принял предложение — показываем реквизиты для P2P оплаты"""
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Проверяем что заказ ещё не оплачен
+    if order.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]:
+        await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
+        return
+
+    await callback.answer("🤝 Отлично! Показываю реквизиты...")
+
+    # Показываем реквизиты для P2P оплаты
+    payment_text = f"""💳 <b>Куда кидать золото</b>
+
+<code>89196739120</code>
+(Т-Банк / Сбер)
+
+👤 Получатель: <b>Семен Юрьевич С.</b>
+
+💰 <b>Сумма:</b> <code>{order.price:.0f}</code> руб.
+
+━━━━━━━━━━━━━━━━━━━━━━
+⚠️ <b>Важно:</b> После перевода обязательно скинь скриншот чека сюда!"""
+
+    # Клавиатура
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📤 Я оплатил (Скинуть чек)",
+            callback_data=f"send_receipt:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="💬 Проблема с оплатой",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+    ])
+
+    await callback.message.edit_text(payment_text, reply_markup=keyboard)
+
+    # Уведомляем админов что клиент принял предложение
+    admin_text = f"""🤝 <b>Клиент принял предложение!</b>
+
+📋 Заказ: #{order.id}
+💰 Сумма: {order.price:.0f}₽
+👤 Клиент: @{callback.from_user.username or 'без username'}
+
+Ожидаем оплату и чек..."""
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, admin_text)
+        except Exception:
+            pass
+
+
+@router.callback_query(F.data.startswith("send_receipt:"))
+async def send_receipt_callback(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
+    """Клиент нажал 'Скинуть чек' — переводим в режим ожидания скриншота"""
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Проверяем что заказ ещё не оплачен
+    if order.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]:
+        await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
+        return
+
+    await callback.answer("📸 Жду скриншот чека!")
+
+    # Сохраняем order_id в state и переводим в состояние ожидания чека
+    await state.update_data(receipt_order_id=order_id)
+    await state.set_state(OrderState.waiting_for_receipt)
+
+    # Обновляем сообщение
+    waiting_text = f"""📸 <b>Жду скриншот чека!</b>
+
+Заказ #{order.id} · {order.price:.0f}₽
+
+Просто отправь фото или скриншот чека в этот чат.
+
+<i>После проверки я сразу приступлю к работе! 🤠</i>"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="❌ Отмена",
+            callback_data=f"cancel_receipt:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="💬 Проблема с оплатой",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+    ])
+
+    await callback.message.edit_text(waiting_text, reply_markup=keyboard)
+
+
+@router.callback_query(F.data.startswith("cancel_receipt:"))
+async def cancel_receipt_callback(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
+    """Отмена отправки чека — возврат к реквизитам"""
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Очищаем состояние
+    await state.clear()
+    await callback.answer("Отменено")
+
+    # Возвращаем к реквизитам
+    payment_text = f"""💳 <b>Куда кидать золото</b>
+
+<code>89196739120</code>
+(Т-Банк / Сбер)
+
+👤 Получатель: <b>Семен Юрьевич С.</b>
+
+💰 <b>Сумма:</b> <code>{order.price:.0f}</code> руб.
+
+━━━━━━━━━━━━━━━━━━━━━━
+⚠️ <b>Важно:</b> После перевода обязательно скинь скриншот чека сюда!"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📤 Я оплатил (Скинуть чек)",
+            callback_data=f"send_receipt:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="💬 Проблема с оплатой",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+    ])
+
+    await callback.message.edit_text(payment_text, reply_markup=keyboard)
