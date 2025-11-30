@@ -124,10 +124,19 @@ SALOON_CONFIRMATIONS = [
 ]
 
 
-def get_attachment_confirm_text(attachment: dict, count: int, is_urgent: bool = False) -> str:
+def get_attachment_confirm_text(
+    attachment: dict,
+    count: int,
+    is_urgent: bool = False,
+    is_special: bool = False,
+) -> str:
     """
-    Генерирует умное подтверждение в зависимости от типа вложения.
-    Использует рандомные ответы в стиле Салуна.
+    Генерирует умное подтверждение в зависимости от типа вложения и flow.
+
+    Flows:
+    - is_urgent: Срочный заказ → быстрый, энергичный ответ
+    - is_special: Спецзаказ/Уникальная задача → интрига, экспертный анализ
+    - Стандартный: Рандомные ответы в стиле Салуна
     """
     att_type = attachment.get("type", "unknown")
 
@@ -149,21 +158,30 @@ def get_attachment_confirm_text(attachment: dict, count: int, is_urgent: bool = 
             else:
                 extra = f"\n🎤 <i>Голосовое {secs} сек</i>"
 
-    # Рандомный ответ из списка
-    base_text = random.choice(SALOON_CONFIRMATIONS)
-
-    # Для срочных — особое подтверждение
-    if is_urgent and count == 1:
-        return f"""✅ <b>Задание получено!</b>
-
-{base_text}{extra}
-
-⏳ Оцениваю объём...
-<i>Напишу через пару минут с ценой и сроком</i>"""
-
-    # Для срочных при добавлении
+    # === CASE A: СРОЧНЫЙ ЗАКАЗ ===
     if is_urgent:
-        return f"{base_text}{extra}\n📎 Всего: {pluralize_files(count)}"
+        if count == 1:
+            return f"""⚡️ <b>Поймал!</b>
+
+Уже несу Шерифу на стол бегом.{extra}
+
+<i>Никуда не уходи — вернусь с ценой быстрее, чем вылетит пуля.</i>"""
+        else:
+            return f"⚡️ <b>Ещё один!</b>{extra}\n📎 Всего: {pluralize_files(count)}"
+
+    # === CASE B: СПЕЦЗАКАЗ / УНИКАЛЬНАЯ ЗАДАЧА ===
+    if is_special:
+        if count == 1:
+            return f"""🧐 <b>Любопытный случай...</b>
+
+Материал принял.{extra}
+
+Тут нужно покумекать. Сейчас изучу детали под лупой и скажу, как мы это провернём."""
+        else:
+            return f"🧐 <b>Ещё улики...</b>{extra}\n📎 Всего материалов: {pluralize_files(count)}"
+
+    # === CASE C: СТАНДАРТНЫЙ FLOW ===
+    base_text = random.choice(SALOON_CONFIRMATIONS)
 
     # Счётчик если больше одного
     if count > 1:
@@ -1091,6 +1109,10 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
     attachments = data.get("attachments", [])
     is_urgent = data.get("is_urgent", False)
 
+    # Определяем, спецзаказ ли это (WorkType.OTHER)
+    work_type_value = data.get("work_type", "")
+    is_special = work_type_value == WorkType.OTHER.value
+
     # Проверка лимита
     if len(attachments) >= MAX_ATTACHMENTS:
         await message.answer(
@@ -1191,7 +1213,7 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
 
         # Умное подтверждение по типу контента
         count = len(attachments)
-        confirm_text = get_attachment_confirm_text(attachment, count, is_urgent)
+        confirm_text = get_attachment_confirm_text(attachment, count, is_urgent, is_special)
 
         # Добавляем инфо о пересылке
         if attachment.get("forwarded"):
