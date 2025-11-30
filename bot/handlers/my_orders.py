@@ -52,7 +52,33 @@ from bot.services.logger import log_action, LogEvent
 from bot.states.order import OrderState, CouponState
 from core.config import settings
 from core.media_cache import send_cached_photo
+from core.redis_pool import get_redis
 from bot.utils.message_helpers import safe_edit_or_send
+
+
+# Константы для кэша купонов в Redis
+COUPON_USAGE_PREFIX = "coupon_used:"
+COUPON_USAGE_TTL = 60 * 60 * 24 * 365  # 1 год
+
+
+async def is_coupon_used(user_id: int, coupon_code: str) -> bool:
+    """Проверяет, использовал ли пользователь данный купон"""
+    try:
+        redis = await get_redis()
+        key = f"{COUPON_USAGE_PREFIX}{user_id}:{coupon_code}"
+        return await redis.exists(key) > 0
+    except Exception:
+        return False
+
+
+async def mark_coupon_used(user_id: int, coupon_code: str) -> None:
+    """Отмечает купон как использованный"""
+    try:
+        redis = await get_redis()
+        key = f"{COUPON_USAGE_PREFIX}{user_id}:{coupon_code}"
+        await redis.set(key, "1", ex=COUPON_USAGE_TTL)
+    except Exception:
+        pass
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -1475,12 +1501,31 @@ async def process_coupon_code(message: Message, session: AsyncSession, state: FS
     coupon_data = VALID_COUPONS.get(code)
 
     if coupon_data:
+        # Check if user already used this coupon
+        if await is_coupon_used(telegram_id, code):
+            lines = [
+                "🎟 <b>КУПОН УЖЕ ИСПОЛЬЗОВАН</b>",
+                "",
+                f"❌ Ты уже активировал код <code>{code}</code>.",
+                "",
+                "Каждый купон можно использовать только один раз.",
+            ]
+            await message.answer(
+                "\n".join(lines),
+                reply_markup=get_coupon_result_keyboard(False),
+                parse_mode=ParseMode.HTML,
+            )
+            return
+
         # Apply coupon
         bonus_amount = coupon_data["amount"]
         description = coupon_data["description"]
 
         user.balance += bonus_amount
         await session.commit()
+
+        # Mark coupon as used
+        await mark_coupon_used(telegram_id, code)
 
         # Log
         try:

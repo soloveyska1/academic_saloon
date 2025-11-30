@@ -3,6 +3,7 @@
 Все логи отправляются в канал LOG_CHANNEL_ID.
 """
 
+import logging
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -377,7 +378,6 @@ class BotLogger:
 
         except Exception as e:
             # Логируем локально если не удалось отправить в канал
-            import logging
             logging.error(f"Failed to send log to channel: {e}")
             return None
 
@@ -456,7 +456,6 @@ class BotLogger:
             return msg.message_id
 
         except Exception as e:
-            import logging
             logging.error(f"Failed to send error log to channel: {e}")
             return None
 
