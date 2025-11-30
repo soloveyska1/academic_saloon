@@ -223,7 +223,7 @@ async def show_my_balance(callback: CallbackQuery, session: AsyncSession, bot: B
 на свои заказы.</i>"""
 
     await safe_delete_message(callback)
-    await callback.message.answer(text, reply_markup=get_back_keyboard())
+    await bot.send_message(callback.message.chat.id, text, reply_markup=get_back_keyboard())
 
 
 def build_support_caption() -> str:
@@ -389,9 +389,10 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     user = result.scalar_one_or_none()
 
     await safe_delete_message(callback)
+    chat_id = callback.message.chat.id
 
     if not user:
-        await callback.message.answer("Досье не найдено.", reply_markup=get_back_keyboard())
+        await bot.send_message(chat_id, "Досье не найдено.", reply_markup=get_back_keyboard())
         return
 
     status, discount = user.loyalty_status
@@ -407,7 +408,7 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 {status}
 {discount_line}"""
 
-    await callback.message.answer(text.strip(), reply_markup=get_back_keyboard())
+    await bot.send_message(chat_id, text.strip(), reply_markup=get_back_keyboard())
 
 
 @router.callback_query(F.data == "finance")
@@ -442,7 +443,7 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 на свои заказы.</i>"""
 
     await safe_delete_message(callback)
-    await callback.message.answer(text, reply_markup=get_back_keyboard())
+    await bot.send_message(callback.message.chat.id, text, reply_markup=get_back_keyboard())
 
 
 @router.callback_query(F.data == "support")

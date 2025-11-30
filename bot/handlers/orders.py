@@ -903,6 +903,7 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
 В какой сфере проблема, ковбой?
 Укажи тему, чтобы я знал, какого специалиста поднимать с постели."""
 
+    chat_id = callback.message.chat.id
     try:
         await callback.message.delete()
     except Exception:
@@ -913,7 +914,7 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
         try:
             await send_cached_photo(
                 bot=bot,
-                chat_id=callback.message.chat.id,
+                chat_id=chat_id,
                 photo_path=DIRECTIONS_IMAGE_PATH,
                 caption=caption,
                 reply_markup=get_subject_keyboard(),
@@ -923,7 +924,7 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
             pass
 
     # Fallback на текст
-    await callback.message.answer(caption, reply_markup=get_subject_keyboard())
+    await bot.send_message(chat_id, caption, reply_markup=get_subject_keyboard())
 
 
 # ══════════════════════════════════════════════════════════════

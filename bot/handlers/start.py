@@ -86,8 +86,11 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     telegram_id = message.from_user.id
 
     # Очистка старых Reply-кнопок
-    cleanup_msg = await message.answer("⏳", reply_markup=ReplyKeyboardRemove())
-    await cleanup_msg.delete()
+    try:
+        cleanup_msg = await message.answer("⏳", reply_markup=ReplyKeyboardRemove())
+        await cleanup_msg.delete()
+    except Exception:
+        pass  # Может не удалиться если нет прав или бот ограничен
 
     # Поиск пользователя
     query = select(User).where(User.telegram_id == telegram_id)
@@ -97,6 +100,7 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     # Обработка реферальной ссылки для нового пользователя
     if user is None:
         referrer_id = None
+        referrer = None
         if deep_link and deep_link.startswith("ref"):
             try:
                 potential_referrer_id = int(deep_link[3:])
@@ -107,9 +111,8 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
                     referrer = ref_result.scalar_one_or_none()
                     if referrer:
                         referrer_id = potential_referrer_id
-                        # Увеличиваем счётчик рефералов
+                        # Увеличиваем счётчик рефералов (commit будет ниже вместе с созданием пользователя)
                         referrer.referrals_count += 1
-                        await session.commit()
             except ValueError:
                 pass
 
@@ -124,6 +127,7 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             terms_accepted_at=None,  # Оферта ещё не принята
         )
         session.add(user)
+        # Один commit для нового пользователя и реферала (если есть)
         await session.commit()
 
         # Логируем нового пользователя

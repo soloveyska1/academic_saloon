@@ -56,8 +56,14 @@ class AntiSpamMiddleware(BaseMiddleware):
         # Проверяем, замучен ли пользователь
         mute_until_str = await redis.get(mute_key)
         if mute_until_str:
-            mute_until = datetime.fromisoformat(mute_until_str)
-            if now < mute_until:
+            try:
+                mute_until = datetime.fromisoformat(mute_until_str)
+            except (ValueError, TypeError):
+                # Повреждённые данные — удаляем ключ и продолжаем
+                await redis.delete(mute_key)
+                mute_until = None
+
+            if mute_until and now < mute_until:
                 # Всё ещё замучен — игнорируем сообщение
                 remaining = int((mute_until - now).total_seconds())
                 if isinstance(event, Update) and event.message:
@@ -66,14 +72,19 @@ class AntiSpamMiddleware(BaseMiddleware):
                         f"Подожди {remaining // 60} мин. {remaining % 60} сек."
                     )
                 return None
-            else:
+            elif mute_until:
                 # Мут закончился — удаляем ключ
                 await redis.delete(mute_key)
 
         # Получаем историю сообщений (список timestamp'ов)
         history_raw = await redis.get(history_key)
         if history_raw:
-            history = json.loads(history_raw)
+            try:
+                history = json.loads(history_raw)
+                if not isinstance(history, list):
+                    history = []
+            except (json.JSONDecodeError, TypeError):
+                history = []
         else:
             history = []
 

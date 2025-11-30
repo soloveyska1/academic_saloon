@@ -1,8 +1,13 @@
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from aiogram import Router, F, Bot
+
+# Московский часовой пояс
+MSK_TZ = ZoneInfo("Europe/Moscow")
 
 logger = logging.getLogger(__name__)
 
@@ -626,7 +631,16 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
         return
 
     parts = callback.data.split(":")
-    order_id = int(parts[1])
+    if len(parts) < 3:
+        await callback.answer("Ошибка формата данных", show_alert=True)
+        return
+
+    try:
+        order_id = int(parts[1])
+    except ValueError:
+        await callback.answer("Некорректный ID заказа", show_alert=True)
+        return
+
     new_status = parts[2]
 
     # Получаем заказ
@@ -643,8 +657,7 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
 
     # Если статус изменён на "completed", записываем время завершения
     if new_status == OrderStatus.COMPLETED.value:
-        from datetime import datetime, timezone
-        order.completed_at = datetime.now(timezone.utc)
+        order.completed_at = datetime.now(MSK_TZ)
 
     await session.commit()
 
@@ -1367,8 +1380,16 @@ async def bonus_add_callback(callback: CallbackQuery, session: AsyncSession, bot
         return
 
     parts = callback.data.split(":")
-    user_id = int(parts[1])
-    amount = int(parts[2])
+    if len(parts) < 3:
+        await callback.answer("Ошибка формата данных", show_alert=True)
+        return
+
+    try:
+        user_id = int(parts[1])
+        amount = int(parts[2])
+    except ValueError:
+        await callback.answer("Некорректные данные", show_alert=True)
+        return
 
     # Находим пользователя
     query = select(User).where(User.telegram_id == user_id)
@@ -1428,8 +1449,16 @@ async def bonus_sub_callback(callback: CallbackQuery, session: AsyncSession, bot
         return
 
     parts = callback.data.split(":")
-    user_id = int(parts[1])
-    amount = int(parts[2])
+    if len(parts) < 3:
+        await callback.answer("Ошибка формата данных", show_alert=True)
+        return
+
+    try:
+        user_id = int(parts[1])
+        amount = int(parts[2])
+    except ValueError:
+        await callback.answer("Некорректные данные", show_alert=True)
+        return
 
     # Находим пользователя
     query = select(User).where(User.telegram_id == user_id)
@@ -1802,8 +1831,16 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
 async def pay_scheme_callback(callback: CallbackQuery, session: AsyncSession):
     """Клиент выбрал схему оплаты (100% или 50%)"""
     parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка формата данных", show_alert=True)
+        return
+
     scheme = parts[1]  # full или half
-    order_id = int(parts[2])
+    try:
+        order_id = int(parts[2])
+    except ValueError:
+        await callback.answer("Некорректный ID заказа", show_alert=True)
+        return
 
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
@@ -2122,8 +2159,16 @@ def get_payment_keyboard(order_id: int) -> InlineKeyboardMarkup:
 async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Клиент выбрал способ оплаты"""
     parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка формата данных", show_alert=True)
+        return
+
     method = parts[1]  # card, sbp, transfer
-    order_id = int(parts[2])
+    try:
+        order_id = int(parts[2])
+    except ValueError:
+        await callback.answer("Некорректный ID заказа", show_alert=True)
+        return
 
     order_query = select(Order).where(Order.id == order_id)
     order_result = await session.execute(order_query)
@@ -2824,8 +2869,16 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
         return
 
     parts = callback.data.split(":")
-    order_id = int(parts[1])
-    user_id = int(parts[2])
+    if len(parts) < 3:
+        await callback.answer("Ошибка формата данных", show_alert=True)
+        return
+
+    try:
+        order_id = int(parts[1])
+        user_id = int(parts[2])
+    except ValueError:
+        await callback.answer("Некорректные данные", show_alert=True)
+        return
 
     # Находим заказ
     order_query = select(Order).where(Order.id == order_id)
