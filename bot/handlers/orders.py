@@ -21,6 +21,9 @@ URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "urgent_bell.jpg"
 SECRET_IMAGE_PATH = Path(__file__).parent.parent / "media" / "secret.jpg"
 FAST_UPLOAD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "fast_upload.jpg"
 INVESTIGATION_IMAGE_PATH = Path(__file__).parent.parent / "media" / "investigation.jpg"
+CONFIRM_URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_urgent.jpg"
+CONFIRM_SPECIAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_special.jpg"
+CONFIRM_STD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -1445,7 +1448,10 @@ async def process_deadline_text(message: Message, state: FSMContext, bot: Bot, s
 async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session: AsyncSession, send_new: bool = False):
     """
     Показать превью заказа для подтверждения.
-    Персонализированный текст с реальными датами.
+    Три сценария в зависимости от типа заказа:
+    - URGENT: Высокий приоритет, быстрый запуск
+    - SPECIAL: Интрига, экспертный анализ
+    - STANDARD: Партнёрский контракт
     """
     # Показываем typing пока формируем превью
     chat_id = callback.message.chat.id if callback.message else callback.from_user.id
@@ -1455,6 +1461,11 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
 
     data = await state.get_data()
 
+    # Определяем тип заказа для условной логики
+    is_urgent = data.get("is_urgent", False)
+    work_type_value = data.get("work_type", "")
+    is_special = work_type_value == WorkType.OTHER.value
+
     # Получаем скидку пользователя
     user_query = select(User).where(User.telegram_id == callback.from_user.id)
     result = await session.execute(user_query)
@@ -1463,10 +1474,7 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     discount = calculate_user_discount(user)
     await state.update_data(discount=discount)
 
-    # Персонализация — имя пользователя
-    first_name = get_first_name(callback.from_user.full_name)
-
-    # Формируем текст превью
+    # Формируем общие данные превью
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
 
     # Направление — показываем только если было указано
@@ -1481,7 +1489,6 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     deadline_key = data.get("deadline", "")
     deadline_label = data.get("deadline_label", "Не указан")
 
-    # Для стандартных сроков показываем дату, для custom — как ввели
     if deadline_key and deadline_key != "custom":
         deadline_display = get_deadline_with_date(deadline_key)
     else:
@@ -1491,19 +1498,52 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     attachments = data.get("attachments", [])
     attachments_preview = format_attachments_preview(attachments)
 
-    # Формируем строки
+    # Формируем общие строки
     subject_text = f"\n◈  <b>Направление:</b> {subject_line}" if subject_line else ""
     discount_line = f"\n🎁  <b>Скидка:</b> {discount}%" if discount > 0 else ""
 
-    text = f"""📋  <b>Проверь и отправляй, {first_name}!</b>
-
-◈  <b>Тип:</b> {work_label}{subject_text}
+    # Блок деталей заказа (общий для всех)
+    details_block = f"""◈  <b>Тип:</b> {work_label}{subject_text}
 ◈  <b>Срок:</b> {deadline_display}
-◈  <b>Задание:</b>
+◈  <b>Материалы:</b>
 {attachments_preview}
-{discount_line}
+{discount_line}"""
 
-После отправки отвечу за 5-15 мин."""
+    # === SCENARIO A: URGENT ORDER ===
+    if is_urgent:
+        caption = f"""🚨 <b>Готовность к запуску...</b>
+
+{details_block}
+
+Времени в обрез. Проверь вводные беглым взглядом.
+Если всё верно — жми на газ, и мы начинаем."""
+
+        confirm_btn_text = "🚀 ПУСК (Отправить)"
+        image_path = CONFIRM_URGENT_IMAGE_PATH
+
+    # === SCENARIO B: SPECIAL/UNIQUE ORDER ===
+    elif is_special:
+        caption = f"""🕵️‍♂️ <b>Досье собрано</b>
+
+{details_block}
+
+Так, я всё зафиксировал. Проверь, не упустили ли мы чего важного в этой схеме.
+Если всё чисто — отправляю шифровку Шерифу лично в руки."""
+
+        confirm_btn_text = "📮 Отправить шифровку"
+        image_path = CONFIRM_SPECIAL_IMAGE_PATH
+
+    # === SCENARIO C: STANDARD ORDER ===
+    else:
+        caption = f"""🤝 <b>Сверим часы, партнёр</b>
+
+{details_block}
+
+Проверь, всё ли верно записано в контракте.
+Если да — ударяем по рукам, и я запускаю процесс."""
+
+        confirm_btn_text = "✅ Всё верно (Отправить)"
+        image_path = CONFIRM_STD_IMAGE_PATH
 
     # Логируем шаг (некритично)
     try:
@@ -1517,10 +1557,35 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
     except Exception:
         pass
 
-    if send_new:
-        await callback.message.answer(text, reply_markup=get_confirm_order_keyboard())
-    else:
-        await safe_edit_or_send(callback, text, reply_markup=get_confirm_order_keyboard(), bot=bot)
+    keyboard = get_confirm_order_keyboard(confirm_text=confirm_btn_text)
+
+    # Удаляем старое сообщение перед отправкой нового с фото
+    if not send_new:
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+    # Пробуем отправить с картинкой
+    if image_path.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=chat_id,
+                photo_path=image_path,
+                caption=caption,
+                reply_markup=keyboard,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить confirm image: {e}")
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=chat_id,
+        text=caption,
+        reply_markup=keyboard,
+    )
 
 
 def format_attachments_summary(attachments: list) -> str:
