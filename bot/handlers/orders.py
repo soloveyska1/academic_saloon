@@ -1826,7 +1826,7 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
     await callback.answer("📎 Жду файлы!")
 
     # Сохраняем order_id и переводим в состояние дослать
-    await state.update_data(append_order_id=order_id)
+    await state.update_data(append_order_id=order_id, appended_files=[])
     await state.set_state(OrderState.appending_files)
 
     text = f"""📎 <b>Дослать материалы к заказу #{order.id}</b>
@@ -1847,7 +1847,14 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
         )],
     ])
 
-    await callback.message.edit_text(text, reply_markup=keyboard)
+    # Удаляем старое сообщение (может быть фото) и отправляем новое
+    chat_id = callback.message.chat.id
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await callback.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
 
 
 @router.message(OrderState.appending_files, F.photo)
