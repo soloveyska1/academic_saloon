@@ -1,16 +1,23 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot.texts.terms import TERMS_SECTIONS
+from core.config import settings
 
 
 def get_terms_short_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура для короткой версии оферты"""
+    """Клавиатура для экрана Кодекса Салуна — только 2 кнопки"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="✅ Принимаю условия", callback_data="terms_accept")
+            InlineKeyboardButton(
+                text="✅ Ударить по рукам (Принять)",
+                callback_data="accept_rules"
+            )
         ],
         [
-            InlineKeyboardButton(text="📖 Читать полностью", callback_data="terms_full")
+            InlineKeyboardButton(
+                text="📄 Читать полную юр. оферту",
+                url=settings.OFFER_URL
+            )
         ]
     ])
 
