@@ -2223,42 +2223,69 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
     final_price = price - bonus_to_use
     half_amount = final_price / 2
 
-    # Формируем сообщение для клиента
+    # Формируем сообщение для клиента (Premium Deal Layout)
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
+    # Строка с бонусами (только если есть)
+    bonus_line = f"\n💎 <b>Списано бонусов:</b> −{bonus_to_use:.0f}₽" if bonus_to_use > 0 else ""
+
+    client_text = f"""💰 <b>СМЕТА ГОТОВА</b>
+
+Шериф всё посчитал. Вот расклад по твоему заказу:
+
+📂 <b>Тип:</b> {work_label}
+💵 <b>Базовая цена:</b> {price:.0f}₽{bonus_line}
+
+───────────────
+<b>ИТОГО К ОПЛАТЕ: {final_price:.0f}₽</b>
+───────────────
+
+<i>Выбери, как будем рассчитываться. Если оплатишь всё сразу — меньше лишних движений.</i>"""
+
+    # Формируем клавиатуру
+    buttons = [
+        [InlineKeyboardButton(
+            text=f"💳 100% Сразу ({final_price:.0f}₽)",
+            callback_data=f"pay_scheme:full:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
+            callback_data=f"pay_scheme:half:{order.id}"
+        )],
+    ]
+
+    # Кнопка "Не тратить бонусы" только если они были применены
     if bonus_to_use > 0:
-        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+        buttons.append([InlineKeyboardButton(
+            text="🔄 Не тратить бонусы (Пересчитать)",
+            callback_data=f"price_no_bonus:{order.id}"
+        )])
 
-📝 {work_label}
-💵 Стоимость: {price:.0f}₽
-🎁 Бонусы: −{bonus_to_use:.0f}₽
+    # Кнопка для вопросов/торга
+    buttons.append([InlineKeyboardButton(
+        text="💬 Вопрос по цене / Дорого",
+        callback_data=f"price_question:{order.id}"
+    )])
 
-<b>К оплате: {final_price:.0f}₽</b>
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-Выбери схему оплаты:"""
-
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"⚡ 100% сразу ({final_price:.0f}₽)", callback_data=f"pay_scheme:full:{order.id}")],
-            [InlineKeyboardButton(text=f"📋 50% аванс ({half_amount:.0f}₽)", callback_data=f"pay_scheme:half:{order.id}")],
-            [InlineKeyboardButton(text="💎 Сохранить бонусы", callback_data=f"price_no_bonus:{order.id}")],
-        ])
-    else:
-        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
-
-📝 {work_label}
-
-<b>К оплате: {final_price:.0f}₽</b>
-
-Выбери схему оплаты:"""
-
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"⚡ 100% сразу ({final_price:.0f}₽)", callback_data=f"pay_scheme:full:{order.id}")],
-            [InlineKeyboardButton(text=f"📋 50% аванс ({half_amount:.0f}₽)", callback_data=f"pay_scheme:half:{order.id}")],
-        ])
-
-    # Отправляем клиенту
+    # Отправляем клиенту с картинкой
     try:
-        await bot.send_message(order.user_id, client_text, reply_markup=kb)
+        if PAYMENT_REQUEST_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=order.user_id,
+                    photo_path=PAYMENT_REQUEST_IMAGE_PATH,
+                    caption=client_text,
+                    reply_markup=kb,
+                )
+            except Exception as e:
+                logger.warning(f"Не удалось отправить payment_request image: {e}")
+                await bot.send_message(order.user_id, client_text, reply_markup=kb)
+        else:
+            await bot.send_message(order.user_id, client_text, reply_markup=kb)
+
         await message.answer(
             f"✅ Цена {price:.0f}₽ назначена заказу #{order.id}\n"
             f"Клиенту отправлено сообщение\n"
@@ -2375,7 +2402,7 @@ async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data.startswith("price_no_bonus:"))
 async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Клиент отказался от списания бонусов"""
+    """Клиент отказался от списания бонусов — пересчёт без скидки"""
     order_id = parse_callback_int(callback.data, 1)
     if order_id is None:
         await callback.answer("Ошибка данных", show_alert=True)
@@ -2395,28 +2422,132 @@ async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession
     order.bonus_used = 0
     await session.commit()
 
-    await callback.answer(f"✅ Бонусы сохранены на балансе (+{bonus_was:.0f}₽)")
+    await callback.answer(f"✅ Бонусы сохранены! (+{bonus_was:.0f}₽ на балансе)")
 
-    # Показываем выбор схемы оплаты без бонусов
+    # Показываем выбор схемы оплаты без бонусов (Premium Layout)
     final_price = order.price
     half_amount = final_price / 2
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
-    new_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+    new_text = f"""💰 <b>СМЕТА ГОТОВА</b>
 
-📝 {work_label}
+Шериф всё посчитал. Вот расклад по твоему заказу:
 
-<b>К оплате: {order.price:.0f}₽</b>
-💎 Бонусы сохранены на балансе
+📂 <b>Тип:</b> {work_label}
+💵 <b>Базовая цена:</b> {order.price:.0f}₽
+💎 <i>Бонусы сохранены на балансе</i>
 
-Выбери схему оплаты:"""
+───────────────
+<b>ИТОГО К ОПЛАТЕ: {final_price:.0f}₽</b>
+───────────────
+
+<i>Выбери, как будем рассчитываться.</i>"""
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"⚡ 100% сразу ({final_price:.0f}₽)", callback_data=f"pay_scheme:full:{order.id}")],
-        [InlineKeyboardButton(text=f"📋 50% аванс ({half_amount:.0f}₽)", callback_data=f"pay_scheme:half:{order.id}")],
+        [InlineKeyboardButton(
+            text=f"💳 100% Сразу ({final_price:.0f}₽)",
+            callback_data=f"pay_scheme:full:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
+            callback_data=f"pay_scheme:half:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text="💬 Вопрос по цене / Дорого",
+            callback_data=f"price_question:{order.id}"
+        )],
     ])
 
-    await callback.message.edit_text(new_text, reply_markup=kb)
+    # Это уже текстовое сообщение, можно edit_caption если было фото
+    try:
+        await callback.message.edit_caption(caption=new_text, reply_markup=kb)
+    except Exception:
+        # Fallback на edit_text если не фото
+        try:
+            await callback.message.edit_text(new_text, reply_markup=kb)
+        except Exception:
+            pass
+
+
+@router.callback_query(F.data.startswith("price_question:"))
+async def price_question_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Клиент хочет обсудить цену / торговаться"""
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    await callback.answer("📨 Связываюсь с Шерифом...")
+
+    # Уведомляем клиента
+    client_text = f"""💬 <b>Понял тебя!</b>
+
+Заказ #{order.id} · {order.price:.0f}₽
+
+Сейчас передам твой вопрос Шерифу лично. Он свяжется с тобой в ближайшее время, чтобы всё обсудить.
+
+Можешь написать ему напрямую:
+@{settings.SUPPORT_USERNAME}"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💬 Написать Шерифу",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+        [InlineKeyboardButton(
+            text="🌵 В салун",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    # Удаляем старое сообщение (может быть фото) и отправляем новое
+    chat_id = callback.message.chat.id
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await bot.send_message(chat_id=chat_id, text=client_text, reply_markup=keyboard)
+
+    # Уведомляем админов
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    admin_text = f"""💬 <b>Клиент хочет обсудить цену!</b>
+
+📋 Заказ: #{order.id}
+📝 {work_label}
+💰 Текущая цена: {order.price:.0f}₽
+
+👤 Клиент: @{callback.from_user.username or 'без username'}
+🆔 ID: <code>{callback.from_user.id}</code>
+
+<i>Клиент нажал "Дорого" — возможно, стоит связаться.</i>"""
+
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💬 Написать клиенту",
+            url=f"tg://user?id={callback.from_user.id}"
+        )],
+        [InlineKeyboardButton(
+            text="📋 Детали заказа",
+            callback_data=f"admin_order_detail:{order.id}"
+        )],
+    ])
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
+        except Exception:
+            pass
 
 
 # ══════════════════════════════════════════════════════════════
