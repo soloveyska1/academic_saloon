@@ -2713,24 +2713,25 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
             await callback.answer(f"Ошибка: {result.error}", show_alert=True)
 
     elif method == "sbp":
-        # СБП по номеру телефона
+        # СБП по номеру телефона — Premium Design
         await callback.answer("⏳")
 
-        text = f"""📲 <b>Оплата по СБП</b>
+        text = f"""<b>⚡️ ПЕРЕВОД ПО СБП</b>
 
-<b>К оплате: {amount:.0f}₽</b>
+К оплате: <b>{amount:.0f} ₽</b>
 
-Переведи на номер:
-📱 <code>{settings.PAYMENT_PHONE}</code>
-{settings.PAYMENT_NAME}
-{settings.PAYMENT_BANKS}
+👇 <i>Нажми на номер, чтобы скопировать:</i>
+<code>{settings.PAYMENT_PHONE}</code>
 
-После перевода нажми «Я оплатил» 👇"""
+👤 <b>Получатель:</b> {settings.PAYMENT_NAME}
+🏦 {settings.PAYMENT_BANKS}
+
+⚠️ <i>После перевода нажми кнопку «Я оплатил».</i>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Я оплатил", callback_data=f"client_paid:{order_id}")],
-            [InlineKeyboardButton(text="◀️ Другой способ", callback_data=f"pay_scheme:{order.payment_scheme}:{order_id}")],
-            [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
+            [InlineKeyboardButton(text="📤 Я оплатил (Прикрепить чек)", callback_data=f"client_paid:{order_id}")],
+            [InlineKeyboardButton(text="🔙 Выбрать другой способ", callback_data=f"pay_scheme:{order.payment_scheme}:{order_id}")],
+            [InlineKeyboardButton(text="🆘 Проблема с оплатой", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
         ])
 
         await safe_edit_or_send(callback, text, reply_markup=kb)
