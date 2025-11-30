@@ -111,10 +111,10 @@ async def noop_handler(callback: CallbackQuery):
 #                    ПРИНЯТИЕ ОФЕРТЫ
 # ══════════════════════════════════════════════════════════════
 
-@router.callback_query(F.data == "terms_accept")
+@router.callback_query(F.data.in_({"terms_accept", "accept_rules"}))
 async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Принятие условий оферты"""
-    await callback.answer("Условия приняты!")
+    """Принятие условий оферты (Кодекса Салуна)"""
+    await callback.answer("🤝 Ударили по рукам!")
 
     telegram_id = callback.from_user.id
 

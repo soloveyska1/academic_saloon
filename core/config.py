@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     REVIEWS_CHANNEL: str = "https://t.me/+Cls1cEPgPcMyZDJi"
     LOG_CHANNEL_ID: int = -1003300275622
     SUPPORT_USERNAME: str = "Thisissaymoon"
+    OFFER_URL: str = "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30"  # Юридическая оферта
 
     # Реквизиты для оплаты (ручной перевод) — из .env
     PAYMENT_PHONE: str  # Номер для СБП
