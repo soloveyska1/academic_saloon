@@ -2736,27 +2736,24 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
         await safe_edit_or_send(callback, text, reply_markup=kb)
 
     elif method == "transfer":
-        # Перевод на карту
+        # Перевод на карту — Premium Design
         await callback.answer("⏳")
 
-        # Форматируем номер карты для читаемости
-        card = settings.PAYMENT_CARD
-        card_formatted = f"{card[:4]} {card[4:8]} {card[8:12]} {card[12:]}" if len(card) == 16 else card
+        text = f"""<b>💳 ПЕРЕВОД НА КАРТУ</b>
 
-        text = f"""🏦 <b>Перевод на карту</b>
+К оплате: <b>{amount:.0f} ₽</b>
 
-<b>К оплате: {amount:.0f}₽</b>
+👇 <i>Нажми на номер карты, чтобы скопировать:</i>
+<code>{settings.PAYMENT_CARD}</code>
 
-Номер карты:
-💳 <code>{settings.PAYMENT_CARD}</code>
-{settings.PAYMENT_NAME}
+👤 <b>Владелец:</b> {settings.PAYMENT_NAME}
 
-После перевода нажми «Я оплатил» 👇"""
+⚠️ <i>После перевода нажми кнопку «Я оплатил».</i>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Я оплатил", callback_data=f"client_paid:{order_id}")],
-            [InlineKeyboardButton(text="◀️ Другой способ", callback_data=f"pay_scheme:{order.payment_scheme}:{order_id}")],
-            [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
+            [InlineKeyboardButton(text="📤 Я оплатил (Прикрепить чек)", callback_data=f"client_paid:{order_id}")],
+            [InlineKeyboardButton(text="🔙 Выбрать другой способ", callback_data=f"pay_scheme:{order.payment_scheme}:{order_id}")],
+            [InlineKeyboardButton(text="🆘 Проблема с оплатой", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
         ])
 
         await safe_edit_or_send(callback, text, reply_markup=kb)
