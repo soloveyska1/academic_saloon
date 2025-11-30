@@ -50,7 +50,7 @@ WORK_TYPE_LABELS = {
     WorkType.CONTROL: "✏️ Контрольная",
     WorkType.PRESENTATION: "📊 Презентация",
     WorkType.PRACTICE: "🏢 Отчёт по практике",
-    WorkType.OTHER: "📎 Другое",
+    WorkType.OTHER: "🦄 Спецзадача",
     WorkType.PHOTO_TASK: "📸 Фото задания",
 }
 
