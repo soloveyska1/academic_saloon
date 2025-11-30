@@ -7,6 +7,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 import pytz
 
@@ -16,12 +17,16 @@ from sqlalchemy import select
 
 from database.models.orders import Order, OrderStatus
 from core.config import settings
+from core.media_cache import send_cached_photo
 
 logger = logging.getLogger(__name__)
 MSK = pytz.timezone("Europe/Moscow")
 
 # Время в минутах до напоминания
 SILENCE_THRESHOLD_MINUTES = 15
+
+# Путь к картинке "В работе"
+BUSY_IMAGE_PATH = Path(__file__).parent.parent / "media" / "busy.jpg"
 
 
 class SilenceReminder:
@@ -67,21 +72,40 @@ class SilenceReminder:
 
     async def _send_reminder(self, order: Order, session: AsyncSession):
         """Отправить напоминание клиенту и записать в БД"""
-        text = f"""⏳ <b>Хозяин сейчас занят</b>
+        caption = f"""🥃 <b>Заказ принят, партнёр!</b>
 
-Твоя заявка #{order.id} в очереди.
-Обычно отвечаю быстрее, но сейчас небольшой завал.
+Твоей заявке присвоил номер <b>#{order.id}</b>.
 
-Скоро напишу с ценой! А если срочно —
-можешь написать напрямую: @{settings.SUPPORT_USERNAME}
+В салуне сегодня аншлаг — многие хотят закрыть долги перед сессией. Но не переживай, мои ребята стреляют метко и быстро.
 
-Спасибо за терпение! 🤠"""
+Я уже понёс твои бумаги на оценку. Скоро вернусь с точной цифрой. Далеко не уходи.
+
+🔥 <i>Если совсем пожар — стучи в личку шерифу:</i> @{settings.SUPPORT_USERNAME}"""
 
         try:
-            await self.bot.send_message(
-                chat_id=order.user_id,
-                text=text,
-            )
+            # Пробуем отправить с картинкой
+            if BUSY_IMAGE_PATH.exists():
+                try:
+                    await send_cached_photo(
+                        bot=self.bot,
+                        chat_id=order.user_id,
+                        photo_path=BUSY_IMAGE_PATH,
+                        caption=caption,
+                    )
+                except Exception as img_error:
+                    logger.warning(f"Failed to send busy.jpg: {img_error}")
+                    # Fallback на текст
+                    await self.bot.send_message(
+                        chat_id=order.user_id,
+                        text=caption,
+                    )
+            else:
+                # Нет картинки — просто текст
+                await self.bot.send_message(
+                    chat_id=order.user_id,
+                    text=caption,
+                )
+
             # Записываем в БД что напоминание отправлено
             order.reminder_sent_at = datetime.now(MSK)
             await session.commit()
