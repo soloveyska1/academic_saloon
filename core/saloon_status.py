@@ -3,9 +3,9 @@
 Хранит данные в Redis: загруженность, клиенты, заказы в работе.
 Динамически генерирует правдоподобное "людей в боте сейчас".
 """
+import hashlib
 import json
 import random
-import hashlib
 from enum import Enum
 from dataclasses import dataclass, asdict
 from datetime import datetime
