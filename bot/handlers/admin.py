@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 # Пути к изображениям для P2P оплаты
 PAYMENT_REQUEST_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_request.jpg"
+CASH_REGISTER_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cash_register.jpg"
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
@@ -2355,32 +2356,70 @@ async def pay_scheme_callback(callback: CallbackQuery, session: AsyncSession):
     if scheme == "half":
         amount_now = final_price / 2
         amount_later = final_price - amount_now
-        scheme_text = f"📋 50% аванс\n\n<b>К оплате сейчас: {amount_now:.0f}₽</b>\nОстаток после проверки: {amount_later:.0f}₽"
+        amount_note = f"\n<i>Остаток {amount_later:.0f}₽ — после проверки работы.</i>"
     else:
         amount_now = final_price
-        scheme_text = f"⚡ 100% сразу\n\n<b>К оплате: {amount_now:.0f}₽</b>"
+        amount_note = ""
+
+    # Ultra-Clean Payment Method Selection
+    text = f"""<b>💳 КАССА ОТКРЫТА</b>
+
+Сумма к оплате: <code>{amount_now:.0f} ₽</code>{amount_note}
+
+Всё готово. Как тебе удобнее перекинуть средства?
+
+⚡️ <b>СБП</b> — долетает мгновенно (по номеру телефона).
+💳 <b>Карта</b> — классический перевод."""
 
     # Показываем выбор способа оплаты
     from bot.services.yookassa import get_yookassa_service
     yookassa = get_yookassa_service()
 
     buttons = []
+    # СБП первый — самый быстрый способ
+    buttons.append([InlineKeyboardButton(
+        text="⚡️ СБП (Быстрый перевод)",
+        callback_data=f"pay_method:sbp:{order_id}"
+    )])
+    buttons.append([InlineKeyboardButton(
+        text="💳 Карта РФ (Сбер / Т-Банк)",
+        callback_data=f"pay_method:transfer:{order_id}"
+    )])
+
+    # Онлайн-оплата если доступна (редко используется)
     if yookassa.is_available:
-        buttons.append([InlineKeyboardButton(text="💳 Оплатить картой", callback_data=f"pay_method:card:{order_id}")])
+        buttons.append([InlineKeyboardButton(
+            text="🌐 Онлайн-оплата (ЮKassa)",
+            callback_data=f"pay_method:card:{order_id}"
+        )])
 
-    buttons.extend([
-        [InlineKeyboardButton(text="📲 Перевод по СБП", callback_data=f"pay_method:sbp:{order_id}")],
-        [InlineKeyboardButton(text="🏦 Перевод на карту", callback_data=f"pay_method:transfer:{order_id}")],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data=f"pay_back:{order_id}")],
-    ])
+    buttons.append([InlineKeyboardButton(
+        text="🔙 Назад",
+        callback_data=f"pay_back:{order_id}"
+    )])
 
-    text = f"""💳 <b>Оплата заказа #{order_id}</b>
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-{scheme_text}
-
-Выбери способ оплаты:"""
-
-    await safe_edit_or_send(callback, text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+    # Отправляем с картинкой если есть
+    try:
+        if CASH_REGISTER_IMAGE_PATH.exists():
+            await send_cached_photo(
+                bot=callback.bot,
+                chat_id=callback.from_user.id,
+                photo_path=CASH_REGISTER_IMAGE_PATH,
+                caption=text,
+                reply_markup=kb,
+            )
+            # Удаляем старое сообщение
+            try:
+                await callback.message.delete()
+            except Exception:
+                pass
+        else:
+            await safe_edit_or_send(callback, text, reply_markup=kb)
+    except Exception as e:
+        logger.warning(f"Не удалось отправить cash_register image: {e}")
+        await safe_edit_or_send(callback, text, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("pay_back:"))
