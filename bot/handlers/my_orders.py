@@ -3,6 +3,7 @@
 Премиальный дизайн с фото и визуальным прогресс-баром.
 """
 
+import asyncio
 import logging
 import random
 from datetime import datetime, timedelta
@@ -10,9 +11,10 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from aiogram import Router, F, Bot
+from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, Message
 from aiogram.fsm.context import FSMContext
-from aiogram.enums import ChatAction, ParseMode
+from aiogram.enums import ChatAction, ParseMode, DiceEmoji
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, case
 
@@ -40,6 +42,7 @@ from bot.keyboards.profile import (
     get_back_to_profile_keyboard,
     get_gang_keyboard,
     get_daily_luck_result_keyboard,
+    get_muse_luck_result_keyboard,
     get_history_keyboard,
     get_coupon_keyboard,
     get_coupon_result_keyboard,
@@ -64,26 +67,91 @@ ORDERS_PER_PAGE = 6  # Уменьшено для лучшего UX
 # Специальный username для Muse режима
 MUSE_USERNAME = "neuronatali"
 
+# Admin Chameleon Mode - хранит состояние режима для админов
+# Key: telegram_id, Value: True = Muse mode, False = Standard mode
+_admin_muse_mode: dict[int, bool] = {}
+
+
+def is_actual_muse(user) -> bool:
+    """Проверяет, является ли пользователь НАСТОЯЩЕЙ Музой (NeuroNatali)."""
+    if user is None:
+        return False
+    username = getattr(user, 'username', None)
+    return username and username.lower() == MUSE_USERNAME.lower()
+
+
+def is_admin(user) -> bool:
+    """Проверяет, является ли пользователь Админом."""
+    if user is None:
+        return False
+    telegram_id = getattr(user, 'id', None) or getattr(user, 'telegram_id', None)
+    return telegram_id and telegram_id in settings.ADMIN_IDS
+
 
 def is_vip_muse(user) -> bool:
     """
-    Проверяет, является ли пользователь VIP Muse (NeuroNatali или Admin).
-    Админ видит тот же интерфейс для тестирования.
+    Проверяет, должен ли пользователь видеть VIP Muse интерфейс.
+
+    - NeuroNatali: ВСЕГДА видит Muse версию
+    - Admin: видит Muse версию ТОЛЬКО если включен debug_muse_mode
+    - Остальные: никогда не видят
     """
     if user is None:
         return False
 
-    # Check by telegram_id (Admin)
+    # NeuroNatali всегда видит Muse версию
+    if is_actual_muse(user):
+        return True
+
+    # Admin видит только если включен muse mode
     telegram_id = getattr(user, 'id', None) or getattr(user, 'telegram_id', None)
     if telegram_id and telegram_id in settings.ADMIN_IDS:
-        return True
-
-    # Check by username (case-insensitive)
-    username = getattr(user, 'username', None)
-    if username and username.lower() == MUSE_USERNAME.lower():
-        return True
+        return _admin_muse_mode.get(telegram_id, False)
 
     return False
+
+
+def toggle_admin_muse_mode(admin_id: int) -> bool:
+    """Переключает режим Muse для админа. Возвращает новое состояние."""
+    current = _admin_muse_mode.get(admin_id, False)
+    _admin_muse_mode[admin_id] = not current
+    return not current
+
+
+@router.message(Command("toggle_muse"))
+async def cmd_toggle_muse(message: Message, session: AsyncSession, bot: Bot):
+    """
+    Команда /toggle_muse - переключает режим Muse для админа.
+    Доступна только админам. Позволяет просматривать бота глазами NeuroNatali.
+    """
+    telegram_id = message.from_user.id
+
+    # Проверяем, является ли пользователь админом
+    if telegram_id not in settings.ADMIN_IDS:
+        # Для обычных пользователей - игнорируем или отвечаем загадочно
+        await message.answer("🤔 Команда не найдена")
+        return
+
+    # Переключаем режим
+    new_state = toggle_admin_muse_mode(telegram_id)
+
+    if new_state:
+        # Режим Muse включён
+        response = (
+            "🌹 <b>Режим Muse АКТИВИРОВАН</b>\n\n"
+            "Теперь ты видишь бота глазами NeuroNatali.\n"
+            "Личный кабинет покажет VIP-интерфейс.\n\n"
+            "<i>/toggle_muse — выключить режим</i>"
+        )
+    else:
+        # Режим Muse выключён
+        response = (
+            "🤠 <b>Режим Muse ВЫКЛЮЧЕН</b>\n\n"
+            "Вернулся стандартный вид.\n\n"
+            "<i>/toggle_muse — включить режим</i>"
+        )
+
+    await message.answer(response, parse_mode=ParseMode.HTML)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -267,39 +335,52 @@ def build_gamified_profile_caption(user: User | None, telegram_id: int) -> str:
 
 def build_muse_profile_caption(user: User | None, telegram_id: int) -> str:
     """
-    Формирует специальный caption для VIP Muse - ПАСПОРТ ГЛАВНОЙ МУЗЫ
-    Персонализированный романтический интерфейс для NeuroNatali.
+    Формирует специальный caption для VIP Muse - ЛИЧНЫЕ ПОКОИ
+    Элегантный романтический интерфейс для NeuroNatali.
+
+    Layout:
+    🌹 ЛИЧНЫЕ ПОКОИ | Special Access
+    ───────────────────
+    👸 Статус: 💎 Королева Вдохновения
+    ✨ Привилегии: Бесконечная удача
+    ───────────────────
+    💰 Твой Сейф: {balance} 🌕 + Ключ от сердца Администратора
+    ───────────────────
+    🎰 Твоя персональная рулетка
     """
     if not user:
         return (
-            f"🌹 <b>ПАСПОРТ ГЛАВНОЙ МУЗЫ</b>\n"
-            f"<i>Салун открывает перед тобой все двери.</i>\n\n"
-            f"Добро пожаловать, Королева!"
+            "🌹 <b>ЛИЧНЫЕ ПОКОИ</b> | Special Access\n"
+            "───────────────────\n"
+            "Добро пожаловать, Королева! 👑"
         )
 
     lines = []
 
     # ═══════════════ HEADER ═══════════════
-    lines.append("🌹 <b>ПАСПОРТ ГЛАВНОЙ МУЗЫ</b>")
-    lines.append("<i>Салун открывает перед тобой все двери, Натали.</i>")
+    lines.append("🌹 <b>ЛИЧНЫЕ ПОКОИ</b> | Special Access")
+    lines.append("───────────────────")
     lines.append("")
 
-    # ═══════════════ SECTION 1: SPECIAL RANK ═══════════════
-    lines.append("🏆 <b>Ранг:</b> 💎 Королева Вдохновения")
-    lines.append("📊 <b>Опыт:</b> Бесценно / ∞")
-    lines.append("<i>Твоё присутствие здесь уже делает нас богаче.</i>")
+    # ═══════════════ STATUS ═══════════════
+    lines.append("👸 <b>Статус:</b> 💎 Королева Вдохновения")
+    lines.append("✨ <b>Привилегии:</b> Бесконечная удача")
+    lines.append("")
+    lines.append("───────────────────")
     lines.append("")
 
-    # ═══════════════ SECTION 2: THE VAULT ═══════════════
-    lines.append(f"💰 <b>Сейф:</b> {format_number(user.balance)} 🌕 + Все золото мира")
+    # ═══════════════ THE VAULT ═══════════════
+    lines.append(f"💰 <b>Твой Сейф:</b> {format_number(user.balance)} 🌕")
+    lines.append("    + Ключ от сердца Администратора 💝")
     if user.referral_earnings > 0:
-        lines.append(f"👥 <b>Доход от Банды:</b> +{format_number(user.referral_earnings)} 🌕")
+        lines.append(f"👥 <b>Доход:</b> +{format_number(user.referral_earnings)} 🌕")
+    lines.append("")
+    lines.append("───────────────────")
     lines.append("")
 
-    # ═══════════════ SECTION 3: SPECIAL MESSAGE ═══════════════
-    lines.append("✨ <b>Специально для тебя:</b>")
-    lines.append("Рулетка работает без перерывов.")
-    lines.append("Испытывай удачу сколько хочешь! 🎰")
+    # ═══════════════ ROULETTE ═══════════════
+    lines.append("🎰 <b>Твоя персональная рулетка</b>")
+    lines.append("<i>Крути без ограничений — для тебя кулдауна нет!</i>")
 
     return "\n".join(lines)
 
@@ -1001,7 +1082,16 @@ MUSE_LUCK_WEIGHTS = [15, 10, 15, 15, 15, 10, 10, 10]  # Равномерное �
 
 @router.callback_query(F.data == "daily_luck")
 async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Ежедневный бонус - Испытать удачу"""
+    """
+    Ежедневный бонус - Испытать удачу
+
+    Animated Casino Experience:
+    1. Delete old message
+    2. Send 🎰 slot machine animation (native Telegram dice)
+    3. Wait 2-3 seconds for suspense
+    4. Calculate reward
+    5. Show result
+    """
     telegram_id = callback.from_user.id
 
     user_result = await session.execute(
@@ -1025,8 +1115,26 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
         )
         return
 
-    await callback.answer()
+    await callback.answer("🎰 Крутим барабан...")
 
+    # ═══════════════ STEP 1: DELETE OLD MESSAGE ═══════════════
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # ═══════════════ STEP 2: SEND SLOT MACHINE ANIMATION ═══════════════
+    # Send native Telegram 🎰 dice animation
+    dice_msg = await bot.send_dice(
+        chat_id=callback.message.chat.id,
+        emoji=DiceEmoji.SLOT_MACHINE
+    )
+
+    # ═══════════════ STEP 3: SUSPENSE DELAY ═══════════════
+    # Wait for the animation to play out (2.5 seconds for dramatic effect)
+    await asyncio.sleep(2.5)
+
+    # ═══════════════ STEP 4: CALCULATE REWARD ═══════════════
     # Roll the dice! (Different loot table for VIP Muse)
     if vip_muse:
         reward_tier = random.choices(MUSE_LUCK_REWARDS, weights=MUSE_LUCK_WEIGHTS, k=1)[0]
@@ -1037,65 +1145,63 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
         min_amount, max_amount, flavor_text = reward_tier
         bonus_amount = random.randint(min_amount, max_amount)
 
-    # Update user
+    # Update user balance
     user.balance += bonus_amount
+
     # Only set cooldown for non-VIP users
     if not vip_muse:
         try:
             user.last_daily_bonus_at = datetime.now(MSK_TZ)
         except Exception:
             pass  # Ignore if column doesn't exist
+
     await session.commit()
 
-    # Log
+    # Log the action
     try:
         await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=callback.from_user,
                         details=f"Daily Luck: +{bonus_amount}₽ {'(VIP)' if vip_muse else ''}", session=session)
     except Exception:
         pass
 
+    # ═══════════════ STEP 5: SHOW RESULT ═══════════════
     # Build result message (different for VIP Muse)
     if vip_muse:
         lines = [
             "🌹 <b>РУЛЕТКА МУЗЫ</b>",
-            "",
-            "🎲 Крутим специальный барабан...",
+            "───────────────────",
             "",
             f"💎 <b>{flavor_text}</b>",
-            f"💰 Начислено: <b>+{bonus_amount} 🌕</b>",
             "",
+            f"💰 Начислено: <b>+{bonus_amount} 🌕</b>",
             f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
             "",
             "<i>Крути ещё! Для тебя ограничений нет 💫</i>",
         ]
+        keyboard = get_muse_luck_result_keyboard()
     else:
         lines = [
             "🎰 <b>БАРАБАН УДАЧИ</b>",
-            "",
-            "🎲 Крутим...",
+            "───────────────────",
             "",
             f"🎉 <b>{flavor_text}</b>",
-            f"💰 Ты получил: <b>+{bonus_amount} 🌕</b>",
             "",
+            f"💰 Ты получил: <b>+{bonus_amount} 🌕</b>",
             f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
             "",
             "<i>Приходи завтра за новой порцией золота!</i>",
         ]
+        keyboard = get_daily_luck_result_keyboard()
 
     caption = "\n".join(lines)
-    keyboard = get_daily_luck_result_keyboard()
 
-    # Delete old message and send result
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
-
+    # Send result as reply to the dice message for visual connection
     await bot.send_message(
         chat_id=callback.message.chat.id,
         text=caption,
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
+        reply_to_message_id=dice_msg.message_id,
     )
 
 
@@ -1425,6 +1531,28 @@ async def process_coupon_code(message: Message, session: AsyncSession, state: FS
 # ══════════════════════════════════════════════════════════════
 #                    СЛУЖЕБНОЕ
 # ══════════════════════════════════════════════════════════════
+
+# Сюрпризы для кнопки "🌹 Сюрприз" (VIP Muse only)
+MUSE_SURPRISES = [
+    "💕 Ты — самое прекрасное, что случалось с этим ботом!",
+    "🌟 Если бы звёзды могли писать код, они бы писали о тебе.",
+    "☕ Кофе? Чай? Или, может, обнимашки? (спросить у Админа)",
+    "🎵 *играет романтическая музыка из сериалов*",
+    "💎 Сюрприз: твоя улыбка сделала чей-то день лучше!",
+    "🌹 Этот бот официально влюблён. В тебя.",
+    "✨ Секрет: Админ улыбается каждый раз, когда ты заходишь.",
+    "🤗 Виртуальные обнимашки отправлены! (доставка: немедленно)",
+    "💫 Факт дня: ты делаешь мир лучше просто своим существованием.",
+    "🎁 Настоящий сюрприз — это ты сама!",
+]
+
+
+@router.callback_query(F.data == "muse_surprise")
+async def muse_surprise_handler(callback: CallbackQuery):
+    """Обработчик кнопки 🌹 Сюрприз для VIP Muse"""
+    surprise = random.choice(MUSE_SURPRISES)
+    await callback.answer(surprise, show_alert=True)
+
 
 @router.callback_query(F.data == "noop")
 async def noop_handler(callback: CallbackQuery):
