@@ -63,6 +63,44 @@ def parse_callback_int(data: str, index: int, separator: str = ":") -> Optional[
         return None
 
 
+def build_price_offer_text(
+    order_id: int,
+    work_label: str,
+    deadline: Optional[str],
+    base_price: float,
+    bonus_used: float,
+    final_price: float,
+    bonus_note: Optional[str] = None,
+) -> str:
+    """
+    Формирует минималистичный текст счёта на оплату.
+    Ultra-clean дизайн без разделителей.
+    """
+    # Строка с дедлайном (только если есть)
+    deadline_line = f"⏱ <b>{deadline}</b>\n" if deadline else ""
+
+    # Строка с бонусами
+    if bonus_note:
+        # Особый текст (например, "Бонусы сохранены на балансе")
+        bonus_line = f"💎 <i>{bonus_note}</i>\n"
+    elif bonus_used > 0:
+        bonus_line = f"💎 Бонусы:  <code>−{bonus_used:.0f} ₽</code>\n"
+    else:
+        bonus_line = ""
+
+    return f"""<b>💰 СЧЁТ НА ОПЛАТУ №{order_id}</b>
+
+Шериф всё посчитал. Расклад такой:
+
+📂 <b>{work_label}</b>
+{deadline_line}
+💵 Тариф:  <code>{base_price:.0f} ₽</code>
+{bonus_line}
+👉 <b>К ОПЛАТЕ: <code>{final_price:.0f} ₽</code></b>
+
+<i>Выбирай, как удобнее платить.</i>"""
+
+
 # ══════════════════════════════════════════════════════════════
 #                        КЛАВИАТУРЫ
 # ══════════════════════════════════════════════════════════════
@@ -2224,24 +2262,17 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
     final_price = price - bonus_to_use
     half_amount = final_price / 2
 
-    # Формируем сообщение для клиента (Premium Deal Layout)
+    # Формируем сообщение для клиента (Ultra-Clean Layout)
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
-    # Строка с бонусами (только если есть)
-    bonus_line = f"\n💎 <b>Списано бонусов:</b> −{bonus_to_use:.0f}₽" if bonus_to_use > 0 else ""
-
-    client_text = f"""💰 <b>СМЕТА ГОТОВА</b>
-
-Шериф всё посчитал. Вот расклад по твоему заказу:
-
-📂 <b>Тип:</b> {work_label}
-💵 <b>Базовая цена:</b> {price:.0f}₽{bonus_line}
-
-───────────────
-<b>ИТОГО К ОПЛАТЕ: {final_price:.0f}₽</b>
-───────────────
-
-<i>Выбери, как будем рассчитываться. Если оплатишь всё сразу — меньше лишних движений.</i>"""
+    client_text = build_price_offer_text(
+        order_id=order.id,
+        work_label=work_label,
+        deadline=order.deadline,
+        base_price=price,
+        bonus_used=bonus_to_use,
+        final_price=final_price,
+    )
 
     # Формируем клавиатуру
     buttons = [
@@ -2374,21 +2405,15 @@ async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
     half_amount = final_price / 2
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
-    # Premium Layout
-    bonus_line = f"\n💎 <b>Списано бонусов:</b> −{order.bonus_used:.0f}₽" if order.bonus_used and order.bonus_used > 0 else ""
-
-    client_text = f"""💰 <b>СМЕТА ГОТОВА</b>
-
-Шериф всё посчитал. Вот расклад по твоему заказу:
-
-📂 <b>Тип:</b> {work_label}
-💵 <b>Базовая цена:</b> {order.price:.0f}₽{bonus_line}
-
-───────────────
-<b>ИТОГО К ОПЛАТЕ: {final_price:.0f}₽</b>
-───────────────
-
-<i>Выбери, как будем рассчитываться.</i>"""
+    # Ultra-Clean Layout
+    client_text = build_price_offer_text(
+        order_id=order.id,
+        work_label=work_label,
+        deadline=order.deadline,
+        base_price=order.price,
+        bonus_used=order.bonus_used or 0,
+        final_price=final_price,
+    )
 
     buttons = [
         [InlineKeyboardButton(
@@ -2441,24 +2466,20 @@ async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession
 
     await callback.answer(f"✅ Бонусы сохранены! (+{bonus_was:.0f}₽ на балансе)")
 
-    # Показываем выбор схемы оплаты без бонусов (Premium Layout)
+    # Показываем выбор схемы оплаты без бонусов (Ultra-Clean Layout)
     final_price = order.price
     half_amount = final_price / 2
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
-    new_text = f"""💰 <b>СМЕТА ГОТОВА</b>
-
-Шериф всё посчитал. Вот расклад по твоему заказу:
-
-📂 <b>Тип:</b> {work_label}
-💵 <b>Базовая цена:</b> {order.price:.0f}₽
-💎 <i>Бонусы сохранены на балансе</i>
-
-───────────────
-<b>ИТОГО К ОПЛАТЕ: {final_price:.0f}₽</b>
-───────────────
-
-<i>Выбери, как будем рассчитываться.</i>"""
+    new_text = build_price_offer_text(
+        order_id=order.id,
+        work_label=work_label,
+        deadline=order.deadline,
+        base_price=order.price,
+        bonus_used=0,
+        final_price=final_price,
+        bonus_note="Бонусы сохранены на балансе",
+    )
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -2876,24 +2897,17 @@ async def process_order_price_input(message: Message, state: FSMContext, session
     final_price = price - bonus_to_use
     half_amount = final_price / 2
 
-    # Формируем сообщение для клиента (Premium Deal Layout)
+    # Формируем сообщение для клиента (Ultra-Clean Layout)
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
-    # Строка с бонусами (только если есть)
-    bonus_line = f"\n💎 <b>Списано бонусов:</b> −{bonus_to_use:.0f}₽" if bonus_to_use > 0 else ""
-
-    client_text = f"""💰 <b>СМЕТА ГОТОВА</b>
-
-Шериф всё посчитал. Вот расклад по твоему заказу:
-
-📂 <b>Тип:</b> {work_label}
-💵 <b>Базовая цена:</b> {price:.0f}₽{bonus_line}
-
-───────────────
-<b>ИТОГО К ОПЛАТЕ: {final_price:.0f}₽</b>
-───────────────
-
-<i>Выбери, как будем рассчитываться. Если оплатишь всё сразу — меньше лишних движений.</i>"""
+    client_text = build_price_offer_text(
+        order_id=order.id,
+        work_label=work_label,
+        deadline=order.deadline,
+        base_price=price,
+        bonus_used=bonus_to_use,
+        final_price=final_price,
+    )
 
     # Формируем клавиатуру
     buttons = [
