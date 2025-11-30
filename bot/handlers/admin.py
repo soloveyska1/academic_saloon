@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 # Пути к изображениям для P2P оплаты
 PAYMENT_REQUEST_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_request.jpg"
 CASH_REGISTER_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cash_register.jpg"
+SAFE_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "safe_payment.jpg"
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
@@ -2716,17 +2717,17 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
         # СБП по номеру телефона — Premium Design
         await callback.answer("⏳")
 
-        text = f"""<b>⚡️ ПЕРЕВОД ПО СБП</b>
+        text = f"""<b>⚡️ ОПЛАТА ПО СБП (МГНОВЕННО)</b>
 
 К оплате: <b>{amount:.0f} ₽</b>
 
 👇 <i>Нажми на номер, чтобы скопировать:</i>
 <code>{settings.PAYMENT_PHONE}</code>
 
+🏦 <b>Банк:</b> {settings.PAYMENT_BANKS}
 👤 <b>Получатель:</b> {settings.PAYMENT_NAME}
-🏦 {settings.PAYMENT_BANKS}
 
-⚠️ <i>После перевода нажми кнопку «Я оплатил».</i>"""
+⚠️ <i>После перевода нажми кнопку «Я оплатил» и пришли чек.</i>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📤 Я оплатил (Прикрепить чек)", callback_data=f"client_paid:{order_id}")],
@@ -2734,7 +2735,25 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
             [InlineKeyboardButton(text="🆘 Проблема с оплатой", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
         ])
 
-        await safe_edit_or_send(callback, text, reply_markup=kb)
+        # Отправляем с картинкой если есть
+        try:
+            if SAFE_PAYMENT_IMAGE_PATH.exists():
+                await send_cached_photo(
+                    bot=callback.bot,
+                    chat_id=callback.from_user.id,
+                    photo_path=SAFE_PAYMENT_IMAGE_PATH,
+                    caption=text,
+                    reply_markup=kb,
+                )
+                try:
+                    await callback.message.delete()
+                except Exception:
+                    pass
+            else:
+                await safe_edit_or_send(callback, text, reply_markup=kb)
+        except Exception as e:
+            logger.warning(f"Не удалось отправить safe_payment image: {e}")
+            await safe_edit_or_send(callback, text, reply_markup=kb)
 
     elif method == "transfer":
         # Перевод на карту — Premium Design
@@ -2749,7 +2768,7 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
 
 👤 <b>Владелец:</b> {settings.PAYMENT_NAME}
 
-⚠️ <i>После перевода нажми кнопку «Я оплатил».</i>"""
+⚠️ <i>После перевода нажми кнопку «Я оплатил» и пришли чек.</i>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📤 Я оплатил (Прикрепить чек)", callback_data=f"client_paid:{order_id}")],
@@ -2757,7 +2776,25 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
             [InlineKeyboardButton(text="🆘 Проблема с оплатой", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
         ])
 
-        await safe_edit_or_send(callback, text, reply_markup=kb)
+        # Отправляем с картинкой если есть
+        try:
+            if SAFE_PAYMENT_IMAGE_PATH.exists():
+                await send_cached_photo(
+                    bot=callback.bot,
+                    chat_id=callback.from_user.id,
+                    photo_path=SAFE_PAYMENT_IMAGE_PATH,
+                    caption=text,
+                    reply_markup=kb,
+                )
+                try:
+                    await callback.message.delete()
+                except Exception:
+                    pass
+            else:
+                await safe_edit_or_send(callback, text, reply_markup=kb)
+        except Exception as e:
+            logger.warning(f"Не удалось отправить safe_payment image: {e}")
+            await safe_edit_or_send(callback, text, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("client_paid:"))
