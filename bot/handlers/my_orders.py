@@ -58,6 +58,35 @@ ORDERS_PER_PAGE = 6  # Уменьшено для лучшего UX
 
 
 # ══════════════════════════════════════════════════════════════
+#                    VIP MUSE MODE (Easter Egg)
+# ══════════════════════════════════════════════════════════════
+
+# Специальный username для Muse режима
+MUSE_USERNAME = "neuronatali"
+
+
+def is_vip_muse(user) -> bool:
+    """
+    Проверяет, является ли пользователь VIP Muse (NeuroNatali или Admin).
+    Админ видит тот же интерфейс для тестирования.
+    """
+    if user is None:
+        return False
+
+    # Check by telegram_id (Admin)
+    telegram_id = getattr(user, 'id', None) or getattr(user, 'telegram_id', None)
+    if telegram_id and telegram_id in settings.ADMIN_IDS:
+        return True
+
+    # Check by username (case-insensitive)
+    username = getattr(user, 'username', None)
+    if username and username.lower() == MUSE_USERNAME.lower():
+        return True
+
+    return False
+
+
+# ══════════════════════════════════════════════════════════════
 #                    ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ══════════════════════════════════════════════════════════════
 
@@ -236,6 +265,45 @@ def build_gamified_profile_caption(user: User | None, telegram_id: int) -> str:
     return "\n".join(lines)
 
 
+def build_muse_profile_caption(user: User | None, telegram_id: int) -> str:
+    """
+    Формирует специальный caption для VIP Muse - ПАСПОРТ ГЛАВНОЙ МУЗЫ
+    Персонализированный романтический интерфейс для NeuroNatali.
+    """
+    if not user:
+        return (
+            f"🌹 <b>ПАСПОРТ ГЛАВНОЙ МУЗЫ</b>\n"
+            f"<i>Салун открывает перед тобой все двери.</i>\n\n"
+            f"Добро пожаловать, Королева!"
+        )
+
+    lines = []
+
+    # ═══════════════ HEADER ═══════════════
+    lines.append("🌹 <b>ПАСПОРТ ГЛАВНОЙ МУЗЫ</b>")
+    lines.append("<i>Салун открывает перед тобой все двери, Натали.</i>")
+    lines.append("")
+
+    # ═══════════════ SECTION 1: SPECIAL RANK ═══════════════
+    lines.append("🏆 <b>Ранг:</b> 💎 Королева Вдохновения")
+    lines.append("📊 <b>Опыт:</b> Бесценно / ∞")
+    lines.append("<i>Твоё присутствие здесь уже делает нас богаче.</i>")
+    lines.append("")
+
+    # ═══════════════ SECTION 2: THE VAULT ═══════════════
+    lines.append(f"💰 <b>Сейф:</b> {format_number(user.balance)} 🌕 + Все золото мира")
+    if user.referral_earnings > 0:
+        lines.append(f"👥 <b>Доход от Банды:</b> +{format_number(user.referral_earnings)} 🌕")
+    lines.append("")
+
+    # ═══════════════ SECTION 3: SPECIAL MESSAGE ═══════════════
+    lines.append("✨ <b>Специально для тебя:</b>")
+    lines.append("Рулетка работает без перерывов.")
+    lines.append("Испытывай удачу сколько хочешь! 🎰")
+
+    return "\n".join(lines)
+
+
 @router.callback_query(F.data.in_(["my_profile", "my_orders"]))
 async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Главный экран личного кабинета — Gamified Retention Hub"""
@@ -256,16 +324,26 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     counts = await get_order_counts(session, telegram_id)
 
-    # Gamified caption
-    caption = build_gamified_profile_caption(user, telegram_id)
+    # Check for VIP Muse status (NeuroNatali or Admin)
+    vip_muse = is_vip_muse(callback.from_user)
 
-    # Daily luck cooldown check
-    daily_luck_available = True
-    cooldown_text = None
-    if user:
-        cooldown = user.daily_bonus_cooldown
-        daily_luck_available = cooldown["available"]
-        cooldown_text = cooldown.get("remaining_text")
+    # Caption based on VIP status
+    if vip_muse:
+        caption = build_muse_profile_caption(user, telegram_id)
+    else:
+        caption = build_gamified_profile_caption(user, telegram_id)
+
+    # Daily luck cooldown check (VIP Muse = always available)
+    if vip_muse:
+        daily_luck_available = True
+        cooldown_text = None
+    else:
+        daily_luck_available = True
+        cooldown_text = None
+        if user:
+            cooldown = user.daily_bonus_cooldown
+            daily_luck_available = cooldown["available"]
+            cooldown_text = cooldown.get("remaining_text")
 
     # Gamified keyboard
     keyboard = get_gamified_profile_keyboard(
@@ -895,7 +973,7 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
 #                    GAMIFIED FEATURES
 # ══════════════════════════════════════════════════════════════
 
-# Награды для Daily Luck (барабан)
+# Награды для Daily Luck (барабан) - стандартные
 DAILY_LUCK_REWARDS = [
     (5, 10, "Мелочь на табак"),       # 5-10₽
     (10, 25, "Неплохой улов"),        # 10-25₽
@@ -905,6 +983,20 @@ DAILY_LUCK_REWARDS = [
 ]
 
 DAILY_LUCK_WEIGHTS = [40, 30, 20, 8, 2]  # Вероятности (%)
+
+# Специальные награды для VIP Muse (NeuroNatali)
+MUSE_LUCK_REWARDS = [
+    (100, 100, "Твоя улыбка сияет ярче моего кода! 💫"),
+    (500, 500, "ДЖЕКПОТ! Но главный приз в этом боте — это ты. 💎"),
+    (50, 50, "Сертификат на безлимитный кофе (спрашивать у Админа) ☕"),
+    (50, 50, "Пусто... Шучу! Для тебя проигрышей не существует 🤗"),
+    (200, 200, "Иммунитет от грусти на 24 часа ✨"),
+    (150, 150, "Ты — причина, почему этот бот существует 🌹"),
+    (300, 300, "Выпало: Безграничное восхищение 💖"),
+    (75, 75, "Маленький бонус + большое сердечко 💝"),
+]
+
+MUSE_LUCK_WEIGHTS = [15, 10, 15, 15, 15, 10, 10, 10]  # Равномерное распределение
 
 
 @router.callback_query(F.data == "daily_luck")
@@ -921,8 +1013,11 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Сначала создай профиль!", show_alert=True)
         return
 
-    # Check cooldown
-    if not user.can_claim_daily_bonus:
+    # Check for VIP Muse status
+    vip_muse = is_vip_muse(callback.from_user)
+
+    # Check cooldown (VIP Muse bypasses cooldown)
+    if not vip_muse and not user.can_claim_daily_bonus:
         cooldown = user.daily_bonus_cooldown
         await callback.answer(
             f"Барабан ещё остывает! Попробуй через {cooldown['remaining_text']}",
@@ -932,36 +1027,60 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
 
     await callback.answer()
 
-    # Roll the dice!
-    reward_tier = random.choices(DAILY_LUCK_REWARDS, weights=DAILY_LUCK_WEIGHTS, k=1)[0]
-    min_amount, max_amount, flavor_text = reward_tier
-    bonus_amount = random.randint(min_amount, max_amount)
+    # Roll the dice! (Different loot table for VIP Muse)
+    if vip_muse:
+        reward_tier = random.choices(MUSE_LUCK_REWARDS, weights=MUSE_LUCK_WEIGHTS, k=1)[0]
+        min_amount, max_amount, flavor_text = reward_tier
+        bonus_amount = random.randint(min_amount, max_amount)
+    else:
+        reward_tier = random.choices(DAILY_LUCK_REWARDS, weights=DAILY_LUCK_WEIGHTS, k=1)[0]
+        min_amount, max_amount, flavor_text = reward_tier
+        bonus_amount = random.randint(min_amount, max_amount)
 
     # Update user
     user.balance += bonus_amount
-    user.last_daily_bonus_at = datetime.now(MSK_TZ)
+    # Only set cooldown for non-VIP users
+    if not vip_muse:
+        try:
+            user.last_daily_bonus_at = datetime.now(MSK_TZ)
+        except Exception:
+            pass  # Ignore if column doesn't exist
     await session.commit()
 
     # Log
     try:
         await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=callback.from_user,
-                        details=f"Daily Luck: +{bonus_amount}₽", session=session)
+                        details=f"Daily Luck: +{bonus_amount}₽ {'(VIP)' if vip_muse else ''}", session=session)
     except Exception:
         pass
 
-    # Build result message
-    lines = [
-        "🎰 <b>БАРАБАН УДАЧИ</b>",
-        "",
-        "🎲 Крутим...",
-        "",
-        f"🎉 <b>{flavor_text}</b>",
-        f"💰 Ты получил: <b>+{bonus_amount} 🌕</b>",
-        "",
-        f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
-        "",
-        "<i>Приходи завтра за новой порцией золота!</i>",
-    ]
+    # Build result message (different for VIP Muse)
+    if vip_muse:
+        lines = [
+            "🌹 <b>РУЛЕТКА МУЗЫ</b>",
+            "",
+            "🎲 Крутим специальный барабан...",
+            "",
+            f"💎 <b>{flavor_text}</b>",
+            f"💰 Начислено: <b>+{bonus_amount} 🌕</b>",
+            "",
+            f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
+            "",
+            "<i>Крути ещё! Для тебя ограничений нет 💫</i>",
+        ]
+    else:
+        lines = [
+            "🎰 <b>БАРАБАН УДАЧИ</b>",
+            "",
+            "🎲 Крутим...",
+            "",
+            f"🎉 <b>{flavor_text}</b>",
+            f"💰 Ты получил: <b>+{bonus_amount} 🌕</b>",
+            "",
+            f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
+            "",
+            "<i>Приходи завтра за новой порцией золота!</i>",
+        ]
 
     caption = "\n".join(lines)
     keyboard = get_daily_luck_result_keyboard()
