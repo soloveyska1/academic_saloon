@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import Router, Bot, F
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
@@ -19,10 +21,11 @@ from bot.texts.terms import (
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.daily_stats import get_live_stats_line
 from core.config import settings
-from core.saloon_status import saloon_manager, generate_status_message
+from core.saloon_status import SaloonStatus, generate_status_message, saloon_manager
 from core.media_cache import send_cached_photo
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
@@ -30,7 +33,11 @@ async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
     Отправляет статус салуна с интерактивными кнопками.
     Закрепляет только если pin=True (для новых пользователей).
     """
-    status = await saloon_manager.get_status()
+    try:
+        status = await saloon_manager.get_status()
+    except Exception:
+        logger.exception("Не удалось получить статус салуна, используется значение по умолчанию")
+        status = SaloonStatus()
     status_text = generate_status_message(status)
 
     # Отправляем сообщение со статусом и кнопками
