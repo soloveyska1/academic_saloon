@@ -322,18 +322,49 @@ def get_muse_luck_result_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-def get_muse_profile_keyboard() -> InlineKeyboardMarkup:
+def get_muse_profile_keyboard(active_orders: int = 0) -> InlineKeyboardMarkup:
     """
-    Клавиатура для VIP Muse профиля - минималистичный дизайн.
+    Клавиатура для VIP Muse профиля - минималистичный дизайн + полный функционал.
 
     Layout:
-    [🎰 Испытать удачу] - центральная кнопка
+    [🎰 Испытать удачу] - VIP рулетка без кулдауна
+    [📦 Мои заказы] - стандартный функционал
+    [📜 История] [🎟 Купон]
+    [🔫 Моя Банда]
     [⬅️ В меню]
     """
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎰 Испытать удачу", callback_data="daily_luck")],
-        [InlineKeyboardButton(text="⬅️ В меню", callback_data="back_to_menu")],
+    buttons = []
+
+    # Row 1: VIP Roulette (главная фишка)
+    buttons.append([
+        InlineKeyboardButton(text="🎰 Испытать удачу", callback_data="daily_luck")
     ])
+
+    # Row 2: Orders (стандартный функционал)
+    orders_text = "📦 Мои заказы"
+    if active_orders > 0:
+        orders_text += f" ({active_orders})"
+    buttons.append([
+        InlineKeyboardButton(text=orders_text, callback_data="profile_orders")
+    ])
+
+    # Row 3: History + Coupon
+    buttons.append([
+        InlineKeyboardButton(text="📜 История", callback_data="profile_history"),
+        InlineKeyboardButton(text="🎟 Купон", callback_data="activate_coupon"),
+    ])
+
+    # Row 4: Gang (referral)
+    buttons.append([
+        InlineKeyboardButton(text="🔫 Моя Банда", callback_data="profile_gang")
+    ])
+
+    # Row 5: Back
+    buttons.append([
+        InlineKeyboardButton(text="⬅️ В меню", callback_data="back_to_menu")
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def get_history_keyboard(page: int = 0, total_pages: int = 1) -> InlineKeyboardMarkup:
