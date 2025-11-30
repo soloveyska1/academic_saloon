@@ -437,7 +437,7 @@ def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
 
     # Назад и отмена
     buttons.append([
-        InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_categories"),
+        InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_categories"),
         InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
     ])
 
