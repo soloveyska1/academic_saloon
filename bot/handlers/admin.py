@@ -31,6 +31,7 @@ from bot.states.admin import AdminStates
 from bot.states.order import OrderState
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
+from bot.handlers.start import process_start
 
 router = Router()
 
@@ -2445,11 +2446,16 @@ async def process_payment_receipt(message: Message, state: FSMContext, session: 
 
 
 @router.message(OrderState.waiting_for_receipt)
-async def process_payment_receipt_invalid(message: Message):
+async def process_payment_receipt_invalid(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """
     Получили мусор (текст, стикер, голос и т.д.) в состоянии ожидания чека.
     Не сбрасываем state — даём ещё одну попытку.
     """
+    # Intercept /start command — reset and redirect to main menu
+    if message.text and message.text.strip().lower().startswith("/start"):
+        await process_start(message, session, bot, state, deep_link=None)
+        return
+
     await message.answer(
         "❌ <b>Это не похоже на чек.</b>\n\n"
         "Пришли <b>скриншот</b> или <b>PDF-файл</b>.\n"
