@@ -2838,33 +2838,36 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
 
     final_price = order.price - order.bonus_used if order.bonus_used else order.price
 
-    # Уведомляем клиента с интерактивными кнопками
-    client_text = f"""🔍 <b>Хм, пока не вижу перевод...</b>
+    # Новое улучшенное сообщение для клиента
+    client_text = f"""🚫 <b>ОПЛАТА НЕ НАЙДЕНА</b>
 
-Заказ #{order.id} · {final_price:.0f}₽
+Партнер, в нашем сейфе пока пусто. Мы проверили счета, но поступления по заказу <b>#{order.id}</b> на сумму <b>{final_price:.0f} ₽</b> не видим.
 
-Бывает! Проверь:
-• Правильные ли реквизиты
-• Ушёл ли перевод (иногда банк задерживает)
+<b>Возможные причины:</b>
+• Банковская задержка (переводы идут до 15 минут).
+• Ошибка в реквизитах.
+• Ты забыл нажать «Отправить» в приложении банка.
 
-Если точно оплатил — жми кнопку 👇"""
+Если деньги списались — без паники. Жми кнопку ниже и пиши лично Шерифу, разберемся."""
 
-    # Клавиатура с действиями для клиента
+    # Новая клавиатура с действиями для клиента
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="✅ Я точно оплатил!",
-                callback_data=f"retry_payment_check:{order.id}"
+                text="🆘 Написать Шерифу",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             ),
         ],
         [
             InlineKeyboardButton(
-                text="📸 Скинуть скриншот",
-                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
-            ),
-            InlineKeyboardButton(
-                text="💳 Реквизиты",
+                text="💳 Показать реквизиты",
                 callback_data=f"show_requisites:{order.id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="⏳ Я подожду",
+                callback_data=f"dismiss_payment_error:{order.id}"
             ),
         ],
     ])
@@ -2875,6 +2878,24 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
         pass
 
     await callback.answer("Клиент уведомлён")
+
+
+@router.callback_query(F.data.startswith("dismiss_payment_error:"))
+async def dismiss_payment_error_callback(callback: CallbackQuery):
+    """Клиент нажал 'Я подожду' — удаляем сообщение об ошибке оплаты"""
+    await callback.answer("👍 Хорошо, подождём!")
+    try:
+        await callback.message.delete()
+    except Exception:
+        # Если не удалось удалить — просто убираем кнопки
+        try:
+            await callback.message.edit_text(
+                "⏳ <b>Ожидаем поступление оплаты...</b>\n\n"
+                "Если деньги списались — напиши Шерифу.",
+                reply_markup=None
+            )
+        except Exception:
+            pass
 
 
 @router.callback_query(F.data.startswith("retry_payment_check:"))
