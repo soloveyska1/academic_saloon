@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 PAYMENT_REQUEST_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_request.jpg"
 CASH_REGISTER_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cash_register.jpg"
 SAFE_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "safe_payment.jpg"
+PAYMENT_SUCCESS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_success.jpg"
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
@@ -2819,37 +2820,47 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
         return
 
-    await callback.answer("👍 Отлично! Проверяю оплату...")
+    await callback.answer("🎉 Отлично!")
 
     # Определяем сумму к оплате (с учётом схемы)
     amount = get_payment_amount(order)
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
 
-    # Текст в зависимости от схемы
-    if order.payment_scheme == "half":
-        scheme_info = f"\n📋 Схема: 50% аванс\n💵 Оплачено: {amount:.0f}₽ из {final_price:.0f}₽"
-    else:
-        scheme_info = ""
+    # Premium Payment Confirmation
+    new_text = f"""<b>🎉 ЕСТЬ КОНТАКТ! ЗОЛОТО В ХРАНИЛИЩЕ.</b>
 
-    # Обновляем сообщение клиенту
-    new_text = f"""✅ <b>Заявка отправлена!</b>
+Заказ <b>#{order.id}</b> оплачен.
 
-Заказ #{order.id} · {amount:.0f}₽{scheme_info}
+Шериф подтвердил поступление. Твои монеты в надёжном месте.
 
-⏳ Проверяю оплату, обычно пара минут.
-Напишу сразу как увижу перевод!"""
+Мои ребята уже засучили рукава и начали работать над твоим заказом. Скоро вернусь с первыми результатами.
 
-    # Оставляем только кнопку поддержки
+<i>Можешь пока расслабиться в салуне, партнёр.</i>"""
+
+    # Кнопки навигации
     new_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="💬 Написать в поддержку",
-                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
-            )
-        ]
+        [InlineKeyboardButton(text="🌵 В салун (Главное меню)", callback_data="main_menu")],
+        [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
     ])
 
-    await callback.message.edit_text(new_text, reply_markup=new_keyboard)
+    # Отправляем с картинкой если есть
+    try:
+        if PAYMENT_SUCCESS_IMAGE_PATH.exists():
+            await send_cached_photo(
+                bot=callback.bot,
+                chat_id=callback.from_user.id,
+                photo_path=PAYMENT_SUCCESS_IMAGE_PATH,
+                caption=new_text,
+                reply_markup=new_keyboard,
+            )
+            try:
+                await callback.message.delete()
+            except Exception:
+                pass
+        else:
+            await safe_edit_or_send(callback, new_text, reply_markup=new_keyboard)
+    except Exception as e:
+        logger.warning(f"Не удалось отправить payment_success image: {e}")
+        await safe_edit_or_send(callback, new_text, reply_markup=new_keyboard)
 
     # Уведомляем админов
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
