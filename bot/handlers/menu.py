@@ -1,3 +1,4 @@
+import html
 import random
 import logging
 from pathlib import Path
@@ -29,6 +30,95 @@ logger = logging.getLogger(__name__)
 SUPPORT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "support.jpg"
 PRICE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "price.jpg"
 CODEX_IMAGE_PATH = Path(__file__).parent.parent / "media" / "codex.jpg"
+MAIN_MENU_IMAGE_PATH = Path(__file__).parent.parent / "media" / "saloon_menu.jpg"
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ГЛАВНОЕ МЕНЮ — ПЕРЕИСПОЛЬЗУЕМАЯ ФУНКЦИЯ
+# ══════════════════════════════════════════════════════════════
+
+def build_main_menu_text(user_name: str) -> str:
+    """
+    Формирует текст главного меню с персонализацией.
+
+    Args:
+        user_name: Имя пользователя (уже экранированное через html.escape!)
+
+    Returns:
+        HTML-форматированный текст меню
+    """
+    return f"""🤠 <b>Салун открыт для тебя, {user_name}!</b>
+
+Здесь решают учебные проблемы любой сложности. Быстро, анонимно и с гарантией Шерифа.
+
+📜 <b>Наше досье:</b>
+🎖 <b>6 лет</b> безупречной работы
+🤝 <b>1000+</b> спасённых студентов
+💎 <b>Доводим до идеала</b> (или вернём золото)
+
+<i>Сейф открыт 24/7. Чем зарядить твой кольт сегодня? 👇</i>"""
+
+
+async def send_main_menu(
+    chat_id: int,
+    bot: Bot,
+    user_name: str,
+) -> None:
+    """
+    Отправляет главное меню с картинкой — универсальная функция.
+
+    Используется:
+    - После принятия оферты (accept_rules)
+    - По команде /start (если юзер уже зарегистрирован)
+    - По кнопке "Назад" (back_to_menu)
+
+    Args:
+        chat_id: ID чата для отправки
+        bot: Экземпляр бота
+        user_name: Имя пользователя (НЕ экранированное — функция сделает это сама)
+    """
+    # Экранируем имя от HTML-инъекций (< > & и т.д.)
+    safe_name = html.escape(user_name)
+    text = build_main_menu_text(safe_name)
+    keyboard = get_main_menu_keyboard()
+
+    # Пытаемся отправить с картинкой
+    if MAIN_MENU_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=chat_id,
+                photo_path=MAIN_MENU_IMAGE_PATH,
+                caption=text,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить картинку меню: {e}")
+
+    # Fallback: используем MENU_IMAGE из настроек
+    if settings.MENU_IMAGE.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=chat_id,
+                photo_path=settings.MENU_IMAGE,
+                caption=text,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Fallback MENU_IMAGE тоже не сработал: {e}")
+
+    # Последний fallback — просто текст
+    await bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
 
 
 # ══════════════════════════════════════════════════════════════
@@ -520,7 +610,7 @@ async def show_about(callback: CallbackQuery, bot: Bot):
 
 @router.callback_query(F.data == "back_to_menu")
 async def back_to_menu(callback: CallbackQuery, bot: Bot):
-    """Возврат в главное меню с атмосферной картинкой"""
+    """Возврат в главное меню с персонализированным приветствием"""
     await callback.answer("⏳")
 
     # Логируем
@@ -531,14 +621,17 @@ async def back_to_menu(callback: CallbackQuery, bot: Bot):
         details="Вернулся в главное меню",
     )
 
-    # Удаляем старое сообщение и отправляем картинку с меню (с кэшированием file_id)
+    # Удаляем старое сообщение
     await safe_delete_message(callback)
-    await send_cached_photo(
+
+    # Отправляем персонализированное меню
+    user_name = callback.from_user.full_name or "Партнёр"
+    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
+
+    await send_main_menu(
+        chat_id=chat_id,
         bot=bot,
-        chat_id=callback.message.chat.id,
-        photo_path=settings.MENU_IMAGE,
-        caption=get_menu_text(),
-        reply_markup=get_main_menu_keyboard()
+        user_name=user_name,
     )
 
 

@@ -3,6 +3,7 @@ from typing import Optional
 
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -26,6 +27,7 @@ from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard, get
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from bot.handlers.start import send_and_pin_status
+from bot.handlers.menu import send_main_menu
 from core.media_cache import send_cached_photo, get_cached_input_media_photo
 
 router = Router()
@@ -112,18 +114,43 @@ async def noop_handler(callback: CallbackQuery):
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data.in_({"terms_accept", "accept_rules"}))
-async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Принятие условий оферты (Кодекса Салуна)"""
+async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot, state: FSMContext):
+    """
+    Принятие условий оферты (Кодекса Салуна).
+
+    Логика:
+    1. Чистка: Удаляем сообщение с офертой (или редактируем если старое)
+    2. Меню: Отправляем НОВОЕ сообщение с картинкой и главным меню
+    3. Сброс: Очищаем FSM state от зависших диалогов
+    """
     await callback.answer("🤝 Ударили по рукам!")
 
     telegram_id = callback.from_user.id
+    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
+    user_name = callback.from_user.full_name or "Партнёр"
 
-    # Получаем пользователя
+    # ═══ ШАГ А: ЧИСТКА — удаляем/редактируем сообщение с офертой ═══
+    if callback.message:
+        try:
+            await callback.message.delete()
+        except Exception:
+            # Сообщение слишком старое — редактируем вместо удаления
+            try:
+                await callback.message.edit_text(
+                    "✅ Правила приняты.",
+                    reply_markup=None
+                )
+            except Exception:
+                pass  # Уже удалено или недоступно
+
+    # ═══ ШАГ В: СБРОС FSM — очищаем зависшие диалоги ═══
+    await state.clear()
+
+    # Получаем/создаём пользователя в БД
     query = select(User).where(User.telegram_id == telegram_id)
     result = await session.execute(query)
     user = result.scalar_one_or_none()
 
-    # Проверяем, принимал ли пользователь оферту раньше
     is_first_accept = user is None or user.terms_accepted_at is None
 
     if not user:
@@ -142,14 +169,7 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     await session.commit()
 
-    # Удаляем сообщение с офертой
-    if callback.message:
-        try:
-            await callback.message.delete()
-        except Exception:
-            pass
-
-    # Формируем приветственное сообщение
+    # ═══ ШАГ Б: МЕНЮ — отправляем главное меню ═══
     if is_first_accept:
         # Логируем нового пользователя — ВАЖНОЕ событие
         ref_info = None
@@ -167,10 +187,11 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             silent=False,  # Со звуком!
         )
 
-        # Новым пользователям: ТОЛЬКО интрига с кнопкой для голосового
+        # Новым пользователям: интрига с голосовым приветствием
         # Меню и закреп отправятся после прослушивания
-        await callback.message.answer(
-            VOICE_TEASER,
+        await bot.send_message(
+            chat_id=chat_id,
+            text=VOICE_TEASER,
             reply_markup=get_voice_teaser_keyboard()
         )
     else:
@@ -183,14 +204,11 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot)
             session=session,
         )
 
-        # Старым пользователям: сразу меню (с кэшированием file_id)
-        text = get_time_greeting()
-        await send_cached_photo(
+        # Возвращающимся пользователям: сразу главное меню
+        await send_main_menu(
+            chat_id=chat_id,
             bot=bot,
-            chat_id=callback.message.chat.id,
-            photo_path=settings.WELCOME_IMAGE,
-            caption=text,
-            reply_markup=get_main_menu_keyboard()
+            user_name=user_name,
         )
 
 
@@ -206,8 +224,9 @@ async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
     """
     await callback.answer("⏳")
 
-    # Определяем chat_id
+    # Определяем данные
     chat_id = callback.message.chat.id if callback.message else callback.from_user.id
+    user_name = callback.from_user.full_name or "Партнёр"
 
     # Удаляем сообщение с кнопкой
     if callback.message:
@@ -228,14 +247,11 @@ async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
         details="Прослушал голосовое приветствие",
     )
 
-    # Теперь отправляем меню (с кэшированием file_id)
-    text = get_time_greeting()
-    await send_cached_photo(
-        bot=bot,
+    # Отправляем персонализированное главное меню
+    await send_main_menu(
         chat_id=chat_id,
-        photo_path=settings.WELCOME_IMAGE,
-        caption=text,
-        reply_markup=get_main_menu_keyboard()
+        bot=bot,
+        user_name=user_name,
     )
 
     # И закреп со статусом салуна
