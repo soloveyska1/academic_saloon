@@ -15,7 +15,7 @@ from aiogram.types import (
     TelegramObject, Update, Message, CallbackQuery,
     InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, User as TgUser
 )
-from aiogram.exceptions import TelegramNetworkError, TelegramRetryAfter
+from aiogram.exceptions import TelegramNetworkError, TelegramRetryAfter, TelegramBadRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -96,6 +96,20 @@ class ErrorHandlerMiddleware(BaseMiddleware):
                     continue
                 # Все попытки исчерпаны
                 logger.error(f"Network error after {MAX_RETRIES} retries: {e}")
+                await self._handle_error(event, data, e)
+                return None
+            except TelegramBadRequest as e:
+                error_msg = str(e).lower()
+                # Игнорируем "безобидные" ошибки редактирования
+                if any(ignore in error_msg for ignore in [
+                    "there is no text in the message",
+                    "message is not modified",
+                    "message can't be edited",
+                    "message to edit not found",
+                ]):
+                    logger.debug(f"Ignored harmless edit error: {e}")
+                    return None
+                # Остальные BadRequest — обрабатываем как ошибки
                 await self._handle_error(event, data, e)
                 return None
             except Exception as e:
