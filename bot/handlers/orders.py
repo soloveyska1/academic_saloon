@@ -65,6 +65,7 @@ from bot.texts.terms import get_first_name
 from core.config import settings
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
+from bot.handlers.start import process_start
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -1109,6 +1110,11 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
     - Защита от дублей (по file_id)
     - Лимит вложений
     """
+    # Intercept /start command — reset and redirect to main menu
+    if message.text and message.text.strip().lower().startswith("/start"):
+        await process_start(message, session, bot, state, deep_link=None)
+        return
+
     data = await state.get_data()
     attachments = data.get("attachments", [])
     is_urgent = data.get("is_urgent", False)
@@ -1425,6 +1431,11 @@ async def back_to_deadline_buttons(callback: CallbackQuery, state: FSMContext, b
 @router.message(OrderState.choosing_deadline)
 async def process_deadline_text(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Обработка ввода срока текстом"""
+    # Intercept /start command — reset and redirect to main menu
+    if message.text and message.text.strip().lower().startswith("/start"):
+        await process_start(message, session, bot, state, deep_link=None)
+        return
+
     await state.update_data(deadline="custom", deadline_label=message.text)
 
     # Создаём фейковый callback для унификации
@@ -1908,8 +1919,13 @@ async def append_voice(message: Message, state: FSMContext):
 
 
 @router.message(OrderState.appending_files, F.text)
-async def append_text(message: Message, state: FSMContext):
+async def append_text(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Получен текст для дослать"""
+    # Intercept /start command — reset and redirect to main menu
+    if message.text and message.text.strip().lower().startswith("/start"):
+        await process_start(message, session, bot, state, deep_link=None)
+        return
+
     data = await state.get_data()
     appended_files = data.get("appended_files", [])
 
@@ -2826,8 +2842,13 @@ async def receive_payment_receipt_document(message: Message, state: FSMContext, 
 
 
 @router.message(OrderState.waiting_for_receipt)
-async def waiting_for_receipt_invalid(message: Message):
+async def waiting_for_receipt_invalid(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Пользователь отправил что-то кроме фото/документа"""
+    # Intercept /start command — reset and redirect to main menu
+    if message.text and message.text.strip().lower().startswith("/start"):
+        await process_start(message, session, bot, state, deep_link=None)
+        return
+
     await message.answer(
         "📸 <b>Жду скриншот чека!</b>\n\n"
         "Пожалуйста, отправь фото или файл с чеком об оплате."
