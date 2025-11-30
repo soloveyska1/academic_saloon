@@ -311,6 +311,18 @@ def get_daily_luck_result_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
+def get_muse_luck_result_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура после получения бонуса для VIP Muse (NeuroNatali)
+    Включает кнопку "🌹 Сюрприз" (dummy) и "Крутить ещё"
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎰 Крутить ещё!", callback_data="daily_luck")],
+        [InlineKeyboardButton(text="🌹 Сюрприз", callback_data="muse_surprise")],
+        [InlineKeyboardButton(text="🔙 Назад в покои", callback_data="my_profile")],
+    ])
+
+
 def get_history_keyboard(page: int = 0, total_pages: int = 1) -> InlineKeyboardMarkup:
     """Клавиатура для истории операций с пагинацией"""
     buttons = []
