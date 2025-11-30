@@ -32,6 +32,7 @@ from core.saloon_status import (
 from bot.states.admin import AdminStates
 from bot.states.order import OrderState
 from core.media_cache import send_cached_photo
+from bot.utils.message_helpers import safe_edit_or_send
 
 router = Router()
 
@@ -2348,7 +2349,7 @@ async def pay_scheme_callback(callback: CallbackQuery, session: AsyncSession):
 
 Выбери способ оплаты:"""
 
-    await callback.message.edit_text(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+    await safe_edit_or_send(callback, text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
 
 
 @router.callback_query(F.data.startswith("pay_back:"))
@@ -2413,7 +2414,7 @@ async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
 
     kb = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    await callback.message.edit_text(client_text, reply_markup=kb)
+    await safe_edit_or_send(callback, client_text, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("price_no_bonus:"))
@@ -2474,15 +2475,7 @@ async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession
         )],
     ])
 
-    # Это уже текстовое сообщение, можно edit_caption если было фото
-    try:
-        await callback.message.edit_caption(caption=new_text, reply_markup=kb)
-    except Exception:
-        # Fallback на edit_text если не фото
-        try:
-            await callback.message.edit_text(new_text, reply_markup=kb)
-        except Exception:
-            pass
+    await safe_edit_or_send(callback, new_text, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("price_question:"))
@@ -2655,7 +2648,7 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
                 [InlineKeyboardButton(text="◀️ Другой способ", callback_data=f"pay_scheme:{order.payment_scheme}:{order_id}")],
             ])
 
-            await callback.message.edit_text(text, reply_markup=kb)
+            await safe_edit_or_send(callback, text, reply_markup=kb)
         else:
             await callback.answer(f"Ошибка: {result.error}", show_alert=True)
 
@@ -2680,7 +2673,7 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
             [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
         ])
 
-        await callback.message.edit_text(text, reply_markup=kb)
+        await safe_edit_or_send(callback, text, reply_markup=kb)
 
     elif method == "transfer":
         # Перевод на карту
@@ -2706,7 +2699,7 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
             [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
         ])
 
-        await callback.message.edit_text(text, reply_markup=kb)
+        await safe_edit_or_send(callback, text, reply_markup=kb)
 
 
 @router.callback_query(F.data.startswith("client_paid:"))
