@@ -13,7 +13,7 @@ SAFE_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "safe_payment
 PAYMENT_SUCCESS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_success.jpg"
 CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking_payment.jpg"
 from aiogram.filters import Command, CommandObject, StateFilter
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -2800,8 +2800,11 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
 
 
 @router.callback_query(F.data.startswith("client_paid:"))
-async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Клиент нажал 'Я оплатил' — уведомляем админа"""
+async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot, state: FSMContext):
+    """
+    Клиент нажал 'Я оплатил' — входим в FSM состояние ожидания чека.
+    Это первый шаг верификации: просим прислать скриншот.
+    """
     order_id = parse_callback_int(callback.data, 1)
     if order_id is None:
         await callback.answer("Ошибка данных", show_alert=True)
@@ -2821,71 +2824,173 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
         return
 
-    await callback.answer("👍 Принято!")
+    await callback.answer("📸")
 
-    # Определяем сумму к оплате (с учётом схемы)
+    # Сохраняем данные в FSM и входим в состояние ожидания чека
     amount = get_payment_amount(order)
+    await state.update_data(
+        payment_order_id=order.id,
+        payment_amount=amount,
+        payment_user_id=callback.from_user.id,
+        payment_username=callback.from_user.username,
+        payment_scheme=order.payment_scheme,
+        payment_method=order.payment_method,
+    )
+    await state.set_state(OrderState.waiting_for_receipt)
 
-    # Сообщение о проверке оплаты (НЕ успех — ждём подтверждения админа!)
-    new_text = f"""<b>🧾 ЧЕК ПРИНЯТ</b>
+    # Сообщение с просьбой прислать чек
+    new_text = f"""<b>📸 ЖДУ ДОКАЗАТЕЛЬСТВ</b>
 
 Заказ <b>#{order.id}</b> · {amount:.0f}₽
 
-Несу его Шерифу на сверку. Как только он увидит поступление на счёте — я сразу дам знать.
+Пришли мне скриншот чека или PDF-файл.
 
-<i>Обычно это занимает пару минут. Не переключайся.</i>"""
+<i>Если передумал — жми кнопку ниже.</i>"""
 
-    # Кнопки навигации
-    new_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+    # Клавиатура с кнопкой отмены
+    cancel_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 Отмена", callback_data=f"cancel_payment_check:{order.id}")],
+    ])
+
+    await safe_edit_or_send(callback, new_text, reply_markup=cancel_keyboard)
+
+
+@router.callback_query(F.data.startswith("cancel_payment_check:"))
+async def cancel_payment_check_callback(callback: CallbackQuery, session: AsyncSession, state: FSMContext):
+    """Отмена отправки чека — возвращаем к выбору способа оплаты"""
+    await state.clear()
+    await callback.answer("Отменено")
+
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        return
+
+    # Находим заказ для возврата к экрану оплаты
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        return
+
+    # Возвращаем к выбору способа оплаты
+    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    amount = final_price / 2 if order.payment_scheme == "half" else final_price
+
+    text = f"""<b>💳 КАССА ОТКРЫТА</b>
+
+Сумма к оплате: <code>{amount:.0f} ₽</code>
+
+Всё готово. Как тебе удобнее перекинуть средства?
+
+⚡️ <b>СБП</b> — долетает мгновенно (по номеру телефона).
+💳 <b>Карта</b> — классический перевод."""
+
+    from bot.services.yookassa import get_yookassa_service
+    yookassa = get_yookassa_service()
+
+    buttons = [
+        [InlineKeyboardButton(text="⚡️ СБП (Быстрый перевод)", callback_data=f"pay_method:sbp:{order_id}")],
+        [InlineKeyboardButton(text="💳 Карта РФ (Сбер / Т-Банк)", callback_data=f"pay_method:transfer:{order_id}")],
+    ]
+    if yookassa.is_available:
+        buttons.append([InlineKeyboardButton(text="🌐 Онлайн-оплата (ЮKassa)", callback_data=f"pay_method:card:{order_id}")])
+    buttons.append([InlineKeyboardButton(text="🔙 Назад", callback_data=f"pay_back:{order_id}")])
+
+    await safe_edit_or_send(callback, text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+
+
+@router.message(OrderState.waiting_for_receipt, F.content_type.in_({ContentType.PHOTO, ContentType.DOCUMENT}))
+async def process_payment_receipt(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+    """
+    Получили фото/документ чека — отправляем админу на проверку.
+    ВАЖНО: Сразу сбрасываем state чтобы не ловить дубли (альбомы).
+    """
+    # Получаем данные из state и СРАЗУ сбрасываем
+    data = await state.get_data()
+    await state.clear()  # Anti-duplicate: сбрасываем до обработки
+
+    order_id = data.get("payment_order_id")
+    amount = data.get("payment_amount", 0)
+    user_id = data.get("payment_user_id")
+    username = data.get("payment_username")
+    scheme = data.get("payment_scheme")
+    method = data.get("payment_method")
+
+    if not order_id:
+        await message.answer("❌ Ошибка: заказ не найден. Попробуй снова.")
+        return
+
+    # Определяем file_id
+    if message.photo:
+        file_id = message.photo[-1].file_id  # Берём самое большое фото
+        file_type = "photo"
+    else:
+        file_id = message.document.file_id
+        file_type = "document"
+
+    # Уведомляем юзера
+    user_text = f"""<b>✅ ПРИНЯТО</b>
+
+Заказ <b>#{order_id}</b> · {amount:.0f}₽
+
+Шериф проверяет чек. Как только увидит поступление — сразу дам знать.
+
+<i>Обычно это пара минут.</i>"""
+
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
     ])
 
-    # Отправляем с картинкой если есть
-    try:
-        if CHECKING_PAYMENT_IMAGE_PATH.exists():
-            await send_cached_photo(
-                bot=callback.bot,
-                chat_id=callback.from_user.id,
-                photo_path=CHECKING_PAYMENT_IMAGE_PATH,
-                caption=new_text,
-                reply_markup=new_keyboard,
-            )
-            try:
-                await callback.message.delete()
-            except Exception:
-                pass
-        else:
-            await safe_edit_or_send(callback, new_text, reply_markup=new_keyboard)
-    except Exception as e:
-        logger.warning(f"Не удалось отправить checking_payment image: {e}")
-        await safe_edit_or_send(callback, new_text, reply_markup=new_keyboard)
+    await message.answer(user_text, reply_markup=user_keyboard)
 
-    # Уведомляем админов
-    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
-
-    # Информация о схеме оплаты для админа
-    scheme_label = "50% аванс" if order.payment_scheme == "half" else "100%"
+    # Формируем сообщение для админа
+    scheme_label = "50% аванс" if scheme == "half" else "100%"
     method_labels = {"card": "💳 Картой", "sbp": "📲 СБП", "transfer": "🏦 На карту"}
-    method_label = method_labels.get(order.payment_method, "")
+    method_label = method_labels.get(method, "")
 
-    admin_text = f"""💸 <b>Клиент заявил об оплате!</b>
+    admin_text = f"""🚨 <b>ПРОВЕРКА ОПЛАТЫ</b>
 
-📋 Заказ: #{order.id}
-📝 {work_label}
-💰 Сумма: {amount:.0f}₽ ({scheme_label})
+👤 <a href='tg://user?id={user_id}'>{username or 'Без username'}</a>
+🆔 ID: <code>{user_id}</code>
+
+📄 Заказ: <code>#{order_id}</code>
+💰 Сумма: <b>{amount:.0f}₽</b> ({scheme_label})
 {method_label}
 
-👤 Клиент: @{callback.from_user.username or 'без username'}
-🆔 ID: <code>{callback.from_user.id}</code>"""
+<i>Чек от клиента прикреплён ниже 👇</i>"""
 
-    # Клавиатура с кнопками подтверждения
-    keyboard = get_payment_confirm_keyboard(order.id, callback.from_user.id)
+    # Клавиатура админа
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Подтвердить зачисление", callback_data=f"confirm_payment:{order_id}")],
+        [InlineKeyboardButton(text="❌ Деньги не пришли", callback_data=f"reject_payment:{order_id}:{user_id}")],
+    ])
 
+    # Отправляем админам с прикреплённым чеком
     for admin_id in settings.ADMIN_IDS:
         try:
-            await bot.send_message(admin_id, admin_text, reply_markup=keyboard)
-        except Exception:
-            pass
+            # Сначала отправляем текст
+            await bot.send_message(admin_id, admin_text)
+            # Потом отправляем чек с кнопками
+            if file_type == "photo":
+                await bot.send_photo(admin_id, file_id, reply_markup=admin_keyboard)
+            else:
+                await bot.send_document(admin_id, file_id, reply_markup=admin_keyboard)
+        except Exception as e:
+            logger.warning(f"Не удалось отправить чек админу {admin_id}: {e}")
+
+
+@router.message(OrderState.waiting_for_receipt)
+async def process_payment_receipt_invalid(message: Message):
+    """
+    Получили мусор (текст, стикер, голос и т.д.) в состоянии ожидания чека.
+    Не сбрасываем state — даём ещё одну попытку.
+    """
+    await message.answer(
+        "❌ <b>Это не похоже на чек.</b>\n\n"
+        "Пришли <b>скриншот</b> или <b>PDF-файл</b>.\n"
+        "Или нажми кнопку «Отмена» выше.",
+    )
 
 
 # ══════════════════════════════════════════════════════════════
@@ -3139,6 +3244,13 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         await callback.answer("У заказа не установлена цена!", show_alert=True)
         return
 
+    # ═══ ANTI-DOUBLE-CLICK: Сначала убираем кнопки! ═══
+    try:
+        admin_processed_text = callback.message.text + "\n\n✅ <b>Обработано: Подтверждено</b>"
+        await callback.message.edit_text(admin_processed_text, reply_markup=None)
+    except Exception:
+        pass  # Если не удалось — возможно уже обработано
+
     # Находим пользователя
     user_query = select(User).where(User.telegram_id == order.user_id)
     user_result = await session.execute(user_query)
@@ -3230,14 +3342,7 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
     except Exception as e:
         logger.warning(f"Не удалось отправить payment_success клиенту: {e}")
 
-    # Обновляем сообщение админу
     await callback.answer("✅ Оплата подтверждена!")
-
-    new_text = callback.message.text + f"\n\n✅ <b>ОПЛАЧЕНО</b> ({order.paid_amount:.0f}₽)"
-    try:
-        await callback.message.edit_text(new_text, reply_markup=None)
-    except Exception:
-        pass
 
 
 @router.callback_query(F.data.startswith("reject_payment:"))
@@ -3259,6 +3364,13 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
     if not order:
         await callback.answer("Заказ не найден", show_alert=True)
         return
+
+    # ═══ ANTI-DOUBLE-CLICK: Сначала убираем кнопки! ═══
+    try:
+        admin_processed_text = callback.message.text + "\n\n❌ <b>Обработано: Отклонено</b>"
+        await callback.message.edit_text(admin_processed_text, reply_markup=None)
+    except Exception:
+        pass  # Если не удалось — возможно уже обработано
 
     final_price = order.price - order.bonus_used if order.bonus_used else order.price
 
@@ -3299,13 +3411,6 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
         pass
 
     await callback.answer("Клиент уведомлён")
-
-    # Обновляем сообщение админу — оставляем кнопки для повторной проверки
-    new_text = callback.message.text + "\n\n⏳ <i>Клиент уведомлён что оплата не найдена</i>"
-    try:
-        await callback.message.edit_text(new_text, reply_markup=callback.message.reply_markup)
-    except Exception:
-        pass
 
 
 @router.callback_query(F.data.startswith("retry_payment_check:"))
