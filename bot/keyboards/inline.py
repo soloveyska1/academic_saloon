@@ -4,20 +4,31 @@ from core.config import settings
 
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
-    """Компактная Inline клавиатура главного меню — стиль Салуна (5 кнопок)"""
+    """
+    Клавиатура главного меню — Premium Saloon Style.
+
+    Layout:
+    [📝 Оформить заказ]           <- full width, CTA
+    [👤 Личный кабинет]           <- full width
+    [⭐ Отзывы ↗️][💰 Цены и Инфо] <- split row
+    [🤠 Написать Шерифу]          <- URL to manager
+    """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📝 Оформить заказ", callback_data="create_order")
+            InlineKeyboardButton(text="📝 Оформить заказ", callback_data="start_order")
         ],
         [
             InlineKeyboardButton(text="👤 Личный кабинет", callback_data="my_profile")
         ],
         [
             InlineKeyboardButton(text="⭐ Отзывы ↗️", url=settings.REVIEWS_CHANNEL),
-            InlineKeyboardButton(text="💰 Прайс & Инфо", callback_data="price_list")
+            InlineKeyboardButton(text="💰 Цены и Инфо", callback_data="price_info")
         ],
         [
-            InlineKeyboardButton(text="🤠 Написать Шерифу", callback_data="contact_owner")
+            InlineKeyboardButton(
+                text="🤠 Написать Шерифу",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
         ],
     ])
     return kb
