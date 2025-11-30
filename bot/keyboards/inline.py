@@ -15,7 +15,7 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📝 Оформить заказ", callback_data="start_order")
+            InlineKeyboardButton(text="📝 Оформить заказ", callback_data="create_order")
         ],
         [
             InlineKeyboardButton(text="👤 Личный кабинет", callback_data="my_profile")
