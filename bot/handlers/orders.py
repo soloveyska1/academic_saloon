@@ -1702,17 +1702,68 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         silent=False,
     )
 
-    text = f"""✅ <b>Заявка #{order.id} принята!</b>
+    # Определяем тип заказа для динамического текста
+    work_type_value = data.get("work_type", "")
+    is_special = work_type_value == WorkType.OTHER.value
 
-Я уже открыл материалы и понёс их на оценку.
+    # ═══════════════════════════════════════════════════════════════
+    #   DYNAMIC COPY BY ORDER TYPE
+    # ═══════════════════════════════════════════════════════════════
 
-Дай мне 10-15 минут — я прижму экспертов к стенке, посчитаю честную цену и вернусь к тебе с готовым предложением.
+    if is_urgent:
+        # 🚀 URGENT ORDER
+        text = f"""🚀 <b>ЗАПУСК СОСТОЯЛСЯ!</b>
 
-Далеко не уходи, Шериф скоро выйдет на связь. 🤠
+Заявка <code>#{order.id}</code> улетела в приоритетную очередь.
+Таймер запущен. Мои люди уже изучают материалы.
 
-━━━━━━━━━━━━━━━━━━━━━━
-Если что-то забыл — пиши сюда:
-@{settings.SUPPORT_USERNAME}"""
+Жди сигнала — я вернусь с ценой и планом действий молниеносно. ⚡"""
+        image_path = CONFIRM_URGENT_IMAGE_PATH
+
+    elif is_special:
+        # 🕵️‍♂️ SPECIAL ORDER
+        text = f"""🕵️‍♂️ <b>ДЕЛО <code>#{order.id}</code> ОТКРЫТО</b>
+
+Материалы подшил, гриф секретности поставил.
+Сейчас соберём консилиум и решим, как провернуть твою задачу красивее всего.
+
+Дай мне немного времени на анализ. 🔍"""
+        image_path = ORDER_DONE_IMAGE_PATH
+
+    else:
+        # 🤝 STANDARD ORDER
+        text = f"""✅ <b>ЗАЯВКА <code>#{order.id}</code> ПРИНЯТА</b>
+
+Я уже открыл материалы и понёс их экспертам.
+
+Дай мне 10-15 минут — я посчитаю честную цену, подготовлю условия и вернусь к тебе.
+Далеко не уходи. 🤠"""
+        image_path = ORDER_DONE_IMAGE_PATH
+
+    # ═══════════════════════════════════════════════════════════════
+    #   IMPROVED KEYBOARD (Waiting Hub)
+    # ═══════════════════════════════════════════════════════════════
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📎 Забыл файл? (Дослать)",
+            callback_data=f"add_files_to_order:{order.id}"
+        )],
+        [
+            InlineKeyboardButton(
+                text="👀 Статус заказа",
+                callback_data=f"order_detail:{order.id}"
+            ),
+            InlineKeyboardButton(
+                text="❓ Задать вопрос",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            ),
+        ],
+        [InlineKeyboardButton(
+            text="🌵 В салун (Главное меню)",
+            callback_data="back_to_menu"
+        )],
+    ])
 
     # Удаляем старое сообщение и отправляем новое с картинкой
     chat_id = callback.message.chat.id if callback.message else callback.from_user.id
@@ -1722,23 +1773,281 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         pass
 
     # Пробуем отправить с картинкой успеха
-    if ORDER_DONE_IMAGE_PATH.exists():
+    if image_path.exists():
         try:
             await send_cached_photo(
                 bot=bot,
                 chat_id=chat_id,
-                photo_path=ORDER_DONE_IMAGE_PATH,
+                photo_path=image_path,
                 caption=text,
-                reply_markup=get_back_keyboard(),
+                reply_markup=keyboard,
             )
         except Exception as e:
-            logger.warning(f"Не удалось отправить order_done image: {e}")
-            await bot.send_message(chat_id=chat_id, text=text, reply_markup=get_back_keyboard())
+            logger.warning(f"Не удалось отправить success image: {e}")
+            await bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
     else:
-        await bot.send_message(chat_id=chat_id, text=text, reply_markup=get_back_keyboard())
+        await bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
 
     # Уведомление админам со всеми вложениями
     await notify_admins_new_order(bot, callback.from_user, order, data)
+
+
+# ══════════════════════════════════════════════════════════════
+#               POST-ORDER: APPEND FILES
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("add_files_to_order:"))
+async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Пользователь хочет дослать файлы к заказу"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Проверяем что заказ существует и принадлежит пользователю
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id
+    )
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Проверяем статус заказа — можно дослать только в ожидающие заказы
+    allowed_statuses = [OrderStatus.PENDING.value, OrderStatus.CONFIRMED.value]
+    if order.status not in allowed_statuses:
+        await callback.answer("К этому заказу уже нельзя добавить файлы", show_alert=True)
+        return
+
+    await callback.answer("📎 Жду файлы!")
+
+    # Сохраняем order_id и переводим в состояние дослать
+    await state.update_data(append_order_id=order_id)
+    await state.set_state(OrderState.appending_files)
+
+    text = f"""📎 <b>Дослать материалы к заказу #{order.id}</b>
+
+Отправь фото, документы или голосовое сообщение.
+Можешь прислать несколько файлов подряд.
+
+Когда закончишь — нажми кнопку ниже."""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="✅ Готово (Отправить)",
+            callback_data=f"finish_append:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="❌ Отмена",
+            callback_data=f"cancel_append:{order_id}"
+        )],
+    ])
+
+    await callback.message.edit_text(text, reply_markup=keyboard)
+
+
+@router.message(OrderState.appending_files, F.photo)
+async def append_photo(message: Message, state: FSMContext):
+    """Получено фото для дослать"""
+    data = await state.get_data()
+    appended_files = data.get("appended_files", [])
+
+    photo = message.photo[-1]
+    appended_files.append({
+        "type": "photo",
+        "file_id": photo.file_id,
+        "caption": message.caption or "",
+    })
+    await state.update_data(appended_files=appended_files)
+
+    await message.answer(f"📸 Фото принял! (всего: {len(appended_files)})")
+
+
+@router.message(OrderState.appending_files, F.document)
+async def append_document(message: Message, state: FSMContext):
+    """Получен документ для дослать"""
+    data = await state.get_data()
+    appended_files = data.get("appended_files", [])
+
+    appended_files.append({
+        "type": "document",
+        "file_id": message.document.file_id,
+        "file_name": message.document.file_name or "файл",
+        "caption": message.caption or "",
+    })
+    await state.update_data(appended_files=appended_files)
+
+    await message.answer(f"📄 Файл принял! (всего: {len(appended_files)})")
+
+
+@router.message(OrderState.appending_files, F.voice)
+async def append_voice(message: Message, state: FSMContext):
+    """Получено голосовое для дослать"""
+    data = await state.get_data()
+    appended_files = data.get("appended_files", [])
+
+    appended_files.append({
+        "type": "voice",
+        "file_id": message.voice.file_id,
+        "duration": message.voice.duration,
+    })
+    await state.update_data(appended_files=appended_files)
+
+    await message.answer(f"🎤 Голосовое принял! (всего: {len(appended_files)})")
+
+
+@router.message(OrderState.appending_files, F.text)
+async def append_text(message: Message, state: FSMContext):
+    """Получен текст для дослать"""
+    data = await state.get_data()
+    appended_files = data.get("appended_files", [])
+
+    appended_files.append({
+        "type": "text",
+        "content": message.text,
+    })
+    await state.update_data(appended_files=appended_files)
+
+    await message.answer(f"📝 Текст принял! (всего: {len(appended_files)})")
+
+
+@router.callback_query(F.data.startswith("finish_append:"))
+async def finish_append_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
+    """Завершить дослать — отправить админам"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    data = await state.get_data()
+    appended_files = data.get("appended_files", [])
+
+    if not appended_files:
+        await callback.answer("Ты ещё ничего не отправил!", show_alert=True)
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        await state.clear()
+        return
+
+    await callback.answer("✅ Отправляю!")
+    await state.clear()
+
+    # Обновляем сообщение пользователю
+    client_text = f"""✅ <b>Материалы отправлены!</b>
+
+К заказу <code>#{order.id}</code> добавлено: {len(appended_files)} файл(ов).
+
+Шериф уже в курсе. 🤠"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="👀 Статус заказа",
+            callback_data=f"order_detail:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text="🌵 В салун",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    await callback.message.edit_text(client_text, reply_markup=keyboard)
+
+    # Уведомляем админов
+    admin_text = f"""📎 <b>Клиент дослал материалы!</b>
+
+📋 Заказ: #{order.id}
+👤 Клиент: @{callback.from_user.username or 'без username'}
+📦 Файлов: {len(appended_files)}"""
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, admin_text)
+
+            # Пересылаем все файлы
+            for file_data in appended_files:
+                file_type = file_data.get("type")
+                try:
+                    if file_type == "photo":
+                        await bot.send_photo(
+                            admin_id,
+                            file_data["file_id"],
+                            caption=file_data.get("caption") or f"[К заказу #{order.id}]"
+                        )
+                    elif file_type == "document":
+                        await bot.send_document(
+                            admin_id,
+                            file_data["file_id"],
+                            caption=file_data.get("caption") or f"[К заказу #{order.id}]"
+                        )
+                    elif file_type == "voice":
+                        await bot.send_voice(
+                            admin_id,
+                            file_data["file_id"],
+                            caption=f"[К заказу #{order.id}]"
+                        )
+                    elif file_type == "text":
+                        await bot.send_message(
+                            admin_id,
+                            f"📝 <b>Текст к заказу #{order.id}:</b>\n\n{file_data.get('content', '')}"
+                        )
+                except Exception as e:
+                    logger.warning(f"Не удалось отправить файл админу {admin_id}: {e}")
+        except Exception as e:
+            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+
+
+@router.callback_query(F.data.startswith("cancel_append:"))
+async def cancel_append_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Отменить дослать"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    await state.clear()
+    await callback.answer("Отменено")
+
+    # Возвращаем к статусу заказа
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if order:
+        text = f"""📋 <b>Заказ #{order.id}</b>
+
+Дослать файлы отменено."""
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="📎 Забыл файл? (Дослать)",
+                callback_data=f"add_files_to_order:{order.id}"
+            )],
+            [InlineKeyboardButton(
+                text="👀 Статус заказа",
+                callback_data=f"order_detail:{order.id}"
+            )],
+            [InlineKeyboardButton(
+                text="🌵 В салун",
+                callback_data="back_to_menu"
+            )],
+        ])
+
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    else:
+        await callback.message.edit_text("Заказ не найден")
 
 
 def format_order_description(attachments: list) -> str:
