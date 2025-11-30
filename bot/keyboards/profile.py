@@ -314,12 +314,25 @@ def get_daily_luck_result_keyboard() -> InlineKeyboardMarkup:
 def get_muse_luck_result_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура после получения бонуса для VIP Muse (NeuroNatali)
-    Включает кнопку "🌹 Сюрприз" (dummy) и "Крутить ещё"
+    Clean minimal design
     """
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎰 Крутить ещё!", callback_data="daily_luck")],
-        [InlineKeyboardButton(text="🌹 Сюрприз", callback_data="muse_surprise")],
-        [InlineKeyboardButton(text="🔙 Назад в покои", callback_data="my_profile")],
+        [InlineKeyboardButton(text="🎰 Крутить ещё", callback_data="daily_luck")],
+        [InlineKeyboardButton(text="⬅️ В меню", callback_data="my_profile")],
+    ])
+
+
+def get_muse_profile_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура для VIP Muse профиля - минималистичный дизайн.
+
+    Layout:
+    [🎰 Испытать удачу] - центральная кнопка
+    [⬅️ В меню]
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎰 Испытать удачу", callback_data="daily_luck")],
+        [InlineKeyboardButton(text="⬅️ В меню", callback_data="back_to_menu")],
     ])
 
 
