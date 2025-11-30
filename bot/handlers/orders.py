@@ -19,6 +19,7 @@ DIRECTIONS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "directions.jpg
 DEADLINE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "deadline.jpg"
 URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "urgent_bell.jpg"
 SECRET_IMAGE_PATH = Path(__file__).parent.parent / "media" / "secret.jpg"
+FAST_UPLOAD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "fast_upload.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -707,30 +708,48 @@ async def process_urgent_deadline(callback: CallbackQuery, state: FSMContext, bo
     except Exception:
         pass
 
-    # Typing эффект
-    # Формируем текст с чек-листом
+    # === РЕЖИМ ФОРСАЖ — ЗАГРУЗКА ФАЙЛОВ ===
+
+    # Формируем текст статуса
     if deadline_key == "asap":
-        deadline_text = "⚡ <b>Как можно скорее</b>\n<i>Наценку определим после оценки объёма</i>"
+        status_block = """<b>Срок:</b> Определим после оценки
+<b>Статус:</b> 🔥 Максимальный приоритет"""
     else:
-        deadline_text = f"⏰ <b>Срок:</b> {deadline_label}\n💰 <b>Наценка:</b> +{surcharge}%"
+        status_block = f"""<b>Срок:</b> {deadline_label}
+<b>Статус:</b> 🔥 Максимальный приоритет"""
 
-    text = f"""📝 <b>Отлично! Теперь кидай задание</b>
+    caption = f"""<b>⚡️ Режим «Форсаж» активирован</b>
 
-{deadline_text}
+{status_block}
 
-───────────
+Время пошло. Меньше слов — больше дела.
 
-<b>📎 Что приложить:</b>
-∙ Фото/скан задания
-∙ Методичку (если есть)
-∙ Точное время сдачи
+Кидай сюда всё, что есть: методичку, скрины, черновики или запиши голосовое. Я разберусь с материалами на лету.
 
-<i>Можно отправить фото, файл, голосовое или текст</i>"""
+<i>Жду файлы...</i>"""
 
-    await callback.message.answer(
-        text=text,
-        reply_markup=get_urgent_task_keyboard()
-    )
+    # Пробуем отправить с картинкой
+    if FAST_UPLOAD_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=FAST_UPLOAD_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_urgent_task_keyboard(),
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото fast_upload: {e}")
+            await callback.message.answer(
+                text=caption,
+                reply_markup=get_urgent_task_keyboard()
+            )
+    else:
+        # Fallback на текст
+        await callback.message.answer(
+            text=caption,
+            reply_markup=get_urgent_task_keyboard()
+        )
 
     # Логируем
     await log_action(

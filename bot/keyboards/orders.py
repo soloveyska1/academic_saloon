@@ -463,10 +463,10 @@ def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_urgent_task_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура после выбора дедлайна в срочном заказе"""
+    """Клавиатура после выбора дедлайна в срочном заказе — Режим Форсаж"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_urgent"),
+            InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_urgent"),
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
         ]
     ])
