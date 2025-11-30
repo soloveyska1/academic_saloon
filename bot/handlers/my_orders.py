@@ -407,7 +407,7 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     # Caption based on UI mode
     if show_muse_ui:
         caption = build_muse_profile_caption(user, telegram_id, user_name)
-        keyboard = get_muse_profile_keyboard()
+        keyboard = get_muse_profile_keyboard(active_orders=counts["active"])
     else:
         caption = build_gamified_profile_caption(user, telegram_id)
 
