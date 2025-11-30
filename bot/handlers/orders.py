@@ -24,6 +24,7 @@ INVESTIGATION_IMAGE_PATH = Path(__file__).parent.parent / "media" / "investigati
 CONFIRM_URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_urgent.jpg"
 CONFIRM_SPECIAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_special.jpg"
 CONFIRM_STD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
+ORDER_DONE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "order_done.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -1701,26 +1702,40 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         silent=False,
     )
 
-    text = f"""✅  <b>Заявка #{order.id} принята!</b>
+    text = f"""✅ <b>Заявка #{order.id} принята!</b>
 
-Я уже открыл материалы и оцениваю объём.
-Дай мне 10-15 минут — посчитаю честную цену
-и напишу тебе лично.
+Я уже открыл материалы и понёс их на оценку.
 
-Скоро вернусь! 🤠
+Дай мне 10-15 минут — я прижму экспертов к стенке, посчитаю честную цену и вернусь к тебе с готовым предложением.
+
+Далеко не уходи, Шериф скоро выйдет на связь. 🤠
 
 ━━━━━━━━━━━━━━━━━━━━━━
-💳  <b>Реквизиты для оплаты</b>
+Если что-то забыл — пиши сюда:
+@{settings.SUPPORT_USERNAME}"""
 
-📱  <code>89196739120</code>
-👤  Семен Юрьевич С.
+    # Удаляем старое сообщение и отправляем новое с картинкой
+    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
 
-🏦  Сбербанк • Т-Банк • БСПБ
-━━━━━━━━━━━━━━━━━━━━━━
-
-Пиши: @{settings.SUPPORT_USERNAME}"""
-
-    await safe_edit_or_send(callback, text, reply_markup=get_back_keyboard(), bot=bot)
+    # Пробуем отправить с картинкой успеха
+    if ORDER_DONE_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=chat_id,
+                photo_path=ORDER_DONE_IMAGE_PATH,
+                caption=text,
+                reply_markup=get_back_keyboard(),
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить order_done image: {e}")
+            await bot.send_message(chat_id=chat_id, text=text, reply_markup=get_back_keyboard())
+    else:
+        await bot.send_message(chat_id=chat_id, text=text, reply_markup=get_back_keyboard())
 
     # Уведомление админам со всеми вложениями
     await notify_admins_new_order(bot, callback.from_user, order, data)
