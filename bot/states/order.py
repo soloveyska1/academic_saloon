@@ -33,3 +33,10 @@ class OrderState(StatesGroup):
 
     # Ожидание скриншота чека после оплаты
     waiting_for_receipt = State()
+
+
+class CouponState(StatesGroup):
+    """Состояния для активации купона"""
+
+    # Ожидание ввода кода купона
+    waiting_code = State()

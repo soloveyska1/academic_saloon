@@ -1,6 +1,7 @@
 """
 Клавиатуры для Личного кабинета.
 Стиль салуна — тёплый и дружелюбный.
+Gamified Retention Hub layout.
 """
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -25,8 +26,62 @@ WORK_TYPE_SHORT = {
 }
 
 
+def get_gamified_profile_keyboard(
+    active_orders: int = 0,
+    daily_luck_available: bool = True,
+    cooldown_text: str | None = None,
+) -> InlineKeyboardMarkup:
+    """
+    Gamified User Profile Keyboard
+
+    Layout:
+    Row 1 (The Fun): Daily Luck button (show cooldown if not available)
+    Row 2 (The Gang): My Gang (Referral)
+    Row 3 (Finance): Operations history | Activate coupon
+    Row 4 (Nav): My orders | Main menu
+    """
+    buttons = []
+
+    # Row 1: Daily Luck (The Fun)
+    if daily_luck_available:
+        buttons.append([
+            InlineKeyboardButton(text="🎰 Испытать удачу (+Бонус)", callback_data="daily_luck")
+        ])
+    else:
+        # Show cooldown timer instead
+        cooldown_display = cooldown_text or "24ч"
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"⏳ След. попытка через {cooldown_display}",
+                callback_data="daily_luck_cooldown"
+            )
+        ])
+
+    # Row 2: My Gang (Referral)
+    buttons.append([
+        InlineKeyboardButton(text="🔫 Моя Банда (Рефералка)", callback_data="profile_gang")
+    ])
+
+    # Row 3: Finance actions
+    buttons.append([
+        InlineKeyboardButton(text="📜 История операций", callback_data="profile_history"),
+        InlineKeyboardButton(text="🎟 Активировать купон", callback_data="activate_coupon"),
+    ])
+
+    # Row 4: Navigation
+    orders_text = "📦 Мои заказы"
+    if active_orders > 0:
+        orders_text += f" ({active_orders})"
+    buttons.append([
+        InlineKeyboardButton(text=orders_text, callback_data="profile_orders"),
+        InlineKeyboardButton(text="🔙 Главное меню", callback_data="back_to_menu"),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def get_profile_dashboard_keyboard(active_orders: int = 0) -> InlineKeyboardMarkup:
-    """Главная клавиатура ЛК — премиальная раскладка"""
+    """Legacy: Главная клавиатура ЛК — премиальная раскладка"""
     buttons = []
 
     # Row 1: Главное действие — заказы (на всю ширину)
@@ -230,3 +285,74 @@ def get_back_to_profile_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="← Назад", callback_data="my_profile")]
     ])
+
+
+# ══════════════════════════════════════════════════════════════
+#              GAMIFIED PROFILE KEYBOARDS
+# ══════════════════════════════════════════════════════════════
+
+def get_gang_keyboard(ref_link: str) -> InlineKeyboardMarkup:
+    """Клавиатура для экрана 'Моя Банда' (рефералка)"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📨 Завербовать бандита",
+            switch_inline_query=f"🤠 Заходи в Академический Салун!\n\n💎 Скидка 5% на первый заказ по моей ссылке:\n{ref_link}"
+        )],
+        [InlineKeyboardButton(text="📋 Скопировать ссылку", callback_data="copy_ref_link")],
+        [InlineKeyboardButton(text="🔙 Назад в кабинет", callback_data="my_profile")],
+    ])
+
+
+def get_daily_luck_result_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура после получения ежедневного бонуса"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔫 Завербовать друга (+бонус)", callback_data="profile_gang")],
+        [InlineKeyboardButton(text="🔙 Назад в кабинет", callback_data="my_profile")],
+    ])
+
+
+def get_history_keyboard(page: int = 0, total_pages: int = 1) -> InlineKeyboardMarkup:
+    """Клавиатура для истории операций с пагинацией"""
+    buttons = []
+
+    # Пагинация если нужна
+    if total_pages > 1:
+        pagination = []
+        if page > 0:
+            pagination.append(InlineKeyboardButton(text="⬅️", callback_data=f"history_page:{page - 1}"))
+        else:
+            pagination.append(InlineKeyboardButton(text=" ", callback_data="noop"))
+
+        pagination.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="noop"))
+
+        if page < total_pages - 1:
+            pagination.append(InlineKeyboardButton(text="➡️", callback_data=f"history_page:{page + 1}"))
+        else:
+            pagination.append(InlineKeyboardButton(text=" ", callback_data="noop"))
+
+        buttons.append(pagination)
+
+    buttons.append([InlineKeyboardButton(text="🔙 Назад в кабинет", callback_data="my_profile")])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_coupon_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура для ввода купона"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Отмена", callback_data="my_profile")],
+    ])
+
+
+def get_coupon_result_keyboard(success: bool) -> InlineKeyboardMarkup:
+    """Клавиатура после активации купона"""
+    if success:
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📦 Сделать заказ", callback_data="create_order")],
+            [InlineKeyboardButton(text="🔙 Назад в кабинет", callback_data="my_profile")],
+        ])
+    else:
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Попробовать другой", callback_data="activate_coupon")],
+            [InlineKeyboardButton(text="🔙 Назад в кабинет", callback_data="my_profile")],
+        ])

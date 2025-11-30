@@ -4,6 +4,7 @@
 """
 
 import logging
+import random
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -29,6 +30,7 @@ from database.models.orders import (
 )
 from bot.keyboards.profile import (
     get_profile_dashboard_keyboard,
+    get_gamified_profile_keyboard,
     get_orders_list_keyboard,
     get_order_detail_keyboard,
     get_cancel_order_confirm_keyboard,
@@ -36,9 +38,14 @@ from bot.keyboards.profile import (
     get_balance_keyboard,
     get_referral_keyboard,
     get_back_to_profile_keyboard,
+    get_gang_keyboard,
+    get_daily_luck_result_keyboard,
+    get_history_keyboard,
+    get_coupon_keyboard,
+    get_coupon_result_keyboard,
 )
 from bot.services.logger import log_action, LogEvent
-from bot.states.order import OrderState
+from bot.states.order import OrderState, CouponState
 from core.config import settings
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
@@ -127,7 +134,7 @@ def format_number(n: float) -> str:
 
 
 def build_profile_caption(user: User | None, first_name: str, counts: dict) -> str:
-    """Формирует caption для Личного кабинета"""
+    """Legacy: Формирует caption для Личного кабинета"""
     if not user:
         return f"🤠 <b>Приветствую, {first_name}!</b>\n\nДобро пожаловать в салун!"
 
@@ -169,9 +176,69 @@ def build_profile_caption(user: User | None, first_name: str, counts: dict) -> s
     return "\n".join(lines)
 
 
+def build_gamified_profile_caption(user: User | None, telegram_id: int) -> str:
+    """
+    Формирует Gamified caption для Личного кабинета - ПАСПОРТ КОВБОЯ
+
+    Layout:
+    - Header: Passport with user ID
+    - Section 1: Progression (Rank + XP Progress Bar)
+    - Section 2: The Vault (Balance + Referral Income)
+    - Section 3: Call to Action
+    """
+    if not user:
+        return (
+            f"🦅 <b>ПАСПОРТ КОВБОЯ</b> | ID: {telegram_id}\n"
+            f"<i>Твой статус в пищевой цепи Салуна.</i>\n\n"
+            f"Добро пожаловать, незнакомец!"
+        )
+
+    # Get rank info
+    rank = user.rank_info
+    progress = user.rank_progress
+
+    lines = []
+
+    # ═══════════════ HEADER ═══════════════
+    lines.append(f"🦅 <b>ПАСПОРТ КОВБОЯ</b> | ID: {telegram_id}")
+    lines.append("<i>Твой статус в пищевой цепи Салуна.</i>")
+    lines.append("")
+
+    # ═══════════════ SECTION 1: PROGRESSION ═══════════════
+    lines.append(f"🏆 <b>Ранг:</b> {rank['emoji']} {rank['name']}")
+    lines.append(f"📊 <b>Опыт:</b> {format_number(user.total_spent)} / {format_number(progress.get('next_threshold', user.total_spent))} ₽")
+    lines.append(f"[{progress['progress_bar']}] {progress['progress_text']}")
+
+    # Progress hint
+    if progress["has_next"]:
+        lines.append(f"<i>До следующего уровня: заказать на {format_number(progress['spent_needed'])} ₽</i>")
+    else:
+        lines.append("<i>Ты достиг вершины, легенда!</i>")
+
+    # Cashback info
+    if rank["cashback"] > 0:
+        lines.append(f"✨ <b>Твой бонус:</b> Кэшбэк {rank['cashback']}%")
+        if rank["bonus"]:
+            lines.append(f"    + {rank['bonus']}")
+    lines.append("")
+
+    # ═══════════════ SECTION 2: THE VAULT ═══════════════
+    lines.append(f"💰 <b>Сейф:</b> {format_number(user.balance)} 🌕 <i>(1🌕 = 1₽)</i>")
+    if user.referral_earnings > 0:
+        lines.append(f"👥 <b>Доход от Банды:</b> +{format_number(user.referral_earnings)} 🌕")
+        lines.append("<i>Включает пассивный доход от приглашенных друзей.</i>")
+    lines.append("")
+
+    # ═══════════════ SECTION 3: CALL TO ACTION ═══════════════
+    lines.append("<b>Нужно больше золота?</b>")
+    lines.append("Крути барабан раз в сутки или грабь дилижансы (зови друзей).")
+
+    return "\n".join(lines)
+
+
 @router.callback_query(F.data.in_(["my_profile", "my_orders"]))
 async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Главный экран личного кабинета — фото с caption"""
+    """Главный экран личного кабинета — Gamified Retention Hub"""
     await callback.answer()
 
     try:
@@ -181,7 +248,6 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         pass
 
     telegram_id = callback.from_user.id
-    first_name = callback.from_user.first_name or "партнёр"
 
     user_result = await session.execute(
         select(User).where(User.telegram_id == telegram_id)
@@ -189,8 +255,24 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     user = user_result.scalar_one_or_none()
 
     counts = await get_order_counts(session, telegram_id)
-    caption = build_profile_caption(user, first_name, counts)
-    keyboard = get_profile_dashboard_keyboard(counts["active"])
+
+    # Gamified caption
+    caption = build_gamified_profile_caption(user, telegram_id)
+
+    # Daily luck cooldown check
+    daily_luck_available = True
+    cooldown_text = None
+    if user:
+        cooldown = user.daily_bonus_cooldown
+        daily_luck_available = cooldown["available"]
+        cooldown_text = cooldown.get("remaining_text")
+
+    # Gamified keyboard
+    keyboard = get_gamified_profile_keyboard(
+        active_orders=counts["active"],
+        daily_luck_available=daily_luck_available,
+        cooldown_text=cooldown_text,
+    )
 
     # Удаляем старое сообщение и отправляем фото
     try:
@@ -807,6 +889,418 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
     )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    GAMIFIED FEATURES
+# ══════════════════════════════════════════════════════════════
+
+# Награды для Daily Luck (барабан)
+DAILY_LUCK_REWARDS = [
+    (5, 10, "Мелочь на табак"),       # 5-10₽
+    (10, 25, "Неплохой улов"),        # 10-25₽
+    (25, 50, "Добрая добыча!"),       # 25-50₽
+    (50, 100, "Удачный день!"),       # 50-100₽
+    (100, 200, "Джекпот, ковбой!"),   # 100-200₽ (редко)
+]
+
+DAILY_LUCK_WEIGHTS = [40, 30, 20, 8, 2]  # Вероятности (%)
+
+
+@router.callback_query(F.data == "daily_luck")
+async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Ежедневный бонус - Испытать удачу"""
+    telegram_id = callback.from_user.id
+
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await callback.answer("Сначала создай профиль!", show_alert=True)
+        return
+
+    # Check cooldown
+    if not user.can_claim_daily_bonus:
+        cooldown = user.daily_bonus_cooldown
+        await callback.answer(
+            f"Барабан ещё остывает! Попробуй через {cooldown['remaining_text']}",
+            show_alert=True
+        )
+        return
+
+    await callback.answer()
+
+    # Roll the dice!
+    reward_tier = random.choices(DAILY_LUCK_REWARDS, weights=DAILY_LUCK_WEIGHTS, k=1)[0]
+    min_amount, max_amount, flavor_text = reward_tier
+    bonus_amount = random.randint(min_amount, max_amount)
+
+    # Update user
+    user.balance += bonus_amount
+    user.last_daily_bonus_at = datetime.now(MSK_TZ)
+    await session.commit()
+
+    # Log
+    try:
+        await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=callback.from_user,
+                        details=f"Daily Luck: +{bonus_amount}₽", session=session)
+    except Exception:
+        pass
+
+    # Build result message
+    lines = [
+        "🎰 <b>БАРАБАН УДАЧИ</b>",
+        "",
+        "🎲 Крутим...",
+        "",
+        f"🎉 <b>{flavor_text}</b>",
+        f"💰 Ты получил: <b>+{bonus_amount} 🌕</b>",
+        "",
+        f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
+        "",
+        "<i>Приходи завтра за новой порцией золота!</i>",
+    ]
+
+    caption = "\n".join(lines)
+    keyboard = get_daily_luck_result_keyboard()
+
+    # Delete old message and send result
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@router.callback_query(F.data == "daily_luck_cooldown")
+async def daily_luck_cooldown_handler(callback: CallbackQuery, session: AsyncSession):
+    """Показывает сообщение о кулдауне"""
+    telegram_id = callback.from_user.id
+
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if user:
+        cooldown = user.daily_bonus_cooldown
+        if not cooldown["available"]:
+            await callback.answer(
+                f"⏳ Барабан перезаряжается. Попробуй через {cooldown['remaining_text']}",
+                show_alert=True
+            )
+            return
+
+    await callback.answer("Барабан готов! Жми на кнопку.", show_alert=True)
+
+
+@router.callback_query(F.data == "profile_gang")
+async def show_gang(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Моя Банда - расширенный экран рефералки"""
+    await callback.answer()
+
+    telegram_id = callback.from_user.id
+    ref_link = f"https://t.me/{settings.BOT_USERNAME}?start=ref{telegram_id}"
+
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = user_result.scalar_one_or_none()
+
+    count = user.referrals_count if user else 0
+    earnings = user.referral_earnings if user else 0
+
+    try:
+        await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=callback.from_user,
+                        details="Моя банда", session=session)
+    except Exception:
+        pass
+
+    # Build Gang caption
+    lines = [
+        "🔫 <b>МОЯ БАНДА</b>",
+        "",
+        "В одиночку на Диком Западе не выжить.",
+        "Собирай свою банду — вместе грабить веселее!",
+        "",
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"👥 <b>Бандитов завербовано:</b> {count}",
+        f"💰 <b>Общая добыча с банды:</b> {format_number(earnings)} 🌕",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "",
+        "💎 <b>Условия вербовки:</b>",
+        "• Друг получает <b>5% скидку</b> на первый заказ",
+        "• Ты получаешь <b>5%</b> с каждой его оплаты — навсегда!",
+        "",
+        "👇 <i>Твоя ссылка (жми, чтобы скопировать):</i>",
+        f"<code>{ref_link}</code>",
+        "",
+        "<i>Чем больше банда, тем больше золота!</i>",
+    ]
+
+    caption = "\n".join(lines)
+    keyboard = get_gang_keyboard(ref_link)
+
+    # Delete old message and send result
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    if REFERRAL_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=REFERRAL_IMAGE_PATH,
+                caption=caption,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото банды: {e}")
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@router.callback_query(F.data == "copy_ref_link")
+async def copy_ref_link_handler(callback: CallbackQuery):
+    """Показывает ссылку для копирования"""
+    telegram_id = callback.from_user.id
+    ref_link = f"https://t.me/{settings.BOT_USERNAME}?start=ref{telegram_id}"
+    await callback.answer(f"Твоя ссылка: {ref_link}", show_alert=True)
+
+
+@router.callback_query(F.data == "profile_history")
+async def show_history(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """История операций с балансом"""
+    await callback.answer()
+    await show_history_page(callback, session, bot, 0)
+
+
+@router.callback_query(F.data.startswith("history_page:"))
+async def paginate_history(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Пагинация истории"""
+    await callback.answer()
+    parts = callback.data.split(":")
+    page = int(parts[1]) if len(parts) > 1 else 0
+    await show_history_page(callback, session, bot, page)
+
+
+HISTORY_PER_PAGE = 10
+
+
+async def show_history_page(callback: CallbackQuery, session: AsyncSession, bot: Bot, page: int):
+    """Показывает страницу истории операций"""
+    telegram_id = callback.from_user.id
+
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await callback.answer("Профиль не найден", show_alert=True)
+        return
+
+    try:
+        await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=callback.from_user,
+                        details="История операций", session=session)
+    except Exception:
+        pass
+
+    # Get completed orders as a proxy for financial history
+    orders_query = select(Order).where(
+        Order.user_id == telegram_id,
+        Order.paid_amount > 0
+    ).order_by(desc(Order.created_at))
+
+    orders_result = await session.execute(orders_query)
+    all_orders = orders_result.scalars().all()
+
+    total_count = len(all_orders)
+    total_pages = max(1, (total_count + HISTORY_PER_PAGE - 1) // HISTORY_PER_PAGE)
+    page = min(page, total_pages - 1)
+
+    start_idx = page * HISTORY_PER_PAGE
+    end_idx = start_idx + HISTORY_PER_PAGE
+    page_orders = all_orders[start_idx:end_idx]
+
+    # Build caption
+    lines = [
+        "📜 <b>ИСТОРИЯ ОПЕРАЦИЙ</b>",
+        "",
+    ]
+
+    if not page_orders:
+        lines.append("<i>Пока нет оплаченных заказов.</i>")
+        lines.append("")
+        lines.append("Сделай первый заказ и история начнётся!")
+    else:
+        lines.append(f"💰 <b>Всего операций:</b> {total_count}")
+        lines.append("")
+
+        for order in page_orders:
+            date_str = order.created_at.strftime("%d.%m.%Y") if order.created_at else "—"
+            work_type = order.work_type_label
+            if work_type and len(work_type) > 1 and work_type[0] in "🎩🎓📚📖📝📄✏️📊🏢📎📸🔥":
+                work_type = work_type[2:].strip()
+
+            lines.append(f"• <b>#{order.id}</b> | {date_str}")
+            lines.append(f"  {work_type}: <b>{format_number(order.paid_amount)}₽</b>")
+            if order.bonus_used > 0:
+                lines.append(f"  <i>Бонусов использовано: {format_number(order.bonus_used)}₽</i>")
+
+        if total_pages > 1:
+            lines.append("")
+            lines.append(f"<i>Страница {page + 1} из {total_pages}</i>")
+
+    lines.append("")
+    lines.append(f"💳 <b>Текущий баланс:</b> {format_number(user.balance)} 🌕")
+
+    caption = "\n".join(lines)
+    keyboard = get_history_keyboard(page, total_pages)
+
+    # Delete old message and send
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
+
+
+@router.callback_query(F.data == "activate_coupon")
+async def activate_coupon_start(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Начало активации купона"""
+    await callback.answer()
+
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    lines = [
+        "🎟 <b>АКТИВАЦИЯ КУПОНА</b>",
+        "",
+        "Введи код купона, который ты получил:",
+        "",
+        "<i>Например: WELCOME50, BONUS100</i>",
+    ]
+
+    caption = "\n".join(lines)
+    keyboard = get_coupon_keyboard()
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+        parse_mode=ParseMode.HTML,
+    )
+
+    # Set state to wait for coupon code
+    await state.set_state(CouponState.waiting_code)
+
+
+# Known coupons (can be extended to DB-based system)
+VALID_COUPONS = {
+    "WELCOME50": {"amount": 50, "description": "Приветственный бонус"},
+    "BONUS100": {"amount": 100, "description": "Праздничный бонус"},
+    "SALOON25": {"amount": 25, "description": "Бонус от Салуна"},
+}
+
+
+@router.message(CouponState.waiting_code)
+async def process_coupon_code(message, session: AsyncSession, state: FSMContext, bot: Bot):
+    """Обработка введённого кода купона"""
+    telegram_id = message.from_user.id
+    code = message.text.strip().upper() if message.text else ""
+
+    # Clear state first
+    await state.clear()
+
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await message.answer(
+            "Профиль не найден. Начни с /start",
+            reply_markup=get_coupon_result_keyboard(False),
+            parse_mode=ParseMode.HTML,
+        )
+        return
+
+    # Check if coupon is valid
+    coupon_data = VALID_COUPONS.get(code)
+
+    if coupon_data:
+        # Apply coupon
+        bonus_amount = coupon_data["amount"]
+        description = coupon_data["description"]
+
+        user.balance += bonus_amount
+        await session.commit()
+
+        # Log
+        try:
+            await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=message.from_user,
+                            details=f"Coupon {code}: +{bonus_amount}₽", session=session)
+        except Exception:
+            pass
+
+        lines = [
+            "🎟 <b>КУПОН АКТИВИРОВАН!</b>",
+            "",
+            f"✅ Код: <code>{code}</code>",
+            f"💎 {description}",
+            "",
+            f"💰 Начислено: <b>+{bonus_amount} 🌕</b>",
+            f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
+            "",
+            "<i>Золото зачислено на твой счёт!</i>",
+        ]
+
+        await message.answer(
+            "\n".join(lines),
+            reply_markup=get_coupon_result_keyboard(True),
+            parse_mode=ParseMode.HTML,
+        )
+    else:
+        # Invalid coupon
+        lines = [
+            "🎟 <b>КУПОН НЕ НАЙДЕН</b>",
+            "",
+            f"❌ Код <code>{code}</code> недействителен.",
+            "",
+            "Проверь правильность ввода или попробуй другой код.",
+        ]
+
+        await message.answer(
+            "\n".join(lines),
+            reply_markup=get_coupon_result_keyboard(False),
+            parse_mode=ParseMode.HTML,
+        )
 
 
 # ══════════════════════════════════════════════════════════════
