@@ -42,8 +42,8 @@ WORK_CATEGORIES = {
         "types": [WorkType.DIPLOMA, WorkType.MASTERS],
     },
     "other": {
-        "label": "📎 Другое / Не знаю",
-        "description": "Нестандартные задачи",
+        "label": "💀 Спецзаказ / Неформат",
+        "description": "Нестандартные и уникальные задачи",
         "types": [WorkType.OTHER],
     },
 }
@@ -65,11 +65,11 @@ def get_work_category_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🎓 Дипломы", callback_data="work_category:large"),
             InlineKeyboardButton(text="🔥 Срочно! Горит!", callback_data="work_category:urgent"),
         ],
-        # Row 3: Прочее и помощь
+        # Row 3: Спецзаказ и помощь
         [
-            InlineKeyboardButton(text="📎 Другое / Не знаю", callback_data="work_category:other"),
+            InlineKeyboardButton(text="💀 Спецзаказ", callback_data="work_category:other"),
             InlineKeyboardButton(
-                text="💬 Помощь с выбором",
+                text="💬 Перетереть с Шерифом",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             ),
         ],
@@ -115,18 +115,9 @@ def get_category_works_keyboard(category_key: str) -> InlineKeyboardMarkup:
             ),
         ])
 
-    # Для категории "other" добавляем кнопку спросить
-    if category_key == "other":
-        buttons.append([
-            InlineKeyboardButton(
-                text="💬 Описать задачу менеджеру",
-                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
-            ),
-        ])
-
     # Назад и отмена
     buttons.append([
-        InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_categories"),
+        InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_categories"),
         InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
     ])
 
@@ -204,6 +195,33 @@ def get_large_works_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(
                 text="🎩 Магистерская | от 44 900 ₽",
                 callback_data=f"order_type:{WorkType.MASTERS.value}"
+            ),
+        ],
+        # Навигация
+        [
+            InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_categories"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ],
+    ])
+    return kb
+
+
+def get_special_order_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура для Спецзаказа / Неформата.
+    Две опции: стандартный flow или прямой контакт с Шерифом.
+    """
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🦄 Уникальная задача",
+                callback_data=f"order_type:{WorkType.OTHER.value}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="💬 Перетереть с Шерифом",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             ),
         ],
         # Навигация

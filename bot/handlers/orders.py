@@ -18,6 +18,7 @@ DIPLOMA_IMAGE_PATH = Path(__file__).parent.parent / "media" / "diploma.jpg"
 DIRECTIONS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "directions.jpg"
 DEADLINE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "deadline.jpg"
 URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "urgent_bell.jpg"
+SECRET_IMAGE_PATH = Path(__file__).parent.parent / "media" / "secret.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -46,6 +47,7 @@ from bot.keyboards.orders import (
     get_deadline_with_date,
     get_urgent_order_keyboard,
     get_urgent_task_keyboard,
+    get_special_order_keyboard,
     SUBJECTS,
     DEADLINES,
     WORK_CATEGORIES,
@@ -579,7 +581,44 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         )
         return
 
-    # Показываем типы работ в категории (для остальных категорий — other)
+    # === СПЕЦЗАКАЗ / НЕФОРМАТ ===
+    if category_key == "other":
+        caption = """<b>💀 Спецзаказ / Неформат</b>
+
+Не нашёл свою тему в списке? Или препод задал что-то совсем дикое?
+
+Не беда. Мы в этом салуне видали всякое. Если это можно написать или начертить — мы это сделаем.
+
+<i>Выбирай, как удобнее: оформить заявку тут или сразу написать главному.</i>"""
+
+        # Удаляем старое и отправляем с фото
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        if SECRET_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=SECRET_IMAGE_PATH,
+                    caption=caption,
+                    reply_markup=get_special_order_keyboard(),
+                )
+                return
+            except Exception as e:
+                logger.warning(f"Не удалось отправить фото secret: {e}")
+
+        # Fallback на текст
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_special_order_keyboard(),
+        )
+        return
+
+    # Показываем типы работ в категории (для остальных категорий)
     text = f"""🎯  <b>{category['label']}</b>
 
 <i>{category['description']}</i>
