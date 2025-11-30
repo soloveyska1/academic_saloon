@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 SUPPORT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "support.jpg"
 PRICE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "price.jpg"
 CODEX_IMAGE_PATH = Path(__file__).parent.parent / "media" / "codex.jpg"
-MAIN_MENU_IMAGE_PATH = Path(__file__).parent.parent / "media" / "saloon_menu.jpg"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -39,7 +38,7 @@ MAIN_MENU_IMAGE_PATH = Path(__file__).parent.parent / "media" / "saloon_menu.jpg
 
 def build_main_menu_text(user_name: str) -> str:
     """
-    Формирует текст главного меню с персонализацией.
+    Формирует текст главного меню — simplified, always available 24/7.
 
     Args:
         user_name: Имя пользователя (уже экранированное через html.escape!)
@@ -47,16 +46,11 @@ def build_main_menu_text(user_name: str) -> str:
     Returns:
         HTML-форматированный текст меню
     """
-    return f"""🤠 <b>Салун открыт для тебя, {user_name}!</b>
+    return """Привет, партнер! Учеба прижала к стенке?
 
-Здесь решают учебные проблемы любой сложности. Быстро, анонимно и с гарантией Шерифа.
+Мы здесь, чтобы прикрыть твою спину. Салун работает 24/7. Выбери, что нужно сделать, и мы найдем лучшего стрелка (автора) под твою задачу прямо сейчас.
 
-📜 <b>Наше досье:</b>
-🎖 <b>6 лет</b> безупречной работы
-🤝 <b>1000+</b> спасённых студентов
-💎 <b>Доводим до идеала</b> (или вернём золото)
-
-<i>Сейф открыт 24/7. Чем зарядить твой кольт сегодня? 👇</i>"""
+👇 Жми на главную кнопку внизу."""
 
 
 async def send_main_menu(
@@ -75,49 +69,30 @@ async def send_main_menu(
     Args:
         chat_id: ID чата для отправки
         bot: Экземпляр бота
-        user_name: Имя пользователя (НЕ экранированное — функция сделает это сама)
+        user_name: Имя пользователя (not used in simplified message)
     """
-    # Экранируем имя от HTML-инъекций (< > & и т.д.)
-    safe_name = html.escape(user_name)
-    text = build_main_menu_text(safe_name)
+    text = build_main_menu_text(user_name)
     keyboard = get_main_menu_keyboard()
 
-    # Пытаемся отправить с картинкой
-    if MAIN_MENU_IMAGE_PATH.exists():
+    # Пытаемся отправить с новой картинкой (saloon_first.jpg)
+    if settings.WELCOME_IMAGE.exists():
         try:
             await send_cached_photo(
                 bot=bot,
                 chat_id=chat_id,
-                photo_path=MAIN_MENU_IMAGE_PATH,
+                photo_path=settings.WELCOME_IMAGE,
                 caption=text,
                 reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
             )
             return
         except Exception as e:
             logger.warning(f"Не удалось отправить картинку меню: {e}")
 
-    # Fallback: используем MENU_IMAGE из настроек
-    if settings.MENU_IMAGE.exists():
-        try:
-            await send_cached_photo(
-                bot=bot,
-                chat_id=chat_id,
-                photo_path=settings.MENU_IMAGE,
-                caption=text,
-                reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
-            )
-            return
-        except Exception as e:
-            logger.warning(f"Fallback MENU_IMAGE тоже не сработал: {e}")
-
-    # Последний fallback — просто текст
+    # Fallback: просто текст
     await bot.send_message(
         chat_id=chat_id,
         text=text,
         reply_markup=keyboard,
-        parse_mode=ParseMode.HTML,
     )
 
 

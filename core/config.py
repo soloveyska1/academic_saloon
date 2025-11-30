@@ -29,8 +29,7 @@ class Settings(BaseSettings):
     YOOKASSA_RETURN_URL: str = "https://t.me/{bot_username}"  # URL возврата после оплаты
 
     # Медиа файлы
-    WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "image_saloon.jpg"
-    WELCOME_VOICE: Path = BASE_DIR / "bot" / "media" / "voice_welcome.ogg"
+    WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "saloon_first.jpg"  # New onboarding image
     OFFER_IMAGE: Path = BASE_DIR / "bot" / "media" / "saloon_welcome.jpg"
     ORDER_IMAGE: Path = BASE_DIR / "bot" / "media" / "bar_saloon.jpg"
     MENU_IMAGE: Path = BASE_DIR / "bot" / "media" / "back_saloon.jpg"

@@ -9,18 +9,19 @@ from sqlalchemy import select
 from database.models.users import User
 from bot.keyboards.inline import get_main_menu_keyboard, get_saloon_status_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
-from bot.texts.terms import (
-    TERMS_SHORT,
-    get_time_greeting,
-    get_first_name,
-    get_main_text,
-    get_welcome_quote,
-)
+from bot.texts.terms import TERMS_SHORT
 from bot.services.logger import log_action, LogEvent, LogLevel
-from bot.services.daily_stats import get_live_stats_line
 from core.config import settings
 from core.saloon_status import saloon_manager, generate_status_message
 from core.media_cache import send_cached_photo
+
+
+# New static welcome message - always available 24/7
+WELCOME_MESSAGE = """Привет, партнер! Учеба прижала к стенке?
+
+Мы здесь, чтобы прикрыть твою спину. Салун работает 24/7. Выбери, что нужно сделать, и мы найдем лучшего стрелка (автора) под твою задачу прямо сейчас.
+
+👇 Жми на главную кнопку внизу."""
 
 router = Router()
 
@@ -185,38 +186,17 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         session=session,
     )
 
-    # === БЫСТРЫЙ ОТВЕТ (оптимизировано) ===
+    # === БЫСТРЫЙ ОТВЕТ — simplified, no dynamic stats ===
 
     # 1. Typing для визуального отклика
     await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
-    # 2. Персонализированное приветствие по имени
-    first_name = get_first_name(user.fullname)
-    greeting = get_time_greeting(name=first_name)
-
-    # 3. Получаем скидку пользователя
-    _, discount = user.loyalty_status
-    if user.referrer_id and user.orders_count == 0:
-        discount = max(discount, 5)
-
-    # 4. Живая статистика (социальное доказательство)
-    try:
-        stats_line = await get_live_stats_line()
-    except Exception:
-        stats_line = ""
-
-    # 5. Основной текст + цитата
-    main_text = get_main_text(stats_line=stats_line, discount=discount)
-    quote = get_welcome_quote()
-
-    # 6. Отправляем картинку с текстом и кнопками (с кэшированием file_id)
-    full_text = f"{greeting}\n\n{main_text}{quote}"
-
+    # 2. Отправляем новую картинку с текстом и кнопками (с кэшированием file_id)
     await send_cached_photo(
         bot=bot,
         chat_id=message.chat.id,
         photo_path=settings.WELCOME_IMAGE,
-        caption=full_text,
+        caption=WELCOME_MESSAGE,
         reply_markup=get_main_menu_keyboard()
     )
 
@@ -228,20 +208,16 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
 @router.callback_query(F.data == "refresh_saloon_status")
 async def refresh_saloon_status(callback: CallbackQuery):
     """
-    Обновляет закреплённое сообщение со статусом салуна.
-    Редактирует текущее сообщение с актуальными данными.
+    Legacy handler for refresh button (now removed from UI).
+    Kept for backwards compatibility if any old pinned messages exist.
     """
-    # Получаем актуальный статус
-    status = await saloon_manager.get_status()
-    status_text = generate_status_message(status)
+    status_text = generate_status_message()
 
     try:
-        # Редактируем сообщение с новыми данными
         await callback.message.edit_text(
             text=status_text,
             reply_markup=get_saloon_status_keyboard()
         )
         await callback.answer("✅ Статус обновлён!")
     except Exception:
-        # Если текст не изменился — просто уведомляем
         await callback.answer("Статус актуален 👍")

@@ -5,28 +5,24 @@ from core.config import settings
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура главного меню — Premium Saloon Style.
+    Клавиатура главного меню — Streamlined for conversion.
 
     Layout:
-    [📝 Оформить заказ]           <- full width, CTA
-    [👤 Личный кабинет]           <- full width
-    [⭐ Отзывы ↗️][💰 Цены и Инфо] <- split row
-    [🤠 Написать Шерифу]          <- URL to manager
+    [📝 РАССЧИТАТЬ СТОИМОСТЬ]     <- full width, Primary CTA
+    [👤 Мои заказы]               <- full width, navigation
+    [⭐️ Отзывы / Гарантии][🆘 Позвать Шерифа] <- trust & support
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📝 Оформить заказ", callback_data="create_order")
+            InlineKeyboardButton(text="📝 РАССЧИТАТЬ СТОИМОСТЬ", callback_data="create_order")
         ],
         [
-            InlineKeyboardButton(text="👤 Личный кабинет", callback_data="my_profile")
+            InlineKeyboardButton(text="👤 Мои заказы", callback_data="my_profile")
         ],
         [
-            InlineKeyboardButton(text="⭐ Отзывы ↗️", url=settings.REVIEWS_CHANNEL),
-            InlineKeyboardButton(text="💰 Цены и Инфо", callback_data="price_info")
-        ],
-        [
+            InlineKeyboardButton(text="⭐️ Отзывы / Гарантии", url=settings.REVIEWS_CHANNEL),
             InlineKeyboardButton(
-                text="🤠 Написать Шерифу",
+                text="🆘 Позвать Шерифа",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             )
         ],
@@ -121,21 +117,10 @@ def get_price_list_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_saloon_status_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура для закреплённого сообщения со статусом салуна"""
+    """Клавиатура для закреплённого сообщения — simplified, no refresh"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🔄 Обновить", callback_data="refresh_saloon_status"),
-            InlineKeyboardButton(text="📝 Заказать", callback_data="create_order")
-        ]
-    ])
-    return kb
-
-
-def get_voice_teaser_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура с кнопкой для прослушивания голосового приветствия"""
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🎧 Послушать", callback_data="play_welcome_voice")
+            InlineKeyboardButton(text="📝 РАССЧИТАТЬ СТОИМОСТЬ", callback_data="create_order")
         ]
     ])
     return kb
