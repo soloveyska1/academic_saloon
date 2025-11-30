@@ -2373,29 +2373,45 @@ async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
     half_amount = final_price / 2
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
+    # Premium Layout
+    bonus_line = f"\n💎 <b>Списано бонусов:</b> −{order.bonus_used:.0f}₽" if order.bonus_used and order.bonus_used > 0 else ""
+
+    client_text = f"""💰 <b>СМЕТА ГОТОВА</b>
+
+Шериф всё посчитал. Вот расклад по твоему заказу:
+
+📂 <b>Тип:</b> {work_label}
+💵 <b>Базовая цена:</b> {order.price:.0f}₽{bonus_line}
+
+───────────────
+<b>ИТОГО К ОПЛАТЕ: {final_price:.0f}₽</b>
+───────────────
+
+<i>Выбери, как будем рассчитываться.</i>"""
+
+    buttons = [
+        [InlineKeyboardButton(
+            text=f"💳 100% Сразу ({final_price:.0f}₽)",
+            callback_data=f"pay_scheme:full:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
+            callback_data=f"pay_scheme:half:{order.id}"
+        )],
+    ]
+
     if order.bonus_used and order.bonus_used > 0:
-        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+        buttons.append([InlineKeyboardButton(
+            text="🔄 Не тратить бонусы (Пересчитать)",
+            callback_data=f"price_no_bonus:{order.id}"
+        )])
 
-📝 {work_label}
-💵 Стоимость: {order.price:.0f}₽
-🎁 Бонусы: −{order.bonus_used:.0f}₽
+    buttons.append([InlineKeyboardButton(
+        text="💬 Вопрос по цене / Дорого",
+        callback_data=f"price_question:{order.id}"
+    )])
 
-<b>К оплате: {final_price:.0f}₽</b>
-
-Выбери схему оплаты:"""
-    else:
-        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
-
-📝 {work_label}
-
-<b>К оплате: {final_price:.0f}₽</b>
-
-Выбери схему оплаты:"""
-
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"⚡ 100% сразу ({final_price:.0f}₽)", callback_data=f"pay_scheme:full:{order.id}")],
-        [InlineKeyboardButton(text=f"📋 50% аванс ({half_amount:.0f}₽)", callback_data=f"pay_scheme:half:{order.id}")],
-    ])
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
 
     await callback.message.edit_text(client_text, reply_markup=kb)
 
@@ -2867,42 +2883,69 @@ async def process_order_price_input(message: Message, state: FSMContext, session
     final_price = price - bonus_to_use
     half_amount = final_price / 2
 
-    # Формируем сообщение для клиента
+    # Формируем сообщение для клиента (Premium Deal Layout)
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
+    # Строка с бонусами (только если есть)
+    bonus_line = f"\n💎 <b>Списано бонусов:</b> −{bonus_to_use:.0f}₽" if bonus_to_use > 0 else ""
+
+    client_text = f"""💰 <b>СМЕТА ГОТОВА</b>
+
+Шериф всё посчитал. Вот расклад по твоему заказу:
+
+📂 <b>Тип:</b> {work_label}
+💵 <b>Базовая цена:</b> {price:.0f}₽{bonus_line}
+
+───────────────
+<b>ИТОГО К ОПЛАТЕ: {final_price:.0f}₽</b>
+───────────────
+
+<i>Выбери, как будем рассчитываться. Если оплатишь всё сразу — меньше лишних движений.</i>"""
+
+    # Формируем клавиатуру
+    buttons = [
+        [InlineKeyboardButton(
+            text=f"💳 100% Сразу ({final_price:.0f}₽)",
+            callback_data=f"pay_scheme:full:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
+            callback_data=f"pay_scheme:half:{order.id}"
+        )],
+    ]
+
+    # Кнопка "Не тратить бонусы" только если они были применены
     if bonus_to_use > 0:
-        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
+        buttons.append([InlineKeyboardButton(
+            text="🔄 Не тратить бонусы (Пересчитать)",
+            callback_data=f"price_no_bonus:{order.id}"
+        )])
 
-📝 {work_label}
-💵 Стоимость: {price:.0f}₽
-🎁 Бонусы: −{bonus_to_use:.0f}₽
+    # Кнопка для вопросов/торга
+    buttons.append([InlineKeyboardButton(
+        text="💬 Вопрос по цене / Дорого",
+        callback_data=f"price_question:{order.id}"
+    )])
 
-<b>К оплате: {final_price:.0f}₽</b>
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-Выбери схему оплаты:"""
-
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"⚡ 100% сразу ({final_price:.0f}₽)", callback_data=f"pay_scheme:full:{order.id}")],
-            [InlineKeyboardButton(text=f"📋 50% аванс ({half_amount:.0f}₽)", callback_data=f"pay_scheme:half:{order.id}")],
-            [InlineKeyboardButton(text="💎 Сохранить бонусы", callback_data=f"price_no_bonus:{order.id}")],
-        ])
-    else:
-        client_text = f"""💰 <b>Заказ #{order.id} оценён!</b>
-
-📝 {work_label}
-
-<b>К оплате: {final_price:.0f}₽</b>
-
-Выбери схему оплаты:"""
-
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"⚡ 100% сразу ({final_price:.0f}₽)", callback_data=f"pay_scheme:full:{order.id}")],
-            [InlineKeyboardButton(text=f"📋 50% аванс ({half_amount:.0f}₽)", callback_data=f"pay_scheme:half:{order.id}")],
-        ])
-
-    # Отправляем клиенту
+    # Отправляем клиенту с картинкой
     try:
-        await bot.send_message(order.user_id, client_text, reply_markup=kb)
+        if PAYMENT_REQUEST_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=order.user_id,
+                    photo_path=PAYMENT_REQUEST_IMAGE_PATH,
+                    caption=client_text,
+                    reply_markup=kb,
+                )
+            except Exception as e:
+                logger.warning(f"Не удалось отправить payment_request image: {e}")
+                await bot.send_message(order.user_id, client_text, reply_markup=kb)
+        else:
+            await bot.send_message(order.user_id, client_text, reply_markup=kb)
+
         await message.answer(
             f"✅ Цена {price:.0f}₽ назначена заказу #{order.id}\n"
             f"Клиенту отправлено сообщение\n"
