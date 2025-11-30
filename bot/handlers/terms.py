@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -15,15 +15,13 @@ from bot.texts.terms import (
     TERMS_ACCEPTED,
     TERMS_ACCEPTED_RETURNING,
     get_time_greeting,
-    VOICE_TEASER,
-    VOICE_CAPTION,
 )
 from bot.keyboards.terms import (
     get_terms_short_keyboard,
     get_terms_full_keyboard,
     get_terms_section_keyboard,
 )
-from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard, get_voice_teaser_keyboard
+from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from bot.handlers.start import send_and_pin_status
@@ -187,13 +185,15 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot,
             silent=False,  # Со звуком!
         )
 
-        # Новым пользователям: интрига с голосовым приветствием
-        # Меню и закреп отправятся после прослушивания
-        await bot.send_message(
+        # Новым пользователям: сразу главное меню и закреп (no voice message)
+        await send_main_menu(
             chat_id=chat_id,
-            text=VOICE_TEASER,
-            reply_markup=get_voice_teaser_keyboard()
+            bot=bot,
+            user_name=user_name,
         )
+
+        # И закреп со статусом салуна
+        await send_and_pin_status(chat_id, bot, pin=True)
     else:
         # Логируем повторное принятие
         await log_action(
@@ -212,47 +212,3 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot,
         )
 
 
-# ══════════════════════════════════════════════════════════════
-#                    ГОЛОСОВОЕ ПРИВЕТСТВИЕ
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data == "play_welcome_voice")
-async def play_welcome_voice(callback: CallbackQuery, bot: Bot):
-    """
-    Отправляет голосовое приветствие по нажатию кнопки.
-    После голосового — меню и закреп (для новых пользователей).
-    """
-    await callback.answer("⏳")
-
-    # Определяем данные
-    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
-    user_name = callback.from_user.full_name or "Партнёр"
-
-    # Удаляем сообщение с кнопкой
-    if callback.message:
-        try:
-            await callback.message.delete()
-        except Exception:
-            pass
-
-    # Отправляем голосовое
-    voice = FSInputFile(settings.WELCOME_VOICE)
-    await bot.send_voice(chat_id=chat_id, voice=voice, caption=VOICE_CAPTION)
-
-    # Логируем
-    await log_action(
-        bot=bot,
-        event=LogEvent.NAV_BUTTON,
-        user=callback.from_user,
-        details="Прослушал голосовое приветствие",
-    )
-
-    # Отправляем персонализированное главное меню
-    await send_main_menu(
-        chat_id=chat_id,
-        bot=bot,
-        user_name=user_name,
-    )
-
-    # И закреп со статусом салуна
-    await send_and_pin_status(chat_id, bot, pin=True)

@@ -25,13 +25,7 @@ from bot.services.bonus import BonusService, BonusReason
 from core.config import settings
 from core.saloon_status import (
     saloon_manager,
-    LoadStatus,
-    LOAD_STATUS_DISPLAY,
     generate_status_message,
-    generate_people_online,
-    OwnerStatusOverride,
-    get_owner_status,
-    get_random_saloon_quote,
 )
 from bot.states.admin import AdminStates
 from bot.states.order import OrderState
@@ -139,18 +133,9 @@ def get_admin_back_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_status_menu_keyboard() -> InlineKeyboardMarkup:
-    """Меню управления статусом — обновлённое с быстрыми кнопками"""
+    """Меню управления статусом — simplified, always 24/7"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🚦 Загрузка", callback_data="admin_load_status"),
-            InlineKeyboardButton(text="🤠 Хозяин", callback_data="admin_owner_status")
-        ],
-        [
-            InlineKeyboardButton(text="👥 Клиенты", callback_data="admin_clients_count"),
-            InlineKeyboardButton(text="📋 Заказы", callback_data="admin_orders_count")
-        ],
-        [
-            InlineKeyboardButton(text="💬 Цитата", callback_data="admin_quote"),
             InlineKeyboardButton(text="👁 Предпросмотр", callback_data="admin_preview_pin")
         ],
         [
@@ -161,34 +146,6 @@ def get_status_menu_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="◀️ Назад", callback_data="admin_panel")
-        ],
-    ])
-    return kb
-
-
-def get_load_status_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура выбора уровня загруженности"""
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=f"{LOAD_STATUS_DISPLAY[LoadStatus.LOW][0]} Свободно",
-                callback_data="admin_set_load_low"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=f"{LOAD_STATUS_DISPLAY[LoadStatus.MEDIUM][0]} Средняя загрузка",
-                callback_data="admin_set_load_medium"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=f"{LOAD_STATUS_DISPLAY[LoadStatus.HIGH][0]} Очень плотно",
-                callback_data="admin_set_load_high"
-            )
-        ],
-        [
-            InlineKeyboardButton(text="◀️ Назад", callback_data="admin_status_menu")
         ],
     ])
     return kb
@@ -209,59 +166,6 @@ def get_cancel_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="❌ Отмена", callback_data="admin_status_menu")
-        ],
-    ])
-    return kb
-
-
-def get_owner_status_keyboard(current: str) -> InlineKeyboardMarkup:
-    """Клавиатура выбора статуса Хозяина"""
-    # Отмечаем текущий статус галочкой
-    auto_mark = "✓ " if current == OwnerStatusOverride.AUTO.value else ""
-    online_mark = "✓ " if current == OwnerStatusOverride.ONLINE.value else ""
-    offline_mark = "✓ " if current == OwnerStatusOverride.OFFLINE.value else ""
-
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=f"{online_mark}🟢 На связи",
-                callback_data="admin_set_owner_online"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=f"{offline_mark}🌙 Отдыхаю",
-                callback_data="admin_set_owner_offline"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=f"{auto_mark}⚡ Авто (по времени)",
-                callback_data="admin_set_owner_auto"
-            )
-        ],
-        [
-            InlineKeyboardButton(text="◀️ Назад", callback_data="admin_status_menu")
-        ],
-    ])
-    return kb
-
-
-def get_quick_count_keyboard(entity: str, current: int) -> InlineKeyboardMarkup:
-    """Клавиатура с быстрыми кнопками +/- для клиентов/заказов"""
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="−5", callback_data=f"admin_quick_{entity}_-5"),
-            InlineKeyboardButton(text="−1", callback_data=f"admin_quick_{entity}_-1"),
-            InlineKeyboardButton(text=f"[ {current} ]", callback_data="noop"),
-            InlineKeyboardButton(text="+1", callback_data=f"admin_quick_{entity}_+1"),
-            InlineKeyboardButton(text="+5", callback_data=f"admin_quick_{entity}_+5"),
-        ],
-        [
-            InlineKeyboardButton(text="✏️ Ввести число", callback_data=f"admin_{entity}_manual")
-        ],
-        [
-            InlineKeyboardButton(text="◀️ Назад", callback_data="admin_status_menu")
         ],
     ])
     return kb
@@ -936,7 +840,7 @@ async def delete_order(callback: CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "admin_status_menu")
 async def show_status_menu(callback: CallbackQuery, state: FSMContext):
-    """Показать меню управления статусом — обновлённое"""
+    """Показать меню управления статусом — simplified, always 24/7"""
     if not is_admin(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
@@ -945,30 +849,13 @@ async def show_status_menu(callback: CallbackQuery, state: FSMContext):
     await callback.answer("⏳")
 
     status = await saloon_manager.get_status()
-    load = LoadStatus(status.load_status)
-    load_emoji, load_title, _ = LOAD_STATUS_DISPLAY[load]
-
-    # Статус Хозяина
-    owner_emoji, owner_text = get_owner_status(status)
-    owner_mode = OwnerStatusOverride(status.owner_status_override)
-    owner_mode_text = {
-        OwnerStatusOverride.AUTO: "авто",
-        OwnerStatusOverride.ONLINE: "вручную",
-        OwnerStatusOverride.OFFLINE: "вручную",
-    }.get(owner_mode, "авто")
-
-    # Цитата
-    quote = get_random_saloon_quote()
 
     text = f"""📊  <b>УПРАВЛЕНИЕ ЗАКРЕПОМ</b>
 
-<b>Текущий статус:</b>
+<b>Статус:</b> 🌟 Салун ОТКРЫТ 24/7
 
-{load_emoji} Загрузка: <b>{load_title}</b>
-👥 Клиентов: <b>{status.clients_count}</b>
-📋 В работе: <b>{status.orders_in_progress}</b>
-{owner_emoji} Хозяин: <b>{owner_text}</b> <i>({owner_mode_text})</i>
-💬 Цитата: <i>{quote[:30]}...</i>
+<i>Закреп показывает статичное сообщение
+(без динамических статистик и offline статуса)</i>
 
 📌 Закреп: {"✅ настроен" if status.pinned_message_id else "❌ не настроен"}"""
 
@@ -976,447 +863,24 @@ async def show_status_menu(callback: CallbackQuery, state: FSMContext):
 
 
 # ══════════════════════════════════════════════════════════════
-#                    УПРАВЛЕНИЕ ЗАГРУЖЕННОСТЬЮ
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data == "admin_load_status")
-async def show_load_status_menu(callback: CallbackQuery):
-    """Показать меню выбора загруженности"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await callback.answer("⏳")
-
-    status = await saloon_manager.get_status()
-    load = LoadStatus(status.load_status)
-    emoji, title, desc = LOAD_STATUS_DISPLAY[load]
-
-    text = f"""🚦  <b>Загруженность</b>
-
-Текущий статус: {emoji} <b>{title}</b>
-<i>{desc}</i>
-
-Выбери новый уровень:"""
-
-    await callback.message.edit_text(text, reply_markup=get_load_status_keyboard())
-
-
-@router.callback_query(F.data.startswith("admin_set_load_"))
-async def set_load_status(callback: CallbackQuery):
-    """Установить уровень загруженности"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    load_map = {
-        "admin_set_load_low": LoadStatus.LOW,
-        "admin_set_load_medium": LoadStatus.MEDIUM,
-        "admin_set_load_high": LoadStatus.HIGH,
-    }
-
-    new_load = load_map.get(callback.data)
-    if not new_load:
-        await callback.answer("Неизвестный статус", show_alert=True)
-        return
-
-    await saloon_manager.set_load_status(new_load)
-    emoji, title, _ = LOAD_STATUS_DISPLAY[new_load]
-
-    await callback.answer(f"Установлено: {emoji} {title}", show_alert=True)
-
-    # Возвращаемся в главное меню статуса
-    status = await saloon_manager.get_status()
-    load = LoadStatus(status.load_status)
-    load_emoji, load_title, _ = LOAD_STATUS_DISPLAY[load]
-
-    # Статус Хозяина
-    owner_emoji, owner_text = get_owner_status(status)
-    owner_mode = OwnerStatusOverride(status.owner_status_override)
-    owner_mode_text = {
-        OwnerStatusOverride.AUTO: "авто",
-        OwnerStatusOverride.ONLINE: "вручную",
-        OwnerStatusOverride.OFFLINE: "вручную",
-    }.get(owner_mode, "авто")
-
-    quote = get_random_saloon_quote()
-
-    text = f"""📊  <b>УПРАВЛЕНИЕ ЗАКРЕПОМ</b>
-
-<b>Текущий статус:</b>
-
-{load_emoji} Загрузка: <b>{load_title}</b>
-👥 Клиентов: <b>{status.clients_count}</b>
-📋 В работе: <b>{status.orders_in_progress}</b>
-{owner_emoji} Хозяин: <b>{owner_text}</b> <i>({owner_mode_text})</i>
-💬 Цитата: <i>{quote[:30]}...</i>
-
-📌 Закреп: {"✅ настроен" if status.pinned_message_id else "❌ не настроен"}"""
-
-    await callback.message.edit_text(text, reply_markup=get_status_menu_keyboard())
-
-
-# ══════════════════════════════════════════════════════════════
-#                    УПРАВЛЕНИЕ КЛИЕНТАМИ СЕЙЧАС
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data == "admin_clients_count")
-async def show_clients_menu(callback: CallbackQuery):
-    """Показать меню управления клиентами с быстрыми кнопками"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await callback.answer("⏳")
-    status = await saloon_manager.get_status()
-
-    text = f"""👥  <b>КЛИЕНТЫ</b>
-
-Сейчас: <b>{status.clients_count}</b>
-
-<i>Используй кнопки для быстрого изменения:</i>"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_quick_count_keyboard("clients", status.clients_count)
-    )
-
-
-@router.callback_query(F.data.startswith("admin_quick_clients_"))
-async def quick_change_clients(callback: CallbackQuery):
-    """Быстрое изменение количества клиентов"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    delta = int(callback.data.split("_")[-1])
-    status = await saloon_manager.get_status()
-    new_count = max(0, status.clients_count + delta)
-    await saloon_manager.set_clients_count(new_count)
-
-    await callback.answer(f"Клиентов: {new_count}")
-
-    text = f"""👥  <b>КЛИЕНТЫ</b>
-
-Сейчас: <b>{new_count}</b>
-
-<i>Используй кнопки для быстрого изменения:</i>"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_quick_count_keyboard("clients", new_count)
-    )
-
-
-@router.callback_query(F.data == "admin_clients_manual")
-async def ask_clients_manual(callback: CallbackQuery, state: FSMContext):
-    """Запросить ручной ввод количества клиентов"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await callback.answer("⏳")
-    status = await saloon_manager.get_status()
-
-    text = f"""👥  <b>Ввод числа клиентов</b>
-
-Текущее: <b>{status.clients_count}</b>
-
-Введи новое число:"""
-
-    await callback.message.edit_text(text, reply_markup=get_cancel_keyboard())
-    await state.set_state(AdminStates.waiting_clients_count)
-
-
-@router.message(AdminStates.waiting_clients_count)
-async def set_clients_count(message: Message, state: FSMContext):
-    """Установить количество клиентов сейчас"""
-    if not is_admin(message.from_user.id):
-        return
-
-    try:
-        count = int(message.text.strip())
-        if count < 0:
-            raise ValueError("Число должно быть неотрицательным")
-
-        await saloon_manager.set_clients_count(count)
-        await state.clear()
-
-        text = f"""✅  <b>Готово!</b>
-
-Клиентов сейчас: <b>{count}</b>"""
-
-        await message.answer(text, reply_markup=get_back_to_status_keyboard())
-
-    except ValueError:
-        await message.answer(
-            "❌ Введи корректное число (0 или больше)",
-            reply_markup=get_cancel_keyboard()
-        )
-
-
-# ══════════════════════════════════════════════════════════════
-#                    УПРАВЛЕНИЕ ЗАКАЗАМИ В РАБОТЕ
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data == "admin_orders_count")
-async def show_orders_menu(callback: CallbackQuery):
-    """Показать меню управления заказами с быстрыми кнопками"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await callback.answer("⏳")
-    status = await saloon_manager.get_status()
-
-    text = f"""📋  <b>ЗАКАЗЫ В РАБОТЕ</b>
-
-Сейчас: <b>{status.orders_in_progress}</b>
-
-<i>Используй кнопки для быстрого изменения:</i>"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_quick_count_keyboard("orders", status.orders_in_progress)
-    )
-
-
-@router.callback_query(F.data.startswith("admin_quick_orders_"))
-async def quick_change_orders(callback: CallbackQuery):
-    """Быстрое изменение количества заказов"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    delta = int(callback.data.split("_")[-1])
-    status = await saloon_manager.get_status()
-    new_count = max(0, status.orders_in_progress + delta)
-    await saloon_manager.set_orders_in_progress(new_count)
-
-    await callback.answer(f"Заказов: {new_count}")
-
-    text = f"""📋  <b>ЗАКАЗЫ В РАБОТЕ</b>
-
-Сейчас: <b>{new_count}</b>
-
-<i>Используй кнопки для быстрого изменения:</i>"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_quick_count_keyboard("orders", new_count)
-    )
-
-
-@router.callback_query(F.data == "admin_orders_manual")
-async def ask_orders_manual(callback: CallbackQuery, state: FSMContext):
-    """Запросить ручной ввод количества заказов"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await callback.answer("⏳")
-    status = await saloon_manager.get_status()
-
-    text = f"""📋  <b>Ввод числа заказов</b>
-
-Текущее: <b>{status.orders_in_progress}</b>
-
-Введи новое число:"""
-
-    await callback.message.edit_text(text, reply_markup=get_cancel_keyboard())
-    await state.set_state(AdminStates.waiting_orders_count)
-
-
-@router.message(AdminStates.waiting_orders_count)
-async def set_orders_count(message: Message, state: FSMContext):
-    """Установить количество заказов"""
-    if not is_admin(message.from_user.id):
-        return
-
-    try:
-        count = int(message.text.strip())
-        if count < 0:
-            raise ValueError("Число должно быть неотрицательным")
-
-        await saloon_manager.set_orders_in_progress(count)
-        await state.clear()
-
-        text = f"""✅  <b>Готово!</b>
-
-Заказов в работе: <b>{count}</b>"""
-
-        await message.answer(text, reply_markup=get_back_to_status_keyboard())
-
-    except ValueError:
-        await message.answer(
-            "❌ Введи корректное число (0 или больше)",
-            reply_markup=get_cancel_keyboard()
-        )
-
-
-# ══════════════════════════════════════════════════════════════
-#                    СТАТУС ХОЗЯИНА
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data == "admin_owner_status")
-async def show_owner_status_menu(callback: CallbackQuery):
-    """Показать меню выбора статуса Хозяина"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await callback.answer("⏳")
-    status = await saloon_manager.get_status()
-    owner_emoji, owner_text = get_owner_status(status)
-
-    text = f"""🤠  <b>СТАТУС ХОЗЯИНА</b>
-
-Текущий: {owner_emoji} <b>{owner_text}</b>
-
-<b>Режимы:</b>
-🟢 <b>На связи</b> — принудительно онлайн
-🌙 <b>Отдыхаю</b> — выходной/недоступен
-⚡ <b>Авто</b> — по времени МСК (9:00-22:00)
-
-<i>Выбери режим:</i>"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_owner_status_keyboard(status.owner_status_override)
-    )
-
-
-@router.callback_query(F.data == "admin_set_owner_online")
-async def set_owner_online(callback: CallbackQuery):
-    """Установить статус Хозяина — На связи"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await saloon_manager.set_owner_status(OwnerStatusOverride.ONLINE)
-    await callback.answer("🟢 Установлено: На связи", show_alert=True)
-
-    # Возвращаемся в меню статуса хозяина
-    status = await saloon_manager.get_status()
-    owner_emoji, owner_text = get_owner_status(status)
-
-    text = f"""🤠  <b>СТАТУС ХОЗЯИНА</b>
-
-Текущий: {owner_emoji} <b>{owner_text}</b>
-
-<b>Режимы:</b>
-🟢 <b>На связи</b> — принудительно онлайн
-🌙 <b>Отдыхаю</b> — выходной/недоступен
-⚡ <b>Авто</b> — по времени МСК (9:00-22:00)
-
-<i>Выбери режим:</i>"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_owner_status_keyboard(status.owner_status_override)
-    )
-
-
-@router.callback_query(F.data == "admin_set_owner_offline")
-async def set_owner_offline(callback: CallbackQuery):
-    """Установить статус Хозяина — Отдыхаю"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await saloon_manager.set_owner_status(OwnerStatusOverride.OFFLINE)
-    await callback.answer("🌙 Установлено: Отдыхаю", show_alert=True)
-
-    status = await saloon_manager.get_status()
-    owner_emoji, owner_text = get_owner_status(status)
-
-    text = f"""🤠  <b>СТАТУС ХОЗЯИНА</b>
-
-Текущий: {owner_emoji} <b>{owner_text}</b>
-
-<b>Режимы:</b>
-🟢 <b>На связи</b> — принудительно онлайн
-🌙 <b>Отдыхаю</b> — выходной/недоступен
-⚡ <b>Авто</b> — по времени МСК (9:00-22:00)
-
-<i>Выбери режим:</i>"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_owner_status_keyboard(status.owner_status_override)
-    )
-
-
-@router.callback_query(F.data == "admin_set_owner_auto")
-async def set_owner_auto(callback: CallbackQuery):
-    """Установить статус Хозяина — Авто"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await saloon_manager.set_owner_status(OwnerStatusOverride.AUTO)
-    await callback.answer("⚡ Установлено: Авто", show_alert=True)
-
-    status = await saloon_manager.get_status()
-    owner_emoji, owner_text = get_owner_status(status)
-
-    text = f"""🤠  <b>СТАТУС ХОЗЯИНА</b>
-
-Текущий: {owner_emoji} <b>{owner_text}</b>
-
-<b>Режимы:</b>
-🟢 <b>На связи</b> — принудительно онлайн
-🌙 <b>Отдыхаю</b> — выходной/недоступен
-⚡ <b>Авто</b> — по времени МСК (9:00-22:00)
-
-<i>Выбери режим:</i>"""
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_owner_status_keyboard(status.owner_status_override)
-    )
-
-
-# ══════════════════════════════════════════════════════════════
-#                    ПРЕДПРОСМОТР И ЦИТАТА
+#                    ПРЕДПРОСМОТР ЗАКРЕПА
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "admin_preview_pin")
 async def preview_pin(callback: CallbackQuery):
-    """Предпросмотр закрепа"""
+    """Предпросмотр закрепа — simplified static message"""
     if not is_admin(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
 
     await callback.answer("⏳")
-    status = await saloon_manager.get_status()
-    preview = generate_status_message(status)
+    preview = generate_status_message()
 
     # Отправляем предпросмотр отдельным сообщением
     await callback.message.answer(
         f"👁 <b>ПРЕДПРОСМОТР ЗАКРЕПА:</b>\n\n{'─' * 20}\n\n{preview}\n\n{'─' * 20}",
         reply_markup=get_back_to_status_keyboard()
     )
-
-
-@router.callback_query(F.data == "admin_quote")
-async def show_quote_info(callback: CallbackQuery):
-    """Информация о цитате"""
-    if not is_admin(callback.from_user.id):
-        await callback.answer("Доступ запрещён", show_alert=True)
-        return
-
-    await callback.answer("⏳")
-    quote = get_random_saloon_quote()
-
-    text = f"""💬  <b>ЦИТАТА В ЗАКРЕПЕ</b>
-
-Текущая: <i>{quote}</i>
-
-<i>Цитата меняется автоматически каждые 10 минут.
-При обновлении закрепа она обновится.</i>"""
-
-    await callback.message.edit_text(text, reply_markup=get_back_to_status_keyboard())
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1463,7 +927,7 @@ async def ask_pin_chat_id(callback: CallbackQuery, state: FSMContext):
 
     # Предпросмотр сообщения
     status = await saloon_manager.get_status()
-    preview = generate_status_message(status)
+    preview = generate_status_message()
 
     text = f"""📌  <b>Отправить закреп</b>
 
@@ -1519,7 +983,7 @@ async def _send_pin_message(callback: CallbackQuery, bot: Bot, chat_id: int):
     """Вспомогательная функция отправки закрепа"""
     try:
         status = await saloon_manager.get_status()
-        text = generate_status_message(status)
+        text = generate_status_message()
 
         # Отправляем сообщение
         sent_msg = await bot.send_message(chat_id=chat_id, text=text)
@@ -1566,7 +1030,7 @@ async def send_pin_message_manual(message: Message, state: FSMContext, bot: Bot)
         chat_id = int(message.text.strip())
 
         status = await saloon_manager.get_status()
-        text = generate_status_message(status)
+        text = generate_status_message()
 
         # Отправляем сообщение
         sent_msg = await bot.send_message(chat_id=chat_id, text=text)
@@ -1626,7 +1090,7 @@ async def update_pin_message(callback: CallbackQuery, bot: Bot):
         return
 
     try:
-        text = generate_status_message(status)
+        text = generate_status_message()
         await bot.edit_message_text(
             chat_id=status.pinned_chat_id,
             message_id=status.pinned_message_id,
