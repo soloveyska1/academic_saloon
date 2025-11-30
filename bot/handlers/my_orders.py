@@ -33,6 +33,7 @@ from database.models.orders import (
 from bot.keyboards.profile import (
     get_profile_dashboard_keyboard,
     get_gamified_profile_keyboard,
+    get_muse_profile_keyboard,
     get_orders_list_keyboard,
     get_order_detail_keyboard,
     get_cancel_order_confirm_keyboard,
@@ -333,54 +334,44 @@ def build_gamified_profile_caption(user: User | None, telegram_id: int) -> str:
     return "\n".join(lines)
 
 
-def build_muse_profile_caption(user: User | None, telegram_id: int) -> str:
+def build_muse_profile_caption(user: User | None, telegram_id: int, user_name: str = "Гость") -> str:
     """
-    Формирует специальный caption для VIP Muse - ЛИЧНЫЕ ПОКОИ
-    Элегантный романтический интерфейс для NeuroNatali.
+    Формирует специальный caption для VIP Muse - минималистичный эстетичный дизайн.
 
-    Layout:
-    🌹 ЛИЧНЫЕ ПОКОИ | Special Access
-    ───────────────────
-    👸 Статус: 💎 Королева Вдохновения
-    ✨ Привилегии: Бесконечная удача
-    ───────────────────
-    💰 Твой Сейф: {balance} 🌕 + Ключ от сердца Администратора
-    ───────────────────
-    🎰 Твоя персональная рулетка
+    Layout (clean, no separator lines):
+    `✧ M U S E — S U I T E ✧`
+
+    👤 Гость: {name}
+    💎 Статус: `Queen of Inspiration`
+    💳 Баланс: `∞ (Бесценно)`
+
+    В этом пространстве правила устанавливаешь ты.
+
+    👇 Твоя персональная рулетка готова.
     """
     if not user:
         return (
-            "🌹 <b>ЛИЧНЫЕ ПОКОИ</b> | Special Access\n"
-            "───────────────────\n"
-            "Добро пожаловать, Королева! 👑"
+            "<code>✧ M U S E — S U I T E ✧</code>\n\n"
+            f"👤 <b>Гость:</b> {user_name}\n"
+            "💎 <b>Статус:</b> <code>Queen of Inspiration</code>\n\n"
+            "<i>Добро пожаловать в личное пространство.</i>"
         )
 
-    lines = []
+    balance_display = f"{format_number(user.balance)}" if user.balance > 0 else "∞"
 
-    # ═══════════════ HEADER ═══════════════
-    lines.append("🌹 <b>ЛИЧНЫЕ ПОКОИ</b> | Special Access")
-    lines.append("───────────────────")
-    lines.append("")
-
-    # ═══════════════ STATUS ═══════════════
-    lines.append("👸 <b>Статус:</b> 💎 Королева Вдохновения")
-    lines.append("✨ <b>Привилегии:</b> Бесконечная удача")
-    lines.append("")
-    lines.append("───────────────────")
-    lines.append("")
-
-    # ═══════════════ THE VAULT ═══════════════
-    lines.append(f"💰 <b>Твой Сейф:</b> {format_number(user.balance)} 🌕")
-    lines.append("    + Ключ от сердца Администратора 💝")
-    if user.referral_earnings > 0:
-        lines.append(f"👥 <b>Доход:</b> +{format_number(user.referral_earnings)} 🌕")
-    lines.append("")
-    lines.append("───────────────────")
-    lines.append("")
-
-    # ═══════════════ ROULETTE ═══════════════
-    lines.append("🎰 <b>Твоя персональная рулетка</b>")
-    lines.append("<i>Крути без ограничений — для тебя кулдауна нет!</i>")
+    lines = [
+        "<code>✧ M U S E — S U I T E ✧</code>",
+        "",
+        f"👤 <b>Гость:</b> {user_name}",
+        "💎 <b>Статус:</b> <code>Queen of Inspiration</code>",
+        "",
+        f"💳 <b>Баланс:</b> <code>{balance_display}</code> 🌕",
+        "",
+        "<i>В этом пространстве правила устанавливаешь ты.</i>",
+        "<i>Удача всегда на твоей стороне.</i>",
+        "",
+        "👇 <i>Твоя персональная рулетка готова.</i>",
+    ]
 
     return "\n".join(lines)
 
@@ -397,6 +388,8 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         pass
 
     telegram_id = callback.from_user.id
+    tg_user = callback.from_user
+    user_name = tg_user.first_name or "Гость"
 
     user_result = await session.execute(
         select(User).where(User.telegram_id == telegram_id)
@@ -405,33 +398,36 @@ async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     counts = await get_order_counts(session, telegram_id)
 
-    # Check for VIP Muse status (NeuroNatali or Admin)
-    vip_muse = is_vip_muse(callback.from_user)
+    # Check VIP status FIRST (Admin or Muse = unlimited spins)
+    is_vip = is_admin(tg_user) or is_actual_muse(tg_user)
 
-    # Caption based on VIP status
-    if vip_muse:
-        caption = build_muse_profile_caption(user, telegram_id)
+    # Check if should show Muse UI (Admin in muse mode or actual Muse)
+    show_muse_ui = is_vip_muse(tg_user)
+
+    # Caption based on UI mode
+    if show_muse_ui:
+        caption = build_muse_profile_caption(user, telegram_id, user_name)
+        keyboard = get_muse_profile_keyboard()
     else:
         caption = build_gamified_profile_caption(user, telegram_id)
 
-    # Daily luck cooldown check (VIP Muse = always available)
-    if vip_muse:
-        daily_luck_available = True
-        cooldown_text = None
-    else:
-        daily_luck_available = True
-        cooldown_text = None
-        if user:
-            cooldown = user.daily_bonus_cooldown
-            daily_luck_available = cooldown["available"]
-            cooldown_text = cooldown.get("remaining_text")
+        # Daily luck cooldown check (VIP always available)
+        if is_vip:
+            daily_luck_available = True
+            cooldown_text = None
+        else:
+            daily_luck_available = True
+            cooldown_text = None
+            if user:
+                cooldown = user.daily_bonus_cooldown
+                daily_luck_available = cooldown["available"]
+                cooldown_text = cooldown.get("remaining_text")
 
-    # Gamified keyboard
-    keyboard = get_gamified_profile_keyboard(
-        active_orders=counts["active"],
-        daily_luck_available=daily_luck_available,
-        cooldown_text=cooldown_text,
-    )
+        keyboard = get_gamified_profile_keyboard(
+            active_orders=counts["active"],
+            daily_luck_available=daily_luck_available,
+            cooldown_text=cooldown_text,
+        )
 
     # Удаляем старое сообщение и отправляем фото
     try:
@@ -1086,14 +1082,21 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
     Ежедневный бонус - Испытать удачу
 
     Animated Casino Experience:
-    1. Delete old message
-    2. Send 🎰 slot machine animation (native Telegram dice)
-    3. Wait 2-3 seconds for suspense
-    4. Calculate reward
-    5. Show result
+    1. Check VIP status FIRST (before any DB checks)
+    2. If not VIP -> check cooldown
+    3. Send 🎰 slot machine animation
+    4. Wait 3 seconds for suspense
+    5. Calculate reward
+    6. Show result
     """
     telegram_id = callback.from_user.id
+    tg_user = callback.from_user
 
+    # ═══════════════ STEP 1: CHECK VIP STATUS FIRST ═══════════════
+    # This MUST happen BEFORE any database cooldown checks
+    is_vip = is_admin(tg_user) or is_actual_muse(tg_user)
+
+    # Get user from DB
     user_result = await session.execute(
         select(User).where(User.telegram_id == telegram_id)
     )
@@ -1103,86 +1106,79 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Сначала создай профиль!", show_alert=True)
         return
 
-    # Check for VIP Muse status
-    vip_muse = is_vip_muse(callback.from_user)
-
-    # Check cooldown (VIP Muse bypasses cooldown)
-    if not vip_muse and not user.can_claim_daily_bonus:
-        cooldown = user.daily_bonus_cooldown
-        await callback.answer(
-            f"Барабан ещё остывает! Попробуй через {cooldown['remaining_text']}",
-            show_alert=True
-        )
-        return
+    # ═══════════════ STEP 2: CHECK COOLDOWN (only for non-VIP) ═══════════════
+    if not is_vip:
+        if not user.can_claim_daily_bonus:
+            cooldown = user.daily_bonus_cooldown
+            await callback.answer(
+                f"⏳ Барабан остывает! Жди ещё {cooldown['remaining_text']}",
+                show_alert=True
+            )
+            return
 
     await callback.answer("🎰 Крутим барабан...")
 
-    # ═══════════════ STEP 1: DELETE OLD MESSAGE ═══════════════
+    # ═══════════════ STEP 3: DELETE OLD & SEND ANIMATION ═══════════════
     try:
         await callback.message.delete()
     except Exception:
         pass
 
-    # ═══════════════ STEP 2: SEND SLOT MACHINE ANIMATION ═══════════════
     # Send native Telegram 🎰 dice animation
     dice_msg = await bot.send_dice(
         chat_id=callback.message.chat.id,
         emoji=DiceEmoji.SLOT_MACHINE
     )
 
-    # ═══════════════ STEP 3: SUSPENSE DELAY ═══════════════
-    # Wait for the animation to play out (2.5 seconds for dramatic effect)
-    await asyncio.sleep(2.5)
+    # ═══════════════ STEP 4: SUSPENSE DELAY (3 seconds) ═══════════════
+    await asyncio.sleep(3)
 
-    # ═══════════════ STEP 4: CALCULATE REWARD ═══════════════
-    # Roll the dice! (Different loot table for VIP Muse)
-    if vip_muse:
+    # ═══════════════ STEP 5: CALCULATE REWARD ═══════════════
+    # Check if should use Muse UI (different from VIP bypass)
+    show_muse_ui = is_vip_muse(tg_user)
+
+    if show_muse_ui:
         reward_tier = random.choices(MUSE_LUCK_REWARDS, weights=MUSE_LUCK_WEIGHTS, k=1)[0]
-        min_amount, max_amount, flavor_text = reward_tier
-        bonus_amount = random.randint(min_amount, max_amount)
     else:
         reward_tier = random.choices(DAILY_LUCK_REWARDS, weights=DAILY_LUCK_WEIGHTS, k=1)[0]
-        min_amount, max_amount, flavor_text = reward_tier
-        bonus_amount = random.randint(min_amount, max_amount)
 
-    # Update user balance
+    min_amount, max_amount, flavor_text = reward_tier
+    bonus_amount = random.randint(min_amount, max_amount)
+
+    # Update balance
     user.balance += bonus_amount
 
-    # Only set cooldown for non-VIP users
-    if not vip_muse:
+    # Set cooldown only for regular users
+    if not is_vip:
         try:
             user.last_daily_bonus_at = datetime.now(MSK_TZ)
         except Exception:
-            pass  # Ignore if column doesn't exist
+            pass
 
     await session.commit()
 
-    # Log the action
+    # Log
     try:
-        await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=callback.from_user,
-                        details=f"Daily Luck: +{bonus_amount}₽ {'(VIP)' if vip_muse else ''}", session=session)
+        await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=tg_user,
+                        details=f"Daily Luck: +{bonus_amount}₽ {'(VIP)' if is_vip else ''}", session=session)
     except Exception:
         pass
 
-    # ═══════════════ STEP 5: SHOW RESULT ═══════════════
-    # Build result message (different for VIP Muse)
-    if vip_muse:
+    # ═══════════════ STEP 6: SHOW RESULT ═══════════════
+    if show_muse_ui:
         lines = [
-            "🌹 <b>РУЛЕТКА МУЗЫ</b>",
-            "───────────────────",
+            "<code>✧ R O U L E T T E ✧</code>",
             "",
-            f"💎 <b>{flavor_text}</b>",
+            f"💎 {flavor_text}",
             "",
-            f"💰 Начислено: <b>+{bonus_amount} 🌕</b>",
-            f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
+            f"💰 <b>+{bonus_amount}</b> монет",
             "",
-            "<i>Крути ещё! Для тебя ограничений нет 💫</i>",
+            f"<i>Баланс: {format_number(user.balance)} 🌕</i>",
         ]
         keyboard = get_muse_luck_result_keyboard()
     else:
         lines = [
             "🎰 <b>БАРАБАН УДАЧИ</b>",
-            "───────────────────",
             "",
             f"🎉 <b>{flavor_text}</b>",
             "",
@@ -1195,7 +1191,6 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
 
     caption = "\n".join(lines)
 
-    # Send result as reply to the dice message for visual connection
     await bot.send_message(
         chat_id=callback.message.chat.id,
         text=caption,
