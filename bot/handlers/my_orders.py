@@ -10,7 +10,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, Message
 from aiogram.fsm.context import FSMContext
 from aiogram.enums import ChatAction, ParseMode
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1230,7 +1230,7 @@ VALID_COUPONS = {
 
 
 @router.message(CouponState.waiting_code)
-async def process_coupon_code(message, session: AsyncSession, state: FSMContext, bot: Bot):
+async def process_coupon_code(message: Message, session: AsyncSession, state: FSMContext, bot: Bot):
     """Обработка введённого кода купона"""
     telegram_id = message.from_user.id
     code = message.text.strip().upper() if message.text else ""
