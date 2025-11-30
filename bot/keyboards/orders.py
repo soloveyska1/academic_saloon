@@ -638,11 +638,16 @@ def get_custom_deadline_keyboard() -> InlineKeyboardMarkup:
 #                    ШАГ 5: ПОДТВЕРЖДЕНИЕ
 # ══════════════════════════════════════════════════════════════
 
-def get_confirm_order_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура подтверждения заказа"""
+def get_confirm_order_keyboard(
+    confirm_text: str = "✅ Отправить заявку",
+) -> InlineKeyboardMarkup:
+    """
+    Клавиатура подтверждения заказа.
+    confirm_text позволяет кастомизировать главную кнопку по типу заказа.
+    """
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="✅ Отправить заявку", callback_data="confirm_order")
+            InlineKeyboardButton(text=confirm_text, callback_data="confirm_order")
         ],
         [
             InlineKeyboardButton(text="✏️ Изменить", callback_data="order_edit"),
