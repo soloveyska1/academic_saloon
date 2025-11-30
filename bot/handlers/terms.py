@@ -24,7 +24,6 @@ from bot.keyboards.terms import (
 from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
-from bot.handlers.start import send_and_pin_status
 from bot.handlers.menu import send_main_menu
 from core.media_cache import send_cached_photo, get_cached_input_media_photo
 
@@ -185,15 +184,13 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot,
             silent=False,  # Со звуком!
         )
 
-        # Новым пользователям: сразу главное меню и закреп (no voice message)
+        # Новым пользователям: главное меню с закрепом
         await send_main_menu(
             chat_id=chat_id,
             bot=bot,
             user_name=user_name,
+            pin=True,
         )
-
-        # И закреп со статусом салуна
-        await send_and_pin_status(chat_id, bot, pin=True)
     else:
         # Логируем повторное принятие
         await log_action(

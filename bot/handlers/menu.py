@@ -38,28 +38,33 @@ CODEX_IMAGE_PATH = Path(__file__).parent.parent / "media" / "codex.jpg"
 
 def build_main_menu_text(user_name: str) -> str:
     """
-    Формирует текст главного меню — simplified, always available 24/7.
+    Формирует текст главного меню — combined status + welcome, always 24/7.
 
     Args:
-        user_name: Имя пользователя (уже экранированное через html.escape!)
+        user_name: Имя пользователя (not used in simplified message)
 
     Returns:
         HTML-форматированный текст меню
     """
-    return """Привет, партнер! Учеба прижала к стенке?
+    return """🌟 <b>АКАДЕМИЧЕСКИЙ САЛУН — ОТКРЫТО 24/7</b>
+⚡️ Оперативная помощь. 1000+ сделок. Гарантия.
 
-Мы здесь, чтобы прикрыть твою спину. Салун работает 24/7. Выбери, что нужно сделать, и мы найдем лучшего стрелка (автора) под твою задачу прямо сейчас.
+Привет, партнер! Учеба прижала к стенке? Мы здесь, чтобы прикрыть твою спину. Выбери, что нужно сделать, и мы найдем лучшего стрелка под твою задачу.
 
-👇 Жми на главную кнопку внизу."""
+👇 Жми на главную кнопку внизу.
+
+<i>Нажимая кнопки, ты соглашаешься с правилами сервиса.</i>"""
 
 
 async def send_main_menu(
     chat_id: int,
     bot: Bot,
     user_name: str,
+    pin: bool = False,
 ) -> None:
     """
     Отправляет главное меню с картинкой — универсальная функция.
+    Optionally pins the message for new users.
 
     Используется:
     - После принятия оферты (accept_rules)
@@ -70,30 +75,43 @@ async def send_main_menu(
         chat_id: ID чата для отправки
         bot: Экземпляр бота
         user_name: Имя пользователя (not used in simplified message)
+        pin: Закрепить сообщение (для новых пользователей)
     """
     text = build_main_menu_text(user_name)
     keyboard = get_main_menu_keyboard()
+    sent_message = None
 
     # Пытаемся отправить с новой картинкой (saloon_first.jpg)
     if settings.WELCOME_IMAGE.exists():
         try:
-            await send_cached_photo(
+            sent_message = await send_cached_photo(
                 bot=bot,
                 chat_id=chat_id,
                 photo_path=settings.WELCOME_IMAGE,
                 caption=text,
                 reply_markup=keyboard,
             )
-            return
         except Exception as e:
             logger.warning(f"Не удалось отправить картинку меню: {e}")
 
     # Fallback: просто текст
-    await bot.send_message(
-        chat_id=chat_id,
-        text=text,
-        reply_markup=keyboard,
-    )
+    if sent_message is None:
+        sent_message = await bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=keyboard,
+        )
+
+    # Pin the message if requested (for new users)
+    if pin and sent_message:
+        try:
+            await bot.pin_chat_message(
+                chat_id=chat_id,
+                message_id=sent_message.message_id,
+                disable_notification=True
+            )
+        except Exception:
+            pass  # Pinning might fail in some cases, that's OK
 
 
 # ══════════════════════════════════════════════════════════════
