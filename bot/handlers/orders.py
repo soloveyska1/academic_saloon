@@ -596,6 +596,91 @@ def calculate_user_discount(user: User | None) -> int:
 MAX_PENDING_ORDERS = 5  # Мягкий лимит необработанных заказов
 
 
+# ══════════════════════════════════════════════════════════════
+#   БЫСТРЫЙ ЗАКАЗ ИЗ ПРАЙС-ЛИСТА (quick_order:*)
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("quick_order:"))
+async def quick_order_from_price(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
+    """
+    Быстрый заказ из прайс-листа — сразу к выбору направления/заданию.
+
+    Кнопки: quick_order:diploma, quick_order:coursework, quick_order:photo_task, quick_order:other
+    """
+    # ОБЯЗАТЕЛЬНО: останавливаем часики
+    await callback.answer("⏳ Начинаем оформление...")
+
+    # Парсим тип работы
+    work_type_value = callback.data.split(":")[1]
+
+    # Валидация типа
+    try:
+        work_type = WorkType(work_type_value)
+    except ValueError:
+        await callback.message.answer("❌ Неизвестный тип работы")
+        return
+
+    # Очищаем state и инициализируем
+    await state.clear()
+    await state.update_data(
+        work_type=work_type_value,
+        attachments=[],
+    )
+
+    work_label = WORK_TYPE_LABELS.get(work_type, work_type_value)
+
+    # Логируем
+    try:
+        await log_action(
+            bot=bot,
+            event=LogEvent.ORDER_START,
+            user=callback.from_user,
+            details=f"Быстрый заказ из прайса: {work_label}",
+            session=session,
+        )
+    except Exception:
+        pass
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Если photo_task или other — сразу к заданию
+    if work_type == WorkType.PHOTO_TASK:
+        await state.update_data(subject="photo_task", subject_label="📸 Фото задания")
+        await state.set_state(OrderState.entering_task)
+        await show_task_input_screen(callback.message, is_photo_task=True, send_new=True)
+        return
+
+    if work_type == WorkType.OTHER:
+        await state.update_data(subject="other", subject_label="🦄 Спецзаказ")
+        await state.set_state(OrderState.entering_task)
+        await show_task_input_screen(callback.message, is_special=True, send_new=True)
+        return
+
+    # Для diploma, coursework и других крупных — к выбору направления
+    if work_type in WORKS_REQUIRE_SUBJECT:
+        await state.set_state(OrderState.choosing_subject)
+
+        text = f"""📚 <b>{work_label}</b> — отличный выбор!
+
+Теперь выбери направление, чтобы мы подобрали нужного специалиста:"""
+
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=text,
+            reply_markup=get_subject_keyboard(),
+        )
+        return
+
+    # Для остальных — сразу к заданию
+    await state.update_data(subject="skip", subject_label="—")
+    await state.set_state(OrderState.entering_task)
+    await show_task_input_screen(callback.message, send_new=True)
+
+
 @router.callback_query(F.data == "create_order")
 async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
     """Начать создание заказа — выбор типа работы"""

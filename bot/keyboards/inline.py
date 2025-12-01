@@ -18,7 +18,7 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
         # Row 1: Primary CTA
         [
             InlineKeyboardButton(
-                text="⚡️ УЗНАТЬ ЦЕНУ",
+                text="🎯 ОФОРМИТЬ ЗАКАЗ",
                 callback_data="create_order"
             )
         ],
@@ -135,15 +135,15 @@ def get_cancel_complete_keyboard() -> InlineKeyboardMarkup:
 def get_price_list_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура для прайс-листа — быстрые кнопки заказа по типам"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        # Row 1: Крупные работы
+        # Row 1: Крупные работы (специальные callback для быстрого заказа)
         [
-            InlineKeyboardButton(text="🎓 Расчёт Диплома", callback_data="order_type:diploma"),
-            InlineKeyboardButton(text="📚 Расчёт Курсовой", callback_data="order_type:coursework"),
+            InlineKeyboardButton(text="🎓 Заказать Диплом", callback_data="quick_order:diploma"),
+            InlineKeyboardButton(text="📚 Заказать Курсовую", callback_data="quick_order:coursework"),
         ],
         # Row 2: Быстрые варианты
         [
-            InlineKeyboardButton(text="📸 Оценить задачу", callback_data="order_type:photo_task"),
-            InlineKeyboardButton(text="⚡️ Другое", callback_data="order_type:other"),
+            InlineKeyboardButton(text="📸 Оценить задачу", callback_data="quick_order:photo_task"),
+            InlineKeyboardButton(text="⚡️ Другое", callback_data="quick_order:other"),
         ],
         # Row 3: Оферта
         [
