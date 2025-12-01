@@ -78,6 +78,7 @@ from core.config import settings
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
 from bot.handlers.start import process_start
+from bot.services.yandex_disk import yandex_disk_service
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -3047,6 +3048,73 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     # Определяем, спецзаказ ли это
     is_special = data.get("work_type") == WorkType.OTHER.value
 
+    attachments = data.get("attachments", [])
+
+    # ═══════════════════════════════════════════════════════════════
+    #   Загрузка файлов на Яндекс Диск
+    # ═══════════════════════════════════════════════════════════════
+    yadisk_link = None
+    if yandex_disk_service.is_available and attachments:
+        try:
+            # Скачиваем файлы из Telegram и загружаем на Яндекс Диск
+            files_to_upload = []
+            file_counter = 1
+
+            for att in attachments:
+                att_type = att.get("type", "unknown")
+                file_id = att.get("file_id")
+
+                if not file_id or att_type == "text":
+                    continue
+
+                try:
+                    # Скачиваем файл из Telegram
+                    tg_file = await bot.get_file(file_id)
+                    file_bytes = await bot.download_file(tg_file.file_path)
+
+                    # Определяем имя файла
+                    if att_type == "document":
+                        filename = att.get("file_name", f"document_{file_counter}")
+                    elif att_type == "photo":
+                        filename = f"photo_{file_counter}.jpg"
+                    elif att_type == "voice":
+                        filename = f"voice_{file_counter}.ogg"
+                    elif att_type == "video":
+                        filename = f"video_{file_counter}.mp4"
+                    elif att_type == "video_note":
+                        filename = f"video_note_{file_counter}.mp4"
+                    elif att_type == "audio":
+                        filename = f"audio_{file_counter}.mp3"
+                    else:
+                        filename = f"file_{file_counter}"
+
+                    files_to_upload.append((file_bytes.read(), filename))
+                    file_counter += 1
+
+                except Exception as e:
+                    logger.warning(f"Failed to download file from Telegram: {e}")
+                    continue
+
+            # Загружаем все файлы на Яндекс Диск
+            if files_to_upload:
+                client_name = user.full_name or f"User_{user.id}"
+                result = await yandex_disk_service.upload_multiple_files(
+                    files=files_to_upload,
+                    order_id=order.id,
+                    client_name=client_name,
+                    work_type=work_label,
+                )
+                if result.success and result.folder_url:
+                    yadisk_link = result.folder_url
+                    logger.info(f"Order #{order.id} files uploaded to Yandex Disk: {yadisk_link}")
+
+        except Exception as e:
+            logger.error(f"Error uploading to Yandex Disk: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #   Формируем текст уведомления
+    # ═══════════════════════════════════════════════════════════════
+
     # Разный заголовок для срочных/спец/обычных заказов
     if is_special:
         header = f"""💀💀💀  <b>СПЕЦЗАКАЗ #{order.id}</b>  💀💀💀
@@ -3059,6 +3127,9 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     else:
         header = f"""🆕  <b>Новая заявка #{order.id}</b>"""
 
+    # Строка с ссылкой на Яндекс Диск
+    yadisk_line = f"\n📁 <b>Файлы:</b> <a href=\"{yadisk_link}\">Яндекс Диск</a>\n" if yadisk_link else ""
+
     text = f"""{header}
 
 ◈  Клиент: {user.full_name} ({username_str})
@@ -3067,9 +3138,8 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
 ◈  Тип: {work_label}
 ◈  Направление: {subject_label}
 ◈  Срок: {data.get('deadline_label', '—')}
-{urgent_line}{discount_line}"""
+{urgent_line}{discount_line}{yadisk_line}"""
 
-    attachments = data.get("attachments", [])
     admin_keyboard = get_order_admin_keyboard(order.id, user.id)
 
     async def notify_single_admin(admin_id: int):
