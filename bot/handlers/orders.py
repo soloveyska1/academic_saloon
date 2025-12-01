@@ -2462,14 +2462,14 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
 
 @router.callback_query(F.data.startswith("recalc_order:"))
 async def recalc_order_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    """Пользователь хочет пересчитать цену — возвращаем к выбору типа работы"""
+    """Пользователь хочет пересчитать цену — возвращаем к выбору срока"""
     try:
         order_id = int(callback.data.split(":")[1])
     except (IndexError, ValueError):
         await callback.answer("Ошибка данных", show_alert=True)
         return
 
-    # Удаляем заказ (он ещё не оплачен)
+    # Ищем заказ
     order_query = select(Order).where(
         Order.id == order_id,
         Order.user_id == callback.from_user.id,
@@ -2485,14 +2485,60 @@ async def recalc_order_callback(callback: CallbackQuery, state: FSMContext, sess
         await callback.answer("Заказ не найден или уже оплачен", show_alert=True)
         return
 
+    # Сохраняем данные заказа в state
+    work_type_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
+
+    await state.update_data(
+        work_type=order.work_type,
+        work_type_label=work_type_label,
+        subject=order.subject or "",
+        subject_label=order.subject or "",
+        topic=order.topic or "",
+        description=order.description or "",
+        attachments=[],  # Файлы не переносим
+    )
+
+    # Удаляем заказ (он ещё не оплачен)
     await session.delete(order)
     await session.commit()
 
-    await callback.answer("🔄 Начинаем заново!")
+    await callback.answer("🔄 Выбери новый срок!")
 
-    # Перенаправляем на создание нового заказа
-    from bot.handlers.orders import start_order
-    await start_order(callback, state, callback.bot, session)
+    # Переходим к выбору срока
+    await state.set_state(OrderState.choosing_deadline)
+
+    caption = """⏳ <b>Часики тикают...</b>
+
+Скажи честно, сколько у нас времени до расстрела?
+
+Если нужно «вчера» — готовься доплатить за скорость.
+Если время терпит — сэкономишь патроны."""
+
+    # Удаляем старое сообщение и отправляем новое
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    if DEADLINE_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=callback.bot,
+                chat_id=callback.message.chat.id,
+                photo_path=DEADLINE_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_deadline_keyboard(),
+            )
+            return
+        except Exception:
+            pass
+
+    # Fallback на текст
+    await callback.bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_deadline_keyboard()
+    )
 
 
 @router.callback_query(F.data.startswith("edit_order_data:"))
