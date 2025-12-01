@@ -1882,8 +1882,17 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             status=order_status,
         )
         session.add(order)
+        await session.flush()  # Получаем ID без закрытия транзакции
+        order_id = order.id    # Сохраняем ID
         await session.commit()
-        await session.refresh(order)
+
+        # Перезапрашиваем заказ из БД (refresh может не работать после commit)
+        order_result = await session.execute(
+            select(Order).where(Order.id == order_id)
+        )
+        order = order_result.scalar_one_or_none()
+        if not order:
+            raise Exception(f"Order {order_id} not found after commit")
         success = True
 
     except Exception as e:
