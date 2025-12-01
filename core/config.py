@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     YOOKASSA_SECRET_KEY: str | None = None      # Секретный ключ
     YOOKASSA_RETURN_URL: str = "https://t.me/{bot_username}"  # URL возврата после оплаты
 
+    # Яндекс Диск (хранение файлов заказов)
+    YANDEX_DISK_TOKEN: str | None = None        # OAuth токен
+    YANDEX_DISK_FOLDER: str = "Academic_Saloon_Orders"  # Корневая папка для заказов
+
     # Медиа файлы
     WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "saloon_first.jpg"  # New onboarding image
     OFFER_IMAGE: Path = BASE_DIR / "bot" / "media" / "saloon_welcome.jpg"

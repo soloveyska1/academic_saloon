@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import random
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
@@ -77,8 +78,118 @@ from core.config import settings
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
 from bot.handlers.start import process_start
+from bot.services.yandex_disk import yandex_disk_service
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
+
+# Словари для парсинга русских дат
+WEEKDAYS_RU = {
+    "понедельник": 0, "пн": 0,
+    "вторник": 1, "вт": 1,
+    "среда": 2, "среду": 2, "ср": 2,
+    "четверг": 3, "чт": 3,
+    "пятница": 4, "пятницу": 4, "пт": 4,
+    "суббота": 5, "субботу": 5, "сб": 5,
+    "воскресенье": 6, "воскресенью": 6, "вс": 6,
+}
+
+MONTHS_RU = {
+    "января": 1, "янв": 1, "январь": 1,
+    "февраля": 2, "фев": 2, "февраль": 2,
+    "марта": 3, "мар": 3, "март": 3,
+    "апреля": 4, "апр": 4, "апрель": 4,
+    "мая": 5, "май": 5,
+    "июня": 6, "июн": 6, "июнь": 6,
+    "июля": 7, "июл": 7, "июль": 7,
+    "августа": 8, "авг": 8, "август": 8,
+    "сентября": 9, "сен": 9, "сент": 9, "сентябрь": 9,
+    "октября": 10, "окт": 10, "октябрь": 10,
+    "ноября": 11, "ноя": 11, "нояб": 11, "ноябрь": 11,
+    "декабря": 12, "дек": 12, "декабрь": 12,
+}
+
+
+def parse_custom_deadline(text: str) -> tuple[str, str]:
+    """
+    Парсит текстовый ввод даты и определяет срочность.
+
+    Returns:
+        (deadline_key, deadline_label) - ключ для множителя и человекочитаемая метка
+    """
+    text_lower = text.lower().strip()
+    now = datetime.now(MSK_TZ)
+    today = now.date()
+    target_date = None
+
+    # Проверяем "сегодня"
+    if "сегодня" in text_lower:
+        return ("today", text)
+
+    # Проверяем "завтра"
+    if "завтра" in text_lower:
+        return ("tomorrow", text)
+
+    # Проверяем дни недели (к понедельнику, до среды, в пятницу)
+    for weekday_name, weekday_num in WEEKDAYS_RU.items():
+        if weekday_name in text_lower:
+            # Находим ближайший такой день недели
+            days_ahead = weekday_num - today.weekday()
+            if days_ahead <= 0:  # Если день уже прошёл на этой неделе
+                days_ahead += 7
+            target_date = today + timedelta(days=days_ahead)
+            break
+
+    # Проверяем формат "DD месяца" или "DD.MM"
+    if target_date is None:
+        # Паттерн: "15 декабря", "5 янв"
+        for month_name, month_num in MONTHS_RU.items():
+            pattern = rf"(\d{{1,2}})\s*{month_name}"
+            match = re.search(pattern, text_lower)
+            if match:
+                day = int(match.group(1))
+                year = today.year
+                # Если месяц уже прошёл, берём следующий год
+                if month_num < today.month or (month_num == today.month and day < today.day):
+                    year += 1
+                try:
+                    target_date = datetime(year, month_num, day).date()
+                except ValueError:
+                    pass
+                break
+
+        # Паттерн: "15.12" или "15/12"
+        if target_date is None:
+            match = re.search(r"(\d{1,2})[./](\d{1,2})", text_lower)
+            if match:
+                day = int(match.group(1))
+                month = int(match.group(2))
+                year = today.year
+                if month < today.month or (month == today.month and day < today.day):
+                    year += 1
+                try:
+                    target_date = datetime(year, month, day).date()
+                except ValueError:
+                    pass
+
+    # Если удалось распарсить дату, вычисляем разницу
+    if target_date:
+        days_diff = (target_date - today).days
+
+        if days_diff <= 0:
+            return ("today", text)
+        elif days_diff == 1:
+            return ("tomorrow", text)
+        elif days_diff <= 3:
+            return ("3_days", text)
+        elif days_diff <= 7:
+            return ("week", text)
+        elif days_diff <= 14:
+            return ("2_weeks", text)
+        else:
+            return ("month", text)
+
+    # Не удалось распарсить — используем "неделя" как безопасный дефолт
+    return ("week", text)
 
 router = Router()
 
@@ -763,7 +874,7 @@ async def process_urgent_deadline(callback: CallbackQuery, state: FSMContext, bo
 
 Кидай сюда всё, что есть: методичку, скрины, черновики или запиши голосовое. Я разберусь с материалами на лету.
 
-<i>Жду файлы...</i>"""
+<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
 
     # Пробуем отправить с картинкой
     if FAST_UPLOAD_IMAGE_PATH.exists():
@@ -1034,7 +1145,7 @@ async def show_task_input_screen(
 
 Не стесняйся. Скидывай всё: черновики, фото доски, или запиши голосовое с объяснениями на пальцах. Чем страннее задача — тем интереснее вызов.
 
-<i>Жду улики...</i>"""
+<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
 
         # Удаляем старое сообщение
         if not send_new:
@@ -1077,7 +1188,7 @@ async def show_task_input_screen(
 💬 Скриншоты переписки с преподом
 ✍️ <b>Или просто напиши тему и требования текстом</b>
 
-<i>Жду твои файлы... Можно кидать по одному или пачкой.</i>"""
+<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
 
     # Удаляем старое сообщение
     if not send_new:
@@ -1463,7 +1574,9 @@ async def process_deadline_text(message: Message, state: FSMContext, bot: Bot, s
         await process_start(message, session, bot, state, deep_link=None)
         return
 
-    await state.update_data(deadline="custom", deadline_label=message.text)
+    # Парсим текстовую дату и определяем срочность для правильного расчёта цены
+    deadline_key, deadline_label = parse_custom_deadline(message.text)
+    await state.update_data(deadline=deadline_key, deadline_label=deadline_label)
 
     # Создаём фейковый callback для унификации
     class FakeCallback:
@@ -2935,6 +3048,73 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     # Определяем, спецзаказ ли это
     is_special = data.get("work_type") == WorkType.OTHER.value
 
+    attachments = data.get("attachments", [])
+
+    # ═══════════════════════════════════════════════════════════════
+    #   Загрузка файлов на Яндекс Диск
+    # ═══════════════════════════════════════════════════════════════
+    yadisk_link = None
+    if yandex_disk_service and yandex_disk_service.is_available and attachments:
+        try:
+            # Скачиваем файлы из Telegram и загружаем на Яндекс Диск
+            files_to_upload = []
+            file_counter = 1
+
+            for att in attachments:
+                att_type = att.get("type", "unknown")
+                file_id = att.get("file_id")
+
+                if not file_id or att_type == "text":
+                    continue
+
+                try:
+                    # Скачиваем файл из Telegram
+                    tg_file = await bot.get_file(file_id)
+                    file_bytes = await bot.download_file(tg_file.file_path)
+
+                    # Определяем имя файла
+                    if att_type == "document":
+                        filename = att.get("file_name", f"document_{file_counter}")
+                    elif att_type == "photo":
+                        filename = f"photo_{file_counter}.jpg"
+                    elif att_type == "voice":
+                        filename = f"voice_{file_counter}.ogg"
+                    elif att_type == "video":
+                        filename = f"video_{file_counter}.mp4"
+                    elif att_type == "video_note":
+                        filename = f"video_note_{file_counter}.mp4"
+                    elif att_type == "audio":
+                        filename = f"audio_{file_counter}.mp3"
+                    else:
+                        filename = f"file_{file_counter}"
+
+                    files_to_upload.append((file_bytes.read(), filename))
+                    file_counter += 1
+
+                except Exception as e:
+                    logger.warning(f"Failed to download file from Telegram: {e}")
+                    continue
+
+            # Загружаем все файлы на Яндекс Диск
+            if files_to_upload:
+                client_name = user.full_name or f"User_{user.id}"
+                result = await yandex_disk_service.upload_multiple_files(
+                    files=files_to_upload,
+                    order_id=order.id,
+                    client_name=client_name,
+                    work_type=work_label,
+                )
+                if result.success and result.folder_url:
+                    yadisk_link = result.folder_url
+                    logger.info(f"Order #{order.id} files uploaded to Yandex Disk: {yadisk_link}")
+
+        except Exception as e:
+            logger.error(f"Error uploading to Yandex Disk: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #   Формируем текст уведомления
+    # ═══════════════════════════════════════════════════════════════
+
     # Разный заголовок для срочных/спец/обычных заказов
     if is_special:
         header = f"""💀💀💀  <b>СПЕЦЗАКАЗ #{order.id}</b>  💀💀💀
@@ -2947,6 +3127,9 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     else:
         header = f"""🆕  <b>Новая заявка #{order.id}</b>"""
 
+    # Строка с ссылкой на Яндекс Диск
+    yadisk_line = f"\n📁 <b>Файлы:</b> <a href=\"{yadisk_link}\">Яндекс Диск</a>\n" if yadisk_link else ""
+
     text = f"""{header}
 
 ◈  Клиент: {user.full_name} ({username_str})
@@ -2955,9 +3138,8 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
 ◈  Тип: {work_label}
 ◈  Направление: {subject_label}
 ◈  Срок: {data.get('deadline_label', '—')}
-{urgent_line}{discount_line}"""
+{urgent_line}{discount_line}{yadisk_line}"""
 
-    attachments = data.get("attachments", [])
     admin_keyboard = get_order_admin_keyboard(order.id, user.id)
 
     async def notify_single_admin(admin_id: int):
