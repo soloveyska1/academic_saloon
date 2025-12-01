@@ -5,25 +5,53 @@ from core.config import settings
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура главного меню — Streamlined for conversion.
+    Клавиатура главного меню — Optimized for conversion.
 
-    Layout:
-    [📝 РАССЧИТАТЬ СТОИМОСТЬ]     <- full width, Primary CTA
-    [👤 Мои заказы]               <- full width, navigation
-    [⭐️ Отзывы / Гарантии][🆘 Позвать Шерифа] <- trust & support
+    Layout (per spec):
+    Row 1: [ ⚡️ УЗНАТЬ ЦЕНУ ]     <- Primary CTA, full width
+    Row 2: [ 🎁 Тайник (Халява) ]  <- Curiosity hook
+    Row 3: [ 👤 Кабинет ] [ ⭐️ Отзывы ]
+    Row 4: [ 🆘 Позвать Шерифа ]
+    Row 5: [ 📜 Оферта ]          <- Small, for curious users
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        # Row 1: Primary CTA
         [
-            InlineKeyboardButton(text="📝 РАССЧИТАТЬ СТОИМОСТЬ", callback_data="create_order")
+            InlineKeyboardButton(
+                text="⚡️ УЗНАТЬ ЦЕНУ",
+                callback_data="create_order"
+            )
         ],
+        # Row 2: Curiosity hook (placeholder)
         [
-            InlineKeyboardButton(text="👤 Мои заказы", callback_data="my_profile")
+            InlineKeyboardButton(
+                text="🎁 Тайник (Халява)",
+                callback_data="secret_stash"
+            )
         ],
+        # Row 3: Profile & Reviews
         [
-            InlineKeyboardButton(text="⭐️ Отзывы / Гарантии", url=settings.REVIEWS_CHANNEL),
+            InlineKeyboardButton(
+                text="👤 Кабинет",
+                callback_data="my_profile"
+            ),
+            InlineKeyboardButton(
+                text="⭐️ Отзывы",
+                url=settings.REVIEWS_CHANNEL
+            ),
+        ],
+        # Row 4: Support
+        [
             InlineKeyboardButton(
                 text="🆘 Позвать Шерифа",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
+        ],
+        # Row 5: Offer (small, for curious)
+        [
+            InlineKeyboardButton(
+                text="📜 Оферта",
+                url=settings.OFFER_URL
             )
         ],
     ])

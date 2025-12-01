@@ -10,3 +10,9 @@ class AdminStates(StatesGroup):
     waiting_order_price = State()      # Ожидание ввода цены заказа
     confirm_delete_order = State()     # Подтверждение удаления заказа
     waiting_bonus_amount = State()     # Ожидание ввода суммы бонусов
+
+    # Новые состояния для расширенной админки
+    broadcast_text = State()           # Ожидание текста рассылки
+    setting_price = State()            # Ожидание ввода новой цены
+    messaging_user = State()           # Отправка сообщения клиенту
+    sending_file = State()             # Отправка файла клиенту

@@ -17,6 +17,7 @@ from core.media_cache import send_cached_photo
 
 
 # Combined welcome + status message - always available 24/7
+# Implicit consent in footer (no barrier)
 WELCOME_MESSAGE = """🌟 <b>АКАДЕМИЧЕСКИЙ САЛУН — ОТКРЫТО 24/7</b>
 ⚡️ Оперативная помощь. 1000+ сделок. Гарантия.
 
@@ -24,7 +25,7 @@ WELCOME_MESSAGE = """🌟 <b>АКАДЕМИЧЕСКИЙ САЛУН — ОТКР�
 
 👇 Жми на главную кнопку внизу.
 
-<i>Нажимая кнопки, ты соглашаешься с правилами сервиса.</i>"""
+<i>Нажимая кнопки, ты принимаешь условия <a href="{offer_url}">Оферты</a>.</i>"""
 
 router = Router()
 
@@ -75,11 +76,12 @@ async def cmd_start(message: Message, session: AsyncSession, bot: Bot, state: FS
 
 async def process_start(message: Message, session: AsyncSession, bot: Bot, state: FSMContext, deep_link: str | None):
     """
-    Основная логика:
-    - Новый пользователь → показать оферту
-    - Не принял оферту → показать оферту
-    - Принял оферту → главное меню
+    Основная логика (БЕЗ БАРЬЕРА ОФЕРТЫ):
+    - Новый пользователь → сразу главное меню (implicit consent)
+    - Существующий пользователь → главное меню
     """
+    from datetime import datetime
+
     # Очищаем FSM состояние при /start
     await state.clear()
 
@@ -97,8 +99,10 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     result = await session.execute(query)
     user = result.scalar_one_or_none()
 
+    is_new_user = user is None
+
     # Обработка реферальной ссылки для нового пользователя
-    if user is None:
+    if is_new_user:
         referrer_id = None
         referrer = None
         if deep_link and deep_link.startswith("ref"):
@@ -111,12 +115,12 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
                     referrer = ref_result.scalar_one_or_none()
                     if referrer:
                         referrer_id = potential_referrer_id
-                        # Увеличиваем счётчик рефералов (commit будет ниже вместе с созданием пользователя)
+                        # Увеличиваем счётчик рефералов
                         referrer.referrals_count += 1
             except ValueError:
                 pass
 
-        # Создаём пользователя БЕЗ принятия оферты
+        # Создаём пользователя С IMPLICIT CONSENT (оферта принята по факту использования)
         user = User(
             telegram_id=telegram_id,
             username=message.from_user.username,
@@ -124,10 +128,9 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             role="user",
             referrer_id=referrer_id,
             deep_link=deep_link,
-            terms_accepted_at=None,  # Оферта ещё не принята
+            terms_accepted_at=datetime.utcnow(),  # Implicit consent
         )
         session.add(user)
-        # Один commit для нового пользователя и реферала (если есть)
         await session.commit()
 
         # Логируем нового пользователя
@@ -137,27 +140,18 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             bot=bot,
             event=event,
             user=message.from_user,
-            details="Новый пользователь, показана оферта",
+            details="Новый пользователь → главное меню",
             extra_data=extra,
             session=session,
             level=LogLevel.ACTION,
         )
-
-        # Показываем оферту с картинкой (с кэшированием file_id)
-        await send_cached_photo(
-            bot=bot,
-            chat_id=message.chat.id,
-            photo_path=settings.OFFER_IMAGE,
-            caption=TERMS_SHORT,
-            reply_markup=get_terms_short_keyboard()
-        )
-        return
-
-    # Пользователь существует, но не принял оферту
-    if not user.has_accepted_terms:
-        # Обновляем данные
+    else:
+        # Обновляем данные существующего пользователя
         user.username = message.from_user.username
         user.fullname = message.from_user.full_name
+        # Если оферта не была принята — принимаем implicit
+        if not user.terms_accepted_at:
+            user.terms_accepted_at = datetime.utcnow()
         await session.commit()
 
         # Логируем возврат
@@ -165,45 +159,24 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             bot=bot,
             event=LogEvent.USER_RETURN,
             user=message.from_user,
-            details="Вернулся, оферта не принята",
+            details="Вернулся в главное меню",
             session=session,
         )
 
-        # Показываем оферту с картинкой (с кэшированием file_id)
-        await send_cached_photo(
-            bot=bot,
-            chat_id=message.chat.id,
-            photo_path=settings.OFFER_IMAGE,
-            caption=TERMS_SHORT,
-            reply_markup=get_terms_short_keyboard()
-        )
-        return
-
-    # Пользователь принял оферту — показываем главное меню
-    user.username = message.from_user.username
-    user.fullname = message.from_user.full_name
-    await session.commit()
-
-    # Логируем возврат активного пользователя
-    await log_action(
-        bot=bot,
-        event=LogEvent.USER_RETURN,
-        user=message.from_user,
-        details="Вернулся в главное меню",
-        session=session,
-    )
-
-    # === БЫСТРЫЙ ОТВЕТ — simplified, no dynamic stats ===
+    # === ГЛАВНОЕ МЕНЮ — сразу без барьеров ===
 
     # 1. Typing для визуального отклика
     await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
-    # 2. Отправляем новую картинку с текстом и кнопками (с кэшированием file_id)
+    # 2. Форматируем текст с ссылкой на оферту
+    welcome_text = WELCOME_MESSAGE.format(offer_url=settings.OFFER_URL)
+
+    # 3. Отправляем картинку с текстом и кнопками
     await send_cached_photo(
         bot=bot,
         chat_id=message.chat.id,
         photo_path=settings.WELCOME_IMAGE,
-        caption=WELCOME_MESSAGE,
+        caption=welcome_text,
         reply_markup=get_main_menu_keyboard()
     )
 

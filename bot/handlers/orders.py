@@ -53,11 +53,20 @@ from bot.keyboards.orders import (
     get_deadline_with_date,
     get_urgent_order_keyboard,
     get_urgent_task_keyboard,
-    get_special_order_keyboard,
+    get_special_order_keyboard as get_special_order_kb,  # Renamed to avoid conflict
+    get_invoice_keyboard,
+    get_waiting_payment_keyboard,
+    get_order_success_keyboard,
     SUBJECTS,
     DEADLINES,
     WORK_CATEGORIES,
     WORKS_REQUIRE_SUBJECT,
+)
+from bot.services.pricing import (
+    calculate_price,
+    get_invoice_text,
+    get_special_order_text,
+    format_price_breakdown,
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
@@ -1655,25 +1664,82 @@ def format_attachments_summary(attachments: list) -> str:
 
 @router.callback_query(OrderState.confirming, F.data == "confirm_order")
 async def confirm_order(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
-    """Подтверждение и сохранение заказа"""
+    """
+    Подтверждение и сохранение заказа с АВТОМАТИЧЕСКИМ расчётом цены.
+
+    Flow:
+    1. Показываем анимацию "Шериф считает смету..."
+    2. Рассчитываем цену по формуле: Base * Urgency * (1 - Discount)
+    3. Для спецзаказов (OTHER) — ставим статус WAITING_ESTIMATION (ручная оценка)
+    4. Для обычных заказов — показываем инвойс с кнопкой оплаты
+    """
     await callback.answer("⏳")
 
     data = await state.get_data()
     user_id = callback.from_user.id
+    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
 
     # Формируем описание из вложений
     description = format_order_description(data.get("attachments", []))
 
-    # Создаём заказ
+    work_type_value = data.get("work_type", "")
+    is_special = work_type_value == WorkType.OTHER.value
+    is_urgent = data.get("is_urgent", False)
+    deadline_key = data.get("deadline", "week")
+    discount_percent = data.get("discount", 0)
+
+    # ═══════════════════════════════════════════════════════════════
+    #   ШАГ 1: Анимация "Шериф считает..."
+    # ═══════════════════════════════════════════════════════════════
+
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    loading_msg = await bot.send_message(
+        chat_id=chat_id,
+        text="⏳ <b>Шериф считает смету...</b>\n\n<i>Подожди пару секунд</i>"
+    )
+
+    # Небольшая задержка для эффекта
+    await asyncio.sleep(1.5)
+
+    # ═══════════════════════════════════════════════════════════════
+    #   ШАГ 2: Расчёт цены
+    # ═══════════════════════════════════════════════════════════════
+
+    price_calc = calculate_price(
+        work_type=work_type_value,
+        deadline_key=deadline_key,
+        discount_percent=discount_percent,
+    )
+
+    final_price = price_calc.price_after_discount if discount_percent > 0 else price_calc.final_price
+
+    # ═══════════════════════════════════════════════════════════════
+    #   ШАГ 3: Определяем статус и создаём заказ
+    # ═══════════════════════════════════════════════════════════════
+
+    if is_special:
+        # Спецзаказ — ждёт ручной оценки админа
+        order_status = OrderStatus.WAITING_ESTIMATION.value
+        order_price = 0  # Цена будет установлена админом
+    else:
+        # Обычный заказ — сразу CONFIRMED с рассчитанной ценой
+        order_status = OrderStatus.CONFIRMED.value
+        order_price = final_price
+
     order = Order(
         user_id=user_id,
-        work_type=data["work_type"],
+        work_type=work_type_value,
         subject=data.get("subject_label") or data.get("subject"),
-        topic=None,  # Тема теперь часть описания
+        topic=None,
         description=description,
         deadline=data.get("deadline_label"),
-        discount=data.get("discount", 0),
-        status=OrderStatus.PENDING.value,
+        discount=discount_percent,
+        price=order_price,
+        status=order_status,
     )
     session.add(order)
     await session.commit()
@@ -1686,105 +1752,80 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
     await state.clear()
 
-    work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
-    is_urgent = data.get("is_urgent", False)
+    # Удаляем сообщение "считает смету"
+    try:
+        await loading_msg.delete()
+    except Exception:
+        pass
 
-    # Логируем подтверждение заказа
+    work_label = WORK_TYPE_LABELS.get(WorkType(work_type_value), work_type_value)
+    deadline_label = data.get("deadline_label", "Не указан")
+
+    # ═══════════════════════════════════════════════════════════════
+    #   ШАГ 4: Логирование
+    # ═══════════════════════════════════════════════════════════════
+
     urgent_prefix = "🚨 СРОЧНЫЙ " if is_urgent else ""
+    special_prefix = "🦄 СПЕЦЗАКАЗ " if is_special else ""
     extra_data = {
         "Тип": work_label,
         "Направление": data.get("subject_label", "—"),
-        "Срок": data.get("deadline_label", "—"),
-        "Скидка": f"{data.get('discount', 0)}%",
+        "Срок": deadline_label,
+        "Скидка": f"{discount_percent}%",
         "Вложений": len(data.get("attachments", [])),
     }
-    if is_urgent:
-        surcharge = data.get("urgent_surcharge", 0)
-        if surcharge > 0:
-            extra_data["Наценка"] = f"+{surcharge}%"
+
+    if not is_special:
+        extra_data["💰 Цена"] = f"{final_price:,} ₽".replace(",", " ")
+        extra_data["База"] = f"{price_calc.base_price:,} ₽".replace(",", " ")
+        extra_data["Множитель"] = f"x{price_calc.urgency_multiplier}"
 
     await log_action(
         bot=bot,
         event=LogEvent.ORDER_CONFIRM,
         user=callback.from_user,
-        details=f"{urgent_prefix}Заказ #{order.id} подтверждён",
+        details=f"{urgent_prefix}{special_prefix}Заказ #{order.id} создан",
         extra_data=extra_data,
         session=session,
         level=LogLevel.ACTION,
         silent=False,
     )
 
-    # Определяем тип заказа для динамического текста
-    work_type_value = data.get("work_type", "")
-    is_special = work_type_value == WorkType.OTHER.value
-
     # ═══════════════════════════════════════════════════════════════
-    #   DYNAMIC COPY BY ORDER TYPE
+    #   ШАГ 5: Отправляем результат пользователю
     # ═══════════════════════════════════════════════════════════════
 
-    if is_urgent:
-        # 🚀 URGENT ORDER
-        text = f"""🚀 <b>ЗАПУСК СОСТОЯЛСЯ!</b>
+    if is_special:
+        # 🦄 СПЕЦЗАКАЗ — ждёт ручной оценки
+        text = f"""🦄 <b>СПЕЦЗАКАЗ <code>#{order.id}</code> ПРИНЯТ</b>
 
-Заявка <code>#{order.id}</code> улетела в приоритетную очередь.
-Таймер запущен. Мои люди уже изучают материалы.
+Это задача для спецназа. Тут нужен индивидуальный подход.
 
-Жди сигнала — я вернусь с ценой и планом действий молниеносно. ⚡"""
-        image_path = CONFIRM_URGENT_IMAGE_PATH
+Шериф лично изучит материалы и вернётся с ценой.
+Обычно это занимает <b>до 2 часов</b> (в рабочее время).
 
-    elif is_special:
-        # 🕵️‍♂️ SPECIAL ORDER
-        text = f"""🕵️‍♂️ <b>ДЕЛО <code>#{order.id}</code> ОТКРЫТО</b>
+<i>Статус: ожидает оценки 🔍</i>"""
 
-Материалы подшил, гриф секретности поставил.
-Сейчас соберём консилиум и решим, как провернуть твою задачу красивее всего.
-
-Дай мне немного времени на анализ. 🔍"""
-        image_path = ORDER_DONE_IMAGE_PATH
+        keyboard = get_special_order_kb(order.id)
+        image_path = CONFIRM_SPECIAL_IMAGE_PATH
 
     else:
-        # 🤝 STANDARD ORDER
-        text = f"""✅ <b>ЗАЯВКА <code>#{order.id}</code> ПРИНЯТА</b>
+        # 💰 ОБЫЧНЫЙ ЗАКАЗ — показываем инвойс
+        breakdown = format_price_breakdown(price_calc, work_label, deadline_label)
 
-Я уже открыл материалы и понёс их экспертам.
+        text = f"""⚖️ <b>СМЕТА ГОТОВА</b>
 
-Дай мне 10-15 минут — я посчитаю честную цену, подготовлю условия и вернусь к тебе.
-Далеко не уходи. 🤠"""
-        image_path = ORDER_DONE_IMAGE_PATH
+📋 <b>Заказ:</b> <code>#{order.id}</code>
 
-    # ═══════════════════════════════════════════════════════════════
-    #   IMPROVED KEYBOARD (Waiting Hub)
-    # ═══════════════════════════════════════════════════════════════
+{breakdown}
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="📎 Забыл файл? (Дослать)",
-            callback_data=f"add_files_to_order:{order.id}"
-        )],
-        [
-            InlineKeyboardButton(
-                text="👀 Статус заказа",
-                callback_data=f"order_detail:{order.id}"
-            ),
-            InlineKeyboardButton(
-                text="❓ Задать вопрос",
-                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
-            ),
-        ],
-        [InlineKeyboardButton(
-            text="🌵 В салун (Главное меню)",
-            callback_data="back_to_menu"
-        )],
-    ])
+<i>Цена рассчитана автоматически.
+Для сложных случаев шериф может скорректировать.</i>"""
 
-    # Удаляем старое сообщение и отправляем новое с картинкой
-    chat_id = callback.message.chat.id if callback.message else callback.from_user.id
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
+        keyboard = get_invoice_keyboard(order.id, final_price)
+        image_path = CONFIRM_STD_IMAGE_PATH if CONFIRM_STD_IMAGE_PATH.exists() else ORDER_DONE_IMAGE_PATH
 
-    # Пробуем отправить с картинкой успеха
+    # Отправляем сообщение
     if image_path.exists():
         try:
             await send_cached_photo(
@@ -1795,13 +1836,248 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
                 reply_markup=keyboard,
             )
         except Exception as e:
-            logger.warning(f"Не удалось отправить success image: {e}")
+            logger.warning(f"Не удалось отправить invoice image: {e}")
             await bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
     else:
         await bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
 
     # Уведомление админам со всеми вложениями
     await notify_admins_new_order(bot, callback.from_user, order, data)
+
+
+# ══════════════════════════════════════════════════════════════
+#               ОПЛАТА И ПЕРЕСЧЁТ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("pay_order:"))
+async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Пользователь нажал 'Оплатить' — показываем реквизиты"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Получаем заказ
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id
+    )
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    if order.status not in [OrderStatus.CONFIRMED.value, OrderStatus.WAITING_ESTIMATION.value]:
+        await callback.answer("Этот заказ уже нельзя оплатить", show_alert=True)
+        return
+
+    await callback.answer("💳")
+
+    price = int(order.price)
+    advance = price // 2  # 50% аванс
+
+    # Реквизиты из конфига
+    text = f"""💳 <b>ОПЛАТА ЗАКАЗА #{order.id}</b>
+
+<b>Сумма к оплате:</b> <code>{price:,} ₽</code>
+
+━━━━━━━━━━━━━━━━━━━━
+<b>Схема оплаты:</b>
+├ 50% аванс: <code>{advance:,} ₽</code>
+└ 50% после готовности
+
+━━━━━━━━━━━━━━━━━━━━
+<b>Реквизиты для перевода:</b>
+
+📱 <b>СБП ({settings.PAYMENT_BANKS}):</b>
+<code>{settings.PAYMENT_PHONE}</code>
+
+💳 <b>Карта:</b>
+<code>{settings.PAYMENT_CARD}</code>
+
+👤 <b>Получатель:</b> {settings.PAYMENT_NAME}
+
+━━━━━━━━━━━━━━━━━━━━
+<i>После оплаты нажми кнопку ниже или отправь скриншот чека.</i>""".replace(",", " ")
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="✅ Я оплатил",
+            callback_data=f"confirm_payment:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="📸 Отправить чек",
+            callback_data=f"send_receipt:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="❓ Вопрос по оплате",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+        [InlineKeyboardButton(
+            text="🔙 Назад",
+            callback_data=f"order_detail:{order_id}"
+        )],
+    ])
+
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except Exception:
+        await callback.message.answer(text, reply_markup=keyboard)
+
+
+@router.callback_query(F.data.startswith("confirm_payment:"))
+async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Пользователь подтвердил оплату — уведомляем админа"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id
+    )
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    await callback.answer("✅ Принято!")
+
+    text = f"""✅ <b>Спасибо!</b>
+
+Заявка на оплату заказа <code>#{order.id}</code> отправлена шерифу.
+
+Как только проверю поступление — запущу работу и сообщу тебе.
+Обычно это занимает <b>до 30 минут</b>.
+
+<i>Если оплата по СБП — обычно вижу сразу.</i>"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="👀 Статус заказа",
+            callback_data=f"order_detail:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="🌵 В салун",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except Exception:
+        await callback.message.answer(text, reply_markup=keyboard)
+
+    # Уведомляем админов
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
+    admin_text = f"""💳 <b>ЗАЯВКА НА ОПЛАТУ</b>
+
+📋 Заказ: <code>#{order.id}</code>
+👤 Клиент: @{callback.from_user.username or 'без юзернейма'} ({callback.from_user.id})
+📂 Тип: {work_label}
+💰 Сумма: <code>{int(order.price):,} ₽</code>
+
+<i>Проверь поступление и подтверди оплату в админке.</i>""".replace(",", " ")
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, admin_text)
+        except Exception as e:
+            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+
+
+@router.callback_query(F.data.startswith("recalc_order:"))
+async def recalc_order_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Пользователь хочет пересчитать цену — возвращаем к выбору типа работы"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Удаляем заказ (он ещё не оплачен)
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id,
+        Order.status == OrderStatus.CONFIRMED.value
+    )
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if order:
+        await session.delete(order)
+        await session.commit()
+
+    await callback.answer("🔄 Начинаем заново!")
+
+    # Перенаправляем на создание нового заказа
+    from bot.handlers.orders import start_order
+    await start_order(callback, state, callback.bot, session)
+
+
+@router.callback_query(F.data.startswith("cancel_confirmed_order:"))
+async def cancel_confirmed_order_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Отмена подтверждённого заказа (до оплаты)"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id
+    )
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Можно отменить только неоплаченные заказы
+    cancelable = [
+        OrderStatus.PENDING.value,
+        OrderStatus.CONFIRMED.value,
+        OrderStatus.WAITING_ESTIMATION.value
+    ]
+    if order.status not in cancelable:
+        await callback.answer("Этот заказ уже нельзя отменить", show_alert=True)
+        return
+
+    # Отменяем
+    order.status = OrderStatus.CANCELLED.value
+    await session.commit()
+
+    await callback.answer("❌ Заказ отменён")
+
+    text = f"""❌ <b>Заказ #{order.id} отменён</b>
+
+Жаль, что не сложилось. Но двери салуна всегда открыты.
+Возвращайся, когда понадобится помощь. 🤠"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📝 Новый заказ",
+            callback_data="create_order"
+        )],
+        [InlineKeyboardButton(
+            text="🌵 В салун",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except Exception:
+        await callback.message.answer(text, reply_markup=keyboard)
 
 
 # ══════════════════════════════════════════════════════════════
