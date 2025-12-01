@@ -1276,7 +1276,7 @@ async def task_add_more(callback: CallbackQuery, state: FSMContext, bot: Bot):
 Кидай файлы, фото или текст.
 Когда всё — нажми «Готово»."""
 
-    await safe_edit_or_send(callback, text, reply_markup=get_task_input_keyboard(), bot=bot)
+    await safe_edit_or_send(callback, text, reply_markup=get_task_continue_keyboard(), bot=bot)
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_clear")
