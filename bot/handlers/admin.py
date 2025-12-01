@@ -18,7 +18,7 @@ SAFE_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "safe_payment
 PAYMENT_SUCCESS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_success.jpg"
 CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking_payment.jpg"
 from aiogram.filters import Command, CommandObject, StateFilter
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType, FSInputFile
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -2873,28 +2873,27 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
     # Уведомляем клиента — Premium Payment Success!
     bonus_line = f"\n\n🎁 <b>+{order_bonus:.0f}₽</b> бонусов на баланс!" if order_bonus > 0 else ""
 
-    client_text = f"""<b>🎉 ЕСТЬ КОНТАКТ! ЗОЛОТО В ХРАНИЛИЩЕ.</b>
+    client_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
 
-Заказ <b>#{order.id}</b> оплачен.
+Заказ <b>#{order.id}</b> принят в работу.
+💰 Аванс получен: <b>{int(order.paid_amount):,} ₽</b>
 
-Шериф подтвердил поступление. Твои монеты в надёжном месте.
-
-Мои ребята уже засучили рукава и начали работать над твоим заказом. Скоро вернусь с первыми результатами.{bonus_line}
-
-<i>Можешь пока расслабиться в салуне, партнёр.</i>"""
+Шериф уже запряг лошадей. Как будет готово — пришлю уведомление сюда.
+Следи за статусом в кабинете.{bonus_line}""".replace(",", " ")
 
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🌵 В салун (Главное меню)", callback_data="back_to_menu")],
-        [InlineKeyboardButton(text="💬 Написать в поддержку", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
+        [InlineKeyboardButton(text="👀 Отследить статус", callback_data="my_orders")],
+        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="referral_program")],
+        [InlineKeyboardButton(text="🌵 В Салун", callback_data="back_to_menu")],
     ])
 
-    # Отправляем клиенту с картинкой
+    # Отправляем клиенту с картинкой (FSInputFile)
     try:
         if PAYMENT_SUCCESS_IMAGE_PATH.exists():
-            await send_cached_photo(
-                bot=bot,
+            photo_file = FSInputFile(PAYMENT_SUCCESS_IMAGE_PATH)
+            await bot.send_photo(
                 chat_id=order.user_id,
-                photo_path=PAYMENT_SUCCESS_IMAGE_PATH,
+                photo=photo_file,
                 caption=client_text,
                 reply_markup=client_keyboard,
             )
