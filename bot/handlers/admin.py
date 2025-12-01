@@ -110,19 +110,21 @@ def build_price_offer_text(
 # ══════════════════════════════════════════════════════════════
 
 def get_admin_keyboard() -> InlineKeyboardMarkup:
-    """Главное меню админки"""
+    """Главное меню админки — The Boss Dashboard"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="📋 Заявки", callback_data="admin_orders_list")
+            InlineKeyboardButton(text="📋 Заявки", callback_data="admin_orders_list"),
+            InlineKeyboardButton(text="📊 Бухгалтерия", callback_data="admin_statistics"),
         ],
         [
-            InlineKeyboardButton(text="📊 Статус Салуна", callback_data="admin_status_menu")
+            InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast"),
         ],
         [
-            InlineKeyboardButton(text="👶 Режим новичка", callback_data="admin_newbie_mode")
+            InlineKeyboardButton(text="🔧 Статус Салуна", callback_data="admin_status_menu"),
         ],
         [
-            InlineKeyboardButton(text="🔧 Превью ошибки", callback_data="admin_error_preview")
+            InlineKeyboardButton(text="👶 Режим новичка", callback_data="admin_newbie_mode"),
+            InlineKeyboardButton(text="🐛 Превью ошибки", callback_data="admin_error_preview"),
         ],
     ])
     return kb
@@ -181,29 +183,50 @@ def get_cancel_keyboard() -> InlineKeyboardMarkup:
 ORDER_STATUS_LABELS = {
     OrderStatus.DRAFT.value: ("📝", "Черновик"),
     OrderStatus.PENDING.value: ("⏳", "Ожидает оценки"),
+    OrderStatus.WAITING_ESTIMATION.value: ("🔍", "Спецзаказ: ждёт цену"),
     OrderStatus.CONFIRMED.value: ("✅", "Ждёт оплаты"),
     OrderStatus.PAID.value: ("💰", "Оплачен"),
     OrderStatus.IN_PROGRESS.value: ("⚙️", "В работе"),
-    OrderStatus.REVIEW.value: ("🔍", "На проверке"),
+    OrderStatus.REVIEW.value: ("👁", "На проверке"),
     OrderStatus.COMPLETED.value: ("✨", "Завершён"),
     OrderStatus.CANCELLED.value: ("❌", "Отменён"),
     OrderStatus.REJECTED.value: ("🚫", "Отклонён"),
 }
 
 
-def get_order_detail_keyboard(order_id: int) -> InlineKeyboardMarkup:
-    """Клавиатура управления заказом"""
+def get_order_detail_keyboard(order_id: int, user_id: int) -> InlineKeyboardMarkup:
+    """
+    Клавиатура управления заказом — расширенная версия.
+
+    Actions:
+    - Сменить статус
+    - Изменить цену (для спецзаказов и override)
+    - Написать клиенту
+    - Отправить файл
+    - Отметить оплаченным
+    - Отменить / Удалить
+    """
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        # Row 1: Status & Price
         [
-            InlineKeyboardButton(text="🔄 Сменить статус", callback_data=f"admin_change_status:{order_id}"),
+            InlineKeyboardButton(text="🔄 Статус", callback_data=f"admin_change_status:{order_id}"),
+            InlineKeyboardButton(text="✏️ Цена", callback_data=f"admin_set_price:{order_id}"),
         ],
+        # Row 2: Communication
         [
-            InlineKeyboardButton(text="💰 Назначить цену", callback_data=f"admin_set_price:{order_id}"),
+            InlineKeyboardButton(text="📩 Написать", callback_data=f"admin_msg_user:{order_id}:{user_id}"),
+            InlineKeyboardButton(text="📤 Файл", callback_data=f"admin_send_file:{order_id}:{user_id}"),
         ],
+        # Row 3: Quick actions
         [
-            InlineKeyboardButton(text="❌ Отменить", callback_data=f"admin_cancel_order:{order_id}"),
+            InlineKeyboardButton(text="✅ Оплачен", callback_data=f"admin_mark_paid:{order_id}"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_cancel_order:{order_id}"),
+        ],
+        # Row 4: Danger zone
+        [
             InlineKeyboardButton(text="🗑 Удалить", callback_data=f"admin_delete_order:{order_id}"),
         ],
+        # Row 5: Navigation
         [
             InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list"),
         ],
@@ -600,7 +623,7 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession):
 
 📅 Создан: {order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else '—'}"""
 
-    await callback.message.edit_text(text, reply_markup=get_order_detail_keyboard(order_id))
+    await callback.message.edit_text(text, reply_markup=get_order_detail_keyboard(order_id, order.user_id))
 
 
 @router.callback_query(F.data.startswith("admin_change_status:"))
@@ -729,7 +752,7 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
 
 📅 Создан: {order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else '—'}"""
 
-    await callback.message.edit_text(text, reply_markup=get_order_detail_keyboard(order_id))
+    await callback.message.edit_text(text, reply_markup=get_order_detail_keyboard(order_id, order.user_id))
 
 
 @router.callback_query(F.data.startswith("admin_cancel_order:"))
@@ -3532,3 +3555,499 @@ async def cancel_receipt_callback(callback: CallbackQuery, session: AsyncSession
     ])
 
     await callback.message.edit_text(payment_text, reply_markup=keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    СТАТИСТИКА / БУХГАЛТЕРИЯ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "admin_statistics")
+async def show_statistics(callback: CallbackQuery, session: AsyncSession):
+    """📊 Бухгалтерия — статистика бота"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    await callback.answer("⏳")
+
+    from sqlalchemy import func
+    from datetime import date
+
+    # Общее количество пользователей
+    users_count_query = select(func.count(User.id))
+    users_count = (await session.execute(users_count_query)).scalar() or 0
+
+    # Пользователи сегодня
+    today = date.today()
+    today_users_query = select(func.count(User.id)).where(
+        func.date(User.created_at) == today
+    )
+    today_users = (await session.execute(today_users_query)).scalar() or 0
+
+    # Заказы сегодня
+    today_orders_query = select(func.count(Order.id)).where(
+        func.date(Order.created_at) == today
+    )
+    today_orders = (await session.execute(today_orders_query)).scalar() or 0
+
+    # Общий доход (сумма paid_amount у оплаченных заказов)
+    paid_statuses = [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value, OrderStatus.IN_PROGRESS.value, OrderStatus.COMPLETED.value]
+    revenue_query = select(func.sum(Order.paid_amount)).where(
+        Order.status.in_(paid_statuses)
+    )
+    total_revenue = (await session.execute(revenue_query)).scalar() or 0
+
+    # Доход сегодня
+    today_revenue_query = select(func.sum(Order.paid_amount)).where(
+        Order.status.in_(paid_statuses),
+        func.date(Order.created_at) == today
+    )
+    today_revenue = (await session.execute(today_revenue_query)).scalar() or 0
+
+    # Активные заказы
+    active_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value, OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.IN_PROGRESS.value]
+    active_orders_query = select(func.count(Order.id)).where(
+        Order.status.in_(active_statuses)
+    )
+    active_orders = (await session.execute(active_orders_query)).scalar() or 0
+
+    # Завершённые заказы
+    completed_query = select(func.count(Order.id)).where(
+        Order.status == OrderStatus.COMPLETED.value
+    )
+    completed_orders = (await session.execute(completed_query)).scalar() or 0
+
+    text = f"""📊 <b>БУХГАЛТЕРИЯ САЛУНА</b>
+
+<b>👥 Пользователи:</b>
+├ Всего: <code>{users_count:,}</code>
+└ Сегодня: <code>+{today_users}</code>
+
+<b>📋 Заказы:</b>
+├ Активных: <code>{active_orders}</code>
+├ Завершено: <code>{completed_orders:,}</code>
+└ Сегодня: <code>+{today_orders}</code>
+
+<b>💰 Финансы:</b>
+├ Выручка всего: <code>{total_revenue:,.0f} ₽</code>
+└ Сегодня: <code>+{today_revenue:,.0f} ₽</code>
+
+<i>Обновлено: {datetime.now(MSK_TZ).strftime('%d.%m.%Y %H:%M')}</i>""".replace(",", " ")
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_statistics")],
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_panel")],
+    ])
+
+    await callback.message.edit_text(text, reply_markup=keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    РАССЫЛКА
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "admin_broadcast")
+async def start_broadcast(callback: CallbackQuery, state: FSMContext):
+    """📢 Рассылка — начало"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    await callback.answer("⏳")
+    await state.set_state(AdminStates.broadcast_text)
+
+    text = """📢 <b>РАССЫЛКА</b>
+
+Отправь текст сообщения для рассылки.
+
+<i>Поддерживается HTML-разметка:
+• &lt;b&gt;жирный&lt;/b&gt;
+• &lt;i&gt;курсив&lt;/i&gt;
+• &lt;code&gt;код&lt;/code&gt;
+• &lt;a href="url"&gt;ссылка&lt;/a&gt;</i>
+
+⚠️ Рассылка будет отправлена ВСЕМ пользователям!"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_panel")],
+    ])
+
+    await callback.message.edit_text(text, reply_markup=keyboard)
+
+
+@router.message(AdminStates.broadcast_text)
+async def receive_broadcast_text(message: Message, state: FSMContext, session: AsyncSession):
+    """Получение текста рассылки"""
+    if not is_admin(message.from_user.id):
+        return
+
+    broadcast_text = message.text or message.caption
+
+    if not broadcast_text:
+        await message.answer("❌ Отправь текстовое сообщение")
+        return
+
+    # Сохраняем текст и показываем превью
+    await state.update_data(broadcast_text=broadcast_text)
+
+    # Считаем пользователей
+    from sqlalchemy import func
+    users_count_query = select(func.count(User.id))
+    users_count = (await session.execute(users_count_query)).scalar() or 0
+
+    preview_text = f"""📢 <b>ПРЕВЬЮ РАССЫЛКИ</b>
+
+<b>Получателей:</b> {users_count:,} чел.
+
+━━━━━━━━━━━━━━━━━━━━━
+{broadcast_text}
+━━━━━━━━━━━━━━━━━━━━━
+
+Отправить?""".replace(",", " ")
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Отправить", callback_data="admin_confirm_broadcast")],
+        [InlineKeyboardButton(text="✏️ Редактировать", callback_data="admin_broadcast")],
+        [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_panel")],
+    ])
+
+    await message.answer(preview_text, reply_markup=keyboard)
+
+
+@router.callback_query(F.data == "admin_confirm_broadcast")
+async def confirm_broadcast(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
+    """Подтверждение и отправка рассылки"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    data = await state.get_data()
+    broadcast_text = data.get("broadcast_text")
+
+    if not broadcast_text:
+        await callback.answer("Текст не найден", show_alert=True)
+        return
+
+    await callback.answer("🚀 Запускаю рассылку...")
+    await state.clear()
+
+    # Получаем всех пользователей
+    users_query = select(User.telegram_id)
+    users_result = await session.execute(users_query)
+    user_ids = [row[0] for row in users_result.fetchall()]
+
+    total = len(user_ids)
+    sent = 0
+    failed = 0
+
+    # Отправляем статус
+    status_msg = await callback.message.edit_text(
+        f"📤 <b>Рассылка запущена...</b>\n\nОтправлено: 0/{total}"
+    )
+
+    import asyncio
+
+    for i, user_id in enumerate(user_ids, 1):
+        try:
+            await bot.send_message(user_id, broadcast_text)
+            sent += 1
+        except Exception:
+            failed += 1
+
+        # Обновляем статус каждые 50 сообщений
+        if i % 50 == 0:
+            try:
+                await status_msg.edit_text(
+                    f"📤 <b>Рассылка...</b>\n\nОтправлено: {sent}/{total}\nОшибок: {failed}"
+                )
+            except Exception:
+                pass
+
+        # Задержка для избежания флуд-лимитов
+        await asyncio.sleep(0.05)  # 20 сообщений в секунду
+
+    # Итоговый отчёт
+    result_text = f"""✅ <b>РАССЫЛКА ЗАВЕРШЕНА</b>
+
+📤 Отправлено: <code>{sent}</code>
+❌ Ошибок: <code>{failed}</code>
+📊 Всего: <code>{total}</code>"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀️ В админку", callback_data="admin_panel")],
+    ])
+
+    await status_msg.edit_text(result_text, reply_markup=keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    НАПИСАТЬ КЛИЕНТУ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("admin_msg_user:"))
+async def start_message_to_user(callback: CallbackQuery, state: FSMContext):
+    """Начало отправки сообщения клиенту"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    try:
+        order_id = int(parts[1])
+        user_id = int(parts[2])
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    await callback.answer("⏳")
+    await state.update_data(msg_order_id=order_id, msg_user_id=user_id)
+    await state.set_state(AdminStates.messaging_user)
+
+    text = f"""📩 <b>Сообщение клиенту</b>
+
+📋 Заказ: #{order_id}
+👤 ID: <code>{user_id}</code>
+
+Напиши текст сообщения:"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_order_detail:{order_id}")],
+    ])
+
+    await callback.message.edit_text(text, reply_markup=keyboard)
+
+
+@router.message(AdminStates.messaging_user)
+async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
+    """Отправка сообщения клиенту"""
+    if not is_admin(message.from_user.id):
+        return
+
+    data = await state.get_data()
+    order_id = data.get("msg_order_id")
+    user_id = data.get("msg_user_id")
+
+    if not user_id:
+        await message.answer("❌ Ошибка: пользователь не найден")
+        await state.clear()
+        return
+
+    msg_text = message.text or message.caption
+
+    if not msg_text:
+        await message.answer("❌ Отправь текстовое сообщение")
+        return
+
+    await state.clear()
+
+    # Форматируем сообщение от шерифа
+    sheriff_msg = f"""🤠 <b>Сообщение от Шерифа</b>
+
+{msg_text}
+
+<i>По заказу #{order_id}</i>"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💬 Ответить",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+    ])
+
+    try:
+        await bot.send_message(user_id, sheriff_msg, reply_markup=keyboard)
+        await message.answer(f"✅ Сообщение отправлено клиенту ({user_id})")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка отправки: {e}")
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ОТПРАВИТЬ ФАЙЛ КЛИЕНТУ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("admin_send_file:"))
+async def start_send_file(callback: CallbackQuery, state: FSMContext):
+    """Начало отправки файла клиенту"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    try:
+        order_id = int(parts[1])
+        user_id = int(parts[2])
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    await callback.answer("⏳")
+    await state.update_data(file_order_id=order_id, file_user_id=user_id)
+    await state.set_state(AdminStates.sending_file)
+
+    text = f"""📤 <b>Отправка файла клиенту</b>
+
+📋 Заказ: #{order_id}
+👤 ID: <code>{user_id}</code>
+
+Отправь файл (документ, фото, архив):"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Отмена", callback_data=f"admin_order_detail:{order_id}")],
+    ])
+
+    await callback.message.edit_text(text, reply_markup=keyboard)
+
+
+@router.message(AdminStates.sending_file, F.document | F.photo)
+async def forward_file_to_user(message: Message, state: FSMContext, bot: Bot):
+    """Пересылка файла клиенту"""
+    if not is_admin(message.from_user.id):
+        return
+
+    data = await state.get_data()
+    order_id = data.get("file_order_id")
+    user_id = data.get("file_user_id")
+
+    if not user_id:
+        await message.answer("❌ Ошибка: пользователь не найден")
+        await state.clear()
+        return
+
+    await state.clear()
+
+    # Отправляем файл с подписью
+    caption = f"""📥 <b>Файл по заказу #{order_id}</b>
+
+<i>Готовая работа от Салуна!</i>"""
+
+    try:
+        if message.document:
+            await bot.send_document(
+                user_id,
+                message.document.file_id,
+                caption=caption
+            )
+        elif message.photo:
+            await bot.send_photo(
+                user_id,
+                message.photo[-1].file_id,
+                caption=caption
+            )
+
+        await message.answer(f"✅ Файл отправлен клиенту ({user_id})")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка отправки: {e}")
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ОТМЕТИТЬ ОПЛАЧЕННЫМ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("admin_mark_paid:"))
+async def mark_order_paid(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Отметить заказ как оплаченный"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Получаем заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Обновляем статус и paid_amount
+    order.status = OrderStatus.PAID.value
+    order.paid_amount = order.price or 0
+    order.paid_at = datetime.now(MSK_TZ)
+
+    await session.commit()
+    await callback.answer("✅ Заказ отмечен как оплаченный!")
+
+    # Уведомляем клиента
+    user_notification = f"""✅ <b>ОПЛАТА ПОДТВЕРЖДЕНА</b>
+
+📋 Заказ: <code>#{order.id}</code>
+💰 Сумма: <code>{order.paid_amount:.0f} ₽</code>
+
+Отлично! Я уже взял твою задачу в работу.
+Скоро вернусь с результатом. 🤠"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="👀 Статус заказа",
+            callback_data=f"order_detail:{order_id}"
+        )],
+    ])
+
+    try:
+        await bot.send_message(order.user_id, user_notification, reply_markup=keyboard)
+    except Exception:
+        pass
+
+    # Обновляем карточку заказа для админа
+    emoji, status_label = ORDER_STATUS_LABELS.get(order.status, ("", order.status))
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
+
+    text = f"""✅ <b>Заказ #{order.id} оплачен!</b>
+
+📂 <b>Тип:</b> {work_label}
+💰 <b>Сумма:</b> {order.paid_amount:.0f}₽
+{emoji} <b>Статус:</b> {status_label}
+
+<i>Клиент уведомлён</i>"""
+
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📋 К заказу", callback_data=f"admin_order_detail:{order_id}")],
+        [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")],
+    ])
+
+    await callback.message.edit_text(text, reply_markup=admin_keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    PLACEHOLDER: ТАЙНИК (ХАЛЯВА)
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "secret_stash")
+async def secret_stash_placeholder(callback: CallbackQuery):
+    """🎁 Тайник — placeholder для будущей функции халявы"""
+    text = """🎁 <b>ТАЙНИК</b>
+
+<i>Эта функция скоро появится!</i>
+
+Здесь будут:
+• Промокоды на скидки
+• Бесплатные шаблоны
+• Секретные бонусы
+
+Следи за обновлениями! 🤠"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")],
+    ])
+
+    await callback.answer("🎁 Скоро!")
+    try:
+        await callback.message.edit_caption(caption=text, reply_markup=keyboard)
+    except Exception:
+        try:
+            await callback.message.edit_text(text, reply_markup=keyboard)
+        except Exception:
+            await callback.message.answer(text, reply_markup=keyboard)

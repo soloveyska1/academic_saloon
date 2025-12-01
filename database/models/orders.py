@@ -9,6 +9,7 @@ class OrderStatus(str, enum.Enum):
     """Статусы заказа"""
     DRAFT = "draft"              # Черновик (заполняется)
     PENDING = "pending"          # Ожидает оценки
+    WAITING_ESTIMATION = "waiting_estimation"  # Спецзаказ: ждёт ручной оценки админа
     CONFIRMED = "confirmed"      # Подтверждён, ждёт оплаты
     PAID = "paid"                # Оплачен аванс
     PAID_FULL = "paid_full"      # Оплачен полностью
@@ -104,6 +105,16 @@ ORDER_STATUS_META = {
         "label": "Ожидает оценки",
         "short_label": "Ожидает",
         "description": "Скоро назначу цену",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": True,
+        "show_in_history": False,
+    },
+    OrderStatus.WAITING_ESTIMATION: {
+        "emoji": "🔍",
+        "label": "Оценивается",
+        "short_label": "Оценка",
+        "description": "Спецзаказ: шериф оценивает",
         "is_active": True,
         "is_final": False,
         "user_can_cancel": True,

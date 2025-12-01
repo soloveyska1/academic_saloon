@@ -711,3 +711,133 @@ def get_skip_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order")
         ]
     ])
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ОПЛАТА / ИНВОЙС
+# ══════════════════════════════════════════════════════════════
+
+def get_invoice_keyboard(order_id: int, price: int) -> InlineKeyboardMarkup:
+    """
+    Клавиатура для инвойса после авторасчёта цены.
+
+    Args:
+        order_id: ID заказа
+        price: Цена к оплате
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text=f"✅ Оплатить {price:,} ₽".replace(",", " "),
+                callback_data=f"pay_order:{order_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🔄 Пересчитать",
+                callback_data=f"recalc_order:{order_id}"
+            ),
+            InlineKeyboardButton(
+                text="✏️ Изменить",
+                callback_data=f"edit_order_data:{order_id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="💬 Вопрос по цене",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="❌ Отменить заказ",
+                callback_data=f"cancel_confirmed_order:{order_id}"
+            )
+        ],
+    ])
+
+
+def get_special_order_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    """
+    Клавиатура для спецзаказа (ждёт ручной оценки).
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="📎 Дослать материалы",
+                callback_data=f"add_files_to_order:{order_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="👀 Статус заказа",
+                callback_data=f"order_detail:{order_id}"
+            ),
+            InlineKeyboardButton(
+                text="💬 Написать шерифу",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="🌵 В салун",
+                callback_data="back_to_menu"
+            )
+        ],
+    ])
+
+
+def get_waiting_payment_keyboard(order_id: int, price: int) -> InlineKeyboardMarkup:
+    """
+    Клавиатура после установки цены админом (для спецзаказов).
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text=f"✅ Оплатить {price:,} ₽".replace(",", " "),
+                callback_data=f"pay_order:{order_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="💬 Обсудить цену",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="❌ Отменить заказ",
+                callback_data=f"cancel_confirmed_order:{order_id}"
+            )
+        ],
+    ])
+
+
+def get_order_success_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    """
+    Клавиатура после успешного создания заказа.
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="📎 Дослать материалы",
+                callback_data=f"add_files_to_order:{order_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="👀 Статус заказа",
+                callback_data=f"order_detail:{order_id}"
+            ),
+            InlineKeyboardButton(
+                text="❓ Задать вопрос",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="🌵 В салун",
+                callback_data="back_to_menu"
+            )
+        ],
+    ])
