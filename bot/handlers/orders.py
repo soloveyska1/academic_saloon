@@ -1842,48 +1842,78 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     await asyncio.sleep(1.5)
 
     # ═══════════════════════════════════════════════════════════════
-    #   ШАГ 2: Определяем статус и цену
+    #   ШАГ 2: Определяем статус и цену (с гарантированным удалением loading_msg)
     # ═══════════════════════════════════════════════════════════════
 
+    order = None
     price_calc = None
     final_price = 0
 
-    if is_special:
-        # ═══ СПЕЦЗАКАЗ: ПРОПУСКАЕМ АВТОРАСЧЁТ ═══
-        order_status = OrderStatus.WAITING_ESTIMATION.value
-        order_price = 0  # Цена будет установлена админом вручную
-    else:
-        # ═══ ОБЫЧНЫЙ ЗАКАЗ: АВТОРАСЧЁТ ═══
-        price_calc = calculate_price(
+    try:
+        if is_special:
+            # ═══ СПЕЦЗАКАЗ: ПРОПУСКАЕМ АВТОРАСЧЁТ ═══
+            order_status = OrderStatus.WAITING_ESTIMATION.value
+            order_price = 0  # Цена будет установлена админом вручную
+        else:
+            # ═══ ОБЫЧНЫЙ ЗАКАЗ: АВТОРАСЧЁТ ═══
+            price_calc = calculate_price(
+                work_type=work_type_value,
+                deadline_key=deadline_key,
+                discount_percent=discount_percent,
+            )
+            final_price = price_calc.price_after_discount if discount_percent > 0 else price_calc.final_price
+            order_status = OrderStatus.WAITING_PAYMENT.value
+            order_price = final_price
+
+        order = Order(
+            user_id=user_id,
             work_type=work_type_value,
-            deadline_key=deadline_key,
-            discount_percent=discount_percent,
+            subject=data.get("subject_label") or data.get("subject"),
+            topic=None,
+            description=description,
+            deadline=data.get("deadline_label"),
+            discount=discount_percent,
+            price=order_price,
+            status=order_status,
         )
-        final_price = price_calc.price_after_discount if discount_percent > 0 else price_calc.final_price
-        order_status = OrderStatus.WAITING_PAYMENT.value
-        order_price = final_price
+        session.add(order)
+        await session.commit()
+        await session.refresh(order)
 
-    order = Order(
-        user_id=user_id,
-        work_type=work_type_value,
-        subject=data.get("subject_label") or data.get("subject"),
-        topic=None,
-        description=description,
-        deadline=data.get("deadline_label"),
-        discount=discount_percent,
-        price=order_price,
-        status=order_status,
-    )
-    session.add(order)
-    await session.commit()
-    await session.refresh(order)
+    except Exception as e:
+        logger.error(f"Критическая ошибка при создании заказа: {e}")
+        # Удаляем loading_msg и показываем ошибку
+        try:
+            await loading_msg.delete()
+        except Exception:
+            pass
+        await bot.send_message(
+            chat_id=chat_id,
+            text="❌ Произошла ошибка при создании заказа. Попробуй ещё раз или напиши в поддержку.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔄 Попробовать снова", callback_data="new_order")],
+                [InlineKeyboardButton(text="💬 Поддержка", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
+            ])
+        )
+        try:
+            await state.clear()
+        except Exception:
+            pass
+        return
 
-    # Удаляем из трекера брошенных заказов
-    tracker = get_abandoned_tracker()
-    if tracker:
-        await tracker.complete_order(user_id)
+    # Удаляем из трекера брошенных заказов (не критично если не получится)
+    try:
+        tracker = get_abandoned_tracker()
+        if tracker:
+            await tracker.complete_order(user_id)
+    except Exception as e:
+        logger.warning(f"Не удалось удалить из трекера: {e}")
 
-    await state.clear()
+    # Очищаем состояние FSM
+    try:
+        await state.clear()
+    except Exception as e:
+        logger.warning(f"Не удалось очистить state: {e}")
 
     # Удаляем сообщение "считает смету"
     try:
@@ -1913,16 +1943,20 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         extra_data["База"] = f"{price_calc.base_price:,} ₽".replace(",", " ")
         extra_data["Множитель"] = f"x{price_calc.urgency_multiplier}"
 
-    await log_action(
-        bot=bot,
-        event=LogEvent.ORDER_CONFIRM,
-        user=callback.from_user,
-        details=f"{urgent_prefix}{special_prefix}Заказ #{order.id} создан",
-        extra_data=extra_data,
-        session=session,
-        level=LogLevel.ACTION,
-        silent=False,
-    )
+    # Логирование (не критично если не получится)
+    try:
+        await log_action(
+            bot=bot,
+            event=LogEvent.ORDER_CONFIRM,
+            user=callback.from_user,
+            details=f"{urgent_prefix}{special_prefix}Заказ #{order.id} создан",
+            extra_data=extra_data,
+            session=session,
+            level=LogLevel.ACTION,
+            silent=False,
+        )
+    except Exception as e:
+        logger.warning(f"Не удалось залогировать заказ #{order.id}: {e}")
 
     # ═══════════════════════════════════════════════════════════════
     #   ШАГ 5: Отправляем результат пользователю
@@ -2094,14 +2128,20 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    # Проверяем что заказ в правильном статусе
+    # Проверяем что заказ в правильном статусе для оплаты
     valid_statuses = [
         OrderStatus.WAITING_PAYMENT.value,
         OrderStatus.CONFIRMED.value,
+        OrderStatus.WAITING_ESTIMATION.value,  # Для спецзаказов после принятия предложения
     ]
     if order.status not in valid_statuses:
         await callback.answer("Этот заказ уже обрабатывается", show_alert=True)
         return
+
+    # Если статус WAITING_ESTIMATION - меняем на WAITING_PAYMENT
+    if order.status == OrderStatus.WAITING_ESTIMATION.value:
+        order.status = OrderStatus.WAITING_PAYMENT.value
+        await session.commit()
 
     await callback.answer("🕵️‍♂️ Шериф получил сигнал...")
 
@@ -2349,7 +2389,12 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
         return
 
     # Проверяем статус заказа — можно дослать только в ожидающие заказы
-    allowed_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]
+    allowed_statuses = [
+        OrderStatus.PENDING.value,
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,
+        OrderStatus.WAITING_ESTIMATION.value,  # Для спецзаказов
+    ]
     if order.status not in allowed_statuses:
         await callback.answer("К этому заказу уже нельзя добавить файлы", show_alert=True)
         return
@@ -2463,21 +2508,30 @@ async def append_text(message: Message, state: FSMContext, bot: Bot, session: As
 @router.callback_query(F.data.startswith("finish_append:"))
 async def finish_append_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """Завершить дослать — отправить админам"""
-    try:
-        order_id = int(callback.data.split(":")[1])
-    except (IndexError, ValueError):
-        await callback.answer("Ошибка данных", show_alert=True)
-        return
-
     data = await state.get_data()
     appended_files = data.get("appended_files", [])
+
+    # Берём order_id из STATE (более надёжно, защита от race condition)
+    order_id = data.get("append_order_id")
+
+    # Fallback на callback.data если в state нет
+    if not order_id:
+        try:
+            order_id = int(callback.data.split(":")[1])
+        except (IndexError, ValueError):
+            await callback.answer("Ошибка данных", show_alert=True)
+            await state.clear()
+            return
 
     if not appended_files:
         await callback.answer("Ты ещё ничего не отправил!", show_alert=True)
         return
 
-    # Находим заказ
-    order_query = select(Order).where(Order.id == order_id)
+    # Находим заказ С ПРОВЕРКОЙ ВЛАДЕЛЬЦА
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id  # Защита: только владелец
+    )
     order_result = await session.execute(order_query)
     order = order_result.scalar_one_or_none()
 
@@ -2556,17 +2610,28 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
 @router.callback_query(F.data.startswith("cancel_append:"))
 async def cancel_append_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Отменить дослать"""
-    try:
-        order_id = int(callback.data.split(":")[1])
-    except (IndexError, ValueError):
-        await callback.answer("Ошибка данных", show_alert=True)
-        return
+    data = await state.get_data()
+
+    # Берём order_id из STATE (защита от race condition)
+    order_id = data.get("append_order_id")
+
+    # Fallback на callback.data
+    if not order_id:
+        try:
+            order_id = int(callback.data.split(":")[1])
+        except (IndexError, ValueError):
+            await callback.answer("Ошибка данных", show_alert=True)
+            await state.clear()
+            return
 
     await state.clear()
     await callback.answer("Отменено")
 
-    # Возвращаем к статусу заказа
-    order_query = select(Order).where(Order.id == order_id)
+    # Возвращаем к статусу заказа С ПРОВЕРКОЙ ВЛАДЕЛЬЦА
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id  # Защита: только владелец
+    )
     order_result = await session.execute(order_query)
     order = order_result.scalar_one_or_none()
 
