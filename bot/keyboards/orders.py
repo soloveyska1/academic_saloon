@@ -196,9 +196,9 @@ def get_large_works_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
-def get_special_order_keyboard() -> InlineKeyboardMarkup:
+def get_special_type_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура для Спецзаказа / Неформата.
+    Клавиатура выбора типа для категории Спецзаказа / Неформата.
     Две опции: стандартный flow или прямой контакт с Шерифом.
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
