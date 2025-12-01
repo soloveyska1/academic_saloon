@@ -12,7 +12,7 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     Row 2: [ 🎁 Тайник (Халява) ]  <- Curiosity hook
     Row 3: [ 👤 Кабинет ] [ ⭐️ Отзывы ]
     Row 4: [ 🆘 Позвать Шерифа ]
-    Row 5: [ 📜 Оферта ]          <- Small, for curious users
+    Row 5: [ 📜 Прайс ] [ 📋 Оферта ]
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         # Row 1: Primary CTA
@@ -47,12 +47,16 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             )
         ],
-        # Row 5: Offer (small, for curious)
+        # Row 5: Price list & Offer
         [
             InlineKeyboardButton(
-                text="📜 Оферта",
+                text="📜 Прайс",
+                callback_data="price_list"
+            ),
+            InlineKeyboardButton(
+                text="📋 Оферта",
                 url=settings.OFFER_URL
-            )
+            ),
         ],
     ])
     return kb
