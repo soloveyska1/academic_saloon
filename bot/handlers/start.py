@@ -171,21 +171,14 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     # 2. Форматируем текст с ссылкой на оферту
     welcome_text = WELCOME_MESSAGE.format(offer_url=settings.OFFER_URL)
 
-    # 3. Отправляем картинку с текстом и кнопками (или текст если картинки нет)
-    if settings.WELCOME_IMAGE.exists():
-        await send_cached_photo(
-            bot=bot,
-            chat_id=message.chat.id,
-            photo_path=settings.WELCOME_IMAGE,
-            caption=welcome_text,
-            reply_markup=get_main_menu_keyboard()
-        )
-    else:
-        await bot.send_message(
-            chat_id=message.chat.id,
-            text=welcome_text,
-            reply_markup=get_main_menu_keyboard()
-        )
+    # 3. Отправляем картинку с текстом и кнопками
+    await send_cached_photo(
+        bot=bot,
+        chat_id=message.chat.id,
+        photo_path=settings.WELCOME_IMAGE,
+        caption=welcome_text,
+        reply_markup=get_main_menu_keyboard()
+    )
 
 
 # ══════════════════════════════════════════════════════════════
