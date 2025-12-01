@@ -2554,73 +2554,37 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
 
 
 @router.message(OrderState.appending_files, F.photo)
-async def append_photo(message: Message, state: FSMContext, bot: Bot):
+async def append_photo(message: Message, state: FSMContext):
     """Получено фото для дослать"""
     data = await state.get_data()
     appended_files = data.get("appended_files", [])
 
     photo = message.photo[-1]
-    file_info = {
+    appended_files.append({
         "type": "photo",
         "file_id": photo.file_id,
         "caption": message.caption or "",
-    }
-    appended_files.append(file_info)
+    })
     await state.update_data(appended_files=appended_files)
 
-    # Проверяем media_group
-    media_group_id = message.media_group_id
-    if media_group_id:
-        async def on_append_complete(files: list, chat_id: int, total_count: int):
-            summary = get_files_summary(files)
-            await bot.send_message(
-                chat_id,
-                f"📥 <b>Принял {len(files)} файлов!</b>\n\n{summary}\nВсего: {total_count}"
-            )
-        await handle_media_group_file(
-            media_group_id=media_group_id,
-            file_info=file_info,
-            on_complete=on_append_complete,
-            chat_id=message.chat.id,
-            total_count=len(appended_files),
-        )
-    else:
-        await message.answer(f"📸 Фото принял! (всего: {len(appended_files)})")
+    await message.answer(f"📸 Фото принял! (всего: {len(appended_files)})")
 
 
 @router.message(OrderState.appending_files, F.document)
-async def append_document(message: Message, state: FSMContext, bot: Bot):
+async def append_document(message: Message, state: FSMContext):
     """Получен документ для дослать"""
     data = await state.get_data()
     appended_files = data.get("appended_files", [])
 
-    file_info = {
+    appended_files.append({
         "type": "document",
         "file_id": message.document.file_id,
         "file_name": message.document.file_name or "файл",
         "caption": message.caption or "",
-    }
-    appended_files.append(file_info)
+    })
     await state.update_data(appended_files=appended_files)
 
-    # Проверяем media_group
-    media_group_id = message.media_group_id
-    if media_group_id:
-        async def on_append_complete(files: list, chat_id: int, total_count: int):
-            summary = get_files_summary(files)
-            await bot.send_message(
-                chat_id,
-                f"📥 <b>Принял {len(files)} файлов!</b>\n\n{summary}\nВсего: {total_count}"
-            )
-        await handle_media_group_file(
-            media_group_id=media_group_id,
-            file_info=file_info,
-            on_complete=on_append_complete,
-            chat_id=message.chat.id,
-            total_count=len(appended_files),
-        )
-    else:
-        await message.answer(f"📄 Файл принял! (всего: {len(appended_files)})")
+    await message.answer(f"📄 Файл принял! (всего: {len(appended_files)})")
 
 
 @router.message(OrderState.appending_files, F.voice)
