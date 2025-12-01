@@ -1383,12 +1383,16 @@ async def task_add_more(callback: CallbackQuery, state: FSMContext, bot: Bot):
 Уже есть:
 {preview}{limit_hint}
 
-Кидай файлы, фото или текст."""
+Кидай файлы, фото или текст.
+
+<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
     else:
         text = """📎 <b>Добавь ещё</b>
 
 Кидай файлы, фото или текст.
-Когда всё — нажми «Готово»."""
+Когда всё — нажми «Готово».
+
+<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
 
     # Удаляем старое сообщение и отправляем новое (избегаем "message not modified")
     try:
@@ -1954,24 +1958,42 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         keyboard = get_invoice_keyboard(order.id, final_price)
         image_path = CONFIRM_STD_IMAGE_PATH if CONFIRM_STD_IMAGE_PATH.exists() else ORDER_DONE_IMAGE_PATH
 
-    # Отправляем сообщение
-    if image_path.exists():
-        try:
-            await send_cached_photo(
-                bot=bot,
-                chat_id=chat_id,
-                photo_path=image_path,
-                caption=text,
-                reply_markup=keyboard,
-            )
-        except Exception as e:
-            logger.warning(f"Не удалось отправить invoice image: {e}")
+    # Отправляем сообщение пользователю
+    try:
+        if image_path.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=chat_id,
+                    photo_path=image_path,
+                    caption=text,
+                    reply_markup=keyboard,
+                )
+            except Exception as e:
+                logger.warning(f"Не удалось отправить invoice image: {e}")
+                await bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
+        else:
             await bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
-    else:
-        await bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
+    except Exception as e:
+        logger.error(f"Не удалось отправить финальное сообщение о заказе #{order.id}: {e}")
+        # Fallback - хотя бы простое сообщение
+        try:
+            await bot.send_message(
+                chat_id=chat_id,
+                text=f"✅ Заказ #{order.id} создан!\n\nПодробности в разделе «Мои заказы».",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="📋 Мои заказы", callback_data="profile_orders")],
+                    [InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")],
+                ])
+            )
+        except Exception:
+            pass
 
-    # Уведомление админам со всеми вложениями
-    await notify_admins_new_order(bot, callback.from_user, order, data)
+    # Уведомление админам со всеми вложениями (не блокируем пользователя при ошибке)
+    try:
+        await notify_admins_new_order(bot, callback.from_user, order, data)
+    except Exception as e:
+        logger.error(f"Ошибка уведомления админов о заказе #{order.id}: {e}")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -2343,7 +2365,9 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
 Отправь фото, документы или голосовое сообщение.
 Можешь прислать несколько файлов подряд.
 
-Когда закончишь — нажми кнопку ниже."""
+Когда закончишь — нажми кнопку ниже.
+
+<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
