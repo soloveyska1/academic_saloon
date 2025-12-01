@@ -1344,17 +1344,32 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
             elif message.forward_from_chat:
                 attachment["forward_from"] = message.forward_from_chat.title
 
-        attachments.append(attachment)
-        await state.update_data(attachments=attachments)
-
         # Проверяем, является ли это частью media_group (альбома)
         media_group_id = message.media_group_id
 
         if media_group_id:
-            # Часть альбома — собираем файлы и ответим один раз в конце
-            async def on_media_group_complete(files: list, chat_id: int, is_urgent: bool, is_special: bool, total_count: int):
+            # Часть альбома — НЕ сохраняем сразу, собираем в коллекторе
+            # и сохраним ВСЕ файлы разом в callback (избегаем race condition)
+            async def on_media_group_complete(files: list, chat_id: int, is_urgent: bool, is_special: bool, fsm_state: FSMContext):
                 """Callback вызывается когда все файлы группы получены"""
+                # Читаем актуальное состояние и добавляем ВСЕ файлы разом
+                current_data = await fsm_state.get_data()
+                current_attachments = current_data.get("attachments", [])
+
+                # Добавляем все собранные файлы
+                for f in files:
+                    # Проверка на дубли
+                    f_id = f.get("file_id")
+                    if f_id:
+                        existing_ids = {att.get("file_id") for att in current_attachments if att.get("file_id")}
+                        if f_id in existing_ids:
+                            continue
+                    current_attachments.append(f)
+
+                await fsm_state.update_data(attachments=current_attachments)
+
                 files_count = len(files)
+                total_count = len(current_attachments)
                 summary = get_files_summary(files)
 
                 if is_urgent:
@@ -1386,7 +1401,7 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
 
                 await bot.send_message(chat_id, text, reply_markup=get_task_continue_keyboard())
 
-            # Добавляем в коллектор (не отвечаем сразу)
+            # Добавляем в коллектор (НЕ сохраняем в state сразу!)
             await handle_media_group_file(
                 media_group_id=media_group_id,
                 file_info=attachment,
@@ -1394,10 +1409,13 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
                 chat_id=message.chat.id,
                 is_urgent=is_urgent,
                 is_special=is_special,
-                total_count=len(attachments),
+                fsm_state=state,
             )
         else:
-            # Одиночный файл — отвечаем сразу (старое поведение)
+            # Одиночный файл — сохраняем и отвечаем сразу
+            attachments.append(attachment)
+            await state.update_data(attachments=attachments)
+
             count = len(attachments)
             confirm_text = get_attachment_confirm_text(attachment, count, is_urgent, is_special)
 
