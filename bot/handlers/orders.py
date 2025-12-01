@@ -3032,7 +3032,13 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="✅ Назначить цену",
+                text=f"✅ Подтвердить ~{estimated_price}₽",
+                callback_data=f"admin_confirm_robot_price:{order.id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="✏️ Своя цена",
                 callback_data=f"admin_set_price:{order.id}"
             ),
             InlineKeyboardButton(

@@ -2660,6 +2660,126 @@ async def admin_cancel_price(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
 
 
+@router.callback_query(F.data.startswith("admin_confirm_robot_price:"))
+async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """
+    Быстрое подтверждение цены робота без ручного ввода.
+    Использует order.price который уже рассчитан.
+    """
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Находим заказ
+    order_query = select(Order).where(Order.id == order_id)
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer(f"Заказ #{order_id} не найден", show_alert=True)
+        return
+
+    if order.price <= 0:
+        await callback.answer("❌ Цена робота не установлена! Введи вручную.", show_alert=True)
+        return
+
+    # Находим пользователя
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await callback.answer(f"Пользователь не найден", show_alert=True)
+        return
+
+    await callback.answer("✅ Цена подтверждена!")
+
+    price = order.price
+
+    # Рассчитываем бонусы (макс 50% от цены)
+    max_bonus = price * 0.5
+    bonus_to_use = min(user.balance, max_bonus)
+
+    # Обновляем заказ
+    order.bonus_used = bonus_to_use
+    order.status = OrderStatus.CONFIRMED.value
+    await session.commit()
+
+    # Рассчитываем итоговую цену
+    final_price = price - bonus_to_use
+    half_amount = final_price / 2
+
+    # Формируем сообщение для клиента
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+    client_text = build_price_offer_text(
+        order_id=order.id,
+        work_label=work_label,
+        deadline=order.deadline,
+        base_price=price,
+        bonus_used=bonus_to_use,
+        final_price=final_price,
+    )
+
+    # Формируем клавиатуру
+    buttons = [
+        [InlineKeyboardButton(
+            text=f"💳 100% Сразу ({final_price:.0f}₽)",
+            callback_data=f"pay_scheme:full:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
+            callback_data=f"pay_scheme:half:{order.id}"
+        )],
+    ]
+
+    if bonus_to_use > 0:
+        buttons.append([InlineKeyboardButton(
+            text="🔄 Не тратить бонусы (Пересчитать)",
+            callback_data=f"price_no_bonus:{order.id}"
+        )])
+
+    buttons.append([InlineKeyboardButton(
+        text="💬 Вопрос по цене / Дорого",
+        callback_data=f"price_question:{order.id}"
+    )])
+
+    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    # Отправляем клиенту с картинкой
+    try:
+        if PAYMENT_REQUEST_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=order.user_id,
+                    photo_path=PAYMENT_REQUEST_IMAGE_PATH,
+                    caption=client_text,
+                    reply_markup=kb,
+                )
+            except Exception as e:
+                logger.warning(f"Не удалось отправить payment_request image: {e}")
+                await bot.send_message(order.user_id, client_text, reply_markup=kb)
+        else:
+            await bot.send_message(order.user_id, client_text, reply_markup=kb)
+
+        # Обновляем сообщение админа
+        await callback.message.edit_text(
+            f"✅ <b>Заказ #{order.id} — цена подтверждена</b>\n\n"
+            f"💰 Цена: {price:.0f}₽\n"
+            f"🎁 Бонусов применено: {bonus_to_use:.0f}₽\n"
+            f"💵 Итого к оплате: {final_price:.0f}₽\n\n"
+            f"<i>Клиенту отправлено предложение оплаты.</i>"
+        )
+    except Exception as e:
+        await callback.message.answer(f"❌ Не удалось отправить сообщение клиенту: {e}")
+
+
 @router.message(AdminStates.waiting_order_price)
 async def process_order_price_input(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
     """Обработка ввода цены заказа"""
