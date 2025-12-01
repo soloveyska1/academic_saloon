@@ -751,34 +751,48 @@ def get_skip_keyboard() -> InlineKeyboardMarkup:
 
 def get_invoice_keyboard(order_id: int, price: int) -> InlineKeyboardMarkup:
     """
-    Клавиатура для инвойса после авторасчёта цены.
-
-    Args:
-        order_id: ID заказа
-        price: Цена к оплате
+    GREEN FLOW: Клавиатура для авто-расчёта (auto-pay allowed).
+    Показывается когда заказ простой и безопасный.
     """
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text=f"✅ Оплатить {price:,} ₽".replace(",", " "),
+                text=f"💳 Оплатить {price:,} ₽".replace(",", " "),
                 callback_data=f"pay_order:{order_id}"
             )
         ],
         [
             InlineKeyboardButton(
-                text="🔄 Пересчитать",
-                callback_data=f"recalc_order:{order_id}"
-            ),
-            InlineKeyboardButton(
-                text="✏️ Изменить",
+                text="✏️ Изменить параметры",
                 callback_data=f"edit_order_data:{order_id}"
             ),
         ],
         [
             InlineKeyboardButton(
-                text="💬 Вопрос по цене",
-                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+                text="❌ Отменить заказ",
+                callback_data=f"cancel_confirmed_order:{order_id}"
             )
+        ],
+    ])
+
+
+def get_manual_review_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    """
+    YELLOW FLOW: Клавиатура для ручной проверки шерифом.
+    Показывается когда заказ сложный (файлы, срочность, сложный тип).
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🤠 Отправить на утверждение",
+                callback_data=f"submit_for_review:{order_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="✏️ Изменить параметры",
+                callback_data=f"edit_order_data:{order_id}"
+            ),
         ],
         [
             InlineKeyboardButton(

@@ -59,6 +59,7 @@ from bot.keyboards.orders import (
     get_special_type_keyboard,  # For category selection
     get_special_order_keyboard as get_special_order_kb,  # For post-order keyboard
     get_invoice_keyboard,
+    get_manual_review_keyboard,
     get_waiting_payment_keyboard,
     get_order_success_keyboard,
     SUBJECTS,
@@ -1959,16 +1960,84 @@ def format_attachments_summary(attachments: list) -> str:
     return summary
 
 
+# ═══════════════════════════════════════════════════════════════
+#   RISK MATRIX: Определяет можно ли автоматически рассчитать цену
+# ═══════════════════════════════════════════════════════════════
+
+# Типы работ, безопасные для авторасчёта (простые, типовые)
+SAFE_WORK_TYPES = {
+    WorkType.ESSAY.value,         # Эссе
+    WorkType.REPORT.value,        # Реферат
+    WorkType.PRESENTATION.value,  # Презентация
+    WorkType.CONTROL.value,       # Контрольная
+    WorkType.INDEPENDENT.value,   # Самостоятельная
+}
+
+# Дедлайны с >= 24 часами (не срочные)
+NON_URGENT_DEADLINES = {"3_days", "week", "2_weeks", "month", "custom"}
+
+
+def check_auto_pay_allowed(data: dict) -> tuple[bool, list[str]]:
+    """
+    Risk Matrix: Проверяет можно ли автоматически выставить счёт.
+
+    Возвращает (is_allowed, risk_factors).
+    Auto-pay разрешён ТОЛЬКО если ВСЕ условия выполнены:
+    1. Нет вложений (фото/файлы/голос)
+    2. Тип работы в списке безопасных
+    3. Дедлайн >= 24 часов (не срочный)
+    4. Описание >= 20 символов
+    """
+    risk_factors = []
+
+    # 1. Проверка вложений (файлы = риск)
+    attachments = data.get("attachments", [])
+    file_attachments = [
+        att for att in attachments
+        if att.get("type") in ("photo", "document", "voice", "audio", "video", "video_note")
+    ]
+    has_files = len(file_attachments) > 0
+    if has_files:
+        risk_factors.append("📎 Есть файлы")
+
+    # 2. Проверка типа работы
+    work_type = data.get("work_type", "")
+    is_safe_type = work_type in SAFE_WORK_TYPES
+    if not is_safe_type:
+        risk_factors.append("📚 Сложный тип работы")
+
+    # 3. Проверка срочности дедлайна
+    deadline_key = data.get("deadline", "week")
+    is_non_urgent = deadline_key in NON_URGENT_DEADLINES
+    if not is_non_urgent:
+        risk_factors.append("⚡️ Срочный дедлайн")
+
+    # 4. Проверка длины описания
+    description_text = ""
+    for att in attachments:
+        if att.get("type") == "text":
+            description_text = att.get("content", "")
+            break
+    has_description = len(description_text) >= 20
+    if not has_description:
+        risk_factors.append("📝 Краткое описание")
+
+    # Auto-pay разрешён только если нет факторов риска
+    is_allowed = len(risk_factors) == 0
+
+    return is_allowed, risk_factors
+
+
 @router.callback_query(OrderState.confirming, F.data == "confirm_order")
 async def confirm_order(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """
-    Подтверждение и сохранение заказа с АВТОМАТИЧЕСКИМ расчётом цены.
+    Подтверждение и сохранение заказа с RISK MATRIX логикой.
 
     Flow:
-    1. Показываем анимацию "Шериф считает смету..."
-    2. Рассчитываем цену по формуле: Base * Urgency * (1 - Discount)
-    3. Для спецзаказов (OTHER) — ставим статус WAITING_ESTIMATION (ручная оценка)
-    4. Для обычных заказов — показываем инвойс с кнопкой оплаты
+    1. Проверяем Risk Matrix → определяем GREEN или YELLOW flow
+    2. GREEN FLOW (auto-pay): Показываем инвойс с кнопкой оплаты
+    3. YELLOW FLOW (manual): Показываем экран "Требуется оценка шерифа"
+    4. SPECIAL (other): Отправляем на ручную оценку
     """
     await callback.answer("⏳")
 
@@ -1986,6 +2055,11 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     discount_percent = data.get("discount", 0)
 
     # ═══════════════════════════════════════════════════════════════
+    #   RISK MATRIX: Определяем GREEN или YELLOW flow
+    # ═══════════════════════════════════════════════════════════════
+    is_auto_pay_allowed, risk_factors = check_auto_pay_allowed(data)
+
+    # ═══════════════════════════════════════════════════════════════
     #   ШАГ 1: Анимация (разные тексты для спец/обычных заказов)
     # ═══════════════════════════════════════════════════════════════
 
@@ -1996,8 +2070,10 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
     if is_special:
         loading_text = "🕵️ <b>Шериф принимает спецзаказ...</b>\n\n<i>Секунду</i>"
+    elif is_auto_pay_allowed:
+        loading_text = "⚖️ <b>Робот считает смету...</b>\n\n<i>Секунду</i>"
     else:
-        loading_text = "⏳ <b>Шериф считает смету...</b>\n\n<i>Подожди пару секунд</i>"
+        loading_text = "🛡 <b>Анализируем задачу...</b>\n\n<i>Секунду</i>"
 
     loading_msg = await bot.send_message(chat_id=chat_id, text=loading_text)
 
@@ -2022,8 +2098,8 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             # ═══ СПЕЦЗАКАЗ: ПРОПУСКАЕМ АВТОРАСЧЁТ ═══
             order_status = OrderStatus.WAITING_ESTIMATION.value
             order_price = 0  # Цена будет установлена админом вручную
-        else:
-            # ═══ ОБЫЧНЫЙ ЗАКАЗ: АВТОРАСЧЁТ ═══
+        elif is_auto_pay_allowed:
+            # ═══ GREEN FLOW: АВТОРАСЧЁТ ═══
             price_calc = calculate_price(
                 work_type=work_type_value,
                 deadline_key=deadline_key,
@@ -2032,6 +2108,17 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             final_price = price_calc.price_after_discount if discount_percent > 0 else price_calc.final_price
             order_status = OrderStatus.WAITING_PAYMENT.value
             order_price = final_price
+        else:
+            # ═══ YELLOW FLOW: НУЖНА ОЦЕНКА ШЕРИФА ═══
+            # Считаем предварительную цену для отображения
+            price_calc = calculate_price(
+                work_type=work_type_value,
+                deadline_key=deadline_key,
+                discount_percent=discount_percent,
+            )
+            final_price = price_calc.price_after_discount if discount_percent > 0 else price_calc.final_price
+            order_status = OrderStatus.DRAFT.value  # Черновик до отправки на проверку
+            order_price = final_price  # Предварительная цена
 
         order = Order(
             user_id=user_id,
@@ -2047,7 +2134,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         session.add(order)
         await session.flush()  # Получаем ID без закрытия транзакции
         order_id = order.id    # Сохраняем ID
-        logger.info(f"confirm_order: Created order #{order_id} with user_id={user_id}")
+        logger.info(f"confirm_order: Created order #{order_id} with user_id={user_id}, auto_pay={is_auto_pay_allowed}")
         await session.commit()
 
         # Перезапрашиваем заказ из БД (refresh может не работать после commit)
@@ -2149,7 +2236,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         logger.warning(f"Не удалось залогировать заказ #{order.id}: {e}")
 
     # ═══════════════════════════════════════════════════════════════
-    #   ШАГ 5: Отправляем результат пользователю
+    #   ШАГ 5: Отправляем результат пользователю (GREEN/YELLOW/SPECIAL)
     # ═══════════════════════════════════════════════════════════════
 
     try:
@@ -2168,25 +2255,46 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             keyboard = get_special_order_kb(order.id)
             image_path = CONFIRM_SPECIAL_IMAGE_PATH
 
-        else:
-            # 💰 ОБЫЧНЫЙ ЗАКАЗ — показываем инвойс
-            if price_calc:
-                breakdown = format_price_breakdown(price_calc, work_label, deadline_label)
-            else:
-                breakdown = f"💰 <b>Цена:</b> {final_price:,} ₽".replace(",", " ")
+        elif is_auto_pay_allowed:
+            # ═══ GREEN FLOW: Автоматический инвойс ═══
+            price_formatted = f"{final_price:,}".replace(",", " ")
 
-            text = f"""⚖️ <b>СМЕТА ГОТОВА</b>
+            text = f"""⚖️ <b>СМЕТА ГОТОВА</b> | Заказ <code>#{order.id}</code>
 
-📋 <b>Заказ:</b> <code>#{order.id}</code>
+📁 <b>Тип:</b> {work_label}
+⏳ <b>Срок:</b> {deadline_label}
 
-{breakdown}
+➖➖➖➖➖➖➖➖➖➖➖
+💰 <b>К ОПЛАТЕ: {price_formatted} ₽</b>
+➖➖➖➖➖➖➖➖➖➖➖
 
-<i>Цена рассчитана автоматически.
-Для сложных случаев шериф может скорректировать.</i>"""
+<i>Цена зафиксирована. Робот гарантирует.</i>"""
 
-            logger.info(f"confirm_order: Creating invoice keyboard with order.id={order.id}, price={final_price}")
+            logger.info(f"confirm_order: GREEN FLOW - invoice keyboard for order #{order.id}, price={final_price}")
             keyboard = get_invoice_keyboard(order.id, final_price)
             image_path = CONFIRM_STD_IMAGE_PATH if CONFIRM_STD_IMAGE_PATH.exists() else ORDER_DONE_IMAGE_PATH
+
+        else:
+            # ═══ YELLOW FLOW: Требуется оценка шерифа ═══
+            price_formatted = f"{final_price:,}".replace(",", " ")
+
+            # Формируем список причин для ручной проверки
+            risk_text = "\n".join(f"  • {factor}" for factor in risk_factors) if risk_factors else ""
+
+            text = f"""🛡 <b>ТРЕБУЕТСЯ ОЦЕНКА ШЕРИФА</b> | <code>#{order.id}</code>
+
+🤖 <b>Робот насчитал:</b> ~{price_formatted} ₽
+<i>Но задача серьёзная:</i>
+{risk_text}
+
+Чтобы не было ошибок, <b>Шериф лично проверит заказ</b> и назовёт точную цену. Это быстро.
+
+📁 <b>Тип:</b> {work_label}
+⏳ <b>Срок:</b> {deadline_label}"""
+
+            logger.info(f"confirm_order: YELLOW FLOW - manual review for order #{order.id}, factors={risk_factors}")
+            keyboard = get_manual_review_keyboard(order.id)
+            image_path = CONFIRM_SPECIAL_IMAGE_PATH  # Используем ту же картинку что для спецзаказов
 
     except Exception as e:
         logger.error(f"Ошибка формирования сообщения для заказа #{order.id}: {e}")
@@ -2541,6 +2649,112 @@ async def recalc_order_callback(callback: CallbackQuery, state: FSMContext, sess
     )
 
 
+@router.callback_query(F.data.startswith("submit_for_review:"))
+async def submit_for_review_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """
+    YELLOW FLOW: Пользователь отправляет заказ на проверку шерифом.
+    Меняет статус с DRAFT на WAITING_ESTIMATION и уведомляет админов.
+    """
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Ищем заказ в статусе DRAFT
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id,
+        Order.status == OrderStatus.DRAFT.value
+    )
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден или уже отправлен", show_alert=True)
+        return
+
+    # Меняем статус на WAITING_ESTIMATION
+    order.status = OrderStatus.WAITING_ESTIMATION.value
+    await session.commit()
+
+    await callback.answer("🤠 Заказ отправлен шерифу!")
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Показываем подтверждение
+    text = f"""🛡 <b>ЗАКАЗ <code>#{order.id}</code> НА ПРОВЕРКЕ</b>
+
+Шериф лично посмотрит твою задачу и назовёт точную цену.
+Обычно это занимает <b>до 2 часов</b> (в рабочее время).
+
+⏳ <i>Жди сообщения с ценой...</i>"""
+
+    keyboard = get_special_order_kb(order.id)
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=text,
+        reply_markup=keyboard,
+    )
+
+    # Уведомляем админов о новом заказе на проверку
+    try:
+        work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
+    except ValueError:
+        work_label = order.work_type or "Заказ"
+
+    estimated_price = f"{order.price:,}".replace(",", " ") if order.price > 0 else "—"
+
+    admin_text = f"""🛡 <b>ТРЕБУЕТ ОЦЕНКИ</b> | Заказ <code>#{order.id}</code>
+
+👤 <b>Клиент:</b> {callback.from_user.full_name}
+🆔 <code>{callback.from_user.id}</code>
+
+📁 <b>Тип:</b> {work_label}
+📚 <b>Направление:</b> {order.subject or "—"}
+⏳ <b>Срок:</b> {order.deadline or "—"}
+
+🤖 <b>Робот насчитал:</b> ~{estimated_price} ₽
+<i>Но клиент отправил на ручную проверку.</i>
+
+📝 <b>Описание:</b>
+<i>{order.description[:500] if order.description else "—"}{'...' if order.description and len(order.description) > 500 else ''}</i>"""
+
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="✅ Назначить цену",
+                callback_data=f"admin_set_price:{order.id}"
+            ),
+            InlineKeyboardButton(
+                text="❌ Отклонить",
+                callback_data=f"admin_reject_order:{order.id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text="💬 Написать клиенту",
+                url=f"tg://user?id={callback.from_user.id}"
+            ),
+        ],
+    ])
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(
+                chat_id=admin_id,
+                text=admin_text,
+                reply_markup=admin_keyboard,
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+
+
 @router.callback_query(F.data.startswith("edit_order_data:"))
 async def edit_order_data_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Пользователь хочет изменить данные заказа — удаляем и начинаем заново"""
@@ -2555,6 +2769,7 @@ async def edit_order_data_callback(callback: CallbackQuery, state: FSMContext, s
         Order.id == order_id,
         Order.user_id == callback.from_user.id,
         Order.status.in_([
+            OrderStatus.DRAFT.value,           # YELLOW FLOW (до отправки на проверку)
             OrderStatus.WAITING_PAYMENT.value,
             OrderStatus.CONFIRMED.value,  # legacy
         ])
@@ -2602,6 +2817,7 @@ async def cancel_confirmed_order_callback(callback: CallbackQuery, session: Asyn
 
     # Можно отменить только неоплаченные заказы
     cancelable = [
+        OrderStatus.DRAFT.value,              # YELLOW FLOW (до отправки на проверку)
         OrderStatus.PENDING.value,
         OrderStatus.WAITING_PAYMENT.value,
         OrderStatus.CONFIRMED.value,  # legacy
