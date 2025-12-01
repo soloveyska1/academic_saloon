@@ -25,8 +25,8 @@ CONFIRM_URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_ur
 CONFIRM_SPECIAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_special.jpg"
 CONFIRM_STD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
 ORDER_DONE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "order_done.jpg"
-# Note: checking_payment image now uses cloud URL from settings.IMG_CHECKING_PAYMENT_URL
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
+CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking_payment.jpg"
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1985,16 +1985,24 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         )],
     ])
 
-    # Отправляем с картинкой (cloud URL)
-    try:
-        await bot.send_photo(
-            chat_id=callback.message.chat.id,
-            photo=settings.IMG_CHECKING_PAYMENT_URL,
-            caption=user_text,
-            reply_markup=user_keyboard,
-        )
-    except Exception as e:
-        logger.warning(f"Не удалось отправить checking_payment image: {e}")
+    # Отправляем с картинкой (локальный файл)
+    if CHECKING_PAYMENT_IMAGE_PATH.exists():
+        try:
+            photo_file = FSInputFile(CHECKING_PAYMENT_IMAGE_PATH)
+            await bot.send_photo(
+                chat_id=callback.message.chat.id,
+                photo=photo_file,
+                caption=user_text,
+                reply_markup=user_keyboard,
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить checking_payment image: {e}")
+            await bot.send_message(
+                chat_id=callback.message.chat.id,
+                text=user_text,
+                reply_markup=user_keyboard
+            )
+    else:
         # Fallback без картинки
         await bot.send_message(
             chat_id=callback.message.chat.id,

@@ -41,9 +41,6 @@ class Settings(BaseSettings):
     DIRECTIONS_IMAGE: Path = BASE_DIR / "bot" / "media" / "directions.jpg"
     DEADLINE_IMAGE: Path = BASE_DIR / "bot" / "media" / "deadline.jpg"
 
-    # Cloud-hosted images (URL) — задаётся в .env или используется default
-    IMG_CHECKING_PAYMENT_URL: str = "https://i.imgur.com/checking_payment.jpg"  # Шериф с лупой
-
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
