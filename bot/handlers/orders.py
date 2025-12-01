@@ -35,6 +35,9 @@ IMG_UNDER_REVIEW = Path("/root/academic_saloon/bot/media/checking_payment.jpg") 
 # Upload Stage: Изображения для загрузки файлов
 IMG_UPLOAD_START = Path("/root/academic_saloon/bot/media/upload_bag.jpg")      # Пустая сумка — начальное состояние
 IMG_FILES_RECEIVED = Path("/root/academic_saloon/bot/media/papka.jpg")         # Папка с файлами — файлы приняты
+
+# Draft Review: Изображение для черновика контракта (ДО расчёта цены)
+IMG_DRAFT_REVIEW = Path("/root/academic_saloon/bot/media/checklist.jpg")       # Чеклист — проверка данных
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, InputMediaPhoto
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -2091,7 +2094,8 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
 <i>Проверь, всё ли верно записано...</i>"""
 
         confirm_btn_text = "✅ Всё верно (Отправить)"
-        image_path = CONFIRM_STD_IMAGE_PATH
+        # Используем чеклист для черновика, НЕ рукопожатие (handshake = только для финального счёта)
+        image_path = IMG_DRAFT_REVIEW if IMG_DRAFT_REVIEW.exists() else CONFIRM_STD_IMAGE_PATH
 
     # Логируем шаг (некритично)
     try:
