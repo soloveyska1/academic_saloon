@@ -1884,6 +1884,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         session.add(order)
         await session.flush()  # Получаем ID без закрытия транзакции
         order_id = order.id    # Сохраняем ID
+        logger.info(f"confirm_order: Created order #{order_id} with user_id={user_id}")
         await session.commit()
 
         # Перезапрашиваем заказ из БД (refresh может не работать после commit)
@@ -1893,6 +1894,8 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         order = order_result.scalar_one_or_none()
         if not order:
             raise Exception(f"Order {order_id} not found after commit")
+        # Проверяем что user_id сохранился правильно
+        logger.info(f"confirm_order: Order #{order_id} loaded from DB with user_id={order.user_id}")
         success = True
 
     except Exception as e:
@@ -2159,6 +2162,8 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         await callback.answer("Ошибка данных", show_alert=True)
         return
 
+    logger.info(f"confirm_payment_callback: order_id={order_id}, user_id={callback.from_user.id}")
+
     order_query = select(Order).where(
         Order.id == order_id,
         Order.user_id == callback.from_user.id
@@ -2167,6 +2172,16 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
     order = order_result.scalar_one_or_none()
 
     if not order:
+        # Диагностика
+        check_result = await session.execute(select(Order).where(Order.id == order_id))
+        check_order = check_result.scalar_one_or_none()
+        if check_order:
+            logger.warning(
+                f"confirm_payment: Order {order_id} exists with user_id={check_order.user_id}, "
+                f"but request from user_id={callback.from_user.id}"
+            )
+        else:
+            logger.warning(f"confirm_payment: Order {order_id} does not exist at all")
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
