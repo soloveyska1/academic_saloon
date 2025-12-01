@@ -1896,6 +1896,14 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             raise Exception(f"Order {order_id} not found after commit")
         # Проверяем что user_id сохранился правильно
         logger.info(f"confirm_order: Order #{order_id} loaded from DB with user_id={order.user_id}")
+
+        # Валидация: убедимся что order.id валиден
+        if not order.id or order.id <= 0:
+            raise Exception(f"Invalid order.id={order.id} after DB load")
+        if order.user_id != user_id:
+            logger.error(f"CRITICAL: user_id mismatch! Expected {user_id}, got {order.user_id}")
+            raise Exception(f"User ID mismatch: expected {user_id}, got {order.user_id}")
+
         success = True
 
     except Exception as e:
@@ -1993,6 +2001,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
 ⏳ <i>Жди сообщения...</i>"""
 
+            logger.info(f"confirm_order: Creating special order keyboard with order.id={order.id}")
             keyboard = get_special_order_kb(order.id)
             image_path = CONFIRM_SPECIAL_IMAGE_PATH
 
@@ -2012,6 +2021,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 <i>Цена рассчитана автоматически.
 Для сложных случаев шериф может скорректировать.</i>"""
 
+            logger.info(f"confirm_order: Creating invoice keyboard with order.id={order.id}, price={final_price}")
             keyboard = get_invoice_keyboard(order.id, final_price)
             image_path = CONFIRM_STD_IMAGE_PATH if CONFIRM_STD_IMAGE_PATH.exists() else ORDER_DONE_IMAGE_PATH
 
