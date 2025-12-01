@@ -11,6 +11,7 @@ class OrderStatus(str, enum.Enum):
     PENDING = "pending"          # Ожидает оценки
     WAITING_ESTIMATION = "waiting_estimation"  # Спецзаказ: ждёт ручной оценки админа
     WAITING_PAYMENT = "waiting_payment"  # Цена рассчитана, ждёт оплаты
+    VERIFICATION_PENDING = "verification_pending"  # Пользователь нажал "Я оплатил", ждём проверки админа
     CONFIRMED = "confirmed"      # Подтверждён (legacy, для совместимости)
     PAID = "paid"                # Оплачен аванс
     PAID_FULL = "paid_full"      # Оплачен полностью

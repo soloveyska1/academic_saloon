@@ -25,6 +25,7 @@ CONFIRM_URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_ur
 CONFIRM_SPECIAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_special.jpg"
 CONFIRM_STD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
 ORDER_DONE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "order_done.jpg"
+PAYMENT_CHECKING_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_checking.jpg"
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -1927,7 +1928,11 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
 
 @router.callback_query(F.data.startswith("confirm_payment:"))
 async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Пользователь подтвердил оплату — уведомляем админа"""
+    """
+    Пользователь нажал 'Я оплатил' — переводим в статус verification_pending.
+
+    НЕ помечаем как paid! Ждём ручной проверки админа.
+    """
     try:
         order_id = int(callback.data.split(":")[1])
     except (IndexError, ValueError):
@@ -1945,18 +1950,33 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    await callback.answer("✅ Принято!")
+    # Проверяем что заказ в правильном статусе
+    valid_statuses = [
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,
+    ]
+    if order.status not in valid_statuses:
+        await callback.answer("Этот заказ уже обрабатывается", show_alert=True)
+        return
 
-    text = f"""✅ <b>Спасибо!</b>
+    await callback.answer("⏳ Отправляем на проверку...")
 
-Заявка на оплату заказа <code>#{order.id}</code> отправлена шерифу.
+    # ═══ ОБНОВЛЯЕМ СТАТУС НА VERIFICATION_PENDING ═══
+    order.status = OrderStatus.VERIFICATION_PENDING.value
+    await session.commit()
 
-Как только проверю поступление — запущу работу и сообщу тебе.
-Обычно это занимает <b>до 30 минут</b>.
+    # ═══ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ — УСПОКАИВАЮЩЕЕ ═══
+    user_text = f"""⏳ <b>Платёж на проверке</b>
 
-<i>Если оплата по СБП — обычно вижу сразу.</i>"""
+Шериф получил сигнал. Мы проверяем поступление средств вручную.
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+💤 <b>Если сейчас ночь</b> — подтвердим утром.
+✅ <b>Твой заказ уже зафиксирован</b>, дедлайн в силе. Не волнуйся.
+
+<i>Как только деньги звякнут в казне — придёт чек.</i>"""
+
+    # Убираем кнопки оплаты — только статус и меню
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="👀 Статус заказа",
             callback_data=f"order_detail:{order_id}"
@@ -1967,25 +1987,69 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         )],
     ])
 
+    # Удаляем старое сообщение и отправляем с фото
     try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.message.delete()
     except Exception:
-        await callback.message.answer(text, reply_markup=keyboard)
+        pass
 
-    # Уведомляем админов
+    if PAYMENT_CHECKING_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=PAYMENT_CHECKING_IMAGE_PATH,
+                caption=user_text,
+                reply_markup=user_keyboard,
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить payment_checking image: {e}")
+            await bot.send_message(
+                chat_id=callback.message.chat.id,
+                text=user_text,
+                reply_markup=user_keyboard
+            )
+    else:
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=user_text,
+            reply_markup=user_keyboard
+        )
+
+    # ═══ УВЕДОМЛЕНИЕ АДМИНАМ С КНОПКАМИ ВЕРИФИКАЦИИ ═══
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
-    admin_text = f"""💳 <b>ЗАЯВКА НА ОПЛАТУ</b>
+    username = callback.from_user.username
+    user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
+
+    admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
 
 📋 Заказ: <code>#{order.id}</code>
-👤 Клиент: @{callback.from_user.username or 'без юзернейма'} ({callback.from_user.id})
+💰 Сумма: <b>{int(order.price):,} ₽</b>
+👤 Клиент: {user_link} (<code>{callback.from_user.id}</code>)
 📂 Тип: {work_label}
-💰 Сумма: <code>{int(order.price):,} ₽</code>
 
-<i>Проверь поступление и подтверди оплату в админке.</i>""".replace(",", " ")
+<i>Клиент нажал кнопку «Я оплатил». Зайди в банк и проверь.</i>""".replace(",", " ")
+
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="✅ Деньги пришли",
+                callback_data=f"admin_verify_paid:{order_id}"
+            ),
+            InlineKeyboardButton(
+                text="❌ Нет оплаты",
+                callback_data=f"admin_reject_payment:{order_id}"
+            ),
+        ],
+        [InlineKeyboardButton(
+            text="👁 Детали заказа",
+            callback_data=f"admin_order:{order_id}"
+        )],
+    ])
 
     for admin_id in settings.ADMIN_IDS:
         try:
-            await bot.send_message(admin_id, admin_text)
+            await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
         except Exception as e:
             logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
 
