@@ -1640,13 +1640,12 @@ async def task_add_more(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "task_clear")
 async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """
-    Очистить все вложения — IN-PLACE RESET.
-    Обработчик БЕЗ фильтра state чтобы всегда срабатывал.
+    Очистить все вложения — ОСТАЁМСЯ НА МЕСТЕ.
 
     Логика:
     1. Очищаем данные (attachments, flags)
-    2. Явно устанавливаем state = entering_task (на случай если потерялся)
-    3. Показываем пустое состояние с IMG_UPLOAD_START
+    2. Явно устанавливаем state = entering_task
+    3. Показываем ТОТ ЖЕ экран с полной клавиатурой (Готово, Очистить, Назад, Отмена)
     """
     await callback.answer("🗑 Список очищен!")
 
@@ -1662,7 +1661,7 @@ async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
     )
 
     # ═══════════════════════════════════════════════════════════════
-    # 2. ЯВНО УСТАНАВЛИВАЕМ STATE (на случай если потерялся!)
+    # 2. ЯВНО УСТАНАВЛИВАЕМ STATE
     # ═══════════════════════════════════════════════════════════════
     await state.set_state(OrderState.entering_task)
 
@@ -1673,22 +1672,21 @@ async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
         work_type = None
 
     # ═══════════════════════════════════════════════════════════════
-    # 3. PREPARE EMPTY STATE UI
+    # 3. PREPARE UI — ОСТАЁМСЯ НА МЕСТЕ С ПОЛНОЙ КЛАВИАТУРОЙ
     # ═══════════════════════════════════════════════════════════════
     if work_type == WorkType.OTHER:
         caption = """🕵️‍♂️ <b>Материалы дела</b>
 
-📂 <b>Папка пуста!</b>
+🗑 <b>Список очищен!</b>
 
-Давай подробности — скидывай всё, что есть по задаче.
+Можешь загрузить новые файлы или описать задачу текстом.
 
 <i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
         image_path = INVESTIGATION_IMAGE_PATH
     else:
-        caption = """📂 <b>ПАПКА ПУСТА!</b>
+        caption = """🗑 <b>СПИСОК ОЧИЩЕН!</b>
 
-Выкладывай всё, что есть по задаче.
-Чем больше инфы — тем точнее смогу назвать цену.
+Можешь загрузить новые файлы или описать задачу текстом.
 
 <b>Что можно прислать:</b>
 📸 Фото методички или доски
@@ -1697,38 +1695,53 @@ async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
 ✍️ <b>Или просто напиши тему и требования текстом</b>
 
 <i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
-        image_path = IMG_UPLOAD_START if IMG_UPLOAD_START.exists() else settings.TASK_INPUT_IMAGE
+        image_path = IMG_FILES_RECEIVED if IMG_FILES_RECEIVED.exists() else settings.TASK_INPUT_IMAGE
 
-    # Клавиатура для пустого состояния (без кнопки "Готово")
-    keyboard = get_task_continue_keyboard(files_count=0)
+    # ПОЛНАЯ клавиатура — как будто файлы есть (files_count=1)
+    # Это даёт: Готово, Очистить список, Назад, Отмена
+    keyboard = get_task_continue_keyboard(files_count=1)
 
     # ═══════════════════════════════════════════════════════════════
-    # 4. УДАЛЯЕМ СТАРОЕ И ОТПРАВЛЯЕМ НОВОЕ (надёжный способ)
+    # 4. ОБНОВЛЯЕМ СООБЩЕНИЕ IN-PLACE (edit_media)
     # ═══════════════════════════════════════════════════════════════
     try:
-        await callback.message.delete()
-    except Exception:
-        pass
-
-    if image_path.exists():
-        try:
-            await send_cached_photo(
-                bot=bot,
-                chat_id=callback.message.chat.id,
-                photo_path=image_path,
-                caption=caption,
-                reply_markup=keyboard,
+        if image_path.exists():
+            # Пробуем edit_media с FSInputFile
+            from aiogram.types import InputMediaPhoto, FSInputFile
+            media = InputMediaPhoto(
+                media=FSInputFile(image_path),
+                caption=caption
             )
-            return
-        except Exception as e:
-            logger.warning(f"send_cached_photo failed: {e}")
+            await callback.message.edit_media(media=media, reply_markup=keyboard)
+        else:
+            # Fallback: только текст и клавиатура
+            await callback.message.edit_caption(caption=caption, reply_markup=keyboard)
+    except Exception as e:
+        logger.warning(f"edit_media failed: {e}, trying delete+send")
+        # Fallback: удаляем и отправляем заново
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
 
-    # Fallback на текст
-    await bot.send_message(
-        chat_id=callback.message.chat.id,
-        text=caption,
-        reply_markup=keyboard,
-    )
+        if image_path.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=image_path,
+                    caption=caption,
+                    reply_markup=keyboard,
+                )
+                return
+            except Exception:
+                pass
+
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=keyboard,
+        )
 
 
 @router.callback_query(F.data == "back_from_task")
