@@ -726,6 +726,16 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession, bot:
     order = order_result.scalar_one_or_none()
 
     if not order:
+        # Диагностика: проверяем существует ли заказ вообще
+        check_result = await session.execute(select(Order).where(Order.id == order_id))
+        check_order = check_result.scalar_one_or_none()
+        if check_order:
+            logger.warning(
+                f"show_order_detail: Order {order_id} exists with user_id={check_order.user_id}, "
+                f"but request from telegram_id={telegram_id}"
+            )
+        else:
+            logger.warning(f"show_order_detail: Order {order_id} does not exist at all")
         await callback.message.answer("❌ Заказ не найден или был удалён")
         return
 
