@@ -1907,10 +1907,6 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
             callback_data=f"confirm_payment:{order_id}"
         )],
         [InlineKeyboardButton(
-            text="📸 Отправить чек",
-            callback_data=f"send_receipt:{order_id}"
-        )],
-        [InlineKeyboardButton(
             text="❓ Вопрос по оплате",
             url=f"https://t.me/{settings.SUPPORT_USERNAME}"
         )],
