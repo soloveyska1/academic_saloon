@@ -2073,6 +2073,8 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Ошибка данных", show_alert=True)
         return
 
+    logger.info(f"pay_order_callback: order_id={order_id}, user_id={callback.from_user.id}")
+
     # Получаем заказ
     order_query = select(Order).where(
         Order.id == order_id,
@@ -2082,6 +2084,16 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
     order = order_result.scalar_one_or_none()
 
     if not order:
+        # Логируем для отладки
+        logger.warning(f"pay_order: Order {order_id} not found for user {callback.from_user.id}")
+        # Проверяем, существует ли заказ вообще
+        check_query = select(Order).where(Order.id == order_id)
+        check_result = await session.execute(check_query)
+        check_order = check_result.scalar_one_or_none()
+        if check_order:
+            logger.warning(f"pay_order: Order {order_id} exists but belongs to user {check_order.user_id}, not {callback.from_user.id}")
+        else:
+            logger.warning(f"pay_order: Order {order_id} does not exist in database at all")
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
