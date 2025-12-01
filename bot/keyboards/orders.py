@@ -84,7 +84,7 @@ def get_work_category_keyboard() -> InlineKeyboardMarkup:
 def get_category_works_keyboard(category_key: str) -> InlineKeyboardMarkup:
     """
     Второй уровень: типы работ в выбранной категории.
-    Показывает цены и сроки для каждого типа.
+    Чистые кнопки без цен — цена показывается в caption.
     """
     category = WORK_CATEGORIES.get(category_key)
     if not category:
@@ -94,23 +94,12 @@ def get_category_works_keyboard(category_key: str) -> InlineKeyboardMarkup:
     buttons = []
 
     for work_type in category["types"]:
-        # Формируем текст кнопки с ценой и сроком
+        # Только label без цен
         label = WORK_TYPE_LABELS.get(work_type, work_type.value)
-        price = WORK_TYPE_PRICES.get(work_type, "")
-        deadline = WORK_TYPE_DEADLINES.get(work_type, "")
-
-        # Компактный формат: "📝 Эссе • от 1400₽ • 1-2 дня"
-        parts = [label]
-        if price:
-            parts.append(price)
-        if deadline:
-            parts.append(deadline)
-
-        text = " • ".join(parts)
 
         buttons.append([
             InlineKeyboardButton(
-                text=text,
+                text=label,
                 callback_data=f"order_type:{work_type.value}"
             ),
         ])
@@ -156,18 +145,18 @@ def get_small_works_keyboard() -> InlineKeyboardMarkup:
 def get_medium_works_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура для Курсовых/Практики — крупный калибр.
-    Чистые кнопки с ценами.
+    Чистые кнопки без цен.
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="📜 Курсовая работа | от 11 900 ₽",
+                text="📚 Курсовая работа",
                 callback_data=f"order_type:{WorkType.COURSEWORK.value}"
             ),
         ],
         [
             InlineKeyboardButton(
-                text="💼 Отчет по практике | от 4 900 ₽",
+                text="💼 Отчет по практике",
                 callback_data=f"order_type:{WorkType.PRACTICE.value}"
             ),
         ],
@@ -182,18 +171,19 @@ def get_medium_works_keyboard() -> InlineKeyboardMarkup:
 
 def get_large_works_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура для Дипломов — Premium-стиль "Большой куш".
+    Клавиатура для Дипломов — Premium-стиль.
+    Чистые кнопки без цен.
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="🎓 Диплом (ВКР) | от 34 900 ₽",
+                text="🎓 Диплом (ВКР)",
                 callback_data=f"order_type:{WorkType.DIPLOMA.value}"
             ),
         ],
         [
             InlineKeyboardButton(
-                text="🎩 Магистерская | от 44 900 ₽",
+                text="🎩 Магистерская",
                 callback_data=f"order_type:{WorkType.MASTERS.value}"
             ),
         ],
@@ -235,8 +225,7 @@ def get_special_order_keyboard() -> InlineKeyboardMarkup:
 
 def get_work_type_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура выбора типа работы с ценами и сроками.
-    Оптимизирована для конверсии.
+    Клавиатура выбора типа работы — чистые кнопки без цен.
     """
     buttons = []
 
@@ -259,7 +248,7 @@ def get_work_type_keyboard() -> InlineKeyboardMarkup:
     # Популярные работы (курсовая, контрольная) — вверху
     buttons.append([
         InlineKeyboardButton(
-            text=f"📚 Курсовая • {WORK_TYPE_PRICES[WorkType.COURSEWORK]} • {WORK_TYPE_DEADLINES[WorkType.COURSEWORK]}",
+            text="📚 Курсовая работа",
             callback_data=f"order_type:{WorkType.COURSEWORK.value}"
         ),
     ])
@@ -267,21 +256,21 @@ def get_work_type_keyboard() -> InlineKeyboardMarkup:
     # Мелкие работы — по две в ряд (самые частые)
     buttons.append([
         InlineKeyboardButton(
-            text=f"✏️ Контрольная • {WORK_TYPE_DEADLINES[WorkType.CONTROL]}",
+            text="✏️ Контрольная",
             callback_data=f"order_type:{WorkType.CONTROL.value}"
         ),
         InlineKeyboardButton(
-            text=f"📝 Эссе • {WORK_TYPE_DEADLINES[WorkType.ESSAY]}",
+            text="✍️ Эссе",
             callback_data=f"order_type:{WorkType.ESSAY.value}"
         ),
     ])
     buttons.append([
         InlineKeyboardButton(
-            text=f"📄 Реферат • {WORK_TYPE_DEADLINES[WorkType.REPORT]}",
+            text="📄 Реферат",
             callback_data=f"order_type:{WorkType.REPORT.value}"
         ),
         InlineKeyboardButton(
-            text=f"📊 Презентация • {WORK_TYPE_DEADLINES[WorkType.PRESENTATION]}",
+            text="📊 Презентация",
             callback_data=f"order_type:{WorkType.PRESENTATION.value}"
         ),
     ])
@@ -289,25 +278,25 @@ def get_work_type_keyboard() -> InlineKeyboardMarkup:
     # Средние работы
     buttons.append([
         InlineKeyboardButton(
-            text=f"📖 Самостоятельная • {WORK_TYPE_DEADLINES[WorkType.INDEPENDENT]}",
+            text="📖 Самостоятельная",
             callback_data=f"order_type:{WorkType.INDEPENDENT.value}"
         ),
         InlineKeyboardButton(
-            text=f"🏢 Практика • {WORK_TYPE_DEADLINES[WorkType.PRACTICE]}",
+            text="💼 Практика",
             callback_data=f"order_type:{WorkType.PRACTICE.value}"
         ),
     ])
 
-    # Крупные работы (дорогие) — внизу
+    # Крупные работы — внизу
     buttons.append([
         InlineKeyboardButton(
-            text=f"🎓 Диплом (ВКР) • {WORK_TYPE_PRICES[WorkType.DIPLOMA]}",
+            text="🎓 Диплом (ВКР)",
             callback_data=f"order_type:{WorkType.DIPLOMA.value}"
         ),
     ])
     buttons.append([
         InlineKeyboardButton(
-            text=f"🎩 Магистерская • {WORK_TYPE_PRICES[WorkType.MASTERS]}",
+            text="🎩 Магистерская",
             callback_data=f"order_type:{WorkType.MASTERS.value}"
         ),
     ])
@@ -315,7 +304,7 @@ def get_work_type_keyboard() -> InlineKeyboardMarkup:
     # Другое
     buttons.append([
         InlineKeyboardButton(
-            text="📎 Другое",
+            text="🦄 Спецзаказ",
             callback_data=f"order_type:{WorkType.OTHER.value}"
         ),
     ])
