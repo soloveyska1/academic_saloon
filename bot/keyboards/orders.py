@@ -475,20 +475,65 @@ def get_task_input_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-def get_task_continue_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура после получения задания — добавить ещё или продолжить"""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="➕ Докинуть ещё", callback_data="task_add_more"),
-            InlineKeyboardButton(text="🗑 Сжечь всё", callback_data="task_clear"),
-        ],
-        [
-            InlineKeyboardButton(text="✅ Готово! Выбрать срок ➡️", callback_data="task_done"),
-        ],
-        [
-            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
-        ]
+def get_task_continue_keyboard(files_count: int = 0) -> InlineKeyboardMarkup:
+    """
+    Клавиатура после получения задания — добавить ещё или продолжить.
+
+    Layout:
+    [      📎 Ещё       ]  <- если хочет добавить
+    [ ✅ Готово | 🗑 Очистить ]  <- основные действия
+    [     ❌ Отмена     ]  <- выход
+    """
+    buttons = []
+
+    # Кнопка "Ещё" — только если есть место
+    if files_count < 10:
+        buttons.append([
+            InlineKeyboardButton(text="📎 Ещё", callback_data="task_add_more"),
+        ])
+
+    # Основные действия
+    row = []
+    if files_count > 0:
+        row.append(InlineKeyboardButton(text="✅ Готово", callback_data="task_done"))
+    if files_count > 0:
+        row.append(InlineKeyboardButton(text="🗑 Очистить", callback_data="task_clear"))
+    if row:
+        buttons.append(row)
+
+    # Отмена всегда внизу
+    buttons.append([
+        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
     ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_append_files_keyboard(order_id: int, files_count: int = 0) -> InlineKeyboardMarkup:
+    """
+    Клавиатура для дослать файлы к заказу.
+    Единый стиль с основным flow.
+    """
+    buttons = []
+
+    # Готово — только если есть файлы
+    if files_count > 0:
+        buttons.append([
+            InlineKeyboardButton(
+                text="✅ Отправить",
+                callback_data=f"finish_append:{order_id}"
+            ),
+        ])
+
+    # Отмена
+    buttons.append([
+        InlineKeyboardButton(
+            text="❌ Отмена",
+            callback_data=f"cancel_append:{order_id}"
+        ),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 # ══════════════════════════════════════════════════════════════
