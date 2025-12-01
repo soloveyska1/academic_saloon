@@ -268,7 +268,7 @@ def get_payment_confirm_keyboard(order_id: int, user_id: int) -> InlineKeyboardM
     """Клавиатура подтверждения оплаты для админа"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"confirm_payment:{order_id}"),
+            InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"admin_confirm_payment:{order_id}"),
             InlineKeyboardButton(text="❌ Не пришло", callback_data=f"reject_payment:{order_id}:{user_id}"),
         ],
         [
@@ -2518,7 +2518,7 @@ async def process_payment_receipt(message: Message, state: FSMContext, session: 
 
     # Клавиатура админа
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Подтвердить зачисление", callback_data=f"confirm_payment:{order_id}")],
+        [InlineKeyboardButton(text="✅ Подтвердить зачисление", callback_data=f"admin_confirm_payment:{order_id}")],
         [InlineKeyboardButton(text="❌ Деньги не пришли", callback_data=f"reject_payment:{order_id}:{user_id}")],
     ])
 
@@ -2768,9 +2768,9 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
 #                    КНОПКИ ПОДТВЕРЖДЕНИЯ ОПЛАТЫ
 # ══════════════════════════════════════════════════════════════
 
-@router.callback_query(F.data.startswith("confirm_payment:"))
-async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Админ подтвердил оплату кнопкой"""
+@router.callback_query(F.data.startswith("admin_confirm_payment:"))
+async def admin_confirm_payment_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Админ подтвердил оплату кнопкой (ручное подтверждение от чека)"""
     if not is_admin(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return

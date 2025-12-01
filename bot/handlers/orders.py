@@ -3098,12 +3098,12 @@ async def receive_payment_receipt(message: Message, state: FSMContext, session: 
 👤 Клиент: @{message.from_user.username or 'без username'}
 🆔 ID: <code>{message.from_user.id}</code>"""
 
-    # Клавиатура с кнопками подтверждения
+    # Клавиатура с кнопками подтверждения (для админа)
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
                 text="✅ Подтвердить",
-                callback_data=f"confirm_payment:{order.id}"
+                callback_data=f"admin_confirm_payment:{order.id}"
             ),
             InlineKeyboardButton(
                 text="❌ Не пришло",
@@ -3195,7 +3195,7 @@ async def receive_payment_receipt_document(message: Message, state: FSMContext, 
         [
             InlineKeyboardButton(
                 text="✅ Подтвердить",
-                callback_data=f"confirm_payment:{order.id}"
+                callback_data=f"admin_confirm_payment:{order.id}"
             ),
             InlineKeyboardButton(
                 text="❌ Не пришло",
