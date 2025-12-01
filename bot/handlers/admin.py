@@ -3451,6 +3451,11 @@ async def accept_offer_callback(callback: CallbackQuery, session: AsyncSession, 
 
     await callback.answer("🤝 Отлично! Показываю реквизиты...")
 
+    # ВАЖНО: Меняем статус на WAITING_PAYMENT чтобы confirm_payment работал
+    if order.status == OrderStatus.WAITING_ESTIMATION.value:
+        order.status = OrderStatus.WAITING_PAYMENT.value
+        await session.commit()
+
     # Показываем реквизиты для P2P оплаты (используем конфиг)
     payment_text = f"""💳 <b>ОПЛАТА ЗАКАЗА #{order.id}</b>
 
