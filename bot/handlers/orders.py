@@ -243,14 +243,16 @@ def pluralize_files(n: int) -> str:
     return f"{n} файлов"
 
 
-# Рандомные ответы в стиле Салуна
-SALOON_CONFIRMATIONS = [
-    "Записал в блокнот. 📝",
-    "Так, это принял. Ещё что-то? 🧐",
-    "Улику подшил к делу. 📂",
-    "Добро. Клади ещё, если есть. 👌",
-    "Понял. Информация принята. 🤠",
-]
+# Короткие подтверждения по типу файла
+FILE_TYPE_CONFIRMATIONS = {
+    "text": ["📝 Принял!", "📝 Записал!"],
+    "photo": ["📸 Фото принял!", "📸 Есть!"],
+    "document": ["📄 Файл принял!", "📄 Добавил!"],
+    "voice": ["🎤 Голосовое принял!", "🎤 Записал!"],
+    "video": ["🎬 Видео принял!", "🎬 Добавил!"],
+    "audio": ["🎵 Аудио принял!", "🎵 Добавил!"],
+    "video_note": ["⚪ Кружок принял!", "⚪ Добавил!"],
+}
 
 
 def get_attachment_confirm_text(
@@ -260,63 +262,38 @@ def get_attachment_confirm_text(
     is_special: bool = False,
 ) -> str:
     """
-    Генерирует умное подтверждение в зависимости от типа вложения и flow.
-
-    Flows:
-    - is_urgent: Срочный заказ → быстрый, энергичный ответ
-    - is_special: Спецзаказ/Уникальная задача → интрига, экспертный анализ
-    - Стандартный: Рандомные ответы в стиле Салуна
+    Генерирует короткое подтверждение получения файла.
+    Progress bar добавляется отдельно в вызывающем коде.
     """
     att_type = attachment.get("type", "unknown")
 
-    # Дополнительная инфа по типу
+    # Выбираем подтверждение по типу
+    confirmations = FILE_TYPE_CONFIRMATIONS.get(att_type, ["📎 Принял!"])
+    confirm = random.choice(confirmations)
+
+    # Дополнительная инфа
     extra = ""
     if att_type == "document":
         fname = attachment.get("file_name", "")
         if fname:
-            # Обрезаем длинные имена
             if len(fname) > 25:
                 fname = fname[:22] + "..."
-            extra = f"\n📄 <i>{fname}</i>"
+            extra = f"\n<i>{fname}</i>"
     elif att_type == "voice":
         duration = attachment.get("duration", 0)
         if duration:
             mins, secs = divmod(duration, 60)
-            if mins:
-                extra = f"\n🎤 <i>Голосовое {mins}:{secs:02d}</i>"
-            else:
-                extra = f"\n🎤 <i>Голосовое {secs} сек</i>"
+            extra = f"\n<i>{mins}:{secs:02d}</i>" if mins else f"\n<i>{secs} сек</i>"
 
-    # === CASE A: СРОЧНЫЙ ЗАКАЗ ===
+    # === СРОЧНЫЙ ЗАКАЗ ===
     if is_urgent:
-        if count == 1:
-            return f"""⚡️ <b>Поймал!</b>
+        return f"⚡️ {confirm}{extra}"
 
-Уже несу Шерифу на стол бегом.{extra}
-
-<i>Никуда не уходи — вернусь с ценой быстрее, чем вылетит пуля.</i>"""
-        else:
-            return f"⚡️ <b>Ещё один!</b>{extra}\n📎 Всего: {pluralize_files(count)}"
-
-    # === CASE B: СПЕЦЗАКАЗ / УНИКАЛЬНАЯ ЗАДАЧА ===
+    # === СПЕЦЗАКАЗ ===
     if is_special:
-        if count == 1:
-            return f"""🧐 <b>Любопытный случай...</b>
+        return f"🔍 {confirm}{extra}"
 
-Материал принял.{extra}
-
-Тут нужно покумекать. Сейчас изучу детали под лупой и скажу, как мы это провернём."""
-        else:
-            return f"🧐 <b>Ещё улики...</b>{extra}\n📎 Всего материалов: {pluralize_files(count)}"
-
-    # === CASE C: СТАНДАРТНЫЙ FLOW ===
-    base_text = random.choice(SALOON_CONFIRMATIONS)
-
-    # Счётчик если больше одного
-    if count > 1:
-        return f"{base_text}{extra}\n📎 Всего: {pluralize_files(count)}"
-
-    return f"{base_text}{extra}"
+    return f"{confirm}{extra}"
 
 
 def format_attachments_preview(attachments: list) -> str:
@@ -1570,59 +1547,27 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
             if attachment.get("forwarded"):
                 forward_from = attachment.get("forward_from", "")
                 if forward_from:
-                    confirm_text += f"\n📨 Переслано от: {forward_from}"
+                    confirm_text += f"\n📨 <i>от {forward_from}</i>"
 
             # Progress bar
             confirm_text += f"\n\n{get_progress_bar(count, MAX_ATTACHMENTS)}"
 
-            # Предупреждение о приближении к лимиту
-            if count >= MAX_ATTACHMENTS - 2:
+            # Подсказка или предупреждение
+            if count >= MAX_ATTACHMENTS:
+                confirm_text += "\n\n✓ Лимит — жми <b>Готово →</b>"
+            elif count >= MAX_ATTACHMENTS - 2:
                 remaining = MAX_ATTACHMENTS - count
-                confirm_text += f"\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
+                confirm_text += f"\n\n⚠️ Ещё {remaining} {'файл' if remaining == 1 else 'файла'} и лимит"
+            else:
+                confirm_text += "\n\n<i>Ещё файлы или Готово →</i>"
 
             await message.answer(confirm_text, reply_markup=get_task_continue_keyboard(files_count=count))
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_add_more")
-async def task_add_more(callback: CallbackQuery, state: FSMContext, bot: Bot):
-    """Пользователь хочет добавить ещё файлов"""
-    await callback.answer("📎 Жду!")
-
-    data = await state.get_data()
-    attachments = data.get("attachments", [])
-    count = len(attachments)
-    progress = get_progress_bar(count, MAX_ATTACHMENTS)
-
-    # Показываем превью того что уже есть
-    if attachments:
-        preview = format_attachments_preview(attachments)
-        text = f"""📎 <b>Материалы</b>
-
-{preview}
-
-{progress}
-
-<i>Кидай ещё или жми «Готово»</i>"""
-    else:
-        text = f"""📎 <b>Материалы</b>
-
-{progress}
-
-Кидай файлы, фото или текст.
-
-<i>💡 Нажми 📎 внизу экрана</i>"""
-
-    # Удаляем старое сообщение и отправляем новое
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
-
-    await bot.send_message(
-        chat_id=callback.message.chat.id,
-        text=text,
-        reply_markup=get_task_continue_keyboard(files_count=count)
-    )
+async def task_add_more(callback: CallbackQuery, state: FSMContext):
+    """Legacy handler — кнопка удалена, просто отвечаем"""
+    await callback.answer("Просто добавь файл 📎")
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_clear")
