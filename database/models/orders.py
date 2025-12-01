@@ -10,7 +10,8 @@ class OrderStatus(str, enum.Enum):
     DRAFT = "draft"              # Черновик (заполняется)
     PENDING = "pending"          # Ожидает оценки
     WAITING_ESTIMATION = "waiting_estimation"  # Спецзаказ: ждёт ручной оценки админа
-    CONFIRMED = "confirmed"      # Подтверждён, ждёт оплаты
+    WAITING_PAYMENT = "waiting_payment"  # Цена рассчитана, ждёт оплаты
+    CONFIRMED = "confirmed"      # Подтверждён (legacy, для совместимости)
     PAID = "paid"                # Оплачен аванс
     PAID_FULL = "paid_full"      # Оплачен полностью
     IN_PROGRESS = "in_progress"  # В работе
