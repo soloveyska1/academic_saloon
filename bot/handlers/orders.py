@@ -1838,18 +1838,23 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
     loading_msg = await bot.send_message(chat_id=chat_id, text=loading_text)
 
-    # Небольшая задержка для эффекта
-    await asyncio.sleep(1.5)
-
     # ═══════════════════════════════════════════════════════════════
-    #   ШАГ 2: Определяем статус и цену (с гарантированным удалением loading_msg)
+    #   ГАРАНТИРОВАННАЯ ОБРАБОТКА: try-finally для loading_msg
     # ═══════════════════════════════════════════════════════════════
 
     order = None
     price_calc = None
     final_price = 0
+    success = False
 
     try:
+        # Небольшая задержка для эффекта
+        await asyncio.sleep(1.5)
+
+        # ═══════════════════════════════════════════════════════════════
+        #   ШАГ 2: Определяем статус и цену
+        # ═══════════════════════════════════════════════════════════════
+
         if is_special:
             # ═══ СПЕЦЗАКАЗ: ПРОПУСКАЕМ АВТОРАСЧЁТ ═══
             order_status = OrderStatus.WAITING_ESTIMATION.value
@@ -1879,29 +1884,39 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         session.add(order)
         await session.commit()
         await session.refresh(order)
+        success = True
 
     except Exception as e:
-        logger.error(f"Критическая ошибка при создании заказа: {e}")
-        # Удаляем loading_msg и показываем ошибку
+        logger.error(f"Критическая ошибка при создании заказа: {e}", exc_info=True)
+        try:
+            await bot.send_message(
+                chat_id=chat_id,
+                text="❌ Произошла ошибка при создании заказа. Попробуй ещё раз или напиши в поддержку.",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔄 Попробовать снова", callback_data="new_order")],
+                    [InlineKeyboardButton(text="💬 Поддержка", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
+                ])
+            )
+        except Exception as send_err:
+            logger.error(f"Не удалось отправить сообщение об ошибке: {send_err}")
+
+    finally:
+        # ГАРАНТИРОВАННО удаляем loading_msg
         try:
             await loading_msg.delete()
         except Exception:
             pass
-        await bot.send_message(
-            chat_id=chat_id,
-            text="❌ Произошла ошибка при создании заказа. Попробуй ещё раз или напиши в поддержку.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔄 Попробовать снова", callback_data="new_order")],
-                [InlineKeyboardButton(text="💬 Поддержка", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
-            ])
-        )
+        # ГАРАНТИРОВАННО очищаем state
         try:
             await state.clear()
         except Exception:
             pass
+
+    # Если заказ не создан - выходим
+    if not success or not order:
         return
 
-    # Удаляем из трекера брошенных заказов (не критично если не получится)
+    # Удаляем из трекера брошенных заказов (не критично)
     try:
         tracker = get_abandoned_tracker()
         if tracker:
@@ -1909,19 +1924,11 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     except Exception as e:
         logger.warning(f"Не удалось удалить из трекера: {e}")
 
-    # Очищаем состояние FSM
+    # Безопасное получение work_label
     try:
-        await state.clear()
-    except Exception as e:
-        logger.warning(f"Не удалось очистить state: {e}")
-
-    # Удаляем сообщение "считает смету"
-    try:
-        await loading_msg.delete()
-    except Exception:
-        pass
-
-    work_label = WORK_TYPE_LABELS.get(WorkType(work_type_value), work_type_value)
+        work_label = WORK_TYPE_LABELS.get(WorkType(work_type_value), work_type_value)
+    except ValueError:
+        work_label = work_type_value or "Заказ"
     deadline_label = data.get("deadline_label", "Не указан")
 
     # ═══════════════════════════════════════════════════════════════
@@ -1938,7 +1945,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         "Вложений": len(data.get("attachments", [])),
     }
 
-    if not is_special:
+    if not is_special and price_calc:
         extra_data["💰 Цена"] = f"{final_price:,} ₽".replace(",", " ")
         extra_data["База"] = f"{price_calc.base_price:,} ₽".replace(",", " ")
         extra_data["Множитель"] = f"x{price_calc.urgency_multiplier}"
@@ -1962,9 +1969,10 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     #   ШАГ 5: Отправляем результат пользователю
     # ═══════════════════════════════════════════════════════════════
 
-    if is_special:
-        # 🦄 СПЕЦЗАКАЗ — ждёт ручной оценки (авторасчёт пропущен!)
-        text = f"""🕵️ <b>СПЕЦЗАКАЗ <code>#{order.id}</code> ПРИНЯТ</b>
+    try:
+        if is_special:
+            # 🦄 СПЕЦЗАКАЗ — ждёт ручной оценки (авторасчёт пропущен!)
+            text = f"""🕵️ <b>СПЕЦЗАКАЗ <code>#{order.id}</code> ПРИНЯТ</b>
 
 Это задача нестандартная. Авто-калькулятор тут бессилен.
 
@@ -1973,14 +1981,17 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
 ⏳ <i>Жди сообщения...</i>"""
 
-        keyboard = get_special_order_kb(order.id)
-        image_path = CONFIRM_SPECIAL_IMAGE_PATH
+            keyboard = get_special_order_kb(order.id)
+            image_path = CONFIRM_SPECIAL_IMAGE_PATH
 
-    else:
-        # 💰 ОБЫЧНЫЙ ЗАКАЗ — показываем инвойс
-        breakdown = format_price_breakdown(price_calc, work_label, deadline_label)
+        else:
+            # 💰 ОБЫЧНЫЙ ЗАКАЗ — показываем инвойс
+            if price_calc:
+                breakdown = format_price_breakdown(price_calc, work_label, deadline_label)
+            else:
+                breakdown = f"💰 <b>Цена:</b> {final_price:,} ₽".replace(",", " ")
 
-        text = f"""⚖️ <b>СМЕТА ГОТОВА</b>
+            text = f"""⚖️ <b>СМЕТА ГОТОВА</b>
 
 📋 <b>Заказ:</b> <code>#{order.id}</code>
 
@@ -1989,12 +2000,22 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 <i>Цена рассчитана автоматически.
 Для сложных случаев шериф может скорректировать.</i>"""
 
-        keyboard = get_invoice_keyboard(order.id, final_price)
-        image_path = CONFIRM_STD_IMAGE_PATH if CONFIRM_STD_IMAGE_PATH.exists() else ORDER_DONE_IMAGE_PATH
+            keyboard = get_invoice_keyboard(order.id, final_price)
+            image_path = CONFIRM_STD_IMAGE_PATH if CONFIRM_STD_IMAGE_PATH.exists() else ORDER_DONE_IMAGE_PATH
+
+    except Exception as e:
+        logger.error(f"Ошибка формирования сообщения для заказа #{order.id}: {e}")
+        # Fallback на простое сообщение
+        text = f"✅ <b>Заказ #{order.id} создан!</b>\n\nПодробности в разделе «Мои заказы»."
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Мои заказы", callback_data="profile_orders")],
+            [InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")],
+        ])
+        image_path = None
 
     # Отправляем сообщение пользователю
     try:
-        if image_path.exists():
+        if image_path and image_path.exists():
             try:
                 await send_cached_photo(
                     bot=bot,
