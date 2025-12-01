@@ -47,6 +47,7 @@ from bot.keyboards.orders import (
     get_subject_keyboard,
     get_task_input_keyboard,
     get_task_continue_keyboard,
+    get_append_files_keyboard,
     get_deadline_keyboard,
     get_custom_deadline_keyboard,
     get_confirm_order_keyboard,
@@ -392,6 +393,146 @@ def format_attachments_preview(attachments: list) -> str:
             lines.append(f"   • {name}")
 
     return "\n".join(lines)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    PROGRESS BAR & APPEND CONFIRMATIONS
+# ══════════════════════════════════════════════════════════════
+
+MAX_APPEND_FILES = 5  # Лимит файлов для дослать
+
+
+def get_progress_bar(current: int, maximum: int = MAX_ATTACHMENTS) -> str:
+    """
+    Генерирует визуальный progress bar.
+
+    Примеры:
+        ■■■□□□□□□□ 3/10
+        ■■■■■■■■■■ 10/10 ✓
+    """
+    filled = min(current, maximum)
+    empty = maximum - filled
+
+    bar = "■" * filled + "□" * empty
+
+    if current >= maximum:
+        return f"{bar} {current}/{maximum} ✓"
+
+    return f"{bar} {current}/{maximum}"
+
+
+# Атмосферные подтверждения для append flow (дослать файлы)
+APPEND_CONFIRMATIONS = {
+    "photo": [
+        "📸 Фото подшил к делу!",
+        "📸 Снимок принят, партнёр!",
+        "📸 Улика зафиксирована!",
+    ],
+    "document": [
+        "📄 Документ в деле!",
+        "📄 Бумага принята!",
+        "📄 Файл подшит, партнёр!",
+    ],
+    "voice": [
+        "🎤 Голос записан в протокол!",
+        "🎤 Показания приняты!",
+        "🎤 Аудиозапись в деле!",
+    ],
+    "text": [
+        "📝 Записал в блокнот!",
+        "📝 Текст принят!",
+        "📝 Информация зафиксирована!",
+    ],
+    "video": [
+        "🎬 Видео принято!",
+        "🎬 Запись в деле!",
+    ],
+    "video_note": [
+        "⚪ Кружок получил!",
+        "⚪ Видеосообщение принято!",
+    ],
+    "audio": [
+        "🎵 Аудио принято!",
+        "🎵 Запись в деле!",
+    ],
+}
+
+
+def get_append_confirm_text(
+    attachment: dict,
+    total_count: int,
+    order_id: int,
+) -> str:
+    """
+    Генерирует атмосферное подтверждение для append flow.
+    Включает progress bar и информацию о файле.
+    """
+    att_type = attachment.get("type", "unknown")
+
+    # Выбираем рандомное подтверждение
+    confirmations = APPEND_CONFIRMATIONS.get(att_type, ["📎 Принято!"])
+    confirm = random.choice(confirmations)
+
+    # Доп. инфо о файле
+    extra = ""
+    if att_type == "document":
+        fname = attachment.get("file_name", "")
+        if fname:
+            if len(fname) > 25:
+                fname = fname[:22] + "..."
+            extra = f"\n<i>{fname}</i>"
+    elif att_type == "voice":
+        duration = attachment.get("duration", 0)
+        if duration:
+            mins, secs = divmod(duration, 60)
+            if mins:
+                extra = f"\n<i>{mins}:{secs:02d}</i>"
+            else:
+                extra = f"\n<i>{secs} сек</i>"
+
+    # Progress bar
+    progress = get_progress_bar(total_count, MAX_APPEND_FILES)
+
+    # Предупреждение о лимите
+    warning = ""
+    remaining = MAX_APPEND_FILES - total_count
+    if remaining == 1:
+        warning = "\n\n⚠️ Осталось 1 место!"
+    elif remaining <= 0:
+        warning = "\n\n✓ Лимит достигнут — жми «Отправить»"
+
+    return f"""{confirm}{extra}
+
+{progress}{warning}"""
+
+
+def format_append_status_message(
+    attachments: list,
+    order_id: int,
+) -> str:
+    """
+    Форматирует сообщение со статусом загрузки для append flow.
+    Показывает что уже загружено + progress bar.
+    """
+    if not attachments:
+        return f"""📎 <b>Дослать к заказу #{order_id}</b>
+
+Кидай файлы, фото или голосовое.
+
+{get_progress_bar(0, MAX_APPEND_FILES)}
+
+<i>💡 Нажми 📎 внизу экрана</i>"""
+
+    preview = format_attachments_preview(attachments)
+    progress = get_progress_bar(len(attachments), MAX_APPEND_FILES)
+
+    return f"""📎 <b>Дослать к заказу #{order_id}</b>
+
+{preview}
+
+{progress}
+
+<i>Ещё файлы или жми «Отправить»</i>"""
 
 
 def calculate_user_discount(user: User | None) -> int:
@@ -1253,8 +1394,8 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
     if len(attachments) >= MAX_ATTACHMENTS:
         await message.answer(
             f"⚠️ Максимум {MAX_ATTACHMENTS} вложений.\n"
-            "Нажми «Готово» или очисти и начни заново.",
-            reply_markup=get_task_continue_keyboard()
+            "Жми «Готово» чтобы продолжить.",
+            reply_markup=get_task_continue_keyboard(files_count=len(attachments))
         )
         return
 
@@ -1331,8 +1472,8 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
             existing_ids = {att.get("file_id") for att in attachments if att.get("file_id")}
             if file_id in existing_ids:
                 await message.answer(
-                    "☝️ Этот файл уже добавлен!",
-                    reply_markup=get_task_continue_keyboard()
+                    "☝️ Этот файл уже в деле, партнёр!",
+                    reply_markup=get_task_continue_keyboard(files_count=len(attachments))
                 )
                 return
 
@@ -1372,34 +1513,40 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
                 total_count = len(current_attachments)
                 summary = get_files_summary(files)
 
+                # Progress bar
+                progress = get_progress_bar(total_count, MAX_ATTACHMENTS)
+
                 if is_urgent:
                     text = f"""⚡️ <b>Принял {files_count} файлов!</b>
 
 {summary}
-Всего вложений: {total_count}
+
+{progress}
 
 Лечу к Шерифу с твоим срочняком!"""
                 elif is_special:
                     text = f"""🔍 <b>Принято {files_count} материалов</b>
 
 {summary}
-Всего вложений: {total_count}
+
+{progress}
 
 Изучаю твою нестандартную задачу..."""
                 else:
-                    text = f"""📥 <b>Получил {files_count} файлов!</b>
+                    text = f"""📥 <b>Принял {files_count} файлов!</b>
 
 {summary}
-Всего вложений: {total_count}
 
-Кидай ещё или жми «Готово»."""
+{progress}
+
+<i>Ещё или жми «Готово»</i>"""
 
                 # Предупреждение о приближении к лимиту
                 if total_count >= MAX_ATTACHMENTS - 2:
                     remaining = MAX_ATTACHMENTS - total_count
                     text += f"\n\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
 
-                await bot.send_message(chat_id, text, reply_markup=get_task_continue_keyboard())
+                await bot.send_message(chat_id, text, reply_markup=get_task_continue_keyboard(files_count=total_count))
 
             # Добавляем в коллектор (НЕ сохраняем в state сразу!)
             await handle_media_group_file(
@@ -1425,45 +1572,47 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
                 if forward_from:
                     confirm_text += f"\n📨 Переслано от: {forward_from}"
 
+            # Progress bar
+            confirm_text += f"\n\n{get_progress_bar(count, MAX_ATTACHMENTS)}"
+
             # Предупреждение о приближении к лимиту
             if count >= MAX_ATTACHMENTS - 2:
                 remaining = MAX_ATTACHMENTS - count
-                confirm_text += f"\n\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
+                confirm_text += f"\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
 
-            await message.answer(confirm_text, reply_markup=get_task_continue_keyboard())
+            await message.answer(confirm_text, reply_markup=get_task_continue_keyboard(files_count=count))
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_add_more")
 async def task_add_more(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Пользователь хочет добавить ещё файлов"""
-    await callback.answer("📎 Кидай ещё!")
+    await callback.answer("📎 Жду!")
 
     data = await state.get_data()
     attachments = data.get("attachments", [])
     count = len(attachments)
+    progress = get_progress_bar(count, MAX_ATTACHMENTS)
 
     # Показываем превью того что уже есть
     if attachments:
         preview = format_attachments_preview(attachments)
-        remaining = MAX_ATTACHMENTS - count
-        limit_hint = f"\n\n📊 Загружено: {count}/{MAX_ATTACHMENTS}" if count > 0 else ""
-        text = f"""📎 <b>Добавь ещё</b>
+        text = f"""📎 <b>Материалы</b>
 
-Уже есть:
-{preview}{limit_hint}
+{preview}
 
-Кидай файлы, фото или текст.
+{progress}
 
-<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
+<i>Кидай ещё или жми «Готово»</i>"""
     else:
-        text = """📎 <b>Добавь ещё</b>
+        text = f"""📎 <b>Материалы</b>
+
+{progress}
 
 Кидай файлы, фото или текст.
-Когда всё — нажми «Готово».
 
-<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
+<i>💡 Нажми 📎 внизу экрана</i>"""
 
-    # Удаляем старое сообщение и отправляем новое (избегаем "message not modified")
+    # Удаляем старое сообщение и отправляем новое
     try:
         await callback.message.delete()
     except Exception:
@@ -1472,7 +1621,7 @@ async def task_add_more(callback: CallbackQuery, state: FSMContext, bot: Bot):
     await bot.send_message(
         chat_id=callback.message.chat.id,
         text=text,
-        reply_markup=get_task_continue_keyboard()
+        reply_markup=get_task_continue_keyboard(files_count=count)
     )
 
 
@@ -2535,33 +2684,17 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
         await callback.answer("К этому заказу уже нельзя добавить файлы", show_alert=True)
         return
 
-    await callback.answer("📎 Жду файлы!")
+    await callback.answer("📎 Жду!")
 
     # Сохраняем order_id и переводим в состояние дослать
     await state.update_data(append_order_id=order_id, appended_files=[])
     await state.set_state(OrderState.appending_files)
 
-    text = f"""📎 <b>Дослать материалы к заказу #{order.id}</b>
+    # Используем новую функцию для форматирования
+    text = format_append_status_message([], order_id)
+    keyboard = get_append_files_keyboard(order_id, files_count=0)
 
-Отправь фото, документы или голосовое сообщение.
-Можешь прислать несколько файлов подряд.
-
-Когда закончишь — нажми кнопку ниже.
-
-<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
-
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="✅ Готово (Отправить)",
-            callback_data=f"finish_append:{order_id}"
-        )],
-        [InlineKeyboardButton(
-            text="❌ Отмена",
-            callback_data=f"cancel_append:{order_id}"
-        )],
-    ])
-
-    # Удаляем старое сообщение (может быть фото) и отправляем новое
+    # Удаляем старое сообщение и отправляем новое
     chat_id = callback.message.chat.id
     try:
         await callback.message.delete()
@@ -2571,75 +2704,167 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
     await callback.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard)
 
 
-@router.message(OrderState.appending_files, F.photo)
-async def append_photo(message: Message, state: FSMContext):
-    """Получено фото для дослать"""
-    data = await state.get_data()
-    appended_files = data.get("appended_files", [])
-
-    photo = message.photo[-1]
-    appended_files.append({
-        "type": "photo",
-        "file_id": photo.file_id,
-        "caption": message.caption or "",
-    })
-    await state.update_data(appended_files=appended_files)
-
-    await message.answer(f"📸 Фото принял! (всего: {len(appended_files)})")
-
-
-@router.message(OrderState.appending_files, F.document)
-async def append_document(message: Message, state: FSMContext):
-    """Получен документ для дослать"""
-    data = await state.get_data()
-    appended_files = data.get("appended_files", [])
-
-    appended_files.append({
-        "type": "document",
-        "file_id": message.document.file_id,
-        "file_name": message.document.file_name or "файл",
-        "caption": message.caption or "",
-    })
-    await state.update_data(appended_files=appended_files)
-
-    await message.answer(f"📄 Файл принял! (всего: {len(appended_files)})")
-
-
-@router.message(OrderState.appending_files, F.voice)
-async def append_voice(message: Message, state: FSMContext):
-    """Получено голосовое для дослать"""
-    data = await state.get_data()
-    appended_files = data.get("appended_files", [])
-
-    appended_files.append({
-        "type": "voice",
-        "file_id": message.voice.file_id,
-        "duration": message.voice.duration,
-    })
-    await state.update_data(appended_files=appended_files)
-
-    # Голосовые не бывают частью media_group
-    await message.answer(f"🎤 Голосовое принял! (всего: {len(appended_files)})")
-
-
-@router.message(OrderState.appending_files, F.text)
-async def append_text(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
-    """Получен текст для дослать"""
-    # Intercept /start command — reset and redirect to main menu
+@router.message(OrderState.appending_files)
+async def append_file_universal(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
+    """
+    Универсальный handler для всех типов файлов в append flow.
+    Поддерживает: фото, документы, голосовые, текст, видео, аудио.
+    Поддерживает media_group (альбомы).
+    """
+    # Intercept /start command
     if message.text and message.text.strip().lower().startswith("/start"):
         await process_start(message, session, bot, state, deep_link=None)
         return
 
     data = await state.get_data()
     appended_files = data.get("appended_files", [])
+    order_id = data.get("append_order_id")
 
-    appended_files.append({
-        "type": "text",
-        "content": message.text,
-    })
-    await state.update_data(appended_files=appended_files)
+    if not order_id:
+        await message.answer("❌ Ошибка: заказ не найден")
+        await state.clear()
+        return
 
-    await message.answer(f"📝 Текст принял! (всего: {len(appended_files)})")
+    # Проверка лимита
+    if len(appended_files) >= MAX_APPEND_FILES:
+        await message.answer(
+            f"⚠️ Максимум {MAX_APPEND_FILES} файлов.\n"
+            "Жми «Отправить» чтобы продолжить.",
+            reply_markup=get_append_files_keyboard(order_id, files_count=len(appended_files))
+        )
+        return
+
+    # Определяем тип контента
+    attachment = None
+    file_id = None
+
+    if message.text:
+        attachment = {"type": "text", "content": message.text}
+    elif message.photo:
+        photo = message.photo[-1]
+        file_id = photo.file_id
+        attachment = {
+            "type": "photo",
+            "file_id": file_id,
+            "caption": message.caption or "",
+        }
+    elif message.document:
+        file_id = message.document.file_id
+        attachment = {
+            "type": "document",
+            "file_id": file_id,
+            "file_name": message.document.file_name or "файл",
+            "caption": message.caption or "",
+        }
+    elif message.voice:
+        file_id = message.voice.file_id
+        attachment = {
+            "type": "voice",
+            "file_id": file_id,
+            "duration": message.voice.duration,
+        }
+    elif message.video:
+        file_id = message.video.file_id
+        attachment = {
+            "type": "video",
+            "file_id": file_id,
+            "caption": message.caption or "",
+        }
+    elif message.audio:
+        file_id = message.audio.file_id
+        attachment = {
+            "type": "audio",
+            "file_id": file_id,
+            "file_name": message.audio.file_name or "аудио",
+        }
+    elif message.video_note:
+        file_id = message.video_note.file_id
+        attachment = {"type": "video_note", "file_id": file_id}
+
+    if not attachment:
+        await message.answer("🤔 Этот тип контента не поддерживается")
+        return
+
+    # Защита от дублей
+    if file_id:
+        existing_ids = {f.get("file_id") for f in appended_files if f.get("file_id")}
+        if file_id in existing_ids:
+            await message.answer(
+                "☝️ Этот файл уже добавлен!",
+                reply_markup=get_append_files_keyboard(order_id, files_count=len(appended_files))
+            )
+            return
+
+    # Обработка media_group (альбомов)
+    media_group_id = message.media_group_id
+
+    if media_group_id:
+        # Media group — собираем файлы и отвечаем один раз
+        async def on_append_media_group_complete(
+            files: list,
+            chat_id: int,
+            order_id: int,
+            fsm_state: FSMContext,
+        ):
+            """Callback когда все файлы альбома получены"""
+            current_data = await fsm_state.get_data()
+            current_files = current_data.get("appended_files", [])
+
+            # Добавляем все файлы (с проверкой на дубли и лимит)
+            added = 0
+            for f in files:
+                if len(current_files) >= MAX_APPEND_FILES:
+                    break
+                f_id = f.get("file_id")
+                if f_id:
+                    existing_ids = {att.get("file_id") for att in current_files if att.get("file_id")}
+                    if f_id in existing_ids:
+                        continue
+                current_files.append(f)
+                added += 1
+
+            await fsm_state.update_data(appended_files=current_files)
+
+            # Формируем сообщение
+            total_count = len(current_files)
+            summary = get_files_summary(files)
+            progress = get_progress_bar(total_count, MAX_APPEND_FILES)
+
+            text = f"""📥 <b>Принял {added} файлов!</b>
+
+{summary}
+
+{progress}"""
+
+            if total_count >= MAX_APPEND_FILES:
+                text += "\n\n✓ Лимит — жми «Отправить»"
+
+            await bot.send_message(
+                chat_id,
+                text,
+                reply_markup=get_append_files_keyboard(order_id, files_count=total_count)
+            )
+
+        await handle_media_group_file(
+            media_group_id=media_group_id,
+            file_info=attachment,
+            on_complete=on_append_media_group_complete,
+            chat_id=message.chat.id,
+            order_id=order_id,
+            fsm_state=state,
+        )
+    else:
+        # Одиночный файл — сохраняем и отвечаем сразу
+        appended_files.append(attachment)
+        await state.update_data(appended_files=appended_files)
+
+        total_count = len(appended_files)
+        confirm_text = get_append_confirm_text(attachment, total_count, order_id)
+
+        await message.answer(
+            confirm_text,
+            reply_markup=get_append_files_keyboard(order_id, files_count=total_count)
+        )
 
 
 @router.callback_query(F.data.startswith("finish_append:"))
@@ -3061,13 +3286,16 @@ async def back_to_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
     if attachments:
         # Уже есть вложения — показываем превью
         preview = format_attachments_preview(attachments)
-        text = f"""📝  <b>Задание</b>
+        count = len(attachments)
+        progress = get_progress_bar(count, MAX_ATTACHMENTS)
+        text = f"""📎 <b>Материалы</b>
 
-Уже получено:
 {preview}
 
-Добавить ещё или продолжить?"""
-        await safe_edit_or_send(callback, text, reply_markup=get_task_continue_keyboard(), bot=bot)
+{progress}
+
+<i>Ещё или жми «Готово»</i>"""
+        await safe_edit_or_send(callback, text, reply_markup=get_task_continue_keyboard(files_count=count), bot=bot)
     else:
         await show_task_input_screen(callback.message, work_type=work_type)
 
