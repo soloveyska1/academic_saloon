@@ -2461,21 +2461,36 @@ async def process_payment_receipt(message: Message, state: FSMContext, session: 
     """
     Получили фото/документ чека — отправляем админу на проверку.
     ВАЖНО: Сразу сбрасываем state чтобы не ловить дубли (альбомы).
+
+    Поддерживает два flow:
+    1. payment_order_id - из flow оплаты админа (pay_method:sbp/transfer)
+    2. receipt_order_id - из flow клиента (send_receipt:)
     """
     # Получаем данные из state и СРАЗУ сбрасываем
     data = await state.get_data()
     await state.clear()  # Anti-duplicate: сбрасываем до обработки
 
-    order_id = data.get("payment_order_id")
+    # Поддержка обоих flow: payment_order_id (админский) и receipt_order_id (клиентский)
+    order_id = data.get("payment_order_id") or data.get("receipt_order_id")
     amount = data.get("payment_amount", 0)
-    user_id = data.get("payment_user_id")
-    username = data.get("payment_username")
+    user_id = data.get("payment_user_id") or message.from_user.id
+    username = data.get("payment_username") or message.from_user.username
     scheme = data.get("payment_scheme")
     method = data.get("payment_method")
 
     if not order_id:
         await message.answer("❌ Ошибка: заказ не найден. Попробуй снова.")
         return
+
+    # Если пришли через клиентский flow (receipt_order_id), нужно получить данные из заказа
+    if not amount:
+        order_query = select(Order).where(Order.id == order_id)
+        order_result = await session.execute(order_query)
+        order = order_result.scalar_one_or_none()
+        if order:
+            amount = order.price
+            scheme = order.payment_scheme or "full"
+            method = order.payment_method or "transfer"
 
     # Определяем file_id
     if message.photo:
