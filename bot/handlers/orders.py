@@ -78,7 +78,9 @@ from core.config import settings
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
 from bot.handlers.start import process_start
-from bot.services.yandex_disk import yandex_disk_service
+# ВРЕМЕННО ОТКЛЮЧЕНО для диагностики
+# from bot.services.yandex_disk import yandex_disk_service
+yandex_disk_service = None  # заглушка
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -3054,7 +3056,7 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     #   Загрузка файлов на Яндекс Диск
     # ═══════════════════════════════════════════════════════════════
     yadisk_link = None
-    if yandex_disk_service.is_available and attachments:
+    if yandex_disk_service and yandex_disk_service.is_available and attachments:
         try:
             # Скачиваем файлы из Telegram и загружаем на Яндекс Диск
             files_to_upload = []
