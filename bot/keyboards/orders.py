@@ -483,7 +483,7 @@ def get_task_continue_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🗑 Сжечь всё", callback_data="task_clear"),
         ],
         [
-            InlineKeyboardButton(text="✅ Всё, считай цену!", callback_data="task_done"),
+            InlineKeyboardButton(text="✅ Готово! Выбрать срок ➡️", callback_data="task_done"),
         ],
         [
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
