@@ -2285,10 +2285,10 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
 🏦 <b>Банк:</b> {settings.PAYMENT_BANKS}
 👤 <b>Получатель:</b> {settings.PAYMENT_NAME}
 
-⚠️ <i>После перевода нажми кнопку «Я оплатил» и пришли чек.</i>"""
+⚠️ <i>После перевода нажми кнопку «Я оплатил».</i>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📤 Я оплатил (Прикрепить чек)", callback_data=f"client_paid:{order_id}")],
+            [InlineKeyboardButton(text="✅ Я оплатил", callback_data=f"client_paid:{order_id}")],
             [InlineKeyboardButton(text="🔙 Выбрать другой способ", callback_data=f"pay_scheme:{order.payment_scheme}:{order_id}")],
             [InlineKeyboardButton(text="🆘 Проблема с оплатой", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
         ])
@@ -2326,10 +2326,10 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
 
 👤 <b>Владелец:</b> {settings.PAYMENT_NAME}
 
-⚠️ <i>После перевода нажми кнопку «Я оплатил» и пришли чек.</i>"""
+⚠️ <i>После перевода нажми кнопку «Я оплатил».</i>"""
 
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📤 Я оплатил (Прикрепить чек)", callback_data=f"client_paid:{order_id}")],
+            [InlineKeyboardButton(text="✅ Я оплатил", callback_data=f"client_paid:{order_id}")],
             [InlineKeyboardButton(text="🔙 Выбрать другой способ", callback_data=f"pay_scheme:{order.payment_scheme}:{order_id}")],
             [InlineKeyboardButton(text="🆘 Проблема с оплатой", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
         ])
@@ -2358,8 +2358,8 @@ async def pay_method_callback(callback: CallbackQuery, session: AsyncSession, bo
 @router.callback_query(F.data.startswith("client_paid:"))
 async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot, state: FSMContext):
     """
-    Клиент нажал 'Я оплатил' — входим в FSM состояние ожидания чека.
-    Это первый шаг верификации: просим прислать скриншот.
+    Клиент нажал 'Я оплатил' — сразу уведомляем админа с кнопками подтверждения.
+    БЕЗ обязательного чека — админ сам проверяет поступление.
     """
     order_id = parse_callback_int(callback.data, 1)
     if order_id is None:
@@ -2380,35 +2380,90 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
         return
 
-    await callback.answer("📸")
+    await callback.answer("🕵️‍♂️ Шериф получил сигнал...")
 
-    # Сохраняем данные в FSM и входим в состояние ожидания чека
+    # ═══ ОБНОВЛЯЕМ СТАТУС НА VERIFICATION_PENDING ═══
+    order.status = OrderStatus.VERIFICATION_PENDING.value
+    await session.commit()
+
+    # ═══ УДАЛЯЕМ СТАРОЕ СООБЩЕНИЕ ═══
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # ═══ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ═══
     amount = get_payment_amount(order)
-    await state.update_data(
-        payment_order_id=order.id,
-        payment_amount=amount,
-        payment_user_id=callback.from_user.id,
-        payment_username=callback.from_user.username,
-        payment_scheme=order.payment_scheme,
-        payment_method=order.payment_method,
-    )
-    await state.set_state(OrderState.waiting_for_receipt)
-
-    # Сообщение с просьбой прислать чек
-    new_text = f"""📸 <b>Фиксация сделки</b>
+    user_text = f"""🕵️‍♂️ <b>Платеж на проверке</b>
 
 Заказ <b>#{order.id}</b> · {amount:.0f}₽
 
-Золото любит счёт. Прикрепи сюда скриншот перевода (или PDF), чтобы я мог подтвердить оплату.
+Шериф получил сигнал. Мы проверяем казну вручную.
 
-<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
+💤 <b>Если сейчас ночь</b> — подтвердим утром.
+✅ <b>Твой заказ зафиксирован</b>. Не волнуйся.
 
-    # Клавиатура с кнопкой отмены
-    cancel_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔙 Отмена", callback_data=f"cancel_payment_check:{order.id}")],
+<i>Как только деньги придут — бот пришлет подтверждение.</i>"""
+
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 В меню", callback_data="back_to_menu")],
     ])
 
-    await safe_edit_or_send(callback, new_text, reply_markup=cancel_keyboard)
+    # Отправляем с картинкой если есть
+    if CHECKING_PAYMENT_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.from_user.id,
+                photo_path=CHECKING_PAYMENT_IMAGE_PATH,
+                caption=user_text,
+                reply_markup=user_keyboard,
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить checking_payment image: {e}")
+            await bot.send_message(
+                chat_id=callback.from_user.id,
+                text=user_text,
+                reply_markup=user_keyboard
+            )
+    else:
+        await bot.send_message(
+            chat_id=callback.from_user.id,
+            text=user_text,
+            reply_markup=user_keyboard
+        )
+
+    # ═══ УВЕДОМЛЕНИЕ АДМИНАМ С КНОПКАМИ ВЕРИФИКАЦИИ ═══
+    username = callback.from_user.username
+    user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
+
+    admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
+
+Заказ: <code>#{order.id}</code>
+Клиент: {user_link}
+Сумма: <b>{int(amount):,} ₽</b>
+Способ: {order.payment_method or "—"}
+
+<i>Клиент нажал кнопку. Проверь банк.</i>""".replace(",", " ")
+
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="✅ Подтвердить ($)",
+                callback_data=f"admin_verify_paid:{order_id}"
+            ),
+            InlineKeyboardButton(
+                text="❌ Отклонить",
+                callback_data=f"admin_reject_payment:{order_id}"
+            ),
+        ],
+    ])
+
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
+        except Exception as e:
+            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
 
 
 @router.callback_query(F.data.startswith("cancel_payment_check:"))
