@@ -54,7 +54,8 @@ from bot.keyboards.orders import (
     get_deadline_with_date,
     get_urgent_order_keyboard,
     get_urgent_task_keyboard,
-    get_special_order_keyboard as get_special_order_kb,  # Renamed to avoid conflict
+    get_special_type_keyboard,  # For category selection
+    get_special_order_keyboard as get_special_order_kb,  # For post-order keyboard
     get_invoice_keyboard,
     get_waiting_payment_keyboard,
     get_order_success_keyboard,
@@ -641,7 +642,7 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
                     chat_id=callback.message.chat.id,
                     photo_path=SECRET_IMAGE_PATH,
                     caption=caption,
-                    reply_markup=get_special_order_keyboard(),
+                    reply_markup=get_special_type_keyboard(),
                 )
                 return
             except Exception as e:
@@ -651,7 +652,7 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         await bot.send_message(
             chat_id=callback.message.chat.id,
             text=caption,
-            reply_markup=get_special_order_keyboard(),
+            reply_markup=get_special_type_keyboard(),
         )
         return
 
@@ -1692,7 +1693,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     discount_percent = data.get("discount", 0)
 
     # ═══════════════════════════════════════════════════════════════
-    #   ШАГ 1: Анимация "Шериф считает..."
+    #   ШАГ 1: Анимация (разные тексты для спец/обычных заказов)
     # ═══════════════════════════════════════════════════════════════
 
     try:
@@ -1700,36 +1701,35 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     except Exception:
         pass
 
-    loading_msg = await bot.send_message(
-        chat_id=chat_id,
-        text="⏳ <b>Шериф считает смету...</b>\n\n<i>Подожди пару секунд</i>"
-    )
+    if is_special:
+        loading_text = "🕵️ <b>Шериф принимает спецзаказ...</b>\n\n<i>Секунду</i>"
+    else:
+        loading_text = "⏳ <b>Шериф считает смету...</b>\n\n<i>Подожди пару секунд</i>"
+
+    loading_msg = await bot.send_message(chat_id=chat_id, text=loading_text)
 
     # Небольшая задержка для эффекта
     await asyncio.sleep(1.5)
 
     # ═══════════════════════════════════════════════════════════════
-    #   ШАГ 2: Расчёт цены
+    #   ШАГ 2: Определяем статус и цену
     # ═══════════════════════════════════════════════════════════════
 
-    price_calc = calculate_price(
-        work_type=work_type_value,
-        deadline_key=deadline_key,
-        discount_percent=discount_percent,
-    )
-
-    final_price = price_calc.price_after_discount if discount_percent > 0 else price_calc.final_price
-
-    # ═══════════════════════════════════════════════════════════════
-    #   ШАГ 3: Определяем статус и создаём заказ
-    # ═══════════════════════════════════════════════════════════════
+    price_calc = None
+    final_price = 0
 
     if is_special:
-        # Спецзаказ — ждёт ручной оценки админа
+        # ═══ СПЕЦЗАКАЗ: ПРОПУСКАЕМ АВТОРАСЧЁТ ═══
         order_status = OrderStatus.WAITING_ESTIMATION.value
-        order_price = 0  # Цена будет установлена админом
+        order_price = 0  # Цена будет установлена админом вручную
     else:
-        # Обычный заказ — WAITING_PAYMENT с рассчитанной ценой
+        # ═══ ОБЫЧНЫЙ ЗАКАЗ: АВТОРАСЧЁТ ═══
+        price_calc = calculate_price(
+            work_type=work_type_value,
+            deadline_key=deadline_key,
+            discount_percent=discount_percent,
+        )
+        final_price = price_calc.price_after_discount if discount_percent > 0 else price_calc.final_price
         order_status = OrderStatus.WAITING_PAYMENT.value
         order_price = final_price
 
@@ -1799,15 +1799,15 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     # ═══════════════════════════════════════════════════════════════
 
     if is_special:
-        # 🦄 СПЕЦЗАКАЗ — ждёт ручной оценки
-        text = f"""🦄 <b>СПЕЦЗАКАЗ <code>#{order.id}</code> ПРИНЯТ</b>
+        # 🦄 СПЕЦЗАКАЗ — ждёт ручной оценки (авторасчёт пропущен!)
+        text = f"""🕵️ <b>СПЕЦЗАКАЗ <code>#{order.id}</code> ПРИНЯТ</b>
 
-Это задача для спецназа. Тут нужен индивидуальный подход.
+Это задача нестандартная. Авто-калькулятор тут бессилен.
 
-Шериф лично изучит материалы и вернётся с ценой.
+Шериф лично посмотрит требования и назовёт цену.
 Обычно это занимает <b>до 2 часов</b> (в рабочее время).
 
-<i>Статус: ожидает оценки 🔍</i>"""
+⏳ <i>Жди сообщения...</i>"""
 
         keyboard = get_special_order_kb(order.id)
         image_path = CONFIRM_SPECIAL_IMAGE_PATH
@@ -2931,8 +2931,15 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
     # Формируем строку с username или без
     username_str = f"@{user.username}" if user.username else "без username"
 
-    # Разный заголовок для срочных и обычных заказов
-    if is_urgent:
+    # Определяем, спецзаказ ли это
+    is_special = data.get("work_type") == WorkType.OTHER.value
+
+    # Разный заголовок для срочных/спец/обычных заказов
+    if is_special:
+        header = f"""💀💀💀  <b>СПЕЦЗАКАЗ #{order.id}</b>  💀💀💀
+
+⚠️ <b>ЦЕНУ НУЖНО ВЫСТАВИТЬ ВРУЧНУЮ!</b>"""
+    elif is_urgent:
         header = f"""🚨🚨🚨  <b>СРОЧНАЯ ЗАЯВКА #{order.id}</b>  🚨🚨🚨
 
 ⚡ <b>ТРЕБУЕТ БЫСТРОГО ОТВЕТА!</b>"""
