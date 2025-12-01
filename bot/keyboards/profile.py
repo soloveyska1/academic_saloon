@@ -35,45 +35,43 @@ def get_gamified_profile_keyboard(
     Gamified User Profile Keyboard
 
     Layout:
-    Row 1 (The Fun): Daily Luck button (show cooldown if not available)
-    Row 2 (The Gang): My Gang (Referral)
-    Row 3 (Finance): Operations history | Activate coupon
-    Row 4 (Nav): My orders | Main menu
+    Row 1 (Primary CTA): Open Menu button
+    Row 2 (Engagement): Daily Luck | My Gang (Referral)
+    Row 3 (Utilities): My orders | Activate coupon
+    Row 4 (Navigation): Operations history | Main menu
     """
     buttons = []
 
-    # Row 1: Daily Luck (The Fun)
-    if daily_luck_available:
-        buttons.append([
-            InlineKeyboardButton(text="🎰 Испытать удачу (+Бонус)", callback_data="daily_luck")
-        ])
-    else:
-        # Show cooldown timer instead
-        cooldown_display = cooldown_text or "24ч"
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"⏳ След. попытка через {cooldown_display}",
-                callback_data="daily_luck_cooldown"
-            )
-        ])
-
-    # Row 2: My Gang (Referral)
+    # Row 1: Primary CTA - Open Menu
     buttons.append([
+        InlineKeyboardButton(text="🛒 Открыть Меню", callback_data="create_order")
+    ])
+
+    # Row 2: Engagement - Daily Luck | My Gang
+    if daily_luck_available:
+        luck_button = InlineKeyboardButton(text="🎰 Испытать удачу (+Бонус)", callback_data="daily_luck")
+    else:
+        cooldown_display = cooldown_text or "24ч"
+        luck_button = InlineKeyboardButton(
+            text=f"⏳ След. попытка через {cooldown_display}",
+            callback_data="daily_luck_cooldown"
+        )
+
+    buttons.append([
+        luck_button,
         InlineKeyboardButton(text="🔫 Моя Банда (Рефералка)", callback_data="profile_gang")
     ])
 
-    # Row 3: Finance actions
+    # Row 3: Utilities - My orders | Activate coupon
+    orders_text = f"📦 Мои заказы ({active_orders})" if active_orders > 0 else "📦 Мои заказы"
     buttons.append([
-        InlineKeyboardButton(text="📜 История операций", callback_data="profile_history"),
+        InlineKeyboardButton(text=orders_text, callback_data="profile_orders"),
         InlineKeyboardButton(text="🎟 Активировать купон", callback_data="activate_coupon"),
     ])
 
-    # Row 4: Navigation
-    orders_text = "📦 Мои заказы"
-    if active_orders > 0:
-        orders_text += f" ({active_orders})"
+    # Row 4: Navigation - History | Main menu
     buttons.append([
-        InlineKeyboardButton(text=orders_text, callback_data="profile_orders"),
+        InlineKeyboardButton(text="📜 История операций", callback_data="profile_history"),
         InlineKeyboardButton(text="🔙 Главное меню", callback_data="back_to_menu"),
     ])
 
