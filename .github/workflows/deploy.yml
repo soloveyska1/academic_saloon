@@ -21,15 +21,25 @@ jobs:
             echo "=== Starting deploy ==="
             echo "Current commit: $(git rev-parse --short HEAD)"
 
-            # Полный fetch всех веток и принудительный reset
+            # Подтянуть изменения
             git fetch --all --prune
             git checkout main 2>/dev/null || true
             git reset --hard origin/main
 
             echo "After reset commit: $(git rev-parse --short HEAD)"
 
-            # Удаляем старые контейнеры и пересоздаём
-            docker rm -f saloon_bot saloon_redis saloon_postgres 2>/dev/null || true
-            docker-compose up -d --build --force-recreate
+            # Обновить зависимости (если изменились)
+            source venv/bin/activate
+            pip install -r requirements.txt --quiet
+
+            # Применить миграции
+            alembic upgrade head
+
+            # Перезапустить бота
+            systemctl restart saloon-bot
+
+            # Проверить статус
+            sleep 3
+            systemctl is-active saloon-bot
 
             echo "=== Deploy completed at $(date) ==="
