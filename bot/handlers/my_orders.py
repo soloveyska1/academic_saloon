@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, case
 
 # Пути к изображениям
-PROFILE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cab_saloon.jpg"
+PROFILE_IMAGE_PATH = Path("/root/academic_saloon/bot/media/lk.jpg")
 ORDERS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "my_order.jpg"
 ORDER_DETAIL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "delo.jpg"
 WALLET_IMAGE_PATH = Path(__file__).parent.parent / "media" / "wallet.jpg"
@@ -306,14 +306,14 @@ def build_gamified_profile_caption(user: User | None, telegram_id: int) -> str:
 
     Layout:
     - Header: Passport with user ID
-    - Section 1: Progression (Rank + XP Progress Bar)
-    - Section 2: The Vault (Balance + Referral Income)
+    - Section 1: Progression (Rank + Turnover Progress Bar)
+    - Section 2: Treasury (Balance)
     - Section 3: Call to Action
     """
     if not user:
         return (
-            f"🦅 <b>ПАСПОРТ КОВБОЯ</b> | ID: {telegram_id}\n"
-            f"<i>Твой статус в пищевой цепи Салуна.</i>\n\n"
+            f"🤠 <b>ПАСПОРТ КОВБОЯ</b> | ID: {telegram_id}\n"
+            f"<i>Твой авторитет в Салуне.</i>\n\n"
             f"Добро пожаловать, незнакомец!"
         )
 
@@ -321,41 +321,38 @@ def build_gamified_profile_caption(user: User | None, telegram_id: int) -> str:
     rank = user.rank_info
     progress = user.rank_progress
 
+    # Map old rank name "Салага" to new "Путник"
+    rank_name = rank['name']
+    if rank_name == "Салага":
+        rank_name = "Путник"
+
     lines = []
 
     # ═══════════════ HEADER ═══════════════
-    lines.append(f"🦅 <b>ПАСПОРТ КОВБОЯ</b> | ID: {telegram_id}")
-    lines.append("<i>Твой статус в пищевой цепи Салуна.</i>")
+    lines.append(f"🤠 <b>ПАСПОРТ КОВБОЯ</b> | ID: {telegram_id}")
+    lines.append("<i>Твой авторитет в Салуне.</i>")
     lines.append("")
 
     # ═══════════════ SECTION 1: PROGRESSION ═══════════════
-    lines.append(f"🏆 <b>Ранг:</b> {rank['emoji']} {rank['name']}")
-    lines.append(f"📊 <b>Опыт:</b> {format_number(user.total_spent)} / {format_number(progress.get('next_threshold', user.total_spent))} ₽")
+    lines.append(f"🏆 <b>Ранг:</b> {rank_name}")
+    lines.append(f"💼 <b>Оборот:</b> {format_number(user.total_spent)} / {format_number(progress.get('next_threshold', user.total_spent))} ₽")
     lines.append(f"[{progress['progress_bar']}] {progress['progress_text']}")
 
     # Progress hint
     if progress["has_next"]:
-        lines.append(f"<i>До следующего уровня: заказать на {format_number(progress['spent_needed'])} ₽</i>")
+        lines.append(f"До следующего уровня: заказать на {format_number(progress['spent_needed'])} ₽")
     else:
         lines.append("<i>Ты достиг вершины, легенда!</i>")
 
-    # Cashback info
-    if rank["cashback"] > 0:
-        lines.append(f"✨ <b>Твой бонус:</b> Кэшбэк {rank['cashback']}%")
-        if rank["bonus"]:
-            lines.append(f"    + {rank['bonus']}")
     lines.append("")
 
-    # ═══════════════ SECTION 2: THE VAULT ═══════════════
-    lines.append(f"💰 <b>Сейф:</b> {format_number(user.balance)} 🌕 <i>(1🌕 = 1₽)</i>")
-    if user.referral_earnings > 0:
-        lines.append(f"👥 <b>Доход от Банды:</b> +{format_number(user.referral_earnings)} 🌕")
-        lines.append("<i>Включает пассивный доход от приглашенных друзей.</i>")
+    # ═══════════════ SECTION 2: TREASURY ═══════════════
+    lines.append(f"💰 <b>Казна:</b> {format_number(user.balance)} 🟡 <i>(1🟡 = 1₽)</i>")
     lines.append("")
 
     # ═══════════════ SECTION 3: CALL TO ACTION ═══════════════
     lines.append("<b>Нужно больше золота?</b>")
-    lines.append("Крути барабан раз в сутки или грабь дилижансы (зови друзей).")
+    lines.append("Крути барабан раз в сутки или грабь дилижансы с друзьями.")
 
     return "\n".join(lines)
 
