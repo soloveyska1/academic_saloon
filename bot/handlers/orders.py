@@ -2850,6 +2850,68 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
     await callback.answer("✅ Отправляю!")
     await state.clear()
 
+    # ═══════════════════════════════════════════════════════════════
+    #   Загрузка дополнительных файлов на Яндекс Диск
+    # ═══════════════════════════════════════════════════════════════
+    yadisk_link = None
+    if yandex_disk_service and yandex_disk_service.is_available and appended_files:
+        try:
+            files_to_upload = []
+            file_counter = 1
+
+            for att in appended_files:
+                att_type = att.get("type", "unknown")
+                file_id = att.get("file_id")
+
+                if not file_id or att_type == "text":
+                    continue
+
+                try:
+                    # Скачиваем файл из Telegram
+                    tg_file = await bot.get_file(file_id)
+                    file_bytes = await bot.download_file(tg_file.file_path)
+
+                    # Определяем имя файла (добавляем prefix "доп_")
+                    if att_type == "document":
+                        filename = f"доп_{att.get('file_name', f'document_{file_counter}')}"
+                    elif att_type == "photo":
+                        filename = f"доп_photo_{file_counter}.jpg"
+                    elif att_type == "voice":
+                        filename = f"доп_voice_{file_counter}.ogg"
+                    elif att_type == "video":
+                        filename = f"доп_video_{file_counter}.mp4"
+                    elif att_type == "video_note":
+                        filename = f"доп_video_note_{file_counter}.mp4"
+                    elif att_type == "audio":
+                        filename = f"доп_audio_{file_counter}.mp3"
+                    else:
+                        filename = f"доп_file_{file_counter}"
+
+                    files_to_upload.append((file_bytes.read(), filename))
+                    file_counter += 1
+
+                except Exception as e:
+                    logger.warning(f"Failed to download appended file from Telegram: {e}")
+                    continue
+
+            # Загружаем файлы на Яндекс Диск (в ту же папку заказа)
+            if files_to_upload:
+                client_name = callback.from_user.full_name or f"User_{callback.from_user.id}"
+                work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
+
+                result = await yandex_disk_service.upload_multiple_files(
+                    files=files_to_upload,
+                    order_id=order.id,
+                    client_name=client_name,
+                    work_type=work_label,
+                )
+                if result.success and result.folder_url:
+                    yadisk_link = result.folder_url
+                    logger.info(f"Order #{order.id} appended files uploaded to Yandex Disk: {yadisk_link}")
+
+        except Exception as e:
+            logger.error(f"Error uploading appended files to Yandex Disk: {e}")
+
     # Обновляем сообщение пользователю
     client_text = f"""✅ <b>Материалы отправлены!</b>
 
@@ -2870,12 +2932,15 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
 
     await callback.message.edit_text(client_text, reply_markup=keyboard)
 
+    # Строка с Яндекс Диском для админов
+    yadisk_line = f"\n📁 Яндекс Диск: <a href=\"{yadisk_link}\">Открыть папку</a>" if yadisk_link else ""
+
     # Уведомляем админов
     admin_text = f"""📎 <b>Клиент дослал материалы!</b>
 
 📋 Заказ: #{order.id}
 👤 Клиент: @{callback.from_user.username or 'без username'}
-📦 Файлов: {len(appended_files)}"""
+📦 Файлов: {len(appended_files)}{yadisk_line}"""
 
     for admin_id in settings.ADMIN_IDS:
         try:
