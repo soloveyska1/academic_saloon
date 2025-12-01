@@ -2898,7 +2898,7 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
 
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="👀 Отследить статус", callback_data="my_orders")],
-        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="referral_program")],
+        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="profile_referral")],
         [InlineKeyboardButton(text="🌵 В Салун", callback_data="back_to_menu")],
     ])
 
@@ -4149,7 +4149,7 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="👀 Отследить статус", callback_data="my_orders")],
-        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="referral_program")],
+        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="profile_referral")],
         [InlineKeyboardButton(text="🌵 В Салун", callback_data="back_to_menu")],
     ])
 
