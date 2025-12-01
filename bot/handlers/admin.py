@@ -185,6 +185,7 @@ ORDER_STATUS_LABELS = {
     OrderStatus.PENDING.value: ("⏳", "Ожидает оценки"),
     OrderStatus.WAITING_ESTIMATION.value: ("🔍", "Спецзаказ: ждёт цену"),
     OrderStatus.WAITING_PAYMENT.value: ("💳", "Ждёт оплаты"),
+    OrderStatus.VERIFICATION_PENDING.value: ("🔔", "Проверка оплаты"),
     OrderStatus.CONFIRMED.value: ("✅", "Подтверждён"),  # legacy
     OrderStatus.PAID.value: ("💰", "Оплачен"),
     OrderStatus.IN_PROGRESS.value: ("⚙️", "В работе"),
@@ -349,6 +350,7 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
         .where(Order.status.in_([
             OrderStatus.PENDING.value,
             OrderStatus.WAITING_PAYMENT.value,
+            OrderStatus.VERIFICATION_PENDING.value,
             OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
             OrderStatus.IN_PROGRESS.value,
@@ -368,6 +370,7 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
 
     # Группируем по статусам
     pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
+    verification_pending = [o for o in orders if o.status == OrderStatus.VERIFICATION_PENDING.value]
     waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
     paid = [o for o in orders if o.status == OrderStatus.PAID.value]
     in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
@@ -382,6 +385,12 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
             text += f"  • #{o.id} {work} ({time_str})\n"
         if len(pending) > 5:
             text += f"  <i>...и ещё {len(pending) - 5}</i>\n"
+        text += "\n"
+
+    if verification_pending:
+        text += f"🔔 <b>ПРОВЕРЬ ОПЛАТУ ({len(verification_pending)}):</b>\n"
+        for o in verification_pending[:5]:
+            text += f"  • #{o.id} — {o.price:.0f}₽ ⚠️\n"
         text += "\n"
 
     if waiting_payment:
@@ -461,6 +470,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
         .where(Order.status.in_([
             OrderStatus.PENDING.value,
             OrderStatus.WAITING_PAYMENT.value,
+            OrderStatus.VERIFICATION_PENDING.value,
             OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
             OrderStatus.IN_PROGRESS.value,
@@ -482,6 +492,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
 
     # Группируем по статусам
     pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
+    verification_pending = [o for o in orders if o.status == OrderStatus.VERIFICATION_PENDING.value]
     waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
     paid = [o for o in orders if o.status == OrderStatus.PAID.value]
     in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
@@ -497,6 +508,14 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
             text += f"  • #{o.id} {work} ({time_str})\n"
         if len(pending) > 5:
             text += f"  <i>...и ещё {len(pending) - 5}</i>\n"
+        text += "\n"
+
+    if verification_pending:
+        text += f"🔔 <b>ПРОВЕРЬ ОПЛАТУ ({len(verification_pending)}):</b>\n"
+        for o in verification_pending[:5]:
+            text += f"  • #{o.id} — {o.price:.0f}₽ ⚠️\n"
+        if len(verification_pending) > 5:
+            text += f"  <i>...и ещё {len(verification_pending) - 5}</i>\n"
         text += "\n"
 
     if waiting_payment:
@@ -3608,7 +3627,7 @@ async def show_statistics(callback: CallbackQuery, session: AsyncSession):
     today_revenue = (await session.execute(today_revenue_query)).scalar() or 0
 
     # Активные заказы
-    active_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value, OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.IN_PROGRESS.value]
+    active_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value, OrderStatus.WAITING_PAYMENT.value, OrderStatus.VERIFICATION_PENDING.value, OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.IN_PROGRESS.value]
     active_orders_query = select(func.count(Order.id)).where(
         Order.status.in_(active_statuses)
     )
@@ -4054,3 +4073,184 @@ async def secret_stash_placeholder(callback: CallbackQuery):
             await callback.message.edit_text(text, reply_markup=keyboard)
         except Exception:
             await callback.message.answer(text, reply_markup=keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ВЕРИФИКАЦИЯ ПЛАТЕЖА
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("admin_verify_paid:"))
+async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """
+    Админ подтверждает, что деньги поступили.
+
+    Actions:
+    1. Меняем статус на PAID
+    2. Записываем paid_amount
+    3. Уведомляем пользователя
+    4. Обновляем сообщение админа
+    """
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔️ Нет доступа", show_alert=True)
+        return
+
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order = await session.get(Order, order_id)
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Проверяем статус
+    if order.status != OrderStatus.VERIFICATION_PENDING.value:
+        await callback.answer(f"Заказ уже в статусе: {order.status}", show_alert=True)
+        return
+
+    await callback.answer("✅ Подтверждаем оплату...")
+
+    # ═══ ОБНОВЛЯЕМ ЗАКАЗ ═══
+    order.status = OrderStatus.PAID.value
+    order.paid_amount = order.price / 2  # 50% аванс
+    await session.commit()
+
+    # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ ═══
+    user_text = f"""✅ <b>Оплата подтверждена!</b>
+
+Заказ <code>#{order.id}</code> принят в работу.
+
+💰 Аванс получен: <b>{int(order.paid_amount):,} ₽</b>
+
+Шериф приступает к делу. Напишу, как будет готово.
+Следи за статусом в кабинете. 🤠""".replace(",", " ")
+
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="👀 Статус заказа",
+            callback_data=f"order_detail:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="🌵 В салун",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    try:
+        await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
+    except Exception as e:
+        logger.warning(f"Не удалось уведомить пользователя {order.user_id}: {e}")
+
+    # ═══ ОБНОВЛЯЕМ СООБЩЕНИЕ АДМИНА ═══
+    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
+
+    admin_text = f"""✅ <b>ОПЛАТА ПОДТВЕРЖДЕНА</b>
+
+📋 Заказ: <code>#{order.id}</code>
+📂 Тип: {work_label}
+💰 Аванс: <b>{int(order.paid_amount):,} ₽</b>
+
+<i>Клиент уведомлён. Заказ в работе.</i>""".replace(",", " ")
+
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📋 К заказу", callback_data=f"admin_order_detail:{order_id}")],
+        [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")],
+    ])
+
+    try:
+        await callback.message.edit_text(admin_text, reply_markup=admin_keyboard)
+    except Exception:
+        await callback.message.answer(admin_text, reply_markup=admin_keyboard)
+
+
+@router.callback_query(F.data.startswith("admin_reject_payment:"))
+async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """
+    Админ НЕ видит оплату — возвращаем заказ в waiting_payment.
+
+    Actions:
+    1. Меняем статус обратно на WAITING_PAYMENT
+    2. Уведомляем пользователя с предупреждением
+    3. Обновляем сообщение админа
+    """
+    if not is_admin(callback.from_user.id):
+        await callback.answer("⛔️ Нет доступа", show_alert=True)
+        return
+
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order = await session.get(Order, order_id)
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Проверяем статус
+    if order.status != OrderStatus.VERIFICATION_PENDING.value:
+        await callback.answer(f"Заказ уже в статусе: {order.status}", show_alert=True)
+        return
+
+    await callback.answer("❌ Отклоняем...")
+
+    # ═══ ВОЗВРАЩАЕМ В WAITING_PAYMENT ═══
+    order.status = OrderStatus.WAITING_PAYMENT.value
+    await session.commit()
+
+    # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ ═══
+    user_text = f"""⚠️ <b>Оплата не найдена</b>
+
+Заказ <code>#{order.id}</code>
+
+Мы проверили счёт, но пока не видим поступления.
+
+<b>Возможные причины:</b>
+• Перевод ещё в обработке (подожди 5-15 минут)
+• Неверные реквизиты
+• Перевод на другую сумму
+
+Если ты точно перевёл — напиши в поддержку со скриншотом чека.
+Или попробуй ещё раз 👇"""
+
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💳 К оплате",
+            callback_data=f"pay_order:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="🆘 Написать в поддержку",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+        [InlineKeyboardButton(
+            text="🌵 В салун",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    try:
+        await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
+    except Exception as e:
+        logger.warning(f"Не удалось уведомить пользователя {order.user_id}: {e}")
+
+    # ═══ ОБНОВЛЯЕМ СООБЩЕНИЕ АДМИНА ═══
+    admin_text = f"""❌ <b>ОПЛАТА НЕ НАЙДЕНА</b>
+
+📋 Заказ: <code>#{order.id}</code>
+💰 Сумма: <b>{int(order.price):,} ₽</b>
+
+Заказ возвращён в статус «Ждёт оплаты».
+<i>Клиент уведомлён.</i>""".replace(",", " ")
+
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📋 К заказу", callback_data=f"admin_order_detail:{order_id}")],
+        [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")],
+    ])
+
+    try:
+        await callback.message.edit_text(admin_text, reply_markup=admin_keyboard)
+    except Exception:
+        await callback.message.answer(admin_text, reply_markup=admin_keyboard)
