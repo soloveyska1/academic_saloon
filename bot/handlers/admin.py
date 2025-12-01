@@ -4116,29 +4116,32 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     order.paid_amount = order.price / 2  # 50% аванс
     await session.commit()
 
-    # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ ═══
-    user_text = f"""✅ <b>Оплата подтверждена!</b>
+    # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ С КАРТИНКОЙ ═══
+    user_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
 
-Заказ <code>#{order.id}</code> принят в работу.
-
+Заказ <b>#{order.id}</b> принят в работу.
 💰 Аванс получен: <b>{int(order.paid_amount):,} ₽</b>
 
-Шериф приступает к делу. Напишу, как будет готово.
-Следи за статусом в кабинете. 🤠""".replace(",", " ")
+Шериф уже запряг лошадей. Как будет готово — пришлю уведомление сюда.
+Следи за статусом в кабинете.""".replace(",", " ")
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="👀 Статус заказа",
-            callback_data=f"order_detail:{order_id}"
-        )],
-        [InlineKeyboardButton(
-            text="🌵 В салун",
-            callback_data="back_to_menu"
-        )],
+        [InlineKeyboardButton(text="👀 Отследить статус", callback_data="my_orders")],
+        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="referral_program")],
+        [InlineKeyboardButton(text="🌵 В Салун", callback_data="back_to_menu")],
     ])
 
     try:
-        await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
+        if PAYMENT_SUCCESS_IMAGE_PATH.exists():
+            photo_file = FSInputFile(PAYMENT_SUCCESS_IMAGE_PATH)
+            await bot.send_photo(
+                chat_id=order.user_id,
+                photo=photo_file,
+                caption=user_text,
+                reply_markup=user_keyboard,
+            )
+        else:
+            await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
     except Exception as e:
         logger.warning(f"Не удалось уведомить пользователя {order.user_id}: {e}")
 
