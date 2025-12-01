@@ -477,30 +477,36 @@ def get_task_input_keyboard() -> InlineKeyboardMarkup:
 
 def get_task_continue_keyboard(files_count: int = 0) -> InlineKeyboardMarkup:
     """
-    Клавиатура после получения задания.
+    Клавиатура после получения задания (материалов).
 
-    Layout (если есть файлы):
-    [ ✅ Готово → ]
-    [ 🗑 Очистить | ❌ Отмена ]
+    Layout (если есть материалы):
+    Row 1: [ ✅ Готово (Далее) ]
+    Row 2: [ 🗑 Очистить список ]
+    Row 3: [ 🔙 Назад ] [ ❌ Отмена ]
 
-    Layout (если нет файлов):
-    [ ❌ Отмена ]
+    Layout (если пусто):
+    Row 1: [ 🔙 Назад ] [ ❌ Отмена ]
     """
     buttons = []
 
-    # Готово — главная кнопка, только если есть файлы
     if files_count > 0:
+        # Row 1: Primary CTA
         buttons.append([
-            InlineKeyboardButton(text="✅ Готово →", callback_data="task_done"),
+            InlineKeyboardButton(text="✅ Готово (Далее)", callback_data="task_done"),
         ])
-        # Очистить и Отмена в одном ряду
+        # Row 2: Clear
         buttons.append([
-            InlineKeyboardButton(text="🗑 Очистить", callback_data="task_clear"),
+            InlineKeyboardButton(text="🗑 Очистить список", callback_data="task_clear"),
+        ])
+        # Row 3: Navigation
+        buttons.append([
+            InlineKeyboardButton(text="🔙 Назад", callback_data="back_from_task"),
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
         ])
     else:
-        # Только отмена если файлов нет
+        # Only navigation if empty
         buttons.append([
+            InlineKeyboardButton(text="🔙 Назад", callback_data="back_from_task"),
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
         ])
 
