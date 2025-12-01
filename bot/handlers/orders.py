@@ -1731,9 +1731,12 @@ async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
     )
 
 
-@router.callback_query(OrderState.entering_task, F.data == "back_from_task")
+@router.callback_query(F.data == "back_from_task")
 async def back_from_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
-    """Возврат к предыдущему шагу (выбор направления/предмета)"""
+    """
+    Возврат к предыдущему шагу (выбор направления/предмета).
+    Обработчик БЕЗ фильтра state чтобы всегда срабатывал.
+    """
     await callback.answer("↩️")
 
     data = await state.get_data()
