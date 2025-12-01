@@ -27,6 +27,10 @@ CONFIRM_SPECIAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_s
 CONFIRM_STD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
 ORDER_DONE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "order_done.jpg"
 CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking_payment.jpg"
+
+# Risk Matrix: Изображения для разных состояний сметы
+IMG_DEAL_READY = Path("/root/academic_saloon/bot/media/confirm_std.jpg")      # GREEN FLOW — Сделка готова
+IMG_UNDER_REVIEW = Path("/root/academic_saloon/bot/media/checking_payment.jpg")  # YELLOW FLOW — На проверке
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -2256,7 +2260,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             image_path = CONFIRM_SPECIAL_IMAGE_PATH
 
         elif is_auto_pay_allowed:
-            # ═══ GREEN FLOW: Автоматический инвойс ═══
+            # ═══ GREEN FLOW: Автоматический инвойс (Сделка готова) ═══
             price_formatted = f"{final_price:,}".replace(",", " ")
 
             text = f"""⚖️ <b>СМЕТА ГОТОВА</b> | Заказ <code>#{order.id}</code>
@@ -2272,29 +2276,25 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
             logger.info(f"confirm_order: GREEN FLOW - invoice keyboard for order #{order.id}, price={final_price}")
             keyboard = get_invoice_keyboard(order.id, final_price)
-            image_path = CONFIRM_STD_IMAGE_PATH if CONFIRM_STD_IMAGE_PATH.exists() else ORDER_DONE_IMAGE_PATH
+            image_path = IMG_DEAL_READY if IMG_DEAL_READY.exists() else CONFIRM_STD_IMAGE_PATH
 
         else:
-            # ═══ YELLOW FLOW: Требуется оценка шерифа ═══
+            # ═══ YELLOW FLOW: Требуется оценка шерифа (Робот с моноклем) ═══
             price_formatted = f"{final_price:,}".replace(",", " ")
-
-            # Формируем список причин для ручной проверки
-            risk_text = "\n".join(f"  • {factor}" for factor in risk_factors) if risk_factors else ""
 
             text = f"""🛡 <b>ТРЕБУЕТСЯ ОЦЕНКА ШЕРИФА</b> | <code>#{order.id}</code>
 
 🤖 <b>Робот насчитал:</b> ~{price_formatted} ₽
-<i>Но задача серьёзная:</i>
-{risk_text}
+<i>Но задача серьёзная (есть файлы, сложный тип или горят сроки).</i>
 
-Чтобы не было ошибок, <b>Шериф лично проверит заказ</b> и назовёт точную цену. Это быстро.
+Чтобы не было ошибок, <b>Шериф должен взглянуть лично</b> под микроскопом. Это быстро.
 
 📁 <b>Тип:</b> {work_label}
 ⏳ <b>Срок:</b> {deadline_label}"""
 
             logger.info(f"confirm_order: YELLOW FLOW - manual review for order #{order.id}, factors={risk_factors}")
             keyboard = get_manual_review_keyboard(order.id)
-            image_path = CONFIRM_SPECIAL_IMAGE_PATH  # Используем ту же картинку что для спецзаказов
+            image_path = IMG_UNDER_REVIEW if IMG_UNDER_REVIEW.exists() else CHECKING_PAYMENT_IMAGE_PATH
 
     except Exception as e:
         logger.error(f"Ошибка формирования сообщения для заказа #{order.id}: {e}")
