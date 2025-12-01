@@ -184,7 +184,8 @@ ORDER_STATUS_LABELS = {
     OrderStatus.DRAFT.value: ("📝", "Черновик"),
     OrderStatus.PENDING.value: ("⏳", "Ожидает оценки"),
     OrderStatus.WAITING_ESTIMATION.value: ("🔍", "Спецзаказ: ждёт цену"),
-    OrderStatus.CONFIRMED.value: ("✅", "Ждёт оплаты"),
+    OrderStatus.WAITING_PAYMENT.value: ("💳", "Ждёт оплаты"),
+    OrderStatus.CONFIRMED.value: ("✅", "Подтверждён"),  # legacy
     OrderStatus.PAID.value: ("💰", "Оплачен"),
     OrderStatus.IN_PROGRESS.value: ("⚙️", "В работе"),
     OrderStatus.REVIEW.value: ("👁", "На проверке"),
@@ -347,7 +348,8 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
         select(Order)
         .where(Order.status.in_([
             OrderStatus.PENDING.value,
-            OrderStatus.CONFIRMED.value,
+            OrderStatus.WAITING_PAYMENT.value,
+            OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
             OrderStatus.IN_PROGRESS.value,
         ]))
@@ -366,7 +368,7 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
 
     # Группируем по статусам
     pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
-    confirmed = [o for o in orders if o.status == OrderStatus.CONFIRMED.value]
+    waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
     paid = [o for o in orders if o.status == OrderStatus.PAID.value]
     in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
 
@@ -382,9 +384,9 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
             text += f"  <i>...и ещё {len(pending) - 5}</i>\n"
         text += "\n"
 
-    if confirmed:
-        text += f"✅ <b>Ждут оплаты ({len(confirmed)}):</b>\n"
-        for o in confirmed[:5]:
+    if waiting_payment:
+        text += f"💳 <b>Ждут оплаты ({len(waiting_payment)}):</b>\n"
+        for o in waiting_payment[:5]:
             text += f"  • #{o.id} — {o.price:.0f}₽\n"
         text += "\n"
 
@@ -458,7 +460,8 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
         select(Order)
         .where(Order.status.in_([
             OrderStatus.PENDING.value,
-            OrderStatus.CONFIRMED.value,
+            OrderStatus.WAITING_PAYMENT.value,
+            OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
             OrderStatus.IN_PROGRESS.value,
             OrderStatus.REVIEW.value,
@@ -479,7 +482,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
 
     # Группируем по статусам
     pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
-    confirmed = [o for o in orders if o.status == OrderStatus.CONFIRMED.value]
+    waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
     paid = [o for o in orders if o.status == OrderStatus.PAID.value]
     in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
     review = [o for o in orders if o.status == OrderStatus.REVIEW.value]
@@ -496,12 +499,12 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
             text += f"  <i>...и ещё {len(pending) - 5}</i>\n"
         text += "\n"
 
-    if confirmed:
-        text += f"✅ <b>Ждут оплаты ({len(confirmed)}):</b>\n"
-        for o in confirmed[:5]:
+    if waiting_payment:
+        text += f"💳 <b>Ждут оплаты ({len(waiting_payment)}):</b>\n"
+        for o in waiting_payment[:5]:
             text += f"  • #{o.id} — {o.price:.0f}₽\n"
-        if len(confirmed) > 5:
-            text += f"  <i>...и ещё {len(confirmed) - 5}</i>\n"
+        if len(waiting_payment) > 5:
+            text += f"  <i>...и ещё {len(waiting_payment) - 5}</i>\n"
         text += "\n"
 
     if paid:
@@ -2772,7 +2775,7 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
         return
 
-    if order.status not in [OrderStatus.CONFIRMED.value, OrderStatus.IN_PROGRESS.value]:
+    if order.status not in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value, OrderStatus.IN_PROGRESS.value]:
         await callback.answer(
             f"Заказ нельзя отметить как оплаченный\nСтатус: {order.status_label}",
             show_alert=True
@@ -3158,7 +3161,7 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
         await message.answer(f"⚠️ Заказ #{order_id} уже оплачен")
         return
 
-    if order.status not in [OrderStatus.CONFIRMED.value, OrderStatus.IN_PROGRESS.value]:
+    if order.status not in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value, OrderStatus.IN_PROGRESS.value]:
         await message.answer(
             f"⚠️ Заказ #{order_id} нельзя отметить как оплаченный\n"
             f"Текущий статус: {order.status_label}\n\n"
@@ -3605,7 +3608,7 @@ async def show_statistics(callback: CallbackQuery, session: AsyncSession):
     today_revenue = (await session.execute(today_revenue_query)).scalar() or 0
 
     # Активные заказы
-    active_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value, OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.IN_PROGRESS.value]
+    active_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value, OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value, OrderStatus.PAID.value, OrderStatus.IN_PROGRESS.value]
     active_orders_query = select(func.count(Order.id)).where(
         Order.status.in_(active_statuses)
     )

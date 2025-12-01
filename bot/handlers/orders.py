@@ -1726,8 +1726,8 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         order_status = OrderStatus.WAITING_ESTIMATION.value
         order_price = 0  # Цена будет установлена админом
     else:
-        # Обычный заказ — сразу CONFIRMED с рассчитанной ценой
-        order_status = OrderStatus.CONFIRMED.value
+        # Обычный заказ — WAITING_PAYMENT с рассчитанной ценой
+        order_status = OrderStatus.WAITING_PAYMENT.value
         order_price = final_price
 
     order = Order(
@@ -1870,7 +1870,12 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    if order.status not in [OrderStatus.CONFIRMED.value, OrderStatus.WAITING_ESTIMATION.value]:
+    valid_statuses = [
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,  # legacy
+        OrderStatus.WAITING_ESTIMATION.value
+    ]
+    if order.status not in valid_statuses:
         await callback.answer("Этот заказ уже нельзя оплатить", show_alert=True)
         return
 
@@ -1879,29 +1884,19 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
     price = int(order.price)
     advance = price // 2  # 50% аванс
 
-    # Реквизиты из конфига
+    # Реквизиты из конфига — чистый дизайн
     text = f"""💳 <b>ОПЛАТА ЗАКАЗА #{order.id}</b>
 
-<b>Сумма к оплате:</b> <code>{price:,} ₽</code>
+💰 <b>К оплате: {price:,} ₽</b>
+<i>(Аванс 50%: {advance:,} ₽)</i>
 
-━━━━━━━━━━━━━━━━━━━━
-<b>Схема оплаты:</b>
-├ 50% аванс: <code>{advance:,} ₽</code>
-└ 50% после готовности
+<b>Реквизиты (нажми, чтобы скопировать):</b>
 
-━━━━━━━━━━━━━━━━━━━━
-<b>Реквизиты для перевода:</b>
+СБП: <code>{settings.PAYMENT_PHONE}</code>
+Карта: <code>{settings.PAYMENT_CARD}</code>
+Получатель: {settings.PAYMENT_NAME}
 
-📱 <b>СБП ({settings.PAYMENT_BANKS}):</b>
-<code>{settings.PAYMENT_PHONE}</code>
-
-💳 <b>Карта:</b>
-<code>{settings.PAYMENT_CARD}</code>
-
-👤 <b>Получатель:</b> {settings.PAYMENT_NAME}
-
-━━━━━━━━━━━━━━━━━━━━
-<i>После оплаты нажми кнопку ниже или отправь скриншот чека.</i>""".replace(",", " ")
+⚠️ <i>После перевода нажми кнопку ниже.</i>""".replace(",", " ")
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -2006,16 +2001,61 @@ async def recalc_order_callback(callback: CallbackQuery, state: FSMContext, sess
     order_query = select(Order).where(
         Order.id == order_id,
         Order.user_id == callback.from_user.id,
-        Order.status == OrderStatus.CONFIRMED.value
+        Order.status.in_([
+            OrderStatus.WAITING_PAYMENT.value,
+            OrderStatus.CONFIRMED.value,  # legacy
+        ])
     )
     order_result = await session.execute(order_query)
     order = order_result.scalar_one_or_none()
 
-    if order:
-        await session.delete(order)
-        await session.commit()
+    if not order:
+        await callback.answer("Заказ не найден или уже оплачен", show_alert=True)
+        return
+
+    await session.delete(order)
+    await session.commit()
 
     await callback.answer("🔄 Начинаем заново!")
+
+    # Перенаправляем на создание нового заказа
+    from bot.handlers.orders import start_order
+    await start_order(callback, state, callback.bot, session)
+
+
+@router.callback_query(F.data.startswith("edit_order_data:"))
+async def edit_order_data_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Пользователь хочет изменить данные заказа — удаляем и начинаем заново"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Ищем заказ с валидным статусом для редактирования
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id,
+        Order.status.in_([
+            OrderStatus.WAITING_PAYMENT.value,
+            OrderStatus.CONFIRMED.value,  # legacy
+        ])
+    )
+    order_result = await session.execute(order_query)
+    order = order_result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден или уже оплачен", show_alert=True)
+        return
+
+    # Удаляем заказ (он ещё не оплачен)
+    await session.delete(order)
+    await session.commit()
+
+    await callback.answer("✏️ Давай заполним заново!")
+
+    # Сбрасываем состояние и начинаем заново
+    await state.clear()
 
     # Перенаправляем на создание нового заказа
     from bot.handlers.orders import start_order
@@ -2045,7 +2085,8 @@ async def cancel_confirmed_order_callback(callback: CallbackQuery, session: Asyn
     # Можно отменить только неоплаченные заказы
     cancelable = [
         OrderStatus.PENDING.value,
-        OrderStatus.CONFIRMED.value,
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,  # legacy
         OrderStatus.WAITING_ESTIMATION.value
     ]
     if order.status not in cancelable:
@@ -2106,7 +2147,7 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
         return
 
     # Проверяем статус заказа — можно дослать только в ожидающие заказы
-    allowed_statuses = [OrderStatus.PENDING.value, OrderStatus.CONFIRMED.value]
+    allowed_statuses = [OrderStatus.PENDING.value, OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]
     if order.status not in allowed_statuses:
         await callback.answer("К этому заказу уже нельзя добавить файлы", show_alert=True)
         return
