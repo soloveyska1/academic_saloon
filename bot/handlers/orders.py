@@ -2412,11 +2412,13 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             await loading_msg.delete()
         except Exception:
             pass
-        # ГАРАНТИРОВАННО очищаем state
-        try:
-            await state.clear()
-        except Exception:
-            pass
+        # Очищаем state ТОЛЬКО для не-DRAFT заказов
+        # Для DRAFT сохраняем state до submit_for_review (нужны attachments)
+        if order_status != OrderStatus.DRAFT.value:
+            try:
+                await state.clear()
+            except Exception:
+                pass
 
     # Если заказ не создан - выходим
     if not success or not order:
@@ -2570,10 +2572,12 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             pass
 
     # Уведомление админам со всеми вложениями (не блокируем пользователя при ошибке)
-    try:
-        await notify_admins_new_order(bot, callback.from_user, order, data)
-    except Exception as e:
-        logger.error(f"Ошибка уведомления админов о заказе #{order.id}: {e}")
+    # Для DRAFT (YELLOW FLOW) НЕ уведомляем — это произойдёт в submit_for_review_callback
+    if order.status != OrderStatus.DRAFT.value:
+        try:
+            await notify_admins_new_order(bot, callback.from_user, order, data)
+        except Exception as e:
+            logger.error(f"Ошибка уведомления админов о заказе #{order.id}: {e}")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -2882,10 +2886,12 @@ async def recalc_order_callback(callback: CallbackQuery, state: FSMContext, sess
 
 
 @router.callback_query(F.data.startswith("submit_for_review:"))
-async def submit_for_review_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """
     YELLOW FLOW: Пользователь отправляет заказ на проверку шерифом.
     Меняет статус с DRAFT на WAITING_ESTIMATION и уведомляет админов.
+
+    Включает загрузку на Яндекс Диск и отправку файлов админам.
     """
     try:
         order_id = int(callback.data.split(":")[1])
@@ -2906,6 +2912,10 @@ async def submit_for_review_callback(callback: CallbackQuery, session: AsyncSess
         await callback.answer("Заказ не найден или уже отправлен", show_alert=True)
         return
 
+    # Получаем данные из state (сохранены при создании DRAFT)
+    data = await state.get_data()
+    attachments = data.get("attachments", [])
+
     # Меняем статус на WAITING_ESTIMATION
     order.status = OrderStatus.WAITING_ESTIMATION.value
     await session.commit()
@@ -2918,7 +2928,7 @@ async def submit_for_review_callback(callback: CallbackQuery, session: AsyncSess
     except Exception:
         pass
 
-    # Показываем подтверждение
+    # Показываем подтверждение пользователю
     text = f"""🛡 <b>ЗАКАЗ <code>#{order.id}</code> НА ПРОВЕРКЕ</b>
 
 Шериф лично посмотрит твою задачу и назовёт точную цену.
@@ -2934,17 +2944,79 @@ async def submit_for_review_callback(callback: CallbackQuery, session: AsyncSess
         reply_markup=keyboard,
     )
 
-    # Уведомляем админов о новом заказе на проверку
+    # ═══════════════════════════════════════════════════════════════
+    #   ЗАГРУЗКА НА ЯНДЕКС ДИСК
+    # ═══════════════════════════════════════════════════════════════
     try:
         work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
     except ValueError:
         work_label = order.work_type or "Заказ"
 
+    yadisk_link = None
+    if yandex_disk_service and yandex_disk_service.is_available and attachments:
+        try:
+            files_to_upload = []
+            file_counter = 1
+
+            for att in attachments:
+                att_type = att.get("type", "unknown")
+                file_id = att.get("file_id")
+
+                if not file_id or att_type == "text":
+                    continue
+
+                try:
+                    tg_file = await bot.get_file(file_id)
+                    file_bytes = await bot.download_file(tg_file.file_path)
+
+                    if att_type == "document":
+                        filename = att.get("file_name", f"document_{file_counter}")
+                    elif att_type == "photo":
+                        filename = f"photo_{file_counter}.jpg"
+                    elif att_type == "voice":
+                        filename = f"voice_{file_counter}.ogg"
+                    elif att_type == "video":
+                        filename = f"video_{file_counter}.mp4"
+                    elif att_type == "video_note":
+                        filename = f"video_note_{file_counter}.mp4"
+                    elif att_type == "audio":
+                        filename = f"audio_{file_counter}.mp3"
+                    else:
+                        filename = f"file_{file_counter}"
+
+                    files_to_upload.append((file_bytes.read(), filename))
+                    file_counter += 1
+                except Exception as e:
+                    logger.warning(f"Failed to download file from Telegram: {e}")
+                    continue
+
+            if files_to_upload:
+                client_name = callback.from_user.full_name or f"User_{callback.from_user.id}"
+                result = await yandex_disk_service.upload_multiple_files(
+                    files=files_to_upload,
+                    order_id=order.id,
+                    client_name=client_name,
+                    work_type=work_label,
+                )
+                if result.success and result.folder_url:
+                    yadisk_link = result.folder_url
+                    logger.info(f"Order #{order.id} files uploaded to Yandex Disk: {yadisk_link}")
+
+        except Exception as e:
+            logger.error(f"Error uploading to Yandex Disk: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #   УВЕДОМЛЕНИЕ АДМИНОВ
+    # ═══════════════════════════════════════════════════════════════
     estimated_price = f"{order.price:,}".replace(",", " ") if order.price > 0 else "—"
+    username_str = f"@{callback.from_user.username}" if callback.from_user.username else "без username"
+
+    # Строка с ссылкой на Яндекс Диск
+    yadisk_line = f"\n📁 <b>Файлы:</b> <a href=\"{yadisk_link}\">Яндекс Диск</a>" if yadisk_link else ""
 
     admin_text = f"""🛡 <b>ТРЕБУЕТ ОЦЕНКИ</b> | Заказ <code>#{order.id}</code>
 
-👤 <b>Клиент:</b> {callback.from_user.full_name}
+👤 <b>Клиент:</b> {callback.from_user.full_name} ({username_str})
 🆔 <code>{callback.from_user.id}</code>
 
 📁 <b>Тип:</b> {work_label}
@@ -2952,7 +3024,7 @@ async def submit_for_review_callback(callback: CallbackQuery, session: AsyncSess
 ⏳ <b>Срок:</b> {order.deadline or "—"}
 
 🤖 <b>Робот насчитал:</b> ~{estimated_price} ₽
-<i>Но клиент отправил на ручную проверку.</i>
+<i>Но клиент отправил на ручную проверку.</i>{yadisk_line}
 
 📝 <b>Описание:</b>
 <i>{order.description[:500] if order.description else "—"}{'...' if order.description and len(order.description) > 500 else ''}</i>"""
@@ -2976,15 +3048,72 @@ async def submit_for_review_callback(callback: CallbackQuery, session: AsyncSess
         ],
     ])
 
+    # Отправляем уведомление каждому админу
     for admin_id in settings.ADMIN_IDS:
         try:
+            # Сначала текст с кнопками
             await bot.send_message(
                 chat_id=admin_id,
                 text=admin_text,
                 reply_markup=admin_keyboard,
             )
+
+            # Затем все вложения (файлы)
+            for att in attachments:
+                att_type = att.get("type", "unknown")
+                try:
+                    if att_type == "text":
+                        content = att.get("content", "")
+                        if content:
+                            await bot.send_message(
+                                chat_id=admin_id,
+                                text=f"📝 Текст от клиента:\n\n{content}"
+                            )
+                    elif att_type == "photo":
+                        await bot.send_photo(
+                            chat_id=admin_id,
+                            photo=att.get("file_id"),
+                            caption=att.get("caption") or None
+                        )
+                    elif att_type == "document":
+                        await bot.send_document(
+                            chat_id=admin_id,
+                            document=att.get("file_id"),
+                            caption=att.get("caption") or None
+                        )
+                    elif att_type == "voice":
+                        await bot.send_voice(
+                            chat_id=admin_id,
+                            voice=att.get("file_id")
+                        )
+                    elif att_type == "video":
+                        await bot.send_video(
+                            chat_id=admin_id,
+                            video=att.get("file_id"),
+                            caption=att.get("caption") or None
+                        )
+                    elif att_type == "video_note":
+                        await bot.send_video_note(
+                            chat_id=admin_id,
+                            video_note=att.get("file_id")
+                        )
+                    elif att_type == "audio":
+                        await bot.send_audio(
+                            chat_id=admin_id,
+                            audio=att.get("file_id")
+                        )
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #   ОЧИСТКА STATE (теперь можно, заказ отправлен)
+    # ═══════════════════════════════════════════════════════════════
+    try:
+        await state.clear()
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data.startswith("edit_order_data:"))
