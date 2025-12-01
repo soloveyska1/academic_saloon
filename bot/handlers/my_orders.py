@@ -709,11 +709,13 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession, bot:
 
     parts = callback.data.split(":")
     if len(parts) < 2:
+        logger.warning(f"Invalid callback data in show_order_detail: {callback.data}")
         return
 
     try:
         order_id = int(parts[1])
     except ValueError:
+        logger.warning(f"Invalid order_id in show_order_detail: {callback.data}")
         return
 
     telegram_id = callback.from_user.id
@@ -724,7 +726,7 @@ async def show_order_detail(callback: CallbackQuery, session: AsyncSession, bot:
     order = order_result.scalar_one_or_none()
 
     if not order:
-        await callback.answer("Заказ не найден", show_alert=True)
+        await callback.message.answer("❌ Заказ не найден или был удалён")
         return
 
     caption = build_order_detail_caption(order)
@@ -769,11 +771,13 @@ async def cancel_order_request(callback: CallbackQuery, session: AsyncSession, b
 
     parts = callback.data.split(":")
     if len(parts) < 2:
+        logger.warning(f"Invalid callback data in cancel_order_request: {callback.data}")
         return
 
     try:
         order_id = int(parts[1])
     except ValueError:
+        logger.warning(f"Invalid order_id in cancel_order_request: {callback.data}")
         return
 
     order_result = await session.execute(
@@ -782,11 +786,11 @@ async def cancel_order_request(callback: CallbackQuery, session: AsyncSession, b
     order = order_result.scalar_one_or_none()
 
     if not order:
-        await callback.answer("Заказ не найден", show_alert=True)
+        await callback.message.answer("❌ Заказ не найден или был удалён")
         return
 
     if not order.can_be_cancelled:
-        await callback.answer("Этот заказ нельзя отменить", show_alert=True)
+        await callback.message.answer(f"❌ Заказ #{order.id} уже нельзя отменить (статус: {order.status_label})")
         return
 
     # Убираем emoji из work_type_label
@@ -809,11 +813,13 @@ async def confirm_cancel_order(callback: CallbackQuery, session: AsyncSession, b
 
     parts = callback.data.split(":")
     if len(parts) < 2:
+        logger.warning(f"Invalid callback data in confirm_cancel_order: {callback.data}")
         return
 
     try:
         order_id = int(parts[1])
     except ValueError:
+        logger.warning(f"Invalid order_id in confirm_cancel_order: {callback.data}")
         return
 
     order_result = await session.execute(
@@ -821,8 +827,12 @@ async def confirm_cancel_order(callback: CallbackQuery, session: AsyncSession, b
     )
     order = order_result.scalar_one_or_none()
 
-    if not order or not order.can_be_cancelled:
-        await callback.answer("Нельзя отменить", show_alert=True)
+    if not order:
+        await callback.message.answer("❌ Заказ не найден или был удалён")
+        return
+
+    if not order.can_be_cancelled:
+        await callback.message.answer(f"❌ Заказ #{order.id} уже нельзя отменить (статус: {order.status_label})")
         return
 
     old_status = order.status
@@ -867,11 +877,13 @@ async def reorder(callback: CallbackQuery, state: FSMContext, session: AsyncSess
 
     parts = callback.data.split(":")
     if len(parts) < 2:
+        logger.warning(f"Invalid callback data in reorder: {callback.data}")
         return
 
     try:
         order_id = int(parts[1])
     except ValueError:
+        logger.warning(f"Invalid order_id in reorder: {callback.data}")
         return
 
     order_result = await session.execute(
@@ -880,7 +892,7 @@ async def reorder(callback: CallbackQuery, state: FSMContext, session: AsyncSess
     order = order_result.scalar_one_or_none()
 
     if not order:
-        await callback.answer("Заказ не найден", show_alert=True)
+        await callback.message.answer("❌ Невозможно повторить заказ — он не найден")
         return
 
     await state.clear()

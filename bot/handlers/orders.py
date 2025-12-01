@@ -2508,21 +2508,30 @@ async def append_text(message: Message, state: FSMContext, bot: Bot, session: As
 @router.callback_query(F.data.startswith("finish_append:"))
 async def finish_append_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """Завершить дослать — отправить админам"""
-    try:
-        order_id = int(callback.data.split(":")[1])
-    except (IndexError, ValueError):
-        await callback.answer("Ошибка данных", show_alert=True)
-        return
-
     data = await state.get_data()
     appended_files = data.get("appended_files", [])
+
+    # Берём order_id из STATE (более надёжно, защита от race condition)
+    order_id = data.get("append_order_id")
+
+    # Fallback на callback.data если в state нет
+    if not order_id:
+        try:
+            order_id = int(callback.data.split(":")[1])
+        except (IndexError, ValueError):
+            await callback.answer("Ошибка данных", show_alert=True)
+            await state.clear()
+            return
 
     if not appended_files:
         await callback.answer("Ты ещё ничего не отправил!", show_alert=True)
         return
 
-    # Находим заказ
-    order_query = select(Order).where(Order.id == order_id)
+    # Находим заказ С ПРОВЕРКОЙ ВЛАДЕЛЬЦА
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id  # Защита: только владелец
+    )
     order_result = await session.execute(order_query)
     order = order_result.scalar_one_or_none()
 
@@ -2601,17 +2610,28 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
 @router.callback_query(F.data.startswith("cancel_append:"))
 async def cancel_append_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Отменить дослать"""
-    try:
-        order_id = int(callback.data.split(":")[1])
-    except (IndexError, ValueError):
-        await callback.answer("Ошибка данных", show_alert=True)
-        return
+    data = await state.get_data()
+
+    # Берём order_id из STATE (защита от race condition)
+    order_id = data.get("append_order_id")
+
+    # Fallback на callback.data
+    if not order_id:
+        try:
+            order_id = int(callback.data.split(":")[1])
+        except (IndexError, ValueError):
+            await callback.answer("Ошибка данных", show_alert=True)
+            await state.clear()
+            return
 
     await state.clear()
     await callback.answer("Отменено")
 
-    # Возвращаем к статусу заказа
-    order_query = select(Order).where(Order.id == order_id)
+    # Возвращаем к статусу заказа С ПРОВЕРКОЙ ВЛАДЕЛЬЦА
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id  # Защита: только владелец
+    )
     order_result = await session.execute(order_query)
     order = order_result.scalar_one_or_none()
 
