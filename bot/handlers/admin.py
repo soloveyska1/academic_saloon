@@ -17,6 +17,9 @@ CASH_REGISTER_IMAGE_PATH = Path(__file__).parent.parent / "media" / "cash_regist
 SAFE_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "safe_payment.jpg"
 PAYMENT_SUCCESS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_success.jpg"
 CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking_payment.jpg"
+
+# Изображение для счёта/инвойса (рукопожатие/сделка)
+IMG_PAYMENT_BILL = Path("/root/academic_saloon/bot/media/confirm_std.jpg")
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType, FSInputFile
 from aiogram.fsm.context import FSMContext
@@ -1839,7 +1842,7 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
 
     # Кнопка для вопросов/торга
     buttons.append([InlineKeyboardButton(
-        text="💬 Вопрос по цене / Дорого",
+        text="💬 Обсудить условия",
         callback_data=f"price_question:{order.id}"
     )])
 
@@ -1847,17 +1850,17 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
 
     # Отправляем клиенту с картинкой
     try:
-        if PAYMENT_REQUEST_IMAGE_PATH.exists():
+        if IMG_PAYMENT_BILL.exists():
             try:
                 await send_cached_photo(
                     bot=bot,
                     chat_id=order.user_id,
-                    photo_path=PAYMENT_REQUEST_IMAGE_PATH,
+                    photo_path=IMG_PAYMENT_BILL,
                     caption=client_text,
                     reply_markup=kb,
                 )
             except Exception as e:
-                logger.warning(f"Не удалось отправить payment_request image: {e}")
+                logger.warning(f"Не удалось отправить payment_bill image: {e}")
                 await bot.send_message(order.user_id, client_text, reply_markup=kb)
         else:
             await bot.send_message(order.user_id, client_text, reply_markup=kb)
@@ -2023,7 +2026,7 @@ async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
         )])
 
     buttons.append([InlineKeyboardButton(
-        text="💬 Вопрос по цене / Дорого",
+        text="💬 Обсудить условия",
         callback_data=f"price_question:{order.id}"
     )])
 
@@ -2081,7 +2084,7 @@ async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession
             callback_data=f"pay_scheme:half:{order.id}"
         )],
         [InlineKeyboardButton(
-            text="💬 Вопрос по цене / Дорого",
+            text="💬 Обсудить условия",
             callback_data=f"price_question:{order.id}"
         )],
     ])
@@ -2141,7 +2144,7 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
     # Уведомляем админов
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
-    admin_text = f"""💬 <b>Клиент хочет обсудить цену!</b>
+    admin_text = f"""💬 <b>Клиент хочет обсудить условия!</b>
 
 📋 Заказ: #{order.id}
 📝 {work_label}
@@ -2150,7 +2153,7 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
 👤 Клиент: @{callback.from_user.username or 'без username'}
 🆔 ID: <code>{callback.from_user.id}</code>
 
-<i>Клиент нажал "Дорого" — возможно, стоит связаться.</i>"""
+<i>Клиент хочет обсудить условия — возможно, стоит связаться.</i>"""
 
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -2745,7 +2748,7 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
         )])
 
     buttons.append([InlineKeyboardButton(
-        text="💬 Вопрос по цене / Дорого",
+        text="💬 Обсудить условия",
         callback_data=f"price_question:{order.id}"
     )])
 
@@ -2753,17 +2756,17 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
 
     # Отправляем клиенту с картинкой
     try:
-        if PAYMENT_REQUEST_IMAGE_PATH.exists():
+        if IMG_PAYMENT_BILL.exists():
             try:
                 await send_cached_photo(
                     bot=bot,
                     chat_id=order.user_id,
-                    photo_path=PAYMENT_REQUEST_IMAGE_PATH,
+                    photo_path=IMG_PAYMENT_BILL,
                     caption=client_text,
                     reply_markup=kb,
                 )
             except Exception as e:
-                logger.warning(f"Не удалось отправить payment_request image: {e}")
+                logger.warning(f"Не удалось отправить payment_bill image: {e}")
                 await bot.send_message(order.user_id, client_text, reply_markup=kb)
         else:
             await bot.send_message(order.user_id, client_text, reply_markup=kb)
@@ -2869,7 +2872,7 @@ async def process_order_price_input(message: Message, state: FSMContext, session
 
     # Кнопка для вопросов/торга
     buttons.append([InlineKeyboardButton(
-        text="💬 Вопрос по цене / Дорого",
+        text="💬 Обсудить условия",
         callback_data=f"price_question:{order.id}"
     )])
 
@@ -2877,17 +2880,17 @@ async def process_order_price_input(message: Message, state: FSMContext, session
 
     # Отправляем клиенту с картинкой
     try:
-        if PAYMENT_REQUEST_IMAGE_PATH.exists():
+        if IMG_PAYMENT_BILL.exists():
             try:
                 await send_cached_photo(
                     bot=bot,
                     chat_id=order.user_id,
-                    photo_path=PAYMENT_REQUEST_IMAGE_PATH,
+                    photo_path=IMG_PAYMENT_BILL,
                     caption=client_text,
                     reply_markup=kb,
                 )
             except Exception as e:
-                logger.warning(f"Не удалось отправить payment_request image: {e}")
+                logger.warning(f"Не удалось отправить payment_bill image: {e}")
                 await bot.send_message(order.user_id, client_text, reply_markup=kb)
         else:
             await bot.send_message(order.user_id, client_text, reply_markup=kb)
