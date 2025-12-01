@@ -31,6 +31,7 @@ CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking
 # Risk Matrix: Изображения для разных состояний сметы
 IMG_DEAL_READY = Path("/root/academic_saloon/bot/media/confirm_std.jpg")      # GREEN FLOW — Сделка готова
 IMG_UNDER_REVIEW = Path("/root/academic_saloon/bot/media/checking_payment.jpg")  # YELLOW FLOW — На проверке
+IMG_FILES_RECEIVED = Path("/root/academic_saloon/bot/media/papka.jpg")         # Файлы приняты — Папка
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -373,6 +374,50 @@ def format_attachments_preview(attachments: list) -> str:
     if doc_names:
         for name in doc_names:
             lines.append(f"   • {name}")
+
+    return "\n".join(lines)
+
+
+def format_materials_received_message(attachments: list) -> str:
+    """
+    Форматирует сообщение "МАТЕРИАЛЫ ПРИНЯТЫ" для нового UI.
+    Показывает количество файлов и сниппет описания.
+    """
+    if not attachments:
+        return """📂 <b>ПАПКА ПУСТА</b>
+
+<i>Скинь сюда задание: текст, фото, файлы...</i>"""
+
+    # Считаем файлы (всё кроме текста)
+    file_count = 0
+    description_snippet = None
+
+    for att in attachments:
+        att_type = att.get("type", "unknown")
+        if att_type == "text":
+            content = att.get("content", "")
+            if len(content) > 50:
+                description_snippet = content[:47] + "..."
+            else:
+                description_snippet = content
+        else:
+            file_count += 1
+
+    # Формируем сообщение
+    lines = ["📥 <b>МАТЕРИАЛЫ ПРИНЯТЫ</b>", ""]
+
+    if file_count > 0:
+        lines.append(f"🗂 <b>Загружено файлов:</b> {file_count}")
+
+    if description_snippet:
+        lines.append(f"📝 <b>ТЗ:</b> «{description_snippet}»")
+    elif file_count == 0:
+        lines.append("📝 <b>ТЗ:</b> <i>(только текст)</i>")
+    else:
+        lines.append("📝 <b>ТЗ:</b> <i>(из файлов)</i>")
+
+    lines.append("")
+    lines.append("<i>Если это всё — жми «Готово», чтобы узнать цену.</i>")
 
     return "\n".join(lines)
 
@@ -1386,10 +1431,24 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
     file_id = None
 
     if message.text:
-        # Текстовое сообщение
+        # Текстовое сообщение — Soft Validation
+        text_content = message.text.strip()
+
+        # Reject garbage (< 2 chars)
+        if len(text_content) < 2:
+            await message.answer(
+                "🤔 Слишком коротко, партнёр. Опиши задание подробнее.",
+                reply_markup=get_task_continue_keyboard(files_count=len(attachments))
+            )
+            return
+
+        # Set risk flag for short descriptions
+        risk_short_description = len(text_content) < 20
+        await state.update_data(risk_short_description=risk_short_description)
+
         attachment = {
             "type": "text",
-            "content": message.text,
+            "content": text_content,
         }
     elif message.photo:
         # Фото — берём самое большое
@@ -1543,7 +1602,12 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
         else:
             # Одиночный файл — сохраняем и отвечаем сразу
             attachments.append(attachment)
-            await state.update_data(attachments=attachments)
+
+            # Set has_attachments flag for file types (not text)
+            if attachment.get("type") != "text":
+                await state.update_data(attachments=attachments, has_attachments=True)
+            else:
+                await state.update_data(attachments=attachments)
 
             count = len(attachments)
             confirm_text = get_attachment_confirm_text(attachment, count, is_urgent, is_special)
@@ -1590,6 +1654,69 @@ async def task_clear(callback: CallbackQuery, state: FSMContext):
         work_type = None
 
     await show_task_input_screen(callback.message, work_type=work_type)
+
+
+@router.callback_query(OrderState.entering_task, F.data == "back_from_task")
+async def back_from_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Возврат к предыдущему шагу (выбор направления/предмета)"""
+    await callback.answer("↩️")
+
+    data = await state.get_data()
+    work_type_value = data.get("work_type", "")
+
+    # Очищаем attachments и risk flags при возврате
+    await state.update_data(
+        attachments=[],
+        has_attachments=False,
+        risk_short_description=None
+    )
+
+    try:
+        work_type = WorkType(work_type_value)
+    except ValueError:
+        work_type = None
+
+    # Для типов требующих выбор предмета - возвращаемся к предметам
+    if work_type and work_type.value in WORKS_REQUIRE_SUBJECT:
+        await state.set_state(OrderState.choosing_subject)
+
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        if DIRECTIONS_IMAGE_PATH.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=callback.message.chat.id,
+                    photo_path=DIRECTIONS_IMAGE_PATH,
+                    caption="📚 <b>Выбери направление</b>\n\n<i>В какой области нужна помощь?</i>",
+                    reply_markup=get_subject_keyboard(),
+                )
+                return
+            except Exception:
+                pass
+
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text="📚 <b>Выбери направление</b>\n\n<i>В какой области нужна помощь?</i>",
+            reply_markup=get_subject_keyboard(),
+        )
+    else:
+        # Для остальных - возвращаемся к выбору типа работы
+        await state.set_state(OrderState.choosing_work_type)
+
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text="📋 <b>Выбери тип работы</b>",
+            reply_markup=get_work_category_keyboard(),
+        )
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_done")
@@ -1987,20 +2114,24 @@ def check_auto_pay_allowed(data: dict) -> tuple[bool, list[str]]:
 
     Возвращает (is_allowed, risk_factors).
     Auto-pay разрешён ТОЛЬКО если ВСЕ условия выполнены:
-    1. Нет вложений (фото/файлы/голос)
+    1. Нет вложений (фото/файлы/голос) — has_attachments flag
     2. Тип работы в списке безопасных
     3. Дедлайн >= 24 часов (не срочный)
-    4. Описание >= 20 символов
+    4. Описание >= 20 символов — risk_short_description flag
     """
     risk_factors = []
 
     # 1. Проверка вложений (файлы = риск)
-    attachments = data.get("attachments", [])
-    file_attachments = [
-        att for att in attachments
-        if att.get("type") in ("photo", "document", "voice", "audio", "video", "video_note")
-    ]
-    has_files = len(file_attachments) > 0
+    # Используем флаг из state если есть, иначе проверяем attachments
+    has_files = data.get("has_attachments", False)
+    if not has_files:
+        # Fallback: проверяем attachments напрямую
+        attachments = data.get("attachments", [])
+        file_attachments = [
+            att for att in attachments
+            if att.get("type") in ("photo", "document", "voice", "audio", "video", "video_note")
+        ]
+        has_files = len(file_attachments) > 0
     if has_files:
         risk_factors.append("📎 Есть файлы")
 
@@ -2017,13 +2148,19 @@ def check_auto_pay_allowed(data: dict) -> tuple[bool, list[str]]:
         risk_factors.append("⚡️ Срочный дедлайн")
 
     # 4. Проверка длины описания
-    description_text = ""
-    for att in attachments:
-        if att.get("type") == "text":
-            description_text = att.get("content", "")
-            break
-    has_description = len(description_text) >= 20
-    if not has_description:
+    # Используем флаг из state если есть
+    risk_short_description = data.get("risk_short_description", None)
+    if risk_short_description is None:
+        # Fallback: проверяем текст в attachments
+        attachments = data.get("attachments", [])
+        description_text = ""
+        for att in attachments:
+            if att.get("type") == "text":
+                description_text = att.get("content", "")
+                break
+        risk_short_description = len(description_text) < 20
+
+    if risk_short_description:
         risk_factors.append("📝 Краткое описание")
 
     # Auto-pay разрешён только если нет факторов риска
