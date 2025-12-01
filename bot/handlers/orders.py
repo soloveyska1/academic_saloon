@@ -25,7 +25,7 @@ CONFIRM_URGENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_ur
 CONFIRM_SPECIAL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_special.jpg"
 CONFIRM_STD_IMAGE_PATH = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
 ORDER_DONE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "order_done.jpg"
-PAYMENT_CHECKING_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_checking.jpg"
+# Note: checking_payment image now uses cloud URL from settings.IMG_CHECKING_PAYMENT_URL
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -1931,7 +1931,7 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
     """
     Пользователь нажал 'Я оплатил' — переводим в статус verification_pending.
 
-    НЕ помечаем как paid! Ждём ручной проверки админа.
+    СТРОГО ручная проверка админом! НЕ помечаем как paid автоматически!
     """
     try:
         order_id = int(callback.data.split(":")[1])
@@ -1959,57 +1959,47 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         await callback.answer("Этот заказ уже обрабатывается", show_alert=True)
         return
 
-    await callback.answer("⏳ Отправляем на проверку...")
+    await callback.answer("🕵️‍♂️ Шериф получил сигнал...")
 
-    # ═══ ОБНОВЛЯЕМ СТАТУС НА VERIFICATION_PENDING ═══
+    # ═══ ОБНОВЛЯЕМ СТАТУС НА VERIFICATION_PENDING (НЕ PAID!) ═══
     order.status = OrderStatus.VERIFICATION_PENDING.value
     await session.commit()
 
-    # ═══ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ — УСПОКАИВАЮЩЕЕ ═══
-    user_text = f"""⏳ <b>Платёж на проверке</b>
-
-Шериф получил сигнал. Мы проверяем поступление средств вручную.
-
-💤 <b>Если сейчас ночь</b> — подтвердим утром.
-✅ <b>Твой заказ уже зафиксирован</b>, дедлайн в силе. Не волнуйся.
-
-<i>Как только деньги звякнут в казне — придёт чек.</i>"""
-
-    # Убираем кнопки оплаты — только статус и меню
-    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="👀 Статус заказа",
-            callback_data=f"order_detail:{order_id}"
-        )],
-        [InlineKeyboardButton(
-            text="🌵 В салун",
-            callback_data="back_to_menu"
-        )],
-    ])
-
-    # Удаляем старое сообщение и отправляем с фото
+    # ═══ УДАЛЯЕМ СТАРОЕ СООБЩЕНИЕ (чтобы нельзя было нажать дважды) ═══
     try:
         await callback.message.delete()
     except Exception:
         pass
 
-    if PAYMENT_CHECKING_IMAGE_PATH.exists():
-        try:
-            await send_cached_photo(
-                bot=bot,
-                chat_id=callback.message.chat.id,
-                photo_path=PAYMENT_CHECKING_IMAGE_PATH,
-                caption=user_text,
-                reply_markup=user_keyboard,
-            )
-        except Exception as e:
-            logger.warning(f"Не удалось отправить payment_checking image: {e}")
-            await bot.send_message(
-                chat_id=callback.message.chat.id,
-                text=user_text,
-                reply_markup=user_keyboard
-            )
-    else:
+    # ═══ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ С КАРТИНКОЙ ═══
+    user_text = """🕵️‍♂️ <b>Платеж на проверке</b>
+
+Шериф получил сигнал. Мы проверяем казну вручную.
+
+💤 <b>Если сейчас ночь</b> — подтвердим утром.
+✅ <b>Твой заказ зафиксирован</b>. Не волнуйся.
+
+<i>Как только деньги придут — бот пришлет чек.</i>"""
+
+    # Только кнопка "В меню" — никаких лишних действий
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="🔙 В меню",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    # Отправляем с картинкой (cloud URL)
+    try:
+        await bot.send_photo(
+            chat_id=callback.message.chat.id,
+            photo=settings.IMG_CHECKING_PAYMENT_URL,
+            caption=user_text,
+            reply_markup=user_keyboard,
+        )
+    except Exception as e:
+        logger.warning(f"Не удалось отправить checking_payment image: {e}")
+        # Fallback без картинки
         await bot.send_message(
             chat_id=callback.message.chat.id,
             text=user_text,
@@ -2017,34 +2007,28 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         )
 
     # ═══ УВЕДОМЛЕНИЕ АДМИНАМ С КНОПКАМИ ВЕРИФИКАЦИИ ═══
-    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
     username = callback.from_user.username
     user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
 
     admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
 
-📋 Заказ: <code>#{order.id}</code>
-💰 Сумма: <b>{int(order.price):,} ₽</b>
-👤 Клиент: {user_link} (<code>{callback.from_user.id}</code>)
-📂 Тип: {work_label}
+Заказ: <code>#{order.id}</code>
+Клиент: {user_link}
+Сумма: <b>{int(order.price):,} ₽</b>
 
-<i>Клиент нажал кнопку «Я оплатил». Зайди в банк и проверь.</i>""".replace(",", " ")
+<i>Клиент нажал кнопку. Проверь банк.</i>""".replace(",", " ")
 
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="✅ Деньги пришли",
+                text="✅ Подтвердить ($)",
                 callback_data=f"admin_verify_paid:{order_id}"
             ),
             InlineKeyboardButton(
-                text="❌ Нет оплаты",
+                text="❌ Отклонить",
                 callback_data=f"admin_reject_payment:{order_id}"
             ),
         ],
-        [InlineKeyboardButton(
-            text="👁 Детали заказа",
-            callback_data=f"admin_order:{order_id}"
-        )],
     ])
 
     for admin_id in settings.ADMIN_IDS:
