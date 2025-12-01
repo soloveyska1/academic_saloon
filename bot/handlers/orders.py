@@ -35,7 +35,7 @@ IMG_UNDER_REVIEW = Path("/root/academic_saloon/bot/media/checking_payment.jpg") 
 # Upload Stage: Изображения для загрузки файлов
 IMG_UPLOAD_START = Path("/root/academic_saloon/bot/media/upload_bag.jpg")      # Пустая сумка — начальное состояние
 IMG_FILES_RECEIVED = Path("/root/academic_saloon/bot/media/papka.jpg")         # Папка с файлами — файлы приняты
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, InputMediaPhoto
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1640,14 +1640,20 @@ async def task_add_more(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(OrderState.entering_task, F.data == "task_clear")
 async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """
-    Очистить все вложения — остаёмся на текущем шаге!
-    Сбрасываем данные и показываем начальный UI с пустой сумкой.
+    Очистить все вложения — IN-PLACE RESET.
+
+    КРИТИЧНО:
+    - НЕ меняем FSM state (остаёмся в OrderState.entering_task)
+    - НЕ удаляем/пересылаем сообщение
+    - Используем edit_media для замены картинки на месте
     """
     await callback.answer("🗑 Список очищен!")
 
     data = await state.get_data()
 
-    # Сбрасываем attachments и risk flags, но НЕ меняем state
+    # ═══════════════════════════════════════════════════════════════
+    # 1. WIPE DATA (только данные, НЕ трогаем state!)
+    # ═══════════════════════════════════════════════════════════════
     await state.update_data(
         attachments=[],
         has_attachments=False,
@@ -1660,7 +1666,9 @@ async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
     except ValueError:
         work_type = None
 
-    # Определяем текст и изображение для пустого состояния
+    # ═══════════════════════════════════════════════════════════════
+    # 2. PREPARE EMPTY STATE UI
+    # ═══════════════════════════════════════════════════════════════
     if work_type == WorkType.OTHER:
         caption = """🕵️‍♂️ <b>Материалы дела</b>
 
@@ -1683,14 +1691,35 @@ async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
 <i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
         image_path = IMG_UPLOAD_START if IMG_UPLOAD_START.exists() else settings.TASK_INPUT_IMAGE
 
-    # Удаляем старое сообщение и отправляем новое с нужным изображением
+    # Клавиатура для пустого состояния (без кнопки "Готово")
+    keyboard = get_task_continue_keyboard(files_count=0)
+
+    # ═══════════════════════════════════════════════════════════════
+    # 3. IN-PLACE EDIT (edit_media вместо delete/send)
+    # ═══════════════════════════════════════════════════════════════
+    if image_path.exists():
+        try:
+            # Создаём InputMediaPhoto для замены картинки на месте
+            media = InputMediaPhoto(
+                media=FSInputFile(image_path),
+                caption=caption,
+                parse_mode="HTML"
+            )
+            # Редактируем текущее сообщение (меняем картинку и текст)
+            await callback.message.edit_media(media=media, reply_markup=keyboard)
+            return
+        except Exception as e:
+            # Если edit_media не сработал (например, сообщение было текстовым),
+            # используем fallback с delete/send
+            logger.warning(f"edit_media failed, using fallback: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    # FALLBACK: Если edit_media не работает — delete/send
+    # ═══════════════════════════════════════════════════════════════
     try:
         await callback.message.delete()
     except Exception:
         pass
-
-    # Клавиатура для пустого состояния (без кнопки "Готово")
-    keyboard = get_task_continue_keyboard(files_count=0)
 
     if image_path.exists():
         try:
