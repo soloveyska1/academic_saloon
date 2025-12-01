@@ -77,6 +77,7 @@ from bot.texts.terms import get_first_name
 from core.config import settings
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
+from bot.utils.media_group import handle_media_group_file, get_files_summary
 from bot.handlers.start import process_start
 from bot.services.yandex_disk import yandex_disk_service
 
@@ -1346,22 +1347,72 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
         attachments.append(attachment)
         await state.update_data(attachments=attachments)
 
-        # Умное подтверждение по типу контента
-        count = len(attachments)
-        confirm_text = get_attachment_confirm_text(attachment, count, is_urgent, is_special)
+        # Проверяем, является ли это частью media_group (альбома)
+        media_group_id = message.media_group_id
 
-        # Добавляем инфо о пересылке
-        if attachment.get("forwarded"):
-            forward_from = attachment.get("forward_from", "")
-            if forward_from:
-                confirm_text += f"\n📨 Переслано от: {forward_from}"
+        if media_group_id:
+            # Часть альбома — собираем файлы и ответим один раз в конце
+            async def on_media_group_complete(files: list, chat_id: int, is_urgent: bool, is_special: bool, total_count: int):
+                """Callback вызывается когда все файлы группы получены"""
+                files_count = len(files)
+                summary = get_files_summary(files)
 
-        # Предупреждение о приближении к лимиту
-        if count >= MAX_ATTACHMENTS - 2:
-            remaining = MAX_ATTACHMENTS - count
-            confirm_text += f"\n\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
+                if is_urgent:
+                    text = f"""⚡️ <b>Принял {files_count} файлов!</b>
 
-        await message.answer(confirm_text, reply_markup=get_task_continue_keyboard())
+{summary}
+Всего вложений: {total_count}
+
+Лечу к Шерифу с твоим срочняком!"""
+                elif is_special:
+                    text = f"""🔍 <b>Принято {files_count} материалов</b>
+
+{summary}
+Всего вложений: {total_count}
+
+Изучаю твою нестандартную задачу..."""
+                else:
+                    text = f"""📥 <b>Получил {files_count} файлов!</b>
+
+{summary}
+Всего вложений: {total_count}
+
+Кидай ещё или жми «Готово»."""
+
+                # Предупреждение о приближении к лимиту
+                if total_count >= MAX_ATTACHMENTS - 2:
+                    remaining = MAX_ATTACHMENTS - total_count
+                    text += f"\n\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
+
+                await bot.send_message(chat_id, text, reply_markup=get_task_continue_keyboard())
+
+            # Добавляем в коллектор (не отвечаем сразу)
+            await handle_media_group_file(
+                media_group_id=media_group_id,
+                file_info=attachment,
+                on_complete=on_media_group_complete,
+                chat_id=message.chat.id,
+                is_urgent=is_urgent,
+                is_special=is_special,
+                total_count=len(attachments),
+            )
+        else:
+            # Одиночный файл — отвечаем сразу (старое поведение)
+            count = len(attachments)
+            confirm_text = get_attachment_confirm_text(attachment, count, is_urgent, is_special)
+
+            # Добавляем инфо о пересылке
+            if attachment.get("forwarded"):
+                forward_from = attachment.get("forward_from", "")
+                if forward_from:
+                    confirm_text += f"\n📨 Переслано от: {forward_from}"
+
+            # Предупреждение о приближении к лимиту
+            if count >= MAX_ATTACHMENTS - 2:
+                remaining = MAX_ATTACHMENTS - count
+                confirm_text += f"\n\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
+
+            await message.answer(confirm_text, reply_markup=get_task_continue_keyboard())
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_add_more")
@@ -2503,37 +2554,73 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
 
 
 @router.message(OrderState.appending_files, F.photo)
-async def append_photo(message: Message, state: FSMContext):
+async def append_photo(message: Message, state: FSMContext, bot: Bot):
     """Получено фото для дослать"""
     data = await state.get_data()
     appended_files = data.get("appended_files", [])
 
     photo = message.photo[-1]
-    appended_files.append({
+    file_info = {
         "type": "photo",
         "file_id": photo.file_id,
         "caption": message.caption or "",
-    })
+    }
+    appended_files.append(file_info)
     await state.update_data(appended_files=appended_files)
 
-    await message.answer(f"📸 Фото принял! (всего: {len(appended_files)})")
+    # Проверяем media_group
+    media_group_id = message.media_group_id
+    if media_group_id:
+        async def on_append_complete(files: list, chat_id: int, total_count: int):
+            summary = get_files_summary(files)
+            await bot.send_message(
+                chat_id,
+                f"📥 <b>Принял {len(files)} файлов!</b>\n\n{summary}\nВсего: {total_count}"
+            )
+        await handle_media_group_file(
+            media_group_id=media_group_id,
+            file_info=file_info,
+            on_complete=on_append_complete,
+            chat_id=message.chat.id,
+            total_count=len(appended_files),
+        )
+    else:
+        await message.answer(f"📸 Фото принял! (всего: {len(appended_files)})")
 
 
 @router.message(OrderState.appending_files, F.document)
-async def append_document(message: Message, state: FSMContext):
+async def append_document(message: Message, state: FSMContext, bot: Bot):
     """Получен документ для дослать"""
     data = await state.get_data()
     appended_files = data.get("appended_files", [])
 
-    appended_files.append({
+    file_info = {
         "type": "document",
         "file_id": message.document.file_id,
         "file_name": message.document.file_name or "файл",
         "caption": message.caption or "",
-    })
+    }
+    appended_files.append(file_info)
     await state.update_data(appended_files=appended_files)
 
-    await message.answer(f"📄 Файл принял! (всего: {len(appended_files)})")
+    # Проверяем media_group
+    media_group_id = message.media_group_id
+    if media_group_id:
+        async def on_append_complete(files: list, chat_id: int, total_count: int):
+            summary = get_files_summary(files)
+            await bot.send_message(
+                chat_id,
+                f"📥 <b>Принял {len(files)} файлов!</b>\n\n{summary}\nВсего: {total_count}"
+            )
+        await handle_media_group_file(
+            media_group_id=media_group_id,
+            file_info=file_info,
+            on_complete=on_append_complete,
+            chat_id=message.chat.id,
+            total_count=len(appended_files),
+        )
+    else:
+        await message.answer(f"📄 Файл принял! (всего: {len(appended_files)})")
 
 
 @router.message(OrderState.appending_files, F.voice)
@@ -2549,6 +2636,7 @@ async def append_voice(message: Message, state: FSMContext):
     })
     await state.update_data(appended_files=appended_files)
 
+    # Голосовые не бывают частью media_group
     await message.answer(f"🎤 Голосовое принял! (всего: {len(appended_files)})")
 
 
