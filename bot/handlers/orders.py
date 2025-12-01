@@ -1256,27 +1256,40 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
 @router.callback_query(OrderState.entering_task, F.data == "task_add_more")
 async def task_add_more(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Пользователь хочет добавить ещё файлов"""
-    await callback.answer("Кидай ещё!")
+    await callback.answer("📎 Кидай ещё!")
 
     data = await state.get_data()
     attachments = data.get("attachments", [])
+    count = len(attachments)
 
     # Показываем превью того что уже есть
     if attachments:
         preview = format_attachments_preview(attachments)
-        text = f"""📎  <b>Добавь ещё</b>
+        remaining = MAX_ATTACHMENTS - count
+        limit_hint = f"\n\n📊 Загружено: {count}/{MAX_ATTACHMENTS}" if count > 0 else ""
+        text = f"""📎 <b>Добавь ещё</b>
 
 Уже есть:
-{preview}
+{preview}{limit_hint}
 
-Кидай ещё или нажми «Готово»."""
+Кидай файлы, фото или текст."""
     else:
-        text = """📎  <b>Добавь ещё</b>
+        text = """📎 <b>Добавь ещё</b>
 
 Кидай файлы, фото или текст.
 Когда всё — нажми «Готово»."""
 
-    await safe_edit_or_send(callback, text, reply_markup=get_task_continue_keyboard(), bot=bot)
+    # Удаляем старое сообщение и отправляем новое (избегаем "message not modified")
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=text,
+        reply_markup=get_task_continue_keyboard()
+    )
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_clear")
