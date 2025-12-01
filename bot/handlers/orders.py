@@ -31,7 +31,10 @@ CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking
 # Risk Matrix: Изображения для разных состояний сметы
 IMG_DEAL_READY = Path("/root/academic_saloon/bot/media/confirm_std.jpg")      # GREEN FLOW — Сделка готова
 IMG_UNDER_REVIEW = Path("/root/academic_saloon/bot/media/checking_payment.jpg")  # YELLOW FLOW — На проверке
-IMG_FILES_RECEIVED = Path("/root/academic_saloon/bot/media/papka.jpg")         # Файлы приняты — Папка
+
+# Upload Stage: Изображения для загрузки файлов
+IMG_UPLOAD_START = Path("/root/academic_saloon/bot/media/upload_bag.jpg")      # Пустая сумка — начальное состояние
+IMG_FILES_RECEIVED = Path("/root/academic_saloon/bot/media/papka.jpg")         # Папка с файлами — файлы приняты
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -1366,13 +1369,16 @@ async def show_task_input_screen(
         except Exception:
             pass
 
+    # Выбираем изображение для начального состояния (пустая сумка)
+    start_image = IMG_UPLOAD_START if IMG_UPLOAD_START.exists() else settings.TASK_INPUT_IMAGE
+
     # Отправляем фото с caption (с кэшированием file_id)
-    if settings.TASK_INPUT_IMAGE.exists():
+    if start_image.exists():
         try:
             await send_cached_photo(
                 bot=bot,
                 chat_id=chat_id,
-                photo_path=settings.TASK_INPUT_IMAGE,
+                photo_path=start_image,
                 caption=caption,
                 reply_markup=get_task_input_keyboard(),
             )
@@ -1548,46 +1554,31 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
                             continue
                     current_attachments.append(f)
 
-                await fsm_state.update_data(attachments=current_attachments)
+                # Устанавливаем флаг has_attachments для файлов
+                await fsm_state.update_data(attachments=current_attachments, has_attachments=True)
 
-                files_count = len(files)
                 total_count = len(current_attachments)
-                summary = get_files_summary(files)
 
-                # Progress bar
-                progress = get_progress_bar(total_count, MAX_ATTACHMENTS)
+                # Формируем сообщение "МАТЕРИАЛЫ ПРИНЯТЫ" с новым UI
+                materials_caption = format_materials_received_message(current_attachments)
+                keyboard = get_task_continue_keyboard(files_count=total_count)
 
-                if is_urgent:
-                    text = f"""⚡️ <b>Принял {files_count} файлов!</b>
+                # Отправляем с изображением IMG_FILES_RECEIVED
+                if IMG_FILES_RECEIVED.exists():
+                    try:
+                        await send_cached_photo(
+                            bot=bot,
+                            chat_id=chat_id,
+                            photo_path=IMG_FILES_RECEIVED,
+                            caption=materials_caption,
+                            reply_markup=keyboard,
+                        )
+                        return
+                    except Exception:
+                        pass
 
-{summary}
-
-{progress}
-
-Лечу к Шерифу с твоим срочняком!"""
-                elif is_special:
-                    text = f"""🔍 <b>Принято {files_count} материалов</b>
-
-{summary}
-
-{progress}
-
-Изучаю твою нестандартную задачу..."""
-                else:
-                    text = f"""📥 <b>Принял {files_count} файлов!</b>
-
-{summary}
-
-{progress}
-
-<i>Ещё или жми «Готово»</i>"""
-
-                # Предупреждение о приближении к лимиту
-                if total_count >= MAX_ATTACHMENTS - 2:
-                    remaining = MAX_ATTACHMENTS - total_count
-                    text += f"\n\n⚠️ Осталось {remaining} {'место' if remaining == 1 else 'места'}"
-
-                await bot.send_message(chat_id, text, reply_markup=get_task_continue_keyboard(files_count=total_count))
+                # Fallback на текст
+                await bot.send_message(chat_id, materials_caption, reply_markup=keyboard)
 
             # Добавляем в коллектор (НЕ сохраняем в state сразу!)
             await handle_media_group_file(
@@ -1610,27 +1601,34 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
                 await state.update_data(attachments=attachments)
 
             count = len(attachments)
-            confirm_text = get_attachment_confirm_text(attachment, count, is_urgent, is_special)
+
+            # Формируем сообщение "МАТЕРИАЛЫ ПРИНЯТЫ" с новым UI
+            materials_caption = format_materials_received_message(attachments)
 
             # Добавляем инфо о пересылке
             if attachment.get("forwarded"):
                 forward_from = attachment.get("forward_from", "")
                 if forward_from:
-                    confirm_text += f"\n📨 <i>от {forward_from}</i>"
+                    materials_caption += f"\n📨 <i>Переслано от {forward_from}</i>"
 
-            # Progress bar
-            confirm_text += f"\n\n{get_progress_bar(count, MAX_ATTACHMENTS)}"
+            keyboard = get_task_continue_keyboard(files_count=count)
 
-            # Подсказка или предупреждение
-            if count >= MAX_ATTACHMENTS:
-                confirm_text += "\n\n✓ Лимит — жми <b>Готово →</b>"
-            elif count >= MAX_ATTACHMENTS - 2:
-                remaining = MAX_ATTACHMENTS - count
-                confirm_text += f"\n\n⚠️ Ещё {remaining} {'файл' if remaining == 1 else 'файла'} и лимит"
-            else:
-                confirm_text += "\n\n<i>Ещё файлы или Готово →</i>"
+            # Отправляем с изображением IMG_FILES_RECEIVED
+            if IMG_FILES_RECEIVED.exists():
+                try:
+                    await send_cached_photo(
+                        bot=bot,
+                        chat_id=message.chat.id,
+                        photo_path=IMG_FILES_RECEIVED,
+                        caption=materials_caption,
+                        reply_markup=keyboard,
+                    )
+                    return
+                except Exception:
+                    pass
 
-            await message.answer(confirm_text, reply_markup=get_task_continue_keyboard(files_count=count))
+            # Fallback на простой текст
+            await message.answer(materials_caption, reply_markup=keyboard)
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_add_more")
@@ -1640,12 +1638,21 @@ async def task_add_more(callback: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(OrderState.entering_task, F.data == "task_clear")
-async def task_clear(callback: CallbackQuery, state: FSMContext):
-    """Очистить все вложения и начать заново"""
-    await callback.answer("Очищено!")
+async def task_clear(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """
+    Очистить все вложения — остаёмся на текущем шаге!
+    Сбрасываем данные и показываем начальный UI с пустой сумкой.
+    """
+    await callback.answer("🗑 Список очищен!")
 
     data = await state.get_data()
-    await state.update_data(attachments=[])
+
+    # Сбрасываем attachments и risk flags, но НЕ меняем state
+    await state.update_data(
+        attachments=[],
+        has_attachments=False,
+        risk_short_description=None
+    )
 
     # Получаем work_type для контекста
     try:
@@ -1653,7 +1660,57 @@ async def task_clear(callback: CallbackQuery, state: FSMContext):
     except ValueError:
         work_type = None
 
-    await show_task_input_screen(callback.message, work_type=work_type)
+    # Определяем текст и изображение для пустого состояния
+    if work_type == WorkType.OTHER:
+        caption = """🕵️‍♂️ <b>Материалы дела</b>
+
+Папка пуста. Давай подробности — скидывай всё, что есть по задаче.
+
+<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
+        image_path = INVESTIGATION_IMAGE_PATH
+    else:
+        caption = """📂 <b>ПАПКА ПУСТА</b>
+
+Выкладывай всё, что есть по задаче.
+Чем больше инфы — тем точнее смогу назвать цену.
+
+<b>Что можно прислать:</b>
+📸 Фото методички или доски
+📄 Файлы (Word, PDF)
+💬 Скриншоты переписки с преподом
+✍️ <b>Или просто напиши тему и требования текстом</b>
+
+<i>💡 Чтобы прикрепить файл — нажми 📎 внизу экрана.</i>"""
+        image_path = IMG_UPLOAD_START if IMG_UPLOAD_START.exists() else settings.TASK_INPUT_IMAGE
+
+    # Удаляем старое сообщение и отправляем новое с нужным изображением
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Клавиатура для пустого состояния (без кнопки "Готово")
+    keyboard = get_task_continue_keyboard(files_count=0)
+
+    if image_path.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=image_path,
+                caption=caption,
+                reply_markup=keyboard,
+            )
+            return
+        except Exception:
+            pass
+
+    # Fallback на текст
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=keyboard,
+    )
 
 
 @router.callback_query(OrderState.entering_task, F.data == "back_from_task")
