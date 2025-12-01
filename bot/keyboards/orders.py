@@ -477,34 +477,32 @@ def get_task_input_keyboard() -> InlineKeyboardMarkup:
 
 def get_task_continue_keyboard(files_count: int = 0) -> InlineKeyboardMarkup:
     """
-    Клавиатура после получения задания — добавить ещё или продолжить.
+    Клавиатура после получения задания.
 
-    Layout:
-    [      📎 Ещё       ]  <- если хочет добавить
-    [ ✅ Готово | 🗑 Очистить ]  <- основные действия
-    [     ❌ Отмена     ]  <- выход
+    Layout (если есть файлы):
+    [ ✅ Готово → ]
+    [ 🗑 Очистить | ❌ Отмена ]
+
+    Layout (если нет файлов):
+    [ ❌ Отмена ]
     """
     buttons = []
 
-    # Кнопка "Ещё" — только если есть место
-    if files_count < 10:
+    # Готово — главная кнопка, только если есть файлы
+    if files_count > 0:
         buttons.append([
-            InlineKeyboardButton(text="📎 Ещё", callback_data="task_add_more"),
+            InlineKeyboardButton(text="✅ Готово →", callback_data="task_done"),
         ])
-
-    # Основные действия
-    row = []
-    if files_count > 0:
-        row.append(InlineKeyboardButton(text="✅ Готово", callback_data="task_done"))
-    if files_count > 0:
-        row.append(InlineKeyboardButton(text="🗑 Очистить", callback_data="task_clear"))
-    if row:
-        buttons.append(row)
-
-    # Отмена всегда внизу
-    buttons.append([
-        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
-    ])
+        # Очистить и Отмена в одном ряду
+        buttons.append([
+            InlineKeyboardButton(text="🗑 Очистить", callback_data="task_clear"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ])
+    else:
+        # Только отмена если файлов нет
+        buttons.append([
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+        ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
