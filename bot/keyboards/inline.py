@@ -129,17 +129,26 @@ def get_cancel_complete_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_price_list_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура для прайс-листа — CTA, правила, навигация"""
+    """Клавиатура для прайс-листа — быстрые кнопки заказа по типам"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        # Row 1: Крупные работы
         [
-            InlineKeyboardButton(text="📝 Заказать точный расчет", callback_data="create_order")
+            InlineKeyboardButton(text="🎓 Расчёт Диплома", callback_data="order_type:diploma"),
+            InlineKeyboardButton(text="📚 Расчёт Курсовой", callback_data="order_type:coursework"),
         ],
+        # Row 2: Быстрые варианты
         [
-            InlineKeyboardButton(text="⚖️ Читать правила", callback_data="codex")
+            InlineKeyboardButton(text="📸 Оценить задачу", callback_data="order_type:photo_task"),
+            InlineKeyboardButton(text="⚡️ Другое", callback_data="order_type:other"),
         ],
+        # Row 3: Оферта
         [
-            InlineKeyboardButton(text="🔙 В главное меню", callback_data="back_to_menu")
-        ]
+            InlineKeyboardButton(text="📜 Читать Оферту", callback_data="codex"),
+        ],
+        # Row 4: Назад
+        [
+            InlineKeyboardButton(text="🔙 В главное меню", callback_data="back_to_menu"),
+        ],
     ])
     return kb
 
