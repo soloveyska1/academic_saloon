@@ -40,6 +40,7 @@ from bot.states.order import OrderState
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
 from bot.handlers.start import process_start
+from bot.services.live_cards import update_card_status
 
 router = Router()
 
@@ -2713,6 +2714,19 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
     order.status = OrderStatus.CONFIRMED.value
     await session.commit()
 
+    # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
+    try:
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.full_name if user else None,
+            extra_text=f"💰 Цена назначена: {int(price):,}₽".replace(",", " "),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+
     # Рассчитываем итоговую цену
     final_price = price - bonus_to_use
     half_amount = final_price / 2
@@ -2930,6 +2944,21 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
     order.status = OrderStatus.REJECTED.value
     await session.commit()
 
+    # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
+    try:
+        user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+        user = user_result.scalar_one_or_none()
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.full_name if user else None,
+            extra_text=f"❌ Отклонено админом",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+
     # Уведомляем клиента
     try:
         await bot.send_message(
@@ -3038,6 +3067,19 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
     user.total_spent += order.paid_amount
 
     await session.commit()
+
+    # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
+    try:
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.full_name if user else None,
+            extra_text=f"✅ Оплата подтверждена (чек)",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
 
     # Начисляем бонусы клиенту за оплаченный заказ (50₽)
     order_bonus = 0
@@ -4316,6 +4358,22 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     order.paid_amount = order.price / 2  # 50% аванс
     await session.commit()
 
+    # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
+    try:
+        # Получаем данные клиента для карточки
+        user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+        user = user_result.scalar_one_or_none()
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.full_name if user else None,
+            extra_text=f"✅ Оплата подтверждена админом",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ С КАРТИНКОЙ ═══
     user_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
 
@@ -4403,6 +4461,21 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
     order.status = OrderStatus.WAITING_PAYMENT.value
     await session.commit()
 
+    # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
+    try:
+        user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+        user = user_result.scalar_one_or_none()
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.full_name if user else None,
+            extra_text=f"❌ Оплата не найдена",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ ═══
     user_text = f"""⚠️ <b>Оплата не найдена</b>
 
@@ -4456,3 +4529,32 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
         await callback.message.edit_text(admin_text, reply_markup=admin_keyboard)
     except Exception:
         await callback.message.answer(admin_text, reply_markup=admin_keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    LIVE DASHBOARD
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("dashboard"), StateFilter("*"))
+async def create_dashboard_command(message: Message, session: AsyncSession, bot: Bot):
+    """
+    Создать Live Dashboard в канале заказов.
+
+    Использование: /dashboard
+    """
+    if not is_admin(message.from_user.id):
+        return
+
+    from bot.services.live_cards import send_or_update_dashboard
+
+    await message.answer("📊 Создаю дашборд в канале...")
+
+    try:
+        msg_id = await send_or_update_dashboard(bot=bot, session=session)
+        if msg_id:
+            await message.answer(f"✅ Дашборд создан!\n\nMessage ID: {msg_id}")
+        else:
+            await message.answer("❌ Не удалось создать дашборд")
+    except Exception as e:
+        logger.error(f"Failed to create dashboard: {e}")
+        await message.answer(f"❌ Ошибка: {e}")
