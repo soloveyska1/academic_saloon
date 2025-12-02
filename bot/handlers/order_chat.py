@@ -245,24 +245,30 @@ async def start_admin_chat(message: Message, order_id: int, session: AsyncSessio
     )
 
     # Показываем последние сообщения (если есть)
-    messages_query = select(OrderMessage).where(
-        OrderMessage.order_id == order_id
-    ).order_by(OrderMessage.created_at.desc()).limit(5)
-    result = await session.execute(messages_query)
-    recent_messages = list(reversed(result.scalars().all()))
-
     history_text = ""
-    if recent_messages:
-        history_text = "\n\n📜 <b>Последние сообщения:</b>\n"
-        for msg in recent_messages:
-            sender = "🛡️ Вы" if msg.sender_type == MessageSender.ADMIN.value else f"👤 {client_name}"
-            text_preview = (msg.message_text[:50] + "...") if msg.message_text and len(msg.message_text) > 50 else (msg.message_text or "📎 Файл")
-            history_text += f"• {sender}: {text_preview}\n"
+    try:
+        messages_query = select(OrderMessage).where(
+            OrderMessage.order_id == order_id
+        ).order_by(OrderMessage.created_at.desc()).limit(5)
+        result = await session.execute(messages_query)
+        recent_messages = list(reversed(result.scalars().all()))
+
+        if recent_messages:
+            history_text = "\n\n📜 <b>Последние сообщения:</b>\n"
+            for msg in recent_messages:
+                sender = "🛡️ Вы" if msg.sender_type == MessageSender.ADMIN.value else f"👤 {client_name}"
+                text_preview = (msg.message_text[:50] + "...") if msg.message_text and len(msg.message_text) > 50 else (msg.message_text or "📎 Файл")
+                history_text += f"• {sender}: {text_preview}\n"
+    except Exception as e:
+        logger.warning(f"Could not load chat history: {e}")
+
+    # Получаем label типа работы
+    work_type_display = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
 
     await message.answer(
         f"💬 <b>Чат с клиентом по заказу #{order_id}</b>\n\n"
         f"👤 Клиент: {client_name}\n"
-        f"📋 Тип работы: {order.work_type_label}"
+        f"📋 Тип работы: {work_type_display}"
         f"{history_text}\n\n"
         f"✏️ Введите сообщение или отправьте файл:",
         reply_markup=get_cancel_keyboard()
