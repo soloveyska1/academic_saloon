@@ -4683,7 +4683,7 @@ async def panic_urgency_selected(callback: CallbackQuery, state: FSMContext, bot
 async def panic_file_received(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """
     Получен файл/фото/текст/голос — добавляем в список.
-    Редактируем существующее сообщение вместо отправки нового.
+    Поддерживает media_group (альбомы).
     """
     # Intercept /start command
     if message.text and message.text.strip().lower().startswith("/start"):
@@ -4691,7 +4691,6 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
         return
 
     data = await state.get_data()
-    panic_files = data.get("panic_files", [])
     upload_msg_id = data.get("panic_upload_msg_id")
     chat_id = data.get("panic_chat_id", message.chat.id)
     urgency_label = data.get("panic_urgency_label", "🏎 Турбо")
@@ -4742,19 +4741,65 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
             "content": message.text,
         }
 
-    if attachment:
+    if not attachment:
+        return
+
+    # Проверяем media_group (альбом)
+    media_group_id = message.media_group_id
+
+    if media_group_id:
+        # Часть альбома — собираем через коллектор
+        async def on_panic_media_group_complete(files: list, mg_chat_id: int, **kwargs):
+            """Callback когда все файлы альбома собраны"""
+            fsm_state = kwargs.get("fsm_state")
+            if not fsm_state:
+                return
+
+            current_data = await fsm_state.get_data()
+            panic_files = current_data.get("panic_files", [])
+            ul_msg_id = current_data.get("panic_upload_msg_id")
+            urg_label = current_data.get("panic_urgency_label", "🏎 Турбо")
+
+            # Добавляем все файлы из альбома
+            for f in files:
+                f_id = f.get("file_id")
+                if f_id:
+                    existing_ids = {att.get("file_id") for att in panic_files if att.get("file_id")}
+                    if f_id in existing_ids:
+                        continue
+                panic_files.append(f)
+
+            await fsm_state.update_data(panic_files=panic_files)
+
+            # Обновляем UI
+            await update_panic_upload_ui(bot, mg_chat_id, ul_msg_id, panic_files, urg_label)
+
+        await handle_media_group_file(
+            media_group_id=media_group_id,
+            file_info=attachment,
+            on_complete=on_panic_media_group_complete,
+            chat_id=message.chat.id,
+            fsm_state=state,
+        )
+    else:
+        # Одиночный файл
+        panic_files = data.get("panic_files", [])
         panic_files.append(attachment)
         await state.update_data(panic_files=panic_files)
 
-    # Формируем превью
+        await update_panic_upload_ui(bot, chat_id, upload_msg_id, panic_files, urgency_label)
+
+
+async def update_panic_upload_ui(bot: Bot, chat_id: int, msg_id: int, panic_files: list, urgency_label: str):
+    """Вспомогательная функция для обновления UI загрузки"""
     files_count = len(panic_files)
 
     # Считаем типы
-    photos = sum(1 for f in panic_files if f["type"] == "photo")
-    docs = sum(1 for f in panic_files if f["type"] == "document")
-    voices = sum(1 for f in panic_files if f["type"] in ("voice", "audio"))
-    texts = sum(1 for f in panic_files if f["type"] == "text")
-    videos = sum(1 for f in panic_files if f["type"] in ("video", "video_note"))
+    photos = sum(1 for f in panic_files if f.get("type") == "photo")
+    docs = sum(1 for f in panic_files if f.get("type") == "document")
+    voices = sum(1 for f in panic_files if f.get("type") in ("voice", "audio"))
+    texts = sum(1 for f in panic_files if f.get("type") == "text")
+    videos = sum(1 for f in panic_files if f.get("type") in ("video", "video_note"))
 
     summary_parts = []
     if photos:
@@ -4779,21 +4824,20 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
 <i>✅ Принято: {summary}</i>"""
 
     # Пытаемся отредактировать существующее сообщение
-    if upload_msg_id:
+    if msg_id:
         try:
             await bot.edit_message_caption(
                 chat_id=chat_id,
-                message_id=upload_msg_id,
+                message_id=msg_id,
                 caption=caption,
                 reply_markup=get_panic_upload_keyboard(has_files=files_count > 0),
             )
             return
         except Exception:
-            # Если не получилось (возможно текстовое сообщение), пробуем edit_message_text
             try:
                 await bot.edit_message_text(
                     chat_id=chat_id,
-                    message_id=upload_msg_id,
+                    message_id=msg_id,
                     text=caption,
                     reply_markup=get_panic_upload_keyboard(has_files=files_count > 0),
                 )
@@ -4801,12 +4845,12 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
             except Exception:
                 pass
 
-    # Fallback: отправляем новое сообщение и сохраняем его ID
-    sent_msg = await message.answer(
+    # Fallback: новое сообщение
+    await bot.send_message(
+        chat_id=chat_id,
         text=caption,
         reply_markup=get_panic_upload_keyboard(has_files=files_count > 0),
     )
-    await state.update_data(panic_upload_msg_id=sent_msg.message_id)
 
 
 @router.callback_query(PanicState.uploading_files, F.data == "panic_submit")
@@ -4857,6 +4901,65 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
     await session.commit()
     await session.refresh(order)
 
+    # ═══════════════════════════════════════════════════════════════
+    #   ЗАГРУЗКА НА ЯНДЕКС.ДИСК
+    # ═══════════════════════════════════════════════════════════════
+    yadisk_link = None
+    if yandex_disk_service and yandex_disk_service.is_available and panic_files:
+        try:
+            files_to_upload = []
+            file_counter = 1
+
+            for att in panic_files:
+                att_type = att.get("type", "unknown")
+                file_id = att.get("file_id")
+
+                if not file_id or att_type == "text":
+                    continue
+
+                try:
+                    tg_file = await bot.get_file(file_id)
+                    file_bytes = await bot.download_file(tg_file.file_path)
+
+                    if att_type == "document":
+                        filename = att.get("file_name", f"document_{file_counter}")
+                    elif att_type == "photo":
+                        filename = f"photo_{file_counter}.jpg"
+                    elif att_type == "voice":
+                        filename = f"voice_{file_counter}.ogg"
+                    elif att_type == "video":
+                        filename = f"video_{file_counter}.mp4"
+                    elif att_type == "video_note":
+                        filename = f"video_note_{file_counter}.mp4"
+                    elif att_type == "audio":
+                        filename = f"audio_{file_counter}.mp3"
+                    else:
+                        filename = f"file_{file_counter}"
+
+                    files_to_upload.append((file_bytes.read(), filename))
+                    file_counter += 1
+                except Exception as e:
+                    logger.warning(f"Failed to download file from Telegram: {e}")
+                    continue
+
+            if files_to_upload:
+                client_name = full_name
+                result = await yandex_disk_service.upload_multiple_files(
+                    files=files_to_upload,
+                    order_id=order.id,
+                    client_name=client_name,
+                    work_type="Срочный заказ",
+                )
+                if result.success and result.folder_url:
+                    yadisk_link = result.folder_url
+                    logger.info(f"Panic Order #{order.id} files uploaded to Yandex Disk: {yadisk_link}")
+
+        except Exception as e:
+            logger.error(f"Error uploading panic order to Yandex Disk: {e}")
+
+    # Добавляем ссылку на Яндекс.Диск в уведомление
+    yadisk_line = f"\n📁 <b>Яндекс.Диск:</b> <a href=\"{yadisk_link}\">Открыть папку</a>" if yadisk_link else ""
+
     # Формируем уведомление админам
     admin_text = f"""🔥🔥🔥 <b>СРОЧНЫЙ ЗАКАЗ #{order.id}</b> 🔥🔥🔥
 
@@ -4866,7 +4969,7 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
 
 ⚡ <b>Срочность:</b> {urgency_info["label"]} ({urgency_info["tag"]})
 
-📎 <b>Вложений:</b> {len(panic_files)}
+📎 <b>Вложений:</b> {len(panic_files)}{yadisk_line}
 
 ⏰ <i>Требуется оперативное реагирование!</i>"""
 
@@ -4925,8 +5028,9 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
     except Exception as e:
         logger.warning(f"Не удалось залогировать panic order: {e}")
 
-    # Очищаем состояние
+    # Очищаем состояние, но сохраняем order_id для возможного append
     await state.clear()
+    await state.update_data(last_panic_order_id=order.id)
 
     # Сохраняем chat_id ДО удаления сообщения
     chat_id = callback.message.chat.id
@@ -5052,14 +5156,27 @@ async def panic_clear_files(callback: CallbackQuery, state: FSMContext, bot: Bot
 @router.callback_query(F.data == "panic_append_files")
 async def panic_append_files(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """Дослать материалы к существующему panic-заказу"""
+
+    # Получаем order_id из предыдущего panic заказа
+    data = await state.get_data()
+    order_id = data.get("last_panic_order_id")
+
+    if not order_id:
+        await callback.answer("❌ Заказ не найден. Оформи новый.", show_alert=True)
+        return
+
     await callback.answer("📎")
 
     # Переходим в режим дозагрузки
     await state.set_state(OrderState.appending_files)
-    # Помечаем что это panic append (для правильной навигации)
-    await state.update_data(panic_append=True)
+    # Сохраняем order_id для append и помечаем как panic append
+    await state.update_data(
+        append_order_id=order_id,
+        appended_files=[],
+        panic_append=True,
+    )
 
-    caption = """📎 <b>ДОСЛАТЬ МАТЕРИАЛЫ</b>
+    caption = f"""📎 <b>ДОСЛАТЬ МАТЕРИАЛЫ К ЗАКАЗУ #{order_id}</b>
 
 Отправляй дополнительные файлы — всё передадим исполнителю.
 
@@ -5073,5 +5190,5 @@ async def panic_append_files(callback: CallbackQuery, state: FSMContext, bot: Bo
     await bot.send_message(
         chat_id=callback.message.chat.id,
         text=caption,
-        reply_markup=get_append_files_keyboard(files_count=0),
+        reply_markup=get_append_files_keyboard(order_id=order_id, files_count=0),
     )
