@@ -436,12 +436,11 @@ async def card_set_price_menu(callback: CallbackQuery, session: AsyncSession):
         if row:
             buttons.append(row)
 
-        # Кнопка для ввода своей цены (в личке)
-        bot_username = settings.BOT_USERNAME
+        # Кнопка для ввода своей цены (прямо в топике)
         buttons.append([
             InlineKeyboardButton(
                 text="✏️ Своя цена",
-                url=f"https://t.me/{bot_username}?start=setprice_{order_id}"
+                callback_data=f"admin_set_price:{order_id}"
             )
         ])
 
