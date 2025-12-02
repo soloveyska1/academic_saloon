@@ -642,6 +642,65 @@ async def back_to_menu(callback: CallbackQuery, bot: Bot):
 
 
 # ══════════════════════════════════════════════════════════════
+#                    НОВЫЕ CALLBACK'И ГЛАВНОГО МЕНЮ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "start_order")
+async def start_order_callback(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
+    """
+    Рассчитать стоимость — переход к выбору типа работы.
+    Алиас для create_order.
+    """
+    from bot.handlers.orders import start_order as orders_start_order
+    await orders_start_order(callback, state, bot, session)
+
+
+@router.callback_query(F.data == "show_price")
+async def show_price_callback(callback: CallbackQuery, bot: Bot):
+    """
+    Прайс — алиас для price_list.
+    """
+    await show_price_list(callback, bot)
+
+
+@router.callback_query(F.data == "free_stuff")
+async def show_free_stuff(callback: CallbackQuery, bot: Bot):
+    """Тайник (Халява) — секретный раздел с бонусами"""
+    await callback.answer("🎁")
+
+    # Логируем
+    await log_action(
+        bot=bot,
+        event=LogEvent.NAV_BUTTON,
+        user=callback.from_user,
+        details="Открыл «Тайник»",
+    )
+
+    text = """🎁 <b>Тайник Салуна</b>
+
+Хо-хо, ковбой нашёл секретную комнату!
+
+<b>🎯 Как получить скидку:</b>
+
+◈ <b>Первый заказ:</b> −5% автоматически
+◈ <b>Приведи друга:</b> +5% на баланс от его заказа
+◈ <b>Оптовик:</b> После 3 заказов — скидка 10%
+
+<b>💎 Тайные коды:</b>
+Иногда Шериф раздаёт промокоды в <a href="{reviews}">канале отзывов</a>.
+
+<i>Следи за новостями — тут бывает жарко.</i>""".format(reviews=settings.REVIEWS_CHANNEL)
+
+    await safe_delete_message(callback)
+    await bot.send_message(
+        callback.message.chat.id,
+        text,
+        reply_markup=get_back_keyboard(),
+        disable_web_page_preview=True
+    )
+
+
+# ══════════════════════════════════════════════════════════════
 #                    ОБРАБОТКА ТЕКСТОВЫХ СООБЩЕНИЙ
 # ══════════════════════════════════════════════════════════════
 

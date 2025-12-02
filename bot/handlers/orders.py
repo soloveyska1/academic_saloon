@@ -4614,6 +4614,15 @@ async def start_panic_flow(callback: CallbackQuery, state: FSMContext, bot: Bot)
     )
 
 
+@router.callback_query(F.data == "panic_mode")
+async def panic_mode_entry(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """
+    Точка входа в Panic Flow — кнопка "СРОЧНО! ГОРИТ!" из меню.
+    """
+    await callback.answer("🔥")
+    await start_panic_flow(callback, state, bot)
+
+
 @router.callback_query(PanicState.choosing_urgency, F.data.startswith("panic_urgency:"))
 async def panic_urgency_selected(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """
@@ -4624,24 +4633,13 @@ async def panic_urgency_selected(callback: CallbackQuery, state: FSMContext, bot
     urgency_key = callback.data.split(":")[1]
     urgency_info = PANIC_URGENCY_MAP.get(urgency_key, PANIC_URGENCY_MAP["medium"])
 
-    await state.update_data(
-        panic_urgency=urgency_key,
-        panic_multiplier=urgency_info["multiplier"],
-        panic_urgency_label=urgency_info["label"],
-    )
-    await state.set_state(PanicState.uploading_files)
-
     caption = f"""📤 <b>ЗАГРУЗИ ЗАДАНИЕ</b>
 
 Срочность: <b>{urgency_info["label"]}</b> ({urgency_info["tag"]})
 
-Скидывай сюда всё что есть:
-• 📸 Фото задания
-• 📄 Документы/файлы
-• 🎤 Голосовое (опишешь словами)
-• 💬 Текстом — тоже ок
+Кидай сюда всё сразу: методички, скрины, голосовые. Я разберусь.
 
-<i>Загрузи хотя бы что-то, чтобы разблокировать кнопку ПУСК</i>"""
+<i>✅ Принято: 0 файлов</i>"""
 
     # Удаляем старое сообщение
     try:
@@ -4649,31 +4647,43 @@ async def panic_urgency_selected(callback: CallbackQuery, state: FSMContext, bot
     except Exception:
         pass
 
-    # Отправляем с фото если есть
+    # Отправляем сообщение и сохраняем его ID для редактирования
+    sent_msg = None
     if FAST_UPLOAD_IMAGE_PATH.exists():
         try:
-            await send_cached_photo(
+            sent_msg = await send_cached_photo(
                 bot=bot,
                 chat_id=callback.message.chat.id,
                 photo_path=FAST_UPLOAD_IMAGE_PATH,
                 caption=caption,
                 reply_markup=get_panic_upload_keyboard(has_files=False),
             )
-            return
         except Exception:
             pass
 
-    await bot.send_message(
-        chat_id=callback.message.chat.id,
-        text=caption,
-        reply_markup=get_panic_upload_keyboard(has_files=False),
+    if not sent_msg:
+        sent_msg = await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=caption,
+            reply_markup=get_panic_upload_keyboard(has_files=False),
+        )
+
+    # Сохраняем message_id для последующего редактирования
+    await state.update_data(
+        panic_urgency=urgency_key,
+        panic_multiplier=urgency_info["multiplier"],
+        panic_urgency_label=urgency_info["label"],
+        panic_upload_msg_id=sent_msg.message_id if sent_msg else None,
+        panic_chat_id=callback.message.chat.id,
     )
+    await state.set_state(PanicState.uploading_files)
 
 
 @router.message(PanicState.uploading_files)
 async def panic_file_received(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """
     Получен файл/фото/текст/голос — добавляем в список.
+    Редактируем существующее сообщение вместо отправки нового.
     """
     # Intercept /start command
     if message.text and message.text.strip().lower().startswith("/start"):
@@ -4682,6 +4692,9 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
 
     data = await state.get_data()
     panic_files = data.get("panic_files", [])
+    upload_msg_id = data.get("panic_upload_msg_id")
+    chat_id = data.get("panic_chat_id", message.chat.id)
+    urgency_label = data.get("panic_urgency_label", "🏎 Турбо")
 
     # Определяем тип вложения
     attachment = None
@@ -4735,7 +4748,6 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
 
     # Формируем превью
     files_count = len(panic_files)
-    urgency_label = data.get("panic_urgency_label", "🏎 Турбо")
 
     # Считаем типы
     photos = sum(1 for f in panic_files if f["type"] == "photo")
@@ -4746,30 +4758,55 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
 
     summary_parts = []
     if photos:
-        summary_parts.append(f"📸 {photos} фото")
+        summary_parts.append(f"{photos} фото")
     if docs:
-        summary_parts.append(f"📄 {docs} файл(ов)")
+        summary_parts.append(f"{docs} файл(ов)")
     if voices:
-        summary_parts.append(f"🎤 {voices} голосовых")
+        summary_parts.append(f"{voices} голосовых")
     if texts:
-        summary_parts.append(f"💬 {texts} сообщений")
+        summary_parts.append(f"{texts} сообщений")
     if videos:
-        summary_parts.append(f"🎥 {videos} видео")
+        summary_parts.append(f"{videos} видео")
 
-    summary = " • ".join(summary_parts) if summary_parts else "Пусто"
+    summary = ", ".join(summary_parts) if summary_parts else "0 файлов"
 
     caption = f"""📤 <b>ЗАГРУЗИ ЗАДАНИЕ</b>
 
 Срочность: <b>{urgency_label}</b>
 
-<b>Загружено:</b> {summary}
+Кидай сюда всё сразу: методички, скрины, голосовые. Я разберусь.
 
-<i>Жми 🚀 ПУСК когда готов или добавь ещё материалы</i>"""
+<i>✅ Принято: {summary}</i>"""
 
-    await message.answer(
+    # Пытаемся отредактировать существующее сообщение
+    if upload_msg_id:
+        try:
+            await bot.edit_message_caption(
+                chat_id=chat_id,
+                message_id=upload_msg_id,
+                caption=caption,
+                reply_markup=get_panic_upload_keyboard(has_files=files_count > 0),
+            )
+            return
+        except Exception:
+            # Если не получилось (возможно текстовое сообщение), пробуем edit_message_text
+            try:
+                await bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=upload_msg_id,
+                    text=caption,
+                    reply_markup=get_panic_upload_keyboard(has_files=files_count > 0),
+                )
+                return
+            except Exception:
+                pass
+
+    # Fallback: отправляем новое сообщение и сохраняем его ID
+    sent_msg = await message.answer(
         text=caption,
         reply_markup=get_panic_upload_keyboard(has_files=files_count > 0),
     )
+    await state.update_data(panic_upload_msg_id=sent_msg.message_id)
 
 
 @router.callback_query(PanicState.uploading_files, F.data == "panic_submit")
@@ -4892,14 +4929,23 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
     # Очищаем состояние
     await state.clear()
 
-    # Показываем подтверждение
-    caption = f"""✅ <b>ЗАКАЗ #{order.id} ПРИНЯТ!</b>
+    # Показываем подтверждение — агрессивный стиль для критических сроков
+    if urgency_key in ("critical", "high"):
+        caption = f"""🚨 <b>ТРЕВОГА ПРИНЯТА!</b>
 
-🔥 Твоя заявка в приоритетной очереди.
+Заказ <b>#{order.id}</b> в приоритетной очереди.
 
-Шериф уже в курсе и скоро свяжется с тобой для уточнения деталей и стоимости.
+Шериф получил уведомление <b>ПРИОРИТЕТНОГО УРОВНЯ</b>. Оценка заказа займёт 5-15 минут.
 
-<i>Обычно отвечаем в течение 15-30 минут в рабочее время.</i>"""
+<b>Не исчезай.</b> Мы на связи."""
+    else:
+        caption = f"""✅ <b>ЗАКАЗ #{order.id} ПРИНЯТ!</b>
+
+🔥 Твоя заявка в очереди на оценку.
+
+Шериф скоро свяжется для уточнения деталей и стоимости.
+
+<i>Обычно отвечаем в течение 15-30 минут.</i>"""
 
     # Удаляем старое сообщение
     try:
