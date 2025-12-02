@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 
 from aiogram import Router, Bot, F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +16,7 @@ from database.models.orders import Order, OrderStatus
 from database.models.users import User
 from bot.services.live_cards import (
     update_card_status,
+    send_or_update_card,
     get_card_link,
     ORDERS_CHANNEL_ID,
 )
@@ -29,6 +30,19 @@ router = Router()
 # ══════════════════════════════════════════════════════════════
 #           ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ══════════════════════════════════════════════════════════════
+
+def parse_order_id(callback_data: str) -> int:
+    """Извлекает order_id из callback_data, игнорируя суффиксы вроде _confirmed"""
+    # card_reject:123 или card_reject:123_confirmed
+    parts = callback_data.split(":")
+    if len(parts) < 2:
+        raise ValueError(f"Invalid callback_data: {callback_data}")
+
+    order_part = parts[1]
+    # Убираем суффиксы (_confirmed, _yes, etc.)
+    order_id_str = order_part.split("_")[0]
+    return int(order_id_str)
+
 
 async def get_order_with_user(session: AsyncSession, order_id: int) -> tuple[Order | None, User | None]:
     """Получает заказ и пользователя"""
@@ -53,28 +67,52 @@ async def notify_client(bot: Bot, user_id: int, text: str, reply_markup=None):
         return False
 
 
+def is_admin(user_id: int) -> bool:
+    """Проверка, является ли пользователь админом"""
+    return user_id in settings.ADMIN_IDS
+
+
 # ══════════════════════════════════════════════════════════════
-#           CALLBACK HANDLERS
+#           CALLBACK HANDLERS - ОТКЛОНЕНИЕ
 # ══════════════════════════════════════════════════════════════
 
-@router.callback_query(F.data.startswith("card_reject:"))
-async def card_reject_order(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Отклонить заказ (с подтверждением)"""
-    order_id = int(callback.data.split(":")[1])
+@router.callback_query(F.data.startswith("card_reject:") & ~F.data.endswith("_yes"))
+async def card_reject_order_confirm(callback: CallbackQuery):
+    """Отклонить заказ - запрос подтверждения"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Показываем кнопки подтверждения
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Да, отклонить", callback_data=f"card_reject:{order_id}_yes"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data=f"card_cancel:{order_id}"),
+        ]
+    ])
+
+    await callback.answer()
+    try:
+        await callback.message.edit_reply_markup(reply_markup=keyboard)
+    except Exception:
+        pass
+
+
+@router.callback_query(F.data.startswith("card_reject:") & F.data.endswith("_yes"))
+async def card_reject_order_execute(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Отклонить заказ - выполнение"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
     order, user = await get_order_with_user(session, order_id)
 
     if not order:
         await callback.answer("Заказ не найден", show_alert=True)
-        return
-
-    # Подтверждение
-    if not callback.data.endswith("_confirmed"):
-        await callback.answer(
-            f"Отклонить заказ #{order_id}?\n\nНажмите ещё раз для подтверждения.",
-            show_alert=True
-        )
-        # Меняем callback_data для подтверждения
-        callback.data = f"card_reject:{order_id}_confirmed"
         return
 
     # Выполняем отклонение
@@ -86,7 +124,7 @@ async def card_reject_order(callback: CallbackQuery, session: AsyncSession, bot:
         bot, order, session,
         client_username=user.username if user else None,
         client_name=user.full_name if user else None,
-        extra_text=f"Отклонено {datetime.now().strftime('%d.%m %H:%M')}"
+        extra_text=f"❌ Отклонено {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
     # Уведомляем клиента
@@ -100,25 +138,46 @@ async def card_reject_order(callback: CallbackQuery, session: AsyncSession, bot:
     await callback.answer("✅ Заказ отклонён", show_alert=True)
 
 
-@router.callback_query(F.data.startswith("card_ban:"))
-async def card_ban_user(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Забанить спамера"""
-    order_id = int(callback.data.split(":")[1])
+# ══════════════════════════════════════════════════════════════
+#           CALLBACK HANDLERS - БАН
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("card_ban:") & ~F.data.endswith("_yes"))
+async def card_ban_user_confirm(callback: CallbackQuery):
+    """Забанить спамера - запрос подтверждения"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🚫 Да, забанить", callback_data=f"card_ban:{order_id}_yes"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data=f"card_cancel:{order_id}"),
+        ]
+    ])
+
+    await callback.answer()
+    try:
+        await callback.message.edit_reply_markup(reply_markup=keyboard)
+    except Exception:
+        pass
+
+
+@router.callback_query(F.data.startswith("card_ban:") & F.data.endswith("_yes"))
+async def card_ban_user_execute(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Забанить спамера - выполнение"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
     order, user = await get_order_with_user(session, order_id)
 
     if not order:
         await callback.answer("Заказ не найден", show_alert=True)
-        return
-
-    # Подтверждение
-    if not callback.data.endswith("_confirmed"):
-        await callback.answer(
-            f"🚫 ЗАБАНИТЬ пользователя?\n\n"
-            f"User ID: {order.user_id}\n"
-            "Нажмите ещё раз для подтверждения.",
-            show_alert=True
-        )
-        callback.data = f"card_ban:{order_id}_confirmed"
         return
 
     # Баним пользователя
@@ -139,10 +198,160 @@ async def card_ban_user(callback: CallbackQuery, session: AsyncSession, bot: Bot
     await callback.answer("🚫 Пользователь забанен", show_alert=True)
 
 
+# ══════════════════════════════════════════════════════════════
+#           CALLBACK HANDLERS - ОТМЕНА ДЕЙСТВИЯ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("card_cancel:"))
+async def card_cancel_action(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Отмена действия - возврат к обычным кнопкам"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Восстанавливаем карточку с обычными кнопками
+    await send_or_update_card(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.full_name if user else None,
+    )
+
+    await callback.answer("Отменено")
+
+
+# ══════════════════════════════════════════════════════════════
+#           CALLBACK HANDLERS - УСТАНОВКА ЦЕНЫ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("card_price:"))
+async def card_set_price_menu(callback: CallbackQuery, session: AsyncSession):
+    """Показать меню выбора цены"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order = await session.get(Order, order_id)
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Если робот уже насчитал цену, предлагаем её подтвердить
+    robot_price = int(order.price) if order.price > 0 else 0
+
+    # Популярные цены
+    preset_prices = [1500, 2500, 5000, 10000, 15000, 25000]
+
+    buttons = []
+
+    # Если есть цена от робота - первой кнопкой
+    if robot_price > 0:
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"✅ Подтвердить {robot_price:,}₽".replace(",", " "),
+                callback_data=f"card_setprice:{order_id}:{robot_price}"
+            )
+        ])
+
+    # Preset цены (по 3 в ряд)
+    row = []
+    for price in preset_prices:
+        row.append(InlineKeyboardButton(
+            text=f"{price:,}₽".replace(",", " "),
+            callback_data=f"card_setprice:{order_id}:{price}"
+        ))
+        if len(row) == 3:
+            buttons.append(row)
+            row = []
+    if row:
+        buttons.append(row)
+
+    # Кнопка для ввода своей цены (в личке)
+    bot_username = settings.BOT_USERNAME
+    buttons.append([
+        InlineKeyboardButton(
+            text="✏️ Своя цена",
+            url=f"https://t.me/{bot_username}?start=setprice_{order_id}"
+        )
+    ])
+
+    # Кнопка отмены
+    buttons.append([
+        InlineKeyboardButton(text="❌ Отмена", callback_data=f"card_cancel:{order_id}")
+    ])
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    await callback.answer()
+    try:
+        await callback.message.edit_reply_markup(reply_markup=keyboard)
+    except Exception as e:
+        logger.warning(f"Failed to show price menu: {e}")
+
+
+@router.callback_query(F.data.startswith("card_setprice:"))
+async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Установить выбранную цену"""
+    try:
+        parts = callback.data.split(":")
+        order_id = int(parts[1])
+        price = int(parts[2])
+    except (ValueError, IndexError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Устанавливаем цену
+    order.price = float(price)
+    order.status = OrderStatus.WAITING_PAYMENT.value
+    await session.commit()
+
+    # Обновляем карточку
+    await update_card_status(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.full_name if user else None,
+        extra_text=f"💵 Цена установлена: {price:,}₽".replace(",", " ")
+    )
+
+    # Уведомляем клиента
+    price_formatted = f"{price:,}".replace(",", " ")
+    await notify_client(
+        bot, order.user_id,
+        f"💰 <b>Цена за заказ #{order.id}:</b> {price_formatted}₽\n\n"
+        "Оплати, чтобы мы начали работу!"
+    )
+
+    await callback.answer(f"✅ Цена {price_formatted}₽ установлена!", show_alert=True)
+
+
+# ══════════════════════════════════════════════════════════════
+#           CALLBACK HANDLERS - ПОДТВЕРЖДЕНИЕ ОПЛАТЫ
+# ══════════════════════════════════════════════════════════════
+
 @router.callback_query(F.data.startswith("card_confirm_pay:"))
 async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Подтвердить оплату"""
-    order_id = int(callback.data.split(":")[1])
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
     order, user = await get_order_with_user(session, order_id)
 
     if not order:
@@ -176,7 +385,12 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
 @router.callback_query(F.data.startswith("card_reject_pay:"))
 async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Отклонить (оплата не прошла)"""
-    order_id = int(callback.data.split(":")[1])
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
     order, user = await get_order_with_user(session, order_id)
 
     if not order:
@@ -206,10 +420,19 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
     await callback.answer("❌ Оплата отклонена", show_alert=True)
 
 
+# ══════════════════════════════════════════════════════════════
+#           CALLBACK HANDLERS - НАПОМИНАНИЕ И ЗАВЕРШЕНИЕ
+# ══════════════════════════════════════════════════════════════
+
 @router.callback_query(F.data.startswith("card_remind:"))
 async def card_remind_client(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Напомнить клиенту об оплате"""
-    order_id = int(callback.data.split(":")[1])
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
     order, user = await get_order_with_user(session, order_id)
 
     if not order:
@@ -247,7 +470,12 @@ async def card_remind_client(callback: CallbackQuery, session: AsyncSession, bot
 @router.callback_query(F.data.startswith("card_complete:"))
 async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Завершить заказ"""
-    order_id = int(callback.data.split(":")[1])
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
     order, user = await get_order_with_user(session, order_id)
 
     if not order:
