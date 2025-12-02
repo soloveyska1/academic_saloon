@@ -51,29 +51,34 @@ WORK_CATEGORIES = {
 
 def get_work_category_keyboard() -> InlineKeyboardMarkup:
     """
-    Первый уровень: выбор категории работ.
-    Компактная 2-колоночная сетка для экономии места.
+    Выбор типа работы — строгая иерархия по спецификации.
+
+    Layout:
+    Row 1: [ 📝 Рефераты и ДЗ ] [ 📚 Курсовая / Отчет ]
+    Row 2: [ 🎓 Диплом / ВКР ]
+    Row 3: [ 🔥 СРОЧНО! ГОРИТ! ] — Full width, акцентная
+    Row 4: [ 💀 Спецзаказ / Другое ]
+    Row 5: [ ❌ Отмена ]
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        # Row 1: Популярные
+        # Row 1: Мелкие и средние
         [
-            InlineKeyboardButton(text="📝 Мелкие работы", callback_data="work_category:small"),
-            InlineKeyboardButton(text="📚 Курсовая / Практика", callback_data="work_category:medium"),
+            InlineKeyboardButton(text="📝 Рефераты и ДЗ", callback_data="work_category:small"),
+            InlineKeyboardButton(text="📚 Курсовая / Отчет", callback_data="work_category:medium"),
         ],
-        # Row 2: Крупные и срочные
+        # Row 2: Дипломы
         [
-            InlineKeyboardButton(text="🎓 Дипломы", callback_data="work_category:large"),
-            InlineKeyboardButton(text="🔥 Срочно! Горит!", callback_data="work_category:urgent"),
+            InlineKeyboardButton(text="🎓 Диплом / ВКР", callback_data="work_category:large"),
         ],
-        # Row 3: Спецзаказ и помощь
+        # Row 3: PANIC — акцентная кнопка во всю ширину
         [
-            InlineKeyboardButton(text="💀 Спецзаказ", callback_data="work_category:other"),
-            InlineKeyboardButton(
-                text="💬 Перетереть с Шерифом",
-                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
-            ),
+            InlineKeyboardButton(text="🔥 СРОЧНО! ГОРИТ!", callback_data="panic_mode"),
         ],
-        # Row 4: Отмена (полная ширина)
+        # Row 4: Спецзаказ
+        [
+            InlineKeyboardButton(text="💀 Спецзаказ / Другое", callback_data="work_category:other"),
+        ],
+        # Row 5: Отмена
         [
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
         ],

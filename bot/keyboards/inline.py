@@ -5,58 +5,50 @@ from core.config import settings
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура главного меню — Optimized for conversion.
+    Клавиатура главного меню — строгая иерархия по спецификации.
 
-    Layout (per spec):
-    Row 1: [ ⚡️ УЗНАТЬ ЦЕНУ ]     <- Primary CTA, full width
-    Row 2: [ 🎁 Тайник (Халява) ]  <- Curiosity hook
-    Row 3: [ 👤 Кабинет ] [ ⭐️ Отзывы ]
+    Layout:
+    Row 1: [ ⚡️ Рассчитать стоимость ] — Primary CTA, full width
+    Row 2: [ 📋 Прайс ] [ ⭐️ Отзывы (1000+) ]
+    Row 3: [ 👤 Кабинет ] [ 🎁 Тайник (Халява) ]
     Row 4: [ 🆘 Позвать Шерифа ]
-    Row 5: [ 📜 Прайс ] [ 📋 Оферта ]
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        # Row 1: Primary CTA
+        # Row 1: Primary CTA — акцентная кнопка
         [
             InlineKeyboardButton(
-                text="🎯 ОФОРМИТЬ ЗАКАЗ",
-                callback_data="create_order"
+                text="⚡️ РАССЧИТАТЬ СТОИМОСТЬ",
+                callback_data="start_order"
             )
         ],
-        # Row 2: Curiosity hook (placeholder)
+        # Row 2: Прайс и Отзывы
         [
             InlineKeyboardButton(
-                text="🎁 Тайник (Халява)",
-                callback_data="secret_stash"
-            )
-        ],
-        # Row 3: Profile & Reviews
-        [
-            InlineKeyboardButton(
-                text="👤 Кабинет",
-                callback_data="my_profile"
+                text="📋 Прайс",
+                callback_data="show_price"
             ),
             InlineKeyboardButton(
-                text="⭐️ Отзывы",
+                text="⭐️ Отзывы (1000+)",
                 url=settings.REVIEWS_CHANNEL
             ),
         ],
-        # Row 4: Support
+        # Row 3: Кабинет и Тайник
+        [
+            InlineKeyboardButton(
+                text="👤 Кабинет",
+                callback_data="profile"
+            ),
+            InlineKeyboardButton(
+                text="🎁 Тайник (Халява)",
+                callback_data="free_stuff"
+            ),
+        ],
+        # Row 4: Поддержка
         [
             InlineKeyboardButton(
                 text="🆘 Позвать Шерифа",
-                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+                callback_data="support"
             )
-        ],
-        # Row 5: Price list & Offer
-        [
-            InlineKeyboardButton(
-                text="📜 Прайс",
-                callback_data="price_list"
-            ),
-            InlineKeyboardButton(
-                text="📋 Оферта",
-                url=settings.OFFER_URL
-            ),
         ],
     ])
     return kb
