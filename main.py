@@ -14,6 +14,7 @@ from bot.handlers.admin import router as admin_router
 from bot.handlers.log_actions import router as log_actions_router
 from bot.handlers.my_orders import router as my_orders_router
 from bot.handlers.channel_cards import router as channel_cards_router
+from bot.handlers.order_chat import router as order_chat_router
 from bot.middlewares import (
     ErrorHandlerMiddleware,
     DbSessionMiddleware,
@@ -69,6 +70,7 @@ async def main():
     dp.include_router(admin_router)   # Админка (до start, чтобы /admin обрабатывался)
     dp.include_router(start_router)
     dp.include_router(terms_router)   # Оферта
+    dp.include_router(order_chat_router)  # Приватный чат по заказам
     dp.include_router(orders_router)  # FSM для заказов
     dp.include_router(my_orders_router)  # История заказов
     dp.include_router(menu_router)

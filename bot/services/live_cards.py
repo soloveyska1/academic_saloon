@@ -165,6 +165,12 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
     bot_username = settings.BOT_USERNAME or "academic_saloon_bot"
     buttons = []
 
+    # Кнопка чата - общая для всех активных стадий
+    chat_button = InlineKeyboardButton(
+        text="💬 Написать клиенту",
+        url=f"https://t.me/{bot_username}?start=chat_{order.id}"
+    )
+
     if stage_name == "new":
         # Новый заказ - оценить, отклонить, бан
         buttons = [
@@ -173,6 +179,7 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
                     text="💵 Оценить",
                     callback_data=f"card_price:{order.id}"
                 ),
+                chat_button,
             ],
             [
                 InlineKeyboardButton(
@@ -206,6 +213,7 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
                 ),
             ],
             [
+                chat_button,
                 InlineKeyboardButton(
                     text="🚫 Отклонить",
                     callback_data=f"card_reject:{order.id}"
@@ -226,6 +234,7 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
                     callback_data=f"card_reject_pay:{order.id}"
                 ),
             ],
+            [chat_button],
         ]
 
     elif stage_name == "work":
@@ -236,6 +245,7 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
                     text="📤 Сдать работу",
                     url=f"https://t.me/{bot_username}?start=upload_{order.id}"
                 ),
+                chat_button,
             ],
             [
                 InlineKeyboardButton(
@@ -253,6 +263,7 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
                     text="✅ Завершить заказ",
                     callback_data=f"card_complete:{order.id}"
                 ),
+                chat_button,
             ],
         ]
 
