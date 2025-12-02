@@ -41,6 +41,12 @@ from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
 from bot.handlers.start import process_start
 from bot.services.live_cards import update_card_status
+from bot.services.order_progress import (
+    build_progress_bar,
+    get_progress_keyboard,
+    update_order_progress,
+    sync_progress_with_status,
+)
 
 router = Router()
 
@@ -208,6 +214,7 @@ def get_order_detail_keyboard(order_id: int, user_id: int) -> InlineKeyboardMark
     Actions:
     - Сменить статус
     - Изменить цену (для спецзаказов и override)
+    - Прогресс (для заказов в работе)
     - Написать клиенту
     - Отправить файл
     - Отметить оплаченным
@@ -218,6 +225,10 @@ def get_order_detail_keyboard(order_id: int, user_id: int) -> InlineKeyboardMark
         [
             InlineKeyboardButton(text="🔄 Статус", callback_data=f"admin_change_status:{order_id}"),
             InlineKeyboardButton(text="✏️ Цена", callback_data=f"admin_set_price:{order_id}"),
+        ],
+        # Row 1.5: Progress
+        [
+            InlineKeyboardButton(text="📊 Прогресс", callback_data=f"admin_progress_menu:{order_id}"),
         ],
         # Row 2: Communication
         [
@@ -839,6 +850,222 @@ async def cancel_order(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")]
         ])
+    )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    УПРАВЛЕНИЕ ПРОГРЕССОМ ЗАКАЗА
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("admin_progress_menu:"))
+async def show_progress_menu(callback: CallbackQuery, session: AsyncSession):
+    """Показать меню управления прогрессом заказа"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    await callback.answer("⏳")
+
+    # Получаем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.message.edit_text(
+            "❌ Заказ не найден",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="◀️ К списку", callback_data="admin_orders_list")]
+            ])
+        )
+        return
+
+    current_progress = order.progress if hasattr(order, 'progress') and order.progress else 0
+    progress_bar = build_progress_bar(current_progress)
+
+    text = f"""📊 <b>Прогресс заказа #{order_id}</b>
+
+{progress_bar}
+
+<b>Текущий прогресс:</b> {current_progress}%
+
+Выбери новый прогресс или используй кнопки +/−:
+
+<i>💡 При достижении 25%, 50%, 75% и 100%
+клиент получит уведомление автоматически.</i>"""
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_progress_keyboard(order_id, current_progress)
+    )
+
+
+@router.callback_query(F.data.startswith("admin_set_progress:"))
+async def set_order_progress(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Установить прогресс заказа"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    try:
+        order_id = int(parts[1])
+        new_progress = int(parts[2])
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Получаем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Обновляем прогресс
+    milestones = await update_order_progress(session, bot, order, new_progress)
+
+    milestone_text = ""
+    if milestones:
+        milestone_text = f"\n🔔 Уведомления отправлены: {', '.join([f'{m}%' for m in milestones])}"
+
+    await callback.answer(f"✅ Прогресс: {new_progress}%{milestone_text}", show_alert=True)
+
+    # Обновляем экран
+    progress_bar = build_progress_bar(new_progress)
+
+    text = f"""📊 <b>Прогресс заказа #{order_id}</b>
+
+{progress_bar}
+
+<b>Текущий прогресс:</b> {new_progress}%
+
+Выбери новый прогресс или используй кнопки +/−:
+
+<i>💡 При достижении 25%, 50%, 75% и 100%
+клиент получит уведомление автоматически.</i>"""
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_progress_keyboard(order_id, new_progress)
+    )
+
+
+@router.callback_query(F.data.startswith("admin_progress_inc:"))
+async def increase_progress(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Увеличить прогресс на 10%"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Получаем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    current = order.progress if hasattr(order, 'progress') and order.progress else 0
+    new_progress = min(100, current + 10)
+
+    if new_progress == current:
+        await callback.answer("Уже максимум!", show_alert=True)
+        return
+
+    # Обновляем
+    milestones = await update_order_progress(session, bot, order, new_progress)
+    milestone_text = f" 🔔 {milestones}" if milestones else ""
+
+    await callback.answer(f"✅ {current}% → {new_progress}%{milestone_text}", show_alert=True)
+
+    # Обновляем экран
+    progress_bar = build_progress_bar(new_progress)
+
+    text = f"""📊 <b>Прогресс заказа #{order_id}</b>
+
+{progress_bar}
+
+<b>Текущий прогресс:</b> {new_progress}%
+
+Выбери новый прогресс или используй кнопки +/−:
+
+<i>💡 При достижении 25%, 50%, 75% и 100%
+клиент получит уведомление автоматически.</i>"""
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_progress_keyboard(order_id, new_progress)
+    )
+
+
+@router.callback_query(F.data.startswith("admin_progress_dec:"))
+async def decrease_progress(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Уменьшить прогресс на 10%"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    # Получаем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    current = order.progress if hasattr(order, 'progress') and order.progress else 0
+    new_progress = max(0, current - 10)
+
+    if new_progress == current:
+        await callback.answer("Уже минимум!", show_alert=True)
+        return
+
+    # Обновляем (без уведомлений при уменьшении)
+    await update_order_progress(session, bot, order, new_progress, notify=False)
+
+    await callback.answer(f"✅ {current}% → {new_progress}%", show_alert=True)
+
+    # Обновляем экран
+    progress_bar = build_progress_bar(new_progress)
+
+    text = f"""📊 <b>Прогресс заказа #{order_id}</b>
+
+{progress_bar}
+
+<b>Текущий прогресс:</b> {new_progress}%
+
+Выбери новый прогресс или используй кнопки +/−:
+
+<i>💡 При достижении 25%, 50%, 75% и 100%
+клиент получит уведомление автоматически.</i>"""
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_progress_keyboard(order_id, new_progress)
     )
 
 
