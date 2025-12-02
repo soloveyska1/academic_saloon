@@ -49,7 +49,7 @@ from bot.keyboards.profile import (
     get_coupon_result_keyboard,
 )
 from bot.services.logger import log_action, LogEvent
-from bot.services.order_progress import build_timeline, build_compact_progress
+# Progress functions moved inline for cleaner minimal design
 from bot.states.order import OrderState, CouponState
 from core.config import settings
 from core.media_cache import send_cached_photo
@@ -632,80 +632,88 @@ def get_status_display(status: str) -> tuple[str, str]:
 
 
 def build_order_detail_caption(order: Order) -> str:
-    """Формирует caption для деталей заказа — стиль 'Дело' с Live Progress"""
-    lines = [f"📁 <b>Дело #{order.id}</b>", ""]
+    """Формирует caption для деталей заказа — премиальный минималистичный стиль"""
 
-    # Статус
-    emoji, status_text = get_status_display(order.status)
-    lines.append(f"Статус: {emoji} <b>{status_text}</b>")
+    # Заголовок
+    lines = [f"<b>Заказ #{order.id}</b>"]
+
+    # Статус — одной строкой, элегантно
+    status_labels = {
+        OrderStatus.DRAFT.value: "черновик",
+        OrderStatus.PENDING.value: "на оценке",
+        OrderStatus.WAITING_ESTIMATION.value: "на оценке",
+        OrderStatus.WAITING_PAYMENT.value: "ожидает оплаты",
+        OrderStatus.VERIFICATION_PENDING.value: "проверка оплаты",
+        OrderStatus.CONFIRMED.value: "подтверждён",
+        OrderStatus.PAID.value: "оплачен",
+        OrderStatus.PAID_FULL.value: "оплачен полностью",
+        OrderStatus.IN_PROGRESS.value: "в работе",
+        OrderStatus.REVIEW.value: "на проверке",
+        OrderStatus.COMPLETED.value: "завершён",
+        OrderStatus.CANCELLED.value: "отменён",
+        OrderStatus.REJECTED.value: "отклонён",
+    }
+    status_text = status_labels.get(order.status, order.status)
+    lines.append(f"<i>{status_text}</i>")
     lines.append("")
 
-    # Live Progress — показываем только для активных заказов в работе
+    # Прогресс — только для активных заказов, компактно
     if order.status in [
         OrderStatus.PAID.value,
         OrderStatus.PAID_FULL.value,
         OrderStatus.IN_PROGRESS.value,
         OrderStatus.REVIEW.value,
     ]:
-        timeline = build_timeline(order)
-        lines.append(timeline)
-        lines.append("")
+        progress = getattr(order, 'progress', 0) or 0
+        if progress > 0:
+            filled = int(progress / 10)
+            empty = 10 - filled
+            bar = "●" * filled + "○" * empty
+            lines.append(f"{bar}  {progress}%")
+            lines.append("")
 
-    # Суть задачи
-    lines.append("📚 <b>Суть задачи:</b>")
-
-    # Тип работы (без emoji)
+    # Детали заказа — чистый список без лишних эмодзи
     work_type = order.work_type_label
     if work_type and work_type[0] in "🎩🎓📚📖📝📄✏️📊🏢📎📸🔥":
         work_type = work_type[2:].strip()
-    lines.append(f"• {work_type}")
 
-    # Предмет — только если указан
-    subject = order.subject.strip() if order.subject else ""
-    if subject:
-        lines.append(f"• {subject}")
-
-    # Дедлайн
+    details = []
+    if work_type:
+        details.append(work_type)
+    if order.subject and order.subject.strip():
+        details.append(order.subject.strip())
     if order.deadline:
-        lines.append(f"• Дедлайн: {order.deadline}")
+        details.append(f"срок: {order.deadline}")
 
-    lines.append("")
-
-    # Финансы
-    lines.append("💰 <b>Финансы:</b>")
-
-    if order.price > 0:
-        # Базовая цена
-        if order.discount > 0 or order.bonus_used > 0:
-            lines.append(f"🔹 Цена: <s>{format_number(order.price)}₽</s>")
-        else:
-            lines.append(f"🔹 Цена: {format_number(order.price)}₽")
-
-        # Скидка
-        if order.discount > 0:
-            discount_amount = order.price * order.discount / 100
-            lines.append(f"🔹 Скидка: <b>−{order.discount:.0f}%</b> (−{format_number(discount_amount)}₽)")
-
-        # Бонусы
-        if order.bonus_used > 0:
-            lines.append(f"🔸 Бонусы: <b>−{format_number(order.bonus_used)}₽</b>")
-
+    if details:
+        lines.append("\n".join(details))
         lines.append("")
 
-        # Итог
+    # Финансы — только суть
+    if order.price > 0:
+        # Итоговая строка
         if order.paid_amount >= order.final_price and order.paid_amount > 0:
-            lines.append(f"✅ <b>Оплачено: {format_number(order.paid_amount)}₽</b>")
+            lines.append(f"<b>{format_number(order.paid_amount)} ₽</b>  оплачено")
         elif order.paid_amount > 0:
-            lines.append(f"💳 Оплачено: {format_number(order.paid_amount)}₽ из {format_number(order.final_price)}₽")
+            lines.append(f"<b>{format_number(order.paid_amount)}</b> из {format_number(order.final_price)} ₽")
         else:
-            lines.append(f"💳 <b>К оплате: {format_number(order.final_price)}₽</b>")
-    else:
-        lines.append("🔹 Цена: <i>ожидает оценки</i>")
+            lines.append(f"<b>{format_number(order.final_price)} ₽</b>")
 
-    # Дата создания
+        # Скидка/бонусы мелким шрифтом если есть
+        extras = []
+        if order.discount > 0:
+            extras.append(f"−{order.discount:.0f}%")
+        if order.bonus_used > 0:
+            extras.append(f"бонусы −{format_number(order.bonus_used)}")
+        if extras:
+            lines.append(f"<i>{', '.join(extras)}</i>")
+    else:
+        lines.append("<i>цена уточняется</i>")
+
+    # Дата — мелко внизу
     if order.created_at:
         lines.append("")
-        lines.append(f"<i>Создано: {format_date(order.created_at)}</i>")
+        lines.append(f"<i>{format_date(order.created_at)}</i>")
 
     return "\n".join(lines)
 
