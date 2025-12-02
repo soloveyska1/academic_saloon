@@ -39,8 +39,19 @@ async def run_api_server():
     """Run FastAPI server for Mini App"""
     try:
         import uvicorn
-        from bot.api import api_app
+    except ImportError:
+        logger.warning("⚠️ uvicorn not installed, Mini App API disabled. Install with: pip install uvicorn")
+        return
 
+    try:
+        from bot.api import api_app
+    except ImportError as e:
+        logger.error(f"❌ Failed to import bot.api: {e}")
+        import traceback
+        traceback.print_exc()
+        return
+
+    try:
         config = uvicorn.Config(
             api_app,
             host="0.0.0.0",
@@ -51,8 +62,6 @@ async def run_api_server():
         server = uvicorn.Server(config)
         logger.info("🌐 Mini App API starting on http://0.0.0.0:8000")
         await server.serve()
-    except ImportError:
-        logger.warning("⚠️ uvicorn not installed, Mini App API disabled. Install with: pip install uvicorn")
     except Exception as e:
         logger.error(f"API server error: {e}")
 
