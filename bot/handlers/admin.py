@@ -2649,8 +2649,8 @@ async def process_payment_receipt_invalid(message: Message, state: FSMContext, b
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data.startswith("admin_set_price:"))
-async def admin_set_price_callback(callback: CallbackQuery, state: FSMContext):
-    """Админ нажал кнопку 'Назначить цену'"""
+async def admin_set_price_callback(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Админ нажал кнопку 'Назначить цену' — ввод прямо в топике"""
     if not is_admin(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
@@ -2659,13 +2659,26 @@ async def admin_set_price_callback(callback: CallbackQuery, state: FSMContext):
     if order_id is None:
         await callback.answer("Ошибка данных", show_alert=True)
         return
-    await state.update_data(price_order_id=order_id)
+
+    # Сохраняем order_id и topic_id для ответа в том же топике
+    topic_id = callback.message.message_thread_id if callback.message else None
+    chat_id = callback.message.chat.id if callback.message else None
+
+    await state.update_data(
+        price_order_id=order_id,
+        price_topic_id=topic_id,
+        price_chat_id=chat_id,
+    )
     await state.set_state(AdminStates.waiting_order_price)
 
     await callback.answer("⏳")
-    await callback.message.answer(
-        f"💰 <b>Введи цену для заказа #{order_id}</b>\n\n"
-        f"Напиши просто число (например: 5000)",
+
+    # Отправляем сообщение в тот же топик
+    await bot.send_message(
+        chat_id=chat_id,
+        message_thread_id=topic_id,
+        text=f"💰 <b>Введи цену для заказа #{order_id}</b>\n\n"
+             f"Напиши просто число (например: 5000)",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_cancel_price")]
         ])
@@ -2815,16 +2828,26 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
 
 @router.message(AdminStates.waiting_order_price)
 async def process_order_price_input(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
-    """Обработка ввода цены заказа"""
+    """Обработка ввода цены заказа — работает и в топике и в личке"""
     if not is_admin(message.from_user.id):
         return
 
     data = await state.get_data()
     order_id = data.get("price_order_id")
+    topic_id = data.get("price_topic_id")  # Может быть None если из лички
+    chat_id = data.get("price_chat_id") or message.chat.id
+
+    # Хелпер для ответа в правильное место (топик или личка)
+    async def reply(text: str):
+        await bot.send_message(
+            chat_id=chat_id,
+            message_thread_id=topic_id,
+            text=text,
+        )
 
     if not order_id:
         await state.clear()
-        await message.answer("❌ Ошибка: заказ не выбран")
+        await reply("❌ Ошибка: заказ не выбран")
         return
 
     try:
@@ -2832,7 +2855,7 @@ async def process_order_price_input(message: Message, state: FSMContext, session
         if price <= 0:
             raise ValueError("Цена должна быть положительной")
     except ValueError:
-        await message.answer("❌ Введи корректную цену (положительное число)")
+        await reply("❌ Введи корректную цену (положительное число)")
         return
 
     await state.clear()
@@ -2843,7 +2866,7 @@ async def process_order_price_input(message: Message, state: FSMContext, session
     order = order_result.scalar_one_or_none()
 
     if not order:
-        await message.answer(f"❌ Заказ #{order_id} не найден")
+        await reply(f"❌ Заказ #{order_id} не найден")
         return
 
     # Находим пользователя
@@ -2852,7 +2875,7 @@ async def process_order_price_input(message: Message, state: FSMContext, session
     user = user_result.scalar_one_or_none()
 
     if not user:
-        await message.answer(f"❌ Пользователь заказа #{order_id} не найден")
+        await reply(f"❌ Пользователь заказа #{order_id} не найден")
         return
 
     # Рассчитываем бонусы (макс 50% от цены)
@@ -2925,14 +2948,14 @@ async def process_order_price_input(message: Message, state: FSMContext, session
         else:
             await bot.send_message(order.user_id, client_text, reply_markup=kb)
 
-        await message.answer(
+        await reply(
             f"✅ Цена {price:.0f}₽ назначена заказу #{order.id}\n"
             f"Клиенту отправлено сообщение\n"
             f"Бонусов применено: {bonus_to_use:.0f}₽\n"
             f"Итого к оплате: {final_price:.0f}₽"
         )
     except Exception as e:
-        await message.answer(f"❌ Не удалось отправить сообщение клиенту: {e}")
+        await reply(f"❌ Не удалось отправить сообщение клиенту: {e}")
 
 
 @router.callback_query(F.data.startswith("admin_reject:"))
