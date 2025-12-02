@@ -86,12 +86,14 @@ async def init_unified_hub(bot: Bot, session: AsyncSession) -> dict[str, int]:
     global _service_topic_ids
 
     logger.info("🏗️ Initializing UNIFIED HUB...")
+    print("[DEBUG] Step 1: Querying system user...", flush=True)
 
     # Создаём системного пользователя (user_id=0) если его нет
     # Нужен для foreign key в таблице conversations
     system_user_query = select(User).where(User.telegram_id == 0)
     system_user_result = await session.execute(system_user_query)
     system_user = system_user_result.scalar_one_or_none()
+    print(f"[DEBUG] Step 1 done: system_user={system_user}", flush=True)
 
     if not system_user:
         system_user = User(
@@ -105,7 +107,9 @@ async def init_unified_hub(bot: Bot, session: AsyncSession) -> dict[str, int]:
         logger.info("✅ Created system user (telegram_id=0)")
 
     # Загружаем существующие служебные топики из БД
+    print("[DEBUG] Step 2: Loading service topics...", flush=True)
     for topic_key, topic_config in SERVICE_TOPICS.items():
+        print(f"[DEBUG] Processing topic: {topic_key}", flush=True)
         # Ищем Conversation с типом service, user_id=0 и без order_id
         query = select(Conversation).where(
             Conversation.user_id == 0,  # Служебные топики
@@ -114,10 +118,12 @@ async def init_unified_hub(bot: Bot, session: AsyncSession) -> dict[str, int]:
         )
         result = await session.execute(query)
         conv = result.scalar_one_or_none()
+        print(f"[DEBUG] DB query done for {topic_key}, conv={conv}", flush=True)
 
         if conv and conv.topic_id:
             # Проверяем что топик ещё существует
             try:
+                print(f"[DEBUG] Checking topic {conv.topic_id} in Telegram...", flush=True)
                 await bot.send_chat_action(
                     chat_id=settings.ADMIN_GROUP_ID,
                     action="typing",
