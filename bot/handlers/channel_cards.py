@@ -79,9 +79,12 @@ def is_admin(user_id: int) -> bool:
 @router.callback_query(F.data.startswith("card_reject:") & ~F.data.endswith("_yes"))
 async def card_reject_order_confirm(callback: CallbackQuery):
     """Отклонить заказ - запрос подтверждения"""
+    logger.info(f"card_reject_order_confirm called: {callback.data}")
     try:
         order_id = parse_order_id(callback.data)
-    except ValueError:
+        logger.info(f"Parsed order_id: {order_id}")
+    except ValueError as e:
+        logger.error(f"Failed to parse order_id: {e}")
         await callback.answer("Ошибка данных", show_alert=True)
         return
 
@@ -96,8 +99,9 @@ async def card_reject_order_confirm(callback: CallbackQuery):
     await callback.answer()
     try:
         await callback.message.edit_reply_markup(reply_markup=keyboard)
-    except Exception:
-        pass
+        logger.info(f"Successfully showed confirmation for order {order_id}")
+    except Exception as e:
+        logger.error(f"Failed to edit reply markup: {e}")
 
 
 @router.callback_query(F.data.startswith("card_reject:") & F.data.endswith("_yes"))
@@ -205,24 +209,37 @@ async def card_ban_user_execute(callback: CallbackQuery, session: AsyncSession, 
 @router.callback_query(F.data.startswith("card_cancel:"))
 async def card_cancel_action(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Отмена действия - возврат к обычным кнопкам"""
+    logger.info(f"card_cancel_action called: {callback.data}")
     try:
         order_id = parse_order_id(callback.data)
-    except ValueError:
+        logger.info(f"Parsed order_id: {order_id}")
+    except ValueError as e:
+        logger.error(f"Failed to parse order_id: {e}")
         await callback.answer("Ошибка данных", show_alert=True)
         return
 
-    order, user = await get_order_with_user(session, order_id)
+    try:
+        order, user = await get_order_with_user(session, order_id)
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        await callback.answer("Ошибка базы данных", show_alert=True)
+        return
 
     if not order:
+        logger.warning(f"Order {order_id} not found")
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
     # Восстанавливаем карточку с обычными кнопками
-    await send_or_update_card(
-        bot, order, session,
-        client_username=user.username if user else None,
-        client_name=user.full_name if user else None,
-    )
+    try:
+        await send_or_update_card(
+            bot, order, session,
+            client_username=user.username if user else None,
+            client_name=user.full_name if user else None,
+        )
+        logger.info(f"Card restored for order {order_id}")
+    except Exception as e:
+        logger.error(f"Failed to restore card: {e}")
 
     await callback.answer("Отменено")
 
@@ -234,68 +251,71 @@ async def card_cancel_action(callback: CallbackQuery, session: AsyncSession, bot
 @router.callback_query(F.data.startswith("card_price:"))
 async def card_set_price_menu(callback: CallbackQuery, session: AsyncSession):
     """Показать меню выбора цены"""
+    logger.info(f"card_set_price_menu called: {callback.data}, from_user: {callback.from_user.id}")
+
     try:
         order_id = parse_order_id(callback.data)
-    except ValueError:
-        await callback.answer("Ошибка данных", show_alert=True)
-        return
+        logger.info(f"Parsed order_id: {order_id}")
 
-    order = await session.get(Order, order_id)
-    if not order:
-        await callback.answer("Заказ не найден", show_alert=True)
-        return
+        order = await session.get(Order, order_id)
+        if not order:
+            logger.warning(f"Order {order_id} not found")
+            await callback.answer("Заказ не найден", show_alert=True)
+            return
 
-    # Если робот уже насчитал цену, предлагаем её подтвердить
-    robot_price = int(order.price) if order.price > 0 else 0
+        # Если робот уже насчитал цену, предлагаем её подтвердить
+        robot_price = int(order.price) if order.price > 0 else 0
 
-    # Популярные цены
-    preset_prices = [1500, 2500, 5000, 10000, 15000, 25000]
+        # Популярные цены
+        preset_prices = [1500, 2500, 5000, 10000, 15000, 25000]
 
-    buttons = []
+        buttons = []
 
-    # Если есть цена от робота - первой кнопкой
-    if robot_price > 0:
+        # Если есть цена от робота - первой кнопкой
+        if robot_price > 0:
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"✅ Подтвердить {robot_price:,}₽".replace(",", " "),
+                    callback_data=f"card_setprice:{order_id}:{robot_price}"
+                )
+            ])
+
+        # Preset цены (по 3 в ряд)
+        row = []
+        for price in preset_prices:
+            row.append(InlineKeyboardButton(
+                text=f"{price:,}₽".replace(",", " "),
+                callback_data=f"card_setprice:{order_id}:{price}"
+            ))
+            if len(row) == 3:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
+
+        # Кнопка для ввода своей цены (в личке)
+        bot_username = settings.BOT_USERNAME
         buttons.append([
             InlineKeyboardButton(
-                text=f"✅ Подтвердить {robot_price:,}₽".replace(",", " "),
-                callback_data=f"card_setprice:{order_id}:{robot_price}"
+                text="✏️ Своя цена",
+                url=f"https://t.me/{bot_username}?start=setprice_{order_id}"
             )
         ])
 
-    # Preset цены (по 3 в ряд)
-    row = []
-    for price in preset_prices:
-        row.append(InlineKeyboardButton(
-            text=f"{price:,}₽".replace(",", " "),
-            callback_data=f"card_setprice:{order_id}:{price}"
-        ))
-        if len(row) == 3:
-            buttons.append(row)
-            row = []
-    if row:
-        buttons.append(row)
+        # Кнопка отмены
+        buttons.append([
+            InlineKeyboardButton(text="❌ Отмена", callback_data=f"card_cancel:{order_id}")
+        ])
 
-    # Кнопка для ввода своей цены (в личке)
-    bot_username = settings.BOT_USERNAME
-    buttons.append([
-        InlineKeyboardButton(
-            text="✏️ Своя цена",
-            url=f"https://t.me/{bot_username}?start=setprice_{order_id}"
-        )
-    ])
+        keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    # Кнопка отмены
-    buttons.append([
-        InlineKeyboardButton(text="❌ Отмена", callback_data=f"card_cancel:{order_id}")
-    ])
-
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-
-    await callback.answer()
-    try:
+        await callback.answer()
         await callback.message.edit_reply_markup(reply_markup=keyboard)
+        logger.info(f"Price menu shown for order {order_id}")
+
     except Exception as e:
-        logger.warning(f"Failed to show price menu: {e}")
+        logger.error(f"Error in card_set_price_menu: {type(e).__name__}: {e}", exc_info=True)
+        await callback.answer(f"Ошибка: {type(e).__name__}", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("card_setprice:"))
