@@ -118,9 +118,10 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="📋 Заявки", callback_data="admin_orders_list"),
-            InlineKeyboardButton(text="📊 Бухгалтерия", callback_data="admin_statistics"),
+            InlineKeyboardButton(text="💬 Диалоги", callback_data="admin_dialogs"),
         ],
         [
+            InlineKeyboardButton(text="📊 Бухгалтерия", callback_data="admin_statistics"),
             InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast"),
         ],
         [
@@ -3834,6 +3835,621 @@ async def cancel_receipt_callback(callback: CallbackQuery, session: AsyncSession
     ])
 
     await callback.message.edit_text(payment_text, reply_markup=keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ДИАЛОГИ (ЧАТЫ С КЛИЕНТАМИ)
+# ══════════════════════════════════════════════════════════════
+
+from database.models.orders import Conversation, ConversationType
+
+
+def get_admin_dialogs_keyboard(
+    page: int = 0,
+    filter_type: str = "all",
+    total_pages: int = 1,
+) -> InlineKeyboardMarkup:
+    """Клавиатура панели диалогов для админки"""
+    buttons = []
+
+    # Фильтры
+    filters = [
+        ("all", "📋 Все"),
+        ("unread", "📩 Новые"),
+        ("order", "📦 Заказы"),
+        ("support", "🛠️ Поддержка"),
+    ]
+    filters_row1 = []
+    filters_row2 = []
+    for i, (f_type, f_label) in enumerate(filters):
+        label = f"• {f_label} •" if filter_type == f_type else f_label
+        btn = InlineKeyboardButton(text=label, callback_data=f"admin_dialogs_filter:{f_type}")
+        if i < 2:
+            filters_row1.append(btn)
+        else:
+            filters_row2.append(btn)
+    buttons.append(filters_row1)
+    buttons.append(filters_row2)
+
+    # Пагинация
+    if total_pages > 1:
+        nav_row = []
+        if page > 0:
+            nav_row.append(InlineKeyboardButton(
+                text="◀️",
+                callback_data=f"admin_dialogs_page:{page - 1}:{filter_type}"
+            ))
+        nav_row.append(InlineKeyboardButton(
+            text=f"{page + 1}/{total_pages}",
+            callback_data="admin_dialogs_noop"
+        ))
+        if page < total_pages - 1:
+            nav_row.append(InlineKeyboardButton(
+                text="▶️",
+                callback_data=f"admin_dialogs_page:{page + 1}:{filter_type}"
+            ))
+        buttons.append(nav_row)
+
+    # Управление
+    buttons.append([
+        InlineKeyboardButton(text="🔄 Обновить", callback_data=f"admin_dialogs_refresh:{filter_type}"),
+        InlineKeyboardButton(text="◀️ Назад", callback_data="admin_panel"),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def format_admin_dialogs_list(
+    session: AsyncSession,
+    filter_type: str = "all",
+    page: int = 0,
+    per_page: int = 8,
+) -> tuple[str, int, list]:
+    """Форматирует список диалогов для админки"""
+    from sqlalchemy import func as sql_func
+
+    query = select(Conversation).where(Conversation.is_active == True)
+
+    if filter_type == "unread":
+        query = query.where(Conversation.unread_count > 0)
+    elif filter_type == "order":
+        query = query.where(Conversation.order_id.isnot(None))
+    elif filter_type == "support":
+        query = query.where(Conversation.conversation_type == ConversationType.SUPPORT.value)
+
+    # Считаем общее количество
+    count_query = select(sql_func.count()).select_from(query.subquery())
+    total = (await session.execute(count_query)).scalar() or 0
+    total_pages = max(1, (total + per_page - 1) // per_page)
+
+    # Получаем страницу
+    query = query.order_by(
+        desc(Conversation.unread_count > 0),
+        desc(Conversation.last_message_at)
+    ).offset(page * per_page).limit(per_page)
+
+    result = await session.execute(query)
+    conversations = result.scalars().all()
+
+    if not conversations:
+        return "📭 <b>Диалогов пока нет</b>\n\nКогда клиенты напишут — увидишь здесь.", total_pages, []
+
+    lines = ["💬 <b>Диалоги с клиентами</b>\n"]
+
+    # Счётчик непрочитанных
+    unread_query = select(sql_func.sum(Conversation.unread_count)).where(
+        Conversation.is_active == True,
+        Conversation.unread_count > 0
+    )
+    total_unread = (await session.execute(unread_query)).scalar() or 0
+    if total_unread > 0:
+        lines.append(f"📩 Непрочитанных: <b>{total_unread}</b>\n")
+
+    for conv in conversations:
+        # Получаем пользователя
+        user_query = select(User).where(User.telegram_id == conv.user_id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        user_name = user.fullname if user else f"ID: {conv.user_id}"
+        username = f"@{user.username}" if user and user.username else ""
+
+        # Форматируем строку
+        unread_badge = f"🔴{conv.unread_count}" if conv.unread_count else ""
+        type_emoji = conv.type_emoji
+
+        # Превью сообщения
+        preview = (conv.last_message_text or "—")[:25]
+        if len(conv.last_message_text or "") > 25:
+            preview += "…"
+
+        # Время
+        if conv.last_message_at:
+            time_str = conv.last_message_at.strftime("%d.%m %H:%M")
+        else:
+            time_str = ""
+
+        # Контекст
+        if conv.order_id:
+            context = f"Заказ #{conv.order_id}"
+        else:
+            context = "Поддержка"
+
+        lines.append(
+            f"{unread_badge}{type_emoji} <b>{user_name}</b> {username}\n"
+            f"   {context} • {time_str}\n"
+            f"   <i>{preview}</i>\n"
+        )
+
+    lines.append(f"\n📊 Всего диалогов: {total}")
+
+    return "\n".join(lines), total_pages, conversations
+
+
+@router.callback_query(F.data == "admin_dialogs")
+async def show_admin_dialogs(callback: CallbackQuery, session: AsyncSession):
+    """💬 Диалоги — чаты с клиентами"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    await callback.answer("💬")
+
+    text, total_pages, conversations = await format_admin_dialogs_list(session)
+
+    # Добавляем кнопки для каждого диалога
+    buttons = []
+    for conv in conversations[:5]:  # Топ 5 для быстрого доступа
+        user_query = select(User).where(User.telegram_id == conv.user_id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        user_name = (user.fullname if user else f"ID: {conv.user_id}")[:20]
+
+        unread = f"🔴{conv.unread_count} " if conv.unread_count else ""
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{unread}💬 {user_name}",
+                callback_data=f"admin_dialog_open:{conv.user_id}"
+            )
+        ])
+
+    # Добавляем основную клавиатуру
+    kb = get_admin_dialogs_keyboard(page=0, filter_type="all", total_pages=total_pages)
+
+    # Объединяем кнопки
+    combined_buttons = buttons + kb.inline_keyboard
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=combined_buttons)
+    )
+
+
+@router.callback_query(F.data.startswith("admin_dialogs_filter:"))
+async def admin_dialogs_filter(callback: CallbackQuery, session: AsyncSession):
+    """Фильтрация диалогов"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌", show_alert=True)
+        return
+
+    filter_type = callback.data.split(":")[1]
+    text, total_pages, conversations = await format_admin_dialogs_list(session, filter_type=filter_type)
+
+    # Кнопки диалогов
+    buttons = []
+    for conv in conversations[:5]:
+        user_query = select(User).where(User.telegram_id == conv.user_id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        user_name = (user.fullname if user else f"ID: {conv.user_id}")[:20]
+
+        unread = f"🔴{conv.unread_count} " if conv.unread_count else ""
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{unread}💬 {user_name}",
+                callback_data=f"admin_dialog_open:{conv.user_id}"
+            )
+        ])
+
+    kb = get_admin_dialogs_keyboard(page=0, filter_type=filter_type, total_pages=total_pages)
+    combined_buttons = buttons + kb.inline_keyboard
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=combined_buttons)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_dialogs_page:"))
+async def admin_dialogs_page(callback: CallbackQuery, session: AsyncSession):
+    """Пагинация диалогов"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌", show_alert=True)
+        return
+
+    parts = callback.data.split(":")
+    page = int(parts[1])
+    filter_type = parts[2] if len(parts) > 2 else "all"
+
+    text, total_pages, conversations = await format_admin_dialogs_list(
+        session, filter_type=filter_type, page=page
+    )
+
+    buttons = []
+    for conv in conversations[:5]:
+        user_query = select(User).where(User.telegram_id == conv.user_id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        user_name = (user.fullname if user else f"ID: {conv.user_id}")[:20]
+
+        unread = f"🔴{conv.unread_count} " if conv.unread_count else ""
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{unread}💬 {user_name}",
+                callback_data=f"admin_dialog_open:{conv.user_id}"
+            )
+        ])
+
+    kb = get_admin_dialogs_keyboard(page=page, filter_type=filter_type, total_pages=total_pages)
+    combined_buttons = buttons + kb.inline_keyboard
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=combined_buttons)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_dialogs_refresh:"))
+async def admin_dialogs_refresh(callback: CallbackQuery, session: AsyncSession):
+    """Обновление списка диалогов"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌", show_alert=True)
+        return
+
+    filter_type = callback.data.split(":")[1]
+    text, total_pages, conversations = await format_admin_dialogs_list(session, filter_type=filter_type)
+
+    buttons = []
+    for conv in conversations[:5]:
+        user_query = select(User).where(User.telegram_id == conv.user_id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        user_name = (user.fullname if user else f"ID: {conv.user_id}")[:20]
+
+        unread = f"🔴{conv.unread_count} " if conv.unread_count else ""
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{unread}💬 {user_name}",
+                callback_data=f"admin_dialog_open:{conv.user_id}"
+            )
+        ])
+
+    kb = get_admin_dialogs_keyboard(page=0, filter_type=filter_type, total_pages=total_pages)
+    combined_buttons = buttons + kb.inline_keyboard
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=combined_buttons)
+    )
+    await callback.answer("🔄 Обновлено")
+
+
+@router.callback_query(F.data == "admin_dialogs_noop")
+async def admin_dialogs_noop(callback: CallbackQuery):
+    """Нажатие на номер страницы"""
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_dialog_open:"))
+async def admin_dialog_open(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Открыть диалог с клиентом"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌", show_alert=True)
+        return
+
+    user_id = int(callback.data.split(":")[1])
+
+    # Получаем клиента
+    client_query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(client_query)
+    client = result.scalar_one_or_none()
+    client_name = client.fullname if client else f"ID: {user_id}"
+    username = f"@{client.username}" if client and client.username else ""
+
+    # Получаем диалог
+    conv_query = select(Conversation).where(
+        Conversation.user_id == user_id,
+        Conversation.order_id.is_(None)
+    )
+    conv_result = await session.execute(conv_query)
+    conv = conv_result.scalar_one_or_none()
+
+    # Сбрасываем счётчик непрочитанных
+    if conv and conv.unread_count > 0:
+        conv.unread_count = 0
+        await session.commit()
+
+    # Контекст заказа если есть
+    order_info = ""
+    if conv and conv.order_id:
+        order = await session.get(Order, conv.order_id)
+        if order:
+            order_info = f"\n📋 Заказ #{order.id} • {order.work_type_label}"
+
+    await state.set_state(AdminStates.messaging_user)
+    await state.update_data(target_user_id=user_id, client_name=client_name)
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📎 Файл", callback_data=f"admin_dialog_file:{user_id}"),
+            InlineKeyboardButton(text="🎤 Голосовое", callback_data=f"admin_dialog_voice:{user_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="❌ Отмена", callback_data="admin_dialogs"),
+        ],
+    ])
+
+    await callback.message.edit_text(
+        f"💬 <b>Диалог с клиентом</b>\n\n"
+        f"👤 {client_name} {username}\n"
+        f"🆔 <code>{user_id}</code>"
+        f"{order_info}\n\n"
+        f"✏️ Введите сообщение или отправьте файл/голосовое:",
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_dialog_file:"))
+async def admin_dialog_file_start(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Начать отправку файла клиенту"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌", show_alert=True)
+        return
+
+    user_id = int(callback.data.split(":")[1])
+
+    client_query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(client_query)
+    client = result.scalar_one_or_none()
+    client_name = client.fullname if client else f"ID: {user_id}"
+
+    await state.set_state(AdminStates.dialog_file)
+    await state.update_data(target_user_id=user_id, client_name=client_name)
+
+    await callback.message.edit_text(
+        f"📎 <b>Отправка файла</b>\n\n"
+        f"👤 {client_name}\n\n"
+        f"Отправьте файл (документ, фото, видео):",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_dialogs")]
+        ])
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_dialog_voice:"))
+async def admin_dialog_voice_start(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Начать отправку голосового клиенту"""
+    if not is_admin(callback.from_user.id):
+        await callback.answer("❌", show_alert=True)
+        return
+
+    user_id = int(callback.data.split(":")[1])
+
+    client_query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(client_query)
+    client = result.scalar_one_or_none()
+    client_name = client.fullname if client else f"ID: {user_id}"
+
+    await state.set_state(AdminStates.dialog_voice)
+    await state.update_data(target_user_id=user_id, client_name=client_name)
+
+    await callback.message.edit_text(
+        f"🎤 <b>Голосовое сообщение</b>\n\n"
+        f"👤 {client_name}\n\n"
+        f"Запишите и отправьте голосовое сообщение:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_dialogs")]
+        ])
+    )
+    await callback.answer()
+
+
+@router.message(AdminStates.dialog_file, F.document | F.photo | F.video)
+async def admin_dialog_send_file(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
+    """Админ отправляет файл клиенту из диалога"""
+    from bot.handlers.order_chat import get_support_chat_keyboard, update_conversation
+    from database.models.orders import MessageSender
+
+    data = await state.get_data()
+    user_id = data.get("target_user_id")
+    client_name = data.get("client_name", "Клиент")
+
+    if not user_id:
+        await message.answer("❌ Ошибка: данные потеряны")
+        await state.clear()
+        return
+
+    # Определяем тип файла
+    file_id = None
+    file_type = None
+    caption = message.caption or ""
+
+    if message.photo:
+        file_id = message.photo[-1].file_id
+        file_type = "photo"
+    elif message.document:
+        file_id = message.document.file_id
+        file_type = "document"
+    elif message.video:
+        file_id = message.video.file_id
+        file_type = "video"
+
+    if not file_id:
+        await message.answer("❌ Не удалось обработать файл")
+        return
+
+    try:
+        msg_text = f"🛡️ <b>Файл от Шерифа:</b>"
+        if caption:
+            msg_text += f"\n\n{caption}"
+
+        if file_type == "photo":
+            await bot.send_photo(
+                chat_id=user_id,
+                photo=file_id,
+                caption=msg_text,
+                reply_markup=get_support_chat_keyboard(user_id, is_admin=False)
+            )
+        elif file_type == "video":
+            await bot.send_video(
+                chat_id=user_id,
+                video=file_id,
+                caption=msg_text,
+                reply_markup=get_support_chat_keyboard(user_id, is_admin=False)
+            )
+        else:
+            await bot.send_document(
+                chat_id=user_id,
+                document=file_id,
+                caption=msg_text,
+                reply_markup=get_support_chat_keyboard(user_id, is_admin=False)
+            )
+
+        await message.answer(
+            f"✅ Файл отправлен клиенту {client_name}!",
+            reply_markup=get_support_chat_keyboard(user_id, is_admin=True)
+        )
+
+        # Обновляем диалог
+        await update_conversation(
+            session, user_id, None, "📎 Файл",
+            MessageSender.ADMIN.value, conv_type=ConversationType.SUPPORT.value
+        )
+
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить: {e}")
+
+    await state.clear()
+
+
+@router.message(AdminStates.dialog_voice, F.voice)
+async def admin_dialog_send_voice(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
+    """Админ отправляет голосовое клиенту из диалога"""
+    from bot.handlers.order_chat import get_support_chat_keyboard, update_conversation
+    from database.models.orders import MessageSender
+
+    data = await state.get_data()
+    user_id = data.get("target_user_id")
+    client_name = data.get("client_name", "Клиент")
+
+    if not user_id:
+        await message.answer("❌ Ошибка: данные потеряны")
+        await state.clear()
+        return
+
+    try:
+        # Сначала текст
+        await bot.send_message(
+            chat_id=user_id,
+            text="🛡️ <b>Голосовое от Шерифа:</b>"
+        )
+        # Потом голосовое
+        await bot.send_voice(
+            chat_id=user_id,
+            voice=message.voice.file_id,
+            reply_markup=get_support_chat_keyboard(user_id, is_admin=False)
+        )
+
+        await message.answer(
+            f"✅ Голосовое отправлено клиенту {client_name}!",
+            reply_markup=get_support_chat_keyboard(user_id, is_admin=True)
+        )
+
+        # Обновляем диалог
+        await update_conversation(
+            session, user_id, None, "🎤 Голосовое",
+            MessageSender.ADMIN.value, conv_type=ConversationType.SUPPORT.value
+        )
+
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить: {e}")
+
+    await state.clear()
+
+
+# Также обрабатываем файлы/голосовые в обычном режиме messaging_user
+@router.message(AdminStates.messaging_user, F.document | F.photo | F.video | F.voice)
+async def admin_messaging_file(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
+    """Админ отправляет файл/голосовое клиенту из диалога (универсальный хендлер)"""
+    from bot.handlers.order_chat import get_support_chat_keyboard, update_conversation
+    from database.models.orders import MessageSender
+
+    data = await state.get_data()
+    user_id = data.get("target_user_id")
+    client_name = data.get("client_name", "Клиент")
+
+    if not user_id:
+        await message.answer("❌ Ошибка: данные потеряны")
+        await state.clear()
+        return
+
+    try:
+        caption = message.caption or ""
+
+        if message.voice:
+            await bot.send_message(chat_id=user_id, text="🛡️ <b>Голосовое от Шерифа:</b>")
+            await bot.send_voice(
+                chat_id=user_id,
+                voice=message.voice.file_id,
+                reply_markup=get_support_chat_keyboard(user_id, is_admin=False)
+            )
+            preview = "🎤 Голосовое"
+        elif message.photo:
+            msg_text = f"🛡️ <b>Файл от Шерифа:</b>" + (f"\n\n{caption}" if caption else "")
+            await bot.send_photo(
+                chat_id=user_id,
+                photo=message.photo[-1].file_id,
+                caption=msg_text,
+                reply_markup=get_support_chat_keyboard(user_id, is_admin=False)
+            )
+            preview = "📷 Фото"
+        elif message.video:
+            msg_text = f"🛡️ <b>Файл от Шерифа:</b>" + (f"\n\n{caption}" if caption else "")
+            await bot.send_video(
+                chat_id=user_id,
+                video=message.video.file_id,
+                caption=msg_text,
+                reply_markup=get_support_chat_keyboard(user_id, is_admin=False)
+            )
+            preview = "🎬 Видео"
+        else:
+            msg_text = f"🛡️ <b>Файл от Шерифа:</b>" + (f"\n\n{caption}" if caption else "")
+            await bot.send_document(
+                chat_id=user_id,
+                document=message.document.file_id,
+                caption=msg_text,
+                reply_markup=get_support_chat_keyboard(user_id, is_admin=False)
+            )
+            preview = "📎 Файл"
+
+        await message.answer(
+            f"✅ Отправлено клиенту {client_name}!",
+            reply_markup=get_support_chat_keyboard(user_id, is_admin=True)
+        )
+
+        # Обновляем диалог
+        await update_conversation(
+            session, user_id, None, preview,
+            MessageSender.ADMIN.value, conv_type=ConversationType.SUPPORT.value
+        )
+
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить: {e}")
+
+    await state.clear()
 
 
 # ══════════════════════════════════════════════════════════════
