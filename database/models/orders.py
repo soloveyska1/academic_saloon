@@ -395,6 +395,9 @@ class Conversation(Base):
     # Forum Topic ID в админской группе (message_thread_id)
     topic_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
 
+    # ID закреплённой карточки заказа внутри топика
+    topic_card_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
     # Тип диалога
     conversation_type: Mapped[str] = mapped_column(String(20), default=ConversationType.FREE.value)
 

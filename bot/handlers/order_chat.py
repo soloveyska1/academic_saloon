@@ -5,8 +5,15 @@
 - Клиент пишет боту → Бот пересылает в топик админской группы
 - Админ пишет в топик → Бот пересылает клиенту
 - Sticky State: клиент остаётся в режиме чата пока не выйдет
+- Self-Healing: автовосстановление при удалении топика
+- Fusion: карточка заказа закрепляется в топике
+
+Safety Commands (для админов в топике):
+- /card - переотправить/обновить закреплённую карточку
+- /price XXXX - установить цену заказа
 """
 import logging
+import re
 from datetime import datetime
 
 from aiogram import Router, Bot, F
@@ -16,13 +23,14 @@ from aiogram.types import (
     ForumTopic,
 )
 from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import Command
 from aiogram.exceptions import TelegramBadRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 
 from database.models.orders import (
-    Order, OrderMessage, MessageSender, Conversation, ConversationType
+    Order, OrderMessage, MessageSender, Conversation, ConversationType, OrderStatus
 )
 from database.models.users import User
 from bot.states.chat import ChatStates
@@ -32,6 +40,15 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+
+# ══════════════════════════════════════════════════════════════
+#                    FSM СОСТОЯНИЯ ДЛЯ ТОПИКА
+# ══════════════════════════════════════════════════════════════
+
+class TopicStates(StatesGroup):
+    """Состояния для действий внутри топика"""
+    waiting_custom_price = State()  # Ожидание ввода своей цены
 
 
 # ══════════════════════════════════════════════════════════════
@@ -83,13 +100,25 @@ async def get_or_create_topic(
     user_id: int,
     order_id: int | None = None,
     conv_type: str = ConversationType.SUPPORT.value,
+    force_recreate: bool = False,
 ) -> tuple[Conversation, int]:
     """
     Получает или создаёт топик для диалога.
+    Self-Healing: автоматически пересоздаёт топик если он был удалён.
+
+    Args:
+        bot: Бот
+        session: Сессия БД
+        user_id: ID пользователя Telegram
+        order_id: ID заказа (опционально)
+        conv_type: Тип диалога
+        force_recreate: Принудительно создать новый топик
 
     Returns:
         tuple[Conversation, topic_id]
     """
+    from bot.services.live_cards import send_or_update_card
+
     # Ищем существующую Conversation
     query = select(Conversation).where(Conversation.user_id == user_id)
     if order_id:
@@ -116,8 +145,8 @@ async def get_or_create_topic(
         )
         session.add(conv)
 
-    # Проверяем есть ли topic_id
-    if conv.topic_id:
+    # Проверяем есть ли topic_id и не требуется ли пересоздание
+    if conv.topic_id and not force_recreate:
         # Проверяем что топик ещё жив
         try:
             # Пытаемся отправить typing action в топик для проверки
@@ -128,10 +157,12 @@ async def get_or_create_topic(
             )
             return conv, conv.topic_id
         except TelegramBadRequest as e:
-            if "thread not found" in str(e).lower() or "message_thread_id" in str(e).lower():
-                # Топик удалён — создадим новый
-                logger.warning(f"Topic {conv.topic_id} was deleted, creating new one")
+            error_str = str(e).lower()
+            if "thread not found" in error_str or "message_thread_id" in error_str or "chat not found" in error_str:
+                # Топик удалён — создадим новый (Self-Healing)
+                logger.warning(f"🔧 SELF-HEALING: Topic {conv.topic_id} was deleted, recreating...")
                 conv.topic_id = None
+                conv.topic_card_message_id = None
             else:
                 raise
 
@@ -153,12 +184,26 @@ async def get_or_create_topic(
             name=topic_name,
         )
         conv.topic_id = forum_topic.message_thread_id
+        conv.topic_card_message_id = None  # Сбрасываем — карточка будет создана заново
         await session.commit()
 
         # Отправляем стартовое сообщение в топик
         await send_topic_header(bot, session, conv, user, order_id)
 
-        logger.info(f"Created topic {conv.topic_id} for user {user_id}, order {order_id}")
+        # FUSION: Если есть заказ — отправляем и закрепляем карточку
+        if order_id:
+            order = await session.get(Order, order_id)
+            if order:
+                await send_or_update_card(
+                    bot=bot,
+                    order=order,
+                    session=session,
+                    client_username=user.username if user else None,
+                    client_name=client_name,
+                )
+                logger.info(f"📋 Posted order card in new topic {conv.topic_id}")
+
+        logger.info(f"✅ Created topic {conv.topic_id} for user {user_id}, order {order_id}")
 
     except TelegramBadRequest as e:
         logger.error(f"Failed to create topic: {e}")
@@ -331,10 +376,27 @@ async def client_message_to_topic(
     """
     Обработчик всех сообщений клиента в режиме чата.
     Пересылает в топик админской группы.
+    Self-Healing: автоматически восстанавливает удалённые топики.
     """
     data = await state.get_data()
     order_id = data.get("order_id")
     conv_type = data.get("conv_type", ConversationType.SUPPORT.value)
+
+    async def try_forward_to_topic(conv: Conversation, topic_id: int) -> bool:
+        """Попытка переслать сообщение в топик"""
+        try:
+            await bot.copy_message(
+                chat_id=settings.ADMIN_GROUP_ID,
+                message_thread_id=topic_id,
+                from_chat_id=message.chat.id,
+                message_id=message.message_id,
+            )
+            return True
+        except TelegramBadRequest as e:
+            error_str = str(e).lower()
+            if "thread not found" in error_str or "message_thread_id" in error_str or "chat not found" in error_str:
+                return False
+            raise
 
     try:
         # Получаем или создаём топик
@@ -342,13 +404,26 @@ async def client_message_to_topic(
             bot, session, message.from_user.id, order_id, conv_type
         )
 
-        # Пересылаем сообщение в топик (copy_message сохраняет форматирование)
-        await bot.copy_message(
-            chat_id=settings.ADMIN_GROUP_ID,
-            message_thread_id=topic_id,
-            from_chat_id=message.chat.id,
-            message_id=message.message_id,
-        )
+        # Пытаемся переслать в топик
+        forwarded = await try_forward_to_topic(conv, topic_id)
+
+        if not forwarded:
+            # SELF-HEALING: Топик удалён — создаём новый
+            logger.warning(f"🔧 SELF-HEALING triggered in client_message_to_topic for order {order_id}")
+
+            # Пересоздаём топик
+            conv, topic_id = await get_or_create_topic(
+                bot, session, message.from_user.id, order_id, conv_type,
+                force_recreate=True
+            )
+
+            # Пробуем ещё раз
+            forwarded = await try_forward_to_topic(conv, topic_id)
+            if not forwarded:
+                raise TelegramBadRequest(method="copy_message", message="Topic recreation failed")
+
+            # Логируем инцидент Self-Healing
+            logger.info(f"✅ SELF-HEALING completed: new topic {topic_id} for order {order_id}")
 
         # Сохраняем сообщение в БД
         await save_message_to_db(
@@ -768,3 +843,294 @@ async def cmd_dialogs(message: Message, session: AsyncSession):
         f"📩 С непрочитанными: {unread}\n\n"
         "💡 <i>Все диалоги теперь в топиках группы!</i>"
     )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    SAFETY COMMANDS (В ТОПИКЕ)
+# ══════════════════════════════════════════════════════════════
+
+@router.message(
+    Command("card"),
+    F.chat.id == settings.ADMIN_GROUP_ID,
+    F.message_thread_id,
+)
+async def cmd_card_in_topic(message: Message, session: AsyncSession, bot: Bot):
+    """
+    /card - Переотправить/обновить закреплённую карточку заказа в топике.
+    Работает только в топиках админской группы.
+    """
+    from bot.services.live_cards import send_or_update_card
+
+    # Проверяем что это админ
+    if message.from_user.id not in settings.ADMIN_IDS:
+        return
+
+    topic_id = message.message_thread_id
+
+    # Находим Conversation по topic_id
+    query = select(Conversation).where(Conversation.topic_id == topic_id)
+    result = await session.execute(query)
+    conv = result.scalar_one_or_none()
+
+    if not conv:
+        await message.reply("❌ Этот топик не привязан к диалогу")
+        return
+
+    if not conv.order_id:
+        await message.reply("❌ Этот топик не привязан к заказу (поддержка)")
+        return
+
+    # Получаем заказ и пользователя
+    order = await session.get(Order, conv.order_id)
+    if not order:
+        await message.reply("❌ Заказ не найден")
+        return
+
+    user_query = select(User).where(User.telegram_id == conv.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    # Сбрасываем topic_card_message_id чтобы создать новую карточку
+    conv.topic_card_message_id = None
+    await session.commit()
+
+    # Отправляем/обновляем карточку
+    try:
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+        )
+        await message.reply("✅ Карточка заказа обновлена и закреплена")
+    except Exception as e:
+        logger.error(f"Failed to refresh card in topic: {e}")
+        await message.reply(f"❌ Ошибка: {e}")
+
+
+@router.message(
+    Command("price"),
+    F.chat.id == settings.ADMIN_GROUP_ID,
+    F.message_thread_id,
+)
+async def cmd_price_in_topic(message: Message, session: AsyncSession, bot: Bot, state: FSMContext):
+    """
+    /price [сумма] - Установить цену заказа прямо в топике.
+    Примеры:
+    - /price 5000 - установить цену 5000₽
+    - /price - показать меню выбора цены
+    """
+    from bot.services.live_cards import send_or_update_card
+
+    # Проверяем что это админ
+    if message.from_user.id not in settings.ADMIN_IDS:
+        return
+
+    topic_id = message.message_thread_id
+
+    # Находим Conversation по topic_id
+    query = select(Conversation).where(Conversation.topic_id == topic_id)
+    result = await session.execute(query)
+    conv = result.scalar_one_or_none()
+
+    if not conv:
+        await message.reply("❌ Этот топик не привязан к диалогу")
+        return
+
+    if not conv.order_id:
+        await message.reply("❌ Этот топик не привязан к заказу")
+        return
+
+    # Получаем заказ и пользователя
+    order = await session.get(Order, conv.order_id)
+    if not order:
+        await message.reply("❌ Заказ не найден")
+        return
+
+    user_query = select(User).where(User.telegram_id == conv.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    # Парсим аргумент команды
+    args = message.text.split(maxsplit=1)
+    if len(args) > 1:
+        # Передана сумма — устанавливаем сразу
+        try:
+            price_str = args[1].replace(" ", "").replace(",", "").replace("₽", "")
+            price = int(price_str)
+
+            if price <= 0:
+                await message.reply("❌ Цена должна быть положительной")
+                return
+
+            if price > 1000000:
+                await message.reply("❌ Слишком большая сумма")
+                return
+
+            # Рассчитываем бонусы
+            bonus_used = 0
+            if user and user.balance > 0:
+                max_bonus = price * 0.5
+                bonus_used = min(user.balance, max_bonus)
+
+            # Устанавливаем цену
+            order.price = float(price)
+            order.bonus_used = bonus_used
+            order.status = OrderStatus.WAITING_PAYMENT.value
+            await session.commit()
+
+            # Обновляем карточки (Dual Sync)
+            final_price = price - bonus_used
+            if bonus_used > 0:
+                extra_text = (
+                    f"💵 Тариф: {price:,}₽\n"
+                    f"💎 Бонусы: −{bonus_used:.0f}₽\n"
+                    f"👉 К оплате: {final_price:,.0f}₽"
+                ).replace(",", " ")
+            else:
+                extra_text = f"💵 Цена: {price:,}₽".replace(",", " ")
+
+            await send_or_update_card(
+                bot=bot,
+                order=order,
+                session=session,
+                client_username=user.username if user else None,
+                client_name=user.fullname if user else None,
+                extra_text=extra_text,
+            )
+
+            # Отправляем счёт клиенту
+            from bot.handlers.channel_cards import send_payment_notification
+            sent = await send_payment_notification(bot, order, user, price)
+
+            price_formatted = f"{price:,}".replace(",", " ")
+            status = "клиент получил счёт!" if sent else "(уведомление не доставлено)"
+            await message.reply(f"✅ Цена {price_formatted}₽ установлена, {status}")
+
+        except ValueError:
+            await message.reply("❌ Неверный формат цены. Пример: /price 5000")
+    else:
+        # Цена не передана — показываем меню
+        preset_prices = [1500, 2500, 5000, 10000, 15000, 25000]
+        robot_price = int(order.price) if order.price > 0 else 0
+
+        buttons = []
+
+        # Если есть цена от робота
+        if robot_price > 0:
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"✅ Подтвердить {robot_price:,}₽".replace(",", " "),
+                    callback_data=f"topic_setprice:{conv.order_id}:{robot_price}"
+                )
+            ])
+
+        # Preset цены (по 3 в ряд)
+        row = []
+        for price in preset_prices:
+            row.append(InlineKeyboardButton(
+                text=f"{price:,}₽".replace(",", " "),
+                callback_data=f"topic_setprice:{conv.order_id}:{price}"
+            ))
+            if len(row) == 3:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
+
+        # Кнопка своей цены
+        buttons.append([
+            InlineKeyboardButton(
+                text="✏️ Своя цена (введите /price СУММА)",
+                callback_data="noop"
+            )
+        ])
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+
+        await message.reply(
+            f"💵 <b>Установка цены для заказа #{conv.order_id}</b>\n\n"
+            "Выберите цену или введите свою командой:\n"
+            "<code>/price 7500</code>",
+            reply_markup=keyboard,
+        )
+
+
+@router.callback_query(F.data.startswith("topic_setprice:"))
+async def topic_set_price_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Обработчик callback для установки цены из меню в топике"""
+    from bot.services.live_cards import send_or_update_card
+    from bot.handlers.channel_cards import send_payment_notification
+
+    # Проверяем что это админ
+    if callback.from_user.id not in settings.ADMIN_IDS:
+        await callback.answer("Нет доступа", show_alert=True)
+        return
+
+    try:
+        parts = callback.data.split(":")
+        order_id = int(parts[1])
+        price = int(parts[2])
+    except (ValueError, IndexError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order = await session.get(Order, order_id)
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    user_query = select(User).where(User.telegram_id == order.user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    # Рассчитываем бонусы
+    bonus_used = 0
+    if user and user.balance > 0:
+        max_bonus = price * 0.5
+        bonus_used = min(user.balance, max_bonus)
+
+    # Устанавливаем цену
+    order.price = float(price)
+    order.bonus_used = bonus_used
+    order.status = OrderStatus.WAITING_PAYMENT.value
+    await session.commit()
+
+    # Обновляем карточки
+    final_price = price - bonus_used
+    if bonus_used > 0:
+        extra_text = (
+            f"💵 Тариф: {price:,}₽\n"
+            f"💎 Бонусы: −{bonus_used:.0f}₽\n"
+            f"👉 К оплате: {final_price:,.0f}₽"
+        ).replace(",", " ")
+    else:
+        extra_text = f"💵 Цена: {price:,}₽".replace(",", " ")
+
+    await send_or_update_card(
+        bot=bot,
+        order=order,
+        session=session,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+        extra_text=extra_text,
+    )
+
+    # Отправляем счёт клиенту
+    sent = await send_payment_notification(bot, order, user, price)
+
+    price_formatted = f"{price:,}".replace(",", " ")
+    await callback.answer(f"✅ Цена {price_formatted}₽ установлена!", show_alert=True)
+
+    # Удаляем меню выбора цены
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+
+@router.callback_query(F.data == "noop")
+async def noop_callback(callback: CallbackQuery):
+    """Пустой callback для информационных кнопок"""
+    await callback.answer()
