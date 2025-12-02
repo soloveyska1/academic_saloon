@@ -4929,6 +4929,9 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
     # Очищаем состояние
     await state.clear()
 
+    # Сохраняем chat_id ДО удаления сообщения
+    chat_id = callback.message.chat.id
+
     # Показываем подтверждение — агрессивный стиль для критических сроков
     if urgency_key in ("critical", "high"):
         caption = f"""🚨 <b>ТРЕВОГА ПРИНЯТА!</b>
@@ -4953,25 +4956,27 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
     except Exception:
         pass
 
-    # Отправляем подтверждение
+    # Отправляем подтверждение юзеру — ОБЯЗАТЕЛЬНО
+    sent = False
     if ORDER_DONE_IMAGE_PATH.exists():
         try:
             await send_cached_photo(
                 bot=bot,
-                chat_id=callback.message.chat.id,
+                chat_id=chat_id,
                 photo_path=ORDER_DONE_IMAGE_PATH,
                 caption=caption,
                 reply_markup=get_panic_final_keyboard(user_id),
             )
-            return
-        except Exception:
-            pass
+            sent = True
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото подтверждения: {e}")
 
-    await bot.send_message(
-        chat_id=callback.message.chat.id,
-        text=caption,
-        reply_markup=get_panic_final_keyboard(user_id),
-    )
+    if not sent:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=caption,
+            reply_markup=get_panic_final_keyboard(user_id),
+        )
 
 
 @router.callback_query(F.data == "panic_back_to_urgency")
