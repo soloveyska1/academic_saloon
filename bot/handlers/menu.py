@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Пути к изображениям
 SUPPORT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "support.jpg"
-PRICE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "price.jpg"
+PRICE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "deng.jpg"
 CODEX_IMAGE_PATH = Path(__file__).parent.parent / "media" / "codex.jpg"
 
 

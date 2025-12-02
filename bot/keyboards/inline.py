@@ -143,7 +143,7 @@ def get_price_list_keyboard() -> InlineKeyboardMarkup:
         # Row 2: Быстрые варианты
         [
             InlineKeyboardButton(text="📸 Оценить задачу", callback_data="quick_order:photo_task"),
-            InlineKeyboardButton(text="⚡️ Другое", callback_data="quick_order:other"),
+            InlineKeyboardButton(text="🔥 Срочно/Другое", callback_data="quick_order:other"),
         ],
         # Row 3: Оферта
         [

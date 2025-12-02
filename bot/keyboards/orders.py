@@ -397,24 +397,24 @@ def get_subject_keyboard() -> InlineKeyboardMarkup:
 
 
 # ══════════════════════════════════════════════════════════════
-#                    СРОЧНЫЙ ЗАКАЗ
+#                    PANIC FLOW — СРОЧНЫЙ ЗАКАЗ
 # ══════════════════════════════════════════════════════════════
 
-def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
+def get_panic_urgency_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура для срочного заказа.
-    Быстрый выбор дедлайна + возможность сразу скинуть задание.
+    Клавиатура Panic Flow — Шаг 1: Выбор срочности (наценки).
+    Убрана кнопка "Не знаю" — если не знает, считаем Турбо.
     """
     now = datetime.now(MSK_TZ)
 
     buttons = []
 
-    # Кнопка "Сегодня" только если ещё не поздно (до 20:00)
+    # Кнопка "Вчера" только если ещё не поздно (до 20:00)
     if now.hour < 20:
         buttons.append([
             InlineKeyboardButton(
                 text="🚀 Нужно вчера (+50%)",
-                callback_data="urgent_deadline:today"
+                callback_data="panic_urgency:critical"
             )
         ])
 
@@ -422,23 +422,15 @@ def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
     buttons.append([
         InlineKeyboardButton(
             text="🔥 Сдать завтра (+30%)",
-            callback_data="urgent_deadline:tomorrow"
+            callback_data="panic_urgency:high"
         )
     ])
 
-    # 2-3 дня
+    # 2-3 дня (Турбо) — дефолт
     buttons.append([
         InlineKeyboardButton(
             text="🏎 Турбо (2-3 дня, +15%)",
-            callback_data="urgent_deadline:3_days"
-        )
-    ])
-
-    # Просто скинуть — для тех кто в панике
-    buttons.append([
-        InlineKeyboardButton(
-            text="🤷‍♂️ Не знаю / Просто начни",
-            callback_data="urgent_deadline:asap"
+            callback_data="panic_urgency:medium"
         )
     ])
 
@@ -451,11 +443,77 @@ def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
+def get_panic_upload_keyboard(has_files: bool = False) -> InlineKeyboardMarkup:
+    """
+    Клавиатура Panic Flow — Шаг 2: Загрузка файлов.
+    Кнопка ПУСК появляется только после загрузки хотя бы одного файла.
+    """
+    buttons = []
+
+    if has_files:
+        # Кнопка отправки появляется только когда есть файлы
+        buttons.append([
+            InlineKeyboardButton(
+                text="🚀 ПУСК (Отправить заказ)",
+                callback_data="panic_submit"
+            )
+        ])
+        buttons.append([
+            InlineKeyboardButton(
+                text="🗑 Очистить",
+                callback_data="panic_clear"
+            )
+        ])
+
+    # Навигация
+    buttons.append([
+        InlineKeyboardButton(text="🔙 Назад", callback_data="panic_back_to_urgency"),
+        InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_panic_final_keyboard(user_id: int) -> InlineKeyboardMarkup:
+    """
+    Клавиатура Panic Flow — Финал.
+    Дослать материалы + написать Шерифу лично.
+    """
+    from core.config import settings
+
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="📎 Дослать материалы",
+                callback_data="panic_append_files"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🆘 Написать Шерифу лично",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🏠 В главное меню",
+                callback_data="back_to_menu"
+            )
+        ],
+    ])
+
+
+# Legacy — для обратной совместимости
+def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
+    """Редирект на новую клавиатуру Panic Flow"""
+    return get_panic_urgency_keyboard()
+
+
 def get_urgent_task_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура после выбора дедлайна в срочном заказе — Режим Форсаж"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_urgent"),
+            InlineKeyboardButton(text="🔙 Назад", callback_data="panic_back_to_urgency"),
             InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_order"),
         ]
     ])
