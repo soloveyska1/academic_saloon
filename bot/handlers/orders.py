@@ -2761,15 +2761,21 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
     await session.commit()
 
     # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
+    card_updated = False
     try:
+        username = callback.from_user.username
+        user_link = f"@{username}" if username else f"ID:{callback.from_user.id}"
+
         await update_card_status(
             bot=bot,
             order=order,
             session=session,
             client_username=callback.from_user.username,
             client_name=callback.from_user.full_name,
-            extra_text="🔔 Клиент нажал 'Я оплатил'",
+            extra_text=f"🔔 ПРОВЕРЬ ОПЛАТУ!\n{user_link} · {int(order.price):,}₽".replace(",", " "),
         )
+        card_updated = True
+        logger.info(f"Order #{order.id}: card updated with verification buttons")
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
 
@@ -2822,36 +2828,37 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
             reply_markup=user_keyboard
         )
 
-    # ═══ УВЕДОМЛЕНИЕ АДМИНАМ С КНОПКАМИ ВЕРИФИКАЦИИ ═══
-    username = callback.from_user.username
-    user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
+    # ═══ FALLBACK: УВЕДОМЛЕНИЕ АДМИНАМ ЕСЛИ КАРТОЧКА НЕ ОБНОВИЛАСЬ ═══
+    if not card_updated:
+        username = callback.from_user.username
+        user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
 
-    admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
+        admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
 
 Заказ: <code>#{order.id}</code>
 Клиент: {user_link}
 Сумма: <b>{int(order.price):,} ₽</b>
 
-<i>Клиент нажал кнопку. Проверь банк.</i>""".replace(",", " ")
+<i>Клиент нажал "Я оплатил". Проверь банк.</i>""".replace(",", " ")
 
-    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="✅ Подтвердить ($)",
-                callback_data=f"admin_verify_paid:{order_id}"
-            ),
-            InlineKeyboardButton(
-                text="❌ Отклонить",
-                callback_data=f"admin_reject_payment:{order_id}"
-            ),
-        ],
-    ])
+        admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Подтвердить ($)",
+                    callback_data=f"admin_verify_paid:{order_id}"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Отклонить",
+                    callback_data=f"admin_reject_payment:{order_id}"
+                ),
+            ],
+        ])
 
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
-        except Exception as e:
-            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+        for admin_id in settings.ADMIN_IDS:
+            try:
+                await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
+            except Exception as e:
+                logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
 
 
 @router.callback_query(F.data.startswith("recalc_order:"))
@@ -4285,7 +4292,7 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
 
             # Загружаем все файлы на Яндекс Диск
             if files_to_upload:
-                client_name = user.full_name or f"User_{user.id}"
+                client_name = user.fullname or f"User_{user.id}"
                 result = await yandex_disk_service.upload_multiple_files(
                     files=files_to_upload,
                     order_id=order.id,
@@ -4311,7 +4318,7 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
                 order=order,
                 session=session,
                 client_username=user.username,
-                client_name=user.full_name,
+                client_name=user.fullname,
                 yadisk_link=yadisk_link,
             )
             if msg_id:
@@ -4349,7 +4356,7 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
 
     text = f"""{header}
 
-◈  Клиент: {user.full_name} ({username_str})
+◈  Клиент: {user.fullname} ({username_str})
 ◈  ID: <code>{user.id}</code>
 
 ◈  Тип: {work_label}
