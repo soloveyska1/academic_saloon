@@ -19,7 +19,7 @@ PAYMENT_SUCCESS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "payment_s
 CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking_payment.jpg"
 
 # Изображение для счёта/инвойса (рукопожатие/сделка)
-IMG_PAYMENT_BILL = Path("/root/academic_saloon/bot/media/confirm_std.jpg")
+IMG_PAYMENT_BILL = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType, FSInputFile
 from aiogram.fsm.context import FSMContext

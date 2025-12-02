@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, case
 
 # Пути к изображениям
-PROFILE_IMAGE_PATH = Path("/root/academic_saloon/bot/media/lk.jpg")
+PROFILE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "lk.jpg"
 ORDERS_IMAGE_PATH = Path(__file__).parent.parent / "media" / "my_order.jpg"
 ORDER_DETAIL_IMAGE_PATH = Path(__file__).parent.parent / "media" / "delo.jpg"
 WALLET_IMAGE_PATH = Path(__file__).parent.parent / "media" / "wallet.jpg"
