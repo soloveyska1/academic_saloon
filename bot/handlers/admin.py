@@ -2437,37 +2437,53 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
             reply_markup=user_keyboard
         )
 
-    # ═══ УВЕДОМЛЕНИЕ АДМИНАМ С КНОПКАМИ ВЕРИФИКАЦИИ ═══
-    username = callback.from_user.username
-    user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
+    # ═══ УВЕДОМЛЕНИЕ В КАНАЛЬНУЮ КАРТОЧКУ ═══
+    # Получаем данные клиента для карточки
+    try:
+        user_result = await session.execute(select(User).where(User.telegram_id == order.user_id))
+        user = user_result.scalar_one_or_none()
 
-    admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
+        username = callback.from_user.username
+        user_link = f"@{username}" if username else f"ID:{callback.from_user.id}"
+
+        # Обновляем карточку в канале - она покажет кнопки подтверждения/отклонения
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            extra_text=f"🔔 ПРОВЕРЬ ОПЛАТУ!\n{user_link} · {int(amount):,}₽ · {order.payment_method or 'способ не указан'}".replace(",", " "),
+        )
+        logger.info(f"Order #{order_id}: card updated with verification buttons")
+    except Exception as e:
+        logger.error(f"Failed to update card for order #{order_id}: {e}")
+        # Fallback: отправляем в админский DM если карточка не обновилась
+        admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
 
 Заказ: <code>#{order.id}</code>
-Клиент: {user_link}
 Сумма: <b>{int(amount):,} ₽</b>
-Способ: {order.payment_method or "—"}
 
-<i>Клиент нажал кнопку. Проверь банк.</i>""".replace(",", " ")
+<i>Клиент нажал "Я оплатил". Проверь банк.</i>""".replace(",", " ")
 
-    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="✅ Подтвердить ($)",
-                callback_data=f"admin_verify_paid:{order_id}"
-            ),
-            InlineKeyboardButton(
-                text="❌ Отклонить",
-                callback_data=f"admin_reject_payment:{order_id}"
-            ),
-        ],
-    ])
+        admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Подтвердить ($)",
+                    callback_data=f"admin_verify_paid:{order_id}"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Отклонить",
+                    callback_data=f"admin_reject_payment:{order_id}"
+                ),
+            ],
+        ])
 
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
-        except Exception as e:
-            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+        for admin_id in settings.ADMIN_IDS:
+            try:
+                await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
+            except Exception as e2:
+                logger.warning(f"Не удалось уведомить админа {admin_id}: {e2}")
 
 
 @router.callback_query(F.data.startswith("cancel_payment_check:"))
@@ -2721,7 +2737,7 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
             order=order,
             session=session,
             client_username=user.username if user else None,
-            client_name=user.full_name if user else None,
+            client_name=user.fullname if user else None,
             extra_text=f"💰 Цена назначена: {int(price):,}₽".replace(",", " "),
         )
     except Exception as e:
@@ -2953,7 +2969,7 @@ async def admin_reject_order(callback: CallbackQuery, session: AsyncSession, bot
             order=order,
             session=session,
             client_username=user.username if user else None,
-            client_name=user.full_name if user else None,
+            client_name=user.fullname if user else None,
             extra_text=f"❌ Отклонено админом",
         )
     except Exception as e:
@@ -3075,7 +3091,7 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
             order=order,
             session=session,
             client_username=user.username if user else None,
-            client_name=user.full_name if user else None,
+            client_name=user.fullname if user else None,
             extra_text=f"✅ Оплата подтверждена (чек)",
         )
     except Exception as e:
@@ -4368,7 +4384,7 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
             order=order,
             session=session,
             client_username=user.username if user else None,
-            client_name=user.full_name if user else None,
+            client_name=user.fullname if user else None,
             extra_text=f"✅ Оплата подтверждена админом",
         )
     except Exception as e:
@@ -4470,7 +4486,7 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
             order=order,
             session=session,
             client_username=user.username if user else None,
-            client_name=user.full_name if user else None,
+            client_name=user.fullname if user else None,
             extra_text=f"❌ Оплата не найдена",
         )
     except Exception as e:
