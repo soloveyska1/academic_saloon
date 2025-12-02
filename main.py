@@ -13,6 +13,7 @@ from bot.handlers.orders import router as orders_router
 from bot.handlers.admin import router as admin_router
 from bot.handlers.log_actions import router as log_actions_router
 from bot.handlers.my_orders import router as my_orders_router
+from bot.handlers.channel_cards import router as channel_cards_router
 from bot.middlewares import (
     ErrorHandlerMiddleware,
     DbSessionMiddleware,
@@ -64,6 +65,7 @@ async def main():
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
     dp.include_router(log_actions_router)  # Обработчики кнопок логов (первыми!)
+    dp.include_router(channel_cards_router)  # Live-карточки в канале заказов
     dp.include_router(admin_router)   # Админка (до start, чтобы /admin обрабатывался)
     dp.include_router(start_router)
     dp.include_router(terms_router)   # Оферта

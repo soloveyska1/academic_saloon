@@ -96,6 +96,7 @@ from bot.utils.message_helpers import safe_edit_or_send
 from bot.utils.media_group import handle_media_group_file, get_files_summary
 from bot.handlers.start import process_start
 from bot.services.yandex_disk import yandex_disk_service
+from bot.services.live_cards import send_or_update_card, update_card_status
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -2607,11 +2608,11 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         except Exception:
             pass
 
-    # Уведомление админам со всеми вложениями (не блокируем пользователя при ошибке)
+    # Уведомление админам со всеми вложениями + Live-карточка (не блокируем пользователя при ошибке)
     # Для DRAFT (YELLOW FLOW) НЕ уведомляем — это произойдёт в submit_for_review_callback
     if order.status != OrderStatus.DRAFT.value:
         try:
-            await notify_admins_new_order(bot, callback.from_user, order, data)
+            await notify_admins_new_order(bot, callback.from_user, order, data, session)
         except Exception as e:
             logger.error(f"Ошибка уведомления админов о заказе #{order.id}: {e}")
 
@@ -2758,6 +2759,19 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
     # ═══ ОБНОВЛЯЕМ СТАТУС НА VERIFICATION_PENDING (НЕ PAID!) ═══
     order.status = OrderStatus.VERIFICATION_PENDING.value
     await session.commit()
+
+    # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
+    try:
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=callback.from_user.username,
+            client_name=callback.from_user.full_name,
+            extra_text="🔔 Клиент нажал 'Я оплатил'",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
 
     # ═══ УДАЛЯЕМ СТАРОЕ СООБЩЕНИЕ (чтобы нельзя было нажать дважды) ═══
     try:
@@ -3041,6 +3055,22 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
 
         except Exception as e:
             logger.error(f"Error uploading to Yandex Disk: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #   Live-карточка в канале заказов
+    # ═══════════════════════════════════════════════════════════════
+    try:
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=callback.from_user.username,
+            client_name=callback.from_user.full_name,
+            yadisk_link=yadisk_link,
+        )
+        logger.info(f"Live card created for order #{order.id} (submit_for_review)")
+    except Exception as e:
+        logger.error(f"Failed to create live card for order #{order.id}: {e}")
 
     # ═══════════════════════════════════════════════════════════════
     #   УВЕДОМЛЕНИЕ АДМИНОВ
@@ -3609,6 +3639,22 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
         except Exception as e:
             logger.error(f"Error uploading appended files to Yandex Disk: {e}")
 
+    # ═══════════════════════════════════════════════════════════════
+    #   Обновляем Live-карточку
+    # ═══════════════════════════════════════════════════════════════
+    try:
+        await update_card_status(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=callback.from_user.username,
+            client_name=callback.from_user.full_name,
+            yadisk_link=yadisk_link,
+            extra_text=f"📎 Дослано файлов: {len(appended_files)}",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+
     # Строка с Яндекс Диском для админов
     yadisk_line = f"\n📁 Яндекс Диск: <a href=\"{yadisk_link}\">Открыть папку</a>" if yadisk_link else ""
 
@@ -4155,8 +4201,8 @@ def get_order_admin_keyboard(order_id: int, user_id: int) -> InlineKeyboardMarku
     ])
 
 
-async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
-    """Уведомление админов о новой заявке со всеми вложениями"""
+async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, session: AsyncSession = None):
+    """Уведомление админов о новой заявке со всеми вложениями + создание Live-карточки в канале"""
     work_label = WORK_TYPE_LABELS.get(WorkType(data["work_type"]), data["work_type"])
     is_urgent = data.get("is_urgent", False)
 
@@ -4245,6 +4291,23 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
 
         except Exception as e:
             logger.error(f"Error uploading to Yandex Disk: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #   Live-карточка в канале заказов
+    # ═══════════════════════════════════════════════════════════════
+    if session:
+        try:
+            await send_or_update_card(
+                bot=bot,
+                order=order,
+                session=session,
+                client_username=user.username,
+                client_name=user.full_name,
+                yadisk_link=yadisk_link,
+            )
+            logger.info(f"Live card created/updated for order #{order.id}")
+        except Exception as e:
+            logger.error(f"Failed to create live card for order #{order.id}: {e}")
 
     # ═══════════════════════════════════════════════════════════════
     #   Формируем текст уведомления
@@ -5030,6 +5093,22 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
 
         except Exception as e:
             logger.error(f"Error uploading panic order to Yandex Disk: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #   Live-карточка в канале заказов
+    # ═══════════════════════════════════════════════════════════════
+    try:
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=username,
+            client_name=full_name,
+            yadisk_link=yadisk_link,
+        )
+        logger.info(f"Live card created for panic order #{order.id}")
+    except Exception as e:
+        logger.error(f"Failed to create live card for panic order #{order.id}: {e}")
 
     # Добавляем ссылку на Яндекс.Диск в уведомление
     yadisk_line = f"\n📁 <b>Яндекс.Диск:</b> <a href=\"{yadisk_link}\">Открыть папку</a>" if yadisk_link else ""

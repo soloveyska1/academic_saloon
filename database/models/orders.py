@@ -286,6 +286,9 @@ class Order(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Напоминание отправлено
 
+    # Live-карточка в канале заказов
+    channel_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # ID сообщения в канале
+
     @property
     def status_label(self) -> str:
         """Человекочитаемый статус с emoji"""
