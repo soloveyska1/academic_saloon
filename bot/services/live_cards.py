@@ -16,8 +16,8 @@ from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkTyp
 
 logger = logging.getLogger(__name__)
 
-# ID канала для заказов
-ORDERS_CHANNEL_ID = -1003331104298
+# ID канала для заказов (из настроек)
+ORDERS_CHANNEL_ID = settings.ORDERS_CHANNEL_ID
 
 
 # ══════════════════════════════════════════════════════════════
@@ -321,6 +321,7 @@ async def send_or_update_card(
 
     # Отправляем новое сообщение
     try:
+        logger.info(f"Sending card for order #{order.id} to channel {ORDERS_CHANNEL_ID}")
         msg = await bot.send_message(
             chat_id=ORDERS_CHANNEL_ID,
             text=text,
@@ -328,10 +329,10 @@ async def send_or_update_card(
         )
         order.channel_message_id = msg.message_id
         await session.commit()
-        logger.info(f"Created new card for order #{order.id} (msg_id={msg.message_id})")
+        logger.info(f"Created new card for order #{order.id} (msg_id={msg.message_id}) in channel {ORDERS_CHANNEL_ID}")
         return msg.message_id
     except Exception as e:
-        logger.error(f"Failed to send card for order #{order.id}: {e}")
+        logger.error(f"FAILED to send card for order #{order.id} to channel {ORDERS_CHANNEL_ID}: {type(e).__name__}: {e}")
         return None
 
 

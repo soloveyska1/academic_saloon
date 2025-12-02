@@ -3059,8 +3059,9 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
     # ═══════════════════════════════════════════════════════════════
     #   Live-карточка в канале заказов
     # ═══════════════════════════════════════════════════════════════
+    card_created = False
     try:
-        await send_or_update_card(
+        msg_id = await send_or_update_card(
             bot=bot,
             order=order,
             session=session,
@@ -3068,20 +3069,27 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
             client_name=callback.from_user.full_name,
             yadisk_link=yadisk_link,
         )
-        logger.info(f"Live card created for order #{order.id} (submit_for_review)")
+        if msg_id:
+            card_created = True
+            logger.info(f"Live card created for order #{order.id} (submit_for_review, msg_id={msg_id})")
+        else:
+            logger.warning(f"Live card creation returned None for order #{order.id}")
     except Exception as e:
         logger.error(f"Failed to create live card for order #{order.id}: {e}")
 
-    # ═══════════════════════════════════════════════════════════════
-    #   УВЕДОМЛЕНИЕ АДМИНОВ
-    # ═══════════════════════════════════════════════════════════════
-    estimated_price = f"{order.price:,}".replace(",", " ") if order.price > 0 else "—"
-    username_str = f"@{callback.from_user.username}" if callback.from_user.username else "без username"
+    # Если карточка создана в канале, пропускаем личные уведомления админам
+    if not card_created:
+        # ═══════════════════════════════════════════════════════════════
+        #   FALLBACK: Уведомление админов напрямую
+        # ═══════════════════════════════════════════════════════════════
+        logger.warning(f"Order #{order.id}: falling back to personal admin notifications (submit_for_review)")
+        estimated_price = f"{order.price:,}".replace(",", " ") if order.price > 0 else "—"
+        username_str = f"@{callback.from_user.username}" if callback.from_user.username else "без username"
 
-    # Строка с ссылкой на Яндекс Диск
-    yadisk_line = f"\n📁 <b>Файлы:</b> <a href=\"{yadisk_link}\">Яндекс Диск</a>" if yadisk_link else ""
+        # Строка с ссылкой на Яндекс Диск
+        yadisk_line_text = f"\n📁 <b>Файлы:</b> <a href=\"{yadisk_link}\">Яндекс Диск</a>" if yadisk_link else ""
 
-    admin_text = f"""🛡 <b>ТРЕБУЕТ ОЦЕНКИ</b> | Заказ <code>#{order.id}</code>
+        admin_text = f"""🛡 <b>ТРЕБУЕТ ОЦЕНКИ</b> | Заказ <code>#{order.id}</code>
 
 👤 <b>Клиент:</b> {callback.from_user.full_name} ({username_str})
 🆔 <code>{callback.from_user.id}</code>
@@ -3091,94 +3099,94 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
 ⏳ <b>Срок:</b> {order.deadline or "—"}
 
 🤖 <b>Робот насчитал:</b> ~{estimated_price} ₽
-<i>Но клиент отправил на ручную проверку.</i>{yadisk_line}
+<i>Но клиент отправил на ручную проверку.</i>{yadisk_line_text}
 
 📝 <b>Описание:</b>
 <i>{order.description[:500] if order.description else "—"}{'...' if order.description and len(order.description) > 500 else ''}</i>"""
 
-    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=f"✅ Подтвердить ~{estimated_price}₽",
-                callback_data=f"admin_confirm_robot_price:{order.id}"
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="✏️ Своя цена",
-                callback_data=f"admin_set_price:{order.id}"
-            ),
-            InlineKeyboardButton(
-                text="❌ Отклонить",
-                callback_data=f"admin_reject_order:{order.id}"
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text="💬 Написать клиенту",
-                url=f"tg://user?id={callback.from_user.id}"
-            ),
-        ],
-    ])
+        admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"✅ Подтвердить ~{estimated_price}₽",
+                    callback_data=f"admin_confirm_robot_price:{order.id}"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✏️ Своя цена",
+                    callback_data=f"admin_set_price:{order.id}"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Отклонить",
+                    callback_data=f"admin_reject_order:{order.id}"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="💬 Написать клиенту",
+                    url=f"tg://user?id={callback.from_user.id}"
+                ),
+            ],
+        ])
 
-    # Отправляем уведомление каждому админу
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            # Сначала текст с кнопками
-            await bot.send_message(
-                chat_id=admin_id,
-                text=admin_text,
-                reply_markup=admin_keyboard,
-            )
+        # Отправляем уведомление каждому админу
+        for admin_id in settings.ADMIN_IDS:
+            try:
+                # Сначала текст с кнопками
+                await bot.send_message(
+                    chat_id=admin_id,
+                    text=admin_text,
+                    reply_markup=admin_keyboard,
+                )
 
-            # Затем все вложения (файлы)
-            for att in attachments:
-                att_type = att.get("type", "unknown")
-                try:
-                    if att_type == "text":
-                        content = att.get("content", "")
-                        if content:
-                            await bot.send_message(
+                # Затем все вложения (файлы)
+                for att in attachments:
+                    att_type = att.get("type", "unknown")
+                    try:
+                        if att_type == "text":
+                            content = att.get("content", "")
+                            if content:
+                                await bot.send_message(
+                                    chat_id=admin_id,
+                                    text=f"📝 Текст от клиента:\n\n{content}"
+                                )
+                        elif att_type == "photo":
+                            await bot.send_photo(
                                 chat_id=admin_id,
-                                text=f"📝 Текст от клиента:\n\n{content}"
+                                photo=att.get("file_id"),
+                                caption=att.get("caption") or None
                             )
-                    elif att_type == "photo":
-                        await bot.send_photo(
-                            chat_id=admin_id,
-                            photo=att.get("file_id"),
-                            caption=att.get("caption") or None
-                        )
-                    elif att_type == "document":
-                        await bot.send_document(
-                            chat_id=admin_id,
-                            document=att.get("file_id"),
-                            caption=att.get("caption") or None
-                        )
-                    elif att_type == "voice":
-                        await bot.send_voice(
-                            chat_id=admin_id,
-                            voice=att.get("file_id")
-                        )
-                    elif att_type == "video":
-                        await bot.send_video(
-                            chat_id=admin_id,
-                            video=att.get("file_id"),
-                            caption=att.get("caption") or None
-                        )
-                    elif att_type == "video_note":
-                        await bot.send_video_note(
-                            chat_id=admin_id,
-                            video_note=att.get("file_id")
-                        )
-                    elif att_type == "audio":
-                        await bot.send_audio(
-                            chat_id=admin_id,
-                            audio=att.get("file_id")
-                        )
-                except Exception:
-                    pass
-        except Exception as e:
-            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+                        elif att_type == "document":
+                            await bot.send_document(
+                                chat_id=admin_id,
+                                document=att.get("file_id"),
+                                caption=att.get("caption") or None
+                            )
+                        elif att_type == "voice":
+                            await bot.send_voice(
+                                chat_id=admin_id,
+                                voice=att.get("file_id")
+                            )
+                        elif att_type == "video":
+                            await bot.send_video(
+                                chat_id=admin_id,
+                                video=att.get("file_id"),
+                                caption=att.get("caption") or None
+                            )
+                        elif att_type == "video_note":
+                            await bot.send_video_note(
+                                chat_id=admin_id,
+                                video_note=att.get("file_id")
+                            )
+                        elif att_type == "audio":
+                            await bot.send_audio(
+                                chat_id=admin_id,
+                                audio=att.get("file_id")
+                            )
+                    except Exception:
+                        pass
+            except Exception as e:
+                logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
 
     # ═══════════════════════════════════════════════════════════════
     #   ОЧИСТКА STATE (теперь можно, заказ отправлен)
@@ -4295,9 +4303,10 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
     # ═══════════════════════════════════════════════════════════════
     #   Live-карточка в канале заказов
     # ═══════════════════════════════════════════════════════════════
+    card_created = False
     if session:
         try:
-            await send_or_update_card(
+            msg_id = await send_or_update_card(
                 bot=bot,
                 order=order,
                 session=session,
@@ -4305,13 +4314,23 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
                 client_name=user.full_name,
                 yadisk_link=yadisk_link,
             )
-            logger.info(f"Live card created/updated for order #{order.id}")
+            if msg_id:
+                card_created = True
+                logger.info(f"Live card created for order #{order.id} (msg_id={msg_id})")
+            else:
+                logger.warning(f"Live card creation returned None for order #{order.id}")
         except Exception as e:
             logger.error(f"Failed to create live card for order #{order.id}: {e}")
 
+    # Если карточка успешно создана в канале, пропускаем личные уведомления админам
+    if card_created:
+        logger.info(f"Order #{order.id}: skipping personal admin notifications (card in channel)")
+        return
+
     # ═══════════════════════════════════════════════════════════════
-    #   Формируем текст уведомления
+    #   FALLBACK: Уведомления админам напрямую (если канал недоступен)
     # ═══════════════════════════════════════════════════════════════
+    logger.warning(f"Order #{order.id}: falling back to personal admin notifications")
 
     # Разный заголовок для срочных/спец/обычных заказов
     if is_special:
@@ -5097,8 +5116,9 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
     # ═══════════════════════════════════════════════════════════════
     #   Live-карточка в канале заказов
     # ═══════════════════════════════════════════════════════════════
+    card_created = False
     try:
-        await send_or_update_card(
+        msg_id = await send_or_update_card(
             bot=bot,
             order=order,
             session=session,
@@ -5106,15 +5126,26 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
             client_name=full_name,
             yadisk_link=yadisk_link,
         )
-        logger.info(f"Live card created for panic order #{order.id}")
+        if msg_id:
+            card_created = True
+            logger.info(f"Live card created for panic order #{order.id} (msg_id={msg_id})")
+        else:
+            logger.warning(f"Live card creation returned None for panic order #{order.id}")
     except Exception as e:
         logger.error(f"Failed to create live card for panic order #{order.id}: {e}")
 
-    # Добавляем ссылку на Яндекс.Диск в уведомление
-    yadisk_line = f"\n📁 <b>Яндекс.Диск:</b> <a href=\"{yadisk_link}\">Открыть папку</a>" if yadisk_link else ""
+    # Если карточка создана в канале, пропускаем личные уведомления админам
+    if not card_created:
+        # ═══════════════════════════════════════════════════════════════
+        #   FALLBACK: Уведомление админов напрямую
+        # ═══════════════════════════════════════════════════════════════
+        logger.warning(f"Panic order #{order.id}: falling back to personal admin notifications")
 
-    # Формируем уведомление админам
-    admin_text = f"""🔥🔥🔥 <b>СРОЧНЫЙ ЗАКАЗ #{order.id}</b> 🔥🔥🔥
+        # Добавляем ссылку на Яндекс.Диск в уведомление
+        yadisk_line_text = f"\n📁 <b>Яндекс.Диск:</b> <a href=\"{yadisk_link}\">Открыть папку</a>" if yadisk_link else ""
+
+        # Формируем уведомление админам
+        admin_text = f"""🔥🔥🔥 <b>СРОЧНЫЙ ЗАКАЗ #{order.id}</b> 🔥🔥🔥
 
 👤 <b>Клиент:</b> {full_name}
 📱 @{username}
@@ -5122,51 +5153,51 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
 
 ⚡ <b>Срочность:</b> {urgency_info["label"]} ({urgency_info["tag"]})
 
-📎 <b>Вложений:</b> {len(panic_files)}{yadisk_line}
+📎 <b>Вложений:</b> {len(panic_files)}{yadisk_line_text}
 
 ⏰ <i>Требуется оперативное реагирование!</i>"""
 
-    # Отправляем админам
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            await bot.send_message(admin_id, admin_text)
+        # Отправляем админам
+        for admin_id in settings.ADMIN_IDS:
+            try:
+                await bot.send_message(admin_id, admin_text)
 
-            # Пересылаем все вложения
-            for attachment in panic_files:
-                try:
-                    if attachment["type"] == "photo":
-                        await bot.send_photo(
-                            admin_id,
-                            attachment["file_id"],
-                            caption=attachment.get("caption", "")
-                        )
-                    elif attachment["type"] == "document":
-                        await bot.send_document(
-                            admin_id,
-                            attachment["file_id"],
-                            caption=f"📄 {attachment.get('file_name', 'документ')}"
-                        )
-                    elif attachment["type"] == "voice":
-                        await bot.send_voice(admin_id, attachment["file_id"])
-                    elif attachment["type"] == "audio":
-                        await bot.send_audio(admin_id, attachment["file_id"])
-                    elif attachment["type"] == "video":
-                        await bot.send_video(
-                            admin_id,
-                            attachment["file_id"],
-                            caption=attachment.get("caption", "")
-                        )
-                    elif attachment["type"] == "video_note":
-                        await bot.send_video_note(admin_id, attachment["file_id"])
-                    elif attachment["type"] == "text":
-                        await bot.send_message(
-                            admin_id,
-                            f"💬 Текст от клиента:\n\n{attachment['content']}"
-                        )
-                except Exception as e:
-                    logger.warning(f"Не удалось переслать вложение админу {admin_id}: {e}")
-        except Exception as e:
-            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+                # Пересылаем все вложения
+                for attachment in panic_files:
+                    try:
+                        if attachment["type"] == "photo":
+                            await bot.send_photo(
+                                admin_id,
+                                attachment["file_id"],
+                                caption=attachment.get("caption", "")
+                            )
+                        elif attachment["type"] == "document":
+                            await bot.send_document(
+                                admin_id,
+                                attachment["file_id"],
+                                caption=f"📄 {attachment.get('file_name', 'документ')}"
+                            )
+                        elif attachment["type"] == "voice":
+                            await bot.send_voice(admin_id, attachment["file_id"])
+                        elif attachment["type"] == "audio":
+                            await bot.send_audio(admin_id, attachment["file_id"])
+                        elif attachment["type"] == "video":
+                            await bot.send_video(
+                                admin_id,
+                                attachment["file_id"],
+                                caption=attachment.get("caption", "")
+                            )
+                        elif attachment["type"] == "video_note":
+                            await bot.send_video_note(admin_id, attachment["file_id"])
+                        elif attachment["type"] == "text":
+                            await bot.send_message(
+                                admin_id,
+                                f"💬 Текст от клиента:\n\n{attachment['content']}"
+                            )
+                    except Exception as e:
+                        logger.warning(f"Не удалось переслать вложение админу {admin_id}: {e}")
+            except Exception as e:
+                logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
 
     # Логируем (не критично, оборачиваем в try)
     try:

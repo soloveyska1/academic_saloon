@@ -4558,3 +4558,53 @@ async def create_dashboard_command(message: Message, session: AsyncSession, bot:
     except Exception as e:
         logger.error(f"Failed to create dashboard: {e}")
         await message.answer(f"❌ Ошибка: {e}")
+
+
+@router.message(Command("testchannel"), StateFilter("*"))
+async def test_channel_command(message: Message, bot: Bot):
+    """
+    Тестовая отправка сообщения в канал заказов.
+    Помогает проверить, что бот может постить в канал.
+
+    Использование: /testchannel
+    """
+    if not is_admin(message.from_user.id):
+        return
+
+    from datetime import datetime
+    channel_id = settings.ORDERS_CHANNEL_ID
+
+    await message.answer(
+        f"🔄 Тестирую отправку в канал...\n"
+        f"Channel ID: <code>{channel_id}</code>"
+    )
+
+    try:
+        test_msg = await bot.send_message(
+            chat_id=channel_id,
+            text=f"🧪 <b>Тестовое сообщение</b>\n\n"
+                 f"Время: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}\n"
+                 f"Отправлено администратором для проверки.\n\n"
+                 f"<i>Можно удалить это сообщение.</i>"
+        )
+        await message.answer(
+            f"✅ <b>Успешно!</b>\n\n"
+            f"Сообщение отправлено в канал.\n"
+            f"Message ID: <code>{test_msg.message_id}</code>\n"
+            f"Channel: <code>{channel_id}</code>"
+        )
+    except Exception as e:
+        error_msg = str(e)
+        hint = ""
+        if "chat not found" in error_msg.lower():
+            hint = "\n\n💡 <b>Подсказка:</b> Проверь, что ID канала верный."
+        elif "not enough rights" in error_msg.lower() or "bot is not a member" in error_msg.lower():
+            hint = "\n\n💡 <b>Подсказка:</b> Добавь бота в канал как администратора с правом отправки сообщений."
+        elif "forbidden" in error_msg.lower():
+            hint = "\n\n💡 <b>Подсказка:</b> У бота нет прав на отправку сообщений в этот канал."
+
+        await message.answer(
+            f"❌ <b>Ошибка отправки!</b>\n\n"
+            f"Channel ID: <code>{channel_id}</code>\n"
+            f"Error: <code>{error_msg}</code>{hint}"
+        )
