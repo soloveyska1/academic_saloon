@@ -2766,7 +2766,7 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
         username = callback.from_user.username
         user_link = f"@{username}" if username else f"ID:{callback.from_user.id}"
 
-        await update_card_status(
+        card_updated = await update_card_status(
             bot=bot,
             order=order,
             session=session,
@@ -2774,8 +2774,10 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
             client_name=callback.from_user.full_name,
             extra_text=f"🔔 ПРОВЕРЬ ОПЛАТУ!\n{user_link} · {int(order.price):,}₽".replace(",", " "),
         )
-        card_updated = True
-        logger.info(f"Order #{order.id}: card updated with verification buttons")
+        if card_updated:
+            logger.info(f"Order #{order.id}: card updated with verification buttons")
+        else:
+            logger.warning(f"Order #{order.id}: card update returned False (no topic?)")
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
 
@@ -2828,12 +2830,11 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
             reply_markup=user_keyboard
         )
 
-    # ═══ FALLBACK: УВЕДОМЛЕНИЕ АДМИНАМ ЕСЛИ КАРТОЧКА НЕ ОБНОВИЛАСЬ ═══
-    if not card_updated:
-        username = callback.from_user.username
-        user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
+    # ═══ УВЕДОМЛЕНИЕ В ТОПИК О ПРОВЕРКЕ ОПЛАТЫ ═══
+    username = callback.from_user.username
+    user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
 
-        admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
+    admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
 
 Заказ: <code>#{order.id}</code>
 Клиент: {user_link}
@@ -2841,19 +2842,41 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
 
 <i>Клиент нажал "Я оплатил". Проверь банк.</i>""".replace(",", " ")
 
-        admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="✅ Подтвердить ($)",
-                    callback_data=f"admin_verify_paid:{order_id}"
-                ),
-                InlineKeyboardButton(
-                    text="❌ Отклонить",
-                    callback_data=f"admin_reject_payment:{order_id}"
-                ),
-            ],
-        ])
+    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="✅ Подтвердить ($)",
+                callback_data=f"admin_verify_paid:{order_id}"
+            ),
+            InlineKeyboardButton(
+                text="❌ Отклонить",
+                callback_data=f"admin_reject_payment:{order_id}"
+            ),
+        ],
+    ])
 
+    # Пытаемся отправить в топик заказа
+    topic_notified = False
+    try:
+        from database.models.orders import Conversation
+        conv_query = select(Conversation).where(Conversation.order_id == order.id)
+        conv_result = await session.execute(conv_query)
+        conv = conv_result.scalar_one_or_none()
+
+        if conv and conv.topic_id:
+            await bot.send_message(
+                chat_id=settings.ADMIN_GROUP_ID,
+                message_thread_id=conv.topic_id,
+                text=admin_text,
+                reply_markup=admin_keyboard,
+            )
+            topic_notified = True
+            logger.info(f"Payment verification notification sent to topic for order #{order.id}")
+    except Exception as e:
+        logger.warning(f"Failed to send payment notification to topic: {e}")
+
+    # Fallback: если топик не найден — уведомляем админов лично
+    if not topic_notified:
         for admin_id in settings.ADMIN_IDS:
             try:
                 await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
