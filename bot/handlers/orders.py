@@ -3517,7 +3517,29 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
     await state.clear()
 
     # ═══════════════════════════════════════════════════════════════
-    #   Загрузка дополнительных файлов на Яндекс Диск
+    #   БЫСТРЫЙ ОТВЕТ ПОЛЬЗОВАТЕЛЮ (до загрузки на Яндекс.Диск!)
+    # ═══════════════════════════════════════════════════════════════
+    client_text = f"""✅ <b>Материалы отправлены!</b>
+
+К заказу <code>#{order.id}</code> добавлено: {len(appended_files)} файл(ов).
+
+Шериф уже в курсе. 🤠"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="👀 Статус заказа",
+            callback_data=f"order_detail:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text="🌵 В салун",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    await callback.message.edit_text(client_text, reply_markup=keyboard)
+
+    # ═══════════════════════════════════════════════════════════════
+    #   Загрузка дополнительных файлов на Яндекс Диск (после ответа)
     # ═══════════════════════════════════════════════════════════════
     yadisk_link = None
     if yandex_disk_service and yandex_disk_service.is_available and appended_files:
@@ -3578,26 +3600,6 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
 
         except Exception as e:
             logger.error(f"Error uploading appended files to Yandex Disk: {e}")
-
-    # Обновляем сообщение пользователю
-    client_text = f"""✅ <b>Материалы отправлены!</b>
-
-К заказу <code>#{order.id}</code> добавлено: {len(appended_files)} файл(ов).
-
-Шериф уже в курсе. 🤠"""
-
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="👀 Статус заказа",
-            callback_data=f"order_detail:{order.id}"
-        )],
-        [InlineKeyboardButton(
-            text="🌵 В салун",
-            callback_data="back_to_menu"
-        )],
-    ])
-
-    await callback.message.edit_text(client_text, reply_markup=keyboard)
 
     # Строка с Яндекс Диском для админов
     yadisk_line = f"\n📁 Яндекс Диск: <a href=\"{yadisk_link}\">Открыть папку</a>" if yadisk_link else ""
@@ -4908,7 +4910,64 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
     await session.refresh(order)
 
     # ═══════════════════════════════════════════════════════════════
-    #   ЗАГРУЗКА НА ЯНДЕКС.ДИСК
+    #   БЫСТРЫЙ ОТВЕТ ПОЛЬЗОВАТЕЛЮ (до загрузки на Яндекс.Диск!)
+    # ═══════════════════════════════════════════════════════════════
+
+    # Очищаем состояние, но сохраняем order_id для возможного append
+    await state.clear()
+    await state.update_data(last_panic_order_id=order.id)
+
+    # Сохраняем chat_id ДО удаления сообщения
+    chat_id = callback.message.chat.id
+
+    # Показываем подтверждение — агрессивный стиль для критических сроков
+    if urgency_key in ("critical", "high"):
+        caption = f"""🚨 <b>ТРЕВОГА ПРИНЯТА!</b>
+
+Заказ <b>#{order.id}</b> в приоритетной очереди.
+
+Шериф получил уведомление <b>ПРИОРИТЕТНОГО УРОВНЯ</b>. Оценка заказа займёт 5-15 минут.
+
+<b>Не исчезай.</b> Мы на связи."""
+    else:
+        caption = f"""✅ <b>ЗАКАЗ #{order.id} ПРИНЯТ!</b>
+
+🔥 Твоя заявка в очереди на оценку.
+
+Шериф скоро свяжется для уточнения деталей и стоимости.
+
+<i>Обычно отвечаем в течение 15-30 минут.</i>"""
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Отправляем подтверждение юзеру — СРАЗУ, без ожидания загрузки
+    sent = False
+    if ORDER_DONE_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=chat_id,
+                photo_path=ORDER_DONE_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_panic_final_keyboard(user_id),
+            )
+            sent = True
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото подтверждения: {e}")
+
+    if not sent:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=caption,
+            reply_markup=get_panic_final_keyboard(user_id),
+        )
+
+    # ═══════════════════════════════════════════════════════════════
+    #   ЗАГРУЗКА НА ЯНДЕКС.ДИСК (после ответа пользователю)
     # ═══════════════════════════════════════════════════════════════
     yadisk_link = None
     if yandex_disk_service and yandex_disk_service.is_available and panic_files:
@@ -5034,59 +5093,6 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
         )
     except Exception as e:
         logger.warning(f"Не удалось залогировать panic order: {e}")
-
-    # Очищаем состояние, но сохраняем order_id для возможного append
-    await state.clear()
-    await state.update_data(last_panic_order_id=order.id)
-
-    # Сохраняем chat_id ДО удаления сообщения
-    chat_id = callback.message.chat.id
-
-    # Показываем подтверждение — агрессивный стиль для критических сроков
-    if urgency_key in ("critical", "high"):
-        caption = f"""🚨 <b>ТРЕВОГА ПРИНЯТА!</b>
-
-Заказ <b>#{order.id}</b> в приоритетной очереди.
-
-Шериф получил уведомление <b>ПРИОРИТЕТНОГО УРОВНЯ</b>. Оценка заказа займёт 5-15 минут.
-
-<b>Не исчезай.</b> Мы на связи."""
-    else:
-        caption = f"""✅ <b>ЗАКАЗ #{order.id} ПРИНЯТ!</b>
-
-🔥 Твоя заявка в очереди на оценку.
-
-Шериф скоро свяжется для уточнения деталей и стоимости.
-
-<i>Обычно отвечаем в течение 15-30 минут.</i>"""
-
-    # Удаляем старое сообщение
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
-
-    # Отправляем подтверждение юзеру — ОБЯЗАТЕЛЬНО
-    sent = False
-    if ORDER_DONE_IMAGE_PATH.exists():
-        try:
-            await send_cached_photo(
-                bot=bot,
-                chat_id=chat_id,
-                photo_path=ORDER_DONE_IMAGE_PATH,
-                caption=caption,
-                reply_markup=get_panic_final_keyboard(user_id),
-            )
-            sent = True
-        except Exception as e:
-            logger.warning(f"Не удалось отправить фото подтверждения: {e}")
-
-    if not sent:
-        await bot.send_message(
-            chat_id=chat_id,
-            text=caption,
-            reply_markup=get_panic_final_keyboard(user_id),
-        )
 
 
 @router.callback_query(F.data == "panic_back_to_urgency")
