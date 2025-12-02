@@ -1,12 +1,14 @@
+/* 🤠 RoulettePage — Saloon Gambling Style */
+
 .container {
   padding: 20px 16px;
   text-align: center;
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .header {
@@ -14,47 +16,80 @@
 }
 
 .title {
-  font-family: 'Playfair Display', serif;
-  font-size: 28px;
+  font-family: 'Rye', cursive;
+  font-size: 32px;
   color: #d4a853;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  text-shadow:
+    3px 3px 0 #1e0f08,
+    0 0 30px rgba(212,168,83,0.5);
+  letter-spacing: 0.05em;
 }
 
 .subtitle {
+  font-family: 'IM Fell English', serif;
   font-size: 14px;
-  color: #8b8b7a;
+  color: #c4a574;
+  font-style: italic;
 }
 
-/* Wheel */
+/* Wheel Container */
 .wheelContainer {
   position: relative;
   width: 280px;
   height: 280px;
-  margin: 0 auto 24px;
+  margin: 0 auto 28px;
 }
 
 .pointer {
   position: absolute;
-  top: -15px;
+  top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 24px;
-  color: #d4a853;
+  font-size: 28px;
   z-index: 10;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+  animation: pointerBounce 2s ease-in-out infinite;
 }
 
+@keyframes pointerBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(3px); }
+}
+
+/* Wheel - Western wooden style */
 .wheel {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   position: relative;
-  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-  border: 4px solid #d4a853;
+  background:
+    radial-gradient(circle at center,
+      #4a2c1a 0%,
+      #3d2317 40%,
+      #2d1810 100%);
+  border: 8px solid;
+  border-color: #c9a227;
   box-shadow:
-    0 0 0 8px rgba(212, 168, 83, 0.2),
-    0 10px 40px rgba(0, 0, 0, 0.5);
+    0 0 0 4px #8b6914,
+    0 0 0 12px #3d2317,
+    0 0 0 14px #c9a227,
+    0 15px 40px rgba(0,0,0,0.6),
+    inset 0 0 40px rgba(0,0,0,0.5);
   overflow: hidden;
+}
+
+/* Wheel decorative ring */
+.wheel::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 2px dashed #c4a574;
+  border-radius: 50%;
+  opacity: 0.4;
 }
 
 .segment {
@@ -67,44 +102,56 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 20px 10px;
+  padding: 24px 12px;
   clip-path: polygon(0 100%, 100% 0, 100% 100%);
 }
 
 .segmentLabel {
-  font-size: 16px;
-  font-weight: 600;
-  color: #f5f5dc;
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f5efe0;
+  text-shadow: 0 2px 3px rgba(0,0,0,0.5);
   transform-origin: center;
 }
 
+/* Brass center hub */
 .wheelCenter {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #d4a853 0%, #b87333 100%);
+  width: 70px;
+  height: 70px;
+  background:
+    radial-gradient(circle at 35% 35%,
+      #ffeaa7 0%,
+      #e6c547 20%,
+      #c9a227 50%,
+      #8b6914 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border: 3px solid #f5f5dc;
+  font-size: 32px;
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 2px 4px rgba(255,255,255,0.3),
+    inset 0 -3px 6px rgba(0,0,0,0.3);
+  border: 4px solid #8b6914;
 }
 
-/* Result */
+/* Result banner */
 .result {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 20px;
-  border-radius: 16px;
+  gap: 10px;
+  padding: 24px;
+  border-radius: 12px;
   margin-bottom: 24px;
-  animation: popIn 0.3s ease-out;
+  animation: popIn 0.4s ease-out;
+  position: relative;
 }
 
 @keyframes popIn {
@@ -119,82 +166,179 @@
 }
 
 .resultWin {
-  background: linear-gradient(135deg, rgba(92, 184, 92, 0.2) 0%, rgba(92, 184, 92, 0.1) 100%);
-  border: 1px solid rgba(92, 184, 92, 0.3);
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E"),
+    linear-gradient(180deg,
+      #f5efe0 0%,
+      #e8dcc4 10%,
+      #e8dcc4 90%,
+      #c4a574 100%);
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.4),
+    0 0 40px rgba(212,168,83,0.3),
+    inset 0 0 30px rgba(139,105,20,0.1);
+}
+
+/* Burnt edges for win */
+.resultWin::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 12px;
+  box-shadow: inset 0 0 25px rgba(139,69,19,0.2);
+  pointer-events: none;
 }
 
 .resultLose {
-  background: linear-gradient(135deg, rgba(139, 139, 122, 0.2) 0%, rgba(139, 139, 122, 0.1) 100%);
-  border: 1px solid rgba(139, 139, 122, 0.3);
+  background:
+    repeating-radial-gradient(
+      circle at 1px 1px,
+      transparent 0px,
+      transparent 1px,
+      rgba(0,0,0,0.02) 1px,
+      rgba(0,0,0,0.02) 2px
+    ),
+    linear-gradient(145deg, #5c3a2e 0%, #3d2317 100%);
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
 .resultEmoji {
-  font-size: 40px;
+  font-size: 48px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+  position: relative;
+  z-index: 1;
 }
 
 .resultText {
-  font-size: 18px;
-  font-weight: 600;
-  color: #f5f5dc;
+  font-family: 'Rye', cursive;
+  font-size: 20px;
+  color: #1a0f05;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  position: relative;
+  z-index: 1;
 }
 
-/* Spin button */
+.resultLose .resultText {
+  color: #c4a574;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Spin button - Big brass */
 .spinBtn {
   width: 100%;
-  background: linear-gradient(135deg, #d4a853 0%, #b87333 100%);
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 20%,
+      #8b6914 80%,
+      #c9a227 100%);
   border: none;
   border-radius: 16px;
-  padding: 18px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a2e;
+  padding: 20px;
+  font-family: 'Rye', cursive;
+  font-size: 20px;
+  color: #1a0f05;
   cursor: pointer;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.4),
+    inset 0 2px 4px rgba(255,255,255,0.3),
+    inset 0 -3px 6px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
   transition: all 0.2s ease;
   margin-bottom: 24px;
+  letter-spacing: 0.05em;
 }
 
 .spinBtn:active:not(.disabled) {
-  transform: scale(0.98);
+  transform: translateY(3px);
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.4),
+    inset 0 1px 2px rgba(0,0,0,0.2);
 }
 
 .spinBtn.disabled {
-  background: rgba(139, 139, 122, 0.3);
-  color: #8b8b7a;
+  background:
+    linear-gradient(180deg,
+      #5c3a2e 0%,
+      #3d2317 100%);
+  color: #8b7355;
   cursor: not-allowed;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.3),
+    inset 0 2px 4px rgba(0,0,0,0.2);
+  text-shadow: none;
 }
 
-/* Rules */
+/* Rules - Leather card */
 .rules {
-  background: rgba(15, 52, 96, 0.4);
+  background:
+    repeating-radial-gradient(
+      circle at 1px 1px,
+      transparent 0px,
+      transparent 1px,
+      rgba(0,0,0,0.02) 1px,
+      rgba(0,0,0,0.02) 2px
+    ),
+    linear-gradient(145deg, #7a4f3d 0%, #5c3a2e 50%, #3d2317 100%);
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
   text-align: left;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  position: relative;
+}
+
+/* Stitching */
+.rules::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 2px dashed #c4a574;
+  border-radius: 8px;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .rules h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Cinzel', serif;
   font-size: 16px;
   color: #d4a853;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 1;
 }
 
 .rules ul {
   list-style: none;
   padding: 0;
   margin: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .rules li {
+  font-family: 'IM Fell English', serif;
   font-size: 14px;
-  color: #c4b998;
-  padding: 6px 0;
-  padding-left: 20px;
+  color: #c4a574;
+  padding: 8px 0;
+  padding-left: 24px;
   position: relative;
 }
 
 .rules li::before {
-  content: '•';
+  content: '★';
   position: absolute;
   left: 0;
-  color: #d4a853;
+  color: #c9a227;
+  font-size: 12px;
 }
