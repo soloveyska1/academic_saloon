@@ -659,7 +659,7 @@ async def quick_order_from_price(callback: CallbackQuery, state: FSMContext, bot
 
     if work_type == WorkType.OTHER:
         # "Другое" переходит в Panic Flow
-        await panic_flow_entry(callback, state, bot)
+        await start_panic_flow(callback, state, bot)
         return
 
     # Для diploma, coursework и других крупных — к выбору направления
@@ -820,61 +820,18 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
         )
         return
 
-    # Для срочных заказов — диалоговый эффект с психологическими триггерами
-    if category_key == "urgent" and len(category["types"]) == 1:
-        work_type = category["types"][0]
-        await state.update_data(work_type=work_type.value, is_urgent=True)
-        # Состояние остаётся choosing_type для обработки выбора срока
-
+    # Для срочных заказов — Panic Flow
+    if category_key == "urgent":
         # Обновляем трекер (некритично)
         try:
             tracker = get_abandoned_tracker()
             if tracker:
-                await tracker.update_step(callback.from_user.id, "Ввод задания (срочно)")
+                await tracker.update_step(callback.from_user.id, "Panic Flow (срочно)")
         except Exception:
             pass
 
-        # === СРОЧНЫЙ ЗАКАЗ — НОВЫЙ ДИЗАЙН ===
-
-        # Сохраняем что это срочный заказ
-        await state.update_data(is_urgent=True, work_type=WorkType.PHOTO_TASK.value)
-
-        # 1. Удаляем старое сообщение
-        try:
-            await callback.message.delete()
-        except Exception:
-            pass
-
-        # === СРОЧНЫЙ ЗАКАЗ — КОД КРАСНЫЙ (BADASS MODE) ===
-
-        caption = """<b>🚨 КОД КРАСНЫЙ: Горит дедлайн?</b>
-
-🌙 Да, мы работаем прямо сейчас. Выдыхай.
-
-Пока другие спят — мы вытаскиваем из задницы тех, кто дотянул до последнего. Без осуждения, без лишних вопросов. Только результат.
-
-<i>Надбавка за скорость — это честная плата за бессонные ночи команды:</i>"""
-
-        # Пробуем отправить с картинкой
-        if URGENT_IMAGE_PATH.exists():
-            try:
-                await send_cached_photo(
-                    bot=bot,
-                    chat_id=callback.message.chat.id,
-                    photo_path=URGENT_IMAGE_PATH,
-                    caption=caption,
-                    reply_markup=get_urgent_order_keyboard(),
-                )
-                return
-            except Exception as e:
-                logger.warning(f"Не удалось отправить фото urgent: {e}")
-
-        # Fallback на текст
-        await bot.send_message(
-            chat_id=callback.message.chat.id,
-            text=caption,
-            reply_markup=get_urgent_order_keyboard(),
-        )
+        # Запускаем Panic Flow
+        await start_panic_flow(callback, state, bot)
         return
 
     # Для мелких работ — специальный layout с фото и ценами в caption
@@ -4608,14 +4565,11 @@ PANIC_URGENCY_MAP = {
 }
 
 
-@router.callback_query(F.data == "work_category:urgent")
-async def panic_flow_entry(callback: CallbackQuery, state: FSMContext, bot: Bot):
+async def start_panic_flow(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """
-    Точка входа в Panic Flow — выбор срочности.
-    Вызывается из категорий работ или из прайса по кнопке "Другое".
+    Запуск Panic Flow — вспомогательная функция.
+    Вызывается из разных мест: work_category:urgent, quick_order:other
     """
-    await callback.answer("🔥")
-
     # Устанавливаем состояние Panic Flow
     await state.set_state(PanicState.choosing_urgency)
     await state.update_data(
