@@ -127,7 +127,7 @@ async def card_reject_order_execute(callback: CallbackQuery, session: AsyncSessi
     await update_card_status(
         bot, order, session,
         client_username=user.username if user else None,
-        client_name=user.full_name if user else None,
+        client_name=user.fullname if user else None,
         extra_text=f"❌ Отклонено {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
@@ -195,7 +195,7 @@ async def card_ban_user_execute(callback: CallbackQuery, session: AsyncSession, 
     await update_card_status(
         bot, order, session,
         client_username=user.username if user else None,
-        client_name=user.full_name if user else None,
+        client_name=user.fullname if user else None,
         extra_text=f"🚫 СПАМ/БАН {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
@@ -235,7 +235,7 @@ async def card_cancel_action(callback: CallbackQuery, session: AsyncSession, bot
         await send_or_update_card(
             bot, order, session,
             client_username=user.username if user else None,
-            client_name=user.full_name if user else None,
+            client_name=user.fullname if user else None,
         )
         logger.info(f"Card restored for order {order_id}")
     except Exception as e:
@@ -344,7 +344,7 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     await update_card_status(
         bot, order, session,
         client_username=user.username if user else None,
-        client_name=user.full_name if user else None,
+        client_name=user.fullname if user else None,
         extra_text=f"💵 Цена установлена: {price:,}₽".replace(",", " ")
     )
 
@@ -387,7 +387,7 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     await update_card_status(
         bot, order, session,
         client_username=user.username if user else None,
-        client_name=user.full_name if user else None,
+        client_name=user.fullname if user else None,
         extra_text=f"✅ Оплата подтверждена {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
@@ -425,7 +425,7 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
     await update_card_status(
         bot, order, session,
         client_username=user.username if user else None,
-        client_name=user.full_name if user else None,
+        client_name=user.fullname if user else None,
         extra_text=f"❌ Оплата не подтверждена {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
@@ -478,7 +478,7 @@ async def card_remind_client(callback: CallbackQuery, session: AsyncSession, bot
         await update_card_status(
             bot, order, session,
             client_username=user.username if user else None,
-            client_name=user.full_name if user else None,
+            client_name=user.fullname if user else None,
             extra_text=f"🔔 Напомнили клиенту {datetime.now().strftime('%d.%m %H:%M')}"
         )
 
@@ -511,7 +511,7 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
     await update_card_status(
         bot, order, session,
         client_username=user.username if user else None,
-        client_name=user.full_name if user else None,
+        client_name=user.fullname if user else None,
     )
 
     # Уведомляем клиента
