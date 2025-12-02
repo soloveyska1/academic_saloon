@@ -3033,6 +3033,7 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
                     order_id=order.id,
                     client_name=client_name,
                     work_type=work_label,
+                    telegram_id=callback.from_user.id,
                 )
                 if result.success and result.folder_url:
                     yadisk_link = result.folder_url
@@ -3559,16 +3560,17 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
                     logger.warning(f"Failed to download appended file from Telegram: {e}")
                     continue
 
-            # Загружаем файлы на Яндекс Диск (в ту же папку заказа)
+            # Загружаем файлы на Яндекс Диск в подпапку "Дополнительно"
             if files_to_upload:
                 client_name = callback.from_user.full_name or f"User_{callback.from_user.id}"
                 work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
 
-                result = await yandex_disk_service.upload_multiple_files(
+                result = await yandex_disk_service.upload_append_files(
                     files=files_to_upload,
                     order_id=order.id,
                     client_name=client_name,
                     work_type=work_label,
+                    telegram_id=callback.from_user.id,
                 )
                 if result.success and result.folder_url:
                     yadisk_link = result.folder_url
@@ -4225,6 +4227,7 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict):
                     order_id=order.id,
                     client_name=client_name,
                     work_type=work_label,
+                    telegram_id=user.id,
                 )
                 if result.success and result.folder_url:
                     yadisk_link = result.folder_url
@@ -4952,6 +4955,7 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
                     order_id=order.id,
                     client_name=client_name,
                     work_type="Срочный заказ",
+                    telegram_id=user_id,
                 )
                 if result.success and result.folder_url:
                     yadisk_link = result.folder_url
