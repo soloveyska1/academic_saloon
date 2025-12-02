@@ -29,15 +29,15 @@ ORDER_DONE_IMAGE_PATH = Path(__file__).parent.parent / "media" / "order_done.jpg
 CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking_payment.jpg"
 
 # Risk Matrix: Изображения для разных состояний сметы
-IMG_DEAL_READY = Path("/root/academic_saloon/bot/media/confirm_std.jpg")      # GREEN FLOW — Сделка готова
-IMG_UNDER_REVIEW = Path("/root/academic_saloon/bot/media/checking_payment.jpg")  # YELLOW FLOW — На проверке
+IMG_DEAL_READY = Path(__file__).parent.parent / "media" / "confirm_std.jpg"      # GREEN FLOW — Сделка готова
+IMG_UNDER_REVIEW = Path(__file__).parent.parent / "media" / "checking_payment.jpg"  # YELLOW FLOW — На проверке
 
 # Upload Stage: Изображения для загрузки файлов
-IMG_UPLOAD_START = Path("/root/academic_saloon/bot/media/upload_bag.jpg")      # Пустая сумка — начальное состояние
-IMG_FILES_RECEIVED = Path("/root/academic_saloon/bot/media/papka.jpg")         # Папка с файлами — файлы приняты
+IMG_UPLOAD_START = Path(__file__).parent.parent / "media" / "upload_bag.jpg"      # Пустая сумка — начальное состояние
+IMG_FILES_RECEIVED = Path(__file__).parent.parent / "media" / "papka.jpg"         # Папка с файлами — файлы приняты
 
 # Draft Review: Изображение для черновика контракта (ДО расчёта цены)
-IMG_DRAFT_REVIEW = Path("/root/academic_saloon/bot/media/checklist.jpg")       # Чеклист — проверка данных
+IMG_DRAFT_REVIEW = Path(__file__).parent.parent / "media" / "checklist.jpg"       # Чеклист — проверка данных
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, InputMediaPhoto
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext

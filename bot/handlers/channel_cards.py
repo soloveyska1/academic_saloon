@@ -32,7 +32,7 @@ from bot.handlers.order_chat import get_or_create_topic, format_order_info
 from core.media_cache import send_cached_photo
 
 # Изображение для счёта/инвойса
-IMG_PAYMENT_BILL = Path("/root/academic_saloon/bot/media/confirm_std.jpg")
+IMG_PAYMENT_BILL = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
 
 logger = logging.getLogger(__name__)
 
@@ -532,7 +532,7 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     from aiogram.types import FSInputFile
 
     # Путь к картинке успешной оплаты
-    PAYMENT_SUCCESS_IMAGE = Path("/root/academic_saloon/bot/media/payment_success.jpg")
+    PAYMENT_SUCCESS_IMAGE = Path(__file__).parent.parent / "media" / "payment_success.jpg"
 
     try:
         order_id = parse_order_id(callback.data)
