@@ -143,10 +143,10 @@ async def get_user_profile(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Get user's orders
+    # Get user's orders (use internal user.id, not telegram_id)
     orders_result = await session.execute(
         select(Order)
-        .where(Order.user_id == tg_user.id)
+        .where(Order.user_id == user.id)
         .order_by(desc(Order.created_at))
         .limit(50)
     )
@@ -192,7 +192,15 @@ async def get_orders(
 ):
     """Get user's orders with optional filtering"""
 
-    query = select(Order).where(Order.user_id == tg_user.id)
+    # Get user from database to get internal user.id
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    query = select(Order).where(Order.user_id == user.id)
 
     if status:
         # Filter by status
@@ -229,10 +237,18 @@ async def get_order_detail(
 ):
     """Get single order details"""
 
+    # Get user from database to get internal user.id
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     result = await session.execute(
         select(Order).where(
             Order.id == order_id,
-            Order.user_id == tg_user.id
+            Order.user_id == user.id
         )
     )
     order = result.scalar_one_or_none()
