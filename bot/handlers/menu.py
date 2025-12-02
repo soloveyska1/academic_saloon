@@ -750,6 +750,18 @@ async def handle_text_message(message: Message, bot: Bot, session: AsyncSession)
         except Exception:
             pass
 
+    # Обновляем диалог для отслеживания
+    try:
+        from bot.handlers.order_chat import update_conversation
+        from database.models.orders import ConversationType, MessageSender
+        await update_conversation(
+            session, user.id, None, message.text,
+            MessageSender.CLIENT.value, increment_unread=True,
+            conv_type=ConversationType.FREE.value
+        )
+    except Exception:
+        pass
+
     # Отвечаем пользователю в стиле салуна
     await message.answer(
         "📨 <b>Сообщение получено!</b>\n\n"

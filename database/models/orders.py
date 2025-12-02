@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, Float, DateTime, Integer, Text, ForeignKey, Enum, func
+from sqlalchemy import BigInteger, String, Float, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.db import Base
 from datetime import datetime
@@ -368,3 +368,69 @@ class OrderMessage(Base):
 
     # Relationship
     order: Mapped["Order"] = relationship("Order", backref="messages")
+
+
+class ConversationType(str, enum.Enum):
+    """Типы диалогов"""
+    ORDER_CHAT = "order_chat"  # Чат по заказу
+    SUPPORT = "support"        # Обращение в поддержку
+    FREE = "free"              # Свободное сообщение
+
+
+class Conversation(Base):
+    """
+    Диалог с клиентом.
+    Единая точка для отслеживания всех переписок — с заказом или без.
+    """
+    __tablename__ = "conversations"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
+    # Клиент
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
+
+    # Привязка к заказу (опционально — может быть None для свободных диалогов)
+    order_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("orders.id"), nullable=True, index=True)
+
+    # Тип диалога
+    conversation_type: Mapped[str] = mapped_column(String(20), default=ConversationType.FREE.value)
+
+    # Последнее сообщение (для превью)
+    last_message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_sender: Mapped[str | None] = mapped_column(String(20), nullable=True)  # admin / client
+
+    # Статусы
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Непрочитанные сообщения (для админа)
+    unread_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Метаданные
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    # Relationships (lazy to avoid circular imports)
+    # user: relationship to User via user_id
+    # order: relationship to Order via order_id
+
+    @property
+    def type_emoji(self) -> str:
+        """Эмодзи типа диалога"""
+        type_map = {
+            ConversationType.ORDER_CHAT.value: "📋",
+            ConversationType.SUPPORT.value: "🛠️",
+            ConversationType.FREE.value: "💬",
+        }
+        return type_map.get(self.conversation_type, "💬")
+
+    @property
+    def type_label(self) -> str:
+        """Метка типа диалога"""
+        type_map = {
+            ConversationType.ORDER_CHAT.value: "Заказ",
+            ConversationType.SUPPORT.value: "Поддержка",
+            ConversationType.FREE.value: "Сообщение",
+        }
+        return type_map.get(self.conversation_type, "Диалог")

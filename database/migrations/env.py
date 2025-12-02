@@ -10,7 +10,7 @@ from alembic import context
 from core.config import settings
 from database.db import Base
 from database.models.users import User
-from database.models.orders import Order, OrderMessage
+from database.models.orders import Order, OrderMessage, Conversation
 
 config = context.config
 
