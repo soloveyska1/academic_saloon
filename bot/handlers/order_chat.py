@@ -11,7 +11,7 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database.models.orders import Order, OrderMessage, MessageSender
+from database.models.orders import Order, OrderMessage, MessageSender, Conversation, ConversationType
 from database.models.users import User
 from bot.states.chat import OrderChatStates
 from bot.services.yandex_disk import yandex_disk_service
@@ -365,8 +365,12 @@ async def admin_send_text(message: Message, state: FSMContext, session: AsyncSes
             reply_markup=get_chat_keyboard(order_id, is_admin=True)
         )
 
-        # Бэкапим чат
+        # Бэкапим чат и обновляем диалог
         await backup_chat_to_yadisk(order, client_name, client_id, session)
+        await update_conversation(
+            session, client_id, order_id, message.text,
+            MessageSender.ADMIN.value, conv_type=ConversationType.ORDER_CHAT.value
+        )
 
     except Exception as e:
         logger.error(f"Error sending message to client {client_id}: {e}")
@@ -499,8 +503,12 @@ async def admin_send_file(message: Message, state: FSMContext, session: AsyncSes
             reply_markup=get_chat_keyboard(order_id, is_admin=True)
         )
 
-        # Бэкапим чат
+        # Бэкапим чат и обновляем диалог
         await backup_chat_to_yadisk(order, client_name, client_id, session)
+        await update_conversation(
+            session, client_id, order_id, f"📎 {file_name}",
+            MessageSender.ADMIN.value, conv_type=ConversationType.ORDER_CHAT.value
+        )
 
     except Exception as e:
         logger.error(f"Error sending file to client {client_id}: {e}")
@@ -601,8 +609,13 @@ async def client_send_text(message: Message, state: FSMContext, session: AsyncSe
             reply_markup=get_chat_keyboard(order_id, is_admin=False)
         )
 
-        # Бэкапим чат
+        # Бэкапим чат и обновляем диалог
         await backup_chat_to_yadisk(order, client_name, message.from_user.id, session)
+        await update_conversation(
+            session, message.from_user.id, order_id, message.text,
+            MessageSender.CLIENT.value, increment_unread=True,
+            conv_type=ConversationType.ORDER_CHAT.value
+        )
     else:
         await message.answer("⚠️ Не удалось связаться с шерифом. Попробуйте позже.")
 
@@ -745,8 +758,13 @@ async def client_send_file(message: Message, state: FSMContext, session: AsyncSe
             reply_markup=get_chat_keyboard(order_id, is_admin=False)
         )
 
-        # Бэкапим чат
+        # Бэкапим чат и обновляем диалог
         await backup_chat_to_yadisk(order, client_name, message.from_user.id, session)
+        await update_conversation(
+            session, message.from_user.id, order_id, f"📎 {file_name}",
+            MessageSender.CLIENT.value, increment_unread=True,
+            conv_type=ConversationType.ORDER_CHAT.value
+        )
     else:
         await message.answer("⚠️ Не удалось связаться с шерифом. Попробуйте позже.")
 
@@ -994,7 +1012,7 @@ async def admin_dm_reply(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(OrderChatStates.admin_dm, F.text)
-async def admin_dm_send(message: Message, state: FSMContext, bot: Bot):
+async def admin_dm_send(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Админ отправляет прямое сообщение клиенту"""
     data = await state.get_data()
     client_id = data.get("client_id")
@@ -1010,6 +1028,12 @@ async def admin_dm_send(message: Message, state: FSMContext, bot: Bot):
             text=f"🛡️ <b>Сообщение от Шерифа:</b>\n\n{message.text}"
         )
         await message.answer("✅ Сообщение отправлено!")
+
+        # Обновляем диалог
+        await update_conversation(
+            session, client_id, None, message.text,
+            MessageSender.ADMIN.value, conv_type=ConversationType.FREE.value
+        )
     except Exception as e:
         logger.error(f"Error sending DM to {client_id}: {e}")
         await message.answer(f"❌ Не удалось отправить: {e}")
@@ -1081,6 +1105,13 @@ async def client_support_message(message: Message, state: FSMContext, bot: Bot, 
             "Ответ придёт сюда же. Обычно отвечаю\n"
             "в течение пары часов, часто быстрее 🤠",
             reply_markup=get_main_menu_keyboard()
+        )
+
+        # Обновляем диалог
+        await update_conversation(
+            session, user.id, None, message.text,
+            MessageSender.CLIENT.value, increment_unread=True,
+            conv_type=ConversationType.SUPPORT.value
         )
     else:
         await message.answer(
@@ -1162,9 +1193,293 @@ async def client_support_file(message: Message, state: FSMContext, bot: Bot, ses
             "Ответ придёт сюда же 🤠",
             reply_markup=get_main_menu_keyboard()
         )
+
+        # Обновляем диалог
+        await update_conversation(
+            session, user.id, None, "📎 Файл",
+            MessageSender.CLIENT.value, increment_unread=True,
+            conv_type=ConversationType.SUPPORT.value
+        )
     else:
         await message.answer(
             "⚠️ Не удалось отправить файл.\n"
             f"Напиши напрямую: @{settings.SUPPORT_USERNAME}",
             reply_markup=get_main_menu_keyboard()
         )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ПАНЕЛЬ ДИАЛОГОВ (АДМИН)
+# ══════════════════════════════════════════════════════════════
+
+from aiogram.filters import Command
+from sqlalchemy import desc, func as sql_func
+
+
+async def get_or_create_conversation(
+    session: AsyncSession,
+    user_id: int,
+    order_id: int | None = None,
+    conv_type: str = ConversationType.FREE.value,
+) -> Conversation:
+    """Получает или создаёт диалог с пользователем"""
+    query = select(Conversation).where(Conversation.user_id == user_id)
+
+    if order_id:
+        query = query.where(Conversation.order_id == order_id)
+    else:
+        query = query.where(Conversation.order_id.is_(None))
+
+    result = await session.execute(query)
+    conv = result.scalar_one_or_none()
+
+    if not conv:
+        conv = Conversation(
+            user_id=user_id,
+            order_id=order_id,
+            conversation_type=conv_type,
+        )
+        session.add(conv)
+
+    return conv
+
+
+async def update_conversation(
+    session: AsyncSession,
+    user_id: int,
+    order_id: int | None,
+    last_message: str,
+    sender: str,
+    increment_unread: bool = False,
+    conv_type: str | None = None,
+) -> None:
+    """Обновляет диалог после нового сообщения"""
+    try:
+        conv = await get_or_create_conversation(
+            session, user_id, order_id,
+            conv_type or (ConversationType.ORDER_CHAT.value if order_id else ConversationType.FREE.value)
+        )
+
+        conv.last_message_text = last_message[:100] if last_message else None
+        conv.last_message_at = datetime.now()
+        conv.last_sender = sender
+        conv.is_active = True
+
+        if increment_unread and sender == MessageSender.CLIENT.value:
+            conv.unread_count = (conv.unread_count or 0) + 1
+        elif sender == MessageSender.ADMIN.value:
+            conv.unread_count = 0
+
+        await session.commit()
+    except Exception as e:
+        logger.error(f"Error updating conversation: {e}")
+
+
+def get_dialogs_keyboard(
+    page: int = 0,
+    filter_type: str = "all",
+    total_pages: int = 1,
+) -> InlineKeyboardMarkup:
+    """Клавиатура панели диалогов"""
+    buttons = []
+
+    # Фильтры
+    filters_row = []
+    filters = [
+        ("all", "📋 Все"),
+        ("unread", "📩 Новые"),
+        ("order", "📦 Заказы"),
+        ("free", "💬 Свободные"),
+    ]
+    for f_type, f_label in filters:
+        label = f"• {f_label} •" if filter_type == f_type else f_label
+        filters_row.append(InlineKeyboardButton(
+            text=label,
+            callback_data=f"dialogs_filter_{f_type}"
+        ))
+    buttons.append(filters_row[:2])
+    buttons.append(filters_row[2:])
+
+    # Пагинация
+    if total_pages > 1:
+        nav_row = []
+        if page > 0:
+            nav_row.append(InlineKeyboardButton(
+                text="◀️ Назад",
+                callback_data=f"dialogs_page_{page - 1}_{filter_type}"
+            ))
+        nav_row.append(InlineKeyboardButton(
+            text=f"{page + 1}/{total_pages}",
+            callback_data="dialogs_noop"
+        ))
+        if page < total_pages - 1:
+            nav_row.append(InlineKeyboardButton(
+                text="Вперёд ▶️",
+                callback_data=f"dialogs_page_{page + 1}_{filter_type}"
+            ))
+        buttons.append(nav_row)
+
+    # Обновить
+    buttons.append([
+        InlineKeyboardButton(text="🔄 Обновить", callback_data=f"dialogs_refresh_{filter_type}"),
+        InlineKeyboardButton(text="❌ Закрыть", callback_data="dialogs_close"),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def format_dialogs_list(
+    session: AsyncSession,
+    filter_type: str = "all",
+    page: int = 0,
+    per_page: int = 10,
+) -> tuple[str, int]:
+    """Форматирует список диалогов"""
+    query = select(Conversation).where(Conversation.is_active == True)
+
+    if filter_type == "unread":
+        query = query.where(Conversation.unread_count > 0)
+    elif filter_type == "order":
+        query = query.where(Conversation.order_id.isnot(None))
+    elif filter_type == "free":
+        query = query.where(Conversation.order_id.is_(None))
+
+    # Считаем общее количество
+    count_query = select(sql_func.count()).select_from(query.subquery())
+    total = (await session.execute(count_query)).scalar() or 0
+    total_pages = max(1, (total + per_page - 1) // per_page)
+
+    # Получаем страницу
+    query = query.order_by(
+        desc(Conversation.unread_count > 0),
+        desc(Conversation.last_message_at)
+    ).offset(page * per_page).limit(per_page)
+
+    result = await session.execute(query)
+    conversations = result.scalars().all()
+
+    if not conversations:
+        return "📭 Диалогов пока нет", total_pages
+
+    lines = ["🗂️ <b>Панель диалогов</b>\n"]
+
+    for conv in conversations:
+        # Получаем пользователя
+        user_query = select(User).where(User.telegram_id == conv.user_id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+        user_name = user.fullname if user else f"ID: {conv.user_id}"
+
+        # Форматируем строку
+        unread_badge = f"🔴 {conv.unread_count}" if conv.unread_count else ""
+        type_emoji = conv.type_emoji
+
+        # Превью сообщения
+        preview = (conv.last_message_text or "—")[:30]
+        if len(conv.last_message_text or "") > 30:
+            preview += "..."
+
+        # Время
+        if conv.last_message_at:
+            time_str = conv.last_message_at.strftime("%d.%m %H:%M")
+        else:
+            time_str = ""
+
+        # Ссылка для открытия
+        if conv.order_id:
+            link = f"/chat_{conv.order_id}"
+            order_info = f"Заказ #{conv.order_id}"
+        else:
+            link = f"dm_reply_{conv.user_id}"
+            order_info = "Без заказа"
+
+        lines.append(
+            f"{unread_badge} {type_emoji} <b>{user_name}</b>\n"
+            f"   {order_info} • {time_str}\n"
+            f"   💬 <i>{preview}</i>\n"
+        )
+
+    lines.append(f"\n📊 Всего: {total}")
+
+    return "\n".join(lines), total_pages
+
+
+@router.message(Command("dialogs"))
+async def cmd_dialogs(message: Message, session: AsyncSession):
+    """Команда /dialogs — панель диалогов для админа"""
+    if message.from_user.id not in settings.ADMIN_IDS:
+        return
+
+    text, total_pages = await format_dialogs_list(session)
+
+    await message.answer(
+        text,
+        reply_markup=get_dialogs_keyboard(page=0, filter_type="all", total_pages=total_pages)
+    )
+
+
+@router.callback_query(F.data.startswith("dialogs_filter_"))
+async def dialogs_filter(callback: CallbackQuery, session: AsyncSession):
+    """Фильтрация диалогов"""
+    if callback.from_user.id not in settings.ADMIN_IDS:
+        await callback.answer("❌ Только для админов")
+        return
+
+    filter_type = callback.data.replace("dialogs_filter_", "")
+    text, total_pages = await format_dialogs_list(session, filter_type=filter_type)
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_dialogs_keyboard(page=0, filter_type=filter_type, total_pages=total_pages)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("dialogs_page_"))
+async def dialogs_page(callback: CallbackQuery, session: AsyncSession):
+    """Пагинация диалогов"""
+    if callback.from_user.id not in settings.ADMIN_IDS:
+        await callback.answer("❌ Только для админов")
+        return
+
+    parts = callback.data.replace("dialogs_page_", "").split("_")
+    page = int(parts[0])
+    filter_type = parts[1] if len(parts) > 1 else "all"
+
+    text, total_pages = await format_dialogs_list(session, filter_type=filter_type, page=page)
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_dialogs_keyboard(page=page, filter_type=filter_type, total_pages=total_pages)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("dialogs_refresh_"))
+async def dialogs_refresh(callback: CallbackQuery, session: AsyncSession):
+    """Обновление списка диалогов"""
+    if callback.from_user.id not in settings.ADMIN_IDS:
+        await callback.answer("❌ Только для админов")
+        return
+
+    filter_type = callback.data.replace("dialogs_refresh_", "")
+    text, total_pages = await format_dialogs_list(session, filter_type=filter_type)
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_dialogs_keyboard(page=0, filter_type=filter_type, total_pages=total_pages)
+    )
+    await callback.answer("🔄 Обновлено")
+
+
+@router.callback_query(F.data == "dialogs_close")
+async def dialogs_close(callback: CallbackQuery):
+    """Закрытие панели диалогов"""
+    await callback.message.delete()
+    await callback.answer()
+
+
+@router.callback_query(F.data == "dialogs_noop")
+async def dialogs_noop(callback: CallbackQuery):
+    """Пустое нажатие на номер страницы"""
+    await callback.answer()
