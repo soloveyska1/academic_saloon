@@ -10,7 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import User, Order
+from database.models.users import User
+from database.models.orders import Order
 from database.db import get_session
 from core.config import settings
 
