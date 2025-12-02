@@ -36,12 +36,16 @@ def get_chat_keyboard(order_id: int, is_admin: bool) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="📎 Файл", callback_data=f"chat_file_{order_id}"),
         ])
         buttons.append([
-            InlineKeyboardButton(text="❌ Закрыть чат", callback_data=f"chat_close_{order_id}"),
+            InlineKeyboardButton(text="📜 История", callback_data=f"chat_history_{order_id}"),
+            InlineKeyboardButton(text="❌ Закрыть", callback_data=f"chat_close_{order_id}"),
         ])
     else:
         buttons.append([
             InlineKeyboardButton(text="💬 Ответить", callback_data=f"chat_reply_{order_id}"),
             InlineKeyboardButton(text="📎 Файл", callback_data=f"chat_file_client_{order_id}"),
+        ])
+        buttons.append([
+            InlineKeyboardButton(text="📜 История", callback_data=f"chat_history_client_{order_id}"),
         ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -52,6 +56,31 @@ def get_cancel_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="❌ Отмена", callback_data="chat_cancel")]
     ])
+
+
+def format_order_info(order: Order) -> str:
+    """Форматирует краткую информацию о заказе для чата"""
+    # Тип работы
+    work_type = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
+
+    # Цена
+    if order.price > 0:
+        price_str = f"{int(order.price):,}₽".replace(",", " ")
+        if order.bonus_used > 0:
+            final = order.price - order.bonus_used
+            price_str = f"{price_str} (−{int(order.bonus_used)}₽ бонусы = {int(final):,}₽)".replace(",", " ")
+    else:
+        price_str = "не установлена"
+
+    # Сроки
+    deadline_str = order.deadline if order.deadline else "не указаны"
+
+    return (
+        f"📋 <b>Заказ #{order.id}</b>\n"
+        f"📝 {work_type}\n"
+        f"💵 Цена: {price_str}\n"
+        f"⏰ Сроки: {deadline_str}"
+    )
 
 
 async def upload_chat_file_to_yadisk(
@@ -146,12 +175,18 @@ async def backup_chat_to_yadisk(
         if not messages:
             return True  # Нечего бэкапить
 
-        # Формируем текст истории
+        # Формируем текст истории с информацией о заказе
+        work_type = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
+        price_str = f"{int(order.price):,}₽".replace(",", " ") if order.price > 0 else "не установлена"
+        deadline_str = order.deadline if order.deadline else "не указаны"
+
         chat_lines = [
             f"═══ История чата по заказу #{order.id} ═══",
-            f"Дата экспорта: {datetime.now().strftime('%d.%m.%Y %H:%M')}",
+            f"Обновлено: {datetime.now().strftime('%d.%m.%Y %H:%M')}",
             f"Клиент: {client_name} (ID: {telegram_id})",
-            f"Тип работы: {order.work_type}",
+            f"Тип работы: {work_type}",
+            f"Цена: {price_str}",
+            f"Сроки: {deadline_str}",
             "═" * 50,
             "",
         ]
@@ -188,11 +223,11 @@ async def backup_chat_to_yadisk(
             if not await yandex_disk_service._ensure_folder_exists(client, dialog_folder):
                 return False
 
-            # Имя файла истории
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            file_path = f"{dialog_folder}/История_чата_{timestamp}.txt"
+            # Один файл истории — перезаписывается при каждом обновлении
+            file_path = f"{dialog_folder}/История_чата.txt"
 
-            upload_url = await yandex_disk_service._get_upload_url(client, file_path)
+            # overwrite=True для перезаписи существующего файла
+            upload_url = await yandex_disk_service._get_upload_url(client, file_path, overwrite=True)
             if not upload_url:
                 return False
 
@@ -311,12 +346,13 @@ async def admin_send_text(message: Message, state: FSMContext, session: AsyncSes
     )
     session.add(order_message)
 
-    # Отправляем клиенту
+    # Отправляем клиенту с информацией о заказе
+    order_info = format_order_info(order)
     try:
         client_msg = await bot.send_message(
             chat_id=client_id,
-            text=f"💬 <b>Сообщение по заказу #{order_id}</b>\n\n"
-                 f"🛡️ <b>Шериф:</b>\n{message.text}",
+            text=f"{order_info}\n\n"
+                 f"💬 <b>Сообщение от Шерифа:</b>\n{message.text}",
             reply_markup=get_chat_keyboard(order_id, is_admin=False)
         )
         order_message.client_message_id = client_msg.message_id
@@ -407,11 +443,12 @@ async def admin_send_file(message: Message, state: FSMContext, session: AsyncSes
     )
     session.add(order_message)
 
-    # Отправляем клиенту
+    # Отправляем клиенту с информацией о заказе
+    order_info = format_order_info(order)
     try:
-        msg_text = f"💬 <b>Файл по заказу #{order_id}</b>\n\n🛡️ <b>Шериф прислал файл:</b>"
+        msg_text = f"{order_info}\n\n📎 <b>Файл от Шерифа:</b>"
         if caption:
-            msg_text += f"\n{caption}"
+            msg_text += f"\n\n{caption}"
 
         # Отправляем файл в зависимости от типа
         if file_type == "photo":
@@ -536,14 +573,17 @@ async def client_send_text(message: Message, state: FSMContext, session: AsyncSe
     )
     session.add(order_message)
 
-    # Уведомляем всех админов
+    # Уведомляем всех админов с информацией о заказе
+    order_info = format_order_info(order)
     sent_to_admin = False
     for admin_id in settings.ADMIN_IDS:
         try:
             admin_msg = await bot.send_message(
                 chat_id=admin_id,
-                text=f"💬 <b>Сообщение от клиента по заказу #{order_id}</b>\n\n"
-                     f"👤 <b>{client_name}:</b>\n{message.text}",
+                text=f"{order_info}\n\n"
+                     f"💬 <b>Сообщение от клиента:</b>\n"
+                     f"👤 {client_name}\n\n"
+                     f"{message.text}",
                 reply_markup=get_chat_keyboard(order_id, is_admin=True)
             )
             if not sent_to_admin:
@@ -642,10 +682,11 @@ async def client_send_file(message: Message, state: FSMContext, session: AsyncSe
     )
     session.add(order_message)
 
-    # Отправляем админам
-    msg_text = f"💬 <b>Файл от клиента по заказу #{order_id}</b>\n\n👤 <b>{client_name} прислал файл:</b>"
+    # Отправляем админам с информацией о заказе
+    order_info = format_order_info(order)
+    msg_text = f"{order_info}\n\n📎 <b>Файл от клиента:</b>\n👤 {client_name}"
     if caption:
-        msg_text += f"\n{caption}"
+        msg_text += f"\n\n{caption}"
     if yadisk_url:
         msg_text += f"\n\n📁 <a href='{yadisk_url}'>Открыть на Я.Диске</a>"
 
@@ -837,6 +878,94 @@ async def admin_send_file_btn(callback: CallbackQuery, state: FSMContext, sessio
         reply_markup=get_cancel_keyboard()
     )
     await callback.answer()
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ИСТОРИЯ ЧАТА
+# ══════════════════════════════════════════════════════════════
+
+async def show_chat_history(callback: CallbackQuery, order_id: int, session: AsyncSession, is_admin: bool):
+    """Показывает историю чата в Telegram"""
+    order = await session.get(Order, order_id)
+    if not order:
+        await callback.answer("❌ Заказ не найден", show_alert=True)
+        return
+
+    # Проверка доступа для клиента
+    if not is_admin and order.user_id != callback.from_user.id:
+        await callback.answer("❌ Это не ваш заказ", show_alert=True)
+        return
+
+    # Получаем сообщения
+    try:
+        messages_query = select(OrderMessage).where(
+            OrderMessage.order_id == order_id
+        ).order_by(OrderMessage.created_at)
+        result = await session.execute(messages_query)
+        messages = result.scalars().all()
+    except Exception:
+        messages = []
+
+    # Информация о заказе
+    order_info = format_order_info(order)
+
+    if not messages:
+        await callback.message.answer(
+            f"{order_info}\n\n"
+            f"📜 <b>История чата</b>\n\n"
+            f"<i>Сообщений пока нет</i>",
+            reply_markup=get_chat_keyboard(order_id, is_admin)
+        )
+        await callback.answer()
+        return
+
+    # Формируем историю
+    history_lines = [f"{order_info}\n", "📜 <b>История чата:</b>\n"]
+
+    for msg in messages[-20:]:  # Последние 20 сообщений
+        sender = "🛡️ Шериф" if msg.sender_type == MessageSender.ADMIN.value else "👤 Клиент"
+        time_str = msg.created_at.strftime("%d.%m %H:%M") if msg.created_at else ""
+
+        line = f"<b>{sender}</b> <i>{time_str}</i>"
+        if msg.message_text:
+            text = msg.message_text[:100] + "..." if len(msg.message_text) > 100 else msg.message_text
+            line += f"\n{text}"
+        if msg.file_name:
+            line += f"\n📎 {msg.file_name}"
+
+        history_lines.append(line)
+        history_lines.append("")
+
+    if len(messages) > 20:
+        history_lines.append(f"<i>... и ещё {len(messages) - 20} сообщений</i>")
+
+    await callback.message.answer(
+        "\n".join(history_lines),
+        reply_markup=get_chat_keyboard(order_id, is_admin)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("chat_history_client_"))
+async def client_view_history(callback: CallbackQuery, session: AsyncSession):
+    """Клиент смотрит историю чата"""
+    order_id = int(callback.data.replace("chat_history_client_", ""))
+    await show_chat_history(callback, order_id, session, is_admin=False)
+
+
+@router.callback_query(F.data.startswith("chat_history_"))
+async def admin_view_history(callback: CallbackQuery, session: AsyncSession):
+    """Админ смотрит историю чата"""
+    if "client" in callback.data:
+        return
+
+    order_id = int(callback.data.replace("chat_history_", ""))
+
+    if callback.from_user.id not in settings.ADMIN_IDS:
+        await callback.answer("❌ Только для админов", show_alert=True)
+        return
+
+    await show_chat_history(callback, order_id, session, is_admin=True)
 
 
 # ══════════════════════════════════════════════════════════════
