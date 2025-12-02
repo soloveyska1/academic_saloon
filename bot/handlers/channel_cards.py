@@ -22,6 +22,11 @@ from bot.services.live_cards import (
     get_card_link,
     ORDERS_CHANNEL_ID,
 )
+from bot.services.order_progress import (
+    get_progress_keyboard,
+    update_order_progress,
+    build_progress_bar,
+)
 from bot.services.unified_hub import (
     update_topic_name,
     close_order_topic,
@@ -748,6 +753,213 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
     )
 
     await callback.answer("✅ Заказ завершён!", show_alert=True)
+
+
+# ══════════════════════════════════════════════════════════════
+#           ПРОГРЕСС ЗАКАЗА (прямо в топике)
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("card_progress:"))
+async def card_show_progress_menu(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Показать меню прогресса прямо в топике"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    current_progress = getattr(order, 'progress', 0) or 0
+    progress_bar = build_progress_bar(current_progress)
+
+    text = f"""📊 <b>Прогресс заказа #{order_id}</b>
+
+{progress_bar}
+
+<b>Текущий прогресс:</b> {current_progress}%
+
+Выбери новый прогресс:
+
+<i>💡 При достижении 25%, 50%, 75% и 100%
+клиент получит уведомление автоматически.</i>"""
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_topic_progress_keyboard(order_id, current_progress)
+    )
+    await callback.answer()
+
+
+def get_topic_progress_keyboard(order_id: int, current_progress: int = 0) -> InlineKeyboardMarkup:
+    """Клавиатура прогресса для топика (компактная)"""
+    buttons = []
+
+    # Быстрые пресеты
+    presets = [25, 50, 75, 100]
+    preset_row = []
+    for p in presets:
+        emoji = "✅" if current_progress >= p else ""
+        preset_row.append(
+            InlineKeyboardButton(
+                text=f"{emoji}{p}%",
+                callback_data=f"topic_progress_set:{order_id}:{p}"
+            )
+        )
+    buttons.append(preset_row)
+
+    # Кнопки +/- 10%
+    buttons.append([
+        InlineKeyboardButton(
+            text="➖ 10%",
+            callback_data=f"topic_progress_dec:{order_id}"
+        ),
+        InlineKeyboardButton(
+            text="➕ 10%",
+            callback_data=f"topic_progress_inc:{order_id}"
+        ),
+    ])
+
+    # Назад к карточке
+    buttons.append([
+        InlineKeyboardButton(
+            text="◀️ Назад к карточке",
+            callback_data=f"topic_progress_back:{order_id}"
+        ),
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+@router.callback_query(F.data.startswith("topic_progress_set:"))
+async def topic_set_progress(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Установить прогресс из топика"""
+    parts = callback.data.split(":")
+    if len(parts) < 3:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    try:
+        order_id = int(parts[1])
+        new_progress = int(parts[2])
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Обновляем прогресс
+    milestones = await update_order_progress(session, bot, order, new_progress)
+
+    milestone_text = ""
+    if milestones:
+        milestone_text = f"\n🔔 Уведомления: {', '.join([f'{m}%' for m in milestones])}"
+
+    await callback.answer(f"✅ Прогресс: {new_progress}%{milestone_text}", show_alert=True)
+
+    # Обновляем карточку заказа в топике
+    await update_card_status(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+    )
+
+
+@router.callback_query(F.data.startswith("topic_progress_inc:"))
+async def topic_increase_progress(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Увеличить прогресс на 10%"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    current = getattr(order, 'progress', 0) or 0
+    new_progress = min(100, current + 10)
+
+    milestones = await update_order_progress(session, bot, order, new_progress)
+
+    milestone_text = ""
+    if milestones:
+        milestone_text = f" 🔔 {', '.join([f'{m}%' for m in milestones])}"
+
+    await callback.answer(f"📊 {new_progress}%{milestone_text}", show_alert=True)
+
+    # Обновляем карточку
+    await update_card_status(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+    )
+
+
+@router.callback_query(F.data.startswith("topic_progress_dec:"))
+async def topic_decrease_progress(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Уменьшить прогресс на 10%"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    current = getattr(order, 'progress', 0) or 0
+    new_progress = max(0, current - 10)
+
+    await update_order_progress(session, bot, order, new_progress, notify=False)
+
+    await callback.answer(f"📊 {new_progress}%", show_alert=True)
+
+    # Обновляем карточку
+    await update_card_status(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+    )
+
+
+@router.callback_query(F.data.startswith("topic_progress_back:"))
+async def topic_progress_back(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Вернуться к карточке заказа"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Обновляем карточку — вернётся стандартная карточка
+    await update_card_status(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+    )
+
+    await callback.answer()
 
 
 # ══════════════════════════════════════════════════════════════
