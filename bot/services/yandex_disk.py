@@ -86,14 +86,12 @@ class YandexDiskService:
         """
         Генерирует путь к папке заказа внутри папки клиента.
 
-        Структура: /Academic_Saloon_Orders/Клиенты/Имя_12345678/Заказ_123_Курсовая/
+        Структура: /Academic_Saloon_Orders/Клиенты/Имя_12345678/Заказ_123/
 
-        Без даты в названии - чтобы путь был стабильным для дослата файлов.
+        Только order_id в названии - путь 100% стабильный для дослата.
         """
-        safe_type = sanitize_filename(work_type) if work_type else "Заказ"
-
-        # Без даты! ID заказа уникален, дата видна в метаданных
-        folder_name = f"Заказ_{order_id}_{safe_type}"
+        # Только ID! work_type может отличаться между созданием и дослатом
+        folder_name = f"Заказ_{order_id}"
 
         if telegram_id:
             client_folder = self._get_client_folder_path(client_name, telegram_id)
@@ -102,7 +100,7 @@ class YandexDiskService:
             # Fallback для совместимости (без telegram_id)
             safe_name = sanitize_filename(client_name) if client_name else "Клиент"
             month_folder = datetime.now().strftime("%Y-%m")
-            return f"/{self._root_folder}/{month_folder}/#{order_id}_{safe_name}_{safe_type}"
+            return f"/{self._root_folder}/{month_folder}/#{order_id}_{safe_name}"
 
     async def _ensure_folder_exists(self, client: httpx.AsyncClient, path: str) -> bool:
         """Создаёт папку если не существует (рекурсивно)"""
