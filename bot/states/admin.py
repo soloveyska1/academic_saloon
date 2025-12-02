@@ -16,3 +16,5 @@ class AdminStates(StatesGroup):
     setting_price = State()            # Ожидание ввода новой цены
     messaging_user = State()           # Отправка сообщения клиенту
     sending_file = State()             # Отправка файла клиенту
+    dialog_file = State()              # Отправка файла в диалоге
+    dialog_voice = State()             # Отправка голосового в диалоге
