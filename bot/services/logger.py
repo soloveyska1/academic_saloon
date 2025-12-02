@@ -175,36 +175,62 @@ class BotLogger:
         return now.strftime("%d.%m.%Y %H:%M")
 
     @staticmethod
-    def get_action_keyboard(user_id: int) -> InlineKeyboardMarkup:
-        """Клавиатура быстрых действий под логом"""
-        return InlineKeyboardMarkup(inline_keyboard=[
-            [
+    def get_action_keyboard(user_id: int, topic_id: int = None, order_id: int = None) -> InlineKeyboardMarkup:
+        """
+        Клавиатура быстрых действий под логом.
+
+        Args:
+            user_id: ID пользователя Telegram
+            topic_id: ID топика (если есть) для кнопки "Открыть чат"
+            order_id: ID заказа (если есть) для кнопки "Открыть чат"
+        """
+        buttons = []
+
+        # Первый ряд: Написать и Инфо
+        row1 = [
+            InlineKeyboardButton(
+                text="💬 Написать",
+                url=f"tg://user?id={user_id}"
+            ),
+            InlineKeyboardButton(
+                text="📋 Инфо",
+                callback_data=f"log_info:{user_id}"
+            ),
+        ]
+        buttons.append(row1)
+
+        # Если есть топик — добавляем кнопку "Открыть чат"
+        if topic_id:
+            group_id = str(settings.ADMIN_GROUP_ID).replace("-100", "")
+            topic_link = f"https://t.me/c/{group_id}/{topic_id}"
+            buttons.append([
                 InlineKeyboardButton(
-                    text="💬 Написать",
-                    url=f"tg://user?id={user_id}"
+                    text="💬 Открыть чат в топике",
+                    url=topic_link
                 ),
-                InlineKeyboardButton(
-                    text="📋 Инфо",
-                    callback_data=f"log_info:{user_id}"
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="👀 Слежка",
-                    callback_data=f"log_watch:{user_id}"
-                ),
-                InlineKeyboardButton(
-                    text="📌 Заметка",
-                    callback_data=f"log_note:{user_id}"
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="🚫 Бан",
-                    callback_data=f"log_ban:{user_id}"
-                ),
-            ],
+            ])
+
+        # Второй ряд: Слежка и Заметка
+        buttons.append([
+            InlineKeyboardButton(
+                text="👀 Слежка",
+                callback_data=f"log_watch:{user_id}"
+            ),
+            InlineKeyboardButton(
+                text="📌 Заметка",
+                callback_data=f"log_note:{user_id}"
+            ),
         ])
+
+        # Третий ряд: Бан
+        buttons.append([
+            InlineKeyboardButton(
+                text="🚫 Бан",
+                callback_data=f"log_ban:{user_id}"
+            ),
+        ])
+
+        return InlineKeyboardMarkup(inline_keyboard=buttons)
 
     @staticmethod
     def get_error_keyboard() -> InlineKeyboardMarkup:
@@ -250,20 +276,39 @@ class BotLogger:
 
         return tags
 
-    async def _get_user_stats(self, user_id: int, session: Optional[AsyncSession] = None) -> tuple[str, bool]:
+    async def _get_user_stats(
+        self, user_id: int, session: Optional[AsyncSession] = None, order_id: int = None
+    ) -> tuple[str, bool, Optional[int]]:
         """
         Получает статистику пользователя из БД.
 
         Returns:
-            (stats_str, is_watched) — строка статистики и флаг слежки
+            (stats_str, is_watched, topic_id) — строка статистики, флаг слежки, ID топика
         """
         if not session:
-            return "", False
+            return "", False, None
 
+        topic_id = None
         try:
             query = select(User).where(User.telegram_id == user_id)
             result = await session.execute(query)
             user = result.scalar_one_or_none()
+
+            # Пытаемся найти topic_id для последнего диалога пользователя
+            try:
+                from database.models.orders import Conversation
+                conv_query = select(Conversation).where(
+                    Conversation.user_id == user_id
+                )
+                if order_id:
+                    conv_query = conv_query.where(Conversation.order_id == order_id)
+                conv_query = conv_query.order_by(Conversation.last_message_at.desc()).limit(1)
+                conv_result = await session.execute(conv_query)
+                conv = conv_result.scalar_one_or_none()
+                if conv and conv.topic_id:
+                    topic_id = conv.topic_id
+            except Exception:
+                pass
 
             if user:
                 status, discount = user.loyalty_status
@@ -284,11 +329,11 @@ class BotLogger:
                 if is_watched:
                     stats += "\n👀  <b>НА СЛЕЖКЕ</b>"
 
-                return stats, is_watched
+                return stats, is_watched, topic_id
         except Exception:
             pass
 
-        return "", False
+        return "", False, None
 
     async def log(
         self,
@@ -299,6 +344,7 @@ class BotLogger:
         session: Optional[AsyncSession] = None,
         level: LogLevel = LogLevel.INFO,
         silent: bool = True,
+        order_id: Optional[int] = None,
     ) -> Optional[int]:
         """
         Отправляет лог в канал.
@@ -311,6 +357,7 @@ class BotLogger:
             session: Сессия БД для получения статистики
             level: Уровень важности
             silent: Без звука (True) или со звуком (False)
+            order_id: ID заказа (для навигации в топик)
 
         Returns:
             message_id отправленного лога или None при ошибке
@@ -324,8 +371,8 @@ class BotLogger:
             user_mention = self.get_user_mention(user)
             time_str = self.get_msk_time()
 
-            # Статистика из БД и флаг слежки
-            stats, is_watched = await self._get_user_stats(user.id, session)
+            # Статистика из БД, флаг слежки и topic_id
+            stats, is_watched, topic_id = await self._get_user_stats(user.id, session, order_id)
 
             # Основной текст
             text_parts = [
@@ -359,7 +406,7 @@ class BotLogger:
             # Для пользователей на слежке — всегда показываем кнопки
             keyboard = None
             if level in (LogLevel.ACTION, LogLevel.WARNING, LogLevel.ERROR, LogLevel.CRITICAL) or is_watched:
-                keyboard = self.get_action_keyboard(user.id)
+                keyboard = self.get_action_keyboard(user.id, topic_id=topic_id, order_id=order_id)
 
             # Важные события со звуком
             # Пользователи на слежке — все логи со звуком
@@ -485,10 +532,14 @@ async def log_action(
     session: Optional[AsyncSession] = None,
     level: LogLevel = LogLevel.INFO,
     silent: bool = True,
+    order_id: Optional[int] = None,
 ) -> Optional[int]:
     """
     Удобная функция для быстрого логирования.
     Создаёт временный логгер если глобальный не инициализирован.
+
+    Args:
+        order_id: ID заказа для навигации в топик
     """
     logger = get_logger()
     if not logger:
@@ -502,4 +553,5 @@ async def log_action(
         session=session,
         level=level,
         silent=silent,
+        order_id=order_id,
     )

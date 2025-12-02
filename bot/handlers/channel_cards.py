@@ -758,7 +758,8 @@ async def dashboard_refresh(callback: CallbackQuery, session: AsyncSession, bot:
 async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """
     Открывает или создаёт топик для чата с клиентом.
-    Отправляет ссылку на топик в админскую группу.
+    FUSION: При создании топика автоматически постится карточка заказа.
+    После создания обновляет кнопку на карточке канала для прямой ссылки.
     """
     try:
         order_id = parse_order_id(callback.data)
@@ -773,7 +774,7 @@ async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, b
         return
 
     try:
-        # Получаем или создаём топик
+        # Получаем или создаём топик (с автопостингом карточки через FUSION)
         conv, topic_id = await get_or_create_topic(
             bot=bot,
             session=session,
@@ -783,22 +784,21 @@ async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, b
         )
 
         # Формируем ссылку на топик
-        # Формат: https://t.me/c/CHAT_ID/TOPIC_ID
-        # CHAT_ID без префикса -100
         group_id = str(settings.ADMIN_GROUP_ID).replace("-100", "")
         topic_link = f"https://t.me/c/{group_id}/{topic_id}"
 
-        await callback.answer(f"💬 Топик создан! Открывай группу.", show_alert=True)
+        await callback.answer(f"💬 Топик готов!", show_alert=True)
 
-        # Отправляем сообщение со ссылкой в канал заказов (рядом с карточкой)
-        client_name = user.fullname if user else f"ID:{order.user_id}"
-        await bot.send_message(
-            chat_id=callback.message.chat.id,
-            text=f"💬 <b>Чат по заказу #{order_id}</b>\n"
-                 f"👤 Клиент: {client_name}\n\n"
-                 f"➡️ <a href=\"{topic_link}\">Открыть топик</a>",
-            reply_to_message_id=callback.message.message_id,
+        # Обновляем карточку в канале чтобы кнопка "Чат" стала прямой ссылкой
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
         )
+
+        # Не отправляем отдельное сообщение - теперь всё в карточке
 
     except Exception as e:
         logger.error(f"Failed to create/open chat topic: {e}")
