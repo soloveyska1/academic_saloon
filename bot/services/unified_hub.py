@@ -198,7 +198,7 @@ async def create_order_topic(
     bot: Bot,
     session: AsyncSession,
     order: Order,
-    user: User,
+    user=None,
 ) -> tuple[Conversation, int]:
     """
     Создаёт топик для нового заказа.
@@ -207,16 +207,24 @@ async def create_order_topic(
         bot: Бот
         session: Сессия БД
         order: Заказ
-        user: Пользователь
+        user: Пользователь (может быть Telegram User или DB User)
 
     Returns:
         (Conversation, topic_id)
     """
     from bot.services.live_cards import send_or_update_card
 
+    # Получаем имя клиента (поддерживаем и Telegram User и DB User)
+    if user:
+        # DB User имеет fullname, Telegram User имеет full_name
+        client_name = getattr(user, 'fullname', None) or getattr(user, 'full_name', None) or f"ID:{order.user_id}"
+        client_username = getattr(user, 'username', None)
+    else:
+        client_name = f"ID:{order.user_id}"
+        client_username = None
+
     # Формируем имя топика
     status_emoji = STATUS_EMOJI.get(order.status, "🔴")
-    client_name = user.fullname if user else f"ID:{order.user_id}"
     topic_name = f"{status_emoji} [#{order.id}] {client_name}"[:128]
 
     # Создаём топик
@@ -238,14 +246,14 @@ async def create_order_topic(
         await session.commit()
 
         # Отправляем заголовок
-        await _send_order_topic_header(bot, order, user, topic_id)
+        await _send_order_topic_header(bot, order, user, topic_id, client_name, client_username)
 
         # Отправляем и закрепляем карточку
         await send_or_update_card(
             bot=bot,
             order=order,
             session=session,
-            client_username=user.username if user else None,
+            client_username=client_username,
             client_name=client_name,
         )
 
@@ -261,12 +269,17 @@ async def create_order_topic(
 async def _send_order_topic_header(
     bot: Bot,
     order: Order,
-    user: User,
+    user,
     topic_id: int,
+    client_name: str = None,
+    client_username: str = None,
 ):
     """Отправляет информационный заголовок в топик заказа"""
-    client_name = user.fullname if user else "Неизвестно"
-    username = f"@{user.username}" if user and user.username else "нет"
+    if not client_name:
+        client_name = getattr(user, 'fullname', None) or getattr(user, 'full_name', None) or "Неизвестно"
+    if not client_username:
+        client_username = getattr(user, 'username', None)
+    username = f"@{client_username}" if client_username else "нет"
 
     # Тип работы
     try:
@@ -306,7 +319,7 @@ async def _send_order_topic_header(
 async def post_to_feed(
     bot: Bot,
     order: Order,
-    user: User,
+    user,
     topic_id: int,
     yadisk_link: str = None,
 ):
@@ -316,7 +329,7 @@ async def post_to_feed(
     Args:
         bot: Бот
         order: Заказ
-        user: Пользователь
+        user: Пользователь (может быть Telegram User или DB User)
         topic_id: ID топика заказа (для ссылки)
         yadisk_link: Ссылка на Яндекс.Диск
     """
@@ -327,10 +340,11 @@ async def post_to_feed(
         logger.warning("Feed topic not initialized, skipping feed post")
         return
 
-    # Формируем мини-карточку
+    # Формируем мини-карточку (поддерживаем и Telegram User и DB User)
     status_emoji = STATUS_EMOJI.get(order.status, "🔴")
-    client_name = user.fullname if user else f"ID:{order.user_id}"
-    username = f"@{user.username}" if user and user.username else ""
+    client_name = getattr(user, 'fullname', None) or getattr(user, 'full_name', None) or f"ID:{order.user_id}" if user else f"ID:{order.user_id}"
+    client_username = getattr(user, 'username', None) if user else None
+    username = f"@{client_username}" if client_username else ""
 
     try:
         work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
