@@ -4749,10 +4749,12 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
 
     if media_group_id:
         # Часть альбома — собираем через коллектор
-        async def on_panic_media_group_complete(files: list, mg_chat_id: int, **kwargs):
+        async def on_panic_media_group_complete(files: list, **kwargs):
             """Callback когда все файлы альбома собраны"""
             fsm_state = kwargs.get("fsm_state")
-            if not fsm_state:
+            mg_chat_id = kwargs.get("chat_id")
+            if not fsm_state or not mg_chat_id:
+                logger.warning(f"Missing fsm_state or chat_id in media group callback: {kwargs}")
                 return
 
             current_data = await fsm_state.get_data()
@@ -4770,6 +4772,7 @@ async def panic_file_received(message: Message, state: FSMContext, bot: Bot, ses
                 panic_files.append(f)
 
             await fsm_state.update_data(panic_files=panic_files)
+            logger.info(f"Media group complete: {len(files)} files added, total: {len(panic_files)}")
 
             # Обновляем UI
             await update_panic_upload_ui(bot, mg_chat_id, ul_msg_id, panic_files, urg_label)
