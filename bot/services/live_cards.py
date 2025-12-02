@@ -169,11 +169,22 @@ def render_order_card(
     if extra_text:
         extra_section = f"\n\n📌 <i>{extra_text}</i>"
 
+    # Прогресс выполнения (только для статусов "в работе")
+    progress_section = ""
+    if stage["name"] == "work":
+        progress = getattr(order, 'progress', 0) or 0
+        if progress > 0:
+            # Визуальный прогресс-бар
+            filled = int(progress / 10)
+            empty = 10 - filled
+            bar = "▓" * filled + "░" * empty
+            progress_section = f"\n\n📊 <b>Прогресс:</b> [{bar}] {progress}%"
+
     # Тег статуса
     status_tag = f"\n\n{stage['status_tag']}"
 
     # Собираем текст
-    text = f"{header}\n\n{client_info}{details_text}{price_text}{files_text}{extra_section}{status_tag}"
+    text = f"{header}\n\n{client_info}{details_text}{price_text}{files_text}{extra_section}{progress_section}{status_tag}"
 
     return text
 
@@ -251,7 +262,14 @@ def get_card_keyboard(
         ])
 
     elif stage_name == "work":
-        # В работе
+        # В работе — показываем прогресс и управление
+        progress = getattr(order, 'progress', 0) or 0
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"📊 Прогресс: {progress}%",
+                callback_data=f"card_progress:{order.id}"
+            ),
+        ])
         buttons.append([
             InlineKeyboardButton(
                 text="📤 Сдать работу",
