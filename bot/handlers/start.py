@@ -66,20 +66,22 @@ async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
 
 
 @router.message(CommandStart(deep_link=True))
-async def cmd_start_with_ref(message: Message, command: CommandObject, session: AsyncSession, bot: Bot, state: FSMContext):
+async def cmd_start_with_link(message: Message, command: CommandObject, session: AsyncSession, bot: Bot, state: FSMContext):
     """
-    Хендлер /start с реферальной ссылкой.
-    Формат: /start ref123456789
+    Хендлер /start с параметром (deep_link).
+    Форматы: /start ref123456789, /start setprice_123, /start admin
     """
     await process_start(message, session, bot, state, deep_link=command.args)
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, session: AsyncSession, bot: Bot, state: FSMContext):
+async def cmd_start(message: Message, session: AsyncSession, bot: Bot, state: FSMContext, command: CommandObject):
     """
-    Хендлер /start без параметров.
+    Хендлер /start без параметров или с параметрами (fallback).
     """
-    await process_start(message, session, bot, state, deep_link=None)
+    # Проверяем есть ли аргументы (deep_link мог не сработать)
+    deep_link = command.args if command and command.args else None
+    await process_start(message, session, bot, state, deep_link=deep_link)
 
 
 async def process_start(message: Message, session: AsyncSession, bot: Bot, state: FSMContext, deep_link: str | None):
@@ -280,12 +282,23 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
 
     # Обновляем карточку в канале
     final_price = price - bonus_used
+
+    # Формируем текст с информацией о бонусах
+    if bonus_used > 0:
+        card_extra_text = (
+            f"💵 Тариф: {price:,}₽\n"
+            f"💎 Бонусы: −{bonus_used:.0f}₽ (баланс клиента)\n"
+            f"👉 К оплате: {final_price:,.0f}₽"
+        ).replace(",", " ")
+    else:
+        card_extra_text = f"💵 Цена: {price:,}₽ (бонусов нет)".replace(",", " ")
+
     try:
         await update_card_status(
             bot, order, session,
             client_username=client.username if client else None,
             client_name=client.fullname if client else None,
-            extra_text=f"💵 Цена: {price:,}₽ → К оплате: {final_price:,.0f}₽".replace(",", " ")
+            extra_text=card_extra_text
         )
     except Exception as e:
         await message.answer(f"⚠️ Карточка не обновлена: {e}")

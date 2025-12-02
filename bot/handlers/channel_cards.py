@@ -480,11 +480,22 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
 
     # Обновляем карточку
     final_price = price - bonus_used
+
+    # Формируем текст с информацией о бонусах
+    if bonus_used > 0:
+        extra_text = (
+            f"💵 Тариф: {price:,}₽\n"
+            f"💎 Бонусы: −{bonus_used:.0f}₽ (баланс клиента)\n"
+            f"👉 К оплате: {final_price:,.0f}₽"
+        ).replace(",", " ")
+    else:
+        extra_text = f"💵 Цена: {price:,}₽ (бонусов нет)".replace(",", " ")
+
     await update_card_status(
         bot, order, session,
         client_username=user.username if user else None,
         client_name=user.fullname if user else None,
-        extra_text=f"💵 Цена: {price:,}₽ → К оплате: {final_price:,.0f}₽".replace(",", " ")
+        extra_text=extra_text
     )
 
     # Отправляем полноценное уведомление с кнопками оплаты
@@ -503,7 +514,12 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
 
 @router.callback_query(F.data.startswith("card_confirm_pay:"))
 async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Подтвердить оплату"""
+    """Подтвердить оплату — использует тот же формат, что и admin.py"""
+    from aiogram.types import FSInputFile
+
+    # Путь к картинке успешной оплаты
+    PAYMENT_SUCCESS_IMAGE = Path("/root/academic_saloon/bot/media/payment_success.jpg")
+
     try:
         order_id = parse_order_id(callback.data)
     except ValueError:
@@ -529,13 +545,35 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
         extra_text=f"✅ Оплата подтверждена {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
-    # Уведомляем клиента
-    await notify_client(
-        bot, order.user_id,
-        f"✅ <b>Оплата подтверждена!</b>\n\n"
-        f"Заказ #{order.id} принят в работу.\n"
-        "Ожидай результат в срок, указанный при оформлении."
-    )
+    # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ (как в admin.py) ═══
+    paid_formatted = f"{int(order.paid_amount):,}".replace(",", " ")
+    user_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
+
+Заказ <b>#{order.id}</b> принят в работу.
+💰 Получено: <b>{paid_formatted} ₽</b>
+
+Шериф уже запряг лошадей. Как будет готово — пришлю уведомление сюда.
+Следи за статусом в кабинете."""
+
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="👀 Отследить статус", callback_data="my_orders")],
+        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="profile_referral")],
+        [InlineKeyboardButton(text="🌵 В Салун", callback_data="back_to_menu")],
+    ])
+
+    try:
+        if PAYMENT_SUCCESS_IMAGE.exists():
+            photo_file = FSInputFile(PAYMENT_SUCCESS_IMAGE)
+            await bot.send_photo(
+                chat_id=order.user_id,
+                photo=photo_file,
+                caption=user_text,
+                reply_markup=user_keyboard,
+            )
+        else:
+            await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
+    except Exception as e:
+        logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
 
     await callback.answer("✅ Оплата подтверждена, клиент уведомлён", show_alert=True)
 
