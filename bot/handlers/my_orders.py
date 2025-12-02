@@ -49,6 +49,7 @@ from bot.keyboards.profile import (
     get_coupon_result_keyboard,
 )
 from bot.services.logger import log_action, LogEvent
+from bot.services.order_progress import build_timeline, build_compact_progress
 from bot.states.order import OrderState, CouponState
 from core.config import settings
 from core.media_cache import send_cached_photo
@@ -631,13 +632,24 @@ def get_status_display(status: str) -> tuple[str, str]:
 
 
 def build_order_detail_caption(order: Order) -> str:
-    """Формирует caption для деталей заказа — стиль 'Дело'"""
+    """Формирует caption для деталей заказа — стиль 'Дело' с Live Progress"""
     lines = [f"📁 <b>Дело #{order.id}</b>", ""]
 
     # Статус
     emoji, status_text = get_status_display(order.status)
     lines.append(f"Статус: {emoji} <b>{status_text}</b>")
     lines.append("")
+
+    # Live Progress — показываем только для активных заказов в работе
+    if order.status in [
+        OrderStatus.PAID.value,
+        OrderStatus.PAID_FULL.value,
+        OrderStatus.IN_PROGRESS.value,
+        OrderStatus.REVIEW.value,
+    ]:
+        timeline = build_timeline(order)
+        lines.append(timeline)
+        lines.append("")
 
     # Суть задачи
     lines.append("📚 <b>Суть задачи:</b>")

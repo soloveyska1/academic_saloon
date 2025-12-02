@@ -279,6 +279,10 @@ class Order(Base):
     # Статус
     status: Mapped[str] = mapped_column(String(20), default=OrderStatus.DRAFT.value)
 
+    # Прогресс выполнения (0-100%)
+    progress: Mapped[int] = mapped_column(Integer, default=0)  # 0-100
+    progress_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Служебное
     admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
