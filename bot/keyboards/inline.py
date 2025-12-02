@@ -74,6 +74,28 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
+def get_sheriff_choice_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура выбора способа связи с шерифом"""
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="💬 Написать в Телеграм",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="🤖 Чат прямо здесь",
+                callback_data="support_bot_chat"
+            )
+        ],
+        [
+            InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")
+        ]
+    ])
+    return kb
+
+
 def get_codex_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура для Кодекса — URL на Telegraph + навигация"""
     kb = InlineKeyboardMarkup(inline_keyboard=[

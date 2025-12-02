@@ -460,8 +460,10 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
 @router.callback_query(F.data == "support")
 async def call_support(callback: CallbackQuery, bot: Bot):
-    """Связь с поддержкой"""
-    await callback.answer("⏳")
+    """Связь с поддержкой — выбор способа связи"""
+    from bot.keyboards.inline import get_sheriff_choice_keyboard
+
+    await callback.answer("🤠")
 
     # Логируем
     await log_action(
@@ -471,19 +473,20 @@ async def call_support(callback: CallbackQuery, bot: Bot):
         details="Открыл «Шериф на связи»",
     )
 
-    text = f"""⭐  <b>Шериф на связи</b>
+    text = """🛡️ <b>Шериф к вашим услугам!</b>
 
+Выбери, как хочешь связаться:
 
-Пиши: @{settings.SUPPORT_USERNAME}
+<b>💬 Телеграм</b> — напишешь мне напрямую,
+отвечу в течение пары часов (обычно быстрее)
 
-Отзывы: <a href="{settings.REVIEWS_CHANNEL}">канал</a>
+<b>🤖 Чат здесь</b> — пиши прямо в боте,
+увижу сразу и отвечу сюда же
 
-
-<i>Отвечаю в течение пары часов,
-обычно быстрее.</i>"""
+<i>Выбирай, партнёр! 🤠</i>"""
 
     await safe_delete_message(callback)
-    await callback.message.answer(text, reply_markup=get_back_keyboard(), disable_web_page_preview=True)
+    await callback.message.answer(text, reply_markup=get_sheriff_choice_keyboard(), disable_web_page_preview=True)
 
 
 @router.callback_query(F.data == "codex")
