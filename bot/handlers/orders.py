@@ -3301,6 +3301,10 @@ async def add_files_to_order_callback(callback: CallbackQuery, state: FSMContext
     await state.update_data(append_order_id=order_id, appended_files=[])
     await state.set_state(OrderState.appending_files)
 
+    # DEBUG: проверяем что state установлен
+    check_state = await state.get_state()
+    logger.info(f"add_files_to_order: set state to {check_state}, order_id={order_id}")
+
     # Используем новую функцию для форматирования
     text = format_append_status_message([], order_id)
     keyboard = get_append_files_keyboard(order_id, files_count=0)
@@ -3322,6 +3326,10 @@ async def append_file_universal(message: Message, state: FSMContext, bot: Bot, s
     Поддерживает: фото, документы, голосовые, текст, видео, аудио.
     Поддерживает media_group (альбомы).
     """
+    # DEBUG: логируем что хендлер сработал
+    current_state = await state.get_state()
+    logger.info(f"append_file_universal triggered! State: {current_state}, Message type: photo={bool(message.photo)}, doc={bool(message.document)}")
+
     # Intercept /start command
     if message.text and message.text.strip().lower().startswith("/start"):
         await process_start(message, session, bot, state, deep_link=None)
