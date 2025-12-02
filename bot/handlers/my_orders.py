@@ -400,7 +400,7 @@ def build_muse_profile_caption(user: User | None, telegram_id: int, user_name: s
     return "\n".join(lines)
 
 
-@router.callback_query(F.data.in_(["my_profile", "my_orders"]))
+@router.callback_query(F.data.in_(["my_profile", "my_orders", "profile"]))
 async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """Главный экран личного кабинета — Gamified Retention Hub"""
     await callback.answer()

@@ -381,46 +381,8 @@ async def show_price_list(callback: CallbackQuery, bot: Bot):
 #                    СУЩЕСТВУЮЩИЕ CALLBACK HANDLERS
 # ══════════════════════════════════════════════════════════════
 
-@router.callback_query(F.data == "profile")
-async def show_profile(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Досье пользователя"""
-    await callback.answer("⏳")
-
-    # Логируем
-    await log_action(
-        bot=bot,
-        event=LogEvent.NAV_BUTTON,
-        user=callback.from_user,
-        details="Открыл «Досье»",
-        session=session,
-    )
-
-    telegram_id = callback.from_user.id
-    query = select(User).where(User.telegram_id == telegram_id)
-    result = await session.execute(query)
-    user = result.scalar_one_or_none()
-
-    await safe_delete_message(callback)
-    chat_id = callback.message.chat.id
-
-    if not user:
-        await bot.send_message(chat_id, "Досье не найдено.", reply_markup=get_back_keyboard())
-        return
-
-    status, discount = user.loyalty_status
-    discount_line = f"◈  Скидка: {discount}%" if discount > 0 else ""
-
-    text = f"""🤠  <b>Досье</b>
-
-
-◈  {user.fullname}
-◈  Баланс: {user.balance:.0f} ₽
-◈  Заказов: {user.orders_count}
-
-{status}
-{discount_line}"""
-
-    await bot.send_message(chat_id, text.strip(), reply_markup=get_back_keyboard())
+# NOTE: Обработчик "profile" перенесён в my_orders.py для показа красивого ЛК
+# Теперь и "profile", и "my_profile" открывают "ПАСПОРТ КОВБОЯ" с картинкой
 
 
 @router.callback_query(F.data == "finance")
