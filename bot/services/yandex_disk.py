@@ -86,12 +86,14 @@ class YandexDiskService:
         """
         Генерирует путь к папке заказа внутри папки клиента.
 
-        Структура: /Academic_Saloon_Orders/Клиенты/Имя_12345678/Заказ_123_2025-12-02_Курсовая/
+        Структура: /Academic_Saloon_Orders/Клиенты/Имя_12345678/Заказ_123_Курсовая/
+
+        Без даты в названии - чтобы путь был стабильным для дослата файлов.
         """
-        date_str = datetime.now().strftime("%Y-%m-%d")
         safe_type = sanitize_filename(work_type) if work_type else "Заказ"
 
-        folder_name = f"Заказ_{order_id}_{date_str}_{safe_type}"
+        # Без даты! ID заказа уникален, дата видна в метаданных
+        folder_name = f"Заказ_{order_id}_{safe_type}"
 
         if telegram_id:
             client_folder = self._get_client_folder_path(client_name, telegram_id)
