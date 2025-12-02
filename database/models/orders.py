@@ -392,6 +392,9 @@ class Conversation(Base):
     # Привязка к заказу (опционально — может быть None для свободных диалогов)
     order_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("orders.id"), nullable=True, index=True)
 
+    # Forum Topic ID в админской группе (message_thread_id)
+    topic_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+
     # Тип диалога
     conversation_type: Mapped[str] = mapped_column(String(20), default=ConversationType.FREE.value)
 

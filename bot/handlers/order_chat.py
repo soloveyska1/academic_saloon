@@ -1,19 +1,31 @@
 """
-Приватный чат между админом и клиентом по заказу.
-Реализует двухсторонний обмен сообщениями через бота.
+Чат через Telegram Forum Topics.
+
+Архитектура:
+- Клиент пишет боту → Бот пересылает в топик админской группы
+- Админ пишет в топик → Бот пересылает клиенту
+- Sticky State: клиент остаётся в режиме чата пока не выйдет
 """
 import logging
 from datetime import datetime
 
 from aiogram import Router, Bot, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton,
+    ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove,
+    ForumTopic,
+)
 from aiogram.fsm.context import FSMContext
+from aiogram.filters import Command
+from aiogram.exceptions import TelegramBadRequest
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, desc
 
-from database.models.orders import Order, OrderMessage, MessageSender, Conversation, ConversationType
+from database.models.orders import (
+    Order, OrderMessage, MessageSender, Conversation, ConversationType
+)
 from database.models.users import User
-from bot.states.chat import OrderChatStates
+from bot.states.chat import ChatStates
 from bot.services.yandex_disk import yandex_disk_service
 from core.config import settings
 
@@ -23,90 +35,564 @@ router = Router()
 
 
 # ══════════════════════════════════════════════════════════════
-#                    УТИЛИТЫ
+#                    КОНСТАНТЫ И КЛАВИАТУРЫ
 # ══════════════════════════════════════════════════════════════
 
-def get_chat_keyboard(order_id: int, is_admin: bool) -> InlineKeyboardMarkup:
-    """Клавиатура для чата - всегда с полным набором кнопок"""
-    buttons = []
+# Эмодзи для топиков по типу
+TOPIC_ICONS = {
+    ConversationType.ORDER_CHAT.value: "📋",
+    ConversationType.SUPPORT.value: "🛠️",
+    ConversationType.FREE.value: "💬",
+}
 
-    if is_admin:
-        buttons.append([
-            InlineKeyboardButton(text="💬 Ответить", callback_data=f"chat_continue_{order_id}"),
-            InlineKeyboardButton(text="📎 Файл", callback_data=f"chat_file_{order_id}"),
-        ])
-        buttons.append([
-            InlineKeyboardButton(text="📜 История", callback_data=f"chat_history_{order_id}"),
-            InlineKeyboardButton(text="❌ Закрыть", callback_data=f"chat_close_{order_id}"),
+
+def get_exit_chat_keyboard() -> ReplyKeyboardMarkup:
+    """Reply-клавиатура для выхода из чата"""
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text="🔙 Выйти в меню")]],
+        resize_keyboard=True,
+        one_time_keyboard=False,
+    )
+
+
+def get_chat_entry_keyboard(order_id: int | None = None) -> InlineKeyboardMarkup:
+    """Inline-клавиатура для входа в чат"""
+    if order_id:
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="💬 Написать по заказу",
+                callback_data=f"enter_chat_order_{order_id}"
+            )]
         ])
     else:
-        buttons.append([
-            InlineKeyboardButton(text="💬 Ответить", callback_data=f"chat_reply_{order_id}"),
-            InlineKeyboardButton(text="📎 Файл", callback_data=f"chat_file_client_{order_id}"),
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="💬 Написать в поддержку",
+                callback_data="enter_chat_support"
+            )]
         ])
-        buttons.append([
-            InlineKeyboardButton(text="📜 История", callback_data=f"chat_history_client_{order_id}"),
-        ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def get_cancel_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура отмены ввода"""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="❌ Отмена", callback_data="chat_cancel")]
+# ══════════════════════════════════════════════════════════════
+#                    РАБОТА С ТОПИКАМИ
+# ══════════════════════════════════════════════════════════════
+
+async def get_or_create_topic(
+    bot: Bot,
+    session: AsyncSession,
+    user_id: int,
+    order_id: int | None = None,
+    conv_type: str = ConversationType.SUPPORT.value,
+) -> tuple[Conversation, int]:
+    """
+    Получает или создаёт топик для диалога.
+
+    Returns:
+        tuple[Conversation, topic_id]
+    """
+    # Ищем существующую Conversation
+    query = select(Conversation).where(Conversation.user_id == user_id)
+    if order_id:
+        query = query.where(Conversation.order_id == order_id)
+    else:
+        query = query.where(Conversation.order_id.is_(None))
+        query = query.where(Conversation.conversation_type == conv_type)
+
+    result = await session.execute(query)
+    conv = result.scalar_one_or_none()
+
+    # Получаем имя клиента
+    user_query = select(User).where(User.telegram_id == user_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+    client_name = user.fullname if user else f"ID:{user_id}"
+
+    # Если Conversation не существует — создаём
+    if not conv:
+        conv = Conversation(
+            user_id=user_id,
+            order_id=order_id,
+            conversation_type=conv_type,
+        )
+        session.add(conv)
+
+    # Проверяем есть ли topic_id
+    if conv.topic_id:
+        # Проверяем что топик ещё жив
+        try:
+            # Пытаемся отправить typing action в топик для проверки
+            await bot.send_chat_action(
+                chat_id=settings.ADMIN_GROUP_ID,
+                action="typing",
+                message_thread_id=conv.topic_id
+            )
+            return conv, conv.topic_id
+        except TelegramBadRequest as e:
+            if "thread not found" in str(e).lower() or "message_thread_id" in str(e).lower():
+                # Топик удалён — создадим новый
+                logger.warning(f"Topic {conv.topic_id} was deleted, creating new one")
+                conv.topic_id = None
+            else:
+                raise
+
+    # Создаём новый топик
+    icon = TOPIC_ICONS.get(conv_type, "💬")
+
+    if order_id:
+        topic_name = f"{icon} [Заказ #{order_id}] {client_name}"
+    else:
+        type_label = "Поддержка" if conv_type == ConversationType.SUPPORT.value else "Сообщение"
+        topic_name = f"{icon} {type_label} | {client_name}"
+
+    # Ограничение Telegram: имя топика до 128 символов
+    topic_name = topic_name[:128]
+
+    try:
+        forum_topic: ForumTopic = await bot.create_forum_topic(
+            chat_id=settings.ADMIN_GROUP_ID,
+            name=topic_name,
+        )
+        conv.topic_id = forum_topic.message_thread_id
+        await session.commit()
+
+        # Отправляем стартовое сообщение в топик
+        await send_topic_header(bot, session, conv, user, order_id)
+
+        logger.info(f"Created topic {conv.topic_id} for user {user_id}, order {order_id}")
+
+    except TelegramBadRequest as e:
+        logger.error(f"Failed to create topic: {e}")
+        raise
+
+    return conv, conv.topic_id
+
+
+async def send_topic_header(
+    bot: Bot,
+    session: AsyncSession,
+    conv: Conversation,
+    user: User | None,
+    order_id: int | None,
+):
+    """Отправляет заголовок-информацию в новый топик"""
+    client_name = user.fullname if user else "Неизвестно"
+    username = f"@{user.username}" if user and user.username else "нет"
+
+    header_lines = [
+        "🆕 <b>Новый диалог</b>\n",
+        f"👤 <b>Клиент:</b> {client_name}",
+        f"📱 <b>Username:</b> {username}",
+        f"🆔 <b>ID:</b> <code>{conv.user_id}</code>",
+    ]
+
+    if order_id:
+        order = await session.get(Order, order_id)
+        if order:
+            header_lines.append("")
+            header_lines.append(format_order_info(order))
+
+    header_lines.extend([
+        "",
+        "━" * 30,
+        "💡 <i>Пишите сюда — сообщения уйдут клиенту.</i>",
+        "💡 <i>Начните сообщение с точки <code>.</code> для внутреннего комментария.</i>",
     ])
 
-
-def get_support_chat_keyboard(user_id: int, is_admin: bool = False) -> InlineKeyboardMarkup:
-    """
-    Клавиатура для чата поддержки (без заказа).
-    Позволяет продолжить переписку обеим сторонам.
-    """
-    if is_admin:
-        # Для админа
-        return InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(text="💬 Ответить", callback_data=f"support_reply_{user_id}"),
-                InlineKeyboardButton(text="📜 Диалоги", callback_data="dialogs_refresh_all"),
-            ]
-        ])
-    else:
-        # Для клиента
-        return InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(text="💬 Написать ещё", callback_data="support_continue"),
-            ],
-            [
-                InlineKeyboardButton(text="🏠 В меню", callback_data="back_to_menu"),
-            ]
-        ])
+    await bot.send_message(
+        chat_id=settings.ADMIN_GROUP_ID,
+        message_thread_id=conv.topic_id,
+        text="\n".join(header_lines),
+    )
 
 
 def format_order_info(order: Order) -> str:
-    """Форматирует краткую информацию о заказе для чата"""
-    # Тип работы
+    """Форматирует краткую информацию о заказе"""
     work_type = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
 
-    # Цена
     if order.price > 0:
         price_str = f"{int(order.price):,}₽".replace(",", " ")
         if order.bonus_used > 0:
             final = order.price - order.bonus_used
-            price_str = f"{price_str} (−{int(order.bonus_used)}₽ бонусы = {int(final):,}₽)".replace(",", " ")
+            price_str = f"{price_str} (−{int(order.bonus_used)}₽ = {int(final):,}₽)".replace(",", " ")
     else:
         price_str = "не установлена"
 
-    # Сроки
     deadline_str = order.deadline if order.deadline else "не указаны"
 
     return (
         f"📋 <b>Заказ #{order.id}</b>\n"
         f"📝 {work_type}\n"
         f"💵 Цена: {price_str}\n"
-        f"⏰ Сроки: {deadline_str}"
+        f"⏰ Сроки: {deadline_str}\n"
+        f"📊 Статус: {order.status_label}"
     )
 
+
+# ══════════════════════════════════════════════════════════════
+#                    ВХОД В ЧАТ (КЛИЕНТ)
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("enter_chat_order_"))
+async def enter_chat_by_order(
+    callback: CallbackQuery,
+    state: FSMContext,
+    session: AsyncSession,
+    bot: Bot,
+):
+    """Клиент входит в чат по заказу"""
+    order_id = int(callback.data.replace("enter_chat_order_", ""))
+
+    # Проверяем что это владелец заказа
+    order = await session.get(Order, order_id)
+    if not order or order.user_id != callback.from_user.id:
+        await callback.answer("❌ Заказ не найден", show_alert=True)
+        return
+
+    # Устанавливаем Sticky State
+    await state.set_state(ChatStates.in_chat)
+    await state.update_data(
+        order_id=order_id,
+        conv_type=ConversationType.ORDER_CHAT.value,
+    )
+
+    await callback.message.answer(
+        f"💬 <b>Чат по заказу #{order_id}</b>\n\n"
+        "Вы в чате с менеджером.\n"
+        "Можете писать текстом, слать файлы и голосовые.\n\n"
+        "Чтобы выйти — нажмите кнопку внизу 👇",
+        reply_markup=get_exit_chat_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "enter_chat_support")
+async def enter_chat_support(
+    callback: CallbackQuery,
+    state: FSMContext,
+):
+    """Клиент входит в чат поддержки"""
+    await state.set_state(ChatStates.in_chat)
+    await state.update_data(
+        order_id=None,
+        conv_type=ConversationType.SUPPORT.value,
+    )
+
+    await callback.message.answer(
+        "💬 <b>Чат с поддержкой</b>\n\n"
+        "Вы в чате с менеджером.\n"
+        "Можете писать текстом, слать файлы и голосовые.\n\n"
+        "Чтобы выйти — нажмите кнопку внизу 👇",
+        reply_markup=get_exit_chat_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "support_bot_chat")
+async def support_bot_chat_entry(
+    callback: CallbackQuery,
+    state: FSMContext,
+):
+    """Legacy callback для входа в чат поддержки (совместимость)"""
+    await enter_chat_support(callback, state)
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ВЫХОД ИЗ ЧАТА (КЛИЕНТ)
+# ══════════════════════════════════════════════════════════════
+
+@router.message(ChatStates.in_chat, F.text == "🔙 Выйти в меню")
+async def exit_chat(message: Message, state: FSMContext):
+    """Клиент выходит из чата"""
+    await state.clear()
+
+    from bot.keyboards.inline import get_main_menu_keyboard
+    await message.answer(
+        "✅ Вы вышли из чата.\n\n"
+        "Если понадобится связаться — всегда можете написать снова!",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await message.answer(
+        "🏠 <b>Главное меню</b>",
+        reply_markup=get_main_menu_keyboard(),
+    )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    CLIENT → ADMIN (STICKY STATE)
+# ══════════════════════════════════════════════════════════════
+
+@router.message(ChatStates.in_chat)
+async def client_message_to_topic(
+    message: Message,
+    state: FSMContext,
+    session: AsyncSession,
+    bot: Bot,
+):
+    """
+    Обработчик всех сообщений клиента в режиме чата.
+    Пересылает в топик админской группы.
+    """
+    data = await state.get_data()
+    order_id = data.get("order_id")
+    conv_type = data.get("conv_type", ConversationType.SUPPORT.value)
+
+    try:
+        # Получаем или создаём топик
+        conv, topic_id = await get_or_create_topic(
+            bot, session, message.from_user.id, order_id, conv_type
+        )
+
+        # Пересылаем сообщение в топик (copy_message сохраняет форматирование)
+        await bot.copy_message(
+            chat_id=settings.ADMIN_GROUP_ID,
+            message_thread_id=topic_id,
+            from_chat_id=message.chat.id,
+            message_id=message.message_id,
+        )
+
+        # Сохраняем сообщение в БД
+        await save_message_to_db(
+            session=session,
+            order_id=order_id,
+            sender_type=MessageSender.CLIENT.value,
+            sender_id=message.from_user.id,
+            message=message,
+            bot=bot,
+        )
+
+        # Обновляем Conversation
+        await update_conversation(
+            session, conv,
+            last_message=get_message_preview(message),
+            sender=MessageSender.CLIENT.value,
+            increment_unread=True,
+        )
+
+        # Подтверждение клиенту
+        await message.answer("✅ Сообщение отправлено!")
+
+    except TelegramBadRequest as e:
+        logger.error(f"Failed to forward message to topic: {e}")
+        await message.answer(
+            "⚠️ Не удалось отправить сообщение. Попробуйте позже."
+        )
+    except Exception as e:
+        logger.error(f"Error in client_message_to_topic: {e}")
+        await message.answer("❌ Произошла ошибка. Попробуйте позже.")
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ADMIN → CLIENT (FROM TOPIC)
+# ══════════════════════════════════════════════════════════════
+
+@router.message(F.chat.id == settings.ADMIN_GROUP_ID, F.message_thread_id)
+async def admin_message_from_topic(
+    message: Message,
+    session: AsyncSession,
+    bot: Bot,
+):
+    """
+    Обработчик сообщений админа из топика.
+    Пересылает клиенту.
+    """
+    # Игнорируем сообщения бота
+    if message.from_user.is_bot:
+        return
+
+    # Игнорируем служебные сообщения (создание топика и т.д.)
+    if message.forum_topic_created or message.forum_topic_edited or message.forum_topic_closed:
+        return
+
+    # Проверяем на внутренний комментарий (начинается с точки)
+    if message.text and message.text.startswith("."):
+        # Это внутренний комментарий команды — не пересылаем
+        return
+
+    topic_id = message.message_thread_id
+
+    # Ищем Conversation по topic_id
+    query = select(Conversation).where(Conversation.topic_id == topic_id)
+    result = await session.execute(query)
+    conv = result.scalar_one_or_none()
+
+    if not conv:
+        # Топик не привязан к диалогу — игнорируем
+        logger.debug(f"No conversation found for topic {topic_id}")
+        return
+
+    try:
+        # Пересылаем сообщение клиенту
+        await bot.copy_message(
+            chat_id=conv.user_id,
+            from_chat_id=message.chat.id,
+            message_id=message.message_id,
+        )
+
+        # Сохраняем в БД
+        await save_message_to_db(
+            session=session,
+            order_id=conv.order_id,
+            sender_type=MessageSender.ADMIN.value,
+            sender_id=message.from_user.id,
+            message=message,
+            bot=bot,
+        )
+
+        # Обновляем Conversation (сбрасываем unread)
+        await update_conversation(
+            session, conv,
+            last_message=get_message_preview(message),
+            sender=MessageSender.ADMIN.value,
+            increment_unread=False,
+        )
+
+        # Подтверждение в топик
+        await message.reply("✅ Доставлено клиенту")
+
+    except TelegramBadRequest as e:
+        error_msg = str(e).lower()
+        if "blocked" in error_msg or "deactivated" in error_msg:
+            await message.reply("⚠️ Клиент заблокировал бота или удалил аккаунт")
+        else:
+            logger.error(f"Failed to send message to client: {e}")
+            await message.reply(f"❌ Ошибка доставки: {e}")
+    except Exception as e:
+        logger.error(f"Error in admin_message_from_topic: {e}")
+        await message.reply(f"❌ Ошибка: {e}")
+
+
+# ══════════════════════════════════════════════════════════════
+#                    УТИЛИТЫ
+# ══════════════════════════════════════════════════════════════
+
+def get_message_preview(message: Message) -> str:
+    """Получает превью сообщения для last_message_text"""
+    if message.text:
+        return message.text[:100]
+    elif message.caption:
+        return message.caption[:100]
+    elif message.photo:
+        return "📷 Фото"
+    elif message.video:
+        return "🎥 Видео"
+    elif message.document:
+        return f"📎 {message.document.file_name or 'Документ'}"
+    elif message.voice:
+        return "🎤 Голосовое"
+    elif message.audio:
+        return "🎵 Аудио"
+    elif message.sticker:
+        return "😀 Стикер"
+    else:
+        return "💬 Сообщение"
+
+
+async def save_message_to_db(
+    session: AsyncSession,
+    order_id: int | None,
+    sender_type: str,
+    sender_id: int,
+    message: Message,
+    bot: Bot,
+):
+    """Сохраняет сообщение в БД (если есть order_id)"""
+    if not order_id:
+        # Для чатов без заказа пока не сохраняем в order_messages
+        return
+
+    # Определяем тип файла
+    file_id = None
+    file_name = None
+    file_type = None
+
+    if message.photo:
+        file_id = message.photo[-1].file_id
+        file_name = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        file_type = "photo"
+    elif message.document:
+        file_id = message.document.file_id
+        file_name = message.document.file_name
+        file_type = "document"
+    elif message.video:
+        file_id = message.video.file_id
+        file_name = message.video.file_name or f"video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+        file_type = "video"
+    elif message.voice:
+        file_id = message.voice.file_id
+        file_name = f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ogg"
+        file_type = "voice"
+    elif message.audio:
+        file_id = message.audio.file_id
+        file_name = message.audio.file_name
+        file_type = "audio"
+
+    # Загружаем файл на Яндекс.Диск если есть
+    yadisk_url = None
+    if file_id and yandex_disk_service.is_available:
+        try:
+            order = await session.get(Order, order_id)
+            user_query = select(User).where(User.telegram_id == (
+                message.from_user.id if sender_type == MessageSender.CLIENT.value else order.user_id
+            ))
+            user_result = await session.execute(user_query)
+            user = user_result.scalar_one_or_none()
+            client_name = user.fullname if user else "Client"
+
+            yadisk_url = await upload_chat_file_to_yadisk(
+                bot, file_id, file_name, order, client_name, order.user_id
+            )
+        except Exception as e:
+            logger.error(f"Failed to upload to YaDisk: {e}")
+
+    # Сохраняем сообщение
+    order_message = OrderMessage(
+        order_id=order_id,
+        sender_type=sender_type,
+        sender_id=sender_id,
+        message_text=message.text or message.caption,
+        file_type=file_type,
+        file_id=file_id,
+        file_name=file_name,
+        yadisk_url=yadisk_url,
+    )
+    session.add(order_message)
+    await session.commit()
+
+    # Бэкапим историю чата
+    if order_id:
+        order = await session.get(Order, order_id)
+        if order:
+            user_query = select(User).where(User.telegram_id == order.user_id)
+            user_result = await session.execute(user_query)
+            user = user_result.scalar_one_or_none()
+            client_name = user.fullname if user else "Client"
+            await backup_chat_to_yadisk(order, client_name, order.user_id, session)
+
+
+async def update_conversation(
+    session: AsyncSession,
+    conv: Conversation,
+    last_message: str,
+    sender: str,
+    increment_unread: bool = False,
+):
+    """Обновляет метаданные Conversation"""
+    conv.last_message_text = last_message[:100] if last_message else None
+    conv.last_message_at = datetime.now()
+    conv.last_sender = sender
+    conv.is_active = True
+
+    if increment_unread and sender == MessageSender.CLIENT.value:
+        conv.unread_count = (conv.unread_count or 0) + 1
+    elif sender == MessageSender.ADMIN.value:
+        conv.unread_count = 0
+
+    await session.commit()
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ЯНДЕКС.ДИСК ИНТЕГРАЦИЯ
+# ══════════════════════════════════════════════════════════════
 
 async def upload_chat_file_to_yadisk(
     bot: Bot,
@@ -116,46 +602,35 @@ async def upload_chat_file_to_yadisk(
     client_name: str,
     telegram_id: int,
 ) -> str | None:
-    """
-    Загружает файл из чата на Яндекс.Диск в папку Диалог.
-    Возвращает публичную ссылку или None.
-    """
+    """Загружает файл из чата на Яндекс.Диск"""
     if not yandex_disk_service.is_available:
         return None
 
     try:
-        # Скачиваем файл из Telegram
         file = await bot.get_file(file_id)
         file_bytes = await bot.download_file(file.file_path)
         content = file_bytes.read()
 
-        # Загружаем в подпапку "Диалог" заказа
         import httpx
-        from bot.services.yandex_disk import YADISK_API_BASE, sanitize_filename
+        from bot.services.yandex_disk import sanitize_filename
 
-        # Путь: /Root/Клиенты/Имя_ID/Заказ_X/Диалог/файл
         safe_name = sanitize_filename(client_name) if client_name else "Клиент"
         folder_name = f"{safe_name}_{telegram_id}"
         order_folder = f"Заказ_{order.id}"
         dialog_folder = f"/{yandex_disk_service._root_folder}/Клиенты/{folder_name}/{order_folder}/Диалог"
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            # Создаём папку Диалог
             if not await yandex_disk_service._ensure_folder_exists(client, dialog_folder):
-                logger.error(f"Failed to create dialog folder: {dialog_folder}")
                 return None
 
-            # Путь к файлу с timestamp для уникальности
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_filename = sanitize_filename(file_name)
             file_path = f"{dialog_folder}/{timestamp}_{safe_filename}"
 
-            # Получаем URL для загрузки
             upload_url = await yandex_disk_service._get_upload_url(client, file_path)
             if not upload_url:
                 return None
 
-            # Загружаем
             upload_resp = await client.put(
                 upload_url,
                 content=content,
@@ -163,12 +638,9 @@ async def upload_chat_file_to_yadisk(
             )
 
             if upload_resp.status_code not in (201, 202):
-                logger.error(f"Upload failed: {upload_resp.status_code}")
                 return None
 
-            # Публикуем папку диалога
             public_url = await yandex_disk_service._publish_folder(client, dialog_folder)
-
             logger.info(f"Chat file uploaded: {file_path}")
             return public_url
 
@@ -183,14 +655,11 @@ async def backup_chat_to_yadisk(
     telegram_id: int,
     session: AsyncSession,
 ) -> bool:
-    """
-    Сохраняет историю чата в текстовый файл на Яндекс.Диск.
-    """
+    """Сохраняет историю чата в текстовый файл на Яндекс.Диск"""
     if not yandex_disk_service.is_available:
         return False
 
     try:
-        # Получаем все сообщения заказа
         messages_query = select(OrderMessage).where(
             OrderMessage.order_id == order.id
         ).order_by(OrderMessage.created_at)
@@ -198,9 +667,8 @@ async def backup_chat_to_yadisk(
         messages = result.scalars().all()
 
         if not messages:
-            return True  # Нечего бэкапить
+            return True
 
-        # Формируем текст истории с информацией о заказе
         work_type = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
         price_str = f"{int(order.price):,}₽".replace(",", " ") if order.price > 0 else "не установлена"
         deadline_str = order.deadline if order.deadline else "не указаны"
@@ -221,23 +689,19 @@ async def backup_chat_to_yadisk(
             time_str = msg.created_at.strftime("%d.%m.%Y %H:%M") if msg.created_at else "—"
 
             chat_lines.append(f"[{time_str}] {sender}:")
-
             if msg.message_text:
                 chat_lines.append(msg.message_text)
-
             if msg.file_name:
                 file_info = f"📎 Файл: {msg.file_name}"
                 if msg.yadisk_url:
                     file_info += f" ({msg.yadisk_url})"
                 chat_lines.append(file_info)
-
             chat_lines.append("")
 
         chat_text = "\n".join(chat_lines)
 
-        # Загружаем на Яндекс.Диск
         import httpx
-        from bot.services.yandex_disk import YADISK_API_BASE, sanitize_filename
+        from bot.services.yandex_disk import sanitize_filename
 
         safe_name = sanitize_filename(client_name) if client_name else "Клиент"
         folder_name = f"{safe_name}_{telegram_id}"
@@ -248,10 +712,7 @@ async def backup_chat_to_yadisk(
             if not await yandex_disk_service._ensure_folder_exists(client, dialog_folder):
                 return False
 
-            # Один файл истории — перезаписывается при каждом обновлении
             file_path = f"{dialog_folder}/История_чата.txt"
-
-            # overwrite=True для перезаписи существующего файла
             upload_url = await yandex_disk_service._get_upload_url(client, file_path, overwrite=True)
             if not upload_url:
                 return False
@@ -274,1272 +735,36 @@ async def backup_chat_to_yadisk(
 
 
 # ══════════════════════════════════════════════════════════════
-#                    АДМИН ИНИЦИИРУЕТ ЧАТ
+#                    ПАНЕЛЬ ДИАЛОГОВ (LEGACY)
 # ══════════════════════════════════════════════════════════════
 
-async def start_admin_chat(message: Message, order_id: int, session: AsyncSession, bot: Bot, state: FSMContext):
-    """
-    Админ начинает чат с клиентом.
-    Вызывается из start.py при deep_link chat_{order_id}.
-    """
-    # Проверяем что это админ
-    if message.from_user.id not in settings.ADMIN_IDS:
-        await message.answer("❌ Эта функция только для администраторов")
-        return
-
-    # Получаем заказ
-    order = await session.get(Order, order_id)
-    if not order:
-        await message.answer(f"❌ Заказ #{order_id} не найден")
-        return
-
-    # Получаем клиента
-    client_query = select(User).where(User.telegram_id == order.user_id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-
-    client_name = client.fullname if client else "Клиент"
-
-    # Устанавливаем состояние и сохраняем данные
-    await state.set_state(OrderChatStates.admin_writing)
-    await state.update_data(
-        order_id=order_id,
-        client_id=order.user_id,
-        client_name=client_name,
-    )
-
-    # Показываем последние сообщения (если есть)
-    history_text = ""
-    try:
-        messages_query = select(OrderMessage).where(
-            OrderMessage.order_id == order_id
-        ).order_by(OrderMessage.created_at.desc()).limit(5)
-        result = await session.execute(messages_query)
-        recent_messages = list(reversed(result.scalars().all()))
-
-        if recent_messages:
-            history_text = "\n\n📜 <b>Последние сообщения:</b>\n"
-            for msg in recent_messages:
-                sender = "🛡️ Вы" if msg.sender_type == MessageSender.ADMIN.value else f"👤 {client_name}"
-                text_preview = (msg.message_text[:50] + "...") if msg.message_text and len(msg.message_text) > 50 else (msg.message_text or "📎 Файл")
-                history_text += f"• {sender}: {text_preview}\n"
-    except Exception as e:
-        logger.warning(f"Could not load chat history: {e}")
-
-    # Получаем label типа работы
-    work_type_display = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
-
-    await message.answer(
-        f"💬 <b>Чат с клиентом по заказу #{order_id}</b>\n\n"
-        f"👤 Клиент: {client_name}\n"
-        f"📋 Тип работы: {work_type_display}"
-        f"{history_text}\n\n"
-        f"✏️ Введите сообщение или отправьте файл:",
-        reply_markup=get_cancel_keyboard()
-    )
-
-
-# ══════════════════════════════════════════════════════════════
-#                    АДМИН ОТПРАВЛЯЕТ СООБЩЕНИЕ
-# ══════════════════════════════════════════════════════════════
-
-@router.message(OrderChatStates.admin_writing, F.text)
-async def admin_send_text(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
-    """Админ отправляет текстовое сообщение клиенту"""
-    data = await state.get_data()
-    order_id = data.get("order_id")
-    client_id = data.get("client_id")
-    client_name = data.get("client_name", "Клиент")
-
-    if not order_id or not client_id:
-        await message.answer("❌ Ошибка: данные чата потеряны")
-        await state.clear()
-        return
-
-    order = await session.get(Order, order_id)
-    if not order:
-        await message.answer(f"❌ Заказ #{order_id} не найден")
-        await state.clear()
-        return
-
-    # Сохраняем сообщение в БД
-    order_message = OrderMessage(
-        order_id=order_id,
-        sender_type=MessageSender.ADMIN.value,
-        sender_id=message.from_user.id,
-        message_text=message.text,
-    )
-    session.add(order_message)
-
-    # Отправляем клиенту с информацией о заказе
-    order_info = format_order_info(order)
-    try:
-        client_msg = await bot.send_message(
-            chat_id=client_id,
-            text=f"{order_info}\n\n"
-                 f"💬 <b>Сообщение от Шерифа:</b>\n{message.text}",
-            reply_markup=get_chat_keyboard(order_id, is_admin=False)
-        )
-        order_message.client_message_id = client_msg.message_id
-        order_message.admin_message_id = message.message_id
-
-        await session.commit()
-
-        await message.answer(
-            f"✅ Сообщение отправлено клиенту {client_name}",
-            reply_markup=get_chat_keyboard(order_id, is_admin=True)
-        )
-
-        # Бэкапим чат и обновляем диалог
-        await backup_chat_to_yadisk(order, client_name, client_id, session)
-        await update_conversation(
-            session, client_id, order_id, message.text,
-            MessageSender.ADMIN.value, conv_type=ConversationType.ORDER_CHAT.value
-        )
-
-    except Exception as e:
-        logger.error(f"Error sending message to client {client_id}: {e}")
-        await message.answer(f"❌ Не удалось отправить сообщение: {e}")
-
-    await state.clear()
-
-
-@router.message(OrderChatStates.admin_writing, F.photo | F.document | F.video | F.voice | F.audio)
-async def admin_send_file(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
-    """Админ отправляет файл клиенту"""
-    data = await state.get_data()
-    order_id = data.get("order_id")
-    client_id = data.get("client_id")
-    client_name = data.get("client_name", "Клиент")
-
-    if not order_id or not client_id:
-        await message.answer("❌ Ошибка: данные чата потеряны")
-        await state.clear()
-        return
-
-    order = await session.get(Order, order_id)
-    if not order:
-        await message.answer(f"❌ Заказ #{order_id} не найден")
-        await state.clear()
-        return
-
-    # Определяем тип файла и получаем file_id
-    file_id = None
-    file_name = None
-    file_type = None
-    caption = message.caption or ""
-
-    if message.photo:
-        file_id = message.photo[-1].file_id  # Берём максимальное качество
-        file_name = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-        file_type = "photo"
-    elif message.document:
-        file_id = message.document.file_id
-        file_name = message.document.file_name or f"document_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        file_type = "document"
-    elif message.video:
-        file_id = message.video.file_id
-        file_name = message.video.file_name or f"video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-        file_type = "video"
-    elif message.voice:
-        file_id = message.voice.file_id
-        file_name = f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ogg"
-        file_type = "voice"
-    elif message.audio:
-        file_id = message.audio.file_id
-        file_name = message.audio.file_name or f"audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
-        file_type = "audio"
-
-    if not file_id:
-        await message.answer("❌ Не удалось обработать файл")
-        return
-
-    # Загружаем на Яндекс.Диск
-    yadisk_url = await upload_chat_file_to_yadisk(
-        bot, file_id, file_name, order, client_name, client_id
-    )
-
-    # Сохраняем сообщение в БД
-    order_message = OrderMessage(
-        order_id=order_id,
-        sender_type=MessageSender.ADMIN.value,
-        sender_id=message.from_user.id,
-        message_text=caption if caption else None,
-        file_type=file_type,
-        file_id=file_id,
-        file_name=file_name,
-        yadisk_url=yadisk_url,
-    )
-    session.add(order_message)
-
-    # Отправляем клиенту с информацией о заказе
-    order_info = format_order_info(order)
-    try:
-        msg_text = f"{order_info}\n\n📎 <b>Файл от Шерифа:</b>"
-        if caption:
-            msg_text += f"\n\n{caption}"
-
-        # Отправляем файл в зависимости от типа
-        if file_type == "photo":
-            client_msg = await bot.send_photo(
-                chat_id=client_id,
-                photo=file_id,
-                caption=msg_text,
-                reply_markup=get_chat_keyboard(order_id, is_admin=False)
-            )
-        elif file_type == "video":
-            client_msg = await bot.send_video(
-                chat_id=client_id,
-                video=file_id,
-                caption=msg_text,
-                reply_markup=get_chat_keyboard(order_id, is_admin=False)
-            )
-        elif file_type == "voice":
-            # Голосовые без caption, отправляем отдельно
-            await bot.send_message(chat_id=client_id, text=msg_text)
-            client_msg = await bot.send_voice(
-                chat_id=client_id,
-                voice=file_id,
-                reply_markup=get_chat_keyboard(order_id, is_admin=False)
-            )
-        elif file_type == "audio":
-            client_msg = await bot.send_audio(
-                chat_id=client_id,
-                audio=file_id,
-                caption=msg_text,
-                reply_markup=get_chat_keyboard(order_id, is_admin=False)
-            )
-        else:  # document
-            client_msg = await bot.send_document(
-                chat_id=client_id,
-                document=file_id,
-                caption=msg_text,
-                reply_markup=get_chat_keyboard(order_id, is_admin=False)
-            )
-
-        order_message.client_message_id = client_msg.message_id
-        order_message.admin_message_id = message.message_id
-
-        await session.commit()
-
-        yadisk_note = " 📁 Сохранено на Я.Диск" if yadisk_url else ""
-        await message.answer(
-            f"✅ Файл отправлен клиенту {client_name}{yadisk_note}",
-            reply_markup=get_chat_keyboard(order_id, is_admin=True)
-        )
-
-        # Бэкапим чат и обновляем диалог
-        await backup_chat_to_yadisk(order, client_name, client_id, session)
-        await update_conversation(
-            session, client_id, order_id, f"📎 {file_name}",
-            MessageSender.ADMIN.value, conv_type=ConversationType.ORDER_CHAT.value
-        )
-
-    except Exception as e:
-        logger.error(f"Error sending file to client {client_id}: {e}")
-        await message.answer(f"❌ Не удалось отправить файл: {e}")
-
-    await state.clear()
-
-
-# ══════════════════════════════════════════════════════════════
-#                    КЛИЕНТ ОТВЕЧАЕТ
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data.startswith("chat_reply_"))
-async def client_start_reply(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    """Клиент нажал 'Ответить'"""
-    order_id = int(callback.data.replace("chat_reply_", ""))
-
-    # Проверяем что это клиент заказа
-    order = await session.get(Order, order_id)
-    if not order:
-        await callback.answer("❌ Заказ не найден", show_alert=True)
-        return
-
-    if order.user_id != callback.from_user.id:
-        await callback.answer("❌ Это не ваш заказ", show_alert=True)
-        return
-
-    # Устанавливаем состояние
-    await state.set_state(OrderChatStates.client_replying)
-    await state.update_data(order_id=order_id)
-
-    await callback.message.answer(
-        f"💬 <b>Ответ по заказу #{order_id}</b>\n\n"
-        f"✏️ Введите сообщение или отправьте файл:",
-        reply_markup=get_cancel_keyboard()
-    )
-    await callback.answer()
-
-
-@router.message(OrderChatStates.client_replying, F.text)
-async def client_send_text(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
-    """Клиент отправляет текстовое сообщение админу"""
-    data = await state.get_data()
-    order_id = data.get("order_id")
-
-    if not order_id:
-        await message.answer("❌ Ошибка: данные чата потеряны")
-        await state.clear()
-        return
-
-    order = await session.get(Order, order_id)
-    if not order:
-        await message.answer(f"❌ Заказ #{order_id} не найден")
-        await state.clear()
-        return
-
-    # Получаем данные клиента
-    client_query = select(User).where(User.telegram_id == message.from_user.id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-    client_name = client.fullname if client else message.from_user.full_name
-
-    # Сохраняем сообщение в БД
-    order_message = OrderMessage(
-        order_id=order_id,
-        sender_type=MessageSender.CLIENT.value,
-        sender_id=message.from_user.id,
-        message_text=message.text,
-        client_message_id=message.message_id,
-    )
-    session.add(order_message)
-
-    # Уведомляем всех админов с информацией о заказе
-    order_info = format_order_info(order)
-    sent_to_admin = False
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            admin_msg = await bot.send_message(
-                chat_id=admin_id,
-                text=f"{order_info}\n\n"
-                     f"💬 <b>Сообщение от клиента:</b>\n"
-                     f"👤 {client_name}\n\n"
-                     f"{message.text}",
-                reply_markup=get_chat_keyboard(order_id, is_admin=True)
-            )
-            if not sent_to_admin:
-                order_message.admin_message_id = admin_msg.message_id
-                sent_to_admin = True
-        except Exception as e:
-            logger.error(f"Error sending to admin {admin_id}: {e}")
-
-    await session.commit()
-
-    if sent_to_admin:
-        await message.answer(
-            f"✅ Сообщение отправлено шерифу!\n\n"
-            f"Ожидайте ответа.",
-            reply_markup=get_chat_keyboard(order_id, is_admin=False)
-        )
-
-        # Бэкапим чат и обновляем диалог
-        await backup_chat_to_yadisk(order, client_name, message.from_user.id, session)
-        await update_conversation(
-            session, message.from_user.id, order_id, message.text,
-            MessageSender.CLIENT.value, increment_unread=True,
-            conv_type=ConversationType.ORDER_CHAT.value
-        )
-    else:
-        await message.answer("⚠️ Не удалось связаться с шерифом. Попробуйте позже.")
-
-    await state.clear()
-
-
-@router.message(OrderChatStates.client_replying, F.photo | F.document | F.video | F.voice | F.audio)
-async def client_send_file(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
-    """Клиент отправляет файл админу"""
-    data = await state.get_data()
-    order_id = data.get("order_id")
-
-    if not order_id:
-        await message.answer("❌ Ошибка: данные чата потеряны")
-        await state.clear()
-        return
-
-    order = await session.get(Order, order_id)
-    if not order:
-        await message.answer(f"❌ Заказ #{order_id} не найден")
-        await state.clear()
-        return
-
-    # Получаем данные клиента
-    client_query = select(User).where(User.telegram_id == message.from_user.id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-    client_name = client.fullname if client else message.from_user.full_name
-
-    # Определяем тип файла
-    file_id = None
-    file_name = None
-    file_type = None
-    caption = message.caption or ""
-
-    if message.photo:
-        file_id = message.photo[-1].file_id
-        file_name = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-        file_type = "photo"
-    elif message.document:
-        file_id = message.document.file_id
-        file_name = message.document.file_name or f"document_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        file_type = "document"
-    elif message.video:
-        file_id = message.video.file_id
-        file_name = message.video.file_name or f"video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-        file_type = "video"
-    elif message.voice:
-        file_id = message.voice.file_id
-        file_name = f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ogg"
-        file_type = "voice"
-    elif message.audio:
-        file_id = message.audio.file_id
-        file_name = message.audio.file_name or f"audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
-        file_type = "audio"
-
-    if not file_id:
-        await message.answer("❌ Не удалось обработать файл")
-        return
-
-    # Загружаем на Яндекс.Диск
-    yadisk_url = await upload_chat_file_to_yadisk(
-        bot, file_id, file_name, order, client_name, message.from_user.id
-    )
-
-    # Сохраняем сообщение в БД
-    order_message = OrderMessage(
-        order_id=order_id,
-        sender_type=MessageSender.CLIENT.value,
-        sender_id=message.from_user.id,
-        message_text=caption if caption else None,
-        file_type=file_type,
-        file_id=file_id,
-        file_name=file_name,
-        yadisk_url=yadisk_url,
-        client_message_id=message.message_id,
-    )
-    session.add(order_message)
-
-    # Отправляем админам с информацией о заказе
-    order_info = format_order_info(order)
-    msg_text = f"{order_info}\n\n📎 <b>Файл от клиента:</b>\n👤 {client_name}"
-    if caption:
-        msg_text += f"\n\n{caption}"
-    if yadisk_url:
-        msg_text += f"\n\n📁 <a href='{yadisk_url}'>Открыть на Я.Диске</a>"
-
-    sent_to_admin = False
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            if file_type == "photo":
-                admin_msg = await bot.send_photo(
-                    chat_id=admin_id,
-                    photo=file_id,
-                    caption=msg_text,
-                    reply_markup=get_chat_keyboard(order_id, is_admin=True)
-                )
-            elif file_type == "video":
-                admin_msg = await bot.send_video(
-                    chat_id=admin_id,
-                    video=file_id,
-                    caption=msg_text,
-                    reply_markup=get_chat_keyboard(order_id, is_admin=True)
-                )
-            elif file_type == "voice":
-                await bot.send_message(chat_id=admin_id, text=msg_text)
-                admin_msg = await bot.send_voice(
-                    chat_id=admin_id,
-                    voice=file_id,
-                    reply_markup=get_chat_keyboard(order_id, is_admin=True)
-                )
-            elif file_type == "audio":
-                admin_msg = await bot.send_audio(
-                    chat_id=admin_id,
-                    audio=file_id,
-                    caption=msg_text,
-                    reply_markup=get_chat_keyboard(order_id, is_admin=True)
-                )
-            else:
-                admin_msg = await bot.send_document(
-                    chat_id=admin_id,
-                    document=file_id,
-                    caption=msg_text,
-                    reply_markup=get_chat_keyboard(order_id, is_admin=True)
-                )
-
-            if not sent_to_admin:
-                order_message.admin_message_id = admin_msg.message_id
-                sent_to_admin = True
-        except Exception as e:
-            logger.error(f"Error sending file to admin {admin_id}: {e}")
-
-    await session.commit()
-
-    if sent_to_admin:
-        yadisk_note = " 📁 Сохранено на Я.Диск" if yadisk_url else ""
-        await message.answer(
-            f"✅ Файл отправлен шерифу!{yadisk_note}\n\n"
-            f"Ожидайте ответа.",
-            reply_markup=get_chat_keyboard(order_id, is_admin=False)
-        )
-
-        # Бэкапим чат и обновляем диалог
-        await backup_chat_to_yadisk(order, client_name, message.from_user.id, session)
-        await update_conversation(
-            session, message.from_user.id, order_id, f"📎 {file_name}",
-            MessageSender.CLIENT.value, increment_unread=True,
-            conv_type=ConversationType.ORDER_CHAT.value
-        )
-    else:
-        await message.answer("⚠️ Не удалось связаться с шерифом. Попробуйте позже.")
-
-    await state.clear()
-
-
-# ══════════════════════════════════════════════════════════════
-#                    УПРАВЛЕНИЕ ЧАТОМ
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data.startswith("chat_continue_"))
-async def admin_continue_chat(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    """Админ продолжает писать в чат"""
-    order_id = int(callback.data.replace("chat_continue_", ""))
-
-    if callback.from_user.id not in settings.ADMIN_IDS:
-        await callback.answer("❌ Только для админов", show_alert=True)
-        return
-
-    order = await session.get(Order, order_id)
-    if not order:
-        await callback.answer("❌ Заказ не найден", show_alert=True)
-        return
-
-    # Получаем клиента
-    client_query = select(User).where(User.telegram_id == order.user_id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-    client_name = client.fullname if client else "Клиент"
-
-    await state.set_state(OrderChatStates.admin_writing)
-    await state.update_data(
-        order_id=order_id,
-        client_id=order.user_id,
-        client_name=client_name,
-    )
-
-    await callback.message.answer(
-        f"💬 <b>Чат с клиентом по заказу #{order_id}</b>\n\n"
-        f"✏️ Введите сообщение или отправьте файл:",
-        reply_markup=get_cancel_keyboard()
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("chat_close_"))
-async def admin_close_chat(callback: CallbackQuery, state: FSMContext):
-    """Админ закрывает чат"""
-    await state.clear()
-    await callback.answer("✅ Чат закрыт")
-
-    try:
-        # Убираем кнопки
-        await callback.message.edit_reply_markup(reply_markup=None)
-    except Exception:
-        pass
-
-
-@router.callback_query(F.data == "chat_cancel")
-async def cancel_chat_input(callback: CallbackQuery, state: FSMContext):
-    """Отмена ввода сообщения"""
-    await state.clear()
-    await callback.answer("❌ Отменено")
-
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
-
-
-@router.callback_query(F.data.startswith("chat_file_client_"))
-async def client_send_file_btn(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    """Клиент хочет отправить файл"""
-    order_id = int(callback.data.replace("chat_file_client_", ""))
-
-    order = await session.get(Order, order_id)
-    if not order:
-        await callback.answer("❌ Заказ не найден", show_alert=True)
-        return
-
-    if order.user_id != callback.from_user.id:
-        await callback.answer("❌ Это не ваш заказ", show_alert=True)
-        return
-
-    await state.set_state(OrderChatStates.client_replying)
-    await state.update_data(order_id=order_id)
-
-    await callback.message.answer(
-        f"📎 <b>Отправка файла по заказу #{order_id}</b>\n\n"
-        f"Отправьте файл, фото или голосовое сообщение:",
-        reply_markup=get_cancel_keyboard()
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("chat_file_"))
-async def admin_send_file_btn(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    """Админ хочет отправить файл"""
-    # Проверяем что это не client callback (уже обработан выше)
-    if "client" in callback.data:
-        return
-
-    order_id = int(callback.data.replace("chat_file_", ""))
-
-    if callback.from_user.id not in settings.ADMIN_IDS:
-        await callback.answer("❌ Только для админов", show_alert=True)
-        return
-
-    order = await session.get(Order, order_id)
-    if not order:
-        await callback.answer("❌ Заказ не найден", show_alert=True)
-        return
-
-    client_query = select(User).where(User.telegram_id == order.user_id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-    client_name = client.fullname if client else "Клиент"
-
-    await state.set_state(OrderChatStates.admin_writing)
-    await state.update_data(
-        order_id=order_id,
-        client_id=order.user_id,
-        client_name=client_name,
-    )
-
-    await callback.message.answer(
-        f"📎 <b>Отправка файла клиенту по заказу #{order_id}</b>\n\n"
-        f"Отправьте файл, фото или голосовое сообщение:",
-        reply_markup=get_cancel_keyboard()
-    )
-    await callback.answer()
-
-
-# ══════════════════════════════════════════════════════════════
-#                    ИСТОРИЯ ЧАТА
-# ══════════════════════════════════════════════════════════════
-
-async def show_chat_history(callback: CallbackQuery, order_id: int, session: AsyncSession, is_admin: bool):
-    """Показывает историю чата в Telegram"""
-    order = await session.get(Order, order_id)
-    if not order:
-        await callback.answer("❌ Заказ не найден", show_alert=True)
-        return
-
-    # Проверка доступа для клиента
-    if not is_admin and order.user_id != callback.from_user.id:
-        await callback.answer("❌ Это не ваш заказ", show_alert=True)
-        return
-
-    # Получаем сообщения
-    try:
-        messages_query = select(OrderMessage).where(
-            OrderMessage.order_id == order_id
-        ).order_by(OrderMessage.created_at)
-        result = await session.execute(messages_query)
-        messages = result.scalars().all()
-    except Exception:
-        messages = []
-
-    # Информация о заказе
-    order_info = format_order_info(order)
-
-    if not messages:
-        await callback.message.answer(
-            f"{order_info}\n\n"
-            f"📜 <b>История чата</b>\n\n"
-            f"<i>Сообщений пока нет</i>",
-            reply_markup=get_chat_keyboard(order_id, is_admin)
-        )
-        await callback.answer()
-        return
-
-    # Формируем историю
-    history_lines = [f"{order_info}\n", "📜 <b>История чата:</b>\n"]
-
-    for msg in messages[-20:]:  # Последние 20 сообщений
-        sender = "🛡️ Шериф" if msg.sender_type == MessageSender.ADMIN.value else "👤 Клиент"
-        time_str = msg.created_at.strftime("%d.%m %H:%M") if msg.created_at else ""
-
-        line = f"<b>{sender}</b> <i>{time_str}</i>"
-        if msg.message_text:
-            text = msg.message_text[:100] + "..." if len(msg.message_text) > 100 else msg.message_text
-            line += f"\n{text}"
-        if msg.file_name:
-            line += f"\n📎 {msg.file_name}"
-
-        history_lines.append(line)
-        history_lines.append("")
-
-    if len(messages) > 20:
-        history_lines.append(f"<i>... и ещё {len(messages) - 20} сообщений</i>")
-
-    await callback.message.answer(
-        "\n".join(history_lines),
-        reply_markup=get_chat_keyboard(order_id, is_admin)
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("chat_history_client_"))
-async def client_view_history(callback: CallbackQuery, session: AsyncSession):
-    """Клиент смотрит историю чата"""
-    order_id = int(callback.data.replace("chat_history_client_", ""))
-    await show_chat_history(callback, order_id, session, is_admin=False)
-
-
-@router.callback_query(F.data.startswith("chat_history_"))
-async def admin_view_history(callback: CallbackQuery, session: AsyncSession):
-    """Админ смотрит историю чата"""
-    if "client" in callback.data:
-        return
-
-    order_id = int(callback.data.replace("chat_history_", ""))
-
-    if callback.from_user.id not in settings.ADMIN_IDS:
-        await callback.answer("❌ Только для админов", show_alert=True)
-        return
-
-    await show_chat_history(callback, order_id, session, is_admin=True)
-
-
-# ══════════════════════════════════════════════════════════════
-#                    ПРЯМЫЕ СООБЩЕНИЯ (ВНЕ ЗАКАЗА)
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data.startswith("dm_reply_"))
-async def admin_dm_reply(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    """Админ отвечает на свободное сообщение клиента"""
-    if callback.from_user.id not in settings.ADMIN_IDS:
-        await callback.answer("❌ Только для админов", show_alert=True)
-        return
-
-    user_id = int(callback.data.replace("dm_reply_", ""))
-
-    # Получаем имя клиента
-    client_query = select(User).where(User.telegram_id == user_id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-    client_name = client.fullname if client else f"ID: {user_id}"
-
-    await state.set_state(OrderChatStates.admin_dm)
-    await state.update_data(client_id=user_id, client_name=client_name)
-
-    await callback.message.answer(
-        f"💬 <b>Ответ клиенту</b>\n\n"
-        f"👤 {client_name}\n\n"
-        f"✏️ Введите сообщение:",
-        reply_markup=get_cancel_keyboard()
-    )
-    await callback.answer()
-
-
-@router.message(OrderChatStates.admin_dm, F.text)
-async def admin_dm_send(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
-    """Админ отправляет прямое сообщение клиенту"""
-    data = await state.get_data()
-    client_id = data.get("client_id")
-    client_name = data.get("client_name", "Клиент")
-
-    if not client_id:
-        await message.answer("❌ Ошибка: данные потеряны")
-        await state.clear()
-        return
-
-    try:
-        # Отправляем клиенту с кнопкой ответа
-        await bot.send_message(
-            chat_id=client_id,
-            text=f"🛡️ <b>Сообщение от Шерифа:</b>\n\n{message.text}",
-            reply_markup=get_support_chat_keyboard(client_id, is_admin=False)
-        )
-
-        # Подтверждаем админу с кнопкой продолжения
-        await message.answer(
-            f"✅ Сообщение отправлено клиенту {client_name}!",
-            reply_markup=get_support_chat_keyboard(client_id, is_admin=True)
-        )
-
-        # Обновляем диалог
-        await update_conversation(
-            session, client_id, None, message.text,
-            MessageSender.ADMIN.value, conv_type=ConversationType.SUPPORT.value
-        )
-    except Exception as e:
-        logger.error(f"Error sending DM to {client_id}: {e}")
-        await message.answer(f"❌ Не удалось отправить: {e}")
-
-    await state.clear()
-
-
-# ══════════════════════════════════════════════════════════════
-#                    ЧАТ ПОДДЕРЖКИ В БОТЕ
-# ══════════════════════════════════════════════════════════════
-
-@router.callback_query(F.data == "support_bot_chat")
-async def start_support_chat(callback: CallbackQuery, state: FSMContext):
-    """Клиент начинает чат с поддержкой в боте"""
-    await state.set_state(OrderChatStates.client_support)
-
-    await callback.message.answer(
-        "💬 <b>Чат с Шерифом</b>\n\n"
-        "Напиши своё сообщение — я передам его Шерифу,\n"
-        "и он ответит тебе прямо сюда!\n\n"
-        "✏️ <i>Пиши, партнёр...</i>",
-        reply_markup=get_cancel_keyboard()
-    )
-    await callback.answer()
-
-
-@router.message(OrderChatStates.client_support, F.text)
-async def client_support_message(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
-    """Клиент отправляет сообщение в поддержку"""
-    user = message.from_user
-
-    # Получаем пользователя из БД
-    client_query = select(User).where(User.telegram_id == user.id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-    client_name = client.fullname if client else user.full_name
-
-    # Отправляем админам с кнопкой ответа
-    sent = False
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            await bot.send_message(
-                chat_id=admin_id,
-                text=f"🛡️ <b>Чат поддержки</b>\n\n"
-                     f"👤 {client_name} (@{user.username or 'нет'})\n"
-                     f"🆔 <code>{user.id}</code>\n\n"
-                     f"💬 {message.text}",
-                reply_markup=get_support_chat_keyboard(user.id, is_admin=True)
-            )
-            sent = True
-        except Exception as e:
-            logger.error(f"Error sending support message to admin {admin_id}: {e}")
-
-    await state.clear()
-
-    if sent:
-        await message.answer(
-            "✅ <b>Сообщение отправлено Шерифу!</b>\n\n"
-            "Ответ придёт сюда же 🤠",
-            reply_markup=get_support_chat_keyboard(user.id, is_admin=False)
-        )
-
-        # Обновляем диалог
-        await update_conversation(
-            session, user.id, None, message.text,
-            MessageSender.CLIENT.value, increment_unread=True,
-            conv_type=ConversationType.SUPPORT.value
-        )
-    else:
-        from bot.keyboards.inline import get_main_menu_keyboard
-        await message.answer(
-            "⚠️ Не удалось отправить сообщение.\n"
-            f"Напиши напрямую: @{settings.SUPPORT_USERNAME}",
-            reply_markup=get_main_menu_keyboard()
-        )
-
-
-@router.callback_query(F.data == "support_continue")
-async def support_continue(callback: CallbackQuery, state: FSMContext):
-    """Клиент хочет написать ещё"""
-    await state.set_state(OrderChatStates.client_support)
-
-    await callback.message.answer(
-        "✏️ <b>Пиши, партнёр!</b>\n\n"
-        "Напиши своё сообщение — Шериф получит его сразу.",
-        reply_markup=get_cancel_keyboard()
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("support_reply_"))
-async def admin_support_reply(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
-    """Админ отвечает клиенту в чате поддержки"""
-    if callback.from_user.id not in settings.ADMIN_IDS:
-        await callback.answer("❌ Только для админов", show_alert=True)
-        return
-
-    user_id = int(callback.data.replace("support_reply_", ""))
-
-    # Получаем имя клиента
-    client_query = select(User).where(User.telegram_id == user_id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-    client_name = client.fullname if client else f"ID: {user_id}"
-
-    await state.set_state(OrderChatStates.admin_dm)
-    await state.update_data(client_id=user_id, client_name=client_name)
-
-    await callback.message.answer(
-        f"💬 <b>Ответ клиенту</b>\n\n"
-        f"👤 {client_name}\n\n"
-        f"✏️ Введите сообщение:",
-        reply_markup=get_cancel_keyboard()
-    )
-    await callback.answer()
-
-
-@router.message(OrderChatStates.client_support, F.photo | F.document)
-async def client_support_file(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
-    """Клиент отправляет файл в поддержку"""
-    user = message.from_user
-
-    # Получаем пользователя из БД
-    client_query = select(User).where(User.telegram_id == user.id)
-    result = await session.execute(client_query)
-    client = result.scalar_one_or_none()
-    client_name = client.fullname if client else user.full_name
-
-    # Определяем файл
-    file_id = None
-    file_type = None
-
-    if message.photo:
-        file_id = message.photo[-1].file_id
-        file_type = "photo"
-    elif message.document:
-        file_id = message.document.file_id
-        file_type = "document"
-
-    caption = message.caption or ""
-
-    msg_text = (
-        f"🛡️ <b>Чат поддержки</b>\n\n"
-        f"👤 {client_name} (@{user.username or 'нет'})\n"
-        f"🆔 <code>{user.id}</code>"
-    )
-    if caption:
-        msg_text += f"\n\n💬 {caption}"
-
-    # Отправляем админам
-    sent = False
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            if file_type == "photo":
-                await bot.send_photo(
-                    chat_id=admin_id,
-                    photo=file_id,
-                    caption=msg_text,
-                    reply_markup=get_support_chat_keyboard(user.id, is_admin=True)
-                )
-            else:
-                await bot.send_document(
-                    chat_id=admin_id,
-                    document=file_id,
-                    caption=msg_text,
-                    reply_markup=get_support_chat_keyboard(user.id, is_admin=True)
-                )
-            sent = True
-        except Exception as e:
-            logger.error(f"Error sending support file to admin {admin_id}: {e}")
-
-    await state.clear()
-
-    if sent:
-        await message.answer(
-            "✅ <b>Файл отправлен Шерифу!</b>\n\n"
-            "Ответ придёт сюда же 🤠",
-            reply_markup=get_support_chat_keyboard(user.id, is_admin=False)
-        )
-
-        # Обновляем диалог
-        await update_conversation(
-            session, user.id, None, "📎 Файл",
-            MessageSender.CLIENT.value, increment_unread=True,
-            conv_type=ConversationType.SUPPORT.value
-        )
-    else:
-        from bot.keyboards.inline import get_main_menu_keyboard
-        await message.answer(
-            "⚠️ Не удалось отправить файл.\n"
-            f"Напиши напрямую: @{settings.SUPPORT_USERNAME}",
-            reply_markup=get_main_menu_keyboard()
-        )
-
-
-# ══════════════════════════════════════════════════════════════
-#                    ПАНЕЛЬ ДИАЛОГОВ (АДМИН)
-# ══════════════════════════════════════════════════════════════
-
-from aiogram.filters import Command
-from sqlalchemy import desc, func as sql_func
-
-
-async def get_or_create_conversation(
-    session: AsyncSession,
-    user_id: int,
-    order_id: int | None = None,
-    conv_type: str = ConversationType.FREE.value,
-) -> Conversation:
-    """Получает или создаёт диалог с пользователем"""
-    query = select(Conversation).where(Conversation.user_id == user_id)
-
-    if order_id:
-        query = query.where(Conversation.order_id == order_id)
-    else:
-        query = query.where(Conversation.order_id.is_(None))
-
-    result = await session.execute(query)
-    conv = result.scalar_one_or_none()
-
-    if not conv:
-        conv = Conversation(
-            user_id=user_id,
-            order_id=order_id,
-            conversation_type=conv_type,
-        )
-        session.add(conv)
-
-    return conv
-
-
-async def update_conversation(
-    session: AsyncSession,
-    user_id: int,
-    order_id: int | None,
-    last_message: str,
-    sender: str,
-    increment_unread: bool = False,
-    conv_type: str | None = None,
-) -> None:
-    """Обновляет диалог после нового сообщения"""
-    try:
-        conv = await get_or_create_conversation(
-            session, user_id, order_id,
-            conv_type or (ConversationType.ORDER_CHAT.value if order_id else ConversationType.FREE.value)
-        )
-
-        conv.last_message_text = last_message[:100] if last_message else None
-        conv.last_message_at = datetime.now()
-        conv.last_sender = sender
-        conv.is_active = True
-
-        if increment_unread and sender == MessageSender.CLIENT.value:
-            conv.unread_count = (conv.unread_count or 0) + 1
-        elif sender == MessageSender.ADMIN.value:
-            conv.unread_count = 0
-
-        await session.commit()
-    except Exception as e:
-        logger.error(f"Error updating conversation: {e}")
-
-
-def get_dialogs_keyboard(
-    page: int = 0,
-    filter_type: str = "all",
-    total_pages: int = 1,
-) -> InlineKeyboardMarkup:
-    """Клавиатура панели диалогов"""
-    buttons = []
-
-    # Фильтры
-    filters_row = []
-    filters = [
-        ("all", "📋 Все"),
-        ("unread", "📩 Новые"),
-        ("order", "📦 Заказы"),
-        ("free", "💬 Свободные"),
-    ]
-    for f_type, f_label in filters:
-        label = f"• {f_label} •" if filter_type == f_type else f_label
-        filters_row.append(InlineKeyboardButton(
-            text=label,
-            callback_data=f"dialogs_filter_{f_type}"
-        ))
-    buttons.append(filters_row[:2])
-    buttons.append(filters_row[2:])
-
-    # Пагинация
-    if total_pages > 1:
-        nav_row = []
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️ Назад",
-                callback_data=f"dialogs_page_{page - 1}_{filter_type}"
-            ))
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="dialogs_noop"
-        ))
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="Вперёд ▶️",
-                callback_data=f"dialogs_page_{page + 1}_{filter_type}"
-            ))
-        buttons.append(nav_row)
-
-    # Обновить
-    buttons.append([
-        InlineKeyboardButton(text="🔄 Обновить", callback_data=f"dialogs_refresh_{filter_type}"),
-        InlineKeyboardButton(text="❌ Закрыть", callback_data="dialogs_close"),
-    ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
-async def format_dialogs_list(
-    session: AsyncSession,
-    filter_type: str = "all",
-    page: int = 0,
-    per_page: int = 10,
-) -> tuple[str, int]:
-    """Форматирует список диалогов"""
-    query = select(Conversation).where(Conversation.is_active == True)
-
-    if filter_type == "unread":
-        query = query.where(Conversation.unread_count > 0)
-    elif filter_type == "order":
-        query = query.where(Conversation.order_id.isnot(None))
-    elif filter_type == "free":
-        query = query.where(Conversation.order_id.is_(None))
-
-    # Считаем общее количество
-    count_query = select(sql_func.count()).select_from(query.subquery())
-    total = (await session.execute(count_query)).scalar() or 0
-    total_pages = max(1, (total + per_page - 1) // per_page)
-
-    # Получаем страницу
-    query = query.order_by(
-        desc(Conversation.unread_count > 0),
-        desc(Conversation.last_message_at)
-    ).offset(page * per_page).limit(per_page)
-
-    result = await session.execute(query)
-    conversations = result.scalars().all()
-
-    if not conversations:
-        return "📭 Диалогов пока нет", total_pages
-
-    lines = ["🗂️ <b>Панель диалогов</b>\n"]
-
-    for conv in conversations:
-        # Получаем пользователя
-        user_query = select(User).where(User.telegram_id == conv.user_id)
-        user_result = await session.execute(user_query)
-        user = user_result.scalar_one_or_none()
-        user_name = user.fullname if user else f"ID: {conv.user_id}"
-
-        # Форматируем строку
-        unread_badge = f"🔴 {conv.unread_count}" if conv.unread_count else ""
-        type_emoji = conv.type_emoji
-
-        # Превью сообщения
-        preview = (conv.last_message_text or "—")[:30]
-        if len(conv.last_message_text or "") > 30:
-            preview += "..."
-
-        # Время
-        if conv.last_message_at:
-            time_str = conv.last_message_at.strftime("%d.%m %H:%M")
-        else:
-            time_str = ""
-
-        # Ссылка для открытия
-        if conv.order_id:
-            link = f"/chat_{conv.order_id}"
-            order_info = f"Заказ #{conv.order_id}"
-        else:
-            link = f"dm_reply_{conv.user_id}"
-            order_info = "Без заказа"
-
-        lines.append(
-            f"{unread_badge} {type_emoji} <b>{user_name}</b>\n"
-            f"   {order_info} • {time_str}\n"
-            f"   💬 <i>{preview}</i>\n"
-        )
-
-    lines.append(f"\n📊 Всего: {total}")
-
-    return "\n".join(lines), total_pages
-
-
+# Оставляем команду /dialogs для просмотра статистики
 @router.message(Command("dialogs"))
 async def cmd_dialogs(message: Message, session: AsyncSession):
-    """Команда /dialogs — панель диалогов для админа"""
+    """Команда /dialogs — показывает статистику диалогов"""
     if message.from_user.id not in settings.ADMIN_IDS:
         return
 
-    text, total_pages = await format_dialogs_list(session)
+    # Считаем статистику
+    from sqlalchemy import func as sql_func
+
+    total_query = select(sql_func.count()).select_from(Conversation)
+    total = (await session.execute(total_query)).scalar() or 0
+
+    active_query = select(sql_func.count()).select_from(Conversation).where(
+        Conversation.is_active == True
+    )
+    active = (await session.execute(active_query)).scalar() or 0
+
+    unread_query = select(sql_func.count()).select_from(Conversation).where(
+        Conversation.unread_count > 0
+    )
+    unread = (await session.execute(unread_query)).scalar() or 0
 
     await message.answer(
-        text,
-        reply_markup=get_dialogs_keyboard(page=0, filter_type="all", total_pages=total_pages)
+        "📊 <b>Статистика диалогов</b>\n\n"
+        f"📋 Всего диалогов: {total}\n"
+        f"✅ Активных: {active}\n"
+        f"📩 С непрочитанными: {unread}\n\n"
+        "💡 <i>Все диалоги теперь в топиках группы!</i>"
     )
-
-
-@router.callback_query(F.data.startswith("dialogs_filter_"))
-async def dialogs_filter(callback: CallbackQuery, session: AsyncSession):
-    """Фильтрация диалогов"""
-    if callback.from_user.id not in settings.ADMIN_IDS:
-        await callback.answer("❌ Только для админов")
-        return
-
-    filter_type = callback.data.replace("dialogs_filter_", "")
-    text, total_pages = await format_dialogs_list(session, filter_type=filter_type)
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_dialogs_keyboard(page=0, filter_type=filter_type, total_pages=total_pages)
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("dialogs_page_"))
-async def dialogs_page(callback: CallbackQuery, session: AsyncSession):
-    """Пагинация диалогов"""
-    if callback.from_user.id not in settings.ADMIN_IDS:
-        await callback.answer("❌ Только для админов")
-        return
-
-    parts = callback.data.replace("dialogs_page_", "").split("_")
-    page = int(parts[0])
-    filter_type = parts[1] if len(parts) > 1 else "all"
-
-    text, total_pages = await format_dialogs_list(session, filter_type=filter_type, page=page)
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_dialogs_keyboard(page=page, filter_type=filter_type, total_pages=total_pages)
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("dialogs_refresh_"))
-async def dialogs_refresh(callback: CallbackQuery, session: AsyncSession):
-    """Обновление списка диалогов"""
-    if callback.from_user.id not in settings.ADMIN_IDS:
-        await callback.answer("❌ Только для админов")
-        return
-
-    filter_type = callback.data.replace("dialogs_refresh_", "")
-    text, total_pages = await format_dialogs_list(session, filter_type=filter_type)
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=get_dialogs_keyboard(page=0, filter_type=filter_type, total_pages=total_pages)
-    )
-    await callback.answer("🔄 Обновлено")
-
-
-@router.callback_query(F.data == "dialogs_close")
-async def dialogs_close(callback: CallbackQuery):
-    """Закрытие панели диалогов"""
-    await callback.message.delete()
-    await callback.answer()
-
-
-@router.callback_query(F.data == "dialogs_noop")
-async def dialogs_noop(callback: CallbackQuery):
-    """Пустое нажатие на номер страницы"""
-    await callback.answer()

@@ -162,13 +162,12 @@ def render_order_card(
 def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру для карточки в зависимости от стадии"""
 
-    bot_username = settings.BOT_USERNAME or "academic_saloon_bot"
     buttons = []
 
-    # Кнопка чата - общая для всех активных стадий
+    # Кнопка чата - открывает/создаёт топик в админской группе
     chat_button = InlineKeyboardButton(
-        text="💬 Написать клиенту",
-        url=f"https://t.me/{bot_username}?start=chat_{order.id}"
+        text="💬 Открыть чат",
+        callback_data=f"card_chat:{order.id}"
     )
 
     if stage_name == "new":

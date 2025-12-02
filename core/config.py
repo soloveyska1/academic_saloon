@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     REVIEWS_CHANNEL: str = "https://t.me/+Cls1cEPgPcMyZDJi"
     LOG_CHANNEL_ID: int = -1003300275622
     ORDERS_CHANNEL_ID: int = -1003331104298  # Канал для Live-карточек заказов
+    ADMIN_GROUP_ID: int = -1003352978651  # Супергруппа с Forum Topics для тикетов
     SUPPORT_USERNAME: str = "Thisissaymoon"
     OFFER_URL: str = "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30"  # Юридическая оферта
 

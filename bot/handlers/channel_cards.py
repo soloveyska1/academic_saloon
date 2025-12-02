@@ -14,7 +14,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardBut
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType
+from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType, Conversation, ConversationType
 from database.models.users import User
 from bot.services.live_cards import (
     update_card_status,
@@ -23,6 +23,7 @@ from bot.services.live_cards import (
     ORDERS_CHANNEL_ID,
 )
 from core.config import settings
+from bot.handlers.order_chat import get_or_create_topic, format_order_info
 from core.media_cache import send_cached_photo
 
 # Изображение для счёта/инвойса
@@ -747,3 +748,58 @@ async def dashboard_refresh(callback: CallbackQuery, session: AsyncSession, bot:
     except Exception as e:
         logger.error(f"Failed to refresh dashboard: {e}")
         await callback.answer("❌ Ошибка обновления", show_alert=True)
+
+
+# ══════════════════════════════════════════════════════════════
+#           CALLBACK HANDLERS - ОТКРЫТИЕ ЧАТА (FORUM TOPICS)
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("card_chat:"))
+async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """
+    Открывает или создаёт топик для чата с клиентом.
+    Отправляет ссылку на топик в админскую группу.
+    """
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    try:
+        # Получаем или создаём топик
+        conv, topic_id = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=order.user_id,
+            order_id=order_id,
+            conv_type=ConversationType.ORDER_CHAT.value,
+        )
+
+        # Формируем ссылку на топик
+        # Формат: https://t.me/c/CHAT_ID/TOPIC_ID
+        # CHAT_ID без префикса -100
+        group_id = str(settings.ADMIN_GROUP_ID).replace("-100", "")
+        topic_link = f"https://t.me/c/{group_id}/{topic_id}"
+
+        await callback.answer(f"💬 Топик создан! Открывай группу.", show_alert=True)
+
+        # Отправляем сообщение со ссылкой в канал заказов (рядом с карточкой)
+        client_name = user.fullname if user else f"ID:{order.user_id}"
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=f"💬 <b>Чат по заказу #{order_id}</b>\n"
+                 f"👤 Клиент: {client_name}\n\n"
+                 f"➡️ <a href=\"{topic_link}\">Открыть топик</a>",
+            reply_to_message_id=callback.message.message_id,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to create/open chat topic: {e}")
+        await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
