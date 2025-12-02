@@ -171,7 +171,7 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(
                     text="💵 Оценить",
-                    url=f"https://t.me/{bot_username}?start=price_{order.id}"
+                    callback_data=f"card_price:{order.id}"
                 ),
             ],
             [
@@ -202,7 +202,7 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
                 ),
                 InlineKeyboardButton(
                     text="✏️ Изменить цену",
-                    url=f"https://t.me/{bot_username}?start=price_{order.id}"
+                    callback_data=f"card_price:{order.id}"
                 ),
             ],
             [
@@ -229,7 +229,7 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
         ]
 
     elif stage_name == "work":
-        # В работе
+        # В работе - пока через бота (требует загрузки файлов)
         buttons = [
             [
                 InlineKeyboardButton(
@@ -239,8 +239,8 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="🆘 Проблема",
-                    url=f"https://t.me/{bot_username}?start=problem_{order.id}"
+                    text="✅ Готово (без файла)",
+                    callback_data=f"card_complete:{order.id}"
                 ),
             ],
         ]
@@ -254,24 +254,11 @@ def get_card_keyboard(order: Order, stage_name: str) -> InlineKeyboardMarkup:
                     callback_data=f"card_complete:{order.id}"
                 ),
             ],
-            [
-                InlineKeyboardButton(
-                    text="🔄 Доработка",
-                    url=f"https://t.me/{bot_username}?start=revision_{order.id}"
-                ),
-            ],
         ]
 
     elif stage_name in ("done", "cancelled"):
-        # Завершённые - без кнопок или минимум
-        buttons = [
-            [
-                InlineKeyboardButton(
-                    text="📋 Детали",
-                    url=f"https://t.me/{bot_username}?start=order_{order.id}"
-                ),
-            ],
-        ]
+        # Завершённые - минимальные кнопки
+        buttons = []  # Никаких кнопок для архивных
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
