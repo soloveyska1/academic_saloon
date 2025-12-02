@@ -4292,7 +4292,8 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
 
             # Загружаем все файлы на Яндекс Диск
             if files_to_upload:
-                client_name = user.fullname or f"User_{user.id}"
+                # Поддерживаем и Telegram User (full_name) и DB User (fullname)
+                client_name = getattr(user, 'fullname', None) or getattr(user, 'full_name', None) or f"User_{user.id}"
                 result = await yandex_disk_service.upload_multiple_files(
                     files=files_to_upload,
                     order_id=order.id,
@@ -4365,9 +4366,12 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
     # Строка с ссылкой на Яндекс Диск
     yadisk_line = f"\n📁 <b>Файлы:</b> <a href=\"{yadisk_link}\">Яндекс Диск</a>\n" if yadisk_link else ""
 
+    # Получаем имя клиента (поддерживаем и Telegram User и DB User)
+    client_fullname = getattr(user, 'fullname', None) or getattr(user, 'full_name', None) or f"ID:{user.id}"
+
     text = f"""{header}
 
-◈  Клиент: {user.fullname} ({username_str})
+◈  Клиент: {client_fullname} ({username_str})
 ◈  ID: <code>{user.id}</code>
 
 ◈  Тип: {work_label}
