@@ -1015,3 +1015,156 @@ async def admin_dm_send(message: Message, state: FSMContext, bot: Bot):
         await message.answer(f"❌ Не удалось отправить: {e}")
 
     await state.clear()
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ЧАТ ПОДДЕРЖКИ В БОТЕ
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "support_bot_chat")
+async def start_support_chat(callback: CallbackQuery, state: FSMContext):
+    """Клиент начинает чат с поддержкой в боте"""
+    await state.set_state(OrderChatStates.client_support)
+
+    await callback.message.answer(
+        "💬 <b>Чат с Шерифом</b>\n\n"
+        "Напиши своё сообщение — я передам его Шерифу,\n"
+        "и он ответит тебе прямо сюда!\n\n"
+        "✏️ <i>Пиши, партнёр...</i>",
+        reply_markup=get_cancel_keyboard()
+    )
+    await callback.answer()
+
+
+@router.message(OrderChatStates.client_support, F.text)
+async def client_support_message(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
+    """Клиент отправляет сообщение в поддержку"""
+    from bot.keyboards.inline import get_main_menu_keyboard
+
+    user = message.from_user
+
+    # Получаем пользователя из БД
+    client_query = select(User).where(User.telegram_id == user.id)
+    result = await session.execute(client_query)
+    client = result.scalar_one_or_none()
+    client_name = client.fullname if client else user.full_name
+
+    # Кнопка для ответа админу
+    reply_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💬 Ответить клиенту",
+            callback_data=f"dm_reply_{user.id}"
+        )]
+    ])
+
+    # Отправляем админам
+    sent = False
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(
+                chat_id=admin_id,
+                text=f"📩 <b>Сообщение через чат поддержки</b>\n\n"
+                     f"👤 {client_name} (@{user.username or 'нет'})\n"
+                     f"🆔 <code>{user.id}</code>\n\n"
+                     f"💬 {message.text}",
+                reply_markup=reply_keyboard
+            )
+            sent = True
+        except Exception as e:
+            logger.error(f"Error sending support message to admin {admin_id}: {e}")
+
+    await state.clear()
+
+    if sent:
+        await message.answer(
+            "✅ <b>Сообщение отправлено Шерифу!</b>\n\n"
+            "Ответ придёт сюда же. Обычно отвечаю\n"
+            "в течение пары часов, часто быстрее 🤠",
+            reply_markup=get_main_menu_keyboard()
+        )
+    else:
+        await message.answer(
+            "⚠️ Не удалось отправить сообщение.\n"
+            f"Напиши напрямую: @{settings.SUPPORT_USERNAME}",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+
+@router.message(OrderChatStates.client_support, F.photo | F.document)
+async def client_support_file(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
+    """Клиент отправляет файл в поддержку"""
+    from bot.keyboards.inline import get_main_menu_keyboard
+
+    user = message.from_user
+
+    # Получаем пользователя из БД
+    client_query = select(User).where(User.telegram_id == user.id)
+    result = await session.execute(client_query)
+    client = result.scalar_one_or_none()
+    client_name = client.fullname if client else user.full_name
+
+    # Определяем файл
+    file_id = None
+    file_type = None
+
+    if message.photo:
+        file_id = message.photo[-1].file_id
+        file_type = "photo"
+    elif message.document:
+        file_id = message.document.file_id
+        file_type = "document"
+
+    caption = message.caption or ""
+
+    # Кнопка для ответа
+    reply_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💬 Ответить клиенту",
+            callback_data=f"dm_reply_{user.id}"
+        )]
+    ])
+
+    msg_text = (
+        f"📩 <b>Файл через чат поддержки</b>\n\n"
+        f"👤 {client_name} (@{user.username or 'нет'})\n"
+        f"🆔 <code>{user.id}</code>"
+    )
+    if caption:
+        msg_text += f"\n\n💬 {caption}"
+
+    # Отправляем админам
+    sent = False
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            if file_type == "photo":
+                await bot.send_photo(
+                    chat_id=admin_id,
+                    photo=file_id,
+                    caption=msg_text,
+                    reply_markup=reply_keyboard
+                )
+            else:
+                await bot.send_document(
+                    chat_id=admin_id,
+                    document=file_id,
+                    caption=msg_text,
+                    reply_markup=reply_keyboard
+                )
+            sent = True
+        except Exception as e:
+            logger.error(f"Error sending support file to admin {admin_id}: {e}")
+
+    await state.clear()
+
+    if sent:
+        await message.answer(
+            "✅ <b>Файл отправлен Шерифу!</b>\n\n"
+            "Ответ придёт сюда же 🤠",
+            reply_markup=get_main_menu_keyboard()
+        )
+    else:
+        await message.answer(
+            "⚠️ Не удалось отправить файл.\n"
+            f"Напиши напрямую: @{settings.SUPPORT_USERNAME}",
+            reply_markup=get_main_menu_keyboard()
+        )
