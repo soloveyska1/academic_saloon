@@ -580,7 +580,7 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
 
 @router.callback_query(F.data.startswith("card_reject_pay:"))
 async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Отклонить (оплата не прошла)"""
+    """Отклонить (оплата не прошла) — с красивым уведомлением"""
     try:
         order_id = parse_order_id(callback.data)
     except ValueError:
@@ -602,18 +602,47 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
         bot, order, session,
         client_username=user.username if user else None,
         client_name=user.fullname if user else None,
-        extra_text=f"❌ Оплата не подтверждена {datetime.now().strftime('%d.%m %H:%M')}"
+        extra_text=f"❌ Оплата не найдена {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
-    # Уведомляем клиента
-    await notify_client(
-        bot, order.user_id,
-        f"❌ <b>Оплата не найдена</b>\n\n"
-        f"Мы не нашли оплату по заказу #{order.id}.\n"
-        "Проверь статус платежа и попробуй снова."
-    )
+    # Красивое уведомление клиенту с кнопками
+    final_price = order.price - order.bonus_used if order.bonus_used else order.price
 
-    await callback.answer("❌ Оплата отклонена", show_alert=True)
+    client_text = f"""⚠️ <b>Оплата не найдена</b>
+
+Заказ <code>#{order.id}</code> • <b>{int(final_price):,} ₽</b>
+
+Мы проверили счёт, но пока не видим поступления.
+
+<b>Возможные причины:</b>
+• Перевод ещё в обработке (5-15 минут)
+• Неверные реквизиты
+• Ошибка при переводе
+
+<i>Если ты точно перевёл — напиши в поддержку
+со скриншотом чека, разберёмся!</i>""".replace(",", " ")
+
+    client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💳 К оплате",
+            callback_data=f"pay_order:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="🆘 Написать Шерифу",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+        [InlineKeyboardButton(
+            text="🌵 В салун",
+            callback_data="back_to_menu"
+        )],
+    ])
+
+    try:
+        await bot.send_message(order.user_id, client_text, reply_markup=client_keyboard)
+    except Exception as e:
+        logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
+
+    await callback.answer("❌ Оплата не найдена, клиент уведомлён", show_alert=True)
 
 
 # ══════════════════════════════════════════════════════════════
