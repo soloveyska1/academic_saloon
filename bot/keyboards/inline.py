@@ -36,7 +36,7 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 text="👤 Кабинет",
-                callback_data="profile"
+                callback_data="my_profile"
             ),
             InlineKeyboardButton(
                 text="🎁 Тайник (Халява)",
@@ -60,7 +60,7 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🎯 Новый заказ", callback_data="create_order")
         ],
         [
-            InlineKeyboardButton(text="🤠 Досье", callback_data="profile"),
+            InlineKeyboardButton(text="🤠 Досье", callback_data="my_profile"),
             InlineKeyboardButton(text="💰 Казна", callback_data="finance")
         ],
         [
