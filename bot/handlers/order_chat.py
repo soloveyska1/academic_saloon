@@ -58,6 +58,31 @@ def get_cancel_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
+def get_support_chat_keyboard(user_id: int, is_admin: bool = False) -> InlineKeyboardMarkup:
+    """
+    Клавиатура для чата поддержки (без заказа).
+    Позволяет продолжить переписку обеим сторонам.
+    """
+    if is_admin:
+        # Для админа
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="💬 Ответить", callback_data=f"support_reply_{user_id}"),
+                InlineKeyboardButton(text="📜 Диалоги", callback_data="dialogs_refresh_all"),
+            ]
+        ])
+    else:
+        # Для клиента
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="💬 Написать ещё", callback_data="support_continue"),
+            ],
+            [
+                InlineKeyboardButton(text="🏠 В меню", callback_data="back_to_menu"),
+            ]
+        ])
+
+
 def format_order_info(order: Order) -> str:
     """Форматирует краткую информацию о заказе для чата"""
     # Тип работы
@@ -991,7 +1016,7 @@ async def admin_view_history(callback: CallbackQuery, session: AsyncSession):
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data.startswith("dm_reply_"))
-async def admin_dm_reply(callback: CallbackQuery, state: FSMContext):
+async def admin_dm_reply(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
     """Админ отвечает на свободное сообщение клиента"""
     if callback.from_user.id not in settings.ADMIN_IDS:
         await callback.answer("❌ Только для админов", show_alert=True)
@@ -999,12 +1024,18 @@ async def admin_dm_reply(callback: CallbackQuery, state: FSMContext):
 
     user_id = int(callback.data.replace("dm_reply_", ""))
 
+    # Получаем имя клиента
+    client_query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(client_query)
+    client = result.scalar_one_or_none()
+    client_name = client.fullname if client else f"ID: {user_id}"
+
     await state.set_state(OrderChatStates.admin_dm)
-    await state.update_data(client_id=user_id)
+    await state.update_data(client_id=user_id, client_name=client_name)
 
     await callback.message.answer(
         f"💬 <b>Ответ клиенту</b>\n\n"
-        f"🆔 ID: <code>{user_id}</code>\n\n"
+        f"👤 {client_name}\n\n"
         f"✏️ Введите сообщение:",
         reply_markup=get_cancel_keyboard()
     )
@@ -1016,6 +1047,7 @@ async def admin_dm_send(message: Message, state: FSMContext, bot: Bot, session: 
     """Админ отправляет прямое сообщение клиенту"""
     data = await state.get_data()
     client_id = data.get("client_id")
+    client_name = data.get("client_name", "Клиент")
 
     if not client_id:
         await message.answer("❌ Ошибка: данные потеряны")
@@ -1023,16 +1055,23 @@ async def admin_dm_send(message: Message, state: FSMContext, bot: Bot, session: 
         return
 
     try:
+        # Отправляем клиенту с кнопкой ответа
         await bot.send_message(
             chat_id=client_id,
-            text=f"🛡️ <b>Сообщение от Шерифа:</b>\n\n{message.text}"
+            text=f"🛡️ <b>Сообщение от Шерифа:</b>\n\n{message.text}",
+            reply_markup=get_support_chat_keyboard(client_id, is_admin=False)
         )
-        await message.answer("✅ Сообщение отправлено!")
+
+        # Подтверждаем админу с кнопкой продолжения
+        await message.answer(
+            f"✅ Сообщение отправлено клиенту {client_name}!",
+            reply_markup=get_support_chat_keyboard(client_id, is_admin=True)
+        )
 
         # Обновляем диалог
         await update_conversation(
             session, client_id, None, message.text,
-            MessageSender.ADMIN.value, conv_type=ConversationType.FREE.value
+            MessageSender.ADMIN.value, conv_type=ConversationType.SUPPORT.value
         )
     except Exception as e:
         logger.error(f"Error sending DM to {client_id}: {e}")
@@ -1063,8 +1102,6 @@ async def start_support_chat(callback: CallbackQuery, state: FSMContext):
 @router.message(OrderChatStates.client_support, F.text)
 async def client_support_message(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Клиент отправляет сообщение в поддержку"""
-    from bot.keyboards.inline import get_main_menu_keyboard
-
     user = message.from_user
 
     # Получаем пользователя из БД
@@ -1073,25 +1110,17 @@ async def client_support_message(message: Message, state: FSMContext, bot: Bot, 
     client = result.scalar_one_or_none()
     client_name = client.fullname if client else user.full_name
 
-    # Кнопка для ответа админу
-    reply_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💬 Ответить клиенту",
-            callback_data=f"dm_reply_{user.id}"
-        )]
-    ])
-
-    # Отправляем админам
+    # Отправляем админам с кнопкой ответа
     sent = False
     for admin_id in settings.ADMIN_IDS:
         try:
             await bot.send_message(
                 chat_id=admin_id,
-                text=f"📩 <b>Сообщение через чат поддержки</b>\n\n"
+                text=f"🛡️ <b>Чат поддержки</b>\n\n"
                      f"👤 {client_name} (@{user.username or 'нет'})\n"
                      f"🆔 <code>{user.id}</code>\n\n"
                      f"💬 {message.text}",
-                reply_markup=reply_keyboard
+                reply_markup=get_support_chat_keyboard(user.id, is_admin=True)
             )
             sent = True
         except Exception as e:
@@ -1102,9 +1131,8 @@ async def client_support_message(message: Message, state: FSMContext, bot: Bot, 
     if sent:
         await message.answer(
             "✅ <b>Сообщение отправлено Шерифу!</b>\n\n"
-            "Ответ придёт сюда же. Обычно отвечаю\n"
-            "в течение пары часов, часто быстрее 🤠",
-            reply_markup=get_main_menu_keyboard()
+            "Ответ придёт сюда же 🤠",
+            reply_markup=get_support_chat_keyboard(user.id, is_admin=False)
         )
 
         # Обновляем диалог
@@ -1114,6 +1142,7 @@ async def client_support_message(message: Message, state: FSMContext, bot: Bot, 
             conv_type=ConversationType.SUPPORT.value
         )
     else:
+        from bot.keyboards.inline import get_main_menu_keyboard
         await message.answer(
             "⚠️ Не удалось отправить сообщение.\n"
             f"Напиши напрямую: @{settings.SUPPORT_USERNAME}",
@@ -1121,11 +1150,49 @@ async def client_support_message(message: Message, state: FSMContext, bot: Bot, 
         )
 
 
+@router.callback_query(F.data == "support_continue")
+async def support_continue(callback: CallbackQuery, state: FSMContext):
+    """Клиент хочет написать ещё"""
+    await state.set_state(OrderChatStates.client_support)
+
+    await callback.message.answer(
+        "✏️ <b>Пиши, партнёр!</b>\n\n"
+        "Напиши своё сообщение — Шериф получит его сразу.",
+        reply_markup=get_cancel_keyboard()
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("support_reply_"))
+async def admin_support_reply(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Админ отвечает клиенту в чате поддержки"""
+    if callback.from_user.id not in settings.ADMIN_IDS:
+        await callback.answer("❌ Только для админов", show_alert=True)
+        return
+
+    user_id = int(callback.data.replace("support_reply_", ""))
+
+    # Получаем имя клиента
+    client_query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(client_query)
+    client = result.scalar_one_or_none()
+    client_name = client.fullname if client else f"ID: {user_id}"
+
+    await state.set_state(OrderChatStates.admin_dm)
+    await state.update_data(client_id=user_id, client_name=client_name)
+
+    await callback.message.answer(
+        f"💬 <b>Ответ клиенту</b>\n\n"
+        f"👤 {client_name}\n\n"
+        f"✏️ Введите сообщение:",
+        reply_markup=get_cancel_keyboard()
+    )
+    await callback.answer()
+
+
 @router.message(OrderChatStates.client_support, F.photo | F.document)
 async def client_support_file(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
     """Клиент отправляет файл в поддержку"""
-    from bot.keyboards.inline import get_main_menu_keyboard
-
     user = message.from_user
 
     # Получаем пользователя из БД
@@ -1147,16 +1214,8 @@ async def client_support_file(message: Message, state: FSMContext, bot: Bot, ses
 
     caption = message.caption or ""
 
-    # Кнопка для ответа
-    reply_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💬 Ответить клиенту",
-            callback_data=f"dm_reply_{user.id}"
-        )]
-    ])
-
     msg_text = (
-        f"📩 <b>Файл через чат поддержки</b>\n\n"
+        f"🛡️ <b>Чат поддержки</b>\n\n"
         f"👤 {client_name} (@{user.username or 'нет'})\n"
         f"🆔 <code>{user.id}</code>"
     )
@@ -1172,14 +1231,14 @@ async def client_support_file(message: Message, state: FSMContext, bot: Bot, ses
                     chat_id=admin_id,
                     photo=file_id,
                     caption=msg_text,
-                    reply_markup=reply_keyboard
+                    reply_markup=get_support_chat_keyboard(user.id, is_admin=True)
                 )
             else:
                 await bot.send_document(
                     chat_id=admin_id,
                     document=file_id,
                     caption=msg_text,
-                    reply_markup=reply_keyboard
+                    reply_markup=get_support_chat_keyboard(user.id, is_admin=True)
                 )
             sent = True
         except Exception as e:
@@ -1191,7 +1250,7 @@ async def client_support_file(message: Message, state: FSMContext, bot: Bot, ses
         await message.answer(
             "✅ <b>Файл отправлен Шерифу!</b>\n\n"
             "Ответ придёт сюда же 🤠",
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=get_support_chat_keyboard(user.id, is_admin=False)
         )
 
         # Обновляем диалог
@@ -1201,6 +1260,7 @@ async def client_support_file(message: Message, state: FSMContext, bot: Bot, ses
             conv_type=ConversationType.SUPPORT.value
         )
     else:
+        from bot.keyboards.inline import get_main_menu_keyboard
         await message.answer(
             "⚠️ Не удалось отправить файл.\n"
             f"Напиши напрямую: @{settings.SUPPORT_USERNAME}",

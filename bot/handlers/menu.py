@@ -710,62 +710,15 @@ async def show_free_stuff(callback: CallbackQuery, bot: Bot):
 @router.message(F.text, StateFilter(None))
 async def handle_text_message(message: Message, bot: Bot, session: AsyncSession):
     """
-    Обработка текстовых сообщений — пересылка админу.
-    Срабатывает ТОЛЬКО когда нет активного FSM состояния (чтобы не перехватывать ввод заказа).
+    Обработка текстовых сообщений вне контекста.
+    Направляем пользователя к чату с шерифом.
     """
-    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from bot.keyboards.inline import get_sheriff_choice_keyboard
 
-    user = message.from_user
-
-    # Логируем сообщение — важное событие
-    text_preview = message.text[:100] if len(message.text) > 100 else message.text
-    await log_action(
-        bot=bot,
-        event=LogEvent.MESSAGE_TEXT,
-        user=user,
-        details=f"«{text_preview}»",
-        session=session,
-        level=LogLevel.ACTION,
-    )
-
-    # Кнопка для ответа клиенту
-    reply_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💬 Ответить клиенту",
-            callback_data=f"dm_reply_{user.id}"
-        )]
-    ])
-
-    # Пересылаем сообщение админу с кнопкой ответа
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            await bot.send_message(
-                chat_id=admin_id,
-                text=f"📩 <b>Сообщение от клиента</b>\n\n"
-                     f"👤 {user.full_name} (@{user.username or 'нет'})\n"
-                     f"🆔 <code>{user.id}</code>\n\n"
-                     f"💬 <i>{message.text}</i>",
-                reply_markup=reply_keyboard
-            )
-        except Exception:
-            pass
-
-    # Обновляем диалог для отслеживания
-    try:
-        from bot.handlers.order_chat import update_conversation
-        from database.models.orders import ConversationType, MessageSender
-        await update_conversation(
-            session, user.id, None, message.text,
-            MessageSender.CLIENT.value, increment_unread=True,
-            conv_type=ConversationType.FREE.value
-        )
-    except Exception:
-        pass
-
-    # Отвечаем пользователю в стиле салуна
+    # Показываем меню связи с шерифом
     await message.answer(
-        "📨 <b>Сообщение получено!</b>\n\n"
-        "🛡️ Шериф скоро ответит. Обычно в течение пары часов.\n\n"
-        f"Или напиши напрямую: @{settings.SUPPORT_USERNAME}",
-        reply_markup=get_main_menu_keyboard()
+        "🤔 <b>Хочешь что-то спросить?</b>\n\n"
+        "Чтобы связаться с Шерифом, нажми кнопку ниже:\n\n"
+        "💬 <i>Так я точно увижу твоё сообщение!</i>",
+        reply_markup=get_sheriff_choice_keyboard()
     )
