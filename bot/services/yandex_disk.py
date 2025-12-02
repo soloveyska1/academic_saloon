@@ -61,24 +61,46 @@ class YandexDiskService:
             "Content-Type": "application/json",
         }
 
+    def _get_client_folder_path(
+        self,
+        client_name: str,
+        telegram_id: int,
+    ) -> str:
+        """
+        Генерирует путь к персональной папке клиента.
+
+        Структура: /Academic_Saloon_Orders/Клиенты/Имя_12345678/
+        """
+        safe_name = sanitize_filename(client_name) if client_name else "Клиент"
+        folder_name = f"{safe_name}_{telegram_id}"
+
+        return f"/{self._root_folder}/Клиенты/{folder_name}"
+
     def _get_order_folder_path(
         self,
         order_id: int,
         client_name: str,
         work_type: str,
+        telegram_id: int = None,
     ) -> str:
         """
-        Генерирует путь к папке заказа.
+        Генерирует путь к папке заказа внутри папки клиента.
 
-        Структура: /Academic_Saloon_Orders/2024-12/#1234_Иванов_Курсовая/
+        Структура: /Academic_Saloon_Orders/Клиенты/Имя_12345678/Заказ_123_2025-12-02_Курсовая/
         """
-        month_folder = datetime.now().strftime("%Y-%m")
-        safe_name = sanitize_filename(client_name) if client_name else "Клиент"
+        date_str = datetime.now().strftime("%Y-%m-%d")
         safe_type = sanitize_filename(work_type) if work_type else "Заказ"
 
-        folder_name = f"#{order_id}_{safe_name}_{safe_type}"
+        folder_name = f"Заказ_{order_id}_{date_str}_{safe_type}"
 
-        return f"/{self._root_folder}/{month_folder}/{folder_name}"
+        if telegram_id:
+            client_folder = self._get_client_folder_path(client_name, telegram_id)
+            return f"{client_folder}/{folder_name}"
+        else:
+            # Fallback для совместимости (без telegram_id)
+            safe_name = sanitize_filename(client_name) if client_name else "Клиент"
+            month_folder = datetime.now().strftime("%Y-%m")
+            return f"/{self._root_folder}/{month_folder}/#{order_id}_{safe_name}_{safe_type}"
 
     async def _ensure_folder_exists(self, client: httpx.AsyncClient, path: str) -> bool:
         """Создаёт папку если не существует (рекурсивно)"""
@@ -183,6 +205,7 @@ class YandexDiskService:
         order_id: int,
         client_name: str,
         work_type: str,
+        telegram_id: int = None,
     ) -> UploadResult:
         """
         Загружает файл из Telegram на Яндекс Диск.
@@ -193,6 +216,7 @@ class YandexDiskService:
             order_id: ID заказа
             client_name: Имя клиента (для папки)
             work_type: Тип работы (для папки)
+            telegram_id: Telegram ID клиента (для персональной папки)
 
         Returns:
             UploadResult с результатом и ссылками
@@ -203,7 +227,7 @@ class YandexDiskService:
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 # Путь к папке заказа
-                folder_path = self._get_order_folder_path(order_id, client_name, work_type)
+                folder_path = self._get_order_folder_path(order_id, client_name, work_type, telegram_id)
 
                 # Создаём папку
                 if not await self._ensure_folder_exists(client, folder_path):
@@ -252,6 +276,7 @@ class YandexDiskService:
         order_id: int,
         client_name: str,
         work_type: str,
+        telegram_id: int = None,
     ) -> UploadResult:
         """
         Загружает несколько файлов в одну папку.
@@ -261,6 +286,7 @@ class YandexDiskService:
             order_id: ID заказа
             client_name: Имя клиента
             work_type: Тип работы
+            telegram_id: Telegram ID клиента (для персональной папки)
 
         Returns:
             UploadResult с публичной ссылкой на папку
@@ -273,7 +299,7 @@ class YandexDiskService:
 
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
-                folder_path = self._get_order_folder_path(order_id, client_name, work_type)
+                folder_path = self._get_order_folder_path(order_id, client_name, work_type, telegram_id)
 
                 # Создаём папку
                 if not await self._ensure_folder_exists(client, folder_path):
@@ -315,6 +341,86 @@ class YandexDiskService:
 
         except Exception as e:
             logger.error(f"Error uploading files to Yandex Disk: {e}")
+            return UploadResult(success=False, error=str(e))
+
+    async def upload_append_files(
+        self,
+        files: list[tuple[bytes, str]],  # [(content, filename), ...]
+        order_id: int,
+        client_name: str,
+        work_type: str,
+        telegram_id: int = None,
+    ) -> UploadResult:
+        """
+        Загружает досланные файлы в подпапку "Дополнительно" существующего заказа.
+
+        Структура: .../Заказ_123_.../Дополнительно_2025-12-02_14-30/
+
+        Args:
+            files: Список кортежей (содержимое, имя_файла)
+            order_id: ID заказа
+            client_name: Имя клиента
+            work_type: Тип работы
+            telegram_id: Telegram ID клиента
+
+        Returns:
+            UploadResult с публичной ссылкой на папку заказа
+        """
+        if not self._configured:
+            return UploadResult(success=False, error="Yandex Disk not configured")
+
+        if not files:
+            return UploadResult(success=False, error="No files to upload")
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                # Базовая папка заказа
+                order_folder = self._get_order_folder_path(order_id, client_name, work_type, telegram_id)
+
+                # Подпапка для дополнительных файлов с датой/временем
+                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+                append_folder = f"{order_folder}/Дополнительно_{timestamp}"
+
+                # Создаём подпапку
+                if not await self._ensure_folder_exists(client, append_folder):
+                    return UploadResult(success=False, error="Failed to create append folder")
+
+                # Загружаем файлы
+                uploaded_count = 0
+                for file_bytes, filename in files:
+                    safe_filename = sanitize_filename(filename)
+                    file_path = f"{append_folder}/{safe_filename}"
+
+                    upload_url = await self._get_upload_url(client, file_path)
+                    if not upload_url:
+                        continue
+
+                    upload_resp = await client.put(
+                        upload_url,
+                        content=file_bytes,
+                        headers={"Content-Type": "application/octet-stream"},
+                    )
+
+                    if upload_resp.status_code in (201, 202):
+                        uploaded_count += 1
+                        logger.debug(f"Uploaded append file: {safe_filename}")
+
+                if uploaded_count == 0:
+                    return UploadResult(success=False, error="No append files were uploaded")
+
+                # Публикуем папку заказа (не подпапку)
+                public_url = await self._publish_folder(client, order_folder)
+
+                logger.info(f"Uploaded {uploaded_count}/{len(files)} append files to {append_folder}")
+
+                return UploadResult(
+                    success=True,
+                    public_url=public_url,
+                    folder_url=public_url,
+                )
+
+        except Exception as e:
+            logger.error(f"Error uploading append files to Yandex Disk: {e}")
             return UploadResult(success=False, error=str(e))
 
     async def get_folder_link(
