@@ -1,11 +1,10 @@
 """
 Live Cards - Система живых карточек заказов.
 
-Fusion Architecture: синхронизация карточек между:
-1. Каналом заказов (ORDERS_CHANNEL_ID)
-2. Forum Topic в админской группе (ADMIN_GROUP_ID)
-
-Один заказ = одно сообщение в канале + закреплённая карточка в топике.
+UNIFIED HUB Architecture:
+- Карточки ТОЛЬКО в Forum Topics (канал убран)
+- Один заказ = один топик с закреплённой карточкой
+- Авто-обновление при смене статуса
 """
 import logging
 from datetime import datetime
@@ -22,9 +21,19 @@ from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkTyp
 
 logger = logging.getLogger(__name__)
 
-# ID каналов и групп
-ORDERS_CHANNEL_ID = settings.ORDERS_CHANNEL_ID
+# ID админской группы (канал больше не используется)
 ADMIN_GROUP_ID = settings.ADMIN_GROUP_ID
+
+# Backward compatibility (канал удалён, но импорт может остаться)
+ORDERS_CHANNEL_ID = None  # Deprecated - use topics instead
+
+
+def get_card_link(order_id: int) -> str:
+    """
+    Deprecated: возвращает пустую строку.
+    Для ссылки на топик используйте get_order_topic_link().
+    """
+    return ""
 
 
 # ══════════════════════════════════════════════════════════════
@@ -172,50 +181,26 @@ def render_order_card(
 def get_card_keyboard(
     order: Order,
     stage_name: str,
-    for_topic: bool = False,
-    topic_id: int = None,
 ) -> InlineKeyboardMarkup:
     """
     Генерирует клавиатуру для карточки в зависимости от стадии.
+    UNIFIED HUB: кнопки только для топика (чат не нужен - уже в топике).
 
     Args:
         order: Объект заказа
         stage_name: Название стадии
-        for_topic: True если клавиатура для топика (убираем кнопку чата)
-        topic_id: ID топика для формирования ссылки (для канальной версии)
     """
     bot_username = settings.BOT_USERNAME or "academic_saloon_bot"
     buttons = []
 
-    # Кнопка чата - только для канала, не для топика
-    chat_button = None
-    if not for_topic and topic_id:
-        # Формируем ссылку на топик
-        group_id = str(ADMIN_GROUP_ID).replace("-100", "")
-        topic_link = f"https://t.me/c/{group_id}/{topic_id}"
-        chat_button = InlineKeyboardButton(
-            text="💬 Открыть чат",
-            url=topic_link
-        )
-    elif not for_topic:
-        # Топик ещё не создан - кнопка callback для создания
-        chat_button = InlineKeyboardButton(
-            text="💬 Открыть чат",
-            callback_data=f"card_chat:{order.id}"
-        )
-
     if stage_name == "new":
         # Новый заказ - оценить, отклонить, бан
-        row1 = [
+        buttons.append([
             InlineKeyboardButton(
                 text="💵 Оценить",
                 callback_data=f"card_price:{order.id}"
             ),
-        ]
-        if chat_button:
-            row1.append(chat_button)
-        buttons.append(row1)
-
+        ])
         buttons.append([
             InlineKeyboardButton(
                 text="🚫 Отклонить",
@@ -235,7 +220,6 @@ def get_card_keyboard(
                 callback_data=f"card_confirm_pay:{order.id}"
             ),
         ])
-
         buttons.append([
             InlineKeyboardButton(
                 text="🔔 Напомнить клиенту",
@@ -246,15 +230,12 @@ def get_card_keyboard(
                 callback_data=f"card_price:{order.id}"
             ),
         ])
-
-        row3 = []
-        if chat_button:
-            row3.append(chat_button)
-        row3.append(InlineKeyboardButton(
-            text="🚫 Отклонить",
-            callback_data=f"card_reject:{order.id}"
-        ))
-        buttons.append(row3)
+        buttons.append([
+            InlineKeyboardButton(
+                text="🚫 Отклонить",
+                callback_data=f"card_reject:{order.id}"
+            ),
+        ])
 
     elif stage_name == "verification":
         # Проверка оплаты
@@ -268,21 +249,15 @@ def get_card_keyboard(
                 callback_data=f"card_reject_pay:{order.id}"
             ),
         ])
-        if chat_button:
-            buttons.append([chat_button])
 
     elif stage_name == "work":
         # В работе
-        row1 = [
+        buttons.append([
             InlineKeyboardButton(
                 text="📤 Сдать работу",
                 url=f"https://t.me/{bot_username}?start=upload_{order.id}"
             ),
-        ]
-        if chat_button:
-            row1.append(chat_button)
-        buttons.append(row1)
-
+        ])
         buttons.append([
             InlineKeyboardButton(
                 text="✅ Готово (без файла)",
@@ -292,25 +267,27 @@ def get_card_keyboard(
 
     elif stage_name == "review":
         # На проверке
-        row1 = [
+        buttons.append([
             InlineKeyboardButton(
                 text="✅ Завершить заказ",
                 callback_data=f"card_complete:{order.id}"
             ),
-        ]
-        if chat_button:
-            row1.append(chat_button)
-        buttons.append(row1)
+        ])
 
     elif stage_name in ("done", "cancelled"):
-        # Завершённые - минимальные кнопки
-        buttons = []  # Никаких кнопок для архивных
+        # Завершённые - минимальные кнопки (можно переоткрыть)
+        buttons.append([
+            InlineKeyboardButton(
+                text="🔄 Переоткрыть",
+                callback_data=f"card_reopen:{order.id}"
+            ),
+        ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 # ══════════════════════════════════════════════════════════════
-#           DUAL CARD SYNC - ОТПРАВКА/ОБНОВЛЕНИЕ
+#           UNIFIED HUB - КАРТОЧКА ТОЛЬКО В ТОПИКЕ
 # ══════════════════════════════════════════════════════════════
 
 async def get_conversation_for_order(
@@ -333,81 +310,25 @@ async def send_or_update_card(
     extra_text: str = None,
 ) -> Optional[int]:
     """
-    DUAL SYNC: Отправляет/обновляет карточку в ОБОИХ местах:
-    1. Канал заказов (ORDERS_CHANNEL_ID)
-    2. Топик в админской группе (если существует)
+    UNIFIED HUB: Отправляет/обновляет карточку ТОЛЬКО в топике.
+    Канал больше не используется.
 
     Returns:
-        message_id карточки в канале
+        message_id карточки в топике (или None)
     """
     # Получаем Conversation для проверки наличия топика
     conv = await get_conversation_for_order(session, order.id)
-    topic_id = conv.topic_id if conv else None
+
+    if not conv or not conv.topic_id:
+        logger.warning(f"No topic found for order #{order.id}, skipping card update")
+        return None
 
     # Рендерим текст карточки
     text = render_order_card(order, client_username, client_name, yadisk_link, extra_text)
     stage = get_card_stage(order.status)
 
-    # === 1. ОБНОВЛЕНИЕ КАНАЛА ===
-    channel_msg_id = await _update_channel_card(
-        bot, order, session, text, stage, topic_id
-    )
-
-    # === 2. ОБНОВЛЕНИЕ ТОПИКА (если есть) ===
-    if conv and conv.topic_id:
-        await _update_topic_card(
-            bot, order, session, conv, text, stage
-        )
-
-    return channel_msg_id
-
-
-async def _update_channel_card(
-    bot: Bot,
-    order: Order,
-    session: AsyncSession,
-    text: str,
-    stage: dict,
-    topic_id: int = None,
-) -> Optional[int]:
-    """Обновляет карточку в канале заказов"""
-    keyboard = get_card_keyboard(order, stage["name"], for_topic=False, topic_id=topic_id)
-
-    if order.channel_message_id:
-        # Обновляем существующее сообщение
-        try:
-            await bot.edit_message_text(
-                chat_id=ORDERS_CHANNEL_ID,
-                message_id=order.channel_message_id,
-                text=text,
-                reply_markup=keyboard,
-            )
-            logger.debug(f"Updated channel card for order #{order.id}")
-            return order.channel_message_id
-        except TelegramBadRequest as e:
-            if "message is not modified" in str(e):
-                return order.channel_message_id
-            elif "message to edit not found" in str(e):
-                logger.warning(f"Channel card not found for order #{order.id}, creating new")
-                order.channel_message_id = None
-            else:
-                logger.error(f"Failed to edit channel card for order #{order.id}: {e}")
-                return None
-
-    # Отправляем новое сообщение
-    try:
-        msg = await bot.send_message(
-            chat_id=ORDERS_CHANNEL_ID,
-            text=text,
-            reply_markup=keyboard,
-        )
-        order.channel_message_id = msg.message_id
-        await session.commit()
-        logger.info(f"Created channel card for order #{order.id} (msg_id={msg.message_id})")
-        return msg.message_id
-    except Exception as e:
-        logger.error(f"Failed to send channel card for order #{order.id}: {e}")
-        return None
+    # Обновляем карточку в топике
+    return await _update_topic_card(bot, order, session, conv, text, stage)
 
 
 async def _update_topic_card(
@@ -419,7 +340,7 @@ async def _update_topic_card(
     stage: dict,
 ) -> Optional[int]:
     """Обновляет закреплённую карточку в топике"""
-    keyboard = get_card_keyboard(order, stage["name"], for_topic=True)
+    keyboard = get_card_keyboard(order, stage["name"])
 
     if conv.topic_card_message_id:
         # Обновляем существующую карточку
@@ -506,26 +427,23 @@ async def update_card_status(
 #           ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ══════════════════════════════════════════════════════════════
 
-def get_card_link(order: Order) -> Optional[str]:
-    """Возвращает ссылку на карточку в канале"""
-    if not order.channel_message_id:
-        return None
-
-    channel_id_str = str(ORDERS_CHANNEL_ID).replace("-100", "")
-    return f"https://t.me/c/{channel_id_str}/{order.channel_message_id}"
-
-
 def get_topic_link(topic_id: int) -> str:
     """Возвращает ссылку на топик в админской группе"""
     group_id = str(ADMIN_GROUP_ID).replace("-100", "")
     return f"https://t.me/c/{group_id}/{topic_id}"
 
 
-def get_back_to_card_keyboard(order: Order) -> Optional[InlineKeyboardMarkup]:
-    """Клавиатура с кнопкой возврата к карточке"""
-    link = get_card_link(order)
-    if not link:
-        return None
+async def get_order_topic_link(session: AsyncSession, order_id: int) -> Optional[str]:
+    """Возвращает ссылку на топик заказа"""
+    conv = await get_conversation_for_order(session, order_id)
+    if conv and conv.topic_id:
+        return get_topic_link(conv.topic_id)
+    return None
+
+
+def get_back_to_topic_keyboard(topic_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура с кнопкой возврата в топик"""
+    link = get_topic_link(topic_id)
 
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔙 Вернуться к заказу", url=link)]
@@ -627,15 +545,22 @@ async def send_or_update_dashboard(
     dashboard_message_id: Optional[int] = None,
 ) -> Optional[int]:
     """
-    Отправляет или обновляет дашборд в канале.
+    UNIFIED HUB: Отправляет или обновляет дашборд в топике "Дашборд".
     """
+    from bot.services.unified_hub import get_service_topic_id
+
+    dashboard_topic_id = get_service_topic_id("dashboard")
+    if not dashboard_topic_id:
+        logger.warning("Dashboard topic not initialized, skipping dashboard update")
+        return None
+
     text = await render_dashboard(session)
     keyboard = get_dashboard_keyboard()
 
     if dashboard_message_id:
         try:
             await bot.edit_message_text(
-                chat_id=ORDERS_CHANNEL_ID,
+                chat_id=ADMIN_GROUP_ID,
                 message_id=dashboard_message_id,
                 text=text,
                 reply_markup=keyboard,
@@ -652,11 +577,12 @@ async def send_or_update_dashboard(
 
     try:
         msg = await bot.send_message(
-            chat_id=ORDERS_CHANNEL_ID,
+            chat_id=ADMIN_GROUP_ID,
+            message_thread_id=dashboard_topic_id,
             text=text,
             reply_markup=keyboard,
         )
-        logger.info(f"Dashboard created (msg_id={msg.message_id})")
+        logger.info(f"Dashboard created in topic (msg_id={msg.message_id})")
         return msg.message_id
     except Exception as e:
         logger.error(f"Failed to send dashboard: {e}")

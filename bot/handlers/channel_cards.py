@@ -22,6 +22,11 @@ from bot.services.live_cards import (
     get_card_link,
     ORDERS_CHANNEL_ID,
 )
+from bot.services.unified_hub import (
+    update_topic_name,
+    close_order_topic,
+    reopen_order_topic,
+)
 from core.config import settings
 from bot.handlers.order_chat import get_or_create_topic, format_order_info
 from core.media_cache import send_cached_photo
@@ -263,6 +268,9 @@ async def card_reject_order_execute(callback: CallbackQuery, session: AsyncSessi
         extra_text=f"❌ Отклонено {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
+    # UNIFIED HUB: Закрываем топик
+    await close_order_topic(bot, session, order)
+
     # Уведомляем клиента
     await notify_client(
         bot, order.user_id,
@@ -330,6 +338,9 @@ async def card_ban_user_execute(callback: CallbackQuery, session: AsyncSession, 
         client_name=user.fullname if user else None,
         extra_text=f"🚫 СПАМ/БАН {datetime.now().strftime('%d.%m %H:%M')}"
     )
+
+    # UNIFIED HUB: Закрываем топик
+    await close_order_topic(bot, session, order)
 
     await callback.answer("🚫 Пользователь забанен", show_alert=True)
 
@@ -479,6 +490,9 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     order.status = OrderStatus.WAITING_PAYMENT.value
     await session.commit()
 
+    # UNIFIED HUB: Обновляем название топика
+    await update_topic_name(bot, session, order, user)
+
     # Обновляем карточку
     final_price = price - bonus_used
 
@@ -537,6 +551,9 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     order.status = OrderStatus.PAID_FULL.value
     order.paid_amount = order.price
     await session.commit()
+
+    # UNIFIED HUB: Обновляем название топика
+    await update_topic_name(bot, session, order, user)
 
     # Обновляем карточку
     await update_card_status(
@@ -597,6 +614,9 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
     # Возвращаем статус "Ждёт оплаты"
     order.status = OrderStatus.WAITING_PAYMENT.value
     await session.commit()
+
+    # UNIFIED HUB: Обновляем название топика
+    await update_topic_name(bot, session, order, user)
 
     # Обновляем карточку
     await update_card_status(
@@ -717,6 +737,9 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
         client_name=user.fullname if user else None,
     )
 
+    # UNIFIED HUB: Закрываем топик
+    await close_order_topic(bot, session, order)
+
     # Уведомляем клиента
     await notify_client(
         bot, order.user_id,
@@ -803,3 +826,45 @@ async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, b
     except Exception as e:
         logger.error(f"Failed to create/open chat topic: {e}")
         await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
+
+
+# ══════════════════════════════════════════════════════════════
+#           CALLBACK HANDLERS - ПЕРЕОТКРЫТИЕ ЗАКАЗА
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("card_reopen:"))
+async def card_reopen_order(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """
+    Переоткрывает завершённый/отклонённый заказ.
+    Возвращает статус в PENDING и открывает топик.
+    """
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Возвращаем статус в "Новый"
+    order.status = OrderStatus.PENDING.value
+    order.completed_at = None
+    await session.commit()
+
+    # UNIFIED HUB: Переоткрываем топик
+    await reopen_order_topic(bot, session, order)
+    await update_topic_name(bot, session, order, user)
+
+    # Обновляем карточку
+    await update_card_status(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+        extra_text=f"🔄 Переоткрыт {datetime.now().strftime('%d.%m %H:%M')}"
+    )
+
+    await callback.answer("✅ Заказ переоткрыт!", show_alert=True)

@@ -1,6 +1,9 @@
 """
 Система логирования действий пользователей.
-Все логи отправляются в канал LOG_CHANNEL_ID.
+
+UNIFIED HUB Architecture:
+- Логи отправляются в топик "Логи" в админской группе
+- Fallback на LOG_CHANNEL_ID если топик не инициализирован
 """
 
 import logging
@@ -148,11 +151,30 @@ EVENT_NAMES = {
 
 
 class BotLogger:
-    """Основной класс для логирования"""
+    """
+    Основной класс для логирования.
+
+    UNIFIED HUB: Логи отправляются в топик "Логи" в админской группе.
+    Если топик не инициализирован — fallback на LOG_CHANNEL_ID.
+    """
 
     def __init__(self, bot: Bot):
         self.bot = bot
-        self.channel_id = settings.LOG_CHANNEL_ID
+        self.channel_id = settings.LOG_CHANNEL_ID  # Fallback
+
+    def _get_logs_destination(self) -> tuple[int, Optional[int]]:
+        """
+        Возвращает (chat_id, message_thread_id) для отправки лога.
+        Если UNIFIED HUB инициализирован — топик, иначе — канал.
+        """
+        try:
+            from bot.services.unified_hub import get_service_topic_id
+            topic_id = get_service_topic_id("logs")
+            if topic_id:
+                return settings.ADMIN_GROUP_ID, topic_id
+        except ImportError:
+            pass
+        return self.channel_id, None
 
     @staticmethod
     def get_user_link(user: TgUser) -> str:
@@ -413,9 +435,12 @@ class BotLogger:
             if level in (LogLevel.ERROR, LogLevel.CRITICAL) or is_watched:
                 silent = False
 
-            # Отправляем
+            # UNIFIED HUB: отправляем в топик или канал
+            chat_id, thread_id = self._get_logs_destination()
+
             msg = await self.bot.send_message(
-                chat_id=self.channel_id,
+                chat_id=chat_id,
+                message_thread_id=thread_id,
                 text=text,
                 reply_markup=keyboard,
                 disable_notification=silent,
@@ -424,8 +449,8 @@ class BotLogger:
             return msg.message_id
 
         except Exception as e:
-            # Логируем локально если не удалось отправить в канал
-            logging.error(f"Failed to send log to channel: {e}")
+            # Логируем локально если не удалось отправить
+            logging.error(f"Failed to send log: {e}")
             return None
 
     async def log_error(
@@ -493,6 +518,23 @@ class BotLogger:
             if user:
                 keyboard = self.get_action_keyboard(user.id)
 
+            # UNIFIED HUB: ошибки идут в топик "alerts" (со звуком)
+            try:
+                from bot.services.unified_hub import get_service_topic_id
+                alerts_topic_id = get_service_topic_id("alerts")
+                if alerts_topic_id:
+                    msg = await self.bot.send_message(
+                        chat_id=settings.ADMIN_GROUP_ID,
+                        message_thread_id=alerts_topic_id,
+                        text=text,
+                        reply_markup=keyboard,
+                        disable_notification=False,
+                    )
+                    return msg.message_id
+            except ImportError:
+                pass
+
+            # Fallback на канал
             msg = await self.bot.send_message(
                 chat_id=self.channel_id,
                 text=text,
@@ -503,7 +545,7 @@ class BotLogger:
             return msg.message_id
 
         except Exception as e:
-            logging.error(f"Failed to send error log to channel: {e}")
+            logging.error(f"Failed to send error log: {e}")
             return None
 
 
