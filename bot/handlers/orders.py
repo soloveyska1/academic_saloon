@@ -4912,19 +4912,18 @@ async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bo
         except Exception as e:
             logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
 
-    # Логируем
-    await log_action(
-        session=session,
-        event=LogEvent.ORDER_CREATED,
-        level=LogLevel.INFO,
-        user_id=user.id if user else None,
-        order_id=order.id,
-        details={
-            "panic": True,
-            "urgency": urgency_key,
-            "files_count": len(panic_files),
-        }
-    )
+    # Логируем (не критично, оборачиваем в try)
+    try:
+        await log_action(
+            bot=bot,
+            event=LogEvent.ORDER_CREATED,
+            user=callback.from_user,
+            details=f"Panic Order #{order.id}, urgency: {urgency_key}, files: {len(panic_files)}",
+            session=session,
+            level=LogLevel.INFO,
+        )
+    except Exception as e:
+        logger.warning(f"Не удалось залогировать panic order: {e}")
 
     # Очищаем состояние
     await state.clear()
