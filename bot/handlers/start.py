@@ -3,10 +3,12 @@ from aiogram.filters import CommandStart, CommandObject
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models.users import User
+from database.models.orders import Order, OrderStatus
 from bot.keyboards.inline import get_main_menu_keyboard, get_saloon_status_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
 from bot.texts.terms import TERMS_SHORT
@@ -14,6 +16,11 @@ from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from core.saloon_status import saloon_manager, generate_status_message
 from core.media_cache import send_cached_photo
+
+
+# FSM для ввода своей цены
+class SetPriceState(StatesGroup):
+    waiting_for_price = State()
 
 
 # Combined welcome + status message - always available 24/7
@@ -163,6 +170,34 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             session=session,
         )
 
+    # === ОБРАБОТКА DEEP LINKS ДЛЯ АДМИНОВ ===
+
+    # Установка своей цены (из карточки в канале)
+    if deep_link and deep_link.startswith("setprice_"):
+        if message.from_user.id in settings.ADMIN_IDS:
+            try:
+                order_id = int(deep_link.replace("setprice_", ""))
+                order = await session.get(Order, order_id)
+                if order:
+                    # Сохраняем order_id в FSM и спрашиваем цену
+                    await state.set_state(SetPriceState.waiting_for_price)
+                    await state.update_data(order_id=order_id)
+
+                    current_price = f"{int(order.price):,}₽".replace(",", " ") if order.price > 0 else "не установлена"
+                    await message.answer(
+                        f"💵 <b>Установка цены для заказа #{order_id}</b>\n\n"
+                        f"Текущая цена: {current_price}\n\n"
+                        f"Введи новую цену (только число, например: <code>5000</code>):",
+                    )
+                    return  # Не показываем главное меню
+                else:
+                    await message.answer(f"❌ Заказ #{order_id} не найден")
+            except ValueError:
+                await message.answer("❌ Неверный формат ссылки")
+        else:
+            await message.answer("❌ Эта функция только для администраторов")
+            # Продолжаем показывать главное меню
+
     # === ГЛАВНОЕ МЕНЮ — сразу без барьеров ===
 
     # 1. Typing для визуального отклика
@@ -186,6 +221,86 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             text=welcome_text,
             reply_markup=get_main_menu_keyboard()
         )
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ВВОД СВОЕЙ ЦЕНЫ (для канальных карточек)
+# ══════════════════════════════════════════════════════════════
+
+@router.message(SetPriceState.waiting_for_price)
+async def process_custom_price(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+    """Обработка ввода цены от админа"""
+    from bot.services.live_cards import update_card_status
+
+    data = await state.get_data()
+    order_id = data.get("order_id")
+
+    if not order_id:
+        await message.answer("❌ Ошибка: заказ не найден в состоянии")
+        await state.clear()
+        return
+
+    # Парсим цену
+    try:
+        price_text = message.text.strip().replace(" ", "").replace("₽", "").replace(",", "")
+        price = int(price_text)
+        if price <= 0:
+            raise ValueError("Цена должна быть положительной")
+    except (ValueError, AttributeError):
+        await message.answer(
+            "❌ Неверный формат цены.\n\n"
+            "Введи только число, например: <code>5000</code>"
+        )
+        return
+
+    # Получаем заказ и пользователя
+    order = await session.get(Order, order_id)
+    if not order:
+        await message.answer(f"❌ Заказ #{order_id} не найден")
+        await state.clear()
+        return
+
+    # Устанавливаем цену
+    order.price = float(price)
+    order.status = OrderStatus.WAITING_PAYMENT.value
+    await session.commit()
+
+    # Получаем данные клиента для карточки
+    client_query = select(User).where(User.telegram_id == order.user_id)
+    client_result = await session.execute(client_query)
+    client = client_result.scalar_one_or_none()
+
+    # Обновляем карточку в канале
+    try:
+        await update_card_status(
+            bot, order, session,
+            client_username=client.username if client else None,
+            client_name=client.fullname if client else None,
+            extra_text=f"💵 Цена установлена: {price:,}₽".replace(",", " ")
+        )
+    except Exception as e:
+        await message.answer(f"⚠️ Карточка не обновлена: {e}")
+
+    # Уведомляем клиента
+    try:
+        price_formatted = f"{price:,}".replace(",", " ")
+        await bot.send_message(
+            order.user_id,
+            f"💰 <b>Цена за заказ #{order.id}:</b> {price_formatted}₽\n\n"
+            "Оплати, чтобы мы начали работу!"
+        )
+    except Exception:
+        pass
+
+    # Очищаем FSM
+    await state.clear()
+
+    price_formatted = f"{price:,}".replace(",", " ")
+    await message.answer(
+        f"✅ <b>Цена установлена!</b>\n\n"
+        f"Заказ #{order_id}: <b>{price_formatted}₽</b>\n"
+        f"Клиент уведомлён, карточка обновлена."
+    )
 
 
 # ══════════════════════════════════════════════════════════════
