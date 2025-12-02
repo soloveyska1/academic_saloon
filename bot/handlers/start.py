@@ -16,6 +16,7 @@ from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from core.saloon_status import saloon_manager, generate_status_message
 from core.media_cache import send_cached_photo
+from bot.handlers.channel_cards import send_payment_notification
 
 
 # FSM для ввода своей цены
@@ -229,7 +230,7 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
 
 @router.message(SetPriceState.waiting_for_price)
 async def process_custom_price(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
-    """Обработка ввода цены от админа"""
+    """Обработка ввода цены от админа — отправляет клиенту полноценный счёт с кнопками"""
     from bot.services.live_cards import update_card_status
 
     data = await state.get_data()
@@ -260,47 +261,58 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
         await state.clear()
         return
 
-    # Устанавливаем цену
-    order.price = float(price)
-    order.status = OrderStatus.WAITING_PAYMENT.value
-    await session.commit()
-
-    # Получаем данные клиента для карточки
+    # Получаем данные клиента для карточки и расчёта бонусов
     client_query = select(User).where(User.telegram_id == order.user_id)
     client_result = await session.execute(client_query)
     client = client_result.scalar_one_or_none()
 
+    # Рассчитываем бонусы (как в admin.py)
+    bonus_used = 0
+    if client and client.balance > 0:
+        max_bonus = price * 0.5
+        bonus_used = min(client.balance, max_bonus)
+
+    # Устанавливаем цену и бонусы
+    order.price = float(price)
+    order.bonus_used = bonus_used
+    order.status = OrderStatus.WAITING_PAYMENT.value
+    await session.commit()
+
     # Обновляем карточку в канале
+    final_price = price - bonus_used
     try:
         await update_card_status(
             bot, order, session,
             client_username=client.username if client else None,
             client_name=client.fullname if client else None,
-            extra_text=f"💵 Цена установлена: {price:,}₽".replace(",", " ")
+            extra_text=f"💵 Цена: {price:,}₽ → К оплате: {final_price:,.0f}₽".replace(",", " ")
         )
     except Exception as e:
         await message.answer(f"⚠️ Карточка не обновлена: {e}")
 
-    # Уведомляем клиента
-    try:
-        price_formatted = f"{price:,}".replace(",", " ")
-        await bot.send_message(
-            order.user_id,
-            f"💰 <b>Цена за заказ #{order.id}:</b> {price_formatted}₽\n\n"
-            "Оплати, чтобы мы начали работу!"
-        )
-    except Exception:
-        pass
+    # Отправляем полноценное уведомление с кнопками оплаты
+    sent = await send_payment_notification(bot, order, client, price)
 
     # Очищаем FSM
     await state.clear()
 
     price_formatted = f"{price:,}".replace(",", " ")
-    await message.answer(
-        f"✅ <b>Цена установлена!</b>\n\n"
-        f"Заказ #{order_id}: <b>{price_formatted}₽</b>\n"
-        f"Клиент уведомлён, карточка обновлена."
-    )
+    final_formatted = f"{final_price:,.0f}".replace(",", " ")
+
+    if sent:
+        await message.answer(
+            f"✅ <b>Цена установлена!</b>\n\n"
+            f"Заказ #{order_id}: <b>{price_formatted}₽</b>\n"
+            f"Бонусов применено: {bonus_used:.0f}₽\n"
+            f"К оплате: {final_formatted}₽\n\n"
+            f"Клиенту отправлен счёт с кнопками оплаты."
+        )
+    else:
+        await message.answer(
+            f"✅ <b>Цена установлена!</b>\n\n"
+            f"Заказ #{order_id}: <b>{price_formatted}₽</b>\n"
+            f"⚠️ Не удалось уведомить клиента"
+        )
 
 
 # ══════════════════════════════════════════════════════════════

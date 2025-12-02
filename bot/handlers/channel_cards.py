@@ -6,13 +6,15 @@ Handlers для callback-действий в канале заказов.
 """
 import logging
 from datetime import datetime
+from pathlib import Path
+from typing import Optional
 
 from aiogram import Router, Bot, F
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.orders import Order, OrderStatus
+from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType
 from database.models.users import User
 from bot.services.live_cards import (
     update_card_status,
@@ -21,6 +23,10 @@ from bot.services.live_cards import (
     ORDERS_CHANNEL_ID,
 )
 from core.config import settings
+from core.media_cache import send_cached_photo
+
+# Изображение для счёта/инвойса
+IMG_PAYMENT_BILL = Path("/root/academic_saloon/bot/media/confirm_std.jpg")
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +76,131 @@ async def notify_client(bot: Bot, user_id: int, text: str, reply_markup=None):
 def is_admin(user_id: int) -> bool:
     """Проверка, является ли пользователь админом"""
     return user_id in settings.ADMIN_IDS
+
+
+def build_price_offer_text(
+    order_id: int,
+    work_label: str,
+    deadline: Optional[str],
+    base_price: float,
+    bonus_used: float,
+    final_price: float,
+    bonus_note: Optional[str] = None,
+) -> str:
+    """
+    Формирует минималистичный текст счёта на оплату.
+    Ultra-clean дизайн без разделителей.
+    """
+    # Строка с дедлайном (только если есть)
+    deadline_line = f"⏱ <b>{deadline}</b>\n" if deadline else ""
+
+    # Строка с бонусами
+    if bonus_note:
+        bonus_line = f"💎 <i>{bonus_note}</i>\n"
+    elif bonus_used > 0:
+        bonus_line = f"💎 Бонусы:  <code>−{bonus_used:.0f} ₽</code>\n"
+    else:
+        bonus_line = ""
+
+    return f"""<b>💰 СЧЁТ НА ОПЛАТУ №{order_id}</b>
+
+Шериф всё посчитал. Расклад такой:
+
+📂 <b>{work_label}</b>
+{deadline_line}💵 Тариф:  <code>{base_price:.0f} ₽</code>
+{bonus_line}👉 <b>К ОПЛАТЕ: <code>{final_price:.0f} ₽</code></b>
+
+<i>Выбирай, как удобнее платить.</i>"""
+
+
+def build_payment_keyboard(order_id: int, final_price: float, bonus_used: float = 0) -> InlineKeyboardMarkup:
+    """
+    Создаёт клавиатуру с вариантами оплаты.
+    """
+    half_amount = final_price / 2
+
+    buttons = [
+        [InlineKeyboardButton(
+            text=f"💳 100% Сразу ({final_price:.0f}₽)",
+            callback_data=f"pay_scheme:full:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
+            callback_data=f"pay_scheme:half:{order_id}"
+        )],
+    ]
+
+    # Кнопка "Не тратить бонусы" только если они были применены
+    if bonus_used > 0:
+        buttons.append([InlineKeyboardButton(
+            text="🔄 Не тратить бонусы (Пересчитать)",
+            callback_data=f"price_no_bonus:{order_id}"
+        )])
+
+    # Кнопка для вопросов/торга
+    buttons.append([InlineKeyboardButton(
+        text="💬 Обсудить условия",
+        callback_data=f"price_question:{order_id}"
+    )])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def send_payment_notification(
+    bot: Bot,
+    order: Order,
+    user: Optional[User],
+    price: float,
+) -> bool:
+    """
+    Отправляет клиенту полноценное уведомление об оплате с кнопками.
+    Использует существующую логику из admin.py
+    """
+    if not user:
+        return False
+
+    try:
+        # Рассчитываем бонусы (максимум 50% от цены)
+        max_bonus = price * 0.5
+        bonus_used = min(user.balance, max_bonus)
+        final_price = price - bonus_used
+
+        # Формируем текст
+        work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+
+        client_text = build_price_offer_text(
+            order_id=order.id,
+            work_label=work_label,
+            deadline=order.deadline,
+            base_price=price,
+            bonus_used=bonus_used,
+            final_price=final_price,
+        )
+
+        # Формируем клавиатуру
+        kb = build_payment_keyboard(order.id, final_price, bonus_used)
+
+        # Отправляем с картинкой
+        if IMG_PAYMENT_BILL.exists():
+            try:
+                await send_cached_photo(
+                    bot=bot,
+                    chat_id=order.user_id,
+                    photo_path=IMG_PAYMENT_BILL,
+                    caption=client_text,
+                    reply_markup=kb,
+                )
+                return True
+            except Exception as e:
+                logger.warning(f"Не удалось отправить payment_bill image: {e}")
+
+        # Fallback: отправляем без картинки
+        await bot.send_message(order.user_id, client_text, reply_markup=kb)
+        return True
+
+    except Exception as e:
+        logger.warning(f"Failed to send payment notification to {order.user_id}: {e}")
+        return False
 
 
 # ══════════════════════════════════════════════════════════════
@@ -335,28 +466,35 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    # Устанавливаем цену
+    # Рассчитываем бонусы (как в admin.py)
+    bonus_used = 0
+    if user and user.balance > 0:
+        max_bonus = price * 0.5
+        bonus_used = min(user.balance, max_bonus)
+
+    # Устанавливаем цену и бонусы
     order.price = float(price)
+    order.bonus_used = bonus_used
     order.status = OrderStatus.WAITING_PAYMENT.value
     await session.commit()
 
     # Обновляем карточку
+    final_price = price - bonus_used
     await update_card_status(
         bot, order, session,
         client_username=user.username if user else None,
         client_name=user.fullname if user else None,
-        extra_text=f"💵 Цена установлена: {price:,}₽".replace(",", " ")
+        extra_text=f"💵 Цена: {price:,}₽ → К оплате: {final_price:,.0f}₽".replace(",", " ")
     )
 
-    # Уведомляем клиента
+    # Отправляем полноценное уведомление с кнопками оплаты
+    sent = await send_payment_notification(bot, order, user, price)
+
     price_formatted = f"{price:,}".replace(",", " ")
-    await notify_client(
-        bot, order.user_id,
-        f"💰 <b>Цена за заказ #{order.id}:</b> {price_formatted}₽\n\n"
-        "Оплати, чтобы мы начали работу!"
-    )
-
-    await callback.answer(f"✅ Цена {price_formatted}₽ установлена!", show_alert=True)
+    if sent:
+        await callback.answer(f"✅ Цена {price_formatted}₽ — клиент получил счёт!", show_alert=True)
+    else:
+        await callback.answer(f"✅ Цена {price_formatted}₽ (уведомление не доставлено)", show_alert=True)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -446,7 +584,7 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
 
 @router.callback_query(F.data.startswith("card_remind:"))
 async def card_remind_client(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Напомнить клиенту об оплате"""
+    """Напомнить клиенту об оплате — отправляет полноценный счёт с кнопками"""
     try:
         order_id = parse_order_id(callback.data)
     except ValueError:
@@ -459,15 +597,12 @@ async def card_remind_client(callback: CallbackQuery, session: AsyncSession, bot
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    # Отправляем напоминание
-    price_formatted = f"{order.price:,.0f}".replace(",", " ")
-    sent = await notify_client(
-        bot, order.user_id,
-        f"🔔 <b>Напоминание об оплате</b>\n\n"
-        f"Заказ #{order.id} ждёт оплаты.\n"
-        f"💰 Сумма: <b>{price_formatted}₽</b>\n\n"
-        "Оплати, чтобы мы начали работу!"
-    )
+    if not order.price or order.price <= 0:
+        await callback.answer("❌ Цена ещё не установлена", show_alert=True)
+        return
+
+    # Отправляем полноценное уведомление с кнопками оплаты
+    sent = await send_payment_notification(bot, order, user, order.price)
 
     if sent:
         # Обновляем время напоминания
@@ -482,7 +617,7 @@ async def card_remind_client(callback: CallbackQuery, session: AsyncSession, bot
             extra_text=f"🔔 Напомнили клиенту {datetime.now().strftime('%d.%m %H:%M')}"
         )
 
-        await callback.answer("🔔 Напоминание отправлено!", show_alert=True)
+        await callback.answer("🔔 Счёт повторно отправлен клиенту!", show_alert=True)
     else:
         await callback.answer("❌ Не удалось отправить напоминание", show_alert=True)
 
