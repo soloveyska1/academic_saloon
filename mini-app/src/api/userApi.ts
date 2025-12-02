@@ -28,59 +28,41 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 // User data
 export async function fetchUserData(): Promise<UserData> {
-  // For development/demo, return mock data
-  if (!getInitData()) {
-    return getMockUserData()
-  }
-  return apiFetch<UserData>('/user')
+  // Always return mock data until API is ready
+  return getMockUserData()
 }
 
 // Orders
 export async function fetchOrders(): Promise<Order[]> {
-  if (!getInitData()) {
-    return getMockUserData().orders
-  }
-  return apiFetch<Order[]>('/orders')
+  return getMockUserData().orders
 }
 
 export async function fetchOrderDetail(orderId: number): Promise<Order> {
-  if (!getInitData()) {
-    const orders = getMockUserData().orders
-    const order = orders.find(o => o.id === orderId)
-    if (!order) throw new Error('Order not found')
-    return order
-  }
-  return apiFetch<Order>(`/orders/${orderId}`)
+  const orders = getMockUserData().orders
+  const order = orders.find(o => o.id === orderId)
+  if (!order) throw new Error('Order not found')
+  return order
 }
 
 // Promo code
 export async function applyPromoCode(code: string): Promise<PromoResult> {
-  if (!getInitData()) {
-    // Mock response
-    if (code.toUpperCase() === 'COWBOY20') {
-      return { success: true, message: 'Промокод применён!', discount: 20 }
-    }
-    return { success: false, message: 'Промокод не найден' }
+  // Mock response
+  if (code.toUpperCase() === 'COWBOY20') {
+    return { success: true, message: 'Промокод применён!', discount: 20 }
   }
-  return apiFetch<PromoResult>('/promo/apply', {
-    method: 'POST',
-    body: JSON.stringify({ code }),
-  })
+  return { success: false, message: 'Промокод не найден' }
 }
 
 // Daily roulette
 export async function spinRoulette(): Promise<RouletteResult> {
-  if (!getInitData()) {
-    // Mock response
-    const prizes = [
-      { prize: '50 бонусов', type: 'bonus' as const, value: 50 },
-      { prize: '5% скидка', type: 'discount' as const, value: 5 },
-      { prize: '100 бонусов', type: 'bonus' as const, value: 100 },
-      { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0 },
-    ]
-    return prizes[Math.floor(Math.random() * prizes.length)]
-  }
-  return apiFetch<RouletteResult>('/roulette/spin', { method: 'POST' })
+  // Mock response
+  const prizes = [
+    { prize: '50 бонусов', type: 'bonus' as const, value: 50 },
+    { prize: '5% скидка', type: 'discount' as const, value: 5 },
+    { prize: '100 бонусов', type: 'bonus' as const, value: 100 },
+    { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0 },
+  ]
+  return prizes[Math.floor(Math.random() * prizes.length)]
 }
 
 // Mock data for development
