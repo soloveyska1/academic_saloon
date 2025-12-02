@@ -87,6 +87,23 @@ async def init_unified_hub(bot: Bot, session: AsyncSession) -> dict[str, int]:
 
     logger.info("🏗️ Initializing UNIFIED HUB...")
 
+    # Создаём системного пользователя (user_id=0) если его нет
+    # Нужен для foreign key в таблице conversations
+    system_user_query = select(User).where(User.telegram_id == 0)
+    system_user_result = await session.execute(system_user_query)
+    system_user = system_user_result.scalar_one_or_none()
+
+    if not system_user:
+        system_user = User(
+            telegram_id=0,
+            username="system",
+            fullname="System",
+            role="system",
+        )
+        session.add(system_user)
+        await session.commit()
+        logger.info("✅ Created system user (telegram_id=0)")
+
     # Загружаем существующие служебные топики из БД
     for topic_key, topic_config in SERVICE_TOPICS.items():
         # Ищем Conversation с типом service, user_id=0 и без order_id
@@ -141,6 +158,7 @@ async def init_unified_hub(bot: Bot, session: AsyncSession) -> dict[str, int]:
 
         except Exception as e:
             logger.error(f"❌ Failed to create service topic '{topic_key}': {e}")
+            await session.rollback()  # Восстанавливаем сессию после ошибки
 
     logger.info(f"🏗️ UNIFIED HUB initialized with {len(_service_topic_ids)} service topics")
     return _service_topic_ids
