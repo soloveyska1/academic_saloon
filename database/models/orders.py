@@ -325,3 +325,46 @@ class Order(Base):
         """Итоговая цена с учётом скидки и бонусов"""
         price_with_discount = self.price * (1 - self.discount / 100)
         return max(0, price_with_discount - self.bonus_used)
+
+
+class MessageSender(str, enum.Enum):
+    """Отправитель сообщения в чате заказа"""
+    ADMIN = "admin"
+    CLIENT = "client"
+
+
+class OrderMessage(Base):
+    """
+    Сообщения в приватном чате по заказу.
+    Хранит историю переписки между админом и клиентом.
+    """
+    __tablename__ = "order_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
+    # Связь с заказом
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"), index=True)
+
+    # Кто отправил
+    sender_type: Mapped[str] = mapped_column(String(20))  # admin / client
+    sender_id: Mapped[int] = mapped_column(BigInteger)  # telegram_id отправителя
+
+    # Контент сообщения
+    message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Файл (если есть)
+    file_type: Mapped[str | None] = mapped_column(String(20), nullable=True)  # photo/document/voice/video
+    file_id: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Telegram file_id
+    file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Оригинальное имя файла
+    yadisk_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # Ссылка на Яндекс.Диск
+
+    # Telegram message IDs для редактирования/удаления
+    admin_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # ID сообщения у админа
+    client_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # ID сообщения у клиента
+
+    # Метаданные
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    is_read: Mapped[bool] = mapped_column(default=False)  # Прочитано ли получателем
+
+    # Relationship
+    order: Mapped["Order"] = relationship("Order", backref="messages")

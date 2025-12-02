@@ -175,6 +175,20 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
 
     # === ОБРАБОТКА DEEP LINKS ДЛЯ АДМИНОВ ===
 
+    # Чат с клиентом (из карточки в канале)
+    if deep_link and deep_link.startswith("chat_"):
+        if message.from_user.id in settings.ADMIN_IDS:
+            from bot.handlers.order_chat import start_admin_chat
+            try:
+                order_id = int(deep_link.replace("chat_", ""))
+                await start_admin_chat(message, order_id, session, bot, state)
+                return  # Не показываем главное меню
+            except ValueError:
+                await message.answer("❌ Неверный формат ссылки")
+        else:
+            await message.answer("❌ Эта функция только для администраторов")
+            # Продолжаем показывать главное меню
+
     # Установка своей цены (из карточки в канале)
     if deep_link and deep_link.startswith("setprice_"):
         if message.from_user.id in settings.ADMIN_IDS:
