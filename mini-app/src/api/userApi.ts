@@ -8,61 +8,158 @@ function getInitData(): string {
   return window.Telegram?.WebApp?.initData || ''
 }
 
+// Check if we have valid Telegram context
+function hasTelegramContext(): boolean {
+  return !!getInitData()
+}
+
 // Generic fetch with auth
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const initData = getInitData()
+
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'X-Telegram-Init-Data': getInitData(),
+      'X-Telegram-Init-Data': initData,
       ...options.headers,
     },
   })
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status}`)
+    const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
+    throw new Error(error.detail || `API Error: ${response.status}`)
   }
 
   return response.json()
 }
 
+// Config cache
+let configCache: { bot_username: string; support_username: string } | null = null
+
+// Get bot config
+export async function fetchConfig(): Promise<{ bot_username: string; support_username: string }> {
+  if (configCache) return configCache
+
+  try {
+    const config = await apiFetch<{ bot_username: string; support_username: string }>('/config')
+    configCache = config
+    return config
+  } catch {
+    // Fallback config - ВАЖНО: правильное имя бота
+    return {
+      bot_username: 'Kladovaya_GIPSR_bot',
+      support_username: 'Thisissaymoon'
+    }
+  }
+}
+
 // User data
 export async function fetchUserData(): Promise<UserData> {
-  // Always return mock data until API is ready
-  return getMockUserData()
+  // If no Telegram context (dev mode), use mock data
+  if (!hasTelegramContext()) {
+    console.log('[API] No Telegram context, using mock data')
+    return getMockUserData()
+  }
+
+  try {
+    return await apiFetch<UserData>('/user')
+  } catch (e) {
+    console.error('[API] fetchUserData error:', e)
+    // Fallback to mock if API fails
+    return getMockUserData()
+  }
 }
 
 // Orders
-export async function fetchOrders(): Promise<Order[]> {
-  return getMockUserData().orders
+export async function fetchOrders(status?: string): Promise<Order[]> {
+  if (!hasTelegramContext()) {
+    return getMockUserData().orders
+  }
+
+  try {
+    const params = status ? `?status=${status}` : ''
+    const response = await apiFetch<{ orders: Order[] }>(`/orders${params}`)
+    return response.orders
+  } catch (e) {
+    console.error('[API] fetchOrders error:', e)
+    return getMockUserData().orders
+  }
 }
 
 export async function fetchOrderDetail(orderId: number): Promise<Order> {
-  const orders = getMockUserData().orders
-  const order = orders.find(o => o.id === orderId)
-  if (!order) throw new Error('Order not found')
-  return order
+  if (!hasTelegramContext()) {
+    const orders = getMockUserData().orders
+    const order = orders.find(o => o.id === orderId)
+    if (!order) throw new Error('Order not found')
+    return order
+  }
+
+  try {
+    return await apiFetch<Order>(`/orders/${orderId}`)
+  } catch (e) {
+    console.error('[API] fetchOrderDetail error:', e)
+    // Try mock fallback
+    const orders = getMockUserData().orders
+    const order = orders.find(o => o.id === orderId)
+    if (!order) throw new Error('Order not found')
+    return order
+  }
 }
 
 // Promo code
 export async function applyPromoCode(code: string): Promise<PromoResult> {
-  // Mock response
-  if (code.toUpperCase() === 'COWBOY20') {
-    return { success: true, message: 'Промокод применён!', discount: 20 }
+  if (!hasTelegramContext()) {
+    // Mock response
+    if (code.toUpperCase() === 'COWBOY20') {
+      return { success: true, message: 'Промокод применён!', discount: 20 }
+    }
+    return { success: false, message: 'Промокод не найден' }
   }
-  return { success: false, message: 'Промокод не найден' }
+
+  try {
+    return await apiFetch<PromoResult>('/promo', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+  } catch (e) {
+    console.error('[API] applyPromoCode error:', e)
+    return { success: false, message: 'Ошибка сервера' }
+  }
 }
 
 // Daily roulette
 export async function spinRoulette(): Promise<RouletteResult> {
-  // Mock response
-  const prizes = [
-    { prize: '50 бонусов', type: 'bonus' as const, value: 50 },
-    { prize: '5% скидка', type: 'discount' as const, value: 5 },
-    { prize: '100 бонусов', type: 'bonus' as const, value: 100 },
-    { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0 },
-  ]
-  return prizes[Math.floor(Math.random() * prizes.length)]
+  if (!hasTelegramContext()) {
+    const prizes = [
+      { prize: '50 бонусов', type: 'bonus' as const, value: 50 },
+      { prize: '5% скидка', type: 'discount' as const, value: 5 },
+      { prize: '100 бонусов', type: 'bonus' as const, value: 100 },
+      { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0 },
+    ]
+    return prizes[Math.floor(Math.random() * prizes.length)]
+  }
+
+  try {
+    const result = await apiFetch<{
+      success: boolean
+      prize?: string
+      type?: 'bonus' | 'discount' | 'nothing'
+      value?: number
+      message: string
+    }>('/roulette/spin', {
+      method: 'POST',
+    })
+
+    return {
+      prize: result.prize || result.message,
+      type: result.type || 'nothing',
+      value: result.value || 0,
+    }
+  } catch (e) {
+    console.error('[API] spinRoulette error:', e)
+    return { prize: 'Ошибка', type: 'nothing', value: 0 }
+  }
 }
 
 // Mock data for development

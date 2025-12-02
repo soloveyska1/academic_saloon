@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { UserData } from '../types'
-import { fetchUserData } from '../api/userApi'
+import { fetchUserData, fetchConfig } from '../api/userApi'
 
 export function useUserData() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -36,8 +36,23 @@ export function useUserData() {
   return { userData, loading, error, refetch }
 }
 
+// Bot username - правильное имя!
+const BOT_USERNAME = 'Kladovaya_GIPSR_bot'
+
 export function useTelegram() {
   const tg = window.Telegram?.WebApp
+  const [botUsername, setBotUsername] = useState(BOT_USERNAME)
+
+  // Load config on mount
+  useEffect(() => {
+    fetchConfig().then(config => {
+      if (config.bot_username) {
+        setBotUsername(config.bot_username)
+      }
+    }).catch(() => {
+      // Keep default
+    })
+  }, [])
 
   const haptic = (type: 'light' | 'medium' | 'heavy' = 'light') => {
     tg?.HapticFeedback?.impactOccurred(type)
@@ -52,15 +67,22 @@ export function useTelegram() {
   }
 
   const openBot = (startParam?: string) => {
-    const botUsername = 'academic_saloon_bot' // TODO: from config
     const url = startParam
       ? `https://t.me/${botUsername}?start=${startParam}`
       : `https://t.me/${botUsername}`
     tg?.openTelegramLink(url)
   }
 
+  const openSupport = () => {
+    tg?.openTelegramLink('https://t.me/Thisissaymoon')
+  }
+
   const showAlert = (message: string) => {
     tg?.showAlert(message)
+  }
+
+  const showConfirm = (message: string, callback: (confirmed: boolean) => void) => {
+    tg?.showConfirm(message, callback)
   }
 
   const close = () => {
@@ -71,11 +93,14 @@ export function useTelegram() {
     tg,
     user: tg?.initDataUnsafe?.user,
     initData: tg?.initData,
+    botUsername,
     haptic,
     hapticSuccess,
     hapticError,
     openBot,
+    openSupport,
     showAlert,
+    showConfirm,
     close,
   }
 }

@@ -34,9 +34,33 @@ from core.redis_pool import close_redis
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def main():
-    logger.info("Starting Academic Saloon Bot...")
-    
+
+async def run_api_server():
+    """Run FastAPI server for Mini App"""
+    try:
+        import uvicorn
+        from bot.api import api_app
+
+        config = uvicorn.Config(
+            api_app,
+            host="0.0.0.0",
+            port=8000,
+            log_level="info",
+            access_log=True
+        )
+        server = uvicorn.Server(config)
+        logger.info("🌐 Mini App API starting on http://0.0.0.0:8000")
+        await server.serve()
+    except ImportError:
+        logger.warning("⚠️ uvicorn not installed, Mini App API disabled. Install with: pip install uvicorn")
+    except Exception as e:
+        logger.error(f"API server error: {e}")
+
+
+async def run_bot():
+    """Run Telegram bot"""
+    logger.info("🤖 Starting Academic Saloon Bot...")
+
     # Инициализация бота с настройками по умолчанию (HTML)
     bot = Bot(
         token=settings.BOT_TOKEN.get_secret_value(),
@@ -86,10 +110,10 @@ async def main():
     try:
         # Удаляем вебхук, чтобы не было конфликтов
         await bot.delete_webhook(drop_pending_updates=True)
-        logger.info("Polling started...")
+        logger.info("🤖 Bot polling started...")
         await dp.start_polling(bot)
     except Exception as e:
-        logger.error(f"Error occurred: {e}")
+        logger.error(f"Bot error: {e}")
     finally:
         # Останавливаем фоновые задачи
         abandoned_tracker.stop()
@@ -100,8 +124,23 @@ async def main():
         await bot.session.close()
         logger.info("Bot shutdown complete")
 
+
+async def main():
+    """Run both bot and API server concurrently"""
+    logger.info("=" * 50)
+    logger.info("🤠 Academic Saloon - Starting services...")
+    logger.info("=" * 50)
+
+    # Run both services concurrently
+    await asyncio.gather(
+        run_bot(),
+        run_api_server(),
+        return_exceptions=True
+    )
+
+
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Bot stopped!")
+        logger.info("Services stopped!")
