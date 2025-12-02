@@ -710,6 +710,8 @@ async def handle_text_message(message: Message, bot: Bot, session: AsyncSession)
     Обработка текстовых сообщений — пересылка админу.
     Срабатывает ТОЛЬКО когда нет активного FSM состояния (чтобы не перехватывать ввод заказа).
     """
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
     user = message.from_user
 
     # Логируем сообщение — важное событие
@@ -723,23 +725,32 @@ async def handle_text_message(message: Message, bot: Bot, session: AsyncSession)
         level=LogLevel.ACTION,
     )
 
-    # Пересылаем сообщение админу
+    # Кнопка для ответа клиенту
+    reply_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💬 Ответить клиенту",
+            callback_data=f"dm_reply_{user.id}"
+        )]
+    ])
+
+    # Пересылаем сообщение админу с кнопкой ответа
     for admin_id in settings.ADMIN_IDS:
         try:
             await bot.send_message(
                 chat_id=admin_id,
-                text=f"💬  <b>Сообщение от клиента</b>\n\n"
-                     f"◈  {user.full_name} (@{user.username})\n"
-                     f"◈  ID: <code>{user.id}</code>\n\n"
-                     f"<i>{message.text}</i>"
+                text=f"📩 <b>Сообщение от клиента</b>\n\n"
+                     f"👤 {user.full_name} (@{user.username or 'нет'})\n"
+                     f"🆔 <code>{user.id}</code>\n\n"
+                     f"💬 <i>{message.text}</i>",
+                reply_markup=reply_keyboard
             )
         except Exception:
             pass
 
-    # Отвечаем пользователю
+    # Отвечаем пользователю в стиле салуна
     await message.answer(
-        "📨  <b>Сообщение получено!</b>\n\n"
-        "Хозяин скоро ответит. Обычно в течение пары часов.\n\n"
+        "📨 <b>Сообщение получено!</b>\n\n"
+        "🛡️ Шериф скоро ответит. Обычно в течение пары часов.\n\n"
         f"Или напиши напрямую: @{settings.SUPPORT_USERNAME}",
         reply_markup=get_main_menu_keyboard()
     )

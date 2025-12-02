@@ -27,17 +27,21 @@ router = Router()
 # ══════════════════════════════════════════════════════════════
 
 def get_chat_keyboard(order_id: int, is_admin: bool) -> InlineKeyboardMarkup:
-    """Клавиатура для чата"""
+    """Клавиатура для чата - всегда с полным набором кнопок"""
     buttons = []
 
     if is_admin:
         buttons.append([
-            InlineKeyboardButton(text="✏️ Ещё сообщение", callback_data=f"chat_continue_{order_id}"),
+            InlineKeyboardButton(text="💬 Ответить", callback_data=f"chat_continue_{order_id}"),
+            InlineKeyboardButton(text="📎 Файл", callback_data=f"chat_file_{order_id}"),
+        ])
+        buttons.append([
             InlineKeyboardButton(text="❌ Закрыть чат", callback_data=f"chat_close_{order_id}"),
         ])
     else:
         buttons.append([
             InlineKeyboardButton(text="💬 Ответить", callback_data=f"chat_reply_{order_id}"),
+            InlineKeyboardButton(text="📎 Файл", callback_data=f"chat_file_client_{order_id}"),
         ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -770,3 +774,115 @@ async def cancel_chat_input(callback: CallbackQuery, state: FSMContext):
         await callback.message.delete()
     except Exception:
         pass
+
+
+@router.callback_query(F.data.startswith("chat_file_client_"))
+async def client_send_file_btn(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Клиент хочет отправить файл"""
+    order_id = int(callback.data.replace("chat_file_client_", ""))
+
+    order = await session.get(Order, order_id)
+    if not order:
+        await callback.answer("❌ Заказ не найден", show_alert=True)
+        return
+
+    if order.user_id != callback.from_user.id:
+        await callback.answer("❌ Это не ваш заказ", show_alert=True)
+        return
+
+    await state.set_state(OrderChatStates.client_replying)
+    await state.update_data(order_id=order_id)
+
+    await callback.message.answer(
+        f"📎 <b>Отправка файла по заказу #{order_id}</b>\n\n"
+        f"Отправьте файл, фото или голосовое сообщение:",
+        reply_markup=get_cancel_keyboard()
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("chat_file_"))
+async def admin_send_file_btn(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """Админ хочет отправить файл"""
+    # Проверяем что это не client callback (уже обработан выше)
+    if "client" in callback.data:
+        return
+
+    order_id = int(callback.data.replace("chat_file_", ""))
+
+    if callback.from_user.id not in settings.ADMIN_IDS:
+        await callback.answer("❌ Только для админов", show_alert=True)
+        return
+
+    order = await session.get(Order, order_id)
+    if not order:
+        await callback.answer("❌ Заказ не найден", show_alert=True)
+        return
+
+    client_query = select(User).where(User.telegram_id == order.user_id)
+    result = await session.execute(client_query)
+    client = result.scalar_one_or_none()
+    client_name = client.fullname if client else "Клиент"
+
+    await state.set_state(OrderChatStates.admin_writing)
+    await state.update_data(
+        order_id=order_id,
+        client_id=order.user_id,
+        client_name=client_name,
+    )
+
+    await callback.message.answer(
+        f"📎 <b>Отправка файла клиенту по заказу #{order_id}</b>\n\n"
+        f"Отправьте файл, фото или голосовое сообщение:",
+        reply_markup=get_cancel_keyboard()
+    )
+    await callback.answer()
+
+
+# ══════════════════════════════════════════════════════════════
+#                    ПРЯМЫЕ СООБЩЕНИЯ (ВНЕ ЗАКАЗА)
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("dm_reply_"))
+async def admin_dm_reply(callback: CallbackQuery, state: FSMContext):
+    """Админ отвечает на свободное сообщение клиента"""
+    if callback.from_user.id not in settings.ADMIN_IDS:
+        await callback.answer("❌ Только для админов", show_alert=True)
+        return
+
+    user_id = int(callback.data.replace("dm_reply_", ""))
+
+    await state.set_state(OrderChatStates.admin_dm)
+    await state.update_data(client_id=user_id)
+
+    await callback.message.answer(
+        f"💬 <b>Ответ клиенту</b>\n\n"
+        f"🆔 ID: <code>{user_id}</code>\n\n"
+        f"✏️ Введите сообщение:",
+        reply_markup=get_cancel_keyboard()
+    )
+    await callback.answer()
+
+
+@router.message(OrderChatStates.admin_dm, F.text)
+async def admin_dm_send(message: Message, state: FSMContext, bot: Bot):
+    """Админ отправляет прямое сообщение клиенту"""
+    data = await state.get_data()
+    client_id = data.get("client_id")
+
+    if not client_id:
+        await message.answer("❌ Ошибка: данные потеряны")
+        await state.clear()
+        return
+
+    try:
+        await bot.send_message(
+            chat_id=client_id,
+            text=f"🛡️ <b>Сообщение от Шерифа:</b>\n\n{message.text}"
+        )
+        await message.answer("✅ Сообщение отправлено!")
+    except Exception as e:
+        logger.error(f"Error sending DM to {client_id}: {e}")
+        await message.answer(f"❌ Не удалось отправить: {e}")
+
+    await state.clear()
