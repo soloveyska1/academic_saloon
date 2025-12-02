@@ -35,6 +35,23 @@ class OrderState(StatesGroup):
     waiting_for_receipt = State()
 
 
+class PanicState(StatesGroup):
+    """
+    Состояния для Panic Flow — срочный заказ "ГОРИТ!"
+
+    Минимум кликов: Срочность → Загрузка файлов → Готово
+    """
+
+    # Шаг 1: Выбор срочности (наценки)
+    choosing_urgency = State()
+
+    # Шаг 2: Загрузка файлов (единый шлюз)
+    uploading_files = State()
+
+    # Шаг 3: Подтверждение отправки
+    confirming = State()
+
+
 class CouponState(StatesGroup):
     """Состояния для активации купона"""
 

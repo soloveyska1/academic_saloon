@@ -46,7 +46,7 @@ from sqlalchemy import select
 
 from database.models.users import User
 from database.models.orders import Order, WorkType, WORK_TYPE_LABELS, OrderStatus
-from bot.states.order import OrderState
+from bot.states.order import OrderState, PanicState
 from bot.keyboards.inline import get_back_keyboard, get_cancel_complete_keyboard
 from bot.keyboards.orders import (
     get_work_type_keyboard,
@@ -73,6 +73,9 @@ from bot.keyboards.orders import (
     get_manual_review_keyboard,
     get_waiting_payment_keyboard,
     get_order_success_keyboard,
+    get_panic_urgency_keyboard,
+    get_panic_upload_keyboard,
+    get_panic_final_keyboard,
     SUBJECTS,
     DEADLINES,
     WORK_CATEGORIES,
@@ -655,9 +658,8 @@ async def quick_order_from_price(callback: CallbackQuery, state: FSMContext, bot
         return
 
     if work_type == WorkType.OTHER:
-        await state.update_data(subject="other", subject_label="🦄 Спецзаказ")
-        await state.set_state(OrderState.entering_task)
-        await show_task_input_screen(callback.message, work_type=WorkType.OTHER, send_new=True)
+        # "Другое" переходит в Panic Flow
+        await panic_flow_entry(callback, state, bot)
         return
 
     # Для diploma, coursework и других крупных — к выбору направления
@@ -4591,4 +4593,481 @@ async def waiting_for_receipt_invalid(message: Message, state: FSMContext, bot: 
     await message.answer(
         "📸 <b>Жду скриншот чека!</b>\n\n"
         "Пожалуйста, отправь фото или файл с чеком об оплате."
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                           PANIC FLOW — СРОЧНЫЙ ЗАКАЗ "ГОРИТ!"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Маппинг срочности на множитель и метку
+PANIC_URGENCY_MAP = {
+    "critical": {"multiplier": 1.5, "label": "🚀 Нужно вчера", "tag": "+50%"},
+    "high": {"multiplier": 1.3, "label": "🔥 Сдать завтра", "tag": "+30%"},
+    "medium": {"multiplier": 1.15, "label": "🏎 Турбо (2-3 дня)", "tag": "+15%"},
+}
+
+
+@router.callback_query(F.data == "work_category:urgent")
+async def panic_flow_entry(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """
+    Точка входа в Panic Flow — выбор срочности.
+    Вызывается из категорий работ или из прайса по кнопке "Другое".
+    """
+    await callback.answer("🔥")
+
+    # Устанавливаем состояние Panic Flow
+    await state.set_state(PanicState.choosing_urgency)
+    await state.update_data(
+        panic_files=[],
+        panic_urgency=None,
+    )
+
+    caption = """🔥 <b>РЕЖИМ ПАНИКИ</b>
+
+Понял, горит! Сейчас разберёмся.
+
+<b>Выбери степень огнеопасности:</b>
+
+🚀 <b>Нужно вчера</b> — работаем ночью, цена x1.5
+🔥 <b>Сдать завтра</b> — приоритетная очередь, x1.3
+🏎 <b>Турбо</b> — 2-3 дня, ускорение x1.15"""
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Отправляем с фото если есть
+    if URGENT_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=URGENT_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_panic_urgency_keyboard(),
+            )
+            return
+        except Exception:
+            pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_panic_urgency_keyboard(),
+    )
+
+
+@router.callback_query(PanicState.choosing_urgency, F.data.startswith("panic_urgency:"))
+async def panic_urgency_selected(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """
+    Выбрана срочность — переходим к загрузке файлов.
+    """
+    await callback.answer("⚡")
+
+    urgency_key = callback.data.split(":")[1]
+    urgency_info = PANIC_URGENCY_MAP.get(urgency_key, PANIC_URGENCY_MAP["medium"])
+
+    await state.update_data(
+        panic_urgency=urgency_key,
+        panic_multiplier=urgency_info["multiplier"],
+        panic_urgency_label=urgency_info["label"],
+    )
+    await state.set_state(PanicState.uploading_files)
+
+    caption = f"""📤 <b>ЗАГРУЗИ ЗАДАНИЕ</b>
+
+Срочность: <b>{urgency_info["label"]}</b> ({urgency_info["tag"]})
+
+Скидывай сюда всё что есть:
+• 📸 Фото задания
+• 📄 Документы/файлы
+• 🎤 Голосовое (опишешь словами)
+• 💬 Текстом — тоже ок
+
+<i>Загрузи хотя бы что-то, чтобы разблокировать кнопку ПУСК</i>"""
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Отправляем с фото если есть
+    if FAST_UPLOAD_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=FAST_UPLOAD_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_panic_upload_keyboard(has_files=False),
+            )
+            return
+        except Exception:
+            pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_panic_upload_keyboard(has_files=False),
+    )
+
+
+@router.message(PanicState.uploading_files)
+async def panic_file_received(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
+    """
+    Получен файл/фото/текст/голос — добавляем в список.
+    """
+    # Intercept /start command
+    if message.text and message.text.strip().lower().startswith("/start"):
+        await process_start(message, session, bot, state, deep_link=None)
+        return
+
+    data = await state.get_data()
+    panic_files = data.get("panic_files", [])
+
+    # Определяем тип вложения
+    attachment = None
+
+    if message.photo:
+        photo = message.photo[-1]
+        attachment = {
+            "type": "photo",
+            "file_id": photo.file_id,
+            "caption": message.caption or "",
+        }
+    elif message.document:
+        attachment = {
+            "type": "document",
+            "file_id": message.document.file_id,
+            "file_name": message.document.file_name or "документ",
+            "caption": message.caption or "",
+        }
+    elif message.voice:
+        attachment = {
+            "type": "voice",
+            "file_id": message.voice.file_id,
+            "duration": message.voice.duration,
+        }
+    elif message.audio:
+        attachment = {
+            "type": "audio",
+            "file_id": message.audio.file_id,
+            "file_name": message.audio.file_name or "аудио",
+        }
+    elif message.video:
+        attachment = {
+            "type": "video",
+            "file_id": message.video.file_id,
+            "caption": message.caption or "",
+        }
+    elif message.video_note:
+        attachment = {
+            "type": "video_note",
+            "file_id": message.video_note.file_id,
+        }
+    elif message.text:
+        attachment = {
+            "type": "text",
+            "content": message.text,
+        }
+
+    if attachment:
+        panic_files.append(attachment)
+        await state.update_data(panic_files=panic_files)
+
+    # Формируем превью
+    files_count = len(panic_files)
+    urgency_label = data.get("panic_urgency_label", "🏎 Турбо")
+
+    # Считаем типы
+    photos = sum(1 for f in panic_files if f["type"] == "photo")
+    docs = sum(1 for f in panic_files if f["type"] == "document")
+    voices = sum(1 for f in panic_files if f["type"] in ("voice", "audio"))
+    texts = sum(1 for f in panic_files if f["type"] == "text")
+    videos = sum(1 for f in panic_files if f["type"] in ("video", "video_note"))
+
+    summary_parts = []
+    if photos:
+        summary_parts.append(f"📸 {photos} фото")
+    if docs:
+        summary_parts.append(f"📄 {docs} файл(ов)")
+    if voices:
+        summary_parts.append(f"🎤 {voices} голосовых")
+    if texts:
+        summary_parts.append(f"💬 {texts} сообщений")
+    if videos:
+        summary_parts.append(f"🎥 {videos} видео")
+
+    summary = " • ".join(summary_parts) if summary_parts else "Пусто"
+
+    caption = f"""📤 <b>ЗАГРУЗИ ЗАДАНИЕ</b>
+
+Срочность: <b>{urgency_label}</b>
+
+<b>Загружено:</b> {summary}
+
+<i>Жми 🚀 ПУСК когда готов или добавь ещё материалы</i>"""
+
+    await message.answer(
+        text=caption,
+        reply_markup=get_panic_upload_keyboard(has_files=files_count > 0),
+    )
+
+
+@router.callback_query(PanicState.uploading_files, F.data == "panic_submit")
+async def panic_submit_order(callback: CallbackQuery, state: FSMContext, bot: Bot, session: AsyncSession):
+    """
+    Отправка срочного заказа — создаём заявку и уведомляем админа.
+    """
+    await callback.answer("🚀 Запускаем!")
+
+    data = await state.get_data()
+    panic_files = data.get("panic_files", [])
+    urgency_key = data.get("panic_urgency", "medium")
+    urgency_info = PANIC_URGENCY_MAP.get(urgency_key, PANIC_URGENCY_MAP["medium"])
+
+    user_id = callback.from_user.id
+    username = callback.from_user.username or "без_ника"
+    full_name = callback.from_user.full_name or "Аноним"
+
+    # Получаем пользователя из БД
+    user_query = select(User).where(User.telegram_id == user_id)
+    result = await session.execute(user_query)
+    user = result.scalar_one_or_none()
+
+    # Формируем описание из текстовых вложений
+    text_parts = []
+    for att in panic_files:
+        if att["type"] == "text":
+            text_parts.append(att["content"])
+
+    description = f"🔥 СРОЧНЫЙ ЗАКАЗ — {urgency_info['label']}\n\n"
+    if text_parts:
+        description += "Описание от клиента:\n" + "\n".join(text_parts)
+    else:
+        description += "(Только файлы без текстового описания)"
+
+    # Создаём заказ в БД
+    order = Order(
+        user_id=user.telegram_id if user else user_id,  # telegram_id пользователя
+        work_type=WorkType.OTHER.value,  # Panic = спецзаказ
+        subject="🔥 Срочный заказ",
+        description=description,
+        deadline=urgency_info["label"],
+        price=0.0,  # Цена определяется вручную
+        status=OrderStatus.PENDING.value,
+    )
+
+    session.add(order)
+    await session.commit()
+    await session.refresh(order)
+
+    # Формируем уведомление админам
+    admin_text = f"""🔥🔥🔥 <b>СРОЧНЫЙ ЗАКАЗ #{order.id}</b> 🔥🔥🔥
+
+👤 <b>Клиент:</b> {full_name}
+📱 @{username}
+🆔 <code>{user_id}</code>
+
+⚡ <b>Срочность:</b> {urgency_info["label"]} ({urgency_info["tag"]})
+
+📎 <b>Вложений:</b> {len(panic_files)}
+
+⏰ <i>Требуется оперативное реагирование!</i>"""
+
+    # Отправляем админам
+    for admin_id in settings.ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, admin_text)
+
+            # Пересылаем все вложения
+            for attachment in panic_files:
+                try:
+                    if attachment["type"] == "photo":
+                        await bot.send_photo(
+                            admin_id,
+                            attachment["file_id"],
+                            caption=attachment.get("caption", "")
+                        )
+                    elif attachment["type"] == "document":
+                        await bot.send_document(
+                            admin_id,
+                            attachment["file_id"],
+                            caption=f"📄 {attachment.get('file_name', 'документ')}"
+                        )
+                    elif attachment["type"] == "voice":
+                        await bot.send_voice(admin_id, attachment["file_id"])
+                    elif attachment["type"] == "audio":
+                        await bot.send_audio(admin_id, attachment["file_id"])
+                    elif attachment["type"] == "video":
+                        await bot.send_video(
+                            admin_id,
+                            attachment["file_id"],
+                            caption=attachment.get("caption", "")
+                        )
+                    elif attachment["type"] == "video_note":
+                        await bot.send_video_note(admin_id, attachment["file_id"])
+                    elif attachment["type"] == "text":
+                        await bot.send_message(
+                            admin_id,
+                            f"💬 Текст от клиента:\n\n{attachment['content']}"
+                        )
+                except Exception as e:
+                    logger.warning(f"Не удалось переслать вложение админу {admin_id}: {e}")
+        except Exception as e:
+            logger.warning(f"Не удалось уведомить админа {admin_id}: {e}")
+
+    # Логируем
+    await log_action(
+        session=session,
+        event=LogEvent.ORDER_CREATED,
+        level=LogLevel.INFO,
+        user_id=user.id if user else None,
+        order_id=order.id,
+        details={
+            "panic": True,
+            "urgency": urgency_key,
+            "files_count": len(panic_files),
+        }
+    )
+
+    # Очищаем состояние
+    await state.clear()
+
+    # Показываем подтверждение
+    caption = f"""✅ <b>ЗАКАЗ #{order.id} ПРИНЯТ!</b>
+
+🔥 Твоя заявка в приоритетной очереди.
+
+Шериф уже в курсе и скоро свяжется с тобой для уточнения деталей и стоимости.
+
+<i>Обычно отвечаем в течение 15-30 минут в рабочее время.</i>"""
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    # Отправляем подтверждение
+    if ORDER_DONE_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=ORDER_DONE_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_panic_final_keyboard(user_id),
+            )
+            return
+        except Exception:
+            pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_panic_final_keyboard(user_id),
+    )
+
+
+@router.callback_query(F.data == "panic_back_to_urgency")
+async def panic_back_to_urgency(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Назад к выбору срочности"""
+    await callback.answer("⏳")
+    await state.set_state(PanicState.choosing_urgency)
+
+    caption = """🔥 <b>РЕЖИМ ПАНИКИ</b>
+
+Понял, горит! Сейчас разберёмся.
+
+<b>Выбери степень огнеопасности:</b>
+
+🚀 <b>Нужно вчера</b> — работаем ночью, цена x1.5
+🔥 <b>Сдать завтра</b> — приоритетная очередь, x1.3
+🏎 <b>Турбо</b> — 2-3 дня, ускорение x1.15"""
+
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    if URGENT_IMAGE_PATH.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=callback.message.chat.id,
+                photo_path=URGENT_IMAGE_PATH,
+                caption=caption,
+                reply_markup=get_panic_urgency_keyboard(),
+            )
+            return
+        except Exception:
+            pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_panic_urgency_keyboard(),
+    )
+
+
+@router.callback_query(F.data == "panic_clear")
+async def panic_clear_files(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Очистить загруженные файлы"""
+    await callback.answer("🗑 Очищено")
+
+    data = await state.get_data()
+    urgency_label = data.get("panic_urgency_label", "🏎 Турбо")
+
+    await state.update_data(panic_files=[])
+
+    caption = f"""📤 <b>ЗАГРУЗИ ЗАДАНИЕ</b>
+
+Срочность: <b>{urgency_label}</b>
+
+Файлы очищены. Загрузи заново:
+• 📸 Фото задания
+• 📄 Документы/файлы
+• 🎤 Голосовое (опишешь словами)
+• 💬 Текстом — тоже ок
+
+<i>Загрузи хотя бы что-то, чтобы разблокировать кнопку ПУСК</i>"""
+
+    await safe_edit_or_send(
+        callback,
+        caption,
+        reply_markup=get_panic_upload_keyboard(has_files=False),
+        bot=bot,
+    )
+
+
+@router.callback_query(F.data == "panic_append_files")
+async def panic_append_files(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """Дослать материалы к существующему panic-заказу"""
+    await callback.answer("📎")
+
+    # Переходим в режим дозагрузки
+    await state.set_state(OrderState.appending_files)
+    # Помечаем что это panic append (для правильной навигации)
+    await state.update_data(panic_append=True)
+
+    caption = """📎 <b>ДОСЛАТЬ МАТЕРИАЛЫ</b>
+
+Отправляй дополнительные файлы — всё передадим исполнителю.
+
+<i>Когда закончишь — нажми «Готово»</i>"""
+
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
+    await bot.send_message(
+        chat_id=callback.message.chat.id,
+        text=caption,
+        reply_markup=get_append_files_keyboard(files_count=0),
     )
