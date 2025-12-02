@@ -365,11 +365,14 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
         select(Order)
         .where(Order.status.in_([
             OrderStatus.PENDING.value,
+            OrderStatus.WAITING_ESTIMATION.value,  # Спецзаказы ждут оценки
             OrderStatus.WAITING_PAYMENT.value,
             OrderStatus.VERIFICATION_PENDING.value,
             OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
+            OrderStatus.PAID_FULL.value,  # Полностью оплаченные
             OrderStatus.IN_PROGRESS.value,
+            OrderStatus.REVIEW.value,
         ]))
         .order_by(desc(Order.created_at))
         .limit(20)
@@ -386,10 +389,12 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
 
     # Группируем по статусам
     pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
+    waiting_estimation = [o for o in orders if o.status == OrderStatus.WAITING_ESTIMATION.value]
     verification_pending = [o for o in orders if o.status == OrderStatus.VERIFICATION_PENDING.value]
     waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
-    paid = [o for o in orders if o.status == OrderStatus.PAID.value]
+    paid = [o for o in orders if o.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]]
     in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
+    review = [o for o in orders if o.status == OrderStatus.REVIEW.value]
 
     text = "📋 <b>Активные заявки</b>\n\n"
 
@@ -401,6 +406,16 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
             text += f"  • #{o.id} {work} ({time_str})\n"
         if len(pending) > 5:
             text += f"  <i>...и ещё {len(pending) - 5}</i>\n"
+        text += "\n"
+
+    if waiting_estimation:
+        text += f"🔥 <b>Спецзаказы — оцени! ({len(waiting_estimation)}):</b>\n"
+        for o in waiting_estimation[:5]:
+            work = WORK_TYPE_LABELS.get(WorkType(o.work_type), o.work_type) if o.work_type else "?"
+            time_str = o.created_at.strftime("%d.%m %H:%M") if o.created_at else ""
+            text += f"  • #{o.id} {work} ({time_str}) 🔥\n"
+        if len(waiting_estimation) > 5:
+            text += f"  <i>...и ещё {len(waiting_estimation) - 5}</i>\n"
         text += "\n"
 
     if verification_pending:
@@ -424,6 +439,12 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
     if in_progress:
         text += f"⚙️ <b>В работе ({len(in_progress)}):</b>\n"
         for o in in_progress[:5]:
+            text += f"  • #{o.id}\n"
+        text += "\n"
+
+    if review:
+        text += f"🔍 <b>На проверке ({len(review)}):</b>\n"
+        for o in review[:5]:
             text += f"  • #{o.id}\n"
 
     text += "\n<i>Команды: /price ID ЦЕНА, /paid ID</i>"
@@ -485,10 +506,12 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
         select(Order)
         .where(Order.status.in_([
             OrderStatus.PENDING.value,
+            OrderStatus.WAITING_ESTIMATION.value,  # Спецзаказы ждут оценки
             OrderStatus.WAITING_PAYMENT.value,
             OrderStatus.VERIFICATION_PENDING.value,
             OrderStatus.CONFIRMED.value,  # legacy
             OrderStatus.PAID.value,
+            OrderStatus.PAID_FULL.value,  # Полностью оплаченные
             OrderStatus.IN_PROGRESS.value,
             OrderStatus.REVIEW.value,
         ]))
@@ -508,9 +531,10 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
 
     # Группируем по статусам
     pending = [o for o in orders if o.status == OrderStatus.PENDING.value]
+    waiting_estimation = [o for o in orders if o.status == OrderStatus.WAITING_ESTIMATION.value]
     verification_pending = [o for o in orders if o.status == OrderStatus.VERIFICATION_PENDING.value]
     waiting_payment = [o for o in orders if o.status in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]]
-    paid = [o for o in orders if o.status == OrderStatus.PAID.value]
+    paid = [o for o in orders if o.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]]
     in_progress = [o for o in orders if o.status == OrderStatus.IN_PROGRESS.value]
     review = [o for o in orders if o.status == OrderStatus.REVIEW.value]
 
@@ -524,6 +548,16 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
             text += f"  • #{o.id} {work} ({time_str})\n"
         if len(pending) > 5:
             text += f"  <i>...и ещё {len(pending) - 5}</i>\n"
+        text += "\n"
+
+    if waiting_estimation:
+        text += f"🔥 <b>Спецзаказы — оцени! ({len(waiting_estimation)}):</b>\n"
+        for o in waiting_estimation[:5]:
+            work = WORK_TYPE_LABELS.get(WorkType(o.work_type), o.work_type) if o.work_type else "?"
+            time_str = o.created_at.strftime("%d.%m %H:%M") if o.created_at else ""
+            text += f"  • #{o.id} {work} ({time_str}) 🔥\n"
+        if len(waiting_estimation) > 5:
+            text += f"  <i>...и ещё {len(waiting_estimation) - 5}</i>\n"
         text += "\n"
 
     if verification_pending:
