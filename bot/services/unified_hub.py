@@ -89,8 +89,9 @@ async def init_unified_hub(bot: Bot, session: AsyncSession) -> dict[str, int]:
 
     # Загружаем существующие служебные топики из БД
     for topic_key, topic_config in SERVICE_TOPICS.items():
-        # Ищем Conversation с типом service и без order_id
+        # Ищем Conversation с типом service, user_id=0 и без order_id
         query = select(Conversation).where(
+            Conversation.user_id == 0,  # Служебные топики
             Conversation.conversation_type == f"service_{topic_key}",
             Conversation.order_id.is_(None),
         )
