@@ -1,3 +1,5 @@
+/* 🤠 Navigation — Saloon Bar Style */
+
 .nav {
   position: fixed;
   bottom: 0;
@@ -5,11 +7,43 @@
   right: 0;
   display: flex;
   justify-content: space-around;
-  background: linear-gradient(to top, #0d0d1a 0%, rgba(13, 13, 26, 0.95) 100%);
-  backdrop-filter: blur(10px);
-  padding: 12px 16px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(212, 168, 83, 0.2);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(0,0,0,0.1) 2px,
+      rgba(0,0,0,0.1) 4px
+    ),
+    linear-gradient(to top,
+      #1e0f08 0%,
+      #2d1810 30%,
+      #3d2317 100%);
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  border-top: 3px solid #8b6914;
+  box-shadow:
+    0 -4px 20px rgba(0,0,0,0.5),
+    inset 0 2px 4px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,180,80,0.1);
+}
+
+/* Brass strip at top */
+.nav::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 50%,
+      #8b6914 100%);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.3),
+    inset 0 1px 1px rgba(255,255,255,0.3);
 }
 
 .navItem {
@@ -20,10 +54,11 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 12px;
+  padding: 10px 20px;
+  border-radius: 8px;
   transition: all 0.2s ease;
-  color: #8b8b7a;
+  color: #8b7355;
+  position: relative;
 }
 
 .navItem:active {
@@ -32,16 +67,45 @@
 
 .navItem.active {
   color: #d4a853;
-  background: rgba(212, 168, 83, 0.1);
+  background:
+    linear-gradient(180deg,
+      rgba(201,162,39,0.15) 0%,
+      rgba(139,105,20,0.1) 100%);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.2),
+    0 0 15px rgba(212,168,83,0.2);
+}
+
+/* Active indicator - brass nail */
+.navItem.active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background:
+    radial-gradient(circle at 30% 30%,
+      #ffeaa7 0%,
+      #c9a227 50%,
+      #8b6914 100%);
+  border-radius: 50%;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.3),
+    inset 0 -1px 1px rgba(0,0,0,0.3);
 }
 
 .icon {
   font-size: 24px;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
 }
 
 .label {
-  font-size: 11px;
-  font-weight: 500;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
 }

@@ -1,11 +1,13 @@
+/* 🤠 OrderDetailPage — Contract Document Style */
+
 .container {
   padding: 20px 16px;
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .loading, .error {
@@ -15,16 +17,26 @@
   justify-content: center;
   min-height: 50vh;
   gap: 16px;
-  color: #8b8b7a;
+  color: #c4a574;
+  font-family: 'IM Fell English', serif;
 }
 
 .error button {
-  background: rgba(212, 168, 83, 0.2);
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 50%,
+      #8b6914 100%);
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
-  color: #d4a853;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  color: #1a0f05;
   cursor: pointer;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.3),
+    inset 0 1px 2px rgba(255,255,255,0.3);
 }
 
 /* Header */
@@ -39,54 +51,101 @@
   background: none;
   border: none;
   color: #d4a853;
-  font-size: 16px;
+  font-size: 20px;
   cursor: pointer;
   padding: 8px 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 .orderId {
-  font-family: 'Playfair Display', serif;
-  font-size: 20px;
-  color: #f5f5dc;
+  font-family: 'Rye', cursive;
+  font-size: 22px;
+  color: #d4a853;
+  text-shadow:
+    2px 2px 0 #1e0f08,
+    0 0 15px rgba(212,168,83,0.3);
 }
 
-/* Status banner */
+/* Status banner - Leather badge */
 .statusBanner {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
-  border-radius: 16px;
+  padding: 18px 20px;
+  border-radius: 12px;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .statusPending {
-  background: linear-gradient(135deg, rgba(240, 173, 78, 0.2) 0%, rgba(240, 173, 78, 0.1) 100%);
-  border: 1px solid rgba(240, 173, 78, 0.3);
+  background:
+    repeating-radial-gradient(
+      circle at 1px 1px,
+      transparent 0px,
+      transparent 1px,
+      rgba(0,0,0,0.02) 1px,
+      rgba(0,0,0,0.02) 2px
+    ),
+    linear-gradient(145deg, #7a4f3d 0%, #5c3a2e 50%, #3d2317 100%);
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 .statusPayment {
-  background: linear-gradient(135deg, rgba(91, 192, 222, 0.2) 0%, rgba(91, 192, 222, 0.1) 100%);
-  border: 1px solid rgba(91, 192, 222, 0.3);
+  background:
+    linear-gradient(145deg, #4a6f8b 0%, #3a5a70 50%, #2a4555 100%);
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 .statusWork {
-  background: linear-gradient(135deg, rgba(212, 168, 83, 0.2) 0%, rgba(212, 168, 83, 0.1) 100%);
-  border: 1px solid rgba(212, 168, 83, 0.3);
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 30%,
+      #8b6914 100%);
+  box-shadow:
+    0 6px 20px rgba(201,162,39,0.4),
+    inset 0 1px 2px rgba(255,255,255,0.3);
 }
 
 .statusSuccess {
-  background: linear-gradient(135deg, rgba(92, 184, 92, 0.2) 0%, rgba(92, 184, 92, 0.1) 100%);
-  border: 1px solid rgba(92, 184, 92, 0.3);
+  background:
+    linear-gradient(145deg, #5a8a50 0%, #4a7c3f 50%, #3a6030 100%);
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 .statusError {
-  background: linear-gradient(135deg, rgba(217, 83, 79, 0.2) 0%, rgba(217, 83, 79, 0.1) 100%);
-  border: 1px solid rgba(217, 83, 79, 0.3);
+  background:
+    linear-gradient(145deg, #9b4a4a 0%, #8b3a3a 50%, #6b2a2a 100%);
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+/* Stitching for leather banners */
+.statusPending::before,
+.statusPayment::before,
+.statusSuccess::before,
+.statusError::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  border: 2px dashed rgba(196,165,116,0.4);
+  border-radius: 8px;
+  pointer-events: none;
 }
 
 .statusIcon {
-  font-size: 32px;
+  font-size: 36px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 .statusInfo {
@@ -95,14 +154,26 @@
 }
 
 .statusLabel {
+  font-family: 'Cinzel', serif;
   font-size: 18px;
   font-weight: 600;
-  color: #f5f5dc;
+  color: #f5efe0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.statusWork .statusLabel {
+  color: #1a0f05;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
 }
 
 .statusProgress {
+  font-family: 'IM Fell English', serif;
   font-size: 14px;
-  color: #c4b998;
+  color: #c4a574;
+}
+
+.statusWork .statusProgress {
+  color: #5c3a2e;
 }
 
 /* Progress section */
@@ -111,29 +182,41 @@
 }
 
 .progressBar {
-  height: 8px;
-  background: rgba(139, 139, 122, 0.2);
-  border-radius: 4px;
+  height: 16px;
+  background: #3d2317;
+  border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  box-shadow:
+    inset 0 3px 6px rgba(0,0,0,0.4),
+    0 1px 0 rgba(255,255,255,0.1);
 }
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #d4a853 0%, #f0c674 100%);
-  border-radius: 4px;
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 50%,
+      #8b6914 100%);
+  border-radius: 10px;
   transition: width 0.5s ease;
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.3),
+    0 0 12px rgba(201,162,39,0.5);
 }
 
 .progressSteps {
   display: flex;
   justify-content: space-between;
+  font-family: 'IM Fell English', serif;
   font-size: 11px;
-  color: #8b8b7a;
+  color: #8b7355;
 }
 
 .stepDone {
   color: #d4a853;
+  text-shadow: 0 0 8px rgba(212,168,83,0.4);
 }
 
 /* Sections */
@@ -142,25 +225,52 @@
 }
 
 .sectionTitle {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Cinzel', serif;
   font-size: 18px;
-  color: #f5f5dc;
+  color: #d4a853;
   margin-bottom: 12px;
+  text-shadow:
+    0 2px 4px rgba(0,0,0,0.5),
+    0 0 15px rgba(212,168,83,0.2);
+  letter-spacing: 0.03em;
 }
 
-/* Details card */
+/* Details card - Parchment scroll */
 .detailsCard {
-  background: rgba(15, 52, 96, 0.6);
-  border-radius: 16px;
-  padding: 16px;
-  border: 1px solid rgba(212, 168, 83, 0.1);
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E"),
+    linear-gradient(180deg,
+      #f5efe0 0%,
+      #e8dcc4 10%,
+      #e8dcc4 90%,
+      #c4a574 100%);
+  border-radius: 8px;
+  padding: 18px;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.4),
+    inset 0 0 30px rgba(139,105,20,0.1);
+  position: relative;
+}
+
+.detailsCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 8px;
+  box-shadow: inset 0 0 25px rgba(139,69,19,0.2);
+  pointer-events: none;
 }
 
 .detailRow {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(139, 139, 122, 0.1);
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(139,105,20,0.2);
+  position: relative;
+  z-index: 1;
 }
 
 .detailRow:last-child {
@@ -168,58 +278,93 @@
 }
 
 .detailLabel {
-  color: #8b8b7a;
+  font-family: 'IM Fell English', serif;
+  color: #8b6914;
   font-size: 14px;
 }
 
 .detailValue {
-  color: #f5f5dc;
+  font-family: 'IM Fell English', serif;
+  color: #1a0f05;
   font-size: 14px;
   font-weight: 500;
   text-align: right;
   max-width: 60%;
 }
 
-/* Payment card */
+/* Payment card - Leather wallet */
 .paymentCard {
-  background: rgba(15, 52, 96, 0.6);
-  border-radius: 16px;
-  padding: 16px;
-  border: 1px solid rgba(212, 168, 83, 0.1);
+  background:
+    repeating-radial-gradient(
+      circle at 1px 1px,
+      transparent 0px,
+      transparent 1px,
+      rgba(0,0,0,0.02) 1px,
+      rgba(0,0,0,0.02) 2px
+    ),
+    linear-gradient(145deg, #7a4f3d 0%, #5c3a2e 50%, #3d2317 100%);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -2px 4px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.paymentCard::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  border: 2px dashed #c4a574;
+  border-radius: 8px;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .paymentRow {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 10px 0;
+  font-family: 'IM Fell English', serif;
   font-size: 15px;
-  color: #c4b998;
+  color: #c4a574;
+  position: relative;
+  z-index: 1;
 }
 
 .paymentRow.discount {
-  color: #5cb85c;
+  color: #7cb87c;
 }
 
 .paymentRow.paid {
-  color: #5cb85c;
+  color: #7cb87c;
   font-weight: 500;
 }
 
 .paymentDivider {
-  height: 1px;
-  background: rgba(212, 168, 83, 0.2);
-  margin: 8px 0;
+  height: 2px;
+  background:
+    linear-gradient(90deg, transparent, #c4a574, transparent);
+  margin: 10px 0;
+  position: relative;
+  z-index: 1;
 }
 
 .totalLabel {
+  font-family: 'Cinzel', serif;
   font-weight: 600;
-  color: #f5f5dc;
+  color: #f5efe0;
 }
 
 .totalValue {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: 'Rye', cursive;
+  font-size: 20px;
   color: #d4a853;
+  text-shadow: 0 0 10px rgba(212,168,83,0.4);
 }
 
 /* Actions */
@@ -231,34 +376,80 @@
 }
 
 .actionPrimary {
-  background: linear-gradient(135deg, #d4a853 0%, #b87333 100%);
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 25%,
+      #8b6914 75%,
+      #c9a227 100%);
   border: none;
   border-radius: 12px;
-  padding: 16px;
+  padding: 18px;
+  font-family: 'Cinzel', serif;
   font-size: 16px;
-  font-weight: 600;
-  color: #1a1a2e;
+  font-weight: 700;
+  color: #1a0f05;
   cursor: pointer;
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 2px 4px rgba(255,255,255,0.3),
+    inset 0 -2px 4px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
   transition: all 0.2s ease;
+  letter-spacing: 0.03em;
 }
 
 .actionPrimary:active {
-  transform: scale(0.98);
+  transform: translateY(2px);
+  box-shadow:
+    0 3px 10px rgba(0,0,0,0.4),
+    inset 0 1px 2px rgba(0,0,0,0.2);
 }
 
 .actionSecondary {
-  background: rgba(15, 52, 96, 0.6);
-  border: 1px solid rgba(212, 168, 83, 0.3);
+  background:
+    repeating-radial-gradient(
+      circle at 1px 1px,
+      transparent 0px,
+      transparent 1px,
+      rgba(0,0,0,0.02) 1px,
+      rgba(0,0,0,0.02) 2px
+    ),
+    linear-gradient(145deg, #7a4f3d 0%, #5c3a2e 50%, #3d2317 100%);
+  border: none;
   border-radius: 12px;
-  padding: 16px;
+  padding: 18px;
+  font-family: 'Cinzel', serif;
   font-size: 16px;
-  font-weight: 500;
-  color: #f5f5dc;
+  font-weight: 600;
+  color: #f5efe0;
   cursor: pointer;
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -2px 4px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   transition: all 0.2s ease;
+  letter-spacing: 0.03em;
+  position: relative;
+}
+
+.actionSecondary::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  border: 1px dashed #c4a574;
+  border-radius: 9px;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .actionSecondary:active {
-  transform: scale(0.98);
-  background: rgba(15, 52, 96, 0.8);
+  transform: translateY(2px);
+  box-shadow:
+    0 3px 10px rgba(0,0,0,0.4),
+    inset 0 2px 4px rgba(0,0,0,0.2);
 }

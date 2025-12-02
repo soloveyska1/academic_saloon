@@ -1,11 +1,13 @@
+/* 🤠 OrdersPage — Wanted Board Style */
+
 .container {
   padding: 20px 16px;
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .header {
@@ -16,45 +18,89 @@
 }
 
 .title {
-  font-family: 'Playfair Display', serif;
-  font-size: 24px;
-  color: #f5f5dc;
+  font-family: 'Rye', cursive;
+  font-size: 26px;
+  color: #d4a853;
+  text-shadow:
+    2px 2px 0 #1e0f08,
+    0 0 20px rgba(212,168,83,0.4);
+  letter-spacing: 0.05em;
 }
 
 .count {
-  background: rgba(212, 168, 83, 0.2);
-  color: #d4a853;
-  padding: 4px 12px;
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 50%,
+      #8b6914 100%);
+  color: #1a0f05;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  padding: 6px 16px;
   border-radius: 20px;
   font-size: 14px;
-  font-weight: 500;
+  box-shadow:
+    0 3px 8px rgba(0,0,0,0.3),
+    inset 0 1px 2px rgba(255,255,255,0.3);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
 }
 
-/* Filters */
+/* Filters - Leather tabs */
 .filters {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 20px;
   overflow-x: auto;
   padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .filterBtn {
-  background: rgba(15, 52, 96, 0.4);
-  border: 1px solid rgba(212, 168, 83, 0.1);
-  border-radius: 20px;
-  padding: 8px 16px;
+  background:
+    linear-gradient(145deg, #5c3a2e 0%, #3d2317 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-family: 'IM Fell English', serif;
   font-size: 14px;
-  color: #c4b998;
+  color: #c4a574;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
+  box-shadow:
+    0 3px 8px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  position: relative;
+}
+
+.filterBtn::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 1px dashed #8b7355;
+  border-radius: 5px;
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 .filterBtn.active {
-  background: rgba(212, 168, 83, 0.2);
-  border-color: #d4a853;
-  color: #d4a853;
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 50%,
+      #8b6914 100%);
+  color: #1a0f05;
+  box-shadow:
+    0 4px 12px rgba(201,162,39,0.4),
+    inset 0 1px 2px rgba(255,255,255,0.3);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.filterBtn.active::before {
+  display: none;
 }
 
 .filterBtn:active {
@@ -65,34 +111,59 @@
 .ordersList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .empty {
   text-align: center;
-  padding: 40px 20px;
-  color: #8b8b7a;
+  padding: 50px 20px;
+  color: #8b7355;
 }
 
 .emptyIcon {
-  font-size: 48px;
+  font-size: 56px;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  filter: grayscale(30%);
 }
 
-/* Order card */
+/* Order card - Wanted poster style */
 .orderCard {
-  background: rgba(15, 52, 96, 0.6);
-  border-radius: 16px;
-  padding: 16px;
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.06'/%3E%3C/svg%3E"),
+    linear-gradient(180deg,
+      #f5efe0 0%,
+      #e8dcc4 5%,
+      #e8dcc4 95%,
+      #c4a574 100%);
+  border-radius: 6px;
+  padding: 18px;
   cursor: pointer;
-  border: 1px solid rgba(212, 168, 83, 0.1);
   transition: all 0.2s ease;
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.4),
+    inset 0 0 30px rgba(139,105,20,0.08);
+  position: relative;
+}
+
+/* Burnt edges */
+.orderCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 20px rgba(139,69,19,0.2);
+  pointer-events: none;
 }
 
 .orderCard:active {
   transform: scale(0.98);
-  background: rgba(15, 52, 96, 0.8);
+  box-shadow:
+    0 3px 10px rgba(0,0,0,0.4),
+    inset 0 0 30px rgba(139,105,20,0.1);
 }
 
 .orderHeader {
@@ -100,100 +171,134 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .orderId {
+  font-family: 'IM Fell English', serif;
   font-size: 13px;
-  color: #8b8b7a;
-  font-weight: 500;
+  color: #8b6914;
+  font-style: italic;
 }
 
 .orderStatus {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 500;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .statusPending {
-  background: rgba(240, 173, 78, 0.2);
-  color: #f0ad4e;
+  background: #f0ad4e;
+  color: #1a0f05;
+  box-shadow: 0 2px 4px rgba(240,173,78,0.4);
 }
 
 .statusPayment {
-  background: rgba(91, 192, 222, 0.2);
-  color: #5bc0de;
+  background: #5bc0de;
+  color: #1a0f05;
+  box-shadow: 0 2px 4px rgba(91,192,222,0.4);
 }
 
 .statusWork {
-  background: rgba(212, 168, 83, 0.2);
-  color: #d4a853;
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 100%);
+  color: #1a0f05;
+  box-shadow: 0 2px 4px rgba(201,162,39,0.4);
 }
 
 .statusSuccess {
-  background: rgba(92, 184, 92, 0.2);
-  color: #5cb85c;
+  background: #5cb85c;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(92,184,92,0.4);
 }
 
 .statusError {
-  background: rgba(217, 83, 79, 0.2);
-  color: #d9534f;
+  background: #8b3a3a;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(139,58,58,0.4);
 }
 
 .orderBody {
   margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .orderTitle {
+  font-family: 'Rye', cursive;
   font-size: 17px;
-  font-weight: 600;
-  color: #f5f5dc;
+  color: #1a0f05;
   margin-bottom: 4px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
 }
 
 .orderSubject {
+  font-family: 'IM Fell English', serif;
   font-size: 14px;
-  color: #c4b998;
+  color: #5c3a2e;
 }
 
 .orderFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .orderDeadline {
+  font-family: 'IM Fell English', serif;
   font-size: 13px;
-  color: #8b8b7a;
+  color: #8b6914;
+  font-style: italic;
 }
 
 .orderPrice {
-  font-size: 16px;
-  font-weight: 600;
-  color: #d4a853;
+  font-family: 'Rye', cursive;
+  font-size: 18px;
+  color: #1a0f05;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
 }
 
 /* Progress bar */
 .progressBar {
-  margin-top: 12px;
-  height: 6px;
-  background: rgba(139, 139, 122, 0.2);
-  border-radius: 3px;
+  margin-top: 14px;
+  height: 10px;
+  background: #3d2317;
+  border-radius: 5px;
   position: relative;
   overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  z-index: 1;
 }
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #d4a853 0%, #f0c674 100%);
-  border-radius: 3px;
-  transition: width 0.3s ease;
+  background:
+    linear-gradient(180deg,
+      #e6c547 0%,
+      #c9a227 50%,
+      #8b6914 100%);
+  border-radius: 5px;
+  transition: width 0.5s ease;
+  box-shadow:
+    inset 0 1px 2px rgba(255,255,255,0.3),
+    0 0 10px rgba(201,162,39,0.4);
 }
 
 .progressText {
   position: absolute;
   right: 0;
   top: -18px;
+  font-family: 'IM Fell English', serif;
   font-size: 11px;
-  color: #8b8b7a;
+  color: #8b6914;
+  font-style: italic;
 }
