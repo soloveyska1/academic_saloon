@@ -26,6 +26,7 @@ from bot.services.logger import init_logger
 from bot.services.abandoned_detector import init_abandoned_tracker
 from bot.services.daily_stats import init_daily_stats
 from bot.services.silence_reminder import init_silence_reminder
+from bot.services.unified_hub import init_unified_hub
 from database.db import async_session_maker
 from core.redis_pool import close_redis
 
@@ -56,6 +57,12 @@ async def main():
 
     # --- ИНИЦИАЛИЗАЦИЯ СЕРВИСОВ ---
     init_logger(bot)
+
+    # UNIFIED HUB: инициализация служебных топиков
+    async with async_session_maker() as session:
+        await init_unified_hub(bot, session)
+    logger.info("UNIFIED HUB initialized")
+
     abandoned_tracker = init_abandoned_tracker(bot, storage)
     logger.info("Abandoned order tracker started")
     daily_stats = init_daily_stats(bot)

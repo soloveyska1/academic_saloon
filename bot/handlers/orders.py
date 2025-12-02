@@ -4308,30 +4308,41 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
             logger.error(f"Error uploading to Yandex Disk: {e}")
 
     # ═══════════════════════════════════════════════════════════════
-    #   Live-карточка в канале заказов
+    #   UNIFIED HUB: Создание топика заказа
     # ═══════════════════════════════════════════════════════════════
-    card_created = False
+    topic_created = False
     if session:
         try:
-            msg_id = await send_or_update_card(
-                bot=bot,
-                order=order,
-                session=session,
-                client_username=user.username,
-                client_name=user.fullname,
-                yadisk_link=yadisk_link,
-            )
-            if msg_id:
-                card_created = True
-                logger.info(f"Live card created for order #{order.id} (msg_id={msg_id})")
-            else:
-                logger.warning(f"Live card creation returned None for order #{order.id}")
-        except Exception as e:
-            logger.error(f"Failed to create live card for order #{order.id}: {e}")
+            from bot.services.unified_hub import create_order_topic, post_to_feed
 
-    # Если карточка успешно создана в канале, пропускаем личные уведомления админам
-    if card_created:
-        logger.info(f"Order #{order.id}: skipping personal admin notifications (card in channel)")
+            # Создаём топик для заказа
+            conv, topic_id = await create_order_topic(
+                bot=bot,
+                session=session,
+                order=order,
+                user=user,
+            )
+
+            if topic_id:
+                topic_created = True
+                logger.info(f"✅ Order topic created for #{order.id} (topic_id={topic_id})")
+
+                # Постим в ленту заказов
+                await post_to_feed(
+                    bot=bot,
+                    order=order,
+                    user=user,
+                    topic_id=topic_id,
+                    yadisk_link=yadisk_link,
+                )
+            else:
+                logger.warning(f"Topic creation returned None for order #{order.id}")
+        except Exception as e:
+            logger.error(f"Failed to create order topic for #{order.id}: {e}")
+
+    # Если топик успешно создан, пропускаем личные уведомления админам
+    if topic_created:
+        logger.info(f"Order #{order.id}: topic created, skipping personal admin notifications")
         return
 
     # ═══════════════════════════════════════════════════════════════
