@@ -2096,7 +2096,9 @@ async def price_no_bonus_callback(callback: CallbackQuery, session: AsyncSession
 
 @router.callback_query(F.data.startswith("price_question:"))
 async def price_question_callback(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Клиент хочет обсудить цену / торговаться"""
+    """Клиент хочет обсудить цену / торговаться — переводит в чат через топик"""
+    from bot.handlers.order_chat import get_or_create_topic, ConversationType
+
     order_id = parse_callback_int(callback.data, 1)
     if order_id is None:
         await callback.answer("Ошибка данных", show_alert=True)
@@ -2111,22 +2113,19 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    await callback.answer("📨 Связываюсь с Шерифом...")
+    await callback.answer("📨 Открываю чат с Шерифом...")
 
-    # Уведомляем клиента
-    client_text = f"""💬 <b>Понял тебя!</b>
+    # Уведомляем клиента и предлагаем войти в чат
+    client_text = f"""💬 <b>Готов обсудить!</b>
 
 Заказ #{order.id} · {order.price:.0f}₽
 
-Сейчас передам твой вопрос Шерифу лично. Он свяжется с тобой в ближайшее время, чтобы всё обсудить.
-
-Можешь написать ему напрямую:
-@{settings.SUPPORT_USERNAME}"""
+Нажми кнопку ниже, чтобы войти в чат и обсудить условия напрямую с Шерифом."""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="💬 Написать Шерифу",
-            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+            text="💬 Войти в чат по заказу",
+            callback_data=f"enter_chat_order_{order.id}"
         )],
         [InlineKeyboardButton(
             text="🌵 В салун",
@@ -2143,10 +2142,19 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
 
     await bot.send_message(chat_id=chat_id, text=client_text, reply_markup=keyboard)
 
-    # Уведомляем админов
+    # Создаём топик и отправляем уведомление туда
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
-    admin_text = f"""💬 <b>Клиент хочет обсудить условия!</b>
+    try:
+        conv, topic_id = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=callback.from_user.id,
+            order_id=order_id,
+            conv_type=ConversationType.ORDER_CHAT.value,
+        )
+
+        admin_text = f"""💬 <b>Клиент хочет обсудить условия!</b>
 
 📋 Заказ: #{order.id}
 📝 {work_label}
@@ -2155,24 +2163,15 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
 👤 Клиент: @{callback.from_user.username or 'без username'}
 🆔 ID: <code>{callback.from_user.id}</code>
 
-<i>Клиент хочет обсудить условия — возможно, стоит связаться.</i>"""
+<i>Пишите сюда — сообщения уйдут клиенту.</i>"""
 
-    admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💬 Написать клиенту",
-            url=f"tg://user?id={callback.from_user.id}"
-        )],
-        [InlineKeyboardButton(
-            text="📋 Детали заказа",
-            callback_data=f"admin_order_detail:{order.id}"
-        )],
-    ])
-
-    for admin_id in settings.ADMIN_IDS:
-        try:
-            await bot.send_message(admin_id, admin_text, reply_markup=admin_keyboard)
-        except Exception:
-            pass
+        await bot.send_message(
+            chat_id=settings.ADMIN_GROUP_ID,
+            message_thread_id=topic_id,
+            text=admin_text,
+        )
+    except Exception as e:
+        logger.error(f"Failed to notify admins in topic: {e}")
 
 
 # ══════════════════════════════════════════════════════════════
