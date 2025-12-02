@@ -657,7 +657,7 @@ async def quick_order_from_price(callback: CallbackQuery, state: FSMContext, bot
     if work_type == WorkType.OTHER:
         await state.update_data(subject="other", subject_label="🦄 Спецзаказ")
         await state.set_state(OrderState.entering_task)
-        await show_task_input_screen(callback.message, is_special=True, send_new=True)
+        await show_task_input_screen(callback.message, work_type=WorkType.OTHER, send_new=True)
         return
 
     # Для diploma, coursework и других крупных — к выбору направления
