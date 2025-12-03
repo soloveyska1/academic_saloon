@@ -331,21 +331,30 @@ async def spin_roulette(
     # Check cooldown (use timezone-aware datetime!)
     now = datetime.now(timezone.utc)
 
-    # GOD MODE FOR ADMIN - Skip time check for testing animations
+    # --- GOD MODE FOR ADMIN ---
+    # Admin can spin infinitely for testing animations
     if user.telegram_id == 872379852:
-        # Admin can spin infinitely for testing
-        pass
-    elif user.last_daily_bonus_at:
+        can_spin = True
+        logger.info(f"GOD MODE: Allowing infinite spin for admin {user.telegram_id}")
+    else:
+        # Standard user cooldown logic
+        can_spin = True  # Default to true if no previous spin
+        if user.last_daily_bonus_at:
+            next_spin = user.last_daily_bonus_at + timedelta(hours=24)
+            if next_spin.tzinfo is None:
+                next_spin = next_spin.replace(tzinfo=timezone.utc)
+            can_spin = now >= next_spin
+
+    # Block non-admin users who can't spin
+    if not can_spin and user.telegram_id != 872379852:
         next_spin = user.last_daily_bonus_at + timedelta(hours=24)
-        # Ensure timezone-aware comparison
         if next_spin.tzinfo is None:
             next_spin = next_spin.replace(tzinfo=timezone.utc)
-        if now < next_spin:
-            return RouletteResponse(
-                success=False,
-                message="Колесо фортуны ещё отдыхает",
-                next_spin_at=next_spin.isoformat()
-            )
+        return RouletteResponse(
+            success=False,
+            message="Колесо фортуны ещё отдыхает",
+            next_spin_at=next_spin.isoformat()
+        )
 
     # Spin the wheel!
     prizes = [
