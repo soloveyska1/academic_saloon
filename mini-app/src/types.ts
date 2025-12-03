@@ -77,6 +77,50 @@ export interface RouletteResult {
   value: number
 }
 
+// Order Creation (Web App First)
+export interface OrderCreateRequest {
+  work_type: string
+  subject: string
+  topic?: string
+  deadline: string
+  description?: string
+}
+
+export interface OrderCreateResponse {
+  success: boolean
+  order_id: number
+  message: string
+  price?: number
+  is_manual_required: boolean
+}
+
+// Work types for order creation
+export type WorkType =
+  | 'masters'
+  | 'diploma'
+  | 'coursework'
+  | 'independent'
+  | 'essay'
+  | 'report'
+  | 'control'
+  | 'presentation'
+  | 'practice'
+  | 'other'
+  | 'photo_task'
+
+export interface WorkTypeOption {
+  value: WorkType
+  label: string
+  emoji: string
+  price: string
+}
+
+export interface DeadlineOption {
+  value: string
+  label: string
+  multiplier: string
+}
+
 // Telegram Web App types
 declare global {
   interface Window {

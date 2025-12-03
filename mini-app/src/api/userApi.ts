@@ -1,4 +1,4 @@
-import { UserData, PromoResult, RouletteResult, Order } from '../types'
+import { UserData, PromoResult, RouletteResult, Order, OrderCreateRequest, OrderCreateResponse } from '../types'
 
 // API base URL - hardcoded to ensure correct path
 const API_BASE = 'https://academic-saloon.duckdns.org/api'
@@ -177,6 +177,36 @@ export async function spinRoulette(): Promise<RouletteResult> {
   } catch (e) {
     console.error('[API] spinRoulette error:', e)
     return { prize: 'Ошибка', type: 'nothing', value: 0 }
+  }
+}
+
+// Create order
+export async function createOrder(data: OrderCreateRequest): Promise<OrderCreateResponse> {
+  if (!hasTelegramContext()) {
+    // Mock response for development
+    console.log('[API] Mock createOrder:', data)
+    return {
+      success: true,
+      order_id: Math.floor(Math.random() * 1000) + 100,
+      message: '✅ Заказ создан! (Mock)',
+      price: 15000,
+      is_manual_required: data.work_type === 'other'
+    }
+  }
+
+  try {
+    return await apiFetch<OrderCreateResponse>('/orders/create', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  } catch (e) {
+    console.error('[API] createOrder error:', e)
+    return {
+      success: false,
+      order_id: 0,
+      message: 'Ошибка создания заказа. Попробуйте позже.',
+      is_manual_required: false
+    }
   }
 }
 
