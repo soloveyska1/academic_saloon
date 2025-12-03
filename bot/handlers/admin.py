@@ -21,7 +21,7 @@ CHECKING_PAYMENT_IMAGE_PATH = Path(__file__).parent.parent / "media" / "checking
 # Изображение для счёта/инвойса (рукопожатие/сделка)
 IMG_PAYMENT_BILL = Path(__file__).parent.parent / "media" / "confirm_std.jpg"
 from aiogram.filters import Command, CommandObject, StateFilter
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType, FSInputFile
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType, FSInputFile, WebAppInfo
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -2130,46 +2130,31 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
 
     # Рассчитываем итоговую цену
     final_price = price - bonus_to_use
-    half_amount = final_price / 2
 
-    # Формируем сообщение для клиента (Ultra-Clean Layout)
-    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
-
-    client_text = build_price_offer_text(
-        order_id=order.id,
-        work_label=work_label,
-        deadline=order.deadline,
-        base_price=price,
-        bonus_used=bonus_to_use,
-        final_price=final_price,
-    )
-
-    # Формируем клавиатуру
-    buttons = [
-        [InlineKeyboardButton(
-            text=f"💳 100% Сразу ({final_price:.0f}₽)",
-            callback_data=f"pay_scheme:full:{order.id}"
-        )],
-        [InlineKeyboardButton(
-            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
-            callback_data=f"pay_scheme:half:{order.id}"
-        )],
-    ]
-
-    # Кнопка "Не тратить бонусы" только если они были применены
+    # Формируем премиум-уведомление для Mini App
+    price_formatted = f"{int(final_price):,}".replace(",", " ")
+    bonus_line = ""
     if bonus_to_use > 0:
-        buttons.append([InlineKeyboardButton(
-            text="🔄 Не тратить бонусы (Пересчитать)",
-            callback_data=f"price_no_bonus:{order.id}"
-        )])
+        bonus_line = f"\n💎 Применено бонусов: -{int(bonus_to_use)} ₽"
 
-    # Кнопка для вопросов/торга
-    buttons.append([InlineKeyboardButton(
-        text="💬 Обсудить условия",
-        callback_data=f"price_question:{order.id}"
-    )])
+    client_text = f"""🏆 <b>Заказ #{order.id} оценён!</b>
 
-    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+💰 К оплате: <b>{price_formatted} ₽</b>{bonus_line}
+
+Нажми кнопку ниже, чтобы перейти к оплате."""
+
+    # Клавиатура с WebApp кнопкой
+    webapp_url = f"{settings.WEBAPP_URL}/orders/{order.id}"
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💳 Перейти к оплате",
+            web_app=WebAppInfo(url=webapp_url)
+        )],
+        [InlineKeyboardButton(
+            text="💬 Обсудить условия",
+            callback_data=f"price_question:{order.id}"
+        )],
+    ])
 
     # Отправляем клиенту с картинкой
     try:
@@ -2190,7 +2175,7 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
 
         await message.answer(
             f"✅ Цена {price:.0f}₽ назначена заказу #{order.id}\n"
-            f"Клиенту отправлено сообщение\n"
+            f"Клиенту отправлено сообщение в Mini App\n"
             f"Бонусов применено: {bonus_to_use:.0f}₽\n"
             f"Итого к оплате: {final_price:.0f}₽"
         )
@@ -3079,44 +3064,31 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
 
     # Рассчитываем итоговую цену
     final_price = price - bonus_to_use
-    half_amount = final_price / 2
 
-    # Формируем сообщение для клиента
-    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
-
-    client_text = build_price_offer_text(
-        order_id=order.id,
-        work_label=work_label,
-        deadline=order.deadline,
-        base_price=price,
-        bonus_used=bonus_to_use,
-        final_price=final_price,
-    )
-
-    # Формируем клавиатуру
-    buttons = [
-        [InlineKeyboardButton(
-            text=f"💳 100% Сразу ({final_price:.0f}₽)",
-            callback_data=f"pay_scheme:full:{order.id}"
-        )],
-        [InlineKeyboardButton(
-            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
-            callback_data=f"pay_scheme:half:{order.id}"
-        )],
-    ]
-
+    # Формируем премиум-уведомление для Mini App
+    price_formatted = f"{int(final_price):,}".replace(",", " ")
+    bonus_line = ""
     if bonus_to_use > 0:
-        buttons.append([InlineKeyboardButton(
-            text="🔄 Не тратить бонусы (Пересчитать)",
-            callback_data=f"price_no_bonus:{order.id}"
-        )])
+        bonus_line = f"\n💎 Применено бонусов: -{int(bonus_to_use)} ₽"
 
-    buttons.append([InlineKeyboardButton(
-        text="💬 Обсудить условия",
-        callback_data=f"price_question:{order.id}"
-    )])
+    client_text = f"""🏆 <b>Заказ #{order.id} оценён!</b>
 
-    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+💰 К оплате: <b>{price_formatted} ₽</b>{bonus_line}
+
+Нажми кнопку ниже, чтобы перейти к оплате."""
+
+    # Клавиатура с WebApp кнопкой
+    webapp_url = f"{settings.WEBAPP_URL}/orders/{order.id}"
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💳 Перейти к оплате",
+            web_app=WebAppInfo(url=webapp_url)
+        )],
+        [InlineKeyboardButton(
+            text="💬 Обсудить условия",
+            callback_data=f"price_question:{order.id}"
+        )],
+    ])
 
     # Отправляем клиенту с картинкой
     try:
@@ -3141,7 +3113,7 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
             f"💰 Цена: {price:.0f}₽\n"
             f"🎁 Бонусов применено: {bonus_to_use:.0f}₽\n"
             f"💵 Итого к оплате: {final_price:.0f}₽\n\n"
-            f"<i>Клиенту отправлено предложение оплаты.</i>"
+            f"<i>Клиенту отправлено уведомление в Mini App.</i>"
         )
     except Exception as e:
         await callback.message.answer(f"❌ Не удалось отправить сообщение клиенту: {e}")
@@ -3211,46 +3183,31 @@ async def process_order_price_input(message: Message, state: FSMContext, session
 
     # Рассчитываем итоговую цену
     final_price = price - bonus_to_use
-    half_amount = final_price / 2
 
-    # Формируем сообщение для клиента (Ultra-Clean Layout)
-    work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
-
-    client_text = build_price_offer_text(
-        order_id=order.id,
-        work_label=work_label,
-        deadline=order.deadline,
-        base_price=price,
-        bonus_used=bonus_to_use,
-        final_price=final_price,
-    )
-
-    # Формируем клавиатуру
-    buttons = [
-        [InlineKeyboardButton(
-            text=f"💳 100% Сразу ({final_price:.0f}₽)",
-            callback_data=f"pay_scheme:full:{order.id}"
-        )],
-        [InlineKeyboardButton(
-            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
-            callback_data=f"pay_scheme:half:{order.id}"
-        )],
-    ]
-
-    # Кнопка "Не тратить бонусы" только если они были применены
+    # Формируем премиум-уведомление для Mini App
+    price_formatted = f"{int(final_price):,}".replace(",", " ")
+    bonus_line = ""
     if bonus_to_use > 0:
-        buttons.append([InlineKeyboardButton(
-            text="🔄 Не тратить бонусы (Пересчитать)",
-            callback_data=f"price_no_bonus:{order.id}"
-        )])
+        bonus_line = f"\n💎 Применено бонусов: -{int(bonus_to_use)} ₽"
 
-    # Кнопка для вопросов/торга
-    buttons.append([InlineKeyboardButton(
-        text="💬 Обсудить условия",
-        callback_data=f"price_question:{order.id}"
-    )])
+    client_text = f"""🏆 <b>Заказ #{order.id} оценён!</b>
 
-    kb = InlineKeyboardMarkup(inline_keyboard=buttons)
+💰 К оплате: <b>{price_formatted} ₽</b>{bonus_line}
+
+Нажми кнопку ниже, чтобы перейти к оплате."""
+
+    # Клавиатура с WebApp кнопкой
+    webapp_url = f"{settings.WEBAPP_URL}/orders/{order.id}"
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="💳 Перейти к оплате",
+            web_app=WebAppInfo(url=webapp_url)
+        )],
+        [InlineKeyboardButton(
+            text="💬 Обсудить условия",
+            callback_data=f"price_question:{order.id}"
+        )],
+    ])
 
     # Отправляем клиенту с картинкой
     try:
@@ -3271,7 +3228,7 @@ async def process_order_price_input(message: Message, state: FSMContext, session
 
         await reply(
             f"✅ Цена {price:.0f}₽ назначена заказу #{order.id}\n"
-            f"Клиенту отправлено сообщение\n"
+            f"Клиенту отправлено уведомление в Mini App\n"
             f"Бонусов применено: {bonus_to_use:.0f}₽\n"
             f"Итого к оплате: {final_price:.0f}₽"
         )
