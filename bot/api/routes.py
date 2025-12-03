@@ -901,9 +901,10 @@ async def get_payment_info(
 
     # Only show payment info for orders that need payment
     allowed_statuses = [
-        OrderStatus.WAITING_PAYMENT.value,
-        OrderStatus.VERIFICATION_PENDING.value,
-        OrderStatus.PAID.value,  # Half paid, needs remaining
+        OrderStatus.CONFIRMED.value,           # After price is set by admin
+        OrderStatus.WAITING_PAYMENT.value,     # Awaiting payment
+        OrderStatus.VERIFICATION_PENDING.value, # User clicked "I paid"
+        OrderStatus.PAID.value,                # Half paid, needs remaining
     ]
     if order.status not in allowed_statuses:
         raise HTTPException(
