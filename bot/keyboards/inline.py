@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 
 from core.config import settings
 
@@ -14,11 +14,11 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     Row 4: [ 🆘 Позвать Шерифа ]
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        # Row 1: Primary CTA — акцентная кнопка
+        # Row 1: Primary CTA — открывает Mini App для создания заказа
         [
             InlineKeyboardButton(
                 text="⚡️ РАССЧИТАТЬ СТОИМОСТЬ",
-                callback_data="start_order"
+                web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/create-order")
             )
         ],
         # Row 2: Прайс и Отзывы
@@ -32,11 +32,11 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
                 url=settings.REVIEWS_CHANNEL
             ),
         ],
-        # Row 3: Кабинет и Тайник
+        # Row 3: Кабинет (открывает Mini App) и Тайник
         [
             InlineKeyboardButton(
                 text="👤 Кабинет",
-                callback_data="my_profile"
+                web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/profile")
             ),
             InlineKeyboardButton(
                 text="🎁 Тайник (Халява)",
