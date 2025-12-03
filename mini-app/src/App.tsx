@@ -4,6 +4,7 @@ import { HomePage } from './pages/HomePage'
 import { OrdersPage } from './pages/OrdersPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
 import { RoulettePage } from './pages/RoulettePage'
+import { ProfilePage } from './pages/ProfilePage'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
 import { useUserData } from './hooks/useUserData'
@@ -39,6 +40,7 @@ function App() {
           <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
           <Route path="/order/:id" element={<OrderDetailPage />} />
           <Route path="/roulette" element={<RoulettePage user={userData} />} />
+          <Route path="/profile" element={<ProfilePage user={userData} />} />
         </Routes>
         <Navigation />
       </div>
