@@ -69,7 +69,7 @@ interface GoldenInvoiceProps {
 }
 
 function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoiceProps) {
-  const { haptic } = useTelegram()
+  const { haptic, hapticSuccess, hapticError } = useTelegram()
   const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'sbp'>('card')
   const [copied, setCopied] = useState<string | null>(null)
@@ -109,20 +109,20 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
       const result = await confirmPayment(order.id, paymentMethod, paymentScheme)
 
       if (result.success) {
-        haptic('success')
+        hapticSuccess()
         setSuccess(true)
         setTimeout(() => {
           onPaymentConfirmed()
         }, 2500)
       } else {
         setError(result.message)
-        haptic('error')
+        hapticError()
       }
     } catch (err) {
       console.error('[Payment] Error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Ошибка соединения'
       setError(errorMessage)
-      haptic('error')
+      hapticError()
     } finally {
       setProcessing(false)
     }

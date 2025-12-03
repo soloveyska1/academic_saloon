@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from aiogram import Router, Bot, F
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -164,8 +164,8 @@ async def send_payment_notification(
     price: float,
 ) -> bool:
     """
-    Отправляет клиенту полноценное уведомление об оплате с кнопками.
-    Использует существующую логику из admin.py
+    Отправляет клиенту премиум-уведомление об оплате с кнопкой Mini App.
+    Вся логика оплаты теперь в Mini App — более чистый и современный UX.
     """
     if not user:
         return False
@@ -176,20 +176,31 @@ async def send_payment_notification(
         bonus_used = min(user.balance, max_bonus)
         final_price = price - bonus_used
 
-        # Формируем текст
-        work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
+        # Формируем краткий премиум-текст
+        price_formatted = f"{int(final_price):,}".replace(",", " ")
 
-        client_text = build_price_offer_text(
-            order_id=order.id,
-            work_label=work_label,
-            deadline=order.deadline,
-            base_price=price,
-            bonus_used=bonus_used,
-            final_price=final_price,
-        )
+        bonus_line = ""
+        if bonus_used > 0:
+            bonus_line = f"\n💎 Применено бонусов: -{int(bonus_used)} ₽"
 
-        # Формируем клавиатуру
-        kb = build_payment_keyboard(order.id, final_price, bonus_used)
+        client_text = f"""🏆 <b>Заказ #{order.id} оценён!</b>
+
+💰 К оплате: <b>{price_formatted} ₽</b>{bonus_line}
+
+Нажми кнопку ниже, чтобы перейти к оплате."""
+
+        # Клавиатура с WebApp кнопкой
+        webapp_url = f"{settings.WEBAPP_URL}/orders/{order.id}"
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="💳 Перейти к оплате",
+                web_app=WebAppInfo(url=webapp_url)
+            )],
+            [InlineKeyboardButton(
+                text="💬 Обсудить условия",
+                callback_data=f"price_question:{order.id}"
+            )],
+        ])
 
         # Отправляем с картинкой
         if IMG_PAYMENT_BILL.exists():
