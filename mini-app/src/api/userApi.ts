@@ -1,7 +1,7 @@
 import { UserData, PromoResult, RouletteResult, Order } from '../types'
 
 // API base URL - will be your bot's API endpoint
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+const API_BASE = import.meta.env.VITE_API_URL || 'https://academic-saloon.duckdns.org'
 
 // Get init data from Telegram
 function getInitData(): string {
