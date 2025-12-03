@@ -121,6 +121,31 @@ export interface DeadlineOption {
   multiplier: string
 }
 
+// Chat types
+export interface ChatMessage {
+  id: number
+  sender_type: 'admin' | 'client'
+  sender_name: string
+  message_text: string | null
+  file_type: string | null
+  file_name: string | null
+  file_url: string | null
+  created_at: string
+  is_read: boolean
+}
+
+export interface ChatMessagesResponse {
+  order_id: number
+  messages: ChatMessage[]
+  unread_count: number
+}
+
+export interface SendMessageResponse {
+  success: boolean
+  message_id: number
+  message: string
+}
+
 // Telegram Web App types
 declare global {
   interface Window {

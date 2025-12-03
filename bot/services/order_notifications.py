@@ -1,13 +1,13 @@
 """
 Сервис уведомлений о смене статуса заказа.
 
-Отправляет пользователю push-уведомления при изменении статуса заказа.
-Используется админ-панелью при обновлении заказов.
+App-First подход: все действия направляют в Mini App.
+Премиальный, строгий стиль уведомлений.
 """
 
 import logging
 from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from database.models.orders import Order, OrderStatus, get_status_meta
 from core.config import settings
@@ -15,80 +15,88 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 
-# Шаблоны уведомлений для каждого перехода статуса
+# ══════════════════════════════════════════════════════════════
+#  PREMIUM NOTIFICATION TEMPLATES — App-First
+# ══════════════════════════════════════════════════════════════
+
 NOTIFICATION_TEMPLATES = {
-    # Заказ ждёт оплаты (автоматический расчёт)
+    # Заказ ждёт оплаты
     OrderStatus.WAITING_PAYMENT.value: {
         "emoji": "💳",
-        "title": "Ждёт оплаты",
-        "message": "Цена рассчитана автоматически.\nОплати и я сразу приступлю к работе.",
+        "title": "Ожидает оплаты",
+        "message": "Цена рассчитана. Оплатите для начала работы.",
         "show_price": True,
-        "show_order_button": True,
+        "webapp_button": "💳 Оплатить",
+        "webapp_path": "/orders/{order_id}",
     },
 
-    # Заказ подтверждён (legacy / ручной статус)
+    # Заказ подтверждён
     OrderStatus.CONFIRMED.value: {
-        "emoji": "✅",
-        "title": "Заказ подтверждён!",
-        "message": "Я посмотрел твой заказ и назначил цену.\nМожешь оплатить и я сразу приступлю к работе.",
+        "emoji": "✓",
+        "title": "Цена установлена",
+        "message": "Заказ оценён. Оплатите для начала работы.",
         "show_price": True,
-        "show_order_button": True,
+        "webapp_button": "💳 Оплатить",
+        "webapp_path": "/orders/{order_id}",
     },
 
     # Аванс оплачен
     OrderStatus.PAID.value: {
-        "emoji": "💳",
-        "title": "Аванс получен!",
-        "message": "Спасибо за оплату! Приступаю к работе.\nНапишу, когда будет готово.",
+        "emoji": "💰",
+        "title": "Аванс получен",
+        "message": "Приступаем к работе. Уведомим о готовности.",
         "show_price": False,
-        "show_order_button": True,
+        "webapp_button": "📋 Отслеживать",
+        "webapp_path": "/orders/{order_id}",
     },
 
     # Полностью оплачен
     OrderStatus.PAID_FULL.value: {
         "emoji": "💰",
-        "title": "Оплата получена!",
-        "message": "Спасибо за полную оплату! Твой заказ в приоритете.\nНапишу, когда будет готово.",
+        "title": "Оплата получена",
+        "message": "Заказ в приоритете. Уведомим о готовности.",
         "show_price": False,
-        "show_order_button": True,
+        "webapp_button": "📋 Отслеживать",
+        "webapp_path": "/orders/{order_id}",
     },
 
     # В работе
     OrderStatus.IN_PROGRESS.value: {
         "emoji": "⚙️",
-        "title": "Заказ в работе",
-        "message": "Работаю над твоим заказом.\nСкоро будет готово!",
+        "title": "В работе",
+        "message": "Работаем над заказом.",
         "show_price": False,
-        "show_order_button": True,
+        "webapp_button": "📋 Отслеживать",
+        "webapp_path": "/orders/{order_id}",
     },
 
     # На проверке
     OrderStatus.REVIEW.value: {
-        "emoji": "🔍",
-        "title": "Заказ готов!",
-        "message": "Работа готова и ждёт твоей проверки.\nПосмотри и напиши, если нужны правки.",
+        "emoji": "✓",
+        "title": "Готово к проверке",
+        "message": "Работа выполнена. Проверьте результат.",
         "show_price": False,
-        "show_order_button": True,
-        "show_support_button": True,
+        "webapp_button": "📋 Открыть заказ",
+        "webapp_path": "/orders/{order_id}",
     },
 
     # Завершён
     OrderStatus.COMPLETED.value: {
-        "emoji": "✨",
-        "title": "Заказ завершён!",
-        "message": "Рад, что всё получилось!\nСпасибо за заказ. Буду рад видеть снова.",
+        "emoji": "✓",
+        "title": "Заказ завершён",
+        "message": "Благодарим за заказ.",
         "show_price": False,
-        "show_order_button": True,
-        "show_new_order_button": True,
+        "webapp_button": "📝 Новый заказ",
+        "webapp_path": "/create-order",
     },
 
     # Отклонён
     OrderStatus.REJECTED.value: {
-        "emoji": "🚫",
+        "emoji": "✕",
         "title": "Заказ отклонён",
-        "message": "К сожалению, не могу взять этот заказ.\nНапиши мне — объясню причину и помогу найти решение.",
+        "message": "Не можем выполнить данный заказ. Свяжитесь с поддержкой.",
         "show_price": False,
-        "show_support_button": True,
+        "support_button": True,
     },
 }
 
@@ -102,6 +110,7 @@ async def notify_order_status_change(
 ) -> bool:
     """
     Отправить уведомление пользователю о смене статуса заказа.
+    App-First: все действия через WebApp кнопки.
 
     Args:
         bot: Экземпляр бота
@@ -113,56 +122,52 @@ async def notify_order_status_change(
     Returns:
         True если уведомление отправлено успешно
     """
-    # Получаем шаблон для нового статуса
     template = NOTIFICATION_TEMPLATES.get(new_status)
 
     if not template:
         logger.debug(f"Нет шаблона уведомления для статуса {new_status}")
         return False
 
-    # Формируем текст
+    # Формируем премиальный текст
     emoji = template["emoji"]
     title = template["title"]
     message = custom_message or template["message"]
 
-    text = f"""{emoji} <b>{title}</b>
+    # Премиальный строгий формат
+    text = f"""<b>{emoji} {title}</b>
 
-<b>Заказ #{order.id}</b> · {order.work_type_label}
+Заказ <code>#{order.id}</code> · {order.work_type_label}
 
 {message}"""
 
     # Добавляем цену если нужно
     if template.get("show_price") and order.price > 0:
-        price_text = f"\n\n<b>Стоимость: {order.price:.0f}₽</b>"
-
-        if order.discount > 0:
-            price_text += f" (скидка {order.discount:.0f}%)"
+        final_price = order.final_price
+        price_formatted = f"{int(final_price):,}".replace(",", " ")
 
         if order.bonus_used > 0:
-            price_text += f"\n🎁 Бонусы: −{order.bonus_used:.0f}₽"
-            price_text += f"\n<b>Итого: {order.final_price:.0f}₽</b>"
+            text += f"\n\n💰 К оплате: <b>{price_formatted} ₽</b>"
+            text += f"\n<i>Бонусы: −{int(order.bonus_used)} ₽</i>"
+        else:
+            text += f"\n\n💰 К оплате: <b>{price_formatted} ₽</b>"
 
-        text += price_text
-
-    # Формируем клавиатуру
+    # Формируем клавиатуру с WebApp кнопками
     buttons = []
 
-    if template.get("show_order_button"):
+    # Главная WebApp кнопка
+    if template.get("webapp_button") and template.get("webapp_path"):
+        webapp_path = template["webapp_path"].format(order_id=order.id)
+        webapp_url = f"{settings.WEBAPP_URL}{webapp_path}"
         buttons.append([InlineKeyboardButton(
-            text="📋 Посмотреть заказ",
-            callback_data=f"order_detail:{order.id}"
+            text=template["webapp_button"],
+            web_app=WebAppInfo(url=webapp_url)
         )])
 
-    if template.get("show_support_button"):
+    # Кнопка поддержки
+    if template.get("support_button"):
         buttons.append([InlineKeyboardButton(
-            text="💬 Написать",
-            url=f"https://t.me/{settings.SUPPORT_USERNAME}?text=Заказ%20%23{order.id}"
-        )])
-
-    if template.get("show_new_order_button"):
-        buttons.append([InlineKeyboardButton(
-            text="📝 Новый заказ",
-            callback_data="create_order"
+            text="💬 Поддержка",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
         )])
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons) if buttons else None
@@ -174,10 +179,10 @@ async def notify_order_status_change(
             text=text,
             reply_markup=keyboard,
         )
-        logger.info(f"Уведомление о статусе {new_status} отправлено пользователю {order.user_id}")
+        logger.info(f"[Notifications] Status {new_status} sent to user {order.user_id}")
         return True
     except Exception as e:
-        logger.error(f"Ошибка отправки уведомления пользователю {order.user_id}: {e}")
+        logger.error(f"[Notifications] Failed to notify user {order.user_id}: {e}")
         return False
 
 

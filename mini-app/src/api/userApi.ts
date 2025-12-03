@@ -1,4 +1,4 @@
-import { UserData, PromoResult, RouletteResult, Order, OrderCreateRequest, OrderCreateResponse } from '../types'
+import { UserData, PromoResult, RouletteResult, Order, OrderCreateRequest, OrderCreateResponse, ChatMessagesResponse, SendMessageResponse } from '../types'
 
 // API base URL
 const API_BASE = 'https://academic-saloon.duckdns.org/api'
@@ -306,6 +306,78 @@ export async function createOrder(data: OrderCreateRequest): Promise<OrderCreate
   return await apiFetch<OrderCreateResponse>('/orders/create', {
     method: 'POST',
     body: JSON.stringify(data),
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CHAT API — In-App Messaging
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function fetchOrderMessages(orderId: number): Promise<ChatMessagesResponse> {
+  if (!hasTelegramContext()) {
+    if (IS_DEV) {
+      // Mock chat messages for development
+      return {
+        order_id: orderId,
+        messages: [
+          {
+            id: 1,
+            sender_type: 'admin',
+            sender_name: 'Менеджер',
+            message_text: 'Здравствуйте! Ваш заказ принят в работу.',
+            file_type: null,
+            file_name: null,
+            file_url: null,
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+            is_read: true,
+          },
+          {
+            id: 2,
+            sender_type: 'client',
+            sender_name: 'Вы',
+            message_text: 'Спасибо! Когда примерно будет готово?',
+            file_type: null,
+            file_name: null,
+            file_url: null,
+            created_at: new Date(Date.now() - 3000000).toISOString(),
+            is_read: true,
+          },
+          {
+            id: 3,
+            sender_type: 'admin',
+            sender_name: 'Менеджер',
+            message_text: 'Планируем закончить к завтрашнему вечеру. Напишу как только будет готово.',
+            file_type: null,
+            file_name: null,
+            file_url: null,
+            created_at: new Date(Date.now() - 2400000).toISOString(),
+            is_read: false,
+          },
+        ],
+        unread_count: 1,
+      }
+    }
+    throw new Error('Откройте приложение через Telegram')
+  }
+
+  return await apiFetch<ChatMessagesResponse>(`/orders/${orderId}/messages`)
+}
+
+export async function sendOrderMessage(orderId: number, text: string): Promise<SendMessageResponse> {
+  if (!hasTelegramContext()) {
+    if (IS_DEV) {
+      return {
+        success: true,
+        message_id: Date.now(),
+        message: 'Сообщение отправлено',
+      }
+    }
+    throw new Error('Откройте приложение через Telegram')
+  }
+
+  return await apiFetch<SendMessageResponse>(`/orders/${orderId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
   })
 }
 

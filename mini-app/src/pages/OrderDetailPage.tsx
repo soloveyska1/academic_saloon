@@ -11,6 +11,7 @@ import {
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { fetchOrderDetail, fetchPaymentInfo, confirmPayment, PaymentInfo } from '../api/userApi'
+import { OrderChat } from '../components/OrderChat'
 
 // Work type icons mapping
 const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
@@ -1355,6 +1356,11 @@ export function OrderDetailPage() {
             </span>
           </motion.div>
         </div>
+      )}
+
+      {/* In-App Chat — Premium Feature */}
+      {isActive && !showPaymentUI && (
+        <OrderChat orderId={order.id} />
       )}
 
       {/* Fixed Action Bar (not during payment) */}

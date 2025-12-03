@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   GraduationCap, FileText, BookOpen, Scroll, PenTool,
@@ -741,23 +741,35 @@ function DeadlineCard({ config, selected, onSelect, index }: DeadlineCardProps) 
 
 export function CreateOrderPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { haptic, hapticSuccess, hapticError } = useTelegram()
+
+  // Check for urgent/panic mode from URL params
+  const isUrgentMode = searchParams.get('urgent') === 'true'
+  const preselectedType = searchParams.get('type') as WorkType | null
 
   // Wizard
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(0)
 
   // Form data
-  const [workType, setWorkType] = useState<WorkType | null>(null)
+  const [workType, setWorkType] = useState<WorkType | null>(preselectedType)
   const [subject, setSubject] = useState('')
   const [topic, setTopic] = useState('')
-  const [description, setDescription] = useState('')
+  const [description, setDescription] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
   const [files, setFiles] = useState<File[]>([])
-  const [deadline, setDeadline] = useState<string | null>(null)
+  const [deadline, setDeadline] = useState<string | null>(isUrgentMode ? 'today' : null)
 
   // UI
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; msg: string; id?: number } | null>(null)
+
+  // Auto-advance to step 2 if type is pre-selected (urgent mode)
+  useEffect(() => {
+    if (preselectedType && isUrgentMode) {
+      setStep(2)
+    }
+  }, [preselectedType, isUrgentMode])
 
   // Validation
   const canStep1 = workType !== null
