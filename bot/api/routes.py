@@ -769,11 +769,24 @@ async def confirm_payment(
     if order.user_id != tg_user.id:
         raise HTTPException(status_code=403, detail="Not your order")
 
-    # Check order is in payment waiting status
-    if order.status not in [OrderStatus.WAITING_PAYMENT.value, 'waiting_payment']:
+    # Check order can accept payment (has price, not paid, not cancelled/completed)
+    cancelled_statuses = [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value, OrderStatus.COMPLETED.value]
+    if order.status in cancelled_statuses:
         raise HTTPException(
             status_code=400,
-            detail=f"Order is not waiting for payment (status: {order.status})"
+            detail=f"Order cannot accept payment (status: {order.status})"
+        )
+
+    if not order.final_price or order.final_price <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Order has no price set yet"
+        )
+
+    if order.paid_amount and order.paid_amount >= order.final_price:
+        raise HTTPException(
+            status_code=400,
+            detail="Order is already fully paid"
         )
 
     # Calculate amount based on scheme

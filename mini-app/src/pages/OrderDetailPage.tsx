@@ -735,8 +735,12 @@ export function OrderDetailPage() {
         const data = await fetchOrderDetail(parseInt(id))
         setOrder(data)
 
-        // Load payment info if waiting for payment
-        if (data.status === 'waiting_payment') {
+        // Load payment info if order has price and is not fully paid
+        const needsPayment = data.final_price > 0 &&
+          (data.paid_amount || 0) < data.final_price &&
+          !['completed', 'cancelled', 'rejected'].includes(data.status)
+
+        if (needsPayment) {
           try {
             const payment = await fetchPaymentInfo(parseInt(id))
             setPaymentInfo(payment)
@@ -852,13 +856,18 @@ export function OrderDetailPage() {
   const isActive = !['completed', 'cancelled', 'rejected'].includes(order.status)
   const isWaitingPayment = order.status === 'waiting_payment'
   const isCancelled = ['cancelled', 'rejected'].includes(order.status)
+  // Show payment UI if order has price, not paid, and not cancelled/completed
+  const showPaymentUI = order.final_price > 0 &&
+    (order.paid_amount || 0) < order.final_price &&
+    isActive &&
+    paymentInfo !== null
 
   return (
     <div style={{
       minHeight: '100vh',
       background: '#0a0a0c',
       padding: 24,
-      paddingBottom: isWaitingPayment ? 40 : 180,
+      paddingBottom: showPaymentUI ? 40 : 180,
     }}>
       {/* Header */}
       <motion.header
@@ -933,8 +942,8 @@ export function OrderDetailPage() {
         </div>
       </motion.header>
 
-      {/* Golden Invoice for WAITING_PAYMENT */}
-      {isWaitingPayment && (
+      {/* Golden Invoice for orders needing payment */}
+      {showPaymentUI && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -950,7 +959,7 @@ export function OrderDetailPage() {
       )}
 
       {/* Progress Steps (only for active non-cancelled orders, not during payment) */}
-      {!isCancelled && !isWaitingPayment && (
+      {!isCancelled && !showPaymentUI && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1349,7 +1358,7 @@ export function OrderDetailPage() {
       )}
 
       {/* Fixed Action Bar (not during payment) */}
-      {!isWaitingPayment && (
+      {!showPaymentUI && (
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
