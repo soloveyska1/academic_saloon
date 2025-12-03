@@ -270,19 +270,37 @@ function MetallicWheel({
         height: 300,
       }}
     >
-      {/* Outer metallic ring */}
+      {/* Outer metallic ring with NEON GLOW */}
       <div
         style={{
           position: 'absolute',
-          inset: -10,
+          inset: -12,
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #4a4a50 0%, #2a2a2e 30%, #3a3a40 70%, #1a1a1e 100%)',
+          background: 'linear-gradient(135deg, #5a5a60 0%, #2a2a2e 25%, #3a3a40 50%, #2a2a2e 75%, #1a1a1e 100%)',
           boxShadow: `
-            0 20px 50px -15px rgba(0, 0, 0, 0.8),
-            0 0 60px -10px rgba(212, 175, 55, 0.15),
-            inset 0 2px 4px rgba(255, 255, 255, 0.1),
-            inset 0 -2px 4px rgba(0, 0, 0, 0.3)
+            0 20px 60px -15px rgba(0, 0, 0, 0.9),
+            0 0 80px -5px rgba(212, 175, 55, 0.25),
+            0 0 120px -20px rgba(212, 175, 55, 0.15),
+            inset 0 2px 6px rgba(255, 255, 255, 0.12),
+            inset 0 -3px 6px rgba(0, 0, 0, 0.4)
           `,
+          border: '2px solid rgba(212, 175, 55, 0.15)',
+        }}
+      />
+
+      {/* Neon outer glow ring */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: -16,
+          borderRadius: '50%',
+          background: 'transparent',
+          boxShadow: `
+            0 0 30px rgba(212, 175, 55, 0.2),
+            0 0 60px rgba(212, 175, 55, 0.1),
+            inset 0 0 30px rgba(212, 175, 55, 0.05)
+          `,
+          pointerEvents: 'none',
         }}
       />
 
@@ -562,8 +580,8 @@ function TriggerButton({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.35 }}
-      whileHover={!disabled ? { scale: 1.02 } : undefined}
-      whileTap={!disabled ? { scale: 0.95, y: 2 } : undefined}
+      whileHover={!disabled ? { scale: 1.02, y: -2 } : undefined}
+      whileTap={!disabled ? { scale: 0.95, y: 4 } : undefined}
       style={{
         position: 'relative',
         width: '100%',
@@ -574,43 +592,49 @@ function TriggerButton({
         cursor: disabled ? 'not-allowed' : 'pointer',
       }}
     >
-      {/* Button shadow base */}
+      {/* BEVELED EDGE - Dark bottom shadow for 3D depth */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          top: 4,
-          borderRadius: 16,
-          background: disabled ? 'rgba(0,0,0,0.3)' : 'rgba(139, 105, 20, 0.6)',
-          filter: 'blur(2px)',
+          top: 6,
+          borderRadius: 18,
+          background: disabled
+            ? 'linear-gradient(180deg, rgba(20, 20, 23, 0.8), rgba(0, 0, 0, 0.9))'
+            : 'linear-gradient(180deg, #5a4010, #2a1f08)',
+          filter: 'blur(1px)',
         }}
       />
 
-      {/* Main button body */}
+      {/* PHYSICAL TRIGGER - Main button body with beveled metal look */}
       <div
         style={{
           position: 'relative',
-          padding: '20px 32px',
+          padding: '22px 36px',
           borderRadius: 16,
           background: disabled
-            ? 'linear-gradient(180deg, #3a3a40 0%, #2a2a2e 50%, #1a1a1e 100%)'
-            : 'linear-gradient(180deg, #e6c547 0%, #d4af37 30%, #b48e26 70%, #8b6914 100%)',
+            ? 'linear-gradient(180deg, #4a4a50 0%, #3a3a40 20%, #2a2a2e 60%, #1a1a1e 100%)'
+            : 'linear-gradient(180deg, #f5d061 0%, #e6c547 15%, #d4af37 40%, #b48e26 70%, #8b6914 100%)',
           border: disabled
-            ? '1px solid rgba(255,255,255,0.05)'
-            : '1px solid rgba(245, 208, 97, 0.4)',
+            ? '2px solid rgba(255,255,255,0.06)'
+            : '3px solid rgba(107, 79, 15, 0.8)',
           boxShadow: disabled
-            ? 'inset 0 2px 4px rgba(255,255,255,0.05), inset 0 -2px 4px rgba(0,0,0,0.2)'
+            ? `
+              inset 0 2px 4px rgba(255,255,255,0.05),
+              inset 0 -3px 6px rgba(0,0,0,0.3)
+            `
             : `
-              inset 0 2px 4px rgba(255,255,255,0.3),
-              inset 0 -2px 4px rgba(0,0,0,0.2),
-              0 0 30px rgba(212, 175, 55, 0.3)
+              inset 0 3px 6px rgba(255,255,255,0.35),
+              inset 0 -4px 8px rgba(0,0,0,0.25),
+              0 0 40px rgba(212, 175, 55, 0.35),
+              0 8px 24px rgba(0, 0, 0, 0.4)
             `,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 12,
-          opacity: disabled ? 0.6 : 1,
-          transition: 'all 0.2s ease',
+          gap: 14,
+          opacity: disabled ? 0.5 : 1,
+          transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {spinning ? (
@@ -663,17 +687,40 @@ function TriggerButton({
         )}
       </div>
 
-      {/* Metallic edge highlights */}
+      {/* METALLIC EDGE HIGHLIGHTS - Top shine effect */}
       {!disabled && (
         <>
           <div
             style={{
               position: 'absolute',
-              top: 1,
-              left: 20,
-              right: 20,
-              height: 1,
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+              top: 2,
+              left: 24,
+              right: 24,
+              height: 2,
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+              borderRadius: 2,
+            }}
+          />
+          {/* Side bevels */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 8,
+              bottom: 8,
+              left: 2,
+              width: 2,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.2), transparent, rgba(0,0,0,0.1))',
+              borderRadius: 2,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 8,
+              bottom: 8,
+              right: 2,
+              width: 1,
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.1), transparent, rgba(255,255,255,0.1))',
               borderRadius: 1,
             }}
           />
@@ -884,6 +931,8 @@ export function RoulettePage({ user }: Props) {
         paddingTop: 16,
         paddingBottom: 120,
         minHeight: '100vh',
+        overflow: 'hidden', // Prevent horizontal scrolling glitches
+        position: 'relative',
       }}
     >
       {/* Header */}
