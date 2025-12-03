@@ -1,8 +1,7 @@
 import { UserData, PromoResult, RouletteResult, Order } from '../types'
 
-// API base URL - will be your bot's API endpoint
-// Updated: force rebuild with /api path
-const API_BASE = import.meta.env.VITE_API_URL || 'https://academic-saloon.duckdns.org/api'
+// API base URL - hardcoded to ensure correct path
+const API_BASE = 'https://academic-saloon.duckdns.org/api'
 
 console.log('[API] API_BASE:', API_BASE)
 
