@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Crosshair, Zap, Gift, Star, Sparkles } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
+import { Crosshair, Zap, Gift, Star, Sparkles, Minus, Plus, Target } from 'lucide-react'
 import { UserData, RouletteResult } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { spinRoulette } from '../api/userApi'
@@ -24,18 +24,243 @@ const SEGMENTS = [
   { label: 'Шанс', type: 'nothing', color: '#3a3a40', secondaryColor: '#2a2a2e' },
 ]
 
+const SEGMENT_ANGLE = 360 / SEGMENTS.length // 45 degrees per segment
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BET SELECTOR COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function BetSelector({
+  betAmount,
+  onBetChange,
+  disabled
+}: {
+  betAmount: number
+  onBetChange: (amount: number) => void
+  disabled: boolean
+}) {
+  const betOptions = [50, 100, 200, 500]
+  const currentIndex = betOptions.indexOf(betAmount)
+
+  const decreaseBet = () => {
+    if (currentIndex > 0 && !disabled) {
+      onBetChange(betOptions[currentIndex - 1])
+    }
+  }
+
+  const increaseBet = () => {
+    if (currentIndex < betOptions.length - 1 && !disabled) {
+      onBetChange(betOptions[currentIndex + 1])
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25 }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+        marginBottom: 24,
+        padding: '16px 24px',
+        background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.9) 0%, rgba(10, 10, 12, 0.95) 100%)',
+        borderRadius: 16,
+        border: '1px solid rgba(212, 175, 55, 0.2)',
+        boxShadow: `
+          0 8px 32px -8px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.03)
+        `,
+      }}
+    >
+      {/* Decrease Button */}
+      <motion.button
+        onClick={decreaseBet}
+        disabled={currentIndex === 0 || disabled}
+        whileTap={{ scale: 0.9 }}
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: currentIndex === 0 || disabled
+            ? 'rgba(40, 40, 45, 0.5)'
+            : 'linear-gradient(135deg, #3a3a40 0%, #2a2a2e 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: currentIndex === 0 || disabled ? 'not-allowed' : 'pointer',
+          opacity: currentIndex === 0 || disabled ? 0.4 : 1,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        }}
+      >
+        <Minus size={20} color="var(--text-secondary)" />
+      </motion.button>
+
+      {/* Bet Display */}
+      <div
+        style={{
+          minWidth: 140,
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontFamily: 'var(--font-mono)',
+            color: 'var(--text-muted)',
+            marginBottom: 4,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Ставка
+        </div>
+        <motion.div
+          key={betAmount}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 32,
+            fontWeight: 800,
+            background: 'linear-gradient(135deg, #f5d061, #d4af37, #b48e26)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            textShadow: '0 0 40px rgba(212, 175, 55, 0.3)',
+          }}
+        >
+          {betAmount}₽
+        </motion.div>
+      </div>
+
+      {/* Increase Button */}
+      <motion.button
+        onClick={increaseBet}
+        disabled={currentIndex === betOptions.length - 1 || disabled}
+        whileTap={{ scale: 0.9 }}
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: currentIndex === betOptions.length - 1 || disabled
+            ? 'rgba(40, 40, 45, 0.5)'
+            : 'linear-gradient(135deg, #d4af37 0%, #8b6914 100%)',
+          border: '1px solid rgba(212, 175, 55, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: currentIndex === betOptions.length - 1 || disabled ? 'not-allowed' : 'pointer',
+          opacity: currentIndex === betOptions.length - 1 || disabled ? 0.4 : 1,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.2)',
+        }}
+      >
+        <Plus size={20} color="var(--bg-void)" />
+      </motion.button>
+    </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  GLASS COVER COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function GlassCover() {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: -4,
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        zIndex: 5,
+      }}
+    >
+      {/* Glass reflection layer */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          background: `
+            linear-gradient(
+              135deg,
+              rgba(255, 255, 255, 0.12) 0%,
+              rgba(255, 255, 255, 0.05) 20%,
+              transparent 50%,
+              rgba(0, 0, 0, 0.1) 80%,
+              rgba(0, 0, 0, 0.2) 100%
+            )
+          `,
+          boxShadow: `
+            inset 0 2px 4px rgba(255, 255, 255, 0.15),
+            inset 0 -2px 8px rgba(0, 0, 0, 0.2)
+          `,
+        }}
+      />
+
+      {/* Highlight arc */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '8%',
+          left: '15%',
+          width: '35%',
+          height: '20%',
+          borderRadius: '50%',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%)',
+          filter: 'blur(8px)',
+          transform: 'rotate(-30deg)',
+        }}
+      />
+
+      {/* Secondary highlight */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '5%',
+          left: '20%',
+          width: '25%',
+          height: '12%',
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.15)',
+          filter: 'blur(4px)',
+          transform: 'rotate(-25deg)',
+        }}
+      />
+
+      {/* Edge rim */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: `
+            0 0 20px rgba(0, 0, 0, 0.3),
+            inset 0 0 60px rgba(0, 0, 0, 0.1)
+          `,
+        }}
+      />
+    </div>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  METALLIC WHEEL COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
 function MetallicWheel({
-  rotation,
+  rotationValue,
   spinning
 }: {
-  rotation: number
+  rotationValue: ReturnType<typeof useMotionValue<number>>
   spinning: boolean
 }) {
-  const segmentAngle = 360 / SEGMENTS.length
+  const rotation = useTransform(rotationValue, (v) => v)
 
   return (
     <div
@@ -49,7 +274,7 @@ function MetallicWheel({
       <div
         style={{
           position: 'absolute',
-          inset: -8,
+          inset: -10,
           borderRadius: '50%',
           background: 'linear-gradient(135deg, #4a4a50 0%, #2a2a2e 30%, #3a3a40 70%, #1a1a1e 100%)',
           boxShadow: `
@@ -61,7 +286,7 @@ function MetallicWheel({
         }}
       />
 
-      {/* Notches on the ring */}
+      {/* Notches on the ring (click points) */}
       {[...Array(24)].map((_, i) => (
         <div
           key={i}
@@ -69,9 +294,9 @@ function MetallicWheel({
             position: 'absolute',
             top: '50%',
             left: '50%',
-            width: 3,
-            height: 8,
-            background: 'linear-gradient(180deg, rgba(212,175,55,0.6), rgba(212,175,55,0.2))',
+            width: 4,
+            height: 10,
+            background: 'linear-gradient(180deg, rgba(212,175,55,0.7), rgba(212,175,55,0.3))',
             borderRadius: 2,
             transformOrigin: 'center -140px',
             transform: `rotate(${i * 15}deg) translateY(-140px)`,
@@ -81,18 +306,12 @@ function MetallicWheel({
 
       {/* The spinning wheel */}
       <motion.div
-        animate={{ rotate: rotation }}
-        transition={{
-          duration: spinning ? 5 : 0,
-          ease: spinning ? [0.12, 0.8, 0.15, 1] : 'linear',
-        }}
         style={{
           position: 'absolute',
           inset: 0,
           borderRadius: '50%',
           overflow: 'hidden',
-          filter: spinning ? `blur(${Math.min(rotation / 200, 3)}px)` : 'none',
-          transition: 'filter 0.3s',
+          rotate: rotation,
         }}
       >
         {/* Wheel background */}
@@ -133,8 +352,8 @@ function MetallicWheel({
           </defs>
 
           {SEGMENTS.map((seg, i) => {
-            const startAngle = i * segmentAngle - 90
-            const endAngle = (i + 1) * segmentAngle - 90
+            const startAngle = i * SEGMENT_ANGLE - 90
+            const endAngle = (i + 1) * SEGMENT_ANGLE - 90
             const startRad = (startAngle * Math.PI) / 180
             const endRad = (endAngle * Math.PI) / 180
             const x1 = 150 + 130 * Math.cos(startRad)
@@ -147,8 +366,8 @@ function MetallicWheel({
                 <path
                   d={`M150,150 L${x1},${y1} A130,130 0 0,1 ${x2},${y2} Z`}
                   fill={`url(#segGrad${i})`}
-                  stroke="rgba(0,0,0,0.3)"
-                  strokeWidth="1"
+                  stroke="rgba(0,0,0,0.4)"
+                  strokeWidth="1.5"
                 />
                 {/* Segment divider lines */}
                 <line
@@ -156,8 +375,8 @@ function MetallicWheel({
                   y1="150"
                   x2={x1}
                   y2={y1}
-                  stroke="rgba(255,255,255,0.1)"
-                  strokeWidth="1"
+                  stroke="rgba(255,255,255,0.15)"
+                  strokeWidth="1.5"
                 />
               </g>
             )
@@ -166,7 +385,7 @@ function MetallicWheel({
 
         {/* Segment labels */}
         {SEGMENTS.map((seg, i) => {
-          const angle = i * segmentAngle + segmentAngle / 2 - 90
+          const angle = i * SEGMENT_ANGLE + SEGMENT_ANGLE / 2 - 90
           const rad = (angle * Math.PI) / 180
           const x = 150 + 85 * Math.cos(rad)
           const y = 150 + 85 * Math.sin(rad)
@@ -180,8 +399,8 @@ function MetallicWheel({
                 top: y,
                 transform: `translate(-50%, -50%) rotate(${angle + 90}deg)`,
                 fontFamily: 'var(--font-mono)',
-                fontSize: seg.type === 'jackpot' ? 14 : 12,
-                fontWeight: 700,
+                fontSize: seg.type === 'jackpot' ? 15 : 13,
+                fontWeight: 800,
                 color: seg.type === 'nothing' ? 'var(--text-muted)' : '#0a0a0c',
                 textShadow: seg.type === 'nothing'
                   ? 'none'
@@ -195,6 +414,9 @@ function MetallicWheel({
         })}
       </motion.div>
 
+      {/* Glass Cover */}
+      <GlassCover />
+
       {/* Center hub */}
       <div
         style={{
@@ -202,8 +424,8 @@ function MetallicWheel({
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 60,
-          height: 60,
+          width: 64,
+          height: 64,
           borderRadius: '50%',
           background: 'linear-gradient(135deg, #f5d061 0%, #d4af37 30%, #8b6914 100%)',
           boxShadow: `
@@ -215,12 +437,13 @@ function MetallicWheel({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 10,
         }}
       >
         <div
           style={{
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             borderRadius: '50%',
             background: 'linear-gradient(180deg, #e6c547 0%, #b48e26 100%)',
             boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3)',
@@ -229,7 +452,7 @@ function MetallicWheel({
             justifyContent: 'center',
           }}
         >
-          <Star size={20} color="#0a0a0c" fill="#0a0a0c" />
+          <Star size={22} color="#0a0a0c" fill="#0a0a0c" />
         </div>
       </div>
     </div>
@@ -244,67 +467,219 @@ function Pointer({ spinning }: { spinning: boolean }) {
   return (
     <motion.div
       animate={spinning ? {
-        rotate: [-3, 3, -2, 2, -1, 1, 0],
-        y: [0, -2, 0, -1, 0],
+        rotate: [-4, 4, -3, 3, -2, 2, 0],
+        y: [0, -3, 0, -2, 0],
       } : {}}
       transition={{
-        duration: 0.15,
+        duration: 0.12,
         repeat: spinning ? Infinity : 0,
         repeatType: 'reverse',
       }}
       style={{
         position: 'absolute',
-        top: -12,
+        top: -16,
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 10,
+        zIndex: 15,
       }}
     >
       {/* Pointer mount */}
       <div
         style={{
-          width: 24,
-          height: 8,
-          background: 'linear-gradient(180deg, #4a4a50 0%, #2a2a2e 100%)',
-          borderRadius: '4px 4px 0 0',
+          width: 28,
+          height: 10,
+          background: 'linear-gradient(180deg, #5a5a60 0%, #3a3a40 50%, #2a2a2e 100%)',
+          borderRadius: '6px 6px 0 0',
           margin: '0 auto',
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.4)',
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.1)',
         }}
       />
       {/* Pointer triangle */}
       <svg
-        width="40"
-        height="35"
-        viewBox="0 0 40 35"
+        width="44"
+        height="40"
+        viewBox="0 0 44 40"
         style={{
           display: 'block',
-          filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))',
+          filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.6))',
         }}
       >
         <defs>
           <linearGradient id="pointerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#f5d061" />
-            <stop offset="50%" stopColor="#d4af37" />
+            <stop offset="40%" stopColor="#d4af37" />
             <stop offset="100%" stopColor="#8b6914" />
           </linearGradient>
+          <filter id="pointerInner">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur" />
+            <feOffset in="blur" dx="0" dy="1" result="offsetBlur" />
+            <feComposite in="SourceGraphic" in2="offsetBlur" operator="over" />
+          </filter>
         </defs>
         <polygon
-          points="20,35 0,0 40,0"
+          points="22,40 0,0 44,0"
           fill="url(#pointerGrad)"
           stroke="#6b4f0f"
-          strokeWidth="1"
+          strokeWidth="1.5"
+          filter="url(#pointerInner)"
         />
+        {/* Center line detail */}
         <line
-          x1="20"
-          y1="8"
-          x2="20"
-          y2="28"
-          stroke="rgba(0,0,0,0.2)"
-          strokeWidth="2"
+          x1="22"
+          y1="10"
+          x2="22"
+          y2="32"
+          stroke="rgba(0,0,0,0.25)"
+          strokeWidth="2.5"
           strokeLinecap="round"
         />
       </svg>
     </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TRIGGER BUTTON COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function TriggerButton({
+  onClick,
+  disabled,
+  spinning,
+  canSpin,
+  betAmount
+}: {
+  onClick: () => void
+  disabled: boolean
+  spinning: boolean
+  canSpin: boolean
+  betAmount: number
+}) {
+  return (
+    <motion.button
+      onClick={onClick}
+      disabled={disabled}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.35 }}
+      whileHover={!disabled ? { scale: 1.02 } : undefined}
+      whileTap={!disabled ? { scale: 0.95, y: 2 } : undefined}
+      style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: 280,
+        padding: 0,
+        background: 'transparent',
+        border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {/* Button shadow base */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          top: 4,
+          borderRadius: 16,
+          background: disabled ? 'rgba(0,0,0,0.3)' : 'rgba(139, 105, 20, 0.6)',
+          filter: 'blur(2px)',
+        }}
+      />
+
+      {/* Main button body */}
+      <div
+        style={{
+          position: 'relative',
+          padding: '20px 32px',
+          borderRadius: 16,
+          background: disabled
+            ? 'linear-gradient(180deg, #3a3a40 0%, #2a2a2e 50%, #1a1a1e 100%)'
+            : 'linear-gradient(180deg, #e6c547 0%, #d4af37 30%, #b48e26 70%, #8b6914 100%)',
+          border: disabled
+            ? '1px solid rgba(255,255,255,0.05)'
+            : '1px solid rgba(245, 208, 97, 0.4)',
+          boxShadow: disabled
+            ? 'inset 0 2px 4px rgba(255,255,255,0.05), inset 0 -2px 4px rgba(0,0,0,0.2)'
+            : `
+              inset 0 2px 4px rgba(255,255,255,0.3),
+              inset 0 -2px 4px rgba(0,0,0,0.2),
+              0 0 30px rgba(212, 175, 55, 0.3)
+            `,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12,
+          opacity: disabled ? 0.6 : 1,
+          transition: 'all 0.2s ease',
+        }}
+      >
+        {spinning ? (
+          <>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+            >
+              <Target size={24} color="var(--bg-void)" />
+            </motion.div>
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 18,
+                fontWeight: 800,
+                color: 'var(--bg-void)',
+                letterSpacing: '0.05em',
+              }}
+            >
+              ВРАЩЕНИЕ...
+            </span>
+          </>
+        ) : canSpin ? (
+          <>
+            <Crosshair size={24} color="var(--bg-void)" strokeWidth={2.5} />
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 18,
+                fontWeight: 800,
+                color: 'var(--bg-void)',
+                letterSpacing: '0.05em',
+              }}
+            >
+              КРУТИТЬ ({betAmount}₽)
+            </span>
+          </>
+        ) : (
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              letterSpacing: '0.05em',
+            }}
+          >
+            ЗАВТРА
+          </span>
+        )}
+      </div>
+
+      {/* Metallic edge highlights */}
+      {!disabled && (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              top: 1,
+              left: 20,
+              right: 20,
+              height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+              borderRadius: 1,
+            }}
+          />
+        </>
+      )}
+    </motion.button>
   )
 }
 
@@ -334,42 +709,44 @@ function ResultBanner({ result }: { result: RouletteResult }) {
         damping: 20,
       }}
       style={{
-        padding: '20px 32px',
-        borderRadius: 'var(--radius-xl)',
+        padding: '24px 32px',
+        borderRadius: 20,
         background: isWin
-          ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(20, 20, 23, 0.95) 100%)'
+          ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(20, 20, 23, 0.95) 100%)'
           : 'linear-gradient(135deg, rgba(40, 40, 45, 0.8) 0%, rgba(20, 20, 23, 0.95) 100%)',
         border: isWin
-          ? '1px solid rgba(212, 175, 55, 0.4)'
+          ? '2px solid rgba(212, 175, 55, 0.5)'
           : '1px solid var(--border-default)',
         boxShadow: isWin
-          ? 'var(--glow-gold-strong), var(--shadow-vault)'
-          : 'var(--shadow-lg)',
+          ? '0 0 40px rgba(212, 175, 55, 0.4), 0 20px 40px -10px rgba(0, 0, 0, 0.6)'
+          : '0 10px 30px rgba(0, 0, 0, 0.4)',
         textAlign: 'center',
       }}
     >
       <motion.div
         animate={isWin ? {
           rotate: [0, -10, 10, -5, 5, 0],
-          scale: [1, 1.1, 1],
+          scale: [1, 1.15, 1],
         } : {}}
         transition={{ duration: 0.6 }}
         style={{
-          width: 56,
-          height: 56,
-          margin: '0 auto 12px',
+          width: 64,
+          height: 64,
+          margin: '0 auto 16px',
           borderRadius: '50%',
           background: isWin
-            ? 'linear-gradient(135deg, var(--gold-400), var(--gold-600))'
+            ? 'linear-gradient(135deg, #f5d061 0%, #d4af37 50%, #8b6914 100%)'
             : 'var(--bg-surface)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: isWin ? 'var(--glow-gold)' : 'none',
+          boxShadow: isWin
+            ? '0 0 40px rgba(212, 175, 55, 0.5), inset 0 2px 4px rgba(255,255,255,0.3)'
+            : 'none',
         }}
       >
         <Icon
-          size={28}
+          size={32}
           color={isWin ? 'var(--bg-void)' : 'var(--text-muted)'}
           strokeWidth={2}
         />
@@ -378,19 +755,20 @@ function ResultBanner({ result }: { result: RouletteResult }) {
       <h3
         style={{
           fontFamily: 'var(--font-display)',
-          fontSize: 20,
+          fontSize: 24,
           fontWeight: 800,
-          marginBottom: 4,
+          marginBottom: 8,
           color: isWin ? 'var(--gold-300)' : 'var(--text-secondary)',
         }}
       >
-        {isWin ? 'Поздравляем!' : 'Не повезло'}
+        {isWin ? 'ПОЗДРАВЛЯЕМ!' : 'НЕ ПОВЕЗЛО'}
       </h3>
 
       <p
-        className="text-mono"
         style={{
-          fontSize: 16,
+          fontFamily: 'var(--font-mono)',
+          fontSize: 18,
+          fontWeight: 600,
           color: isWin ? 'var(--text-primary)' : 'var(--text-muted)',
         }}
       >
@@ -408,41 +786,92 @@ export function RoulettePage({ user }: Props) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState<RouletteResult | null>(null)
-  const [rotation, setRotation] = useState(0)
   const [canSpin, setCanSpin] = useState(user?.daily_luck_available ?? false)
+  const [betAmount, setBetAmount] = useState(100)
+
+  // Use motion value for smooth rotation tracking and haptic feedback
+  const rotationValue = useMotionValue(0)
+  const lastSegmentRef = useRef(0)
+  const hapticIntervalRef = useRef<number | null>(null)
+
+  // Calculate current segment from rotation
+  const getCurrentSegment = useCallback((rotation: number) => {
+    const normalizedRotation = ((rotation % 360) + 360) % 360
+    return Math.floor(normalizedRotation / SEGMENT_ANGLE)
+  }, [])
+
+  // Haptic feedback on segment change
+  useEffect(() => {
+    if (spinning) {
+      // Start haptic interval during spin
+      hapticIntervalRef.current = window.setInterval(() => {
+        const currentRotation = rotationValue.get()
+        const currentSegment = getCurrentSegment(currentRotation)
+
+        if (currentSegment !== lastSegmentRef.current) {
+          // Trigger haptic on segment change
+          try {
+            if (window.Telegram?.WebApp?.HapticFeedback) {
+              window.Telegram.WebApp.HapticFeedback.impactOccurred('light')
+            }
+          } catch {
+            // Haptic not available
+          }
+          lastSegmentRef.current = currentSegment
+        }
+      }, 30) // Check every 30ms for smooth feedback
+    } else {
+      // Clear interval when not spinning
+      if (hapticIntervalRef.current) {
+        clearInterval(hapticIntervalRef.current)
+        hapticIntervalRef.current = null
+      }
+    }
+
+    return () => {
+      if (hapticIntervalRef.current) {
+        clearInterval(hapticIntervalRef.current)
+      }
+    }
+  }, [spinning, rotationValue, getCurrentSegment])
 
   const handleSpin = async () => {
     if (!canSpin || spinning) return
 
+    // Strong initial haptic
     haptic('heavy')
     setSpinning(true)
     setResult(null)
 
-    // Calculate spin: 6-10 full rotations + random offset
-    const spins = 6 + Math.random() * 4
+    // Calculate spin: 8-12 full rotations + random offset
+    const currentRotation = rotationValue.get()
+    const spins = 8 + Math.random() * 4
     const randomOffset = Math.random() * 360
-    const newRotation = rotation + (spins * 360) + randomOffset
-    setRotation(newRotation)
+    const targetRotation = currentRotation + (spins * 360) + randomOffset
 
-    try {
-      // Wait for animation to mostly complete
-      await new Promise(resolve => setTimeout(resolve, 4500))
+    // Animate with custom easing for realistic wheel physics
+    animate(rotationValue, targetRotation, {
+      duration: 6,
+      ease: [0.12, 0.8, 0.12, 1], // Custom easing for realistic deceleration
+      onComplete: async () => {
+        try {
+          const spinResult = await spinRoulette()
+          setResult(spinResult)
+          setCanSpin(false)
 
-      const spinResult = await spinRoulette()
-      setResult(spinResult)
-      setCanSpin(false)
-
-      if (spinResult.type === 'nothing') {
-        hapticError()
-      } else {
-        hapticSuccess()
+          if (spinResult.type === 'nothing') {
+            hapticError()
+          } else {
+            hapticSuccess()
+          }
+        } catch {
+          hapticError()
+          setResult({ prize: 'Ошибка сервера', type: 'nothing', value: 0 })
+        } finally {
+          setSpinning(false)
+        }
       }
-    } catch {
-      hapticError()
-      setResult({ prize: 'Ошибка сервера', type: 'nothing', value: 0 })
-    } finally {
-      setSpinning(false)
-    }
+    })
   }
 
   return (
@@ -452,7 +881,7 @@ export function RoulettePage({ user }: Props) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        paddingTop: 20,
+        paddingTop: 16,
         paddingBottom: 120,
         minHeight: '100vh',
       }}
@@ -463,22 +892,30 @@ export function RoulettePage({ user }: Props) {
         animate={{ opacity: 1, y: 0 }}
         style={{
           textAlign: 'center',
-          marginBottom: 32,
+          marginBottom: 24,
         }}
       >
         <h1
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: 28,
+            fontSize: 32,
             fontWeight: 800,
             marginBottom: 8,
+            letterSpacing: '0.02em',
           }}
           className="gold-gradient-text"
         >
-          Колесо Фортуны
+          КОЛЕСО ФОРТУНЫ
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-          Испытай удачу раз в день
+        <p
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            letterSpacing: '0.1em',
+          }}
+        >
+          ИСПЫТАЙ УДАЧУ • РАЗ В СУТКИ
         </p>
       </motion.header>
 
@@ -486,34 +923,47 @@ export function RoulettePage({ user }: Props) {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
         style={{
           position: 'relative',
-          marginBottom: 32,
+          marginBottom: 28,
         }}
       >
         <Pointer spinning={spinning} />
-        <MetallicWheel rotation={rotation} spinning={spinning} />
+        <MetallicWheel rotationValue={rotationValue} spinning={spinning} />
 
         {/* Ambient glow */}
-        <div
+        <motion.div
+          animate={{
+            opacity: spinning ? [0.4, 0.7, 0.4] : 0.3,
+            scale: spinning ? [1, 1.1, 1] : 1,
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: spinning ? Infinity : 0,
+            ease: 'easeInOut',
+          }}
           style={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 400,
-            height: 400,
+            width: 380,
+            height: 380,
             borderRadius: '50%',
-            background: spinning
-              ? 'radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 60%)'
-              : 'radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 60%)',
+            background: 'radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, transparent 60%)',
             pointerEvents: 'none',
-            transition: 'background 0.5s',
             zIndex: -1,
           }}
         />
       </motion.div>
+
+      {/* Bet Selector */}
+      <BetSelector
+        betAmount={betAmount}
+        onBetChange={setBetAmount}
+        disabled={spinning || !canSpin}
+      />
 
       {/* Result */}
       <AnimatePresence mode="wait">
@@ -527,42 +977,14 @@ export function RoulettePage({ user }: Props) {
         )}
       </AnimatePresence>
 
-      {/* Spin Button */}
-      <motion.button
+      {/* Trigger Button */}
+      <TriggerButton
         onClick={handleSpin}
         disabled={!canSpin || spinning}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        whileTap={canSpin && !spinning ? { scale: 0.95 } : undefined}
-        className="btn-trigger"
-        style={{
-          width: '100%',
-          maxWidth: 280,
-          padding: '18px 32px',
-          opacity: !canSpin || spinning ? 0.5 : 1,
-          cursor: !canSpin || spinning ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {spinning ? (
-          <>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            >
-              <Crosshair size={22} />
-            </motion.div>
-            Крутится...
-          </>
-        ) : canSpin ? (
-          <>
-            <Crosshair size={22} />
-            Крутить барабан
-          </>
-        ) : (
-          'Приходи завтра'
-        )}
-      </motion.button>
+        spinning={spinning}
+        canSpin={canSpin}
+        betAmount={betAmount}
+      />
 
       {/* Rules */}
       <motion.div
@@ -571,12 +993,12 @@ export function RoulettePage({ user }: Props) {
         transition={{ delay: 0.5 }}
         style={{
           marginTop: 32,
-          padding: 20,
-          background: 'var(--bg-card)',
+          padding: '20px 24px',
+          background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.8) 0%, rgba(10, 10, 12, 0.9) 100%)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-lg)',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
+          borderRadius: 16,
           maxWidth: 320,
           width: '100%',
         }}
@@ -584,56 +1006,47 @@ export function RoulettePage({ user }: Props) {
         <h4
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: 14,
-            marginBottom: 12,
-            color: 'var(--text-secondary)',
+            fontSize: 13,
+            marginBottom: 16,
+            color: 'var(--gold-400)',
+            letterSpacing: '0.1em',
           }}
         >
-          Правила игры
+          ПРАВИЛА ИГРЫ
         </h4>
         <ul
           style={{
             listStyle: 'none',
-            fontSize: 12,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
             color: 'var(--text-muted)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 8,
+            gap: 10,
           }}
         >
-          <li style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 4,
-                height: 4,
-                borderRadius: '50%',
-                background: 'var(--gold-400)',
-              }}
-            />
-            Одно вращение в сутки
-          </li>
-          <li style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 4,
-                height: 4,
-                borderRadius: '50%',
-                background: 'var(--gold-400)',
-              }}
-            />
-            Бонусы зачисляются мгновенно
-          </li>
-          <li style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 4,
-                height: 4,
-                borderRadius: '50%',
-                background: 'var(--gold-400)',
-              }}
-            />
-            Скидки применяются к следующему заказу
-          </li>
+          {[
+            'Одно вращение в сутки',
+            'Бонусы зачисляются мгновенно',
+            'Скидки на следующий заказ',
+          ].map((rule, i) => (
+            <li
+              key={i}
+              style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+            >
+              <div
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--gold-400), var(--gold-600))',
+                  boxShadow: '0 0 8px rgba(212, 175, 55, 0.4)',
+                  flexShrink: 0,
+                }}
+              />
+              {rule}
+            </li>
+          ))}
         </ul>
       </motion.div>
     </div>
