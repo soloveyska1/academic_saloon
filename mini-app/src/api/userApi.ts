@@ -3,14 +3,20 @@ import { UserData, PromoResult, RouletteResult, Order } from '../types'
 // API base URL - will be your bot's API endpoint
 const API_BASE = import.meta.env.VITE_API_URL || 'https://academic-saloon.duckdns.org/api'
 
+console.log('[API] API_BASE:', API_BASE)
+
 // Get init data from Telegram
 function getInitData(): string {
-  return window.Telegram?.WebApp?.initData || ''
+  const initData = window.Telegram?.WebApp?.initData || ''
+  console.log('[API] initData exists:', !!initData, 'length:', initData.length)
+  return initData
 }
 
 // Check if we have valid Telegram context
 function hasTelegramContext(): boolean {
-  return !!getInitData()
+  const hasContext = !!getInitData()
+  console.log('[API] hasTelegramContext:', hasContext)
+  return hasContext
 }
 
 // Generic fetch with auth
@@ -56,6 +62,8 @@ export async function fetchConfig(): Promise<{ bot_username: string; support_use
 
 // User data
 export async function fetchUserData(): Promise<UserData> {
+  console.log('[API] fetchUserData called')
+
   // If no Telegram context (dev mode), use mock data
   if (!hasTelegramContext()) {
     console.log('[API] No Telegram context, using mock data')
@@ -63,10 +71,14 @@ export async function fetchUserData(): Promise<UserData> {
   }
 
   try {
-    return await apiFetch<UserData>('/user')
+    console.log('[API] Fetching real user data from:', API_BASE + '/user')
+    const data = await apiFetch<UserData>('/user')
+    console.log('[API] Got user data:', data.fullname, 'telegram_id:', data.telegram_id)
+    return data
   } catch (e) {
     console.error('[API] fetchUserData error:', e)
     // Fallback to mock if API fails
+    console.log('[API] Falling back to mock data due to error')
     return getMockUserData()
   }
 }
