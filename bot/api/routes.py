@@ -27,6 +27,9 @@ from .schemas import (
 from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
 from bot.services.pricing import calculate_price, DEADLINE_LABELS
 from bot.bot_instance import get_bot
+from bot.services.mini_app_logger import (
+    log_order_created, log_roulette_spin, log_mini_app_event, MiniAppEvent
+)
 
 logger = logging.getLogger(__name__)
 
@@ -390,6 +393,20 @@ async def spin_roulette(
 
     await session.commit()
 
+    # Log to Mini App topic
+    try:
+        bot = get_bot()
+        await log_roulette_spin(
+            bot=bot,
+            user_id=user.telegram_id,
+            username=user.username,
+            prize=selected["prize"],
+            prize_type=selected["type"],
+            value=selected["value"],
+        )
+    except Exception as e:
+        logger.warning(f"[API /roulette/spin] Failed to log: {e}")
+
     next_spin_at = (now + timedelta(hours=24)).isoformat()
 
     if selected["type"] == "nothing":
@@ -559,6 +576,23 @@ async def create_order(
 
     except Exception as e:
         logger.warning(f"[API /orders/create] Failed to notify user about order #{order.id}: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #  MINI APP LOG
+    # ═══════════════════════════════════════════════════════════════
+
+    try:
+        await log_order_created(
+            bot=bot,
+            user_id=user.telegram_id,
+            username=user.username,
+            order_id=order.id,
+            work_type=WORK_TYPE_LABELS.get(work_type_enum, data.work_type),
+            subject=data.subject,
+            price=price_calc.final_price if not price_calc.is_manual_required else None,
+        )
+    except Exception as e:
+        logger.warning(f"[API /orders/create] Failed to log to Mini App topic: {e}")
 
     # Prepare response message
     if price_calc.is_manual_required:

@@ -48,6 +48,10 @@ SERVICE_TOPICS = {
         "name": "⚠️ Алерты",
         "icon_color": 0xFF93B2,  # Red
     },
+    "mini_app": {
+        "name": "📱 Mini App",
+        "icon_color": 0xCB86DB,  # Purple
+    },
 }
 
 # Эмодзи статусов для названий топиков
