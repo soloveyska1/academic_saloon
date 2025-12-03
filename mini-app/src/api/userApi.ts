@@ -180,6 +180,146 @@ export async function spinRoulette(): Promise<RouletteResult> {
   }
 }
 
+// Upload files to order
+export interface FileUploadResponse {
+  success: boolean
+  message: string
+  files_url?: string
+  uploaded_count: number
+}
+
+export async function uploadOrderFiles(
+  orderId: number,
+  files: File[],
+  onProgress?: (percent: number) => void
+): Promise<FileUploadResponse> {
+  if (!hasTelegramContext()) {
+    // Mock progress
+    if (onProgress) {
+      for (let i = 0; i <= 100; i += 20) {
+        await new Promise(r => setTimeout(r, 200))
+        onProgress(i)
+      }
+    }
+    return {
+      success: true,
+      message: `✅ Загружено ${files.length} файл(ов) (Mock)`,
+      files_url: 'https://disk.yandex.ru/mock',
+      uploaded_count: files.length
+    }
+  }
+
+  const formData = new FormData()
+  files.forEach(file => formData.append('files', file))
+
+  const initData = getInitData()
+
+  try {
+    // Use XMLHttpRequest for progress tracking
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percent = Math.round((e.loaded / e.total) * 100)
+          onProgress(percent)
+        }
+      })
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText))
+        } else {
+          const error = JSON.parse(xhr.responseText)
+          reject(new Error(error.detail || 'Upload failed'))
+        }
+      })
+
+      xhr.addEventListener('error', () => reject(new Error('Network error')))
+
+      xhr.open('POST', `${API_BASE}/orders/${orderId}/upload-files`)
+      xhr.setRequestHeader('X-Telegram-Init-Data', initData)
+      xhr.send(formData)
+    })
+  } catch (e) {
+    console.error('[API] uploadOrderFiles error:', e)
+    return {
+      success: false,
+      message: 'Ошибка загрузки файлов',
+      uploaded_count: 0
+    }
+  }
+}
+
+// Payment info
+export interface PaymentInfo {
+  order_id: number
+  status: string
+  price: number
+  final_price: number
+  discount: number
+  bonus_used: number
+  paid_amount: number
+  remaining: number
+  card_number: string
+  card_holder: string
+  sbp_phone: string
+  sbp_bank: string
+}
+
+export async function fetchPaymentInfo(orderId: number): Promise<PaymentInfo> {
+  if (!hasTelegramContext()) {
+    return {
+      order_id: orderId,
+      status: 'waiting_payment',
+      price: 15000,
+      final_price: 14000,
+      discount: 5,
+      bonus_used: 1000,
+      paid_amount: 0,
+      remaining: 14000,
+      card_number: '2202 2080 1234 5678',
+      card_holder: 'IVAN PETROV',
+      sbp_phone: '+7 (900) 123-45-67',
+      sbp_bank: 'Тинькофф'
+    }
+  }
+
+  return await apiFetch<PaymentInfo>(`/orders/${orderId}/payment-info`)
+}
+
+// Confirm payment
+export interface PaymentConfirmResponse {
+  success: boolean
+  message: string
+  new_status: string
+  amount_to_pay: number
+}
+
+export async function confirmPayment(
+  orderId: number,
+  paymentMethod: 'card' | 'sbp' | 'transfer',
+  paymentScheme: 'full' | 'half'
+): Promise<PaymentConfirmResponse> {
+  if (!hasTelegramContext()) {
+    await new Promise(r => setTimeout(r, 1500))
+    return {
+      success: true,
+      message: 'Заявка на оплату отправлена (Mock)',
+      new_status: 'verification_pending',
+      amount_to_pay: 14000
+    }
+  }
+
+  return await apiFetch<PaymentConfirmResponse>(`/orders/${orderId}/confirm-payment`, {
+    method: 'POST',
+    body: JSON.stringify({
+      payment_method: paymentMethod,
+      payment_scheme: paymentScheme
+    })
+  })
+}
+
 // Create order
 export async function createOrder(data: OrderCreateRequest): Promise<OrderCreateResponse> {
   if (!hasTelegramContext()) {

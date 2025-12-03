@@ -607,3 +607,287 @@ async def create_order(
         price=float(price_calc.final_price) if not price_calc.is_manual_required else None,
         is_manual_required=price_calc.is_manual_required
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  FILE UPLOAD (Yandex.Disk Integration)
+# ═══════════════════════════════════════════════════════════════════════════
+
+from fastapi import File, UploadFile
+from typing import List
+from bot.services.yandex_disk import yandex_disk_service
+
+
+class FileUploadResponse(BaseModel):
+    success: bool
+    message: str
+    files_url: Optional[str] = None
+    uploaded_count: int = 0
+
+
+@router.post("/orders/{order_id}/upload-files", response_model=FileUploadResponse)
+async def upload_order_files(
+    order_id: int,
+    files: List[UploadFile] = File(...),
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Upload files to an order. Files are stored on Yandex.Disk.
+    Returns the public folder URL.
+    """
+    logger.info(f"[API /orders/{order_id}/upload-files] Upload request from user {tg_user.id}, {len(files)} files")
+
+    # Get user
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get order and verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Not your order")
+
+    # Check if Yandex Disk is available
+    if not yandex_disk_service.is_available:
+        logger.warning("[API] Yandex Disk not configured, skipping file upload")
+        return FileUploadResponse(
+            success=False,
+            message="Файловое хранилище временно недоступно",
+            uploaded_count=0
+        )
+
+    # Read all files
+    file_data = []
+    for file in files:
+        content = await file.read()
+        if len(content) > 50 * 1024 * 1024:  # 50MB limit per file
+            continue
+        file_data.append((content, file.filename))
+
+    if not file_data:
+        return FileUploadResponse(
+            success=False,
+            message="Нет файлов для загрузки или файлы слишком большие",
+            uploaded_count=0
+        )
+
+    # Upload to Yandex Disk
+    result = await yandex_disk_service.upload_multiple_files(
+        files=file_data,
+        order_id=order.id,
+        client_name=user.fullname or f"User_{user.telegram_id}",
+        work_type=order.work_type,
+        telegram_id=user.telegram_id,
+    )
+
+    if result.success:
+        # Save the folder URL to order
+        order.files_url = result.folder_url
+        await session.commit()
+
+        # Update the order card in admin topic with files link
+        try:
+            bot = get_bot()
+            from bot.services.live_cards import send_or_update_card
+            await send_or_update_card(
+                bot=bot,
+                order=order,
+                session=session,
+                client_username=user.username,
+                client_name=user.fullname,
+                extra_text=f"📎 {len(file_data)} файл(ов) загружено",
+            )
+        except Exception as e:
+            logger.warning(f"[API] Failed to update order card: {e}")
+
+        logger.info(f"[API /orders/{order_id}/upload-files] Uploaded {len(file_data)} files")
+
+        return FileUploadResponse(
+            success=True,
+            message=f"✅ Загружено {len(file_data)} файл(ов)",
+            files_url=result.folder_url,
+            uploaded_count=len(file_data)
+        )
+
+    return FileUploadResponse(
+        success=False,
+        message=f"Ошибка загрузки: {result.error}",
+        uploaded_count=0
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  PAYMENT CONFIRMATION (Manual Transfer Flow)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class PaymentConfirmRequest(BaseModel):
+    payment_method: str  # 'card', 'sbp', 'transfer'
+    payment_scheme: str  # 'full', 'half'
+
+
+class PaymentConfirmResponse(BaseModel):
+    success: bool
+    message: str
+    new_status: str
+    amount_to_pay: float
+
+
+@router.post("/orders/{order_id}/confirm-payment", response_model=PaymentConfirmResponse)
+async def confirm_payment(
+    order_id: int,
+    data: PaymentConfirmRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    User confirms they have made a manual payment.
+    Changes status to VERIFICATION_PENDING and notifies admins.
+    """
+    logger.info(f"[API /orders/{order_id}/confirm-payment] User {tg_user.id} confirming payment")
+
+    # Get user
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get order and verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Not your order")
+
+    # Check order is in payment waiting status
+    if order.status not in [OrderStatus.WAITING_PAYMENT.value, 'waiting_payment']:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Order is not waiting for payment (status: {order.status})"
+        )
+
+    # Calculate amount based on scheme
+    final_price = order.final_price
+    if data.payment_scheme == 'half':
+        amount_to_pay = final_price / 2
+    else:
+        amount_to_pay = final_price
+
+    # Update order
+    order.status = OrderStatus.VERIFICATION_PENDING.value
+    order.payment_method = data.payment_method
+    order.payment_scheme = data.payment_scheme
+    await session.commit()
+
+    # Notify admin in topic
+    try:
+        bot = get_bot()
+
+        # Update order card
+        from bot.services.live_cards import send_or_update_card
+        scheme_text = "100%" if data.payment_scheme == 'full' else "50% аванс"
+        method_text = {"card": "Карта", "sbp": "СБП", "transfer": "Перевод"}.get(data.payment_method, data.payment_method)
+
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username,
+            client_name=user.fullname,
+            extra_text=f"💳 Ожидает проверки: {scheme_text} ({method_text})\n💰 Сумма: {amount_to_pay:,.0f}₽".replace(",", " "),
+        )
+
+        # Send notification to user
+        await bot.send_message(
+            chat_id=user.telegram_id,
+            text=f"✅ <b>Заявка на оплату принята!</b>\n\n"
+                 f"Заказ <code>#{order.id}</code>\n"
+                 f"Сумма: <b>{amount_to_pay:,.0f}₽</b>\n\n"
+                 f"Менеджер проверит поступление и подтвердит.\n"
+                 f"Обычно это занимает 5-15 минут.".replace(",", " ")
+        )
+
+    except Exception as e:
+        logger.error(f"[API] Failed to notify about payment: {e}")
+
+    # Log to Mini App topic
+    try:
+        await log_mini_app_event(
+            bot=get_bot(),
+            event=MiniAppEvent.ORDER_VIEW,
+            user_id=user.telegram_id,
+            username=user.username,
+            order_id=order.id,
+            details=f"Подтвердил оплату: {amount_to_pay:,.0f}₽".replace(",", " "),
+        )
+    except Exception as e:
+        logger.warning(f"[API] Failed to log payment confirmation: {e}")
+
+    return PaymentConfirmResponse(
+        success=True,
+        message="Заявка на оплату отправлена на проверку",
+        new_status=order.status,
+        amount_to_pay=amount_to_pay
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  PAYMENT INFO (Get payment details for order)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class PaymentInfoResponse(BaseModel):
+    order_id: int
+    status: str
+    price: float
+    final_price: float
+    discount: float
+    bonus_used: float
+    paid_amount: float
+    remaining: float
+    card_number: str
+    card_holder: str
+    sbp_phone: str
+    sbp_bank: str
+
+
+@router.get("/orders/{order_id}/payment-info", response_model=PaymentInfoResponse)
+async def get_payment_info(
+    order_id: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Get payment details for an order including bank requisites.
+    """
+    # Get order and verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Not your order")
+
+    return PaymentInfoResponse(
+        order_id=order.id,
+        status=order.status,
+        price=float(order.price),
+        final_price=float(order.final_price),
+        discount=float(order.discount),
+        bonus_used=float(order.bonus_used),
+        paid_amount=float(order.paid_amount or 0),
+        remaining=float(order.final_price - (order.paid_amount or 0)),
+        # Payment requisites (from settings or hardcoded for now)
+        card_number="2202 2080 1234 5678",  # TODO: Move to settings
+        card_holder="IVAN PETROV",
+        sbp_phone="+7 (900) 123-45-67",
+        sbp_bank="Тинькофф",
+    )

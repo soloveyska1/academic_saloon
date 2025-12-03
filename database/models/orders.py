@@ -285,6 +285,7 @@ class Order(Base):
 
     # Служебное
     admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    files_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # Yandex.Disk folder URL
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
