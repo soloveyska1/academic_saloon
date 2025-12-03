@@ -185,34 +185,32 @@ export async function uploadOrderFiles(
 
   const initData = getInitData()
 
-  try {
-    // Use XMLHttpRequest for progress tracking
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
+  // Use XMLHttpRequest for progress tracking
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
 
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable && onProgress) {
-          const percent = Math.round((e.loaded / e.total) * 100)
-          onProgress(percent)
-        }
-      })
-
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(JSON.parse(xhr.responseText))
-        } else {
-          const error = JSON.parse(xhr.responseText)
-          reject(new Error(error.detail || 'Upload failed'))
-        }
-      })
-
-      xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
-
-      xhr.open('POST', `${API_BASE}/orders/${orderId}/upload-files`)
-      xhr.setRequestHeader('X-Telegram-Init-Data', initData)
-      xhr.send(formData)
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable && onProgress) {
+        const percent = Math.round((e.loaded / e.total) * 100)
+        onProgress(percent)
+      }
     })
-  }
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText))
+      } else {
+        const error = JSON.parse(xhr.responseText)
+        reject(new Error(error.detail || 'Upload failed'))
+      }
+    })
+
+    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
+
+    xhr.open('POST', `${API_BASE}/orders/${orderId}/upload-files`)
+    xhr.setRequestHeader('X-Telegram-Init-Data', initData)
+    xhr.send(formData)
+  })
 }
 
 // Payment info
