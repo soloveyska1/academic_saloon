@@ -1161,6 +1161,66 @@ async def delete_order(callback: CallbackQuery, session: AsyncSession):
 
 
 # ══════════════════════════════════════════════════════════════
+#                    ОТКРЫТИЕ ТОПИКА ИЗ MINI APP ЛОГА
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("admin_open_order_topic:"))
+async def open_order_topic_from_log(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """
+    Открывает или создаёт топик для чата с клиентом из лога Mini App.
+    """
+    from bot.handlers.order_chat import get_or_create_topic
+    from database.models.orders import ConversationType
+
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    order_id = parse_callback_int(callback.data, 1)
+    if order_id is None:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    await callback.answer("⏳ Открываю топик...")
+
+    # Получаем заказ
+    query = select(Order).where(Order.id == order_id)
+    result = await session.execute(query)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await callback.answer(f"Заказ #{order_id} не найден", show_alert=True)
+        return
+
+    try:
+        # Получаем или создаём топик
+        conv, topic_id = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=order.user_id,
+            order_id=order_id,
+            conv_type=ConversationType.ORDER_CHAT.value,
+        )
+
+        # Формируем ссылку на топик
+        topic_link = f"https://t.me/c/{str(settings.ADMIN_GROUP_ID)[4:]}/{topic_id}"
+
+        await callback.answer(f"✅ Топик открыт", show_alert=False)
+
+        # Отправляем сообщение со ссылкой
+        await bot.send_message(
+            chat_id=callback.from_user.id,
+            text=f"💬 <b>Топик по заказу #{order_id}</b>\n\n"
+                 f"<a href=\"{topic_link}\">Перейти в топик →</a>",
+            disable_notification=True,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to open order topic: {e}")
+        await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
+
+
+# ══════════════════════════════════════════════════════════════
 #                    МЕНЮ СТАТУСА САЛУНА
 # ══════════════════════════════════════════════════════════════
 

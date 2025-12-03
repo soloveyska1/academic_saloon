@@ -877,6 +877,22 @@ async def get_payment_info(
     if order.user_id != tg_user.id:
         raise HTTPException(status_code=403, detail="Not your order")
 
+    # Format card number with spaces for display (XXXX XXXX XXXX XXXX)
+    card_raw = settings.PAYMENT_CARD.replace(" ", "").replace("-", "")
+    card_formatted = " ".join([card_raw[i:i+4] for i in range(0, len(card_raw), 4)])
+
+    # Format phone for display
+    phone_raw = settings.PAYMENT_PHONE.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    if phone_raw.startswith("8"):
+        phone_raw = "+7" + phone_raw[1:]
+    elif not phone_raw.startswith("+"):
+        phone_raw = "+7" + phone_raw
+    # Format as +7 (XXX) XXX-XX-XX
+    if len(phone_raw) >= 12:
+        phone_formatted = f"{phone_raw[:2]} ({phone_raw[2:5]}) {phone_raw[5:8]}-{phone_raw[8:10]}-{phone_raw[10:12]}"
+    else:
+        phone_formatted = phone_raw
+
     return PaymentInfoResponse(
         order_id=order.id,
         status=order.status,
@@ -886,9 +902,9 @@ async def get_payment_info(
         bonus_used=float(order.bonus_used),
         paid_amount=float(order.paid_amount or 0),
         remaining=float(order.final_price - (order.paid_amount or 0)),
-        # Payment requisites (from settings or hardcoded for now)
-        card_number="2202 2080 1234 5678",  # TODO: Move to settings
-        card_holder="IVAN PETROV",
-        sbp_phone="+7 (900) 123-45-67",
-        sbp_bank="Тинькофф",
+        # Payment requisites from settings
+        card_number=card_formatted,
+        card_holder=settings.PAYMENT_NAME.upper(),
+        sbp_phone=phone_formatted,
+        sbp_bank=settings.PAYMENT_BANKS,
     )
