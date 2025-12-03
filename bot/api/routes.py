@@ -12,7 +12,7 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models.users import User
-from database.models.orders import Order
+from database.models.orders import Order, Conversation, ConversationType
 from database.db import get_session
 from core.config import settings
 
@@ -26,6 +26,7 @@ from .schemas import (
 )
 from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
 from bot.services.pricing import calculate_price, DEADLINE_LABELS
+from bot.bot_instance import get_bot
 
 logger = logging.getLogger(__name__)
 
@@ -423,9 +424,15 @@ async def create_order(
 ):
     """
     Create a new order from Mini App.
-    Calculates preliminary price and notifies admins.
+    Calculates preliminary price and notifies admins via Forum Topic.
     """
+    from bot.handlers.order_chat import get_or_create_topic
+    from bot.services.live_cards import send_or_update_card
+
     logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}")
+
+    # Get shared bot instance
+    bot = get_bot()
 
     # Get or create user
     result = await session.execute(
@@ -460,10 +467,9 @@ async def create_order(
         discount_percent=user_discount
     )
 
-    # Determine initial status
-    initial_status = OrderStatus.PENDING.value
-    if price_calc.is_manual_required:
-        initial_status = OrderStatus.WAITING_ESTIMATION.value
+    # Determine initial status - Web orders always start as WAITING_ESTIMATION
+    # to ensure admin review
+    initial_status = OrderStatus.WAITING_ESTIMATION.value
 
     # Create order
     order = Order(
@@ -484,16 +490,81 @@ async def create_order(
 
     logger.info(f"[API /orders/create] Order #{order.id} created, status={initial_status}, price={price_calc.final_price}")
 
+    # ═══════════════════════════════════════════════════════════════
+    #  ADMIN WORKFLOW INTEGRATION
+    # ═══════════════════════════════════════════════════════════════
+
+    try:
+        # 1. Create Forum Topic in Admin Group
+        conv, topic_id = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=user.telegram_id,
+            order_id=order.id,
+            conv_type=ConversationType.ORDER_CHAT.value,
+        )
+        logger.info(f"[API /orders/create] Created topic {topic_id} for order #{order.id}")
+
+        # 2. Send/Update Order Card in Topic
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username,
+            client_name=user.fullname,
+            extra_text="📱 Заказ из Mini App",
+        )
+        logger.info(f"[API /orders/create] Order card sent to topic for order #{order.id}")
+
+    except Exception as e:
+        # Don't fail the order creation if admin notification fails
+        logger.error(f"[API /orders/create] Failed to notify admins for order #{order.id}: {e}")
+
+    # ═══════════════════════════════════════════════════════════════
+    #  USER NOTIFICATION
+    # ═══════════════════════════════════════════════════════════════
+
+    try:
+        # Send confirmation message to user
+        work_label = WORK_TYPE_LABELS.get(work_type_enum, data.work_type)
+
+        user_message = f"""✅ <b>Заказ #{order.id} принят!</b>
+
+📋 <b>{work_label}</b>
+📚 {data.subject}
+⏰ Срок: {data.deadline}
+
+Менеджер оценит заказ и вернётся с точной ценой.
+Следи за обновлениями в Мини-апп! 👇"""
+
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="📱 Открыть Мини-апп",
+                web_app={"url": f"{settings.WEBAPP_URL}/orders"}
+            )],
+            [InlineKeyboardButton(
+                text="💬 Написать менеджеру",
+                callback_data=f"enter_chat_order_{order.id}"
+            )],
+        ])
+
+        await bot.send_message(
+            chat_id=user.telegram_id,
+            text=user_message,
+            reply_markup=keyboard,
+        )
+        logger.info(f"[API /orders/create] User {user.telegram_id} notified about order #{order.id}")
+
+    except Exception as e:
+        logger.warning(f"[API /orders/create] Failed to notify user about order #{order.id}: {e}")
+
     # Prepare response message
     if price_calc.is_manual_required:
         message = "🦄 Спецзаказ принят! Шериф оценит сложность и вернётся с ценой."
     else:
-        message = f"✅ Заказ #{order.id} создан! Предварительная цена: {price_calc.final_price:,.0f}₽".replace(",", " ")
-
-    # TODO: Send admin notification (requires bot instance)
-    # This will be handled by a background task or webhook
-    # For now, we just log that notification is needed
-    logger.info(f"[API /orders/create] Admin notification pending for order #{order.id}")
+        message = f"✅ Заказ #{order.id} создан! Ожидайте оценку от менеджера."
 
     return OrderCreateResponse(
         success=True,

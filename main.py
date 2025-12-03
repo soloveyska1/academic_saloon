@@ -1,11 +1,10 @@
 import asyncio
 import logging
-from aiogram import Bot, Dispatcher
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
+from aiogram import Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
 
 from core.config import settings
+from bot.bot_instance import get_bot, set_bot, close_bot
 from bot.handlers.start import router as start_router
 from bot.handlers.terms import router as terms_router
 from bot.handlers.menu import router as menu_router
@@ -70,11 +69,9 @@ async def run_bot():
     """Run Telegram bot"""
     logger.info("🤖 Starting Academic Saloon Bot...")
 
-    # Инициализация бота с настройками по умолчанию (HTML)
-    bot = Bot(
-        token=settings.BOT_TOKEN.get_secret_value(),
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
-    )
+    # Get shared bot instance (used by both polling and API)
+    bot = get_bot()
+    set_bot(bot)  # Ensure it's registered globally
 
     # FSM storage в Redis
     storage = RedisStorage.from_url(settings.REDIS_URL)
@@ -130,7 +127,7 @@ async def run_bot():
         silence_reminder.stop()
         # Закрываем Redis пул
         await close_redis()
-        await bot.session.close()
+        await close_bot()
         logger.info("Bot shutdown complete")
 
 

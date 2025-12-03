@@ -86,7 +86,9 @@ export function OrderDetailPage() {
 
   const handleChat = () => {
     haptic('medium')
-    openBot(`chat_order_${order?.id}`)
+    // Deep link format: order_chat_{order_id}
+    // This triggers the chat mode in start.py
+    openBot(`order_chat_${order?.id}`)
   }
 
   const handlePay = () => {

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database.models.users import User
-from database.models.orders import Order, OrderStatus
+from database.models.orders import Order, OrderStatus, ConversationType
 from bot.keyboards.inline import get_main_menu_keyboard, get_saloon_status_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
 from bot.texts.terms import TERMS_SHORT
@@ -17,6 +17,8 @@ from core.config import settings
 from core.saloon_status import saloon_manager, generate_status_message
 from core.media_cache import send_cached_photo
 from bot.handlers.channel_cards import send_payment_notification
+from bot.states.chat import ChatStates
+from bot.handlers.order_chat import get_exit_chat_keyboard
 
 
 # FSM для ввода своей цены
@@ -200,6 +202,50 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         else:
             await message.answer("❌ Эта функция только для администраторов")
             # Продолжаем показывать главное меню
+
+    # ═══════════════════════════════════════════════════════════════
+    #  ORDER CHAT DEEP LINK: /start order_chat_{order_id}
+    # ═══════════════════════════════════════════════════════════════
+
+    if deep_link and deep_link.startswith("order_chat_"):
+        try:
+            order_id = int(deep_link.replace("order_chat_", ""))
+
+            # Check if the order exists and belongs to this user
+            order = await session.get(Order, order_id)
+            if not order:
+                await message.answer("❌ Заказ не найден")
+                return
+
+            if order.user_id != message.from_user.id:
+                await message.answer("❌ Это не ваш заказ")
+                return
+
+            # Set FSM state to chat mode
+            await state.set_state(ChatStates.in_chat)
+            await state.update_data(
+                order_id=order_id,
+                conv_type=ConversationType.ORDER_CHAT.value,
+            )
+
+            # Get order info for the message
+            work_label = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
+
+            await message.answer(
+                f"💬 <b>Чат по заказу #{order_id}</b>\n\n"
+                f"📋 {work_label}\n"
+                f"📚 {order.subject or 'Не указано'}\n\n"
+                "Вы подключены к менеджеру.\n"
+                "Пишите сообщения, отправляйте файлы или голосовые.\n\n"
+                "Чтобы выйти — нажмите кнопку внизу 👇",
+                reply_markup=get_exit_chat_keyboard(),
+            )
+
+            return  # Don't show main menu
+
+        except ValueError:
+            await message.answer("❌ Неверный формат ссылки")
+            # Continue to main menu
 
     # === ГЛАВНОЕ МЕНЮ — сразу без барьеров ===
 
