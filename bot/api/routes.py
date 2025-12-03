@@ -4,7 +4,7 @@ API routes for Mini App
 
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -174,11 +174,16 @@ async def get_user_profile(
     # Generate referral code from telegram_id
     referral_code = f"REF{user.telegram_id}"
 
-    # Check daily bonus availability
+    # Check daily bonus availability (use timezone-aware datetime!)
     can_spin = True
     if user.last_daily_bonus_at:
+        # Ensure both datetimes are timezone-aware for comparison
         next_spin = user.last_daily_bonus_at + timedelta(hours=24)
-        can_spin = datetime.utcnow() >= next_spin
+        now_utc = datetime.now(timezone.utc)
+        # If next_spin is naive, make it aware
+        if next_spin.tzinfo is None:
+            next_spin = next_spin.replace(tzinfo=timezone.utc)
+        can_spin = now_utc >= next_spin
 
     return UserResponse(
         id=user.id,
@@ -323,10 +328,13 @@ async def spin_roulette(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Check cooldown
-    now = datetime.utcnow()
+    # Check cooldown (use timezone-aware datetime!)
+    now = datetime.now(timezone.utc)
     if user.last_daily_bonus_at:
         next_spin = user.last_daily_bonus_at + timedelta(hours=24)
+        # Ensure timezone-aware comparison
+        if next_spin.tzinfo is None:
+            next_spin = next_spin.replace(tzinfo=timezone.utc)
         if now < next_spin:
             return RouletteResponse(
                 success=False,
