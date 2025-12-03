@@ -2,9 +2,10 @@
 Pydantic schemas for Mini App API responses
 """
 
+import re
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, Field
 
 
 class RankInfo(BaseModel):
@@ -78,7 +79,16 @@ class OrdersListResponse(BaseModel):
 
 class PromoCodeRequest(BaseModel):
     """Promo code application request"""
-    code: str
+    code: str = Field(..., min_length=1, max_length=50)
+
+    @field_validator('code')
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        # Only allow alphanumeric characters
+        cleaned = re.sub(r'[^A-Za-z0-9]', '', v)
+        if not cleaned:
+            raise ValueError('Некорректный промокод')
+        return cleaned.upper()
 
 
 class PromoCodeResponse(BaseModel):
@@ -111,11 +121,47 @@ class ConfigResponse(BaseModel):
 
 class OrderCreateRequest(BaseModel):
     """Request to create a new order from Mini App"""
-    work_type: str  # Must match WorkType enum values
-    subject: str
-    topic: Optional[str] = None
-    deadline: str  # Deadline key (today, tomorrow, week, etc.) or custom date
-    description: Optional[str] = None
+    work_type: str = Field(..., min_length=1, max_length=50)
+    subject: str = Field(..., min_length=1, max_length=200)
+    topic: Optional[str] = Field(None, max_length=500)
+    deadline: str = Field(..., min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=5000)
+
+    @field_validator('subject', 'topic', 'description')
+    @classmethod
+    def sanitize_text(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        # Strip whitespace and limit consecutive newlines
+        v = v.strip()
+        v = re.sub(r'\n{3,}', '\n\n', v)
+        # Remove potential script tags (basic XSS prevention)
+        v = re.sub(r'<script[^>]*>.*?</script>', '', v, flags=re.IGNORECASE | re.DOTALL)
+        v = re.sub(r'<[^>]+>', '', v)  # Remove all HTML tags
+        return v
+
+    @field_validator('work_type')
+    @classmethod
+    def validate_work_type(cls, v: str) -> str:
+        valid_types = [
+            'masters', 'diploma', 'coursework', 'practice', 'essay',
+            'presentation', 'control', 'independent', 'report', 'photo_task', 'other'
+        ]
+        if v not in valid_types:
+            raise ValueError(f'Некорректный тип работы: {v}')
+        return v
+
+    @field_validator('deadline')
+    @classmethod
+    def validate_deadline(cls, v: str) -> str:
+        valid_deadlines = [
+            'today', 'tomorrow', '3days', 'week', '2weeks', 'month', 'flexible'
+        ]
+        # Allow valid keys or custom dates in format DD.MM.YYYY
+        if v not in valid_deadlines:
+            if not re.match(r'^\d{1,2}\.\d{1,2}\.\d{4}$', v):
+                raise ValueError('Некорректный срок выполнения')
+        return v
 
 
 class OrderCreateResponse(BaseModel):

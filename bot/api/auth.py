@@ -105,8 +105,7 @@ def validate_init_data(init_data: str, bot_token: str) -> Optional[TelegramUser]
             is_premium=user_data.get('is_premium', False)
         )
 
-    except (KeyError, json.JSONDecodeError, ValueError) as e:
-        print(f"initData validation error: {e}")
+    except (KeyError, json.JSONDecodeError, ValueError):
         return None
 
 
@@ -121,10 +120,7 @@ async def get_current_user(
         async def get_user(user: TelegramUser = Depends(get_current_user)):
             ...
     """
-    print(f"[AUTH DEBUG] Received init_data: {init_data[:100] if init_data else 'NONE'}...")
-
     if not init_data:
-        print("[AUTH DEBUG] No init_data header!")
         raise HTTPException(
             status_code=401,
             detail="Missing X-Telegram-Init-Data header"
@@ -134,11 +130,9 @@ async def get_current_user(
     user = validate_init_data(init_data, bot_token)
 
     if not user:
-        print(f"[AUTH DEBUG] Validation failed for init_data")
         raise HTTPException(
             status_code=401,
             detail="Invalid or expired initData"
         )
 
-    print(f"[AUTH DEBUG] User validated: {user.id} ({user.first_name})")
     return user
