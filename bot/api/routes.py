@@ -2,6 +2,7 @@
 API routes for Mini App
 """
 
+import logging
 import random
 from datetime import datetime, timedelta
 from typing import Optional
@@ -22,6 +23,8 @@ from .schemas import (
     RouletteResponse, ConfigResponse,
     RankInfo, LoyaltyInfo
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["Mini App"])
 
@@ -133,6 +136,7 @@ async def get_user_profile(
     session: AsyncSession = Depends(get_session)
 ):
     """Get current user profile with rank, loyalty, and orders"""
+    logger.info(f"[API /user] Request from telegram_id={tg_user.id} ({tg_user.first_name})")
 
     # Get user from database
     result = await session.execute(
@@ -140,13 +144,25 @@ async def get_user_profile(
     )
     user = result.scalar_one_or_none()
 
+    # Auto-register user if not found (opened Mini App before /start)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        logger.info(f"[API /user] User {tg_user.id} not found, auto-registering...")
+        user = User(
+            telegram_id=tg_user.id,
+            username=tg_user.username,
+            fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
+            role="user",
+            terms_accepted_at=datetime.utcnow(),  # Implicit consent via Mini App
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        logger.info(f"[API /user] User {tg_user.id} auto-registered successfully")
 
-    # Get user's orders (use internal user.id, not telegram_id)
+    # Get user's orders (Order.user_id = telegram_id, NOT internal id!)
     orders_result = await session.execute(
         select(Order)
-        .where(Order.user_id == user.id)
+        .where(Order.user_id == user.telegram_id)
         .order_by(desc(Order.created_at))
         .limit(50)
     )
@@ -200,7 +216,7 @@ async def get_orders(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    query = select(Order).where(Order.user_id == user.id)
+    query = select(Order).where(Order.user_id == user.telegram_id)
 
     if status:
         # Filter by status
@@ -248,7 +264,7 @@ async def get_order_detail(
     result = await session.execute(
         select(Order).where(
             Order.id == order_id,
-            Order.user_id == user.id
+            Order.user_id == user.telegram_id
         )
     )
     order = result.scalar_one_or_none()

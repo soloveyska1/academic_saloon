@@ -64,21 +64,27 @@ export async function fetchConfig(): Promise<{ bot_username: string; support_use
 export async function fetchUserData(): Promise<UserData> {
   console.log('[API] fetchUserData called')
 
+  // Check Telegram context
+  const initData = getInitData()
+  console.log('[API] initData length:', initData.length)
+
   // If no Telegram context (dev mode), use mock data
   if (!hasTelegramContext()) {
-    console.log('[API] No Telegram context, using mock data')
+    console.warn('[API] ⚠️ No Telegram context (initData empty) - using MOCK DATA')
+    console.warn('[API] This happens when app is opened outside Telegram or WebApp not initialized')
     return getMockUserData()
   }
 
   try {
     console.log('[API] Fetching real user data from:', API_BASE + '/user')
+    console.log('[API] initData preview:', initData.substring(0, 50) + '...')
     const data = await apiFetch<UserData>('/user')
-    console.log('[API] Got user data:', data.fullname, 'telegram_id:', data.telegram_id)
+    console.log('[API] ✅ Got REAL user data:', data.fullname, 'telegram_id:', data.telegram_id)
     return data
   } catch (e) {
-    console.error('[API] fetchUserData error:', e)
-    // Fallback to mock if API fails
-    console.log('[API] Falling back to mock data due to error')
+    console.error('[API] ❌ fetchUserData FAILED:', e)
+    console.error('[API] ❌ Falling back to MOCK data - check backend logs!')
+    // Still return mock to not break UI, but error is logged
     return getMockUserData()
   }
 }
