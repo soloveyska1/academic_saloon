@@ -103,3 +103,25 @@ class ConfigResponse(BaseModel):
     bot_username: str
     support_username: str
     reviews_channel: str
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ORDER CREATION SCHEMAS (Web App First)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class OrderCreateRequest(BaseModel):
+    """Request to create a new order from Mini App"""
+    work_type: str  # Must match WorkType enum values
+    subject: str
+    topic: Optional[str] = None
+    deadline: str  # Deadline key (today, tomorrow, week, etc.) or custom date
+    description: Optional[str] = None
+
+
+class OrderCreateResponse(BaseModel):
+    """Response after order creation"""
+    success: bool
+    order_id: int
+    message: str
+    price: Optional[float] = None
+    is_manual_required: bool = False  # True for 'other' type - needs admin estimation

@@ -21,8 +21,11 @@ from .schemas import (
     UserResponse, OrderResponse, OrdersListResponse,
     PromoCodeRequest, PromoCodeResponse,
     RouletteResponse, ConfigResponse,
-    RankInfo, LoyaltyInfo
+    RankInfo, LoyaltyInfo,
+    OrderCreateRequest, OrderCreateResponse
 )
+from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
+from bot.services.pricing import calculate_price, DEADLINE_LABELS
 
 logger = logging.getLogger(__name__)
 
@@ -405,4 +408,97 @@ async def spin_roulette(
         value=selected["value"],
         message=f"Поздравляем! Ты выиграл {selected['prize']}!",
         next_spin_at=next_spin_at
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ORDER CREATION (Web App First)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.post("/orders/create", response_model=OrderCreateResponse)
+async def create_order(
+    data: OrderCreateRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Create a new order from Mini App.
+    Calculates preliminary price and notifies admins.
+    """
+    logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}")
+
+    # Get or create user
+    result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        # Auto-register
+        user = User(
+            telegram_id=tg_user.id,
+            username=tg_user.username,
+            fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
+            role="user",
+            terms_accepted_at=datetime.utcnow(),
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+
+    # Validate work_type
+    try:
+        work_type_enum = WorkType(data.work_type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid work_type: {data.work_type}")
+
+    # Calculate price
+    user_discount = get_loyalty_info(user.orders_count or 0).discount
+    price_calc = calculate_price(
+        work_type=data.work_type,
+        deadline_key=data.deadline,
+        discount_percent=user_discount
+    )
+
+    # Determine initial status
+    initial_status = OrderStatus.PENDING.value
+    if price_calc.is_manual_required:
+        initial_status = OrderStatus.WAITING_ESTIMATION.value
+
+    # Create order
+    order = Order(
+        user_id=user.telegram_id,
+        work_type=data.work_type,
+        subject=data.subject,
+        topic=data.topic,
+        description=data.description,
+        deadline=data.deadline,
+        price=float(price_calc.final_price) if not price_calc.is_manual_required else 0.0,
+        discount=float(user_discount),
+        status=initial_status,
+    )
+
+    session.add(order)
+    await session.commit()
+    await session.refresh(order)
+
+    logger.info(f"[API /orders/create] Order #{order.id} created, status={initial_status}, price={price_calc.final_price}")
+
+    # Prepare response message
+    if price_calc.is_manual_required:
+        message = "🦄 Спецзаказ принят! Шериф оценит сложность и вернётся с ценой."
+    else:
+        message = f"✅ Заказ #{order.id} создан! Предварительная цена: {price_calc.final_price:,.0f}₽".replace(",", " ")
+
+    # TODO: Send admin notification (requires bot instance)
+    # This will be handled by a background task or webhook
+    # For now, we just log that notification is needed
+    logger.info(f"[API /orders/create] Admin notification pending for order #{order.id}")
+
+    return OrderCreateResponse(
+        success=True,
+        order_id=order.id,
+        message=message,
+        price=float(price_calc.final_price) if not price_calc.is_manual_required else None,
+        is_manual_required=price_calc.is_manual_required
     )

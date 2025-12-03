@@ -194,7 +194,7 @@ export function HomePage({ user }: Props) {
 
   const handleNewOrder = () => {
     haptic('heavy')
-    openBot('new_order')
+    navigate('/create-order')
   }
 
   const copyReferralCode = () => {
