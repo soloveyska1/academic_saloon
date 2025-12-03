@@ -2,121 +2,164 @@
 ## Academic Saloon - Telegram Bot + Mini App
 
 **Дата аудита:** 2025-12-03
-**Версия:** 1.0.0
+**Версия:** 2.0.0
 **Статус проекта:** Production (работает на VPS)
 
 ---
 
 ## 1. Обзор проекта
 
-### Что это?
-**Academic Saloon** — это Telegram-бот для заказа студенческих работ (курсовые, дипломы, рефераты и т.д.) с веб-интерфейсом (Mini App) для отслеживания заказов и профиля пользователя.
+### 1.1 Что это?
+**Academic Saloon** — это Telegram-бот для заказа студенческих работ (курсовые, дипломы, рефераты и т.д.) с премиальным веб-интерфейсом (Mini App) в стиле "Cyberpunk Casino" для отслеживания заказов, профиля и геймификации.
 
-### Основные функции:
-- **Заказ работ** через пошаговый wizard в боте (выбор типа работы, предмета, дедлайна, загрузка файлов)
-- **Система оплаты** (ручная проверка P2P + интеграция ЮKassa)
-- **Live-карточки заказов** в админском Forum Topic (супергруппа с топиками)
-- **Приватный чат** между клиентом и админом по каждому заказу
-- **Mini App** — веб-приложение для просмотра профиля, заказов и рулетки бонусов
-- **Система лояльности** (ранги по сумме трат + скидки по количеству заказов)
-- **Реферальная система** (5% от заказов приглашенных друзей)
+### 1.2 Ключевые функции:
 
-### Бизнес-логика:
+| Функция | Описание |
+|---------|----------|
+| **Заказ работ** | Пошаговый wizard в боте (тип работы -> предмет -> дедлайн -> файлы) |
+| **Система оплаты** | P2P перевод + интеграция ЮKassa (онлайн) |
+| **Live-карточки** | Заказы отображаются в Forum Topics админской супергруппы |
+| **Приватный чат** | Двусторонняя связь клиент <-> админ через топики |
+| **Mini App** | Премиальный UI: профиль, заказы, рулетка бонусов |
+| **Система лояльности** | Ранги по сумме трат + скидки по количеству заказов |
+| **Реферальная программа** | 5% от заказов приглашенных друзей |
+| **Daily Luck** | Рулетка с ежедневными бонусами |
+
+### 1.3 Бизнес-логика (User Journey):
 ```
-Клиент → /start → Выбирает тип работы → Заполняет детали →
-→ Админ получает карточку в топике → Назначает цену →
-→ Клиент оплачивает → Работа выполняется → Файлы отправляются клиенту
+Клиент                          Админ                           Система
+   |                               |                                |
+   |-- /start --------------------|--------------------------------|
+   |  Выбирает тип работы          |                                |
+   |  Заполняет детали             |                                |
+   |  Отправляет заявку -----------|---> Карточка в Forum Topic ----|
+   |                               |    Назначает цену              |
+   |<-------------------------------------- Уведомление с ценой <---|
+   |  Выбирает способ оплаты       |                                |
+   |  Оплачивает ----------------->|    Подтверждает ---------------|
+   |                               |    Выполняет работу            |
+   |                               |    Обновляет прогресс ---------|
+   |<-------------------------------------- Файлы готовой работы <--|
+   |  Подтверждает получение ------|----------------------------->  |
+   |                               |                  Начисление кэшбэка
 ```
 
 ---
 
 ## 2. Стек технологий
 
-### Backend (Python 3.11)
-| Компонент | Технология | Версия |
-|-----------|------------|--------|
-| Telegram Bot | aiogram | 3.10+ |
-| Web API | FastAPI | 0.109+ |
-| ASGI Server | uvicorn | 0.27+ |
-| ORM | SQLAlchemy | 2.0+ (async) |
-| Migrations | Alembic | 1.12+ |
-| Validation | Pydantic | 2.0+ |
-| Cache/FSM | Redis | 5.0+ |
-| Payment | YooKassa SDK | 3.0+ |
-| HTTP Client | httpx | 0.25+ |
+### 2.1 Backend (Python 3.11)
 
-### Frontend (React + TypeScript)
-| Компонент | Технология | Версия |
-|-----------|------------|--------|
-| Framework | React | 18.2 |
-| Router | react-router-dom | 6.20 |
-| Telegram SDK | @telegram-apps/sdk-react | 1.0 |
-| Bundler | Vite | 5.0 |
-| Language | TypeScript | 5.3 |
+| Компонент | Технология | Версия | Назначение |
+|-----------|------------|--------|------------|
+| Bot Framework | aiogram | 3.10+ | Telegram Bot API, FSM |
+| Web API | FastAPI | 0.109+ | REST API для Mini App |
+| ASGI Server | uvicorn | 0.27+ | Асинхронный веб-сервер |
+| ORM | SQLAlchemy | 2.0+ | Async ORM, модели |
+| Migrations | Alembic | 1.12+ | Версионирование схемы |
+| Validation | Pydantic | 2.0+ | Конфиг, схемы API |
+| Cache/FSM | Redis | 5.0+ | FSM storage, кэш |
+| Payment | YooKassa SDK | 3.0+ | Онлайн-оплата |
+| HTTP Client | httpx | 0.25+ | Внешние запросы |
 
-### База данных
-| Компонент | Технология |
-|-----------|------------|
-| СУБД | PostgreSQL 15 (Alpine) |
-| Async Driver | asyncpg |
-| Cache/Sessions | Redis 7 (Alpine) |
+### 2.2 Frontend (React + TypeScript)
 
-### Инфраструктура
-| Компонент | Описание |
-|-----------|----------|
-| VPS | Собственный сервер (Linux) |
-| Container | Docker + Docker Compose |
-| Reverse Proxy | Nginx (SSL termination) |
-| Frontend Hosting | Vercel (mini-app) |
-| Domain | academic-saloon.duckdns.org |
-| SSL | Let's Encrypt (certbot) |
+| Компонент | Технология | Версия | Назначение |
+|-----------|------------|--------|------------|
+| UI Framework | React | 18.2 | Компонентный UI |
+| Router | react-router-dom | 6.20 | SPA навигация |
+| Telegram SDK | @telegram-apps/sdk-react | 1.0 | Интеграция с Telegram |
+| Animations | framer-motion | 11.0 | Премиальные анимации |
+| Icons | lucide-react | 0.400 | Иконки |
+| Bundler | Vite | 5.0 | Быстрая сборка |
+| Language | TypeScript | 5.3 | Типизация |
+
+### 2.3 Инфраструктура
+
+| Компонент | Технология | Описание |
+|-----------|------------|----------|
+| Database | PostgreSQL 15 | Основное хранилище (Docker Alpine) |
+| Cache | Redis 7 | FSM + кэширование (Docker Alpine) |
+| VPS | Linux | Собственный сервер |
+| Containers | Docker Compose | Оркестрация сервисов |
+| Reverse Proxy | Nginx | SSL termination, /api/* проксирование |
+| Frontend CDN | Vercel | Хостинг Mini App |
+| SSL | Let's Encrypt | Автообновляемые сертификаты |
+| Domain | DuckDNS | Бесплатный динамический DNS |
 
 ---
 
-## 3. Архитектура и схема взаимодействия
+## 3. Архитектура
+
+### 3.1 Схема взаимодействия компонентов
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              КЛИЕНТЫ                                    │
-└─────────────────────────────────────────────────────────────────────────┘
-              │                                      │
-              │ Telegram Bot API                     │ HTTPS (Vercel)
-              ▼                                      ▼
-┌────────────────────────┐              ┌─────────────────────────────────┐
-│   Telegram Servers     │              │    Mini App (React + Vite)      │
-│   - Polling mode       │              │    vercel.app deployment        │
-└────────────────────────┘              └─────────────────────────────────┘
-              │                                      │
-              │ Long Polling                         │ HTTPS API calls
-              ▼                                      ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         VPS SERVER                                      │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                         NGINX                                     │  │
-│  │    - SSL termination (Let's Encrypt)                             │  │
-│  │    - Reverse proxy: /api/* → localhost:8000                      │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-│                                    │                                    │
-│                                    ▼                                    │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                    DOCKER COMPOSE                                 │  │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌──────────────────────────┐  │  │
-│  │  │  PostgreSQL │ │    Redis     │ │      Bot Container       │  │  │
-│  │  │   :5432     │ │    :6379     │ │  - main.py (aiogram)     │  │  │
-│  │  │             │ │  FSM + Cache │ │  - FastAPI on :8000      │  │  │
-│  │  └──────┬──────┘ └──────┬───────┘ └────────────┬─────────────┘  │  │
-│  │         │               │                      │                 │  │
-│  │         └───────────────┴──────────────────────┘                 │  │
-│  │                    saloon_net (bridge)                           │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------------------+
+|                              КЛИЕНТЫ                                         |
+|  [Telegram App]                              [Mini App Browser]              |
++-------------+-------------------------------------------+-------------------+
+              |                                           |
+              | Telegram Bot API                          | HTTPS
+              | (Long Polling)                            |
+              v                                           v
++-------------------------+              +------------------------------------+
+|    Telegram Servers     |              |   Vercel CDN                       |
+|                         |              |   academic-saloon.vercel.app       |
++-------------+-----------+              +-------------------+----------------+
+              |                                              |
+              |                                              | /api/* requests
+              v                                              v
++-----------------------------------------------------------------------------+
+|                            VPS SERVER                                        |
+|  +-----------------------------------------------------------------------+  |
+|  |                           NGINX                                        |  |
+|  |   - SSL termination (Let's Encrypt)                                   |  |
+|  |   - Reverse proxy: /api/* -> localhost:8000                           |  |
+|  |   - Domain: academic-saloon.duckdns.org                               |  |
+|  +-----------------------------------------------------------------------+  |
+|                                    |                                         |
+|                                    v                                         |
+|  +-----------------------------------------------------------------------+  |
+|  |                      DOCKER COMPOSE                                    |  |
+|  |                                                                        |  |
+|  |  +--------------+  +--------------+  +----------------------------+   |  |
+|  |  |  PostgreSQL  |  |    Redis     |  |      Bot Container         |   |  |
+|  |  |   :5432      |  |    :6379     |  |                            |   |  |
+|  |  |              |  |              |  |  main.py                   |   |  |
+|  |  |  - users     |  |  - FSM       |  |    +-- aiogram Bot        |   |  |
+|  |  |  - orders    |  |  - Cache     |  |    +-- FastAPI :8000      |   |  |
+|  |  |  - messages  |  |              |  |                            |   |  |
+|  |  +------+-------+  +------+-------+  +------------+---------------+   |  |
+|  |         |                 |                       |                   |  |
+|  |         +-----------------+-----------------------+                   |  |
+|  |                        saloon_net (bridge)                            |  |
+|  +-----------------------------------------------------------------------+  |
++-----------------------------------------------------------------------------+
 ```
 
-### Важные ID каналов/групп:
+### 3.2 Telegram Integration IDs
+
 ```python
-LOG_CHANNEL_ID = -1003300275622       # Канал логов действий
-ORDERS_CHANNEL_ID = -1003331104298    # Канал Live-карточек (deprecated, используются топики)
-ADMIN_GROUP_ID = -1003352978651       # Супергруппа с Forum Topics для тикетов
+# Системные каналы и группы
+LOG_CHANNEL_ID = -1003300275622       # Канал логов (все действия пользователей)
+ORDERS_CHANNEL_ID = -1003331104298    # [DEPRECATED] Старый канал карточек
+ADMIN_GROUP_ID = -1003352978651       # Супергруппа с Forum Topics (основная)
+```
+
+### 3.3 API Authentication Flow
+
+```
++-------------+     +-------------+     +-------------+     +-------------+
+|  Mini App   |---->|  Telegram   |---->|   FastAPI   |---->|  Database   |
+|             |     |  WebApp     |     |   /api/*    |     |             |
++-------------+     +-------------+     +-------------+     +-------------+
+       |                   |                   |
+       | window.Telegram   | initData          | HMAC-SHA256
+       | .WebApp.initData  | (signed)          | validation
+       |                   |                   |
+       +-------------------+-------------------+
+                           |
+                   X-Telegram-Init-Data header
 ```
 
 ---
@@ -125,461 +168,752 @@ ADMIN_GROUP_ID = -1003352978651       # Супергруппа с Forum Topics �
 
 ```
 academic_saloon/
-├── main.py                    # 🚀 Точка входа: запуск бота + FastAPI
-├── requirements.txt           # Python зависимости
-├── Dockerfile                 # Образ Python 3.11-slim
-├── docker-compose.yml         # Оркестрация: db + redis + bot
-├── alembic.ini               # Конфиг миграций
-├── .env.example              # Шаблон переменных окружения
-│
-├── core/                      # ⚙️ Ядро приложения
-│   ├── config.py             # Pydantic Settings (все env переменные)
-│   ├── redis_pool.py         # Пул соединений Redis
-│   ├── media_cache.py        # Кэширование file_id изображений
-│   └── saloon_status.py      # Статус салуна (открыт/закрыт)
-│
-├── database/                  # 🗄️ База данных
-│   ├── db.py                 # SQLAlchemy engine + session maker
-│   ├── models/
-│   │   ├── users.py          # Модель User (ранги, лояльность, бонусы)
-│   │   └── orders.py         # Модели Order, OrderMessage, Conversation
-│   └── migrations/
-│       ├── env.py            # Alembic config
-│       └── versions/         # Файлы миграций
-│
-├── bot/                       # 🤖 Telegram Bot
-│   ├── handlers/             # Обработчики команд и callback'ов
-│   │   ├── start.py          # /start + deep links
-│   │   ├── orders.py         # FSM wizard создания заказа (БОЛЬШОЙ файл!)
-│   │   ├── admin.py          # Админ-панель, подтверждение оплаты
-│   │   ├── my_orders.py      # История заказов клиента
-│   │   ├── order_chat.py     # Приватный чат клиент-админ
-│   │   ├── channel_cards.py  # Карточки заказов в канале
-│   │   ├── menu.py           # Главное меню
-│   │   ├── terms.py          # Оферта
-│   │   └── log_actions.py    # Обработчики кнопок логов
-│   │
-│   ├── keyboards/            # Inline и Reply клавиатуры
-│   │   ├── inline.py         # Основные inline-кнопки
-│   │   ├── orders.py         # Клавиатуры для wizard заказа
-│   │   ├── profile.py        # Клавиатуры профиля
-│   │   └── terms.py          # Кнопки оферты
-│   │
-│   ├── middlewares/          # Middleware слои
-│   │   ├── error_handler.py  # Глобальный обработчик ошибок
-│   │   ├── db_session.py     # Инъекция сессии БД в хендлеры
-│   │   ├── ban_check.py      # Проверка бана пользователя
-│   │   ├── antispam.py       # Защита от спама
-│   │   └── stop_words.py     # Фильтр стоп-слов
-│   │
-│   ├── services/             # Бизнес-логика
-│   │   ├── logger.py         # Логирование в канал (LogEvent)
-│   │   ├── pricing.py        # Расчёт цен, коэффициенты
-│   │   ├── live_cards.py     # Live-карточки в топиках
-│   │   ├── bonus.py          # Система бонусов
-│   │   ├── yookassa.py       # Интеграция ЮKassa
-│   │   ├── yandex_disk.py    # Загрузка файлов на Я.Диск
-│   │   ├── abandoned_detector.py  # Детектор брошенных корзин
-│   │   ├── silence_reminder.py    # Напоминания о тишине
-│   │   ├── daily_stats.py    # Ежедневная статистика
-│   │   ├── unified_hub.py    # Инициализация служебных топиков
-│   │   └── order_progress.py # Прогресс выполнения заказа
-│   │
-│   ├── states/               # FSM состояния
-│   │   ├── order.py          # Состояния wizard заказа
-│   │   ├── admin.py          # Состояния админки
-│   │   └── chat.py           # Состояния чата
-│   │
-│   ├── texts/                # Шаблоны текстов
-│   │   └── terms.py          # Текст оферты
-│   │
-│   ├── utils/                # Вспомогательные утилиты
-│   │   ├── message_helpers.py # Безопасное редактирование сообщений
-│   │   └── media_group.py    # Обработка медиагрупп
-│   │
-│   ├── media/                # Изображения бота (не в git)
-│   │
-│   └── api/                  # 🌐 FastAPI для Mini App
-│       ├── app.py            # FastAPI application factory
-│       ├── routes.py         # API endpoints (/api/user, /api/orders, etc.)
-│       ├── schemas.py        # Pydantic response models
-│       └── auth.py           # HMAC-SHA256 валидация Telegram initData
-│
-└── mini-app/                  # 📱 React Mini App
-    ├── package.json          # NPM зависимости
-    ├── vite.config.ts        # Vite конфигурация
-    ├── vercel.json           # Конфиг деплоя на Vercel
-    ├── index.html            # Entry HTML
-    └── src/
-        ├── main.tsx          # React entry point
-        ├── App.tsx           # Router и основная структура
-        ├── types.ts          # TypeScript типы
-        ├── api/
-        │   └── userApi.ts    # API клиент (fetch + auth headers)
-        ├── hooks/
-        │   └── useUserData.ts # React hooks для API
-        ├── pages/
-        │   ├── HomePage.tsx      # Главная (профиль, баланс, заказы)
-        │   ├── OrdersPage.tsx    # Список заказов
-        │   ├── OrderDetailPage.tsx # Детали заказа
-        │   └── RoulettePage.tsx  # Рулетка ежедневных бонусов
-        ├── components/
-        │   ├── Navigation.tsx    # Нижняя навигация
-        │   └── LoadingScreen.tsx # Экран загрузки
-        └── styles/
-            └── global.css        # Глобальные стили
+|-- main.py                    # Entry point: Bot + FastAPI concurrent
+|-- requirements.txt           # Python dependencies
+|-- Dockerfile                 # Python 3.11-slim image
+|-- docker-compose.yml         # Services: db + redis + bot
+|-- alembic.ini               # Migrations config
+|-- .env.example              # Environment template
+|
+|-- core/                      # Core modules
+|   |-- config.py             # Pydantic Settings (all env vars)
+|   |-- redis_pool.py         # Redis connection pool
+|   |-- media_cache.py        # Telegram file_id caching
+|   +-- saloon_status.py      # Saloon open/closed status
+|
+|-- database/                  # Database layer
+|   |-- db.py                 # SQLAlchemy engine + async session
+|   |-- models/
+|   |   |-- users.py          # User model (ranks, loyalty, bonuses)
+|   |   +-- orders.py         # Order, OrderMessage, Conversation
+|   +-- migrations/
+|       |-- env.py            # Alembic environment
+|       +-- versions/         # Migration files (15+ versions)
+|
+|-- bot/                       # Telegram Bot
+|   |-- handlers/             # Command & callback handlers
+|   |   |-- start.py          # /start + deep links + price setting
+|   |   |-- orders.py         # FSM wizard (60k+ tokens, needs refactor)
+|   |   |-- admin.py          # Admin panel, payment confirmation
+|   |   |-- my_orders.py      # User's order history
+|   |   |-- order_chat.py     # Private client-admin chat
+|   |   |-- channel_cards.py  # Live order cards in channel
+|   |   |-- menu.py           # Main menu
+|   |   |-- terms.py          # Terms of service
+|   |   +-- log_actions.py    # Log button handlers
+|   |
+|   |-- keyboards/            # Inline & Reply keyboards
+|   |   |-- inline.py         # Main inline buttons
+|   |   |-- orders.py         # Order wizard keyboards
+|   |   |-- profile.py        # Profile keyboards
+|   |   +-- terms.py          # Terms buttons
+|   |
+|   |-- middlewares/          # Middleware chain
+|   |   |-- error_handler.py  # Global error handling
+|   |   |-- db_session.py     # Session injection
+|   |   |-- ban_check.py      # Ban verification
+|   |   |-- antispam.py       # Spam protection
+|   |   +-- stop_words.py     # Stop words filter
+|   |
+|   |-- services/             # Business logic services
+|   |   |-- logger.py         # Channel logging (LogEvent enum)
+|   |   |-- pricing.py        # Price calculation
+|   |   |-- live_cards.py     # Live card updates in topics
+|   |   |-- bonus.py          # Bonus system (BonusService)
+|   |   |-- yookassa.py       # YooKassa integration
+|   |   |-- yandex_disk.py    # Yandex.Disk file upload
+|   |   |-- abandoned_detector.py  # Abandoned cart tracking
+|   |   |-- silence_reminder.py    # Silence reminders
+|   |   |-- daily_stats.py    # Daily statistics
+|   |   |-- unified_hub.py    # Service topics initialization
+|   |   +-- order_progress.py # Order progress tracking
+|   |
+|   |-- states/               # FSM states
+|   |   |-- order.py          # Order wizard states
+|   |   |-- admin.py          # Admin states
+|   |   +-- chat.py           # Chat states
+|   |
+|   |-- texts/                # Text templates
+|   |   +-- terms.py          # Terms of service text
+|   |
+|   |-- utils/                # Utilities
+|   |   |-- message_helpers.py # Safe message editing
+|   |   +-- media_group.py    # Media group handling
+|   |
+|   |-- media/                # Bot images (not in git)
+|   |
+|   +-- api/                  # FastAPI for Mini App
+|       |-- __init__.py       # api_app export
+|       |-- app.py            # FastAPI factory + CORS
+|       |-- routes.py         # API endpoints
+|       |-- schemas.py        # Pydantic response models
+|       +-- auth.py           # HMAC-SHA256 Telegram auth
+|
++-- mini-app/                  # React Mini App
+    |-- package.json          # NPM dependencies
+    |-- vite.config.ts        # Vite configuration
+    |-- vercel.json           # Vercel deployment config
+    |-- index.html            # Entry HTML
+    +-- src/
+        |-- main.tsx          # React entry point
+        |-- App.tsx           # Router + main structure
+        |-- types.ts          # TypeScript types
+        |-- api/
+        |   +-- userApi.ts    # API client (fetch + auth)
+        |-- hooks/
+        |   +-- useUserData.ts # Data fetching hooks + Telegram utils
+        |-- pages/
+        |   |-- HomePage.tsx      # Dashboard with orders carousel
+        |   |-- OrdersPage.tsx    # Orders list
+        |   |-- OrderDetailPage.tsx # Order details
+        |   |-- ProfilePage.tsx   # Bento-grid analytics dashboard
+        |   +-- RoulettePage.tsx  # Cyberpunk casino roulette
+        |-- components/
+        |   |-- Navigation.tsx    # Bottom navigation
+        |   |-- LoadingScreen.tsx # Loading state
+        |   +-- OrdersCarousel.tsx # Horizontal orders carousel
+        +-- styles/
+            +-- global.css        # Global styles (CSS variables)
 ```
 
 ---
 
-## 5. Ключевые файлы
+## 5. Ключевые модели данных
 
-### 5.1 Точка входа: `main.py`
+### 5.1 User Model (`database/models/users.py`)
 
-Запускает **одновременно** бота и FastAPI сервер:
-
-```python
-async def main():
-    await asyncio.gather(
-        run_bot(),       # aiogram polling
-        run_api_server() # FastAPI на :8000
-    )
-```
-
-**Bot:** Long polling, Redis FSM storage, middleware chain
-**API:** uvicorn, CORS enabled, /api/* endpoints
-
-### 5.2 Конфигурация: `core/config.py`
-
-Все настройки через Pydantic Settings из `.env`:
-
-```python
-class Settings(BaseSettings):
-    BOT_TOKEN: SecretStr
-    BOT_USERNAME: str
-    ADMIN_IDS: list[int]
-
-    # Telegram каналы/группы
-    LOG_CHANNEL_ID: int
-    ORDERS_CHANNEL_ID: int
-    ADMIN_GROUP_ID: int
-
-    # PostgreSQL
-    POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_HOST, POSTGRES_PORT
-
-    # Redis
-    REDIS_HOST, REDIS_PORT, REDIS_DB_FSM, REDIS_DB_CACHE
-
-    # Платежи
-    PAYMENT_PHONE, PAYMENT_CARD, PAYMENT_BANKS, PAYMENT_NAME
-    YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY (optional)
-    YANDEX_DISK_TOKEN (optional)
-```
-
-### 5.3 Модели данных: `database/models/`
-
-#### User (users.py)
 ```python
 class User(Base):
-    telegram_id: int          # Уникальный ID Telegram
-    username: str | None
-    fullname: str | None
-    role: str                 # "user" | "admin"
-    balance: float            # Бонусный баланс
+    __tablename__ = "users"
 
-    # Реферальная система
-    referrer_id: int | None
-    referrals_count: int
-    referral_earnings: float
+    # Identity
+    id: int                      # Internal PK
+    telegram_id: int             # Telegram user ID (unique, indexed)
+    username: str | None         # @username
+    fullname: str | None         # Display name
+    role: str                    # "user" | "admin"
 
-    # Статистика
-    orders_count: int
-    total_spent: float
+    # Financials
+    balance: float               # Bonus balance (cashback, referrals)
 
-    # Модерация
+    # Referral System
+    referrer_id: int | None      # Who referred this user
+    referrals_count: int         # How many users referred
+    referral_earnings: float     # Earnings from referrals
+
+    # Statistics
+    orders_count: int            # Total orders placed
+    total_spent: float           # Total amount spent
+
+    # Daily Bonus
+    last_daily_bonus_at: datetime | None  # Last roulette spin
+
+    # Terms
+    terms_accepted_at: datetime | None    # Implicit consent timestamp
+
+    # Moderation
     is_banned: bool
+    banned_at: datetime | None
     ban_reason: str | None
+    is_watched: bool             # Surveillance mode
+    admin_notes: str | None
 
-    # Свойства
-    @property rank_info      # Ранг на основе total_spent
-    @property loyalty_status # Скидка на основе orders_count
+    # Computed Properties
+    @property rank_info          # Rank based on total_spent
+    @property loyalty_status     # Status based on orders_count
+    @property can_claim_daily_bonus
 ```
 
-#### Order (orders.py)
+**Rank Levels (spend-based):**
+
+| Min Spent | Rank | Emoji | Cashback |
+|-----------|------|-------|----------|
+| 50,000 RUB | Легенда Запада | crown | 10% |
+| 20,000 RUB | Головорез | gun | 7% |
+| 5,000 RUB | Ковбой | cowboy | 3% |
+| 0 RUB | Салага | chick | 0% |
+
+**Loyalty Levels (orders-based):**
+
+| Min Orders | Status | Discount |
+|------------|--------|----------|
+| 15 | Легенда салуна | 15% |
+| 7 | Шериф | 10% |
+| 3 | Завсегдатай | 5% |
+| 0 | Новичок | 0% |
+
+### 5.2 Order Model (`database/models/orders.py`)
+
 ```python
 class OrderStatus(str, enum.Enum):
-    DRAFT, PENDING, WAITING_ESTIMATION, WAITING_PAYMENT,
-    VERIFICATION_PENDING, CONFIRMED, PAID, PAID_FULL,
-    IN_PROGRESS, REVIEW, COMPLETED, CANCELLED, REJECTED
+    DRAFT = "draft"                      # Being filled
+    PENDING = "pending"                  # Waiting for evaluation
+    WAITING_ESTIMATION = "waiting_estimation"  # Special order pricing
+    WAITING_PAYMENT = "waiting_payment"  # Price set, awaiting payment
+    VERIFICATION_PENDING = "verification_pending"  # Payment verification
+    CONFIRMED = "confirmed"              # Legacy status
+    PAID = "paid"                        # Advance paid
+    PAID_FULL = "paid_full"             # Fully paid
+    IN_PROGRESS = "in_progress"         # Work in progress
+    REVIEW = "review"                    # Ready for client review
+    COMPLETED = "completed"              # Done
+    CANCELLED = "cancelled"              # Cancelled by user
+    REJECTED = "rejected"                # Rejected by admin
 
 class WorkType(str, enum.Enum):
-    MASTERS, DIPLOMA, COURSEWORK, INDEPENDENT, ESSAY,
-    REPORT, CONTROL, PRESENTATION, PRACTICE, OTHER, PHOTO_TASK
+    MASTERS = "masters"          # Магистерская
+    DIPLOMA = "diploma"          # Диплом (ВКР)
+    COURSEWORK = "coursework"    # Курсовая
+    INDEPENDENT = "independent"  # Самостоятельная
+    ESSAY = "essay"              # Эссе
+    REPORT = "report"            # Реферат
+    CONTROL = "control"          # Контрольная
+    PRESENTATION = "presentation"# Презентация
+    PRACTICE = "practice"        # Отчёт по практике
+    OTHER = "other"              # Спецзадача
+    PHOTO_TASK = "photo_task"    # Фото задания
 
 class Order(Base):
-    user_id: int              # FK → users.telegram_id
+    __tablename__ = "orders"
+
+    id: int
+    user_id: int                 # FK -> users.telegram_id (NOT users.id!)
+
+    # Order details
     work_type: str
     subject: str | None
     topic: str | None
+    description: str | None
     deadline: str | None
 
-    # Финансы
-    price: float
-    discount: float
-    bonus_used: float
-    paid_amount: float
+    # Financials
+    price: float                 # Base price
+    discount: float              # Discount percentage
+    bonus_used: float            # Bonuses applied
+    paid_amount: float           # Amount paid
 
-    # Статус и прогресс
+    # Payment
+    payment_scheme: str | None   # "full" | "half"
+    payment_method: str | None   # "card" | "sbp" | "transfer"
+    yookassa_payment_id: str | None
+
+    # Status & Progress
     status: str
-    progress: int             # 0-100%
-    channel_message_id: int   # ID карточки в канале (deprecated)
+    progress: int                # 0-100%
+    progress_updated_at: datetime | None
+
+    # Live Card
+    channel_message_id: int | None  # Message ID in channel (deprecated)
+
+    # Computed
+    @property final_price        # price * (1 - discount/100) - bonus_used
+    @property work_type_label    # Human-readable label with emoji
+    @property status_label       # Status with emoji
 ```
 
-### 5.4 API эндпоинты: `bot/api/routes.py`
+### 5.3 Conversation Model (Chat System)
 
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/health` | Health check |
-| GET | `/api/config` | Публичная конфигурация (bot_username, support) |
-| GET | `/api/user` | Профиль текущего пользователя + заказы |
-| GET | `/api/orders` | Список заказов с фильтрацией |
-| GET | `/api/orders/{id}` | Детали заказа |
-| POST | `/api/promo` | Применение промокода |
-| POST | `/api/roulette/spin` | Вращение рулетки бонусов |
+```python
+class Conversation(Base):
+    """Tracks all client-admin conversations"""
+    __tablename__ = "conversations"
 
-**Аутентификация:** Header `X-Telegram-Init-Data` с HMAC-SHA256 валидацией
+    id: int
+    user_id: int                 # FK -> users.telegram_id
+    order_id: int | None         # FK -> orders.id (optional)
+    topic_id: int | None         # Forum Topic ID in admin group
+    topic_card_message_id: int | None  # Pinned card in topic
+    conversation_type: str       # "order_chat" | "support" | "free"
+    last_message_text: str | None
+    last_message_at: datetime
+    last_sender: str | None      # "admin" | "client"
+    is_active: bool
+    is_archived: bool
+    unread_count: int
+```
 
-### 5.5 Frontend API: `mini-app/src/api/userApi.ts`
+---
+
+## 6. API Reference
+
+### 6.1 Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/health` | No | Health check |
+| GET | `/api/config` | No | Public config (bot_username, support) |
+| GET | `/api/user` | Yes | User profile + orders + rank + loyalty |
+| GET | `/api/orders` | Yes | Paginated orders list |
+| GET | `/api/orders/{id}` | Yes | Single order details |
+| POST | `/api/promo` | Yes | Apply promo code |
+| POST | `/api/roulette/spin` | Yes | Daily roulette spin |
+
+### 6.2 Authentication
+
+All authenticated endpoints require `X-Telegram-Init-Data` header with Telegram WebApp initData.
+
+**Validation algorithm:**
+```python
+# 1. Parse initData as URL query string
+# 2. Extract 'hash' parameter
+# 3. Build data_check_string from remaining sorted params
+# 4. Compute HMAC-SHA256:
+#    secret_key = HMAC-SHA256("WebAppData", bot_token)
+#    computed_hash = HMAC-SHA256(secret_key, data_check_string)
+# 5. Compare computed_hash with received hash
+# 6. Check auth_date is within 24 hours
+```
+
+### 6.3 Response Schemas
 
 ```typescript
-// Hardcoded URL (не из env!)
-const API_BASE = 'https://academic-saloon.duckdns.org/api'
+// UserResponse
+interface UserResponse {
+  id: number;
+  telegram_id: number;
+  username: string | null;
+  fullname: string;
+  balance: number;
+  bonus_balance: number;
+  orders_count: number;
+  total_spent: number;
+  discount: number;
+  referral_code: string;
+  daily_luck_available: boolean;
+  rank: RankInfo;
+  loyalty: LoyaltyInfo;
+  orders: OrderResponse[];
+}
 
-// Auth header
-headers: {
-    'X-Telegram-Init-Data': window.Telegram?.WebApp?.initData
+// OrderResponse
+interface OrderResponse {
+  id: number;
+  status: OrderStatus;
+  work_type: string;
+  work_type_label: string;
+  subject: string | null;
+  topic: string | null;
+  deadline: string | null;
+  price: number;
+  final_price: number;
+  paid_amount: number;
+  discount: number;
+  bonus_used: number;
+  progress: number;  // 0-100
+  created_at: string;
+  completed_at: string | null;
 }
 ```
 
 ---
 
-## 6. Зависимости
+## 7. Mini App UI Architecture
 
-### Backend (requirements.txt)
-```
-aiogram>=3.10.0          # Telegram Bot Framework
-pydantic-settings>=2.0.0 # Config management
-sqlalchemy>=2.0.0        # ORM
-asyncpg>=0.28.0          # PostgreSQL async driver
-alembic>=1.12.0          # DB migrations
-redis>=5.0.0             # Cache & FSM storage
-python-dotenv>=1.0.0     # .env loader
-pytz>=2024.1             # Timezones
-yookassa>=3.0.0          # Payment gateway
-httpx>=0.25.0            # HTTP client
-fastapi>=0.109.0         # Web API
-uvicorn>=0.27.0          # ASGI server
-```
+### 7.1 Design System
 
-### Frontend (package.json)
-```json
-{
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "@telegram-apps/sdk-react": "^1.0.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.0",
-    "typescript": "^5.3.0",
-    "vite": "^5.0.0"
-  }
+**Color Palette (CSS Variables):**
+```css
+:root {
+  --bg-void: #0a0a0c;           /* Darkest background */
+  --bg-surface: #14141a;        /* Card backgrounds */
+  --gold-200: #f5d061;          /* Light gold */
+  --gold-300: #e6c547;          /* Primary gold */
+  --gold-400: #d4af37;          /* Standard gold */
+  --gold-600: #8b6914;          /* Dark gold */
+  --text-primary: #f5f5f5;      /* Main text */
+  --text-secondary: #a0a0a0;    /* Secondary text */
+  --text-muted: #666666;        /* Muted text */
 }
+```
+
+**Typography:**
+- Display: `Playfair Display` (headings)
+- Mono: `JetBrains Mono` (numbers, codes)
+- Body: System fonts
+
+### 7.2 Page Components
+
+**HomePage** - Dashboard with:
+- Welcome header with user rank badge
+- Stats grid (orders, balance, discount)
+- Horizontal OrdersCarousel with active orders
+- Quick action buttons
+
+**ProfilePage** - Bento grid analytics:
+- Identity card (avatar, name, rank, member since)
+- Referral program block (gold variant)
+- 2x2 stats grid (orders, savings, discount, support)
+- Progress to next level
+- Archive block (completed orders)
+
+**RoulettePage** - Cyberpunk casino:
+- Premium metallic wheel with 8 segments
+- Glass cover overlay effect
+- Animated pointer with haptic feedback
+- Bet selector (50-500 RUB)
+- Result banner with animations
+
+**OrderDetailPage** - Order info:
+- Status badge with progress bar
+- Order details (type, subject, deadline)
+- Price breakdown (base, discount, bonus)
+- Action buttons (chat, cancel)
+
+### 7.3 Key UI Components
+
+```typescript
+// OrdersCarousel - Horizontal scrolling orders
+<OrdersCarousel orders={orders} onOrderClick={handleClick} />
+
+// Navigation - Bottom tab bar
+<Navigation />  // Home | Orders | Roulette | Profile
+
+// LoadingScreen - Skeleton loader
+<LoadingScreen />  // Shows during data fetch
 ```
 
 ---
 
-## 7. Переменные окружения
+## 8. Environment Variables
 
-### Обязательные
+### 8.1 Required Variables
+
 ```bash
-# Bot
-BOT_TOKEN=              # Токен бота от @BotFather
-BOT_USERNAME=           # Username бота (без @)
-ADMIN_IDS=              # JSON array: [123456789, 987654321]
+# BOT CONFIGURATION
+BOT_TOKEN=                    # From @BotFather
+BOT_USERNAME=                 # Without @, e.g., "Kladovaya_GIPSR_bot"
+ADMIN_IDS=[123456789]         # JSON array of admin telegram IDs
 
-# PostgreSQL
-POSTGRES_USER=
-POSTGRES_PASSWORD=
-POSTGRES_DB=
-POSTGRES_HOST=          # "db" для Docker, "localhost" для dev
+# DATABASE (PostgreSQL)
+POSTGRES_USER=saloon
+POSTGRES_PASSWORD=            # Strong password
+POSTGRES_DB=saloon_db
+POSTGRES_HOST=db              # "db" for Docker, "localhost" for dev
 POSTGRES_PORT=5432
 
-# Redis
-REDIS_HOST=             # "redis" для Docker
+# CACHE (Redis)
+REDIS_HOST=redis              # "redis" for Docker
 REDIS_PORT=6379
-REDIS_DB_FSM=0
-REDIS_DB_CACHE=1
+REDIS_DB_FSM=0                # FSM storage
+REDIS_DB_CACHE=1              # General cache
 
-# Оплата (P2P)
-PAYMENT_PHONE=          # Номер для СБП
-PAYMENT_CARD=           # Номер карты
-PAYMENT_BANKS=          # Строка: "Сбер · Т-Банк"
-PAYMENT_NAME=           # Имя получателя
+# PAYMENT (P2P Manual)
+PAYMENT_PHONE=89001234567     # SBP phone number
+PAYMENT_CARD=2200000000000000 # Card number
+PAYMENT_BANKS=Сбер / Т-Банк   # Available banks
+PAYMENT_NAME=Имя Фамилия      # Recipient name
 ```
 
-### Опциональные
-```bash
-# ЮKassa (онлайн-оплата)
-YOOKASSA_SHOP_ID=
-YOOKASSA_SECRET_KEY=
+### 8.2 Optional Variables
 
-# Яндекс.Диск (загрузка файлов)
-YANDEX_DISK_TOKEN=
+```bash
+# YOOKASSA (Online Payment)
+YOOKASSA_SHOP_ID=             # Shop ID from YooKassa
+YOOKASSA_SECRET_KEY=          # API secret key
+
+# YANDEX.DISK (File Storage)
+YANDEX_DISK_TOKEN=            # OAuth token
+YANDEX_DISK_FOLDER=Academic_Saloon_Orders  # Root folder
 ```
 
 ---
 
-## 8. Инфраструктура
+## 9. Infrastructure Configs
 
-### Docker Compose
+### 9.1 Docker Compose (`docker-compose.yml`)
+
 ```yaml
+version: '3.9'
+
 services:
-  db:      # PostgreSQL 15 Alpine
-  redis:   # Redis 7 Alpine
-  bot:     # Python 3.11-slim + main.py
+  db:
+    image: postgres:15-alpine
+    container_name: saloon_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: saloon_redis
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  bot:
+    build: .
+    container_name: saloon_bot
+    restart: always
+    command: python main.py
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"  # FastAPI
+
+volumes:
+  pg_data:
+  redis_data:
+
+networks:
+  default:
+    name: saloon_net
 ```
 
-### Nginx (пример конфига)
+### 9.2 Nginx Config (Example)
+
 ```nginx
 server {
-    listen 443 ssl;
+    listen 443 ssl http2;
     server_name academic-saloon.duckdns.org;
 
-    ssl_certificate /etc/letsencrypt/live/.../fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/.../privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/academic-saloon.duckdns.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/academic-saloon.duckdns.org/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
 
     location /api/ {
         proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+
+server {
+    listen 80;
+    server_name academic-saloon.duckdns.org;
+    return 301 https://$host$request_uri;
+}
 ```
 
-### Vercel (mini-app/vercel.json)
+### 9.3 Vercel Config (`mini-app/vercel.json`)
+
 ```json
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
-  "headers": [{
-    "source": "/(.*)",
-    "headers": [
-      { "key": "X-Frame-Options", "value": "ALLOWALL" }
-    ]
-  }]
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "ALLOWALL" }
+      ]
+    }
+  ]
 }
 ```
 
 ---
 
-## 9. Текущий статус
+## 10. Current Status
 
-### Что работает:
-- [x] Telegram Bot (polling mode)
-- [x] Регистрация пользователей с реферальной системой
-- [x] Wizard создания заказа (все типы работ)
-- [x] Система статусов заказа (13 статусов)
-- [x] Live-карточки в Forum Topics админской группы
-- [x] Приватный чат клиент-админ через топики
-- [x] FastAPI + Mini App API
-- [x] Аутентификация через Telegram initData (HMAC-SHA256)
-- [x] Mini App на Vercel (профиль, заказы, рулетка)
-- [x] SSL через Let's Encrypt
+### 10.1 Working Features
+
+- [x] Telegram Bot (long polling mode)
+- [x] User registration with referral system
+- [x] Order wizard (all work types)
+- [x] 13 order statuses with full lifecycle
+- [x] Live cards in Forum Topics
+- [x] Private client-admin chat via topics
+- [x] FastAPI + Mini App REST API
+- [x] Telegram initData authentication (HMAC-SHA256)
+- [x] Mini App on Vercel
+  - [x] Home page with orders carousel
+  - [x] Profile page (bento grid)
+  - [x] Orders list with filtering
+  - [x] Order detail page
+  - [x] Cyberpunk roulette with haptic feedback
+- [x] SSL via Let's Encrypt
 - [x] Nginx reverse proxy
 - [x] Docker deployment
+- [x] Rank & loyalty system
+- [x] Daily bonus (roulette)
+- [x] GOD MODE for admin roulette testing
 
-### Известные особенности / "костыли":
+### 10.2 Known Issues / Technical Debt
 
-1. **API_BASE hardcoded**: В `userApi.ts` URL API захардкожен вместо использования env:
-   ```typescript
-   const API_BASE = 'https://academic-saloon.duckdns.org/api'
-   ```
-   *Причина: проблемы с env variables на Vercel при первоначальной настройке*
+| Issue | Description | Priority |
+|-------|-------------|----------|
+| **Hardcoded API URL** | `userApi.ts` has hardcoded URL instead of env | Low |
+| **Large orders.py** | 60k+ tokens, needs refactoring into modules | Medium |
+| **Deprecated channel** | `ORDERS_CHANNEL_ID` unused, code remains | Low |
+| **Dual progress source** | Progress can be auto or manual, potential conflicts | Low |
+| **Implicit consent** | Users auto-accept terms on /start (no barrier) | Design choice |
+| **No unit tests** | No automated testing coverage | High |
+| **No CI/CD** | Manual deployment only | Medium |
 
-2. **Канал заказов deprecated**: `ORDERS_CHANNEL_ID` больше не используется, все карточки теперь в Forum Topics (`ADMIN_GROUP_ID`). Код канала оставлен для совместимости.
+### 10.3 GOD MODE Feature
 
-3. **Два источника прогресса**: Progress заказа может устанавливаться и автоматически (по статусу), и вручную админом.
-
-4. **Implicit consent**: Пользователь автоматически принимает оферту при первом /start (без барьера подтверждения).
-
-5. **Большой файл orders.py**: Хендлер заказов содержит 60k+ токенов кода — рекомендуется рефакторинг.
+Admin user (telegram_id: 872379852) has unlimited roulette spins for testing:
+```python
+# bot/api/routes.py
+if user.telegram_id == 872379852:
+    can_spin = True
+    logger.info(f"GOD MODE: Allowing infinite spin for admin")
+```
 
 ---
 
-## 10. Быстрый старт для разработчика
+## 11. Development Guide
 
-### Локальная разработка (без Docker)
+### 11.1 Local Development (Without Docker)
 
 ```bash
-# 1. Клонировать репо
+# 1. Clone repository
 git clone <repo-url> && cd academic_saloon
 
-# 2. Создать виртуальное окружение
+# 2. Create virtual environment
 python -m venv venv && source venv/bin/activate
 
-# 3. Установить зависимости
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Настроить .env
+# 4. Configure environment
 cp .env.example .env
-# Редактировать .env (поставить BOT_TOKEN, настройки БД...)
+# Edit .env with your values
 
-# 5. Поднять PostgreSQL + Redis (или использовать Docker)
+# 5. Start PostgreSQL + Redis (Docker)
 docker-compose up -d db redis
 
-# 6. Применить миграции
+# 6. Apply migrations
 alembic upgrade head
 
-# 7. Запустить бота
+# 7. Run bot + API
 python main.py
 ```
 
-### Деплой на VPS
+### 11.2 VPS Deployment
 
 ```bash
-# 1. Загрузить код на сервер
+# 1. Pull latest code
+cd /path/to/academic_saloon
 git pull origin main
 
-# 2. Пересобрать и перезапустить
+# 2. Rebuild and restart
 docker-compose build
 docker-compose up -d
 
-# 3. Проверить логи
+# 3. Check logs
 docker-compose logs -f bot
+
+# 4. Apply new migrations (if any)
+docker-compose exec bot alembic upgrade head
 ```
 
-### Mini App разработка
+### 11.3 Mini App Development
 
 ```bash
 cd mini-app
+
+# Install dependencies
 npm install
-npm run dev    # localhost:5173
-npm run build  # Production build
+
+# Development server (localhost:5173)
+npm run dev
+
+# Production build
+npm run build
+
+# Deploy to Vercel
+vercel --prod
+```
+
+### 11.4 Database Migrations
+
+```bash
+# Create new migration
+alembic revision --autogenerate -m "description"
+
+# Apply migrations
+alembic upgrade head
+
+# Rollback one version
+alembic downgrade -1
+
+# View history
+alembic history
 ```
 
 ---
 
-## 11. Контакты и ресурсы
+## 12. Quick Reference
 
-| Ресурс | URL |
-|--------|-----|
+### 12.1 Important Paths
+
+| Path | Description |
+|------|-------------|
+| `/home/user/academic_saloon` | Project root |
+| `main.py` | Entry point |
+| `core/config.py` | All settings |
+| `database/models/` | ORM models |
+| `bot/handlers/` | Bot handlers |
+| `bot/api/` | FastAPI app |
+| `mini-app/src/` | React source |
+
+### 12.2 URLs
+
+| Resource | URL |
+|----------|-----|
 | Production Bot | @Kladovaya_GIPSR_bot |
-| Mini App | Vercel (через Telegram WebApp) |
+| Mini App | Opens via Telegram WebApp |
 | API Docs | https://academic-saloon.duckdns.org/api/docs |
+| API ReDoc | https://academic-saloon.duckdns.org/api/redoc |
 | Support | @Thisissaymoon |
-| Оферта | https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30 |
+| Terms | https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30 |
+
+### 12.3 Useful Commands
+
+```bash
+# View bot logs
+docker-compose logs -f bot
+
+# Restart bot only
+docker-compose restart bot
+
+# Database shell
+docker-compose exec db psql -U saloon -d saloon_db
+
+# Redis CLI
+docker-compose exec redis redis-cli
+
+# Check disk space
+df -h
+
+# Check container resources
+docker stats
+```
 
 ---
 
-*Документ создан автоматически на основе технического аудита кодовой базы.*
+## 13. Contact & Resources
+
+| Resource | Details |
+|----------|---------|
+| Repository | GitHub (private) |
+| Production Bot | @Kladovaya_GIPSR_bot |
+| Admin Support | @Thisissaymoon |
+| Domain | academic-saloon.duckdns.org |
+| Frontend Hosting | Vercel |
+| SSL | Let's Encrypt (auto-renew) |
+
+---
+
+*Document generated: 2025-12-03*
+*Version: 2.0.0*
+*Last updated by: Technical Audit Agent*
