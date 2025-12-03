@@ -1,637 +1,667 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   GraduationCap, FileText, BookOpen, Scroll, PenTool,
   ClipboardCheck, Presentation, Briefcase, Sparkles, Camera,
   Calendar, Clock, Zap, Flame, ChevronRight, Check, ArrowLeft,
-  Send, AlertCircle
+  Send, AlertCircle, Upload, X, FileUp, Thermometer
 } from 'lucide-react'
-import { WorkType, WorkTypeOption, DeadlineOption, OrderCreateRequest } from '../types'
+import { WorkType, OrderCreateRequest } from '../types'
 import { createOrder } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  CONSTANTS
+//  UPDATED PRICE LIST (from bot)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const WORK_TYPES: WorkTypeOption[] = [
-  { value: 'diploma', label: 'Диплом', emoji: '🎓', price: 'от 34 900₽' },
-  { value: 'coursework', label: 'Курсовая', emoji: '📚', price: 'от 11 900₽' },
-  { value: 'essay', label: 'Эссе', emoji: '📝', price: 'от 1 400₽' },
-  { value: 'report', label: 'Реферат', emoji: '📄', price: 'от 900₽' },
-  { value: 'control', label: 'Контрольная', emoji: '✏️', price: 'от 1 400₽' },
-  { value: 'presentation', label: 'Презентация', emoji: '📊', price: 'от 1 900₽' },
-  { value: 'practice', label: 'Практика', emoji: '🏢', price: 'от 4 900₽' },
-  { value: 'independent', label: 'Самостоятельная', emoji: '📖', price: 'от 2 400₽' },
-  { value: 'masters', label: 'Магистерская', emoji: '🎩', price: 'от 44 900₽' },
-  { value: 'other', label: 'Другое', emoji: '🦄', price: 'индивидуально' },
-]
-
-const WORK_TYPE_ICONS: Record<WorkType, typeof FileText> = {
-  diploma: GraduationCap,
-  coursework: BookOpen,
-  essay: PenTool,
-  report: FileText,
-  control: ClipboardCheck,
-  presentation: Presentation,
-  practice: Briefcase,
-  independent: Scroll,
-  masters: GraduationCap,
-  other: Sparkles,
-  photo_task: Camera,
+interface WorkTypeConfig {
+  value: WorkType
+  label: string
+  price: string
+  priceNum: number
+  icon: typeof FileText
+  category: 'premium' | 'standard' | 'express'
 }
 
-const DEADLINES: DeadlineOption[] = [
-  { value: 'today', label: 'Сегодня', multiplier: 'x2.0' },
-  { value: 'tomorrow', label: 'Завтра', multiplier: 'x1.7' },
-  { value: '3_days', label: '2-3 дня', multiplier: 'x1.4' },
-  { value: 'week', label: 'Неделя', multiplier: 'x1.2' },
-  { value: '2_weeks', label: '2 недели', multiplier: 'x1.1' },
-  { value: 'month', label: 'Месяц+', multiplier: 'x1.0' },
+const WORK_TYPES: WorkTypeConfig[] = [
+  { value: 'masters', label: 'Магистерская', price: 'от 50 000 ₽', priceNum: 50000, icon: GraduationCap, category: 'premium' },
+  { value: 'diploma', label: 'Диплом (ВКР)', price: 'от 40 000 ₽', priceNum: 40000, icon: GraduationCap, category: 'premium' },
+  { value: 'coursework', label: 'Курсовая', price: 'от 14 000 ₽', priceNum: 14000, icon: BookOpen, category: 'standard' },
+  { value: 'practice', label: 'Отчёт по практике', price: 'от 8 000 ₽', priceNum: 8000, icon: Briefcase, category: 'standard' },
+  { value: 'essay', label: 'Реферат / Эссе', price: 'от 2 500 ₽', priceNum: 2500, icon: PenTool, category: 'express' },
+  { value: 'presentation', label: 'Презентация', price: 'от 2 500 ₽', priceNum: 2500, icon: Presentation, category: 'express' },
+  { value: 'control', label: 'Контрольная', price: 'от 2 500 ₽', priceNum: 2500, icon: ClipboardCheck, category: 'express' },
+  { value: 'independent', label: 'Самостоятельная', price: 'от 2 500 ₽', priceNum: 2500, icon: Scroll, category: 'express' },
+  { value: 'report', label: 'Реферат', price: 'от 2 500 ₽', priceNum: 2500, icon: FileText, category: 'express' },
+  { value: 'photo_task', label: 'Задача по фото', price: 'индивидуально', priceNum: 0, icon: Camera, category: 'express' },
+  { value: 'other', label: 'Другое', price: 'индивидуально', priceNum: 0, icon: Sparkles, category: 'express' },
 ]
 
-const DEADLINE_ICONS: Record<string, typeof Clock> = {
-  today: Flame,
-  tomorrow: Zap,
-  '3_days': Clock,
-  week: Calendar,
-  '2_weeks': Calendar,
-  month: Calendar,
+interface DeadlineConfig {
+  value: string
+  label: string
+  multiplier: string
+  multiplierNum: number
+  urgency: number // 0-100
+  color: string
 }
 
-const STEP_TITLES = [
-  { title: 'Тип работы', subtitle: 'Что нужно сделать?' },
-  { title: 'Детали', subtitle: 'Расскажите подробнее' },
-  { title: 'Сроки', subtitle: 'Когда нужно сдать?' },
+const DEADLINES: DeadlineConfig[] = [
+  { value: 'today', label: 'Сегодня', multiplier: '+100%', multiplierNum: 2.0, urgency: 100, color: '#ef4444' },
+  { value: 'tomorrow', label: 'Завтра', multiplier: '+70%', multiplierNum: 1.7, urgency: 85, color: '#f97316' },
+  { value: '3_days', label: '2-3 дня', multiplier: '+40%', multiplierNum: 1.4, urgency: 60, color: '#eab308' },
+  { value: 'week', label: 'Неделя', multiplier: '+20%', multiplierNum: 1.2, urgency: 40, color: '#84cc16' },
+  { value: '2_weeks', label: '2 недели', multiplier: '+10%', multiplierNum: 1.1, urgency: 20, color: '#22c55e' },
+  { value: 'month', label: 'Месяц+', multiplier: 'Базовая', multiplierNum: 1.0, urgency: 5, color: '#10b981' },
 ]
 
-// Animation variants
+const STEP_CONFIG = [
+  { num: 1, title: 'Тип работы', subtitle: 'Что нужно сделать?' },
+  { num: 2, title: 'Детали заказа', subtitle: 'Расскажите подробнее' },
+  { num: 3, title: 'Файлы', subtitle: 'Прикрепите материалы' },
+  { num: 4, title: 'Сроки', subtitle: 'Когда нужно сдать?' },
+]
+
+// Animation
 const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 300 : -300,
-    opacity: 0,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? 300 : -300,
-    opacity: 0,
-  }),
+  enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0 }),
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  WORK TYPE CARD COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface WorkTypeCardProps {
-  type: WorkTypeOption
-  selected: boolean
-  onSelect: () => void
-  index: number
-}
-
-function WorkTypeCard({ type, selected, onSelect, index }: WorkTypeCardProps) {
-  const Icon = WORK_TYPE_ICONS[type.value] || FileText
-
-  return (
-    <motion.button
-      type="button"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.3 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        onSelect()
-      }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        padding: '18px 12px',
-        minHeight: 110,
-        background: selected
-          ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.06) 100%)'
-          : 'rgba(20, 20, 23, 0.85)',
-        border: selected
-          ? '2px solid rgba(212, 175, 55, 0.6)'
-          : '1px solid rgba(255, 255, 255, 0.06)',
-        borderRadius: 16,
-        cursor: 'pointer',
-        boxShadow: selected
-          ? '0 0 25px -5px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255,255,255,0.08)'
-          : '0 4px 20px -10px rgba(0, 0, 0, 0.6)',
-        position: 'relative',
-        overflow: 'hidden',
-        WebkitTapHighlightColor: 'transparent',
-      }}
-    >
-      {/* Gold glow background when selected */}
-      {selected && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          style={{
-            position: 'absolute',
-            inset: -20,
-            background: 'radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.15) 0%, transparent 60%)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
-      {/* Icon container */}
-      <div
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 12,
-          background: selected
-            ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.1))'
-            : 'rgba(255, 255, 255, 0.04)',
-          border: selected
-            ? '1px solid rgba(212, 175, 55, 0.5)'
-            : '1px solid rgba(255, 255, 255, 0.06)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <Icon size={22} color={selected ? '#e6c547' : '#71717a'} strokeWidth={1.8} />
-      </div>
-
-      {/* Text content */}
-      <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: selected ? '#f2f2f2' : '#a1a1aa',
-            marginBottom: 3,
-          }}
-        >
-          {type.label}
-        </div>
-        <div
-          style={{
-            fontSize: 10,
-            fontWeight: 500,
-            color: selected ? '#e6c547' : '#71717a',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}
-        >
-          {type.price}
-        </div>
-      </div>
-
-      {/* Selection checkmark */}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            style={{
-              position: 'absolute',
-              top: 10,
-              right: 10,
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #e6c547, #b48e26)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(212, 175, 55, 0.4)',
-            }}
-          >
-            <Check size={12} color="#050505" strokeWidth={3} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.button>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  DEADLINE CARD COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface DeadlineCardProps {
-  deadline: DeadlineOption
-  selected: boolean
-  onSelect: () => void
-  index: number
-}
-
-function DeadlineCard({ deadline, selected, onSelect, index }: DeadlineCardProps) {
-  const Icon = DEADLINE_ICONS[deadline.value] || Calendar
-  const isUrgent = ['today', 'tomorrow'].includes(deadline.value)
-
-  return (
-    <motion.button
-      type="button"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.3 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        onSelect()
-      }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        padding: '16px 12px',
-        minHeight: 100,
-        background: selected
-          ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.06) 100%)'
-          : 'rgba(20, 20, 23, 0.85)',
-        border: selected
-          ? '2px solid rgba(212, 175, 55, 0.6)'
-          : '1px solid rgba(255, 255, 255, 0.06)',
-        borderRadius: 16,
-        cursor: 'pointer',
-        boxShadow: selected
-          ? '0 0 25px -5px rgba(212, 175, 55, 0.4)'
-          : '0 4px 20px -10px rgba(0, 0, 0, 0.6)',
-        position: 'relative',
-        overflow: 'hidden',
-        WebkitTapHighlightColor: 'transparent',
-      }}
-    >
-      {/* Urgent indicator */}
-      {isUrgent && !selected && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: deadline.value === 'today' ? '#ef4444' : '#eab308',
-            boxShadow: `0 0 8px ${deadline.value === 'today' ? '#ef4444' : '#eab308'}`,
-          }}
-        />
-      )}
-
-      {/* Gold glow when selected */}
-      {selected && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          style={{
-            position: 'absolute',
-            inset: -20,
-            background: 'radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.15) 0%, transparent 60%)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: selected
-            ? 'linear-gradient(145deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.1))'
-            : 'rgba(255, 255, 255, 0.04)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <Icon
-          size={20}
-          color={selected ? '#e6c547' : isUrgent ? (deadline.value === 'today' ? '#ef4444' : '#eab308') : '#71717a'}
-          strokeWidth={1.8}
-        />
-      </div>
-
-      <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: selected ? '#f2f2f2' : '#a1a1aa' }}>
-          {deadline.label}
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: selected ? '#e6c547' : isUrgent ? (deadline.value === 'today' ? '#ef4444' : '#eab308') : '#71717a',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}
-        >
-          {deadline.multiplier}
-        </div>
-      </div>
-
-      {/* Selection checkmark */}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            style={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              width: 18,
-              height: 18,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #e6c547, #b48e26)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Check size={10} color="#050505" strokeWidth={3} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.button>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM INPUT COMPONENT
+//  PREMIUM INPUT COMPONENT (Floating Label)
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface PremiumInputProps {
   label: string
   value: string
-  onChange: (value: string) => void
-  placeholder: string
+  onChange: (val: string) => void
   multiline?: boolean
   required?: boolean
 }
 
-function PremiumInput({ label, value, onChange, placeholder, multiline, required }: PremiumInputProps) {
+function PremiumInput({ label, value, onChange, multiline, required }: PremiumInputProps) {
   const [focused, setFocused] = useState(false)
+  const isActive = focused || value.length > 0
 
-  const inputStyle: React.CSSProperties = {
+  const baseStyle: React.CSSProperties = {
     width: '100%',
-    padding: '16px 0',
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 15,
+    padding: '20px 0 12px 0',
+    fontSize: 16,
+    fontFamily: "'Inter', sans-serif",
     color: '#f2f2f2',
     background: 'transparent',
     border: 'none',
-    borderBottom: `2px solid ${focused ? '#d4af37' : 'rgba(113, 113, 122, 0.5)'}`,
+    borderBottom: `2px solid ${focused ? '#d4af37' : 'rgba(255,255,255,0.15)'}`,
     outline: 'none',
-    transition: 'border-color 0.2s ease',
+    transition: 'border-color 0.3s ease',
     resize: 'none' as const,
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      style={{ marginBottom: 28 }}
-    >
-      <label
+    <div style={{ position: 'relative', marginBottom: 32 }}>
+      {/* Floating Label */}
+      <motion.label
+        animate={{
+          y: isActive ? -24 : 0,
+          scale: isActive ? 0.75 : 1,
+          color: isActive ? '#d4af37' : '#71717a',
+        }}
+        transition={{ duration: 0.2 }}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          fontSize: 11,
-          fontWeight: 600,
-          color: focused ? '#d4af37' : '#71717a',
-          textTransform: 'uppercase',
-          letterSpacing: '0.12em',
-          marginBottom: 10,
-          transition: 'color 0.2s ease',
+          position: 'absolute',
+          left: 0,
+          top: 16,
+          fontSize: 16,
+          fontWeight: 500,
+          transformOrigin: 'left',
+          pointerEvents: 'none',
         }}
       >
-        {label}
-        {required && <span style={{ color: '#d4af37' }}>*</span>}
-      </label>
+        {label} {required && <span style={{ color: '#d4af37' }}>*</span>}
+      </motion.label>
 
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          rows={4}
-          style={inputStyle}
+          rows={3}
+          style={baseStyle}
         />
       ) : (
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          style={inputStyle}
+          style={baseStyle}
         />
       )}
-    </motion.div>
+
+      {/* Glow line */}
+      <motion.div
+        animate={{ scaleX: focused ? 1 : 0, opacity: focused ? 1 : 0 }}
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 2,
+          background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+          transformOrigin: 'left',
+          boxShadow: '0 0 12px rgba(212,175,55,0.5)',
+        }}
+      />
+    </div>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  FLOATING ACTION BUTTON
+//  WORK TYPE CARD
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface FloatingButtonProps {
-  onClick: () => void
-  disabled: boolean
-  loading?: boolean
-  label: string
-  icon?: React.ReactNode
+interface WorkTypeCardProps {
+  config: WorkTypeConfig
+  selected: boolean
+  onSelect: () => void
+  index: number
 }
 
-function FloatingButton({ onClick, disabled, loading, label, icon }: FloatingButtonProps) {
+function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) {
+  const Icon = config.icon
+
   return (
-    <motion.div
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 100, opacity: 0 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    <motion.button
+      type="button"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onSelect}
       style={{
-        position: 'fixed',
-        bottom: 100, // Above the navigation bar (90px + padding)
-        left: 20,
-        right: 20,
-        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        padding: '24px 16px',
+        minHeight: 140,
+        background: selected
+          ? 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
+          : 'rgba(20,20,23,0.6)',
+        backdropFilter: 'blur(12px)',
+        border: selected
+          ? '2px solid rgba(212,175,55,0.6)'
+          : '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 20,
+        cursor: 'pointer',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: selected
+          ? '0 0 30px -5px rgba(212,175,55,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
+          : '0 4px 24px -8px rgba(0,0,0,0.5)',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <motion.button
-        type="button"
-        whileTap={!disabled ? { scale: 0.97 } : undefined}
-        onClick={onClick}
-        disabled={disabled}
-        style={{
-          width: '100%',
-          padding: '18px 24px',
-          fontFamily: "'Playfair Display', serif",
-          fontSize: 17,
+      {/* Glow */}
+      {selected && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            position: 'absolute',
+            inset: -30,
+            background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
+      {/* Category badge */}
+      {config.category === 'premium' && (
+        <div style={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          padding: '3px 8px',
+          fontSize: 9,
           fontWeight: 700,
-          letterSpacing: '0.02em',
-          color: disabled ? '#71717a' : '#050505',
-          background: disabled
-            ? 'rgba(255, 255, 255, 0.08)'
-            : 'linear-gradient(180deg, #f5d061 0%, #d4af37 50%, #b48e26 100%)',
-          border: 'none',
-          borderRadius: 16,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          boxShadow: disabled
-            ? 'none'
-            : '0 0 40px -8px rgba(212, 175, 55, 0.6), 0 10px 25px -10px rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 12,
-          opacity: disabled ? 0.5 : 1,
-          transition: 'all 0.2s ease',
-        }}
-      >
-        {loading ? (
-          <>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-            >
-              <Clock size={20} />
-            </motion.div>
-            Отправка...
-          </>
-        ) : (
-          <>
-            {label}
-            {icon}
-          </>
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          color: '#050505',
+          background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+          borderRadius: 6,
+        }}>
+          Premium
+        </div>
+      )}
+
+      {/* Icon */}
+      <div style={{
+        width: 52,
+        height: 52,
+        borderRadius: 14,
+        background: selected
+          ? 'linear-gradient(145deg, rgba(212,175,55,0.3), rgba(212,175,55,0.1))'
+          : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${selected ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.06)'}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        <Icon size={26} color={selected ? '#e6c547' : '#71717a'} strokeWidth={1.5} />
+      </div>
+
+      {/* Text */}
+      <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: selected ? '#f2f2f2' : '#a1a1aa',
+          marginBottom: 4,
+        }}>
+          {config.label}
+        </div>
+        <div style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: selected ? '#e6c547' : '#71717a',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}>
+          {config.price}
+        </div>
+      </div>
+
+      {/* Checkmark */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            style={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #e6c547, #b48e26)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 10px rgba(212,175,55,0.4)',
+            }}
+          >
+            <Check size={14} color="#050505" strokeWidth={3} />
+          </motion.div>
         )}
-      </motion.button>
-    </motion.div>
+      </AnimatePresence>
+    </motion.button>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIN CREATE ORDER PAGE
+//  FILE UPLOAD ZONE
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface FileUploadProps {
+  files: File[]
+  onAdd: (files: FileList) => void
+  onRemove: (index: number) => void
+}
+
+function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (e.dataTransfer.files.length > 0) {
+      onAdd(e.dataTransfer.files)
+    }
+  }
+
+  return (
+    <div>
+      {/* Drop Zone */}
+      <motion.div
+        animate={{
+          borderColor: isDragging ? 'rgba(212,175,55,0.6)' : 'rgba(212,175,55,0.2)',
+          background: isDragging ? 'rgba(212,175,55,0.08)' : 'rgba(20,20,23,0.4)',
+        }}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => inputRef.current?.click()}
+        style={{
+          padding: 40,
+          borderRadius: 20,
+          border: '2px dashed',
+          cursor: 'pointer',
+          textAlign: 'center',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          onChange={(e) => e.target.files && onAdd(e.target.files)}
+          style={{ display: 'none' }}
+        />
+
+        <motion.div
+          animate={{ y: isDragging ? -5 : 0 }}
+          style={{
+            width: 70,
+            height: 70,
+            margin: '0 auto 20px',
+            borderRadius: 20,
+            background: 'rgba(212,175,55,0.1)',
+            border: '1px solid rgba(212,175,55,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <FileUp size={32} color="#d4af37" strokeWidth={1.5} />
+        </motion.div>
+
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#f2f2f2', marginBottom: 8 }}>
+          Нажмите или перетащите файлы
+        </p>
+        <p style={{ fontSize: 13, color: '#71717a' }}>
+          Методички, примеры, требования
+        </p>
+      </motion.div>
+
+      {/* File List */}
+      {files.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <p style={{ fontSize: 12, color: '#71717a', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Прикреплено ({files.length})
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {files.map((file, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 12,
+                }}
+              >
+                <Upload size={18} color="#d4af37" />
+                <span style={{ flex: 1, fontSize: 14, color: '#f2f2f2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {file.name}
+                </span>
+                <span style={{ fontSize: 12, color: '#71717a' }}>
+                  {(file.size / 1024).toFixed(0)} KB
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRemove(i) }}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    background: 'rgba(239,68,68,0.1)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X size={14} color="#ef4444" />
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  DEADLINE CARD (Urgency Meter)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface DeadlineCardProps {
+  config: DeadlineConfig
+  selected: boolean
+  onSelect: () => void
+  index: number
+}
+
+function DeadlineCard({ config, selected, onSelect, index }: DeadlineCardProps) {
+  const Icon = config.urgency > 70 ? Flame : config.urgency > 30 ? Zap : Calendar
+
+  return (
+    <motion.button
+      type="button"
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onSelect}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        width: '100%',
+        padding: '18px 20px',
+        background: selected
+          ? 'linear-gradient(90deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
+          : 'rgba(20,20,23,0.6)',
+        border: selected
+          ? '2px solid rgba(212,175,55,0.5)'
+          : '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 16,
+        cursor: 'pointer',
+        position: 'relative',
+        overflow: 'hidden',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      {/* Icon */}
+      <div style={{
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: `${config.color}15`,
+        border: `1px solid ${config.color}30`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={22} color={config.color} />
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, textAlign: 'left' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: selected ? '#f2f2f2' : '#a1a1aa' }}>
+            {config.label}
+          </span>
+          <span style={{
+            fontSize: 13,
+            fontWeight: 700,
+            color: config.color,
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            {config.multiplier}
+          </span>
+        </div>
+
+        {/* Urgency Bar */}
+        <div style={{
+          height: 4,
+          background: 'rgba(255,255,255,0.08)',
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${config.urgency}%` }}
+            transition={{ delay: index * 0.08 + 0.2, duration: 0.5 }}
+            style={{
+              height: '100%',
+              background: `linear-gradient(90deg, ${config.color}, ${config.color}80)`,
+              borderRadius: 2,
+              boxShadow: `0 0 8px ${config.color}60`,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Checkmark */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #e6c547, #b48e26)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Check size={14} color="#050505" strokeWidth={3} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.button>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function CreateOrderPage() {
   const navigate = useNavigate()
   const { haptic, hapticSuccess, hapticError } = useTelegram()
 
-  // Wizard state
+  // Wizard
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(0)
 
   // Form data
-  const [selectedWorkType, setSelectedWorkType] = useState<WorkType | null>(null)
+  const [workType, setWorkType] = useState<WorkType | null>(null)
   const [subject, setSubject] = useState('')
   const [topic, setTopic] = useState('')
   const [description, setDescription] = useState('')
-  const [selectedDeadline, setSelectedDeadline] = useState<string | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [deadline, setDeadline] = useState<string | null>(null)
 
-  // UI state
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [result, setResult] = useState<{ success: boolean; message: string; orderId?: number } | null>(null)
+  // UI
+  const [submitting, setSubmitting] = useState(false)
+  const [result, setResult] = useState<{ ok: boolean; msg: string; id?: number } | null>(null)
 
   // Validation
-  const canProceedStep1 = selectedWorkType !== null
-  const canProceedStep2 = subject.trim().length >= 2
-  const canProceedStep3 = selectedDeadline !== null
+  const canStep1 = workType !== null
+  const canStep2 = subject.trim().length >= 2
+  const canStep3 = true // files are optional
+  const canStep4 = deadline !== null
 
-  // Handlers
-  const handleWorkTypeSelect = (type: WorkType) => {
-    haptic('light')
-    setSelectedWorkType(type)
-  }
-
-  const handleDeadlineSelect = (deadline: string) => {
-    haptic('light')
-    setSelectedDeadline(deadline)
-  }
-
-  const goToNextStep = () => {
+  // Navigation
+  const goNext = () => {
     haptic('medium')
     setDirection(1)
-    setStep((s) => Math.min(s + 1, 3))
+    setStep((s) => Math.min(s + 1, 4))
   }
 
-  const goToPrevStep = () => {
+  const goBack = () => {
     haptic('light')
-    if (step === 1) {
-      navigate(-1)
-    } else {
+    if (step === 1) navigate(-1)
+    else {
       setDirection(-1)
       setStep((s) => s - 1)
     }
   }
 
+  // Files
+  const addFiles = (fileList: FileList) => {
+    haptic('light')
+    setFiles((prev) => [...prev, ...Array.from(fileList)])
+  }
+  const removeFile = (index: number) => {
+    haptic('light')
+    setFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // Submit
   const handleSubmit = async () => {
-    if (!selectedWorkType || !selectedDeadline || !subject.trim()) return
+    if (!workType || !deadline || !subject.trim()) return
 
     haptic('heavy')
-    setIsSubmitting(true)
+    setSubmitting(true)
 
-    const orderData: OrderCreateRequest = {
-      work_type: selectedWorkType,
+    const data: OrderCreateRequest = {
+      work_type: workType,
       subject: subject.trim(),
       topic: topic.trim() || undefined,
-      deadline: selectedDeadline,
+      deadline,
       description: description.trim() || undefined,
     }
 
     try {
-      const response = await createOrder(orderData)
-
-      if (response.success) {
+      const res = await createOrder(data)
+      if (res.success) {
         hapticSuccess()
-        setResult({
-          success: true,
-          message: response.message,
-          orderId: response.order_id,
-        })
+        setResult({ ok: true, msg: res.message, id: res.order_id })
       } else {
         hapticError()
-        setResult({
-          success: false,
-          message: response.message,
-        })
+        setResult({ ok: false, msg: res.message })
       }
     } catch {
       hapticError()
-      setResult({
-        success: false,
-        message: 'Произошла ошибка. Попробуйте позже.',
-      })
+      setResult({ ok: false, msg: 'Ошибка соединения' })
     } finally {
-      setIsSubmitting(false)
-      setStep(4) // Result step
+      setSubmitting(false)
+      setStep(5)
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //  RESULT SCREEN
-  // ═══════════════════════════════════════════════════════════════════════════
+  // Get estimated price
+  const getEstimate = () => {
+    if (!workType || !deadline) return null
+    const wt = WORK_TYPES.find((w) => w.value === workType)
+    const dl = DEADLINES.find((d) => d.value === deadline)
+    if (!wt || !dl || wt.priceNum === 0) return null
+    return Math.round(wt.priceNum * dl.multiplierNum)
+  }
 
-  if (step === 4 && result) {
+  // ─────────────────────────────────────────────────────────────────────────
+  //  RESULT SCREEN
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (step === 5 && result) {
     return (
-      <div style={{ padding: 20, paddingBottom: 180, minHeight: '100vh' }}>
+      <div style={{ padding: 24, paddingBottom: 160, minHeight: '100vh', background: '#050505' }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -647,92 +677,75 @@ export function CreateOrderPage() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            transition={{ delay: 0.2, type: 'spring' }}
             style={{
-              width: 90,
-              height: 90,
+              width: 100,
+              height: 100,
               borderRadius: '50%',
-              background: result.success
-                ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.08))'
-                : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.08))',
-              border: result.success
-                ? '2px solid rgba(34, 197, 94, 0.5)'
-                : '2px solid rgba(239, 68, 68, 0.5)',
+              background: result.ok
+                ? 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05))'
+                : 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05))',
+              border: `3px solid ${result.ok ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 28,
-              boxShadow: result.success
-                ? '0 0 50px -10px rgba(34, 197, 94, 0.5)'
-                : '0 0 50px -10px rgba(239, 68, 68, 0.5)',
+              marginBottom: 32,
+              boxShadow: `0 0 60px -10px ${result.ok ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'}`,
             }}
           >
-            {result.success ? (
-              <Check size={45} color="#22c55e" strokeWidth={2.5} />
+            {result.ok ? (
+              <Check size={50} color="#22c55e" strokeWidth={2} />
             ) : (
-              <AlertCircle size={45} color="#ef4444" strokeWidth={2} />
+              <AlertCircle size={50} color="#ef4444" strokeWidth={2} />
             )}
           </motion.div>
 
-          <h2
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 26,
-              fontWeight: 700,
-              marginBottom: 14,
-              color: result.success ? '#f2f2f2' : '#ef4444',
-            }}
-          >
-            {result.success ? 'Заказ создан!' : 'Ошибка'}
+          <h2 style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 28,
+            fontWeight: 700,
+            color: result.ok ? '#f2f2f2' : '#ef4444',
+            marginBottom: 16,
+          }}>
+            {result.ok ? 'Заказ создан!' : 'Ошибка'}
           </h2>
 
-          <p
-            style={{
-              fontSize: 15,
-              color: '#a1a1aa',
-              marginBottom: 40,
-              maxWidth: 300,
-              lineHeight: 1.5,
-            }}
-          >
-            {result.message}
+          <p style={{ fontSize: 16, color: '#a1a1aa', marginBottom: 40, maxWidth: 300, lineHeight: 1.6 }}>
+            {result.msg}
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 300 }}>
-            {result.success && result.orderId && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 320 }}>
+            {result.ok && result.id && (
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={() => navigate(`/order/${result.orderId}`)}
+                onClick={() => navigate(`/order/${result.id}`)}
                 style={{
-                  width: '100%',
-                  padding: '16px 24px',
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 16,
+                  padding: '18px 28px',
+                  fontSize: 17,
                   fontWeight: 700,
+                  fontFamily: "'Playfair Display', serif",
                   color: '#050505',
                   background: 'linear-gradient(180deg, #f5d061, #d4af37, #b48e26)',
                   border: 'none',
-                  borderRadius: 14,
+                  borderRadius: 16,
                   cursor: 'pointer',
-                  boxShadow: '0 0 30px -8px rgba(212, 175, 55, 0.5)',
+                  boxShadow: '0 0 35px -8px rgba(212,175,55,0.6)',
                 }}
               >
                 Открыть заказ
               </motion.button>
             )}
-
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate('/')}
               style={{
-                width: '100%',
-                padding: '16px 24px',
-                fontSize: 15,
+                padding: '16px 28px',
+                fontSize: 16,
                 fontWeight: 600,
                 color: '#a1a1aa',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: 14,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 16,
                 cursor: 'pointer',
               }}
             >
@@ -744,277 +757,280 @@ export function CreateOrderPage() {
     )
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  //  MAIN WIZARD UI
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ─────────────────────────────────────────────────────────────────────────
+  //  WIZARD
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const currentConfig = STEP_CONFIG[step - 1]
+  const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : step === 3 ? canStep3 : canStep4
+  const estimate = getEstimate()
 
   return (
     <div style={{
-      padding: 20,
-      paddingBottom: 200, // Critical: Space for floating button + navigation
+      padding: 24,
+      paddingBottom: 180, // Space for button + nav
       minHeight: '100vh',
-      background: 'var(--bg-void)',
+      background: '#050505',
     }}>
-      {/* Header with back button */}
+      {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -15 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 14,
-          marginBottom: 20,
-        }}
+        style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}
       >
         <motion.button
-          type="button"
           whileTap={{ scale: 0.9 }}
-          onClick={goToPrevStep}
+          onClick={goBack}
           style={{
-            width: 42,
-            height: 42,
-            borderRadius: 12,
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            width: 46,
+            height: 46,
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            flexShrink: 0,
           }}
         >
-          <ArrowLeft size={20} color="#a1a1aa" />
+          <ArrowLeft size={22} color="#a1a1aa" />
         </motion.button>
 
         <div style={{ flex: 1 }}>
-          <h1
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 24,
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, #f5d061, #d4af37)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              marginBottom: 4,
-            }}
-          >
-            {STEP_TITLES[step - 1]?.title || 'Новый заказ'}
+          <h1 style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 26,
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #f5d061, #d4af37)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            marginBottom: 4,
+          }}>
+            {currentConfig?.title}
           </h1>
-          <p style={{ fontSize: 13, color: '#71717a' }}>
-            {STEP_TITLES[step - 1]?.subtitle || ''}
-          </p>
+          <p style={{ fontSize: 14, color: '#71717a' }}>{currentConfig?.subtitle}</p>
         </div>
 
-        {/* Step counter */}
-        <div
-          style={{
-            padding: '8px 14px',
-            background: 'rgba(212, 175, 55, 0.1)',
-            border: '1px solid rgba(212, 175, 55, 0.2)',
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 600,
-            color: '#d4af37',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}
-        >
-          {step}/3
+        <div style={{
+          padding: '10px 16px',
+          background: 'rgba(212,175,55,0.1)',
+          border: '1px solid rgba(212,175,55,0.2)',
+          borderRadius: 12,
+          fontSize: 14,
+          fontWeight: 700,
+          color: '#d4af37',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}>
+          {step}/4
         </div>
       </motion.div>
 
-      {/* Progress bar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 28,
-        }}
-      >
-        {[1, 2, 3].map((s) => (
+      {/* Progress */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
+        {[1, 2, 3, 4].map((s) => (
           <motion.div
             key={s}
             animate={{
-              background: s <= step
-                ? 'linear-gradient(90deg, #d4af37, #f5d061)'
-                : 'rgba(255, 255, 255, 0.08)',
-              boxShadow: s <= step ? '0 0 12px rgba(212, 175, 55, 0.5)' : 'none',
+              background: s <= step ? 'linear-gradient(90deg, #d4af37, #f5d061)' : 'rgba(255,255,255,0.08)',
+              boxShadow: s <= step ? '0 0 12px rgba(212,175,55,0.5)' : 'none',
             }}
-            style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-            }}
+            style={{ flex: 1, height: 5, borderRadius: 3 }}
           />
         ))}
       </div>
 
-      {/* Step content with animations */}
+      {/* Steps */}
       <AnimatePresence mode="wait" custom={direction}>
-        {/* STEP 1: Work Type Selection */}
         {step === 1 && (
           <motion.div
-            key="step1"
+            key="s1"
             custom={direction}
             variants={slideVariants}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
           >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 12,
-              }}
-            >
-              {WORK_TYPES.map((type, index) => (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+              {WORK_TYPES.map((wt, i) => (
                 <WorkTypeCard
-                  key={type.value}
-                  type={type}
-                  selected={selectedWorkType === type.value}
-                  onSelect={() => handleWorkTypeSelect(type.value)}
-                  index={index}
+                  key={wt.value}
+                  config={wt}
+                  selected={workType === wt.value}
+                  onSelect={() => { haptic('light'); setWorkType(wt.value) }}
+                  index={i}
                 />
               ))}
             </div>
           </motion.div>
         )}
 
-        {/* STEP 2: Order Details */}
         {step === 2 && (
           <motion.div
-            key="step2"
+            key="s2"
             custom={direction}
             variants={slideVariants}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
           >
-            <PremiumInput
-              label="Предмет / Дисциплина"
-              value={subject}
-              onChange={setSubject}
-              placeholder="Математический анализ"
-              required
-            />
+            <PremiumInput label="Предмет / Дисциплина" value={subject} onChange={setSubject} required />
+            <PremiumInput label="Тема работы" value={topic} onChange={setTopic} />
+            <PremiumInput label="Дополнительные требования" value={description} onChange={setDescription} multiline />
+          </motion.div>
+        )}
 
-            <PremiumInput
-              label="Тема работы"
-              value={topic}
-              onChange={setTopic}
-              placeholder="Исследование пределов функций"
-            />
+        {step === 3 && (
+          <motion.div
+            key="s3"
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <FileUploadZone files={files} onAdd={addFiles} onRemove={removeFile} />
 
-            <PremiumInput
-              label="Дополнительные требования"
-              value={description}
-              onChange={setDescription}
-              placeholder="Методичка, особые требования, объём страниц..."
-              multiline
-            />
-
-            {/* Info notice */}
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
               style={{
+                marginTop: 24,
                 padding: 16,
-                background: 'rgba(212, 175, 55, 0.06)',
-                border: '1px solid rgba(212, 175, 55, 0.15)',
+                background: 'rgba(212,175,55,0.06)',
+                border: '1px solid rgba(212,175,55,0.15)',
                 borderRadius: 14,
               }}
             >
-              <p style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
-                <span style={{ color: '#d4af37' }}>Файлы</span> можно будет прикрепить после создания заказа
+              <p style={{ fontSize: 13, color: '#a1a1aa', lineHeight: 1.5 }}>
+                <span style={{ color: '#d4af37' }}>Совет:</span> Загрузите методичку и примеры оформления — это ускорит работу
               </p>
             </motion.div>
           </motion.div>
         )}
 
-        {/* STEP 3: Deadline Selection */}
-        {step === 3 && (
+        {step === 4 && (
           <motion.div
-            key="step3"
+            key="s4"
             custom={direction}
             variants={slideVariants}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
           >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 12,
-                marginBottom: 20,
-              }}
-            >
-              {DEADLINES.map((deadline, index) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {DEADLINES.map((dl, i) => (
                 <DeadlineCard
-                  key={deadline.value}
-                  deadline={deadline}
-                  selected={selectedDeadline === deadline.value}
-                  onSelect={() => handleDeadlineSelect(deadline.value)}
-                  index={index}
+                  key={dl.value}
+                  config={dl}
+                  selected={deadline === dl.value}
+                  onSelect={() => { haptic('light'); setDeadline(dl.value) }}
+                  index={i}
                 />
               ))}
             </div>
 
-            {/* Pricing notice */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              style={{
-                padding: 16,
-                background: 'rgba(239, 68, 68, 0.06)',
-                border: '1px solid rgba(239, 68, 68, 0.15)',
-                borderRadius: 14,
-              }}
-            >
-              <p style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
-                <span style={{ color: '#ef4444' }}>Срочность</span> влияет на стоимость. Множитель применяется к базовой цене.
-              </p>
-            </motion.div>
+            {/* Estimate */}
+            {estimate && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                style={{
+                  marginTop: 24,
+                  padding: 20,
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.03))',
+                  border: '1px solid rgba(212,175,55,0.2)',
+                  borderRadius: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Thermometer size={22} color="#d4af37" />
+                  <span style={{ fontSize: 14, color: '#a1a1aa' }}>Ориентировочно:</span>
+                </div>
+                <span style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: '#e6c547',
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>
+                  {estimate.toLocaleString('ru-RU')} ₽
+                </span>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Floating Action Button */}
-      <AnimatePresence>
-        {step === 1 && (
-          <FloatingButton
-            onClick={goToNextStep}
-            disabled={!canProceedStep1}
-            label="Продолжить"
-            icon={<ChevronRight size={22} />}
-          />
-        )}
-
-        {step === 2 && (
-          <FloatingButton
-            onClick={goToNextStep}
-            disabled={!canProceedStep2}
-            label="Выбрать сроки"
-            icon={<ChevronRight size={22} />}
-          />
-        )}
-
-        {step === 3 && (
-          <FloatingButton
-            onClick={handleSubmit}
-            disabled={!canProceedStep3}
-            loading={isSubmitting}
-            label="Рассчитать стоимость"
-            icon={<Send size={20} />}
-          />
-        )}
-      </AnimatePresence>
+      {/* Action Button */}
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, type: 'spring', stiffness: 300, damping: 30 }}
+        style={{
+          position: 'fixed',
+          bottom: 100,
+          left: 24,
+          right: 24,
+          zIndex: 1000,
+        }}
+      >
+        <motion.button
+          whileTap={canProceed ? { scale: 0.97 } : undefined}
+          onClick={step === 4 ? handleSubmit : goNext}
+          disabled={!canProceed || submitting}
+          style={{
+            width: '100%',
+            padding: '20px 28px',
+            fontSize: 18,
+            fontWeight: 700,
+            fontFamily: "'Playfair Display', serif",
+            letterSpacing: '0.02em',
+            color: canProceed ? '#050505' : '#71717a',
+            background: canProceed
+              ? 'linear-gradient(180deg, #f5d061 0%, #d4af37 50%, #b48e26 100%)'
+              : 'rgba(255,255,255,0.08)',
+            border: 'none',
+            borderRadius: 18,
+            cursor: canProceed && !submitting ? 'pointer' : 'not-allowed',
+            boxShadow: canProceed
+              ? '0 0 50px -10px rgba(212,175,55,0.7), 0 15px 30px -15px rgba(0,0,0,0.5)'
+              : 'none',
+            opacity: canProceed ? 1 : 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+          }}
+        >
+          {submitting ? (
+            <>
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                <Clock size={22} />
+              </motion.div>
+              Отправка...
+            </>
+          ) : step === 4 ? (
+            <>
+              <Send size={20} />
+              Рассчитать стоимость
+            </>
+          ) : (
+            <>
+              {step === 3 ? 'Выбрать сроки' : 'Продолжить'}
+              <ChevronRight size={24} />
+            </>
+          )}
+        </motion.button>
+      </motion.div>
     </div>
   )
 }
