@@ -2,6 +2,7 @@
 FastAPI application for Mini App API
 """
 
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,24 +10,31 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routes import router
 
 
-# Allowed origins for CORS
-ALLOWED_ORIGINS = [
-    # Production
+# Production origins only
+PROD_ORIGINS = [
     "https://academic-saloon.vercel.app",
     "https://academic-saloon-mini-app.vercel.app",
     "https://academic-saloon.duckdns.org",
-    # Development
+]
+
+# Dev origins (only added when DEBUG=true)
+DEV_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
 ]
+
+# Build allowed origins based on environment
+IS_DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+ALLOWED_ORIGINS = PROD_ORIGINS + (DEV_ORIGINS if IS_DEBUG else [])
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     print("🌐 Mini App API starting...")
-    print(f"🌐 CORS allowed origins: {ALLOWED_ORIGINS}")
+    print(f"🌐 Debug mode: {IS_DEBUG}")
+    print(f"🌐 CORS origins: {len(ALLOWED_ORIGINS)} configured")
     yield
     print("🌐 Mini App API shutting down...")
 

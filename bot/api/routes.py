@@ -7,7 +7,7 @@ import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
 from pydantic import BaseModel
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,7 @@ from database.db import get_session
 from core.config import settings
 
 from .auth import TelegramUser, get_current_user
+from .rate_limit import rate_limit_default, rate_limit_create, rate_limit_roulette, rate_limit_payment
 from .schemas import (
     UserResponse, OrderResponse, OrdersListResponse,
     PromoCodeRequest, PromoCodeResponse,
@@ -322,10 +323,13 @@ async def apply_promo_code(
 
 @router.post("/roulette/spin", response_model=RouletteResponse)
 async def spin_roulette(
+    request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
     """Spin daily luck roulette"""
+    # Rate limit check
+    await rate_limit_roulette.check(request)
 
     # Get user
     result = await session.execute(
@@ -339,22 +343,19 @@ async def spin_roulette(
     # Check cooldown (use timezone-aware datetime!)
     now = datetime.now(timezone.utc)
 
-    # --- GOD MODE FOR ADMIN ---
-    # Admin can spin infinitely for testing animations
-    if user.telegram_id == 872379852:
-        can_spin = True
-        logger.info(f"GOD MODE: Allowing infinite spin for admin {user.telegram_id}")
-    else:
-        # Standard user cooldown logic
-        can_spin = True  # Default to true if no previous spin
-        if user.last_daily_bonus_at:
-            next_spin = user.last_daily_bonus_at + timedelta(hours=24)
-            if next_spin.tzinfo is None:
-                next_spin = next_spin.replace(tzinfo=timezone.utc)
-            can_spin = now >= next_spin
+    # Check if user is admin (for testing purposes)
+    is_admin = user.telegram_id in settings.ADMIN_IDS
 
-    # Block non-admin users who can't spin
-    if not can_spin and user.telegram_id != 872379852:
+    # Standard cooldown logic
+    can_spin = True  # Default to true if no previous spin
+    if user.last_daily_bonus_at and not is_admin:
+        next_spin = user.last_daily_bonus_at + timedelta(hours=24)
+        if next_spin.tzinfo is None:
+            next_spin = next_spin.replace(tzinfo=timezone.utc)
+        can_spin = now >= next_spin
+
+    # Block users who can't spin
+    if not can_spin:
         next_spin = user.last_daily_bonus_at + timedelta(hours=24)
         if next_spin.tzinfo is None:
             next_spin = next_spin.replace(tzinfo=timezone.utc)
@@ -436,6 +437,7 @@ async def spin_roulette(
 
 @router.post("/orders/create", response_model=OrderCreateResponse)
 async def create_order(
+    request: Request,
     data: OrderCreateRequest,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
@@ -444,6 +446,8 @@ async def create_order(
     Create a new order from Mini App.
     Calculates preliminary price and notifies admins via Forum Topic.
     """
+    # Rate limit check - prevent order spam
+    await rate_limit_create.check(request)
     from bot.handlers.order_chat import get_or_create_topic
     from bot.services.live_cards import send_or_update_card
 
@@ -742,6 +746,7 @@ class PaymentConfirmResponse(BaseModel):
 
 @router.post("/orders/{order_id}/confirm-payment", response_model=PaymentConfirmResponse)
 async def confirm_payment(
+    request: Request,
     order_id: int,
     data: PaymentConfirmRequest,
     tg_user: TelegramUser = Depends(get_current_user),
@@ -751,6 +756,9 @@ async def confirm_payment(
     User confirms they have made a manual payment.
     Changes status to VERIFICATION_PENDING and notifies admins.
     """
+    # Rate limit check
+    await rate_limit_payment.check(request)
+
     logger.info(f"[API /orders/{order_id}/confirm-payment] User {tg_user.id} confirming payment")
 
     # Get user
@@ -881,6 +889,7 @@ async def get_payment_info(
 ):
     """
     Get payment details for an order including bank requisites.
+    Only available for orders that are awaiting payment.
     """
     # Get order and verify ownership
     order = await session.get(Order, order_id)
@@ -889,6 +898,32 @@ async def get_payment_info(
 
     if order.user_id != tg_user.id:
         raise HTTPException(status_code=403, detail="Not your order")
+
+    # Only show payment info for orders that need payment
+    allowed_statuses = [
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.VERIFICATION_PENDING.value,
+        OrderStatus.PAID.value,  # Half paid, needs remaining
+    ]
+    if order.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Реквизиты доступны только для заказов, ожидающих оплаты"
+        )
+
+    # Must have a price set
+    if not order.final_price or order.final_price <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Цена заказа ещё не определена"
+        )
+
+    # Already fully paid
+    if order.paid_amount and order.paid_amount >= order.final_price:
+        raise HTTPException(
+            status_code=400,
+            detail="Заказ уже полностью оплачен"
+        )
 
     # Format card number with spaces for display (XXXX XXXX XXXX XXXX)
     card_raw = settings.PAYMENT_CARD.replace(" ", "").replace("-", "")

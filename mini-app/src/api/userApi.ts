@@ -1,22 +1,19 @@
 import { UserData, PromoResult, RouletteResult, Order, OrderCreateRequest, OrderCreateResponse } from '../types'
 
-// API base URL - hardcoded to ensure correct path
+// API base URL
 const API_BASE = 'https://academic-saloon.duckdns.org/api'
 
-console.log('[API] API_BASE:', API_BASE)
+// Development mode flag - set to false in production
+const IS_DEV = import.meta.env.DEV || false
 
 // Get init data from Telegram
 function getInitData(): string {
-  const initData = window.Telegram?.WebApp?.initData || ''
-  console.log('[API] initData exists:', !!initData, 'length:', initData.length)
-  return initData
+  return window.Telegram?.WebApp?.initData || ''
 }
 
 // Check if we have valid Telegram context
 function hasTelegramContext(): boolean {
-  const hasContext = !!getInitData()
-  console.log('[API] hasTelegramContext:', hasContext)
-  return hasContext
+  return !!getInitData()
 }
 
 // Generic fetch with auth
@@ -62,121 +59,92 @@ export async function fetchConfig(): Promise<{ bot_username: string; support_use
 
 // User data
 export async function fetchUserData(): Promise<UserData> {
-  console.log('[API] fetchUserData called')
-
-  // Check Telegram context
-  const initData = getInitData()
-  console.log('[API] initData length:', initData.length)
-
-  // If no Telegram context (dev mode), use mock data
+  // If no Telegram context - only allow mock in dev mode
   if (!hasTelegramContext()) {
-    console.warn('[API] ⚠️ No Telegram context (initData empty) - using MOCK DATA')
-    console.warn('[API] This happens when app is opened outside Telegram or WebApp not initialized')
-    return getMockUserData()
+    if (IS_DEV) {
+      console.warn('[DEV] No Telegram context - using mock data')
+      return getMockUserData()
+    }
+    throw new Error('Откройте приложение через Telegram')
   }
 
-  try {
-    console.log('[API] Fetching real user data from:', API_BASE + '/user')
-    console.log('[API] initData preview:', initData.substring(0, 50) + '...')
-    const data = await apiFetch<UserData>('/user')
-    console.log('[API] ✅ Got REAL user data:', data.fullname, 'telegram_id:', data.telegram_id)
-    return data
-  } catch (e) {
-    console.error('[API] ❌ fetchUserData FAILED:', e)
-    console.error('[API] ❌ Falling back to MOCK data - check backend logs!')
-    // Still return mock to not break UI, but error is logged
-    return getMockUserData()
-  }
+  // Fetch real data - no silent fallback
+  const data = await apiFetch<UserData>('/user')
+  return data
 }
 
 // Orders
 export async function fetchOrders(status?: string): Promise<Order[]> {
   if (!hasTelegramContext()) {
-    return getMockUserData().orders
+    if (IS_DEV) return getMockUserData().orders
+    throw new Error('Откройте приложение через Telegram')
   }
 
-  try {
-    const params = status ? `?status=${status}` : ''
-    const response = await apiFetch<{ orders: Order[] }>(`/orders${params}`)
-    return response.orders
-  } catch (e) {
-    console.error('[API] fetchOrders error:', e)
-    return getMockUserData().orders
-  }
+  const params = status ? `?status=${status}` : ''
+  const response = await apiFetch<{ orders: Order[] }>(`/orders${params}`)
+  return response.orders
 }
 
 export async function fetchOrderDetail(orderId: number): Promise<Order> {
   if (!hasTelegramContext()) {
-    const orders = getMockUserData().orders
-    const order = orders.find(o => o.id === orderId)
-    if (!order) throw new Error('Order not found')
-    return order
+    if (IS_DEV) {
+      const order = getMockUserData().orders.find(o => o.id === orderId)
+      if (!order) throw new Error('Заказ не найден')
+      return order
+    }
+    throw new Error('Откройте приложение через Telegram')
   }
 
-  try {
-    return await apiFetch<Order>(`/orders/${orderId}`)
-  } catch (e) {
-    console.error('[API] fetchOrderDetail error:', e)
-    // Try mock fallback
-    const orders = getMockUserData().orders
-    const order = orders.find(o => o.id === orderId)
-    if (!order) throw new Error('Order not found')
-    return order
-  }
+  return await apiFetch<Order>(`/orders/${orderId}`)
 }
 
 // Promo code
 export async function applyPromoCode(code: string): Promise<PromoResult> {
   if (!hasTelegramContext()) {
-    // Mock response
-    if (code.toUpperCase() === 'COWBOY20') {
-      return { success: true, message: 'Промокод применён!', discount: 20 }
+    if (IS_DEV) {
+      if (code.toUpperCase() === 'COWBOY20') {
+        return { success: true, message: 'Промокод применён!', discount: 20 }
+      }
+      return { success: false, message: 'Промокод не найден' }
     }
-    return { success: false, message: 'Промокод не найден' }
+    return { success: false, message: 'Откройте приложение через Telegram' }
   }
 
-  try {
-    return await apiFetch<PromoResult>('/promo', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    })
-  } catch (e) {
-    console.error('[API] applyPromoCode error:', e)
-    return { success: false, message: 'Ошибка сервера' }
-  }
+  return await apiFetch<PromoResult>('/promo', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  })
 }
 
 // Daily roulette
 export async function spinRoulette(): Promise<RouletteResult> {
   if (!hasTelegramContext()) {
-    const prizes = [
-      { prize: '50 бонусов', type: 'bonus' as const, value: 50 },
-      { prize: '5% скидка', type: 'discount' as const, value: 5 },
-      { prize: '100 бонусов', type: 'bonus' as const, value: 100 },
-      { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0 },
-    ]
-    return prizes[Math.floor(Math.random() * prizes.length)]
+    if (IS_DEV) {
+      const prizes = [
+        { prize: '50 бонусов', type: 'bonus' as const, value: 50 },
+        { prize: '5% скидка', type: 'discount' as const, value: 5 },
+        { prize: '100 бонусов', type: 'bonus' as const, value: 100 },
+        { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0 },
+      ]
+      return prizes[Math.floor(Math.random() * prizes.length)]
+    }
+    throw new Error('Откройте приложение через Telegram')
   }
 
-  try {
-    const result = await apiFetch<{
-      success: boolean
-      prize?: string
-      type?: 'bonus' | 'discount' | 'nothing'
-      value?: number
-      message: string
-    }>('/roulette/spin', {
-      method: 'POST',
-    })
+  const result = await apiFetch<{
+    success: boolean
+    prize?: string
+    type?: 'bonus' | 'discount' | 'nothing'
+    value?: number
+    message: string
+  }>('/roulette/spin', {
+    method: 'POST',
+  })
 
-    return {
-      prize: result.prize || result.message,
-      type: result.type || 'nothing',
-      value: result.value || 0,
-    }
-  } catch (e) {
-    console.error('[API] spinRoulette error:', e)
-    return { prize: 'Ошибка', type: 'nothing', value: 0 }
+  return {
+    prize: result.prize || result.message,
+    type: result.type || 'nothing',
+    value: result.value || 0,
   }
 }
 
@@ -194,19 +162,22 @@ export async function uploadOrderFiles(
   onProgress?: (percent: number) => void
 ): Promise<FileUploadResponse> {
   if (!hasTelegramContext()) {
-    // Mock progress
-    if (onProgress) {
-      for (let i = 0; i <= 100; i += 20) {
-        await new Promise(r => setTimeout(r, 200))
-        onProgress(i)
+    if (IS_DEV) {
+      // Mock progress for dev
+      if (onProgress) {
+        for (let i = 0; i <= 100; i += 20) {
+          await new Promise(r => setTimeout(r, 200))
+          onProgress(i)
+        }
+      }
+      return {
+        success: true,
+        message: `✅ Загружено ${files.length} файл(ов) (Dev)`,
+        files_url: 'https://disk.yandex.ru/mock',
+        uploaded_count: files.length
       }
     }
-    return {
-      success: true,
-      message: `✅ Загружено ${files.length} файл(ов) (Mock)`,
-      files_url: 'https://disk.yandex.ru/mock',
-      uploaded_count: files.length
-    }
+    throw new Error('Откройте приложение через Telegram')
   }
 
   const formData = new FormData()
@@ -214,41 +185,32 @@ export async function uploadOrderFiles(
 
   const initData = getInitData()
 
-  try {
-    // Use XMLHttpRequest for progress tracking
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
+  // Use XMLHttpRequest for progress tracking
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
 
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable && onProgress) {
-          const percent = Math.round((e.loaded / e.total) * 100)
-          onProgress(percent)
-        }
-      })
-
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(JSON.parse(xhr.responseText))
-        } else {
-          const error = JSON.parse(xhr.responseText)
-          reject(new Error(error.detail || 'Upload failed'))
-        }
-      })
-
-      xhr.addEventListener('error', () => reject(new Error('Network error')))
-
-      xhr.open('POST', `${API_BASE}/orders/${orderId}/upload-files`)
-      xhr.setRequestHeader('X-Telegram-Init-Data', initData)
-      xhr.send(formData)
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable && onProgress) {
+        const percent = Math.round((e.loaded / e.total) * 100)
+        onProgress(percent)
+      }
     })
-  } catch (e) {
-    console.error('[API] uploadOrderFiles error:', e)
-    return {
-      success: false,
-      message: 'Ошибка загрузки файлов',
-      uploaded_count: 0
-    }
-  }
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText))
+      } else {
+        const error = JSON.parse(xhr.responseText)
+        reject(new Error(error.detail || 'Upload failed'))
+      }
+    })
+
+    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
+
+    xhr.open('POST', `${API_BASE}/orders/${orderId}/upload-files`)
+    xhr.setRequestHeader('X-Telegram-Init-Data', initData)
+    xhr.send(formData)
+  })
 }
 
 // Payment info
@@ -269,20 +231,23 @@ export interface PaymentInfo {
 
 export async function fetchPaymentInfo(orderId: number): Promise<PaymentInfo> {
   if (!hasTelegramContext()) {
-    return {
-      order_id: orderId,
-      status: 'waiting_payment',
-      price: 15000,
-      final_price: 14000,
-      discount: 5,
-      bonus_used: 1000,
-      paid_amount: 0,
-      remaining: 14000,
-      card_number: '2202 2080 1234 5678',
-      card_holder: 'IVAN PETROV',
-      sbp_phone: '+7 (900) 123-45-67',
-      sbp_bank: 'Тинькофф'
+    if (IS_DEV) {
+      return {
+        order_id: orderId,
+        status: 'waiting_payment',
+        price: 15000,
+        final_price: 14000,
+        discount: 5,
+        bonus_used: 1000,
+        paid_amount: 0,
+        remaining: 14000,
+        card_number: '2202 **** **** 5678',
+        card_holder: 'IVAN PETROV',
+        sbp_phone: '+7 (900) ***-**-67',
+        sbp_bank: 'Тинькофф'
+      }
     }
+    throw new Error('Откройте приложение через Telegram')
   }
 
   return await apiFetch<PaymentInfo>(`/orders/${orderId}/payment-info`)
@@ -302,13 +267,16 @@ export async function confirmPayment(
   paymentScheme: 'full' | 'half'
 ): Promise<PaymentConfirmResponse> {
   if (!hasTelegramContext()) {
-    await new Promise(r => setTimeout(r, 1500))
-    return {
-      success: true,
-      message: 'Заявка на оплату отправлена (Mock)',
-      new_status: 'verification_pending',
-      amount_to_pay: 14000
+    if (IS_DEV) {
+      await new Promise(r => setTimeout(r, 1500))
+      return {
+        success: true,
+        message: 'Заявка на оплату отправлена (Dev)',
+        new_status: 'verification_pending',
+        amount_to_pay: 14000
+      }
     }
+    throw new Error('Откройте приложение через Telegram')
   }
 
   return await apiFetch<PaymentConfirmResponse>(`/orders/${orderId}/confirm-payment`, {
@@ -323,31 +291,22 @@ export async function confirmPayment(
 // Create order
 export async function createOrder(data: OrderCreateRequest): Promise<OrderCreateResponse> {
   if (!hasTelegramContext()) {
-    // Mock response for development
-    console.log('[API] Mock createOrder:', data)
-    return {
-      success: true,
-      order_id: Math.floor(Math.random() * 1000) + 100,
-      message: '✅ Заказ создан! (Mock)',
-      price: 15000,
-      is_manual_required: data.work_type === 'other'
+    if (IS_DEV) {
+      return {
+        success: true,
+        order_id: Math.floor(Math.random() * 1000) + 100,
+        message: '✅ Заказ создан! (Dev)',
+        price: 15000,
+        is_manual_required: data.work_type === 'other'
+      }
     }
+    throw new Error('Откройте приложение через Telegram')
   }
 
-  try {
-    return await apiFetch<OrderCreateResponse>('/orders/create', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  } catch (e) {
-    console.error('[API] createOrder error:', e)
-    return {
-      success: false,
-      order_id: 0,
-      message: 'Ошибка создания заказа. Попробуйте позже.',
-      is_manual_required: false
-    }
-  }
+  return await apiFetch<OrderCreateResponse>('/orders/create', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
 }
 
 // Mock data for development
