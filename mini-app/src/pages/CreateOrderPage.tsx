@@ -5,7 +5,7 @@ import {
   GraduationCap, FileText, BookOpen, Scroll, PenTool,
   ClipboardCheck, Presentation, Briefcase, Sparkles, Camera,
   Calendar, Clock, Zap, Flame, ChevronRight, Check, ArrowLeft,
-  Send, AlertCircle, Upload, X, FileUp, Thermometer
+  Send, AlertCircle, Upload, X, FileUp, Thermometer, ChevronDown, Paperclip
 } from 'lucide-react'
 import { WorkType, OrderCreateRequest } from '../types'
 import { createOrder } from '../api/userApi'
@@ -59,8 +59,7 @@ const DEADLINES: DeadlineConfig[] = [
 const STEP_CONFIG = [
   { num: 1, title: 'Тип работы', subtitle: 'Что нужно сделать?' },
   { num: 2, title: 'Детали заказа', subtitle: 'Расскажите подробнее' },
-  { num: 3, title: 'Файлы', subtitle: 'Прикрепите материалы' },
-  { num: 4, title: 'Сроки', subtitle: 'Когда нужно сдать?' },
+  { num: 3, title: 'Сроки', subtitle: 'Когда нужно сдать?' },
 ]
 
 // Animation
@@ -71,93 +70,272 @@ const slideVariants = {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM INPUT COMPONENT (Floating Label)
+//  BENTO INPUT CARD (Solid Card Style)
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface PremiumInputProps {
+interface BentoInputCardProps {
   label: string
   value: string
   onChange: (val: string) => void
+  placeholder?: string
   multiline?: boolean
   required?: boolean
+  icon?: typeof FileText
+  hasDropdown?: boolean
 }
 
-function PremiumInput({ label, value, onChange, multiline, required }: PremiumInputProps) {
+function BentoInputCard({ label, value, onChange, placeholder, multiline, required, icon: Icon, hasDropdown }: BentoInputCardProps) {
   const [focused, setFocused] = useState(false)
-  const isActive = focused || value.length > 0
 
-  const baseStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '20px 0 12px 0',
-    fontSize: 16,
-    fontFamily: "'Inter', sans-serif",
-    color: '#f2f2f2',
-    background: 'transparent',
-    border: 'none',
-    borderBottom: `2px solid ${focused ? '#d4af37' : 'rgba(255,255,255,0.15)'}`,
-    outline: 'none',
-    transition: 'border-color 0.3s ease',
-    resize: 'none' as const,
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{
+        background: '#14141a',
+        borderRadius: 16,
+        border: focused ? '2px solid rgba(212,175,55,0.5)' : '2px solid rgba(255,255,255,0.06)',
+        padding: '16px 18px',
+        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+        boxShadow: focused ? '0 0 20px -5px rgba(212,175,55,0.3)' : 'none',
+      }}
+    >
+      {/* Label */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 10,
+      }}>
+        {Icon && <Icon size={14} color="#d4af37" strokeWidth={2} />}
+        <span style={{
+          fontSize: 11,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: '#d4af37',
+        }}>
+          {label} {required && <span style={{ opacity: 0.7 }}>*</span>}
+        </span>
+      </div>
+
+      {/* Input Area */}
+      <div style={{ position: 'relative' }}>
+        {multiline ? (
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={placeholder}
+            rows={3}
+            style={{
+              width: '100%',
+              fontSize: 16,
+              fontFamily: "'Inter', sans-serif",
+              color: '#f2f2f2',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              resize: 'none',
+              lineHeight: 1.5,
+            }}
+          />
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder={placeholder}
+              style={{
+                flex: 1,
+                fontSize: 16,
+                fontFamily: "'Inter', sans-serif",
+                color: '#f2f2f2',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                padding: 0,
+              }}
+            />
+            {hasDropdown && (
+              <ChevronDown size={20} color="#71717a" style={{ flexShrink: 0 }} />
+            )}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FILE VAULT MINI (Compact for Step 2)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface FileVaultMiniProps {
+  files: File[]
+  onAdd: (files: FileList) => void
+  onRemove: (index: number) => void
+}
+
+function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (e.dataTransfer.files.length > 0) {
+      onAdd(e.dataTransfer.files)
+    }
   }
 
   return (
-    <div style={{ position: 'relative', marginBottom: 32 }}>
-      {/* Floating Label */}
-      <motion.label
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{
+        background: '#14141a',
+        borderRadius: 16,
+        border: isDragging ? '2px solid rgba(212,175,55,0.5)' : '2px solid rgba(255,255,255,0.06)',
+        padding: '16px 18px',
+        transition: 'border-color 0.2s ease',
+      }}
+    >
+      {/* Label */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12,
+      }}>
+        <Paperclip size={14} color="#d4af37" strokeWidth={2} />
+        <span style={{
+          fontSize: 11,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: '#d4af37',
+        }}>
+          Файлы
+        </span>
+        <span style={{
+          fontSize: 10,
+          color: '#71717a',
+          marginLeft: 'auto',
+        }}>
+          Необязательно
+        </span>
+      </div>
+
+      {/* Drop Zone */}
+      <motion.div
         animate={{
-          y: isActive ? -24 : 0,
-          scale: isActive ? 0.75 : 1,
-          color: isActive ? '#d4af37' : '#71717a',
+          background: isDragging ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.02)',
         }}
-        transition={{ duration: 0.2 }}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => inputRef.current?.click()}
         style={{
-          position: 'absolute',
-          left: 0,
-          top: 16,
-          fontSize: 16,
-          fontWeight: 500,
-          transformOrigin: 'left',
-          pointerEvents: 'none',
+          padding: '20px 16px',
+          borderRadius: 12,
+          border: '1px dashed rgba(212,175,55,0.25)',
+          cursor: 'pointer',
+          textAlign: 'center',
         }}
       >
-        {label} {required && <span style={{ color: '#d4af37' }}>*</span>}
-      </motion.label>
-
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          rows={3}
-          style={baseStyle}
-        />
-      ) : (
         <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={baseStyle}
+          ref={inputRef}
+          type="file"
+          multiple
+          onChange={(e) => e.target.files && onAdd(e.target.files)}
+          style={{ display: 'none' }}
         />
-      )}
 
-      {/* Glow line */}
-      <motion.div
-        animate={{ scaleX: focused ? 1 : 0, opacity: focused ? 1 : 0 }}
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 2,
-          background: 'linear-gradient(90deg, #d4af37, #f5d061)',
-          transformOrigin: 'left',
-          boxShadow: '0 0 12px rgba(212,175,55,0.5)',
-        }}
-      />
-    </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+        }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: 'rgba(212,175,55,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <FileUp size={18} color="#d4af37" />
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#a1a1aa', margin: 0 }}>
+              Прикрепить файлы
+            </p>
+            <p style={{ fontSize: 11, color: '#52525b', margin: 0 }}>
+              Методички, примеры, требования
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* File List */}
+      {files.length > 0 && (
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {files.map((file, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: 10,
+              }}
+            >
+              <Upload size={16} color="#d4af37" />
+              <span style={{
+                flex: 1,
+                fontSize: 13,
+                color: '#f2f2f2',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {file.name}
+              </span>
+              <span style={{ fontSize: 11, color: '#52525b' }}>
+                {(file.size / 1024).toFixed(0)} KB
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onRemove(i) }}
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 6,
+                  background: 'rgba(239,68,68,0.1)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={12} color="#ef4444" />
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
   )
 }
 
@@ -584,14 +762,13 @@ export function CreateOrderPage() {
   // Validation
   const canStep1 = workType !== null
   const canStep2 = subject.trim().length >= 2
-  const canStep3 = true // files are optional
-  const canStep4 = deadline !== null
+  const canStep3 = deadline !== null
 
   // Navigation
   const goNext = () => {
     haptic('medium')
     setDirection(1)
-    setStep((s) => Math.min(s + 1, 4))
+    setStep((s) => Math.min(s + 1, 3))
   }
 
   const goBack = () => {
@@ -642,7 +819,7 @@ export function CreateOrderPage() {
       setResult({ ok: false, msg: 'Ошибка соединения' })
     } finally {
       setSubmitting(false)
-      setStep(5)
+      setStep(4) // Result screen
     }
   }
 
@@ -659,7 +836,7 @@ export function CreateOrderPage() {
   //  RESULT SCREEN
   // ─────────────────────────────────────────────────────────────────────────
 
-  if (step === 5 && result) {
+  if (step === 4 && result) {
     return (
       <div style={{ padding: 24, paddingBottom: 160, minHeight: '100vh', background: '#050505' }}>
         <motion.div
@@ -762,7 +939,7 @@ export function CreateOrderPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   const currentConfig = STEP_CONFIG[step - 1]
-  const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : step === 3 ? canStep3 : canStep4
+  const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : canStep3
   const estimate = getEstimate()
 
   return (
@@ -822,13 +999,13 @@ export function CreateOrderPage() {
           color: '#d4af37',
           fontFamily: "'JetBrains Mono', monospace",
         }}>
-          {step}/4
+          {step}/3
         </div>
       </motion.div>
 
       {/* Progress */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2, 3].map((s) => (
           <motion.div
             key={s}
             animate={{
@@ -875,47 +1052,42 @@ export function CreateOrderPage() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 32 }}
           >
-            <PremiumInput label="Предмет / Дисциплина" value={subject} onChange={setSubject} required />
-            <PremiumInput label="Тема работы" value={topic} onChange={setTopic} />
-            <PremiumInput label="Дополнительные требования" value={description} onChange={setDescription} multiline />
+            <BentoInputCard
+              label="Предмет / Дисциплина"
+              value={subject}
+              onChange={setSubject}
+              placeholder="Например: Экономика, Программирование..."
+              icon={BookOpen}
+              hasDropdown
+              required
+            />
+
+            <BentoInputCard
+              label="Тема работы"
+              value={topic}
+              onChange={setTopic}
+              placeholder="Оставьте пустым, если тема свободная"
+              icon={FileText}
+            />
+
+            <BentoInputCard
+              label="Дополнительные требования"
+              value={description}
+              onChange={setDescription}
+              placeholder="Объём, оформление, особые пожелания..."
+              icon={PenTool}
+              multiline
+            />
+
+            <FileVaultMini files={files} onAdd={addFiles} onRemove={removeFile} />
           </motion.div>
         )}
 
         {step === 3 && (
           <motion.div
             key="s3"
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          >
-            <FileUploadZone files={files} onAdd={addFiles} onRemove={removeFile} />
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              style={{
-                marginTop: 24,
-                padding: 16,
-                background: 'rgba(212,175,55,0.06)',
-                border: '1px solid rgba(212,175,55,0.15)',
-                borderRadius: 14,
-              }}
-            >
-              <p style={{ fontSize: 13, color: '#a1a1aa', lineHeight: 1.5 }}>
-                <span style={{ color: '#d4af37' }}>Совет:</span> Загрузите методичку и примеры оформления — это ускорит работу
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {step === 4 && (
-          <motion.div
-            key="s4"
             custom={direction}
             variants={slideVariants}
             initial="enter"
@@ -985,7 +1157,7 @@ export function CreateOrderPage() {
       >
         <motion.button
           whileTap={canProceed ? { scale: 0.97 } : undefined}
-          onClick={step === 4 ? handleSubmit : goNext}
+          onClick={step === 3 ? handleSubmit : goNext}
           disabled={!canProceed || submitting}
           style={{
             width: '100%',
@@ -1018,14 +1190,14 @@ export function CreateOrderPage() {
               </motion.div>
               Отправка...
             </>
-          ) : step === 4 ? (
+          ) : step === 3 ? (
             <>
               <Send size={20} />
               Рассчитать стоимость
             </>
           ) : (
             <>
-              {step === 3 ? 'Выбрать сроки' : 'Продолжить'}
+              {step === 2 ? 'Выбрать сроки' : 'Продолжить'}
               <ChevronRight size={24} />
             </>
           )}
