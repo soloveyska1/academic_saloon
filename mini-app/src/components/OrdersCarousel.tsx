@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion, useMotionValue, animate, PanInfo } from 'framer-motion'
-import { FileText, Clock, CheckCircle, AlertCircle, Loader, Lock, Eye } from 'lucide-react'
+import { FileText, Clock, CheckCircle, AlertCircle, Loader, Lock, Eye, Calendar, Zap } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 
@@ -41,6 +41,41 @@ const variantColors = {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  COUNTDOWN HOOK
+// ═══════════════════════════════════════════════════════════════════════════
+
+function useCountdown(deadline: string | null) {
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; text: string } | null>(null)
+
+  useEffect(() => {
+    if (!deadline) {
+      setTimeLeft(null)
+      return
+    }
+
+    const calculateTimeLeft = () => {
+      const diff = new Date(deadline).getTime() - Date.now()
+      if (diff <= 0) {
+        return { days: 0, hours: 0, text: 'Истёк' }
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+
+      if (days > 0) {
+        return { days, hours, text: `${days}д ${hours}ч` }
+      }
+      return { days, hours, text: `${hours}ч` }
+    }
+
+    setTimeLeft(calculateTimeLeft())
+    const interval = setInterval(() => setTimeLeft(calculateTimeLeft()), 60000)
+    return () => clearInterval(interval)
+  }, [deadline])
+
+  return timeLeft
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  TOP SECRET CASE FILE CARD
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -55,14 +90,18 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
   const config = statusConfig[order.status] || { label: order.status, variant: 'info', icon: FileText }
   const colors = variantColors[config.variant]
   const StatusIcon = config.icon
+  const countdown = useCountdown(order.deadline)
 
-  // 3D transform calculations
-  const scale = isActive ? 1.08 : 0.82 - Math.abs(position) * 0.05
-  const rotateY = position * 25
-  const translateX = position * 60
-  const translateZ = isActive ? 50 : -80 - Math.abs(position) * 30
-  const opacity = isActive ? 1 : 0.5 - Math.abs(position) * 0.1
-  const blur = isActive ? 0 : Math.abs(position) * 2
+  // 3D transform calculations - Enhanced "Cover Flow" style
+  const scale = isActive ? 1.1 : 0.78 - Math.abs(position) * 0.06
+  const rotateY = position * 35
+  const translateX = position * 75
+  const translateZ = isActive ? 80 : -100 - Math.abs(position) * 40
+  const opacity = isActive ? 1 : 0.6 - Math.abs(position) * 0.15
+  const blur = isActive ? 0 : Math.abs(position) * 3
+
+  // Determine if deadline is urgent (< 24 hours)
+  const isUrgent = countdown && countdown.days === 0 && countdown.hours < 24
 
   return (
     <motion.div
@@ -72,46 +111,66 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
         rotateY,
         x: translateX,
         z: translateZ,
-        opacity: Math.max(0.2, opacity),
+        opacity: Math.max(0.15, opacity),
         filter: `blur(${blur}px)`,
       }}
       transition={{
         type: 'spring',
-        stiffness: 300,
-        damping: 30,
+        stiffness: 280,
+        damping: 28,
       }}
-      whileTap={{ scale: scale * 0.97 }}
+      whileTap={{ scale: scale * 0.96 }}
       style={{
         position: 'absolute',
-        width: 280,
-        minHeight: 200,
+        width: 290,
+        minHeight: 220,
         transformStyle: 'preserve-3d',
         cursor: 'pointer',
         zIndex: isActive ? 10 : 5 - Math.abs(position),
       }}
     >
-      {/* Card Container */}
+      {/* Dark Metal Card Container */}
       <div
         style={{
           width: '100%',
           height: '100%',
-          padding: 20,
+          padding: 22,
+          // Dark metal gradient with subtle texture
           background: isActive
-            ? 'linear-gradient(145deg, rgba(30, 30, 35, 0.95) 0%, rgba(20, 20, 23, 0.98) 50%, rgba(25, 25, 28, 0.95) 100%)'
-            : 'linear-gradient(145deg, rgba(25, 25, 28, 0.85) 0%, rgba(15, 15, 18, 0.9) 100%)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
-          borderRadius: 20,
+            ? 'linear-gradient(155deg, rgba(35, 35, 40, 0.98) 0%, rgba(18, 18, 22, 0.99) 40%, rgba(28, 28, 33, 0.97) 100%)'
+            : 'linear-gradient(155deg, rgba(25, 25, 28, 0.9) 0%, rgba(12, 12, 15, 0.95) 100%)',
+          backdropFilter: 'blur(50px)',
+          WebkitBackdropFilter: 'blur(50px)',
+          borderRadius: 22,
           border: isActive
             ? `2px solid ${colors.border}`
-            : '1px solid rgba(255, 255, 255, 0.05)',
+            : '1px solid rgba(255, 255, 255, 0.04)',
           boxShadow: isActive
-            ? `0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 50px -10px ${colors.glow}, inset 0 1px 0 rgba(255,255,255,0.08)`
-            : '0 15px 40px -15px rgba(0, 0, 0, 0.5)',
+            ? `0 30px 70px -20px rgba(0, 0, 0, 0.8), 0 0 60px -15px ${colors.glow}, inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.3)`
+            : '0 20px 50px -20px rgba(0, 0, 0, 0.6)',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
+        {/* Metal texture overlay */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: isActive
+            ? 'radial-gradient(ellipse 120% 80% at 30% 20%, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(ellipse 100% 60% at 70% 80%, rgba(0,0,0,0.2) 0%, transparent 50%)'
+            : 'none',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Brushed metal lines effect */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.01) 2px, rgba(255,255,255,0.01) 4px)',
+          opacity: isActive ? 0.5 : 0.2,
+          pointerEvents: 'none',
+        }} />
+
         {/* TOP SECRET Stamp for Active */}
         {isActive && (
           <motion.div
@@ -119,50 +178,54 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
             animate={{ opacity: 1, scale: 1, rotate: -12 }}
             style={{
               position: 'absolute',
-              top: 12,
-              right: 12,
-              padding: '4px 10px',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              borderRadius: 4,
+              top: 14,
+              right: 14,
+              padding: '5px 12px',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              borderRadius: 5,
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 5,
+              boxShadow: '0 0 15px -5px rgba(239, 68, 68, 0.3)',
             }}
           >
-            <Lock size={10} color="#ef4444" />
+            <Lock size={11} color="#ef4444" />
             <span style={{
               fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: 700,
               color: '#ef4444',
-              letterSpacing: '0.15em',
+              letterSpacing: '0.12em',
             }}>
               СЕКРЕТНО
             </span>
           </motion.div>
         )}
 
-        {/* Case Number Header */}
+        {/* Case Number Header with improved styling */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
           marginBottom: 16,
-          paddingBottom: 12,
-          borderBottom: '1px dashed rgba(255,255,255,0.08)',
+          paddingBottom: 14,
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}>
           <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: isActive ? colors.bg : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${isActive ? colors.border : 'rgba(255,255,255,0.05)'}`,
+            width: 32,
+            height: 32,
+            borderRadius: 10,
+            background: isActive
+              ? `linear-gradient(135deg, ${colors.bg}, rgba(0,0,0,0.3))`
+              : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${isActive ? colors.border : 'rgba(255,255,255,0.04)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            boxShadow: isActive ? `0 0 15px -5px ${colors.glow}` : 'none',
           }}>
-            <FileText size={14} color={isActive ? colors.text : '#71717a'} />
+            <FileText size={15} color={isActive ? colors.text : '#71717a'} />
           </div>
           <div style={{ flex: 1 }}>
             <span
@@ -170,7 +233,8 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
               style={{
                 fontSize: 9,
                 color: 'var(--text-muted)',
-                letterSpacing: '0.1em',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
               }}
             >
               ДЕЛО №
@@ -178,10 +242,11 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
             <div
               className="text-mono"
               style={{
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 700,
                 color: isActive ? colors.text : 'var(--text-secondary)',
-                letterSpacing: '0.05em',
+                letterSpacing: '0.08em',
+                textShadow: isActive ? `0 0 20px ${colors.glow}` : 'none',
               }}
             >
               {order.id.toString().padStart(5, '0')}
@@ -189,46 +254,77 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
           </div>
         </div>
 
-        {/* Work Type - Like a File Label */}
-        <div style={{
-          display: 'inline-block',
-          padding: '4px 10px',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 6,
-          marginBottom: 12,
-        }}>
-          <span
-            className="text-mono"
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {order.work_type_label}
-          </span>
-        </div>
-
-        {/* Subject - Main Content */}
+        {/* Subject Name - Truncated with elegant display */}
         <h4
           style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: 17,
+            fontSize: 18,
             fontWeight: 700,
             color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-            marginBottom: 16,
-            lineHeight: 1.3,
+            marginBottom: 14,
+            lineHeight: 1.35,
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
+            textShadow: isActive ? '0 2px 10px rgba(0,0,0,0.3)' : 'none',
           }}
         >
           {order.subject || 'Без предмета'}
         </h4>
+
+        {/* Deadline Row - Countdown or Date */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 14,
+          padding: '10px 12px',
+          background: isUrgent
+            ? 'rgba(239, 68, 68, 0.08)'
+            : 'rgba(255,255,255,0.02)',
+          border: `1px solid ${isUrgent ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.04)'}`,
+          borderRadius: 10,
+        }}>
+          {isUrgent ? (
+            <Zap size={14} color="#ef4444" />
+          ) : (
+            <Calendar size={14} color={isActive ? 'var(--text-secondary)' : 'var(--text-muted)'} />
+          )}
+          <div style={{ flex: 1 }}>
+            <span style={{
+              fontSize: 9,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+            }}>
+              Дедлайн
+            </span>
+            <div className="text-mono" style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: isUrgent ? '#ef4444' : (isActive ? 'var(--text-primary)' : 'var(--text-secondary)'),
+            }}>
+              {countdown ? countdown.text : (order.deadline
+                ? new Date(order.deadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+                : 'Не указан'
+              )}
+            </div>
+          </div>
+          {isUrgent && (
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: '#ef4444',
+                boxShadow: '0 0 10px #ef4444',
+              }}
+            />
+          )}
+        </div>
 
         {/* Progress Bar (if in progress) */}
         {order.progress > 0 && order.progress < 100 && isActive && (
@@ -237,60 +333,73 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
               <span style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 Прогресс
               </span>
-              <span className="text-mono" style={{ fontSize: 10, color: colors.text, fontWeight: 600 }}>
+              <span className="text-mono" style={{ fontSize: 11, color: colors.text, fontWeight: 700 }}>
                 {order.progress}%
               </span>
             </div>
             <div style={{
-              height: 4,
-              background: 'rgba(255,255,255,0.05)',
+              height: 5,
+              background: 'rgba(255,255,255,0.04)',
               borderRadius: 100,
               overflow: 'hidden',
             }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${order.progress}%` }}
-                transition={{ duration: 0.8, delay: 0.2 }}
+                transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 style={{
                   height: '100%',
                   background: `linear-gradient(90deg, ${colors.text}, ${colors.glow})`,
                   borderRadius: 100,
-                  boxShadow: `0 0 10px ${colors.glow}`,
+                  boxShadow: `0 0 15px ${colors.glow}`,
                 }}
               />
             </div>
           </div>
         )}
 
-        {/* Footer */}
+        {/* Footer with Status Badge and Price */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingTop: 12,
+          paddingTop: 14,
           borderTop: '1px solid rgba(255,255,255,0.05)',
         }}>
-          {/* Status Badge */}
+          {/* Status Badge with Glowing Dot */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '5px 12px',
-              background: isActive ? colors.bg : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${isActive ? colors.border : 'rgba(255,255,255,0.05)'}`,
+              gap: 8,
+              padding: '6px 14px',
+              background: isActive ? colors.bg : 'rgba(255,255,255,0.02)',
+              border: `1px solid ${isActive ? colors.border : 'rgba(255,255,255,0.04)'}`,
               borderRadius: 100,
-              boxShadow: isActive ? `0 0 15px -5px ${colors.glow}` : 'none',
+              boxShadow: isActive ? `0 0 20px -8px ${colors.glow}` : 'none',
             }}
           >
-            <StatusIcon size={11} color={isActive ? colors.text : '#71717a'} />
+            {/* Glowing Status Dot */}
+            <motion.div
+              animate={isActive ? {
+                boxShadow: [`0 0 8px ${colors.text}`, `0 0 15px ${colors.text}`, `0 0 8px ${colors.text}`],
+              } : {}}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: isActive ? colors.text : '#71717a',
+                boxShadow: isActive ? `0 0 8px ${colors.text}` : 'none',
+              }}
+            />
             <span
               className="text-mono"
               style={{
-                fontSize: 9,
+                fontSize: 10,
                 fontWeight: 600,
                 color: isActive ? colors.text : 'var(--text-muted)',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.06em',
                 textTransform: 'uppercase',
               }}
             >
@@ -298,19 +407,20 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
             </span>
           </div>
 
-          {/* Price */}
+          {/* Price with Gold Gradient */}
           <div style={{ textAlign: 'right' }}>
             <span
               className="text-mono"
               style={{
-                fontSize: 16,
-                fontWeight: 700,
+                fontSize: 17,
+                fontWeight: 800,
                 background: isActive
-                  ? 'linear-gradient(135deg, #f5d061, #d4af37)'
+                  ? 'linear-gradient(135deg, #f5d061 0%, #d4af37 50%, #b48e26 100%)'
                   : 'none',
                 WebkitBackgroundClip: isActive ? 'text' : 'unset',
                 WebkitTextFillColor: isActive ? 'transparent' : 'var(--text-muted)',
                 backgroundClip: isActive ? 'text' : 'unset',
+                textShadow: isActive ? '0 0 30px rgba(212, 175, 55, 0.3)' : 'none',
               }}
             >
               {order.final_price.toLocaleString('ru-RU')} ₽
@@ -318,49 +428,50 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
           </div>
         </div>
 
-        {/* Active Glow Border Effect */}
+        {/* Active Glow Border Effect - Animated */}
         {isActive && (
           <motion.div
             animate={{
-              opacity: [0.3, 0.6, 0.3],
+              opacity: [0.4, 0.7, 0.4],
             }}
             transition={{
-              duration: 2,
+              duration: 2.5,
               repeat: Infinity,
               ease: 'easeInOut',
             }}
             style={{
               position: 'absolute',
               inset: -2,
-              borderRadius: 22,
+              borderRadius: 24,
               border: `2px solid ${colors.text}`,
               pointerEvents: 'none',
-              opacity: 0.5,
             }}
           />
         )}
 
-        {/* View indicator */}
+        {/* View indicator - Tap to Open */}
         {isActive && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
             style={{
               position: 'absolute',
-              bottom: -30,
+              bottom: -35,
               left: '50%',
               transform: 'translateX(-50%)',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
-              padding: '4px 10px',
-              background: 'rgba(212, 175, 55, 0.1)',
-              border: '1px solid rgba(212, 175, 55, 0.2)',
+              gap: 6,
+              padding: '6px 14px',
+              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08))',
+              border: '1px solid rgba(212, 175, 55, 0.25)',
               borderRadius: 100,
+              boxShadow: '0 0 20px -8px rgba(212, 175, 55, 0.3)',
             }}
           >
-            <Eye size={10} color="#d4af37" />
-            <span style={{ fontSize: 9, color: '#d4af37', fontWeight: 500 }}>Открыть</span>
+            <Eye size={12} color="#d4af37" />
+            <span style={{ fontSize: 10, color: '#d4af37', fontWeight: 600, letterSpacing: '0.05em' }}>Открыть</span>
           </motion.div>
         )}
       </div>
@@ -463,12 +574,12 @@ export function OrdersCarousel({ orders, onOrderClick }: OrdersCarouselProps) {
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      {/* 3D Stage */}
+      {/* 3D Stage - Premium Cover Flow */}
       <div
         ref={containerRef}
         style={{
-          height: 280,
-          perspective: 1200,
+          height: 340,
+          perspective: 1400,
           perspectiveOrigin: '50% 50%',
           overflow: 'visible',
         }}

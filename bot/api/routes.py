@@ -330,7 +330,12 @@ async def spin_roulette(
 
     # Check cooldown (use timezone-aware datetime!)
     now = datetime.now(timezone.utc)
-    if user.last_daily_bonus_at:
+
+    # GOD MODE FOR ADMIN - Skip time check for testing animations
+    if user.telegram_id == 872379852:
+        # Admin can spin infinitely for testing
+        pass
+    elif user.last_daily_bonus_at:
         next_spin = user.last_daily_bonus_at + timedelta(hours=24)
         # Ensure timezone-aware comparison
         if next_spin.tzinfo is None:
