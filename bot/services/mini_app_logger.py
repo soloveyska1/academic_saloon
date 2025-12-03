@@ -137,20 +137,34 @@ async def log_mini_app_event(
         # Кнопки
         buttons = []
 
-        # Кнопка "Написать пользователю"
-        buttons.append([
-            InlineKeyboardButton(
-                text="💬 Написать",
-                url=f"tg://user?id={user_id}"
-            )
-        ])
-
         # Кнопка на заказ если есть
         if order_id:
             buttons.append([
                 InlineKeyboardButton(
                     text=f"📦 Заказ #{order_id}",
-                    callback_data=f"admin_order:{order_id}"
+                    callback_data=f"admin_order_detail:{order_id}"
+                )
+            ])
+
+        # Кнопки для связи: топик и личка
+        if order_id:
+            # Если есть заказ - показываем кнопку для топика по заказу
+            buttons.append([
+                InlineKeyboardButton(
+                    text="💬 Топик по заказу",
+                    callback_data=f"admin_open_order_topic:{order_id}"
+                ),
+                InlineKeyboardButton(
+                    text="✉️ В личку",
+                    url=f"tg://user?id={user_id}"
+                )
+            ])
+        else:
+            # Без заказа - просто личка
+            buttons.append([
+                InlineKeyboardButton(
+                    text="💬 Написать",
+                    url=f"tg://user?id={user_id}"
                 )
             ])
 
