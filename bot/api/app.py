@@ -9,10 +9,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routes import router
 
 
+# Allowed origins for CORS
+ALLOWED_ORIGINS = [
+    # Production
+    "https://academic-saloon.vercel.app",
+    "https://academic-saloon-mini-app.vercel.app",
+    "https://academic-saloon.duckdns.org",
+    # Development
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     print("🌐 Mini App API starting...")
+    print(f"🌐 CORS allowed origins: {ALLOWED_ORIGINS}")
     yield
     print("🌐 Mini App API shutting down...")
 
@@ -31,12 +45,14 @@ def create_app() -> FastAPI:
     )
 
     # CORS for Mini App
+    # Note: Cannot use "*" with credentials=True, must specify origins explicitly
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Telegram Mini App can be from any origin
+        allow_origins=ALLOWED_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
 
     # Include routes
