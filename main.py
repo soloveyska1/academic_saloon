@@ -9,7 +9,7 @@ from core.config import settings
 from bot.handlers.start import router as start_router
 from bot.handlers.terms import router as terms_router
 from bot.handlers.menu import router as menu_router
-from bot.handlers.orders import router as orders_router
+from bot.handlers.order_flow import order_router as orders_router
 from bot.handlers.admin import router as admin_router
 from bot.handlers.log_actions import router as log_actions_router
 from bot.handlers.my_orders import router as my_orders_router

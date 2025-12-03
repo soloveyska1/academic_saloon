@@ -616,7 +616,7 @@ async def start_order_callback(callback: CallbackQuery, state: FSMContext, bot: 
     Рассчитать стоимость — переход к выбору типа работы.
     Алиас для create_order.
     """
-    from bot.handlers.orders import start_order as orders_start_order
+    from bot.handlers.order_flow.entry import start_order as orders_start_order
     await orders_start_order(callback, state, bot, session)
 
 
