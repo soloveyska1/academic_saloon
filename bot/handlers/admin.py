@@ -52,23 +52,35 @@ router = Router()
 
 
 # ══════════════════════════════════════════════════════════════
-#              WEBSOCKET HELPERS (lazy import)
+#              SMART NOTIFICATION HELPERS
 # ══════════════════════════════════════════════════════════════
 
-async def ws_notify_order_update(telegram_id: int, order_id: int, new_status: str, order_data: dict = None):
-    """Send WebSocket notification about order update (lazy import to avoid circular deps)"""
+async def ws_notify_order_update(telegram_id: int, order_id: int, new_status: str, order_data: dict = None, old_status: str = None):
+    """Send smart WebSocket notification about order update"""
     try:
-        from bot.api.websocket import notify_order_update
-        await notify_order_update(telegram_id, order_id, new_status, order_data)
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=telegram_id,
+            order_id=order_id,
+            new_status=new_status,
+            old_status=old_status,
+            extra_data=order_data
+        )
     except Exception as e:
         logger.warning(f"[WS] Failed to send order update: {e}")
 
 
-async def ws_notify_balance_update(telegram_id: int, new_balance: float, change: float, reason: str = ""):
-    """Send WebSocket notification about balance update (lazy import to avoid circular deps)"""
+async def ws_notify_balance_update(telegram_id: int, new_balance: float, change: float, reason: str = "", reason_key: str = None):
+    """Send smart WebSocket notification about balance update"""
     try:
-        from bot.api.websocket import notify_balance_update
-        await notify_balance_update(telegram_id, new_balance, change, reason)
+        from bot.services.realtime_notifications import send_balance_notification
+        await send_balance_notification(
+            telegram_id=telegram_id,
+            change=change,
+            new_balance=new_balance,
+            reason=reason,
+            reason_key=reason_key
+        )
     except Exception as e:
         logger.warning(f"[WS] Failed to send balance update: {e}")
 
