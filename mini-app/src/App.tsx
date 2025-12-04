@@ -9,6 +9,7 @@ import { CreateOrderPage } from './pages/CreateOrderPage'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { GoldParticles } from './components/ui/GoldParticles'
 import { useUserData } from './hooks/useUserData'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
@@ -98,6 +99,8 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <div className="app">
+          {/* Animated Gold Particles Background */}
+          <GoldParticles />
           <Routes>
             <Route path="/" element={<HomePage user={userData} />} />
             <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
