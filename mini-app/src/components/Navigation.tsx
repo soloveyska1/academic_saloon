@@ -4,14 +4,14 @@ import { Home, ClipboardList, Target, User } from 'lucide-react'
 import { useTelegram } from '../hooks/useUserData'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  NAVIGATION CONFIGURATION — RUSSIAN LABELS
+//  NAVIGATION CONFIGURATION — INTELLIGENT LUXURY LABELS
 // ═══════════════════════════════════════════════════════════════════════════
 
 const navItems = [
   { path: '/', icon: Home, label: 'Главная' },
-  { path: '/orders', icon: ClipboardList, label: 'Заказы' },
-  { path: '/roulette', icon: Target, label: 'Удача' },
-  { path: '/profile', icon: User, label: 'Досье' },
+  { path: '/orders', icon: ClipboardList, label: 'Портфель' },
+  { path: '/roulette', icon: Target, label: 'Клуб' },
+  { path: '/profile', icon: User, label: 'Профиль' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════

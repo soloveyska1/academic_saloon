@@ -5,37 +5,37 @@ from core.config import settings
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура главного меню — App-First подход.
+    Клавиатура главного меню — Intelligent Luxury подход.
     Одна главная кнопка открывает Mini App.
 
     Layout:
-    Row 1: [ 🚀 ОТКРЫТЬ ПРИЛОЖЕНИЕ ] — Primary CTA, WebApp
-    Row 2: [ ⭐️ Отзывы ] [ 📜 Гарантии ]
-    Row 3: [ 💬 Поддержка ]
+    Row 1: [ Личный кабинет ] — Primary CTA, WebApp
+    Row 2: [ Отзывы ] [ Гарантии ]
+    Row 3: [ Поддержка ]
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         # Row 1: Primary CTA — Mini App главная страница
         [
             InlineKeyboardButton(
-                text="🚀 ОТКРЫТЬ ПРИЛОЖЕНИЕ",
+                text="Личный кабинет",
                 web_app=WebAppInfo(url=settings.WEBAPP_URL)
             )
         ],
         # Row 2: Отзывы и Гарантии
         [
             InlineKeyboardButton(
-                text="⭐ Отзывы (1000+)",
+                text="Отзывы",
                 url=settings.REVIEWS_CHANNEL
             ),
             InlineKeyboardButton(
-                text="📜 Гарантии",
+                text="Гарантии",
                 callback_data="codex"
             ),
         ],
         # Row 3: Поддержка
         [
             InlineKeyboardButton(
-                text="💬 Поддержка",
+                text="Поддержка",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             )
         ],
@@ -51,7 +51,7 @@ def get_app_portal_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="🚀 ОТКРЫТЬ ПРИЛОЖЕНИЕ",
+                text="Личный кабинет",
                 web_app=WebAppInfo(url=settings.WEBAPP_URL)
             )
         ],

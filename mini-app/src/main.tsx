@@ -12,8 +12,8 @@ const tg = window.Telegram?.WebApp
 if (tg) {
   tg.ready()
   tg.expand()
-  tg.setHeaderColor('#1a1a2e')
-  tg.setBackgroundColor('#1a1a2e')
+  tg.setHeaderColor('#09090b')
+  tg.setBackgroundColor('#09090b')
 
   // Dev diagnostics only
   if (IS_DEV) {
