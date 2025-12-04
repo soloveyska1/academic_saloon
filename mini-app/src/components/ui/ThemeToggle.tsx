@@ -5,7 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext'
 interface ThemeToggleProps {
   size?: 'sm' | 'md' | 'lg'
   showLabel?: boolean
-  variant?: 'switch' | 'button' | 'card'
+  variant?: 'switch' | 'button' | 'card' | 'eclipse'
 }
 
 export function ThemeToggle({
@@ -248,6 +248,204 @@ export function ThemeToggle({
             {isDark ? 'Тёмная' : 'Светлая'}
           </span>
         )}
+      </motion.button>
+    )
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ECLIPSE TOGGLE — The "wow" effect theme switcher
+  // Light: Golden sun disk with rotating rays
+  // Dark: Moon eclipses sun, leaving golden corona + stars
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (variant === 'eclipse') {
+    const eclipseSize = size === 'sm' ? 56 : size === 'md' ? 72 : 88
+    const sunSize = eclipseSize * 0.5
+    const moonSize = sunSize * 0.9
+
+    // Heavy luxury spring for that "expensive door" feel
+    const heavySpring = {
+      type: 'spring' as const,
+      stiffness: 100,
+      damping: 20,
+      mass: 1.1,
+    }
+
+    return (
+      <motion.button
+        onClick={toggleTheme}
+        whileTap={{ scale: 0.92 }}
+        transition={heavySpring}
+        style={{
+          position: 'relative',
+          width: eclipseSize,
+          height: eclipseSize,
+          borderRadius: '50%',
+          background: isDark
+            ? 'linear-gradient(135deg, #0a0a12 0%, #16182a 100%)'
+            : 'linear-gradient(135deg, #fef7e0 0%, #fff8e1 100%)',
+          border: 'none',
+          cursor: 'pointer',
+          outline: 'none',
+          overflow: 'hidden',
+          boxShadow: isDark
+            ? '0 0 0 1px rgba(255,255,255,0.05), 0 10px 40px -10px rgba(0,0,0,0.8), 0 0 60px -10px rgba(212,175,55,0.2)'
+            : '0 0 0 1px rgba(0,0,0,0.05), 0 10px 40px -10px rgba(166,138,58,0.2), 0 0 60px -10px rgba(251,191,36,0.3)',
+        }}
+      >
+        {/* Stars (Dark Mode) */}
+        <AnimatePresence>
+          {isDark && (
+            <>
+              {[...Array(8)].map((_, i) => (
+                <motion.div
+                  key={`star-${i}`}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{
+                    opacity: [0.3, 0.9, 0.3],
+                    scale: [0.8, 1.2, 0.8],
+                  }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  transition={{
+                    duration: 2 + Math.random(),
+                    delay: i * 0.15,
+                    repeat: Infinity,
+                  }}
+                  style={{
+                    position: 'absolute',
+                    width: 2,
+                    height: 2,
+                    borderRadius: '50%',
+                    background: '#FCF6BA',
+                    boxShadow: '0 0 4px #FCF6BA',
+                    left: `${15 + (i * 11) % 70}%`,
+                    top: `${10 + (i * 13) % 80}%`,
+                  }}
+                />
+              ))}
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Sun Rays (Light Mode) — Rotating */}
+        <AnimatePresence>
+          {!isDark && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                rotate: 360,
+              }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{
+                opacity: { duration: 0.3 },
+                scale: { duration: 0.3 },
+                rotate: { duration: 20, repeat: Infinity, ease: 'linear' },
+              }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {[...Array(12)].map((_, i) => (
+                <motion.div
+                  key={`ray-${i}`}
+                  style={{
+                    position: 'absolute',
+                    width: 3,
+                    height: eclipseSize * 0.35,
+                    background: 'linear-gradient(to top, transparent, #d4af37, #FCF6BA)',
+                    borderRadius: 2,
+                    transformOrigin: '50% 100%',
+                    transform: `rotate(${i * 30}deg) translateY(-${eclipseSize * 0.12}px)`,
+                    opacity: 0.6,
+                  }}
+                />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* The Sun (always present, golden disk) */}
+        <motion.div
+          animate={{
+            scale: isDark ? 0.85 : 1,
+          }}
+          transition={heavySpring}
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: sunSize,
+            height: sunSize,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #8E6E27 0%, #D4AF37 30%, #FFF8D6 50%, #D4AF37 70%, #8E6E27 100%)',
+            boxShadow: isDark
+              ? '0 0 30px rgba(212,175,55,0.6), 0 0 60px rgba(212,175,55,0.3)'
+              : '0 0 40px rgba(251,191,36,0.8), 0 0 80px rgba(251,191,36,0.4)',
+          }}
+        />
+
+        {/* The Moon (eclipsing the sun in dark mode) */}
+        <motion.div
+          initial={false}
+          animate={{
+            x: isDark ? 0 : sunSize * 1.5,
+            opacity: isDark ? 1 : 0,
+          }}
+          transition={{
+            ...heavySpring,
+            opacity: { duration: 0.2 },
+          }}
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: moonSize,
+            height: moonSize,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #0a0a12 0%, #1a1a2e 50%, #0f0f18 100%)',
+            boxShadow: isDark
+              ? 'inset -4px -4px 10px rgba(255,255,255,0.05), inset 4px 4px 10px rgba(0,0,0,0.5)'
+              : 'none',
+          }}
+        />
+
+        {/* Eclipse Corona Glow (Dark Mode) */}
+        <AnimatePresence>
+          {isDark && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{
+                opacity: [0.4, 0.7, 0.4],
+                scale: [1, 1.05, 1],
+              }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: sunSize * 1.4,
+                height: sunSize * 1.4,
+                borderRadius: '50%',
+                background: 'transparent',
+                boxShadow: '0 0 20px 8px rgba(212,175,55,0.3), 0 0 40px 16px rgba(212,175,55,0.15)',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+        </AnimatePresence>
       </motion.button>
     )
   }
