@@ -5,9 +5,11 @@ UNIFIED HUB Architecture:
 - Карточки ТОЛЬКО в Forum Topics (канал убран)
 - Один заказ = один топик с закреплённой карточкой
 - Авто-обновление при смене статуса
+- Умные приоритеты по срочности дедлайна
 """
 import logging
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 from typing import Optional
 
 from aiogram import Bot
@@ -102,6 +104,134 @@ def get_card_stage(status: str) -> dict:
 
 
 # ══════════════════════════════════════════════════════════════
+#           УМНЫЕ ПРИОРИТЕТЫ
+# ══════════════════════════════════════════════════════════════
+
+# Словарь дедлайнов для расчёта дней
+DEADLINE_DAYS = {
+    "today": 0,
+    "tomorrow": 1,
+    "3days": 3,
+    "week": 7,
+    "2weeks": 14,
+    "month": 30,
+    "flexible": 60,
+}
+
+# Конфиг приоритетов (badge, label, days_threshold)
+PRIORITY_CONFIG = [
+    {"badge": "🔥🔥🔥", "label": "ГОРИТ!", "max_days": 0, "color": "#ff0000"},
+    {"badge": "🔥🔥", "label": "СРОЧНО", "max_days": 1, "color": "#ff4400"},
+    {"badge": "🔥", "label": "Скоро", "max_days": 3, "color": "#ff8800"},
+    {"badge": "⏰", "label": "Эта неделя", "max_days": 7, "color": "#ffcc00"},
+    {"badge": "📅", "label": "Есть время", "max_days": 14, "color": "#88cc00"},
+    {"badge": "🌿", "label": "Не срочно", "max_days": 999, "color": "#00cc00"},
+]
+
+
+def parse_deadline_to_date(deadline: str) -> Optional[datetime]:
+    """
+    Парсит дедлайн в дату.
+    Поддерживает: today, tomorrow, 3days, week, 2weeks, month, flexible, DD.MM.YYYY
+    """
+    if not deadline:
+        return None
+
+    deadline_lower = deadline.lower().strip()
+
+    # Проверяем предустановленные значения
+    if deadline_lower in DEADLINE_DAYS:
+        return datetime.now() + timedelta(days=DEADLINE_DAYS[deadline_lower])
+
+    # Парсим дату DD.MM.YYYY
+    date_match = re.match(r'^(\d{1,2})\.(\d{1,2})\.(\d{4})$', deadline)
+    if date_match:
+        try:
+            day, month, year = int(date_match.group(1)), int(date_match.group(2)), int(date_match.group(3))
+            return datetime(year, month, day)
+        except ValueError:
+            pass
+
+    return None
+
+
+def get_deadline_priority(deadline: str) -> dict:
+    """
+    Возвращает приоритет заказа на основе дедлайна.
+
+    Returns:
+        {"badge": "🔥", "label": "Срочно", "days_left": 2, "is_overdue": False}
+    """
+    deadline_date = parse_deadline_to_date(deadline)
+
+    if not deadline_date:
+        return {"badge": "❓", "label": "Срок не указан", "days_left": None, "is_overdue": False}
+
+    now = datetime.now()
+    delta = deadline_date - now
+    days_left = delta.days
+
+    # Просрочен
+    if days_left < 0:
+        return {
+            "badge": "💀",
+            "label": f"ПРОСРОЧЕН на {abs(days_left)} дн.",
+            "days_left": days_left,
+            "is_overdue": True
+        }
+
+    # Находим подходящий приоритет
+    for priority in PRIORITY_CONFIG:
+        if days_left <= priority["max_days"]:
+            days_text = f"{days_left} дн." if days_left > 0 else "СЕГОДНЯ"
+            return {
+                "badge": priority["badge"],
+                "label": priority["label"],
+                "days_left": days_left,
+                "days_text": days_text,
+                "is_overdue": False
+            }
+
+    return {"badge": "🌿", "label": "Не срочно", "days_left": days_left, "is_overdue": False}
+
+
+# Расчётное время выполнения по типу работы (в днях)
+ESTIMATED_DAYS = {
+    "photo_task": 1,
+    "control": 2,
+    "presentation": 3,
+    "essay": 4,
+    "report": 5,
+    "independent": 7,
+    "coursework": 14,
+    "practice": 14,
+    "diploma": 30,
+    "masters": 45,
+    "other": 7,
+}
+
+
+def get_estimated_completion(work_type: str, deadline: str = None) -> str:
+    """
+    Возвращает оценку времени выполнения.
+    """
+    days = ESTIMATED_DAYS.get(work_type, 7)
+
+    if days == 1:
+        return "~1 день"
+    elif days <= 3:
+        return f"~{days} дня"
+    elif days <= 7:
+        return "~неделя"
+    elif days <= 14:
+        return "~2 недели"
+    elif days <= 30:
+        return "~месяц"
+    else:
+        return "~1.5 месяца"
+
+
+# ══════════════════════════════════════════════════════════════
 #           РЕНДЕРИНГ КАРТОЧКИ
 # ══════════════════════════════════════════════════════════════
 
@@ -113,7 +243,7 @@ def render_order_card(
     extra_text: str = None,
 ) -> str:
     """
-    Рендерит текст карточки заказа.
+    Рендерит текст карточки заказа с умными приоритетами.
 
     Returns:
         Текст сообщения карточки
@@ -126,8 +256,25 @@ def render_order_card(
     except ValueError:
         work_label = order.work_type or "Заказ"
 
-    # Заголовок
-    header = f"{stage['emoji']} <b>{stage['tag']} Заказ #{order.id}</b> | {work_label}"
+    # ═══ УМНЫЙ ПРИОРИТЕТ ═══
+    priority = get_deadline_priority(order.deadline)
+    priority_badge = priority["badge"]
+
+    # Показываем приоритет только для активных заказов
+    show_priority = stage["name"] in ("new", "waiting", "verification", "work", "review")
+    priority_line = ""
+    if show_priority and priority["days_left"] is not None:
+        if priority["is_overdue"]:
+            priority_line = f"\n\n⚠️ <b>{priority['label']}</b>"
+        else:
+            days_text = priority.get("days_text", f"{priority['days_left']} дн.")
+            priority_line = f"\n{priority_badge} <b>{priority['label']}</b> • Осталось: {days_text}"
+
+    # Заголовок с приоритетом
+    if show_priority and priority_badge not in ("❓", "🌿", "📅"):
+        header = f"{stage['emoji']} <b>{stage['tag']} #{order.id}</b> {priority_badge} | {work_label}"
+    else:
+        header = f"{stage['emoji']} <b>{stage['tag']} #{order.id}</b> | {work_label}"
 
     # Клиент
     client_info = ""
@@ -159,6 +306,12 @@ def render_order_card(
             paid_formatted = f"{order.paid_amount:,.0f}".replace(",", " ")
             price_text += f" (оплачено: {paid_formatted}₽)"
 
+    # Оценка времени выполнения (только для новых)
+    estimate_text = ""
+    if stage["name"] == "new":
+        estimate = get_estimated_completion(order.work_type)
+        estimate_text = f"\n🕐 <b>Оценка:</b> {estimate}"
+
     # Ссылка на файлы
     files_text = ""
     if yadisk_link:
@@ -184,7 +337,7 @@ def render_order_card(
     status_tag = f"\n\n{stage['status_tag']}"
 
     # Собираем текст
-    text = f"{header}\n\n{client_info}{details_text}{price_text}{files_text}{extra_section}{progress_section}{status_tag}"
+    text = f"{header}\n\n{client_info}{details_text}{price_text}{estimate_text}{files_text}{priority_line}{extra_section}{progress_section}{status_tag}"
 
     return text
 
