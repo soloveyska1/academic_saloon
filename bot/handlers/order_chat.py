@@ -1206,6 +1206,18 @@ async def cmd_price_in_topic(message: Message, session: AsyncSession, bot: Bot, 
             from bot.handlers.channel_cards import send_payment_notification
             sent = await send_payment_notification(bot, order, user, price)
 
+            # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
+            try:
+                from bot.services.realtime_notifications import send_order_status_notification
+                await send_order_status_notification(
+                    telegram_id=order.user_id,
+                    order_id=order.id,
+                    new_status=OrderStatus.WAITING_PAYMENT.value,
+                    extra_data={"final_price": final_price, "bonus_used": bonus_used},
+                )
+            except Exception as ws_err:
+                logger.debug(f"WebSocket notification failed: {ws_err}")
+
             price_formatted = f"{price:,}".replace(",", " ")
             status = "клиент получил счёт!" if sent else "(уведомление не доставлено)"
             await message.reply(f"✅ Цена {price_formatted}₽ установлена, {status}")
@@ -1321,6 +1333,18 @@ async def topic_set_price_callback(callback: CallbackQuery, session: AsyncSessio
 
     # Отправляем счёт клиенту
     sent = await send_payment_notification(bot, order, user, price)
+
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.WAITING_PAYMENT.value,
+            extra_data={"final_price": final_price, "bonus_used": bonus_used},
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
 
     price_formatted = f"{price:,}".replace(",", " ")
     await callback.answer(f"✅ Цена {price_formatted}₽ установлена!", show_alert=True)
