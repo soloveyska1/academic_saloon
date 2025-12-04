@@ -23,25 +23,28 @@ export function Navigation() {
     navigate(path)
   }
 
-  // Theme-aware colors
+  // Theme-aware colors — Obsidian Glass / Royal Porcelain
   const colors = {
     gold: isDark ? '#d4af37' : '#9e7a1a',
     goldLight: isDark ? '#f5d061' : '#b48e26',
-    inactive: isDark ? '#71717a' : '#737373',
+    inactive: isDark ? '#52525b' : '#a1a1aa',
+    // Floating dock background — heavy blur glass
     dockBg: isDark
-      ? 'linear-gradient(180deg, rgba(20, 20, 23, 0.92) 0%, rgba(15, 15, 18, 0.98) 100%)'
-      : 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 247, 244, 0.98) 100%)',
-    dockBorder: isDark ? 'rgba(212, 175, 55, 0.1)' : 'rgba(180, 142, 38, 0.15)',
+      ? 'rgba(12, 12, 16, 0.85)'   // Obsidian glass
+      : 'rgba(255, 255, 255, 0.85)', // Porcelain
+    dockBorder: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
+    // Double border effect — inner highlight
+    dockBorderInner: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.6)',
     fadeBg: isDark
-      ? 'linear-gradient(180deg, transparent 0%, #0a0a0c 40%)'
-      : 'linear-gradient(180deg, transparent 0%, #f8f7f4 40%)',
+      ? 'linear-gradient(180deg, transparent 0%, #050507 50%)'
+      : 'linear-gradient(180deg, transparent 0%, #FAFAF9 50%)',
     spotlightBg: isDark
-      ? 'linear-gradient(180deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%)'
-      : 'linear-gradient(180deg, rgba(180, 142, 38, 0.12) 0%, rgba(180, 142, 38, 0.05) 100%)',
-    spotlightBorder: isDark ? 'rgba(212, 175, 55, 0.2)' : 'rgba(180, 142, 38, 0.25)',
+      ? 'linear-gradient(180deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 100%)'
+      : 'linear-gradient(180deg, rgba(180, 142, 38, 0.1) 0%, rgba(180, 142, 38, 0.04) 100%)',
+    spotlightBorder: isDark ? 'rgba(212, 175, 55, 0.2)' : 'rgba(180, 142, 38, 0.2)',
     glowLine: isDark
-      ? 'linear-gradient(90deg, #d4af37, #f5d061, #d4af37)'
-      : 'linear-gradient(90deg, #9e7a1a, #b48e26, #9e7a1a)',
+      ? 'linear-gradient(90deg, #8E6E27, #D4AF37, #FFF8D6, #D4AF37, #8E6E27)'
+      : 'linear-gradient(90deg, #6b4f0f, #9e7a1a, #d4af37, #9e7a1a, #6b4f0f)',
   }
 
   return (
@@ -60,8 +63,9 @@ export function Navigation() {
         left: 0,
         right: 0,
         zIndex: 1000,
-        padding: '12px 16px',
-        paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+        // Floating effect — 20px margin from bottom
+        padding: '12px 20px',
+        paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
       }}
     >
       {/* Background Gradient Fade */}
@@ -71,30 +75,32 @@ export function Navigation() {
           bottom: 0,
           left: 0,
           right: 0,
-          height: 120,
+          height: 140,
           background: colors.fadeBg,
           pointerEvents: 'none',
           zIndex: -1,
         }}
       />
 
-      {/* Floating Glass Dock */}
+      {/* Floating Glass Dock — Jewelry Box Style */}
       <div
         style={{
+          position: 'relative',
           display: 'flex',
           justifyContent: 'space-around',
           alignItems: 'center',
-          maxWidth: 380,
+          maxWidth: 360,
           margin: '0 auto',
-          padding: '12px 8px',
+          padding: '14px 10px',
           background: colors.dockBg,
-          backdropFilter: 'blur(40px) saturate(150%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(150%)',
-          borderRadius: 22,
+          backdropFilter: 'blur(60px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          borderRadius: 26,
+          // Double border for glass thickness illusion
           border: `1px solid ${colors.dockBorder}`,
           boxShadow: isDark
-            ? `0 -4px 30px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 60px -20px rgba(212, 175, 55, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)`
-            : `0 -4px 30px rgba(0, 0, 0, 0.06), 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 60px -20px rgba(180, 142, 38, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)`,
+            ? `0 0 0 1px ${colors.dockBorderInner}, 0 20px 50px -12px rgba(0, 0, 0, 0.9), 0 0 80px -20px rgba(212, 175, 55, 0.12)`
+            : `0 0 0 1px ${colors.dockBorderInner}, 0 4px 6px -1px rgba(166, 138, 58, 0.08), 0 20px 50px -12px rgba(166, 138, 58, 0.15)`,
         }}
       >
         {navItems.map((item) => {

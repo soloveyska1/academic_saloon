@@ -15,9 +15,10 @@ const ThemeContext = createContext<ThemeContextType | null>(null)
 const STORAGE_KEY = 'academic_saloon_theme'
 
 // Get theme colors for Telegram WebApp
+// IMPORTANT: Sync header with bg-base, not black — prevents visual "seam"
 const getThemeColors = (theme: Theme) => ({
-  header: theme === 'dark' ? '#09090b' : '#f8f7f4',
-  background: theme === 'dark' ? '#09090b' : '#f8f7f4',
+  header: theme === 'dark' ? '#050507' : '#FAFAF9',      // Obsidian Glass / Royal Porcelain
+  background: theme === 'dark' ? '#050507' : '#FAFAF9',
 })
 
 export function useTheme() {
@@ -83,10 +84,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = useCallback(() => {
     setThemeState(prev => prev === 'dark' ? 'light' : 'dark')
 
-    // Haptic feedback on toggle
+    // Heavy haptic feedback — premium "click" feel like an expensive switch
     const tg = window.Telegram?.WebApp
     if (tg?.HapticFeedback) {
-      tg.HapticFeedback.impactOccurred('light')
+      tg.HapticFeedback.impactOccurred('heavy')
     }
   }, [])
 

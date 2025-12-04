@@ -1,9 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   ACADEMIC SALOON — INTELLIGENT LUXURY DESIGN SYSTEM v3.0
-   "High-End Fintech" — Dark, Expensive, Confident, Technologically Advanced
+   ACADEMIC SALOON — DIGITAL LUXURY DESIGN SYSTEM v4.0
+   "Cinematic Realism" — Royal Porcelain & Obsidian Glass
+   Material surfaces, anisotropic reflections, subsurface scattering
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Cinzel:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TAILWIND CSS — MUST BE AT THE TOP
@@ -17,35 +18,57 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* === COLORS: THE OBSIDIAN VAULT === */
+  /* ═══════════════════════════════════════════════════════════════════════════
+     OBSIDIAN GLASS THEME (Dark Mode) — Deep charcoal with blue undertones
+     ═══════════════════════════════════════════════════════════════════════════ */
 
-  /* Backgrounds - Deepest Onyx/Charcoal (Never pure black) */
-  --bg-void: #09090b;
-  --bg-onyx: #0c0c0e;
-  --bg-base: #0a0a0c;
-  --bg-surface: #101012;
-  --bg-elevated: #141417;
-  --bg-card: rgba(18, 18, 21, 0.6);
-  --bg-card-solid: #121215;
-  --bg-glass: rgba(255, 255, 255, 0.05);
+  /* Backgrounds - Deepest Obsidian (Never pure black, slight blue undertone) */
+  --bg-void: #050507;
+  --bg-onyx: #08080b;
+  --bg-base: #050507;
+  --bg-surface: #0c0c10;
+  --bg-elevated: #121218;
+  --bg-card: rgba(18, 18, 23, 0.65);
+  --bg-card-solid: #101015;
+  --bg-glass: rgba(255, 255, 255, 0.04);
 
-  /* === LIQUID GOLD (Premium Metallic Gradient) === */
+  /* === THE ROYAL GOLD — Anisotropic Metal Surface === */
   --gold-950: #5c4510;
   --gold-900: #6b4f0f;
   --gold-800: #7d5c12;
-  --gold-700: #8b6914;
+  --gold-700: #8E6E27;
   --gold-600: #9e7a1a;
   --gold-500: #b48e26;
-  --gold-400: #d4af37;
+  --gold-400: #D4AF37;
   --gold-350: #dfc14a;
   --gold-300: #e6c547;
   --gold-250: #f0d35c;
-  --gold-200: #f5d061;
+  --gold-200: #FFF8D6;
   --gold-150: #f9e07a;
-  --gold-100: #ffeaa7;
+  --gold-100: #FCF6BA;
   --gold-50: #fff8e1;
 
-  /* The Signature Liquid Gold Gradient */
+  /* Anisotropic Metal Surface — The "Luster" gradient */
+  --gold-luster: linear-gradient(
+    135deg,
+    #8E6E27 0%,
+    #D4AF37 25%,
+    #FFF8D6 50%,
+    #D4AF37 75%,
+    #8E6E27 100%
+  );
+
+  /* Text Reveal Shine (for animated headlines) */
+  --gold-text-shine: linear-gradient(
+    to right,
+    #BF953F 0%,
+    #FCF6BA 45%,
+    #FFF8D6 50%,
+    #FCF6BA 55%,
+    #BF953F 100%
+  );
+
+  /* The Signature Liquid Gold Gradient (legacy support) */
   --liquid-gold: linear-gradient(135deg, #BF953F 0%, #FCF6BA 50%, #B38728 75%, #FBF5B7 100%);
   --liquid-gold-text: linear-gradient(135deg, #FCF6BA 0%, #D4AF37 30%, #B38728 60%, #FBF5B7 100%);
 
@@ -75,23 +98,34 @@
   --border-gold: rgba(212, 175, 55, 0.2);
   --border-gold-strong: rgba(212, 175, 55, 0.35);
 
-  /* === TYPOGRAPHY === */
-  --font-display: 'Montserrat', system-ui, sans-serif;
-  --font-serif: 'Cinzel', 'Playfair Display', Georgia, serif;
+  /* === TYPOGRAPHY — Editorial Luxury === */
+  --font-display: 'Cinzel', 'Cinzel Decorative', Georgia, serif;  /* Headlines: журнальная эстетика */
+  --font-serif: 'Cinzel', Georgia, serif;
   --font-sans: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  --font-heading: 'Cinzel', Georgia, serif;  /* Specifically for big numbers & titles */
 
-  /* === EFFECTS === */
+  /* === OBSIDIAN GLASS EFFECTS === */
   --glow-gold: 0 0 20px -5px rgba(212, 175, 55, 0.4);
   --glow-gold-strong: 0 0 40px -5px rgba(212, 175, 55, 0.6);
   --glow-gold-intense: 0 0 60px -10px rgba(212, 175, 55, 0.8);
   --glow-red: 0 0 20px -5px rgba(185, 60, 60, 0.4);
 
+  /* Card shadow — Black glass with gold aura */
+  --card-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 20px 50px -12px rgba(0, 0, 0, 1),
+    0 0 80px -20px rgba(212, 175, 55, 0.15);
+
+  /* Rim light border — the thin line of light on edges */
+  --card-border: 1px solid rgba(255, 255, 255, 0.08);
+  --card-border-gold: 1px solid rgba(212, 175, 55, 0.2);
+
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.7);
   --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.8);
-  --shadow-vault: 0 30px 60px -15px rgba(0, 0, 0, 0.85), 0 0 80px -20px rgba(212, 175, 55, 0.1);
+  --shadow-vault: 0 30px 60px -15px rgba(0, 0, 0, 0.85), 0 0 80px -20px rgba(212, 175, 55, 0.15);
   --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.04);
   --shadow-dossier: 0 15px 35px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.04);
 
@@ -121,23 +155,23 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LIGHT THEME — INTELLIGENT LUXURY (Warm Elegance)
+   ROYAL PORCELAIN THEME (Light Mode) — Warm ivory, golden-brown shadows
+   Like expensive matte paper under sunlight, subsurface scattering effect
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="light"] {
-  /* === COLORS: THE IVORY VAULT === */
+  /* === BACKGROUNDS: THE PORCELAIN SURFACE === */
+  /* Not pure white! Warm cream like expensive paper */
+  --bg-void: #FAFAF9;
+  --bg-onyx: #F5F5F3;
+  --bg-base: #FAFAF9;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-card-solid: #FFFFFF;
+  --bg-glass: rgba(0, 0, 0, 0.015);
 
-  /* Backgrounds - Warm Ivory/Cream (Never pure white) */
-  --bg-void: #f8f7f4;
-  --bg-onyx: #f4f3f0;
-  --bg-base: #f6f5f2;
-  --bg-surface: #ffffff;
-  --bg-elevated: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --bg-card-solid: #ffffff;
-  --bg-glass: rgba(0, 0, 0, 0.02);
-
-  /* === LIQUID GOLD (Deeper for light mode contrast) === */
+  /* === THE ROYAL GOLD (Deeper for light mode contrast) === */
   --gold-950: #3d2e0a;
   --gold-900: #5c4510;
   --gold-800: #6b4f0f;
@@ -153,7 +187,26 @@
   --gold-100: #f5d061;
   --gold-50: #ffeaa7;
 
-  /* Signature Liquid Gold (unchanged - looks great on light) */
+  /* Anisotropic Gold for Light Mode (darker for contrast) */
+  --gold-luster: linear-gradient(
+    135deg,
+    #6b4f0f 0%,
+    #9e7a1a 25%,
+    #d4af37 50%,
+    #9e7a1a 75%,
+    #6b4f0f 100%
+  );
+
+  --gold-text-shine: linear-gradient(
+    to right,
+    #8b6914 0%,
+    #c9a02f 45%,
+    #d4af37 50%,
+    #c9a02f 55%,
+    #8b6914 100%
+  );
+
+  /* Legacy support */
   --liquid-gold: linear-gradient(135deg, #9e7a1a 0%, #d4af37 50%, #8b6914 75%, #c9a02f 100%);
   --liquid-gold-text: linear-gradient(135deg, #9e7a1a 0%, #7d5c12 30%, #5c4510 60%, #8b6914 100%);
 
@@ -170,32 +223,50 @@
   --status-error: #dc2626;
   --status-info: #2563eb;
 
-  /* Text Colors */
-  --text-primary: #1a1a1a;
-  --text-secondary: #525252;
+  /* Text Colors — Never pure black! */
+  --text-primary: rgba(26, 26, 26, 0.92);
+  --text-secondary: rgba(82, 82, 82, 0.9);
   --text-muted: #737373;
   --text-gold: var(--gold-600);
 
   /* Borders */
   --border-subtle: rgba(0, 0, 0, 0.04);
-  --border-default: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.12);
-  --border-gold: rgba(180, 142, 38, 0.25);
-  --border-gold-strong: rgba(180, 142, 38, 0.4);
+  --border-default: rgba(0, 0, 0, 0.06);
+  --border-strong: rgba(0, 0, 0, 0.1);
+  --border-gold: rgba(180, 142, 38, 0.2);
+  --border-gold-strong: rgba(180, 142, 38, 0.35);
 
-  /* === EFFECTS (adapted for light mode) === */
-  --glow-gold: 0 0 20px -5px rgba(180, 142, 38, 0.35);
-  --glow-gold-strong: 0 0 40px -5px rgba(180, 142, 38, 0.5);
-  --glow-gold-intense: 0 0 60px -10px rgba(180, 142, 38, 0.7);
-  --glow-red: 0 0 20px -5px rgba(185, 28, 28, 0.35);
+  /* === PORCELAIN CARD EFFECTS (Subsurface Scattering) === */
+  /* THE SECRET: Golden-brown shadows, NOT black! */
+  --card-shadow:
+    0 4px 6px -1px rgba(180, 142, 38, 0.05),
+    0 10px 15px -3px rgba(166, 138, 58, 0.1),
+    0 20px 40px -10px rgba(255, 255, 255, 0.8) inset;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.12);
-  --shadow-vault: 0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 0 80px -20px rgba(180, 142, 38, 0.08);
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.8);
-  --shadow-dossier: 0 15px 35px -10px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+  --card-border: 1px solid rgba(255, 255, 255, 0.4);
+  --card-border-gold: 1px solid rgba(180, 142, 38, 0.2);
+
+  /* === EFFECTS (warm golden tones) === */
+  --glow-gold: 0 0 20px -5px rgba(180, 142, 38, 0.25);
+  --glow-gold-strong: 0 0 40px -5px rgba(180, 142, 38, 0.4);
+  --glow-gold-intense: 0 0 60px -10px rgba(180, 142, 38, 0.6);
+  --glow-red: 0 0 20px -5px rgba(185, 28, 28, 0.3);
+
+  /* Shadows — NEVER pure black! Use warm golden-brown */
+  --shadow-sm: 0 1px 2px rgba(166, 138, 58, 0.06);
+  --shadow-md: 0 4px 12px rgba(166, 138, 58, 0.08);
+  --shadow-lg: 0 10px 30px rgba(166, 138, 58, 0.1);
+  --shadow-xl: 0 25px 50px rgba(166, 138, 58, 0.12);
+  --shadow-vault:
+    0 4px 6px -1px rgba(180, 142, 38, 0.05),
+    0 10px 15px -3px rgba(166, 138, 58, 0.08),
+    0 30px 60px -15px rgba(166, 138, 58, 0.12);
+  --shadow-glass:
+    0 4px 24px rgba(166, 138, 58, 0.06),
+    0 20px 40px -10px rgba(255, 255, 255, 0.6) inset;
+  --shadow-dossier:
+    0 4px 6px -1px rgba(180, 142, 38, 0.04),
+    0 15px 35px -10px rgba(166, 138, 58, 0.1);
 }
 
 /* Light mode specific overrides */
@@ -433,42 +504,52 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TYPOGRAPHY — INTELLIGENT LUXURY
+   TYPOGRAPHY — EDITORIAL LUXURY (Magazine-style)
+   Cinzel for display, Manrope for body — Never pure white/black text
    ═══════════════════════════════════════════════════════════════════════════ */
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.02em;  /* Tighter tracking for editorial feel */
+  line-height: 1.1;
   color: var(--text-primary);
 }
 
 h1 {
+  font-family: var(--font-serif);  /* Cinzel for hero titles */
   font-size: 28px;
-  line-height: 1.2;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 h2 {
+  font-family: var(--font-serif);  /* Cinzel */
   font-size: 22px;
-  line-height: 1.25;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 h3 {
   font-size: 17px;
-  line-height: 1.3;
+  line-height: 1.25;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 h4 {
   font-size: 14px;
-  line-height: 1.35;
+  line-height: 1.3;
   font-weight: 600;
+}
+
+/* Premium Balance/Number Display — Cinzel for big figures */
+.display-number {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .text-gold {
@@ -505,8 +586,33 @@ h4 {
    LIQUID GOLD TEXT EFFECT (Premium Metallic)
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIQUID GOLD TEXT — Anisotropic Metal Reflection
+   The "Royal Gold" effect — subtle light sweep every 7 seconds
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .gold-gradient-text,
 .liquid-gold-text {
+  background: var(--gold-text-shine);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gold-text-reveal 7s ease-in-out infinite;
+}
+
+/* The subtle light sweep — barely noticeable but luxurious */
+@keyframes gold-text-reveal {
+  0%, 85%, 100% {
+    background-position: 100% 50%;
+  }
+  92% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Continuous shimmer variant (more active) */
+.gold-shimmer-text {
   background: linear-gradient(
     135deg,
     #BF953F 0%,
@@ -527,48 +633,168 @@ h4 {
   50% { background-position: 100% 50%; }
 }
 
-/* Static gold text (no animation) */
+/* Static gold text (no animation) — for body text */
 .gold-text-static {
-  background: linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%);
+  background: var(--gold-luster);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Metallic luster badge/button text */
+.gold-luster-text {
+  background: var(--gold-luster);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GLASSMORPHISM — PREMIUM GLASS CARDS
+   GLASSMORPHISM — JEWELRY BOX CARDS
+   Laser-cut edges, double borders for glass thickness illusion
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .glass-card {
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-glass);
+  position: relative;
+  background: var(--bg-card);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+/* Double border illusion — inner white rim light, outer dark */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .glass-card-gold {
+  position: relative;
   background: linear-gradient(
     135deg,
     rgba(212, 175, 55, 0.08) 0%,
-    rgba(18, 18, 21, 0.85) 40%,
+    var(--bg-card) 40%,
     rgba(212, 175, 55, 0.04) 100%
   );
   backdrop-filter: blur(24px) saturate(130%);
   -webkit-backdrop-filter: blur(24px) saturate(130%);
-  border: 1px solid var(--border-gold);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-vault), inset 0 0 50px rgba(212, 175, 55, 0.03);
+  box-shadow: var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03);
+  overflow: hidden;
+}
+
+/* Gold gradient border */
+.glass-card-gold::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.3) 0%,
+    rgba(255, 248, 214, 0.2) 50%,
+    rgba(212, 175, 55, 0.3) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .glass-card-elevated {
-  background: rgba(22, 22, 26, 0.75);
+  position: relative;
+  background: var(--bg-elevated);
   backdrop-filter: blur(40px) saturate(150%);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
-  border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-vault);
+  overflow: hidden;
+}
+
+.glass-card-elevated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM CARD — Interactive Spotlight Effect
+   The cursor/finger tracking glow effect
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.premium-card {
+  position: relative;
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  transform: translateZ(0);  /* GPU acceleration */
+}
+
+/* Gradient border */
+.premium-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Spotlight effect — controlled via CSS custom properties --mouse-x, --mouse-y */
+.premium-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(212, 175, 55, 0.12),
+    transparent 40%
+  );
+  pointer-events: none;
+}
+
+.premium-card:hover::after {
+  opacity: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
