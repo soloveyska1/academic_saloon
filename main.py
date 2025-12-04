@@ -2,7 +2,7 @@ import asyncio
 import logging
 from aiogram import Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
-from aiogram.types import BotCommand, BotCommandScopeDefault
+from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
 
 from core.config import settings
 from bot.bot_instance import get_bot, set_bot, close_bot
@@ -125,6 +125,15 @@ async def run_bot():
         ]
         await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
         logger.info("📋 Bot commands set")
+
+        # Menu Button — кнопка слева от поля ввода, открывает Mini App
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="Открыть",
+                web_app=WebAppInfo(url=settings.WEBAPP_URL)
+            )
+        )
+        logger.info("📱 Menu button configured")
 
         logger.info("🤖 Bot polling started...")
         await dp.start_polling(bot)
