@@ -957,3 +957,183 @@ async def get_payment_info(
         sbp_phone=phone_formatted,
         sbp_bank=settings.PAYMENT_BANKS,
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  CHAT API — In-App Messaging
+# ═══════════════════════════════════════════════════════════════════════════
+
+from database.models.orders import OrderMessage
+
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    sender_type: str  # 'admin' | 'client'
+    sender_name: str
+    message_text: Optional[str]
+    file_type: Optional[str]
+    file_name: Optional[str]
+    file_url: Optional[str]
+    created_at: str
+    is_read: bool
+
+
+class ChatMessagesListResponse(BaseModel):
+    order_id: int
+    messages: List[ChatMessageResponse]
+    unread_count: int
+
+
+class SendMessageRequest(BaseModel):
+    text: str
+
+
+class SendMessageResponse(BaseModel):
+    success: bool
+    message_id: int
+    message: str
+
+
+@router.get("/orders/{order_id}/messages", response_model=ChatMessagesListResponse)
+async def get_order_messages(
+    order_id: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Get chat messages for an order.
+    Only the order owner can access messages.
+    """
+    # Get order and verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Not your order")
+
+    # Get messages
+    query = (
+        select(OrderMessage)
+        .where(OrderMessage.order_id == order_id)
+        .order_by(OrderMessage.created_at.asc())
+    )
+    result = await session.execute(query)
+    messages = result.scalars().all()
+
+    # Mark messages as read (from admin)
+    unread_count = 0
+    for msg in messages:
+        if msg.sender_type == 'admin' and not msg.is_read:
+            msg.is_read = True
+            unread_count += 1
+
+    if unread_count > 0:
+        await session.commit()
+
+    # Format response
+    formatted_messages = []
+    for msg in messages:
+        formatted_messages.append(ChatMessageResponse(
+            id=msg.id,
+            sender_type=msg.sender_type,
+            sender_name="Менеджер" if msg.sender_type == 'admin' else "Вы",
+            message_text=msg.message_text,
+            file_type=msg.file_type,
+            file_name=msg.file_name,
+            file_url=msg.yadisk_url,
+            created_at=msg.created_at.isoformat() if msg.created_at else "",
+            is_read=msg.is_read or False,
+        ))
+
+    return ChatMessagesListResponse(
+        order_id=order_id,
+        messages=formatted_messages,
+        unread_count=sum(1 for m in messages if m.sender_type == 'admin' and not m.is_read),
+    )
+
+
+@router.post("/orders/{order_id}/messages", response_model=SendMessageResponse)
+async def send_order_message(
+    order_id: int,
+    data: SendMessageRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Send a chat message for an order.
+    Message is forwarded to admin via Forum Topics.
+    """
+    # Get order and verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Not your order")
+
+    # Validate message
+    text = data.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+    if len(text) > 4000:
+        raise HTTPException(status_code=400, detail="Message too long (max 4000 chars)")
+
+    # Get user
+    user = await session.get(User, tg_user.id)
+
+    # Create message record
+    message = OrderMessage(
+        order_id=order_id,
+        sender_type='client',
+        sender_id=tg_user.id,
+        message_text=text,
+        is_read=False,
+    )
+    session.add(message)
+    await session.commit()
+    await session.refresh(message)
+
+    # Forward to admin via Forum Topic
+    try:
+        bot = get_bot()
+
+        # Get or create conversation topic
+        from bot.handlers.order_chat import get_or_create_topic
+
+        conv = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=tg_user.id,
+            order_id=order_id,
+            user_full_name=user.fullname if user else tg_user.first_name,
+            username=user.username if user else tg_user.username,
+        )
+
+        if conv and conv.topic_id:
+            # Send message to admin topic
+            user_name = user.fullname if user else tg_user.first_name
+            username_part = f" (@{user.username})" if user and user.username else ""
+
+            admin_text = (
+                f"💬 <b>Сообщение от клиента</b> (Mini App)\n"
+                f"👤 {user_name}{username_part}\n\n"
+                f"{text}"
+            )
+
+            await bot.send_message(
+                chat_id=settings.ADMIN_GROUP_ID,
+                message_thread_id=conv.topic_id,
+                text=admin_text,
+            )
+
+    except Exception as e:
+        logger.error(f"[Chat API] Failed to forward message to admin: {e}")
+        # Don't fail the request - message is saved in DB
+
+    return SendMessageResponse(
+        success=True,
+        message_id=message.id,
+        message="Сообщение отправлено"
+    )

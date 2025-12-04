@@ -26,16 +26,31 @@ class SetPriceState(StatesGroup):
     waiting_for_price = State()
 
 
-# Combined welcome + status message - always available 24/7
-# Implicit consent in footer (no barrier)
-WELCOME_MESSAGE = """🌟 <b>АКАДЕМИЧЕСКИЙ САЛУН — ОТКРЫТО 24/7</b>
-⚡️ Оперативная помощь. 1000+ сделок. Гарантия.
+# ══════════════════════════════════════════════════════════════
+#  PREMIUM WELCOME MESSAGE — App-First, Strict & Elegant
+# ══════════════════════════════════════════════════════════════
 
-Привет, партнер! Учеба прижала к стенке? Мы здесь, чтобы прикрыть твою спину. Выбери, что нужно сделать, и мы найдем лучшего стрелка под твою задачу.
+WELCOME_MESSAGE = """<b>АКАДЕМИЧЕСКИЙ САЛУН</b>
 
-👇 Жми на главную кнопку внизу.
+Профессиональная помощь с учебными работами.
+Более 1000 выполненных заказов.
 
-<i>Нажимая кнопки, ты принимаешь условия <a href="{offer_url}">Оферты</a>.</i>"""
+<blockquote>✓ Уникальность от 85%
+✓ Оформление по ГОСТ
+✓ 3 итерации правок
+✓ Работаем 24/7</blockquote>
+
+Нажми кнопку ниже — всё управление в приложении.
+
+<i>Условия: <a href="{offer_url}">Оферта</a></i>"""
+
+
+# Message for returning users (shorter)
+WELCOME_BACK_MESSAGE = """<b>АКАДЕМИЧЕСКИЙ САЛУН</b>
+
+С возвращением. Приложение ждёт.
+
+<i>Заказы, чат, оплата — всё внутри.</i>"""
 
 router = Router()
 
@@ -247,15 +262,18 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             await message.answer("❌ Неверный формат ссылки")
             # Continue to main menu
 
-    # === ГЛАВНОЕ МЕНЮ — сразу без барьеров ===
+    # === ГЛАВНОЕ МЕНЮ — App-First Portal ===
 
     # 1. Typing для визуального отклика
     await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
-    # 2. Форматируем текст с ссылкой на оферту
-    welcome_text = WELCOME_MESSAGE.format(offer_url=settings.OFFER_URL)
+    # 2. Разный текст для новых и возвращающихся пользователей
+    if is_new_user:
+        welcome_text = WELCOME_MESSAGE.format(offer_url=settings.OFFER_URL)
+    else:
+        welcome_text = WELCOME_BACK_MESSAGE
 
-    # 3. Отправляем картинку с текстом и кнопками (или текст если картинки нет)
+    # 3. Отправляем картинку с текстом и кнопками
     if settings.WELCOME_IMAGE.exists():
         await send_cached_photo(
             bot=bot,

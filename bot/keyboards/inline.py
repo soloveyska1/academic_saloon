@@ -5,53 +5,57 @@ from core.config import settings
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура главного меню — строгая иерархия по спецификации.
+    Клавиатура главного меню — App-First подход.
+    Одна главная кнопка открывает Mini App.
 
     Layout:
-    Row 1: [ ⚡️ Рассчитать стоимость ] — Primary CTA, full width
-    Row 2: [ 📋 Прайс ] [ ⭐️ Отзывы (1000+) ]
-    Row 3: [ 👤 Кабинет ] [ 🎁 Тайник (Халява) ]
-    Row 4: [ 🆘 Позвать Шерифа ]
+    Row 1: [ 🚀 ОТКРЫТЬ ПРИЛОЖЕНИЕ ] — Primary CTA, WebApp
+    Row 2: [ ⭐️ Отзывы ] [ 📜 Гарантии ]
+    Row 3: [ 💬 Поддержка ]
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        # Row 1: Primary CTA — открывает Mini App для создания заказа
+        # Row 1: Primary CTA — Mini App главная страница
         [
             InlineKeyboardButton(
-                text="⚡️ РАССЧИТАТЬ СТОИМОСТЬ",
-                web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/create-order")
+                text="🚀 ОТКРЫТЬ ПРИЛОЖЕНИЕ",
+                web_app=WebAppInfo(url=settings.WEBAPP_URL)
             )
         ],
-        # Row 2: Прайс и Отзывы
+        # Row 2: Отзывы и Гарантии
         [
             InlineKeyboardButton(
-                text="📋 Прайс",
-                callback_data="show_price"
-            ),
-            InlineKeyboardButton(
-                text="⭐️ Отзывы (1000+)",
+                text="⭐ Отзывы (1000+)",
                 url=settings.REVIEWS_CHANNEL
             ),
-        ],
-        # Row 3: Кабинет (открывает Mini App) и Тайник
-        [
             InlineKeyboardButton(
-                text="👤 Кабинет",
-                web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/profile")
-            ),
-            InlineKeyboardButton(
-                text="🎁 Тайник (Халява)",
-                callback_data="free_stuff"
+                text="📜 Гарантии",
+                callback_data="codex"
             ),
         ],
-        # Row 4: Поддержка
+        # Row 3: Поддержка
         [
             InlineKeyboardButton(
-                text="🆘 Позвать Шерифа",
-                callback_data="support"
+                text="💬 Поддержка",
+                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             )
         ],
     ])
     return kb
+
+
+def get_app_portal_keyboard() -> InlineKeyboardMarkup:
+    """
+    Минималистичная клавиатура-портал в Mini App.
+    Одна кнопка — максимальная конверсия.
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🚀 ОТКРЫТЬ ПРИЛОЖЕНИЕ",
+                web_app=WebAppInfo(url=settings.WEBAPP_URL)
+            )
+        ],
+    ])
 
 
 def get_start_keyboard() -> InlineKeyboardMarkup:

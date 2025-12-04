@@ -182,7 +182,7 @@ function AchievementBadge({ icon: Icon, label, unlocked }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIN HOMEPAGE COMPONENT — DENSE BENTO GRID
+//  MAIN HOMEPAGE COMPONENT — PREMIUM CONVERSION-FOCUSED
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function HomePage({ user }: Props) {
@@ -197,6 +197,12 @@ export function HomePage({ user }: Props) {
     navigate('/create-order')
   }
 
+  const handlePanicOrder = () => {
+    haptic('heavy')
+    // Redirect to create order with photo_task type pre-selected
+    navigate('/create-order?type=photo_task&urgent=true')
+  }
+
   const copyReferralCode = () => {
     navigator.clipboard.writeText(user.referral_code)
     setCopied(true)
@@ -204,18 +210,13 @@ export function HomePage({ user }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Calculate achievements
-  const achievements = [
-    { icon: Star, label: 'Первый', unlocked: user.orders_count >= 1 },
-    { icon: Zap, label: 'Скорость', unlocked: user.orders_count >= 5 },
-    { icon: Crown, label: 'VIP', unlocked: user.discount >= 10 },
-    { icon: Trophy, label: 'Мастер', unlocked: user.orders_count >= 20 },
-  ]
+  // Active orders count
+  const activeOrders = user.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length
 
   return (
     <div className="app-content" style={{ paddingBottom: 110 }}>
       {/* ═══════════════════════════════════════════════════════════════════
-          DENSE BENTO GRID — NO EMPTY SPACE
+          PREMIUM BENTO GRID — CONVERSION FOCUSED
           ═══════════════════════════════════════════════════════════════════ */}
       <div
         style={{
@@ -383,7 +384,7 @@ export function HomePage({ user }: Props) {
         </BentoCell>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            NEW ORDER BUTTON (Wide)
+            PRIMARY CTA — NEW ORDER (Wide)
             ═══════════════════════════════════════════════════════════════════ */}
         <BentoCell span={2} variant="action" delay={0.2} onClick={handleNewOrder}>
           <motion.div
@@ -418,10 +419,60 @@ export function HomePage({ user }: Props) {
               <h3 style={{ fontSize: 18, fontWeight: 800, fontFamily: "'Playfair Display', serif", marginBottom: 2 }}>
                 Новый заказ
               </h3>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Создать заявку</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Рассчитать стоимость</p>
             </div>
             <ChevronRight size={22} color="var(--gold-400)" />
           </motion.div>
+        </BentoCell>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            PANIC BUTTON — INSTANT ORDER (Wide)
+            ═══════════════════════════════════════════════════════════════════ */}
+        <BentoCell
+          span={2}
+          variant="default"
+          delay={0.25}
+          onClick={handlePanicOrder}
+          className="panic-button"
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '2px 0',
+          }}>
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 1],
+                boxShadow: [
+                  '0 0 0 0 rgba(239, 68, 68, 0)',
+                  '0 0 20px 4px rgba(239, 68, 68, 0.3)',
+                  '0 0 0 0 rgba(239, 68, 68, 0)',
+                ],
+              }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Zap size={22} color="#fff" strokeWidth={2.5} />
+            </motion.div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#ef4444', marginBottom: 2 }}>
+                Срочно?
+              </h3>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                Скинь фото задания — оценим за 5 минут
+              </p>
+            </div>
+            <ChevronRight size={20} color="#ef4444" />
+          </div>
         </BentoCell>
 
         {/* ═══════════════════════════════════════════════════════════════════
@@ -565,7 +616,7 @@ export function HomePage({ user }: Props) {
             <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Заказы</span>
           </div>
           <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>
-            {user.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length}
+            {activeOrders}
           </div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>активных</div>
         </BentoCell>
@@ -585,49 +636,6 @@ export function HomePage({ user }: Props) {
           </div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
             {user.daily_luck_available ? 'доступно' : 'завтра'}
-          </div>
-        </BentoCell>
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            ACHIEVEMENTS ROW (Wide)
-            ═══════════════════════════════════════════════════════════════════ */}
-        <BentoCell span={2} variant="default" delay={0.45}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <Trophy size={14} color="var(--gold-400)" />
-            <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 500 }}>
-              Достижения
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-            {achievements.map((achievement, i) => (
-              <AchievementBadge key={i} {...achievement} />
-            ))}
-          </div>
-        </BentoCell>
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            TOTAL SPENT STAT
-            ═══════════════════════════════════════════════════════════════════ */}
-        <BentoCell span={2} variant="default" delay={0.5}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>
-                Всего потрачено
-              </div>
-              <div className="text-mono" style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
-                <AnimatedCounter value={user.total_spent} suffix=" ₽" />
-              </div>
-            </div>
-            <div style={{
-              padding: '8px 14px',
-              background: 'rgba(212, 175, 55, 0.1)',
-              borderRadius: 10,
-              border: '1px solid rgba(212, 175, 55, 0.2)',
-            }}>
-              <span style={{ fontSize: 11, color: 'var(--gold-400)', fontWeight: 600 }}>
-                {user.orders_count} заказов
-              </span>
-            </div>
           </div>
         </BentoCell>
       </div>
