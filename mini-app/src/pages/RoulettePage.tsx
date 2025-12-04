@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Crosshair, Zap, Gift, Star, Sparkles, Minus, Plus, Target } from 'lucide-react'
+import { Crosshair, Zap, Gift, Star, Sparkles, Minus, Plus, Target, Infinity } from 'lucide-react'
 import { UserData, RouletteResult } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { spinRoulette } from '../api/userApi'
+import { useAdmin } from '../contexts/AdminContext'
 
 interface Props {
   user: UserData | null
@@ -831,10 +832,14 @@ function ResultBanner({ result }: { result: RouletteResult }) {
 
 export function RoulettePage({ user }: Props) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
+  const { unlimitedRoulette } = useAdmin()
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState<RouletteResult | null>(null)
-  const [canSpin, setCanSpin] = useState(user?.daily_luck_available ?? false)
+  const [canSpinBase, setCanSpinBase] = useState(user?.daily_luck_available ?? false)
   const [betAmount, setBetAmount] = useState(100)
+
+  // Admin can always spin with unlimited mode
+  const canSpin = unlimitedRoulette || canSpinBase
 
   // Use motion value for smooth rotation tracking and haptic feedback
   const rotationValue = useMotionValue(0)
@@ -904,7 +909,7 @@ export function RoulettePage({ user }: Props) {
         try {
           const spinResult = await spinRoulette()
           setResult(spinResult)
-          setCanSpin(false)
+          setCanSpinBase(false)
 
           if (spinResult.type === 'nothing') {
             hapticError()
@@ -966,7 +971,14 @@ export function RoulettePage({ user }: Props) {
             letterSpacing: '0.1em',
           }}
         >
-          ИСПЫТАЙ УДАЧУ • РАЗ В СУТКИ
+          {unlimitedRoulette ? (
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Infinity size={14} color="#22c55e" />
+              <span style={{ color: '#22c55e' }}>БЕЗЛИМИТ АКТИВЕН</span>
+            </span>
+          ) : (
+            'ИСПЫТАЙ УДАЧУ • РАЗ В СУТКИ'
+          )}
         </p>
       </motion.header>
 
