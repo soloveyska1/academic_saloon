@@ -10,6 +10,7 @@ export interface UserData {
   total_spent: number
   rank: RankInfo
   loyalty: LoyaltyInfo
+  bonus_expiry?: BonusExpiryInfo
   discount: number
   referral_code: string
   orders: Order[]
@@ -31,6 +32,17 @@ export interface LoyaltyInfo {
   level: number
   discount: number
   orders_to_next: number
+}
+
+export interface BonusExpiryInfo {
+  has_expiry: boolean
+  balance: number
+  days_left?: number
+  expiry_date?: string
+  burn_amount?: number
+  status?: 'ok' | 'warning' | 'expired'
+  status_text?: string
+  color?: string
 }
 
 export interface Order {

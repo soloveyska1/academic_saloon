@@ -23,7 +23,7 @@ from .schemas import (
     UserResponse, OrderResponse, OrdersListResponse,
     PromoCodeRequest, PromoCodeResponse,
     RouletteResponse, ConfigResponse,
-    RankInfo, LoyaltyInfo,
+    RankInfo, LoyaltyInfo, BonusExpiryInfo,
     OrderCreateRequest, OrderCreateResponse
 )
 from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
@@ -201,6 +201,10 @@ async def get_user_profile(
             next_spin = next_spin.replace(tzinfo=timezone.utc)
         can_spin = now_utc >= next_spin
 
+    # Get bonus expiry info
+    bonus_expiry_data = user.bonus_expiry_info
+    bonus_expiry = BonusExpiryInfo(**bonus_expiry_data) if bonus_expiry_data else None
+
     return UserResponse(
         id=user.id,
         telegram_id=user.telegram_id,
@@ -215,6 +219,7 @@ async def get_user_profile(
         daily_luck_available=can_spin,
         rank=get_rank_info(actual_total_spent),  # Use actual total spent
         loyalty=get_loyalty_info(completed_orders),
+        bonus_expiry=bonus_expiry,
         orders=[order_to_response(o) for o in orders]
     )
 
@@ -334,8 +339,12 @@ async def spin_roulette(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Spin daily luck roulette"""
-    # Rate limit check
+    """
+    Элитный Клуб - испытай удачу!
+    БЕЗ ЛИМИТА - крутить можно сколько угодно
+    Шанс выигрыша крайне низкий - это элитный клуб!
+    """
+    # Rate limit check (защита от спама)
     await rate_limit_roulette.check(request)
 
     # Get user
@@ -347,42 +356,30 @@ async def spin_roulette(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Check cooldown (use timezone-aware datetime!)
     now = datetime.now(timezone.utc)
 
-    # Check if user is admin (for testing purposes)
-    is_admin = user.telegram_id in settings.ADMIN_IDS
-
-    # Standard cooldown logic
-    can_spin = True  # Default to true if no previous spin
-    if user.last_daily_bonus_at and not is_admin:
-        next_spin = user.last_daily_bonus_at + timedelta(hours=24)
-        if next_spin.tzinfo is None:
-            next_spin = next_spin.replace(tzinfo=timezone.utc)
-        can_spin = now >= next_spin
-
-    # Block users who can't spin
-    if not can_spin:
-        next_spin = user.last_daily_bonus_at + timedelta(hours=24)
-        if next_spin.tzinfo is None:
-            next_spin = next_spin.replace(tzinfo=timezone.utc)
-        return RouletteResponse(
-            success=False,
-            message="Колесо фортуны ещё отдыхает",
-            next_spin_at=next_spin.isoformat()
-        )
-
-    # Spin the wheel!
+    # ═══════════════════════════════════════════════════════════════════════════
+    #  ЭЛИТНЫЙ КЛУБ: ПРИЗЫ С ОЧЕНЬ НИЗКИМ ШАНСОМ ВЫИГРЫША
+    #  Суммарный вес = 10,000,000 для точного расчёта вероятностей
+    # ═══════════════════════════════════════════════════════════════════════════
     prizes = [
-        {"prize": "50 бонусов", "type": "bonus", "value": 50, "weight": 30},
-        {"prize": "100 бонусов", "type": "bonus", "value": 100, "weight": 15},
-        {"prize": "200 бонусов", "type": "bonus", "value": 200, "weight": 5},
-        {"prize": "5% скидка", "type": "discount", "value": 5, "weight": 20},
-        {"prize": "10% скидка", "type": "discount", "value": 10, "weight": 10},
-        {"prize": "Попробуй завтра", "type": "nothing", "value": 0, "weight": 20},
+        # Джекпот - 0.00001% (1 из 10 миллионов)
+        {"prize": "ДЖЕКПОТ 50000₽", "type": "jackpot", "value": 50000, "weight": 1},
+        # Мега-приз - 0.0001% (10 из 10 миллионов)
+        {"prize": "МЕГА-ПРИЗ 10000₽", "type": "bonus", "value": 10000, "weight": 10},
+        # Супер-приз - 0.001% (100 из 10 миллионов)
+        {"prize": "СУПЕР-ПРИЗ 5000₽", "type": "bonus", "value": 5000, "weight": 100},
+        # Крупный - 0.01% (1000 из 10 миллионов)
+        {"prize": "КРУПНЫЙ 1000₽", "type": "bonus", "value": 1000, "weight": 1000},
+        # Хороший - 0.1% (10000 из 10 миллионов)
+        {"prize": "ХОРОШИЙ 500₽", "type": "bonus", "value": 500, "weight": 10000},
+        # Бонус - 1% (100000 из 10 миллионов)
+        {"prize": "БОНУС 100₽", "type": "bonus", "value": 100, "weight": 100000},
+        # Ничего - ~98.9% (остальное)
+        {"prize": "Не повезло", "type": "nothing", "value": 0, "weight": 9888889},
     ]
 
-    # Weighted random selection
+    # Weighted random selection (высокая точность)
     total_weight = sum(p["weight"] for p in prizes)
     rand = random.randint(1, total_weight)
     cumulative = 0
@@ -393,30 +390,31 @@ async def spin_roulette(
             selected = prize
             break
 
-    # Update user's last spin time
-    user.last_daily_bonus_at = now
-
-    # Apply bonus if won
-    if selected["type"] == "bonus":
-        user.referral_earnings = (user.referral_earnings or 0) + selected["value"]
+    # Применяем бонус если выиграл
+    if selected["type"] in ("bonus", "jackpot") and selected["value"] > 0:
+        # Начисляем на основной баланс
+        user.balance = (user.balance or 0) + selected["value"]
+        # Обновляем дату последнего начисления для сгорания бонусов
+        from zoneinfo import ZoneInfo
+        user.last_bonus_at = datetime.now(ZoneInfo("Europe/Moscow"))
+        user.bonus_expiry_notified = False
 
     await session.commit()
 
-    # Log to Mini App topic
-    try:
-        bot = get_bot()
-        await log_roulette_spin(
-            bot=bot,
-            user_id=user.telegram_id,
-            username=user.username,
-            prize=selected["prize"],
-            prize_type=selected["type"],
-            value=selected["value"],
-        )
-    except Exception as e:
-        logger.warning(f"[API /roulette/spin] Failed to log: {e}")
-
-    next_spin_at = (now + timedelta(hours=24)).isoformat()
+    # Log to Mini App topic (только для выигрышей)
+    if selected["type"] != "nothing":
+        try:
+            bot = get_bot()
+            await log_roulette_spin(
+                bot=bot,
+                user_id=user.telegram_id,
+                username=user.username,
+                prize=selected["prize"],
+                prize_type=selected["type"],
+                value=selected["value"],
+            )
+        except Exception as e:
+            logger.warning(f"[API /roulette/spin] Failed to log: {e}")
 
     if selected["type"] == "nothing":
         return RouletteResponse(
@@ -424,8 +422,8 @@ async def spin_roulette(
             prize=selected["prize"],
             type=selected["type"],
             value=0,
-            message="Не повезло! Возвращайся завтра, ковбой!",
-            next_spin_at=next_spin_at
+            message="Не повезло! Попробуй ещё раз!",
+            next_spin_at=None  # Без лимита
         )
 
     return RouletteResponse(
@@ -433,8 +431,8 @@ async def spin_roulette(
         prize=selected["prize"],
         type=selected["type"],
         value=selected["value"],
-        message=f"Поздравляем! Ты выиграл {selected['prize']}!",
-        next_spin_at=next_spin_at
+        message=f"Поздравляем! Ты выиграл {selected['value']}₽!",
+        next_spin_at=None  # Без лимита
     )
 
 

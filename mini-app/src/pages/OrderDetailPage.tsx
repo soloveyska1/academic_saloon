@@ -73,6 +73,12 @@ interface GoldenInvoiceProps {
 
 function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoiceProps) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
+
+  // Определяем, это первая оплата или доплата
+  const isSecondPayment = (order.paid_amount || 0) > 0
+  const remainingAmount = paymentInfo?.remaining || order.final_price - (order.paid_amount || 0)
+
+  // При доплате - только полная оплата остатка, без выбора схемы
   const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'sbp'>('card')
   const [copied, setCopied] = useState<string | null>(null)
@@ -80,9 +86,12 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const amountToPay = paymentScheme === 'full'
-    ? (paymentInfo?.remaining || order.final_price - order.paid_amount)
-    : Math.ceil((paymentInfo?.remaining || order.final_price - order.paid_amount) / 2)
+  // При доплате - всегда полный остаток, при первой оплате - можно выбрать схему
+  const amountToPay = isSecondPayment
+    ? remainingAmount  // Доплата: всегда полный остаток
+    : paymentScheme === 'full'
+      ? remainingAmount
+      : Math.ceil(remainingAmount / 2)
 
   const copyToClipboard = useCallback(async (text: string, key: string) => {
     haptic('light')
@@ -257,7 +266,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
               margin: 0,
               marginBottom: 4,
             }}>
-              Счёт на оплату
+              {isSecondPayment ? 'Доплата' : 'Счёт на оплату'}
             </h3>
             <p style={{
               fontSize: 12,
@@ -327,8 +336,8 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
             {amountToPay.toLocaleString('ru-RU')} ₽
           </motion.p>
 
-          {/* Show remaining amount when prepayment selected */}
-          {paymentScheme === 'half' && (
+          {/* Show remaining amount when prepayment selected (only for first payment) */}
+          {!isSecondPayment && paymentScheme === 'half' && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -356,95 +365,133 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           )}
         </div>
 
-        {/* Payment Scheme Selector */}
-        <div style={{ marginBottom: 20 }}>
-          <p style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#71717a',
-            margin: 0,
-            marginBottom: 12,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}>
-            Схема оплаты
-          </p>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 12,
-          }}>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => { haptic('light'); setPaymentScheme('full') }}
-              style={{
-                padding: 16,
-                background: paymentScheme === 'full'
-                  ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
-                  : 'rgba(255,255,255,0.02)',
-                border: paymentScheme === 'full'
-                  ? '2px solid rgba(212,175,55,0.5)'
-                  : '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 16,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-                <Zap size={18} color={paymentScheme === 'full' ? '#d4af37' : '#71717a'} />
-                <span style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: paymentScheme === 'full' ? '#d4af37' : '#a1a1aa',
+        {/* Payment Scheme Selector - только для первой оплаты */}
+        {!isSecondPayment ? (
+          <div style={{ marginBottom: 20 }}>
+            <p style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#71717a',
+              margin: 0,
+              marginBottom: 12,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}>
+              Схема оплаты
+            </p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 12,
+            }}>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { haptic('light'); setPaymentScheme('full') }}
+                style={{
+                  padding: 16,
+                  background: paymentScheme === 'full'
+                    ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
+                    : 'rgba(255,255,255,0.02)',
+                  border: paymentScheme === 'full'
+                    ? '2px solid rgba(212,175,55,0.5)'
+                    : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 16,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
+                  <Zap size={18} color={paymentScheme === 'full' ? '#d4af37' : '#71717a'} />
+                  <span style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: paymentScheme === 'full' ? '#d4af37' : '#a1a1aa',
+                  }}>
+                    100%
+                  </span>
+                </div>
+                <p style={{
+                  fontSize: 11,
+                  color: '#71717a',
+                  margin: 0,
                 }}>
-                  100%
-                </span>
-              </div>
-              <p style={{
-                fontSize: 11,
-                color: '#71717a',
-                margin: 0,
-              }}>
-                Полная оплата
-              </p>
-            </motion.button>
+                  Полная оплата
+                </p>
+              </motion.button>
 
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => { haptic('light'); setPaymentScheme('half') }}
-              style={{
-                padding: 16,
-                background: paymentScheme === 'half'
-                  ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
-                  : 'rgba(255,255,255,0.02)',
-                border: paymentScheme === 'half'
-                  ? '2px solid rgba(212,175,55,0.5)'
-                  : '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 16,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-                <Shield size={18} color={paymentScheme === 'half' ? '#d4af37' : '#71717a'} />
-                <span style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: paymentScheme === 'half' ? '#d4af37' : '#a1a1aa',
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { haptic('light'); setPaymentScheme('half') }}
+                style={{
+                  padding: 16,
+                  background: paymentScheme === 'half'
+                    ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
+                    : 'rgba(255,255,255,0.02)',
+                  border: paymentScheme === 'half'
+                    ? '2px solid rgba(212,175,55,0.5)'
+                    : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 16,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
+                  <Shield size={18} color={paymentScheme === 'half' ? '#d4af37' : '#71717a'} />
+                  <span style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: paymentScheme === 'half' ? '#d4af37' : '#a1a1aa',
+                  }}>
+                    50%
+                  </span>
+                </div>
+                <p style={{
+                  fontSize: 11,
+                  color: '#71717a',
+                  margin: 0,
                 }}>
-                  50%
-                </span>
-              </div>
+                  Предоплата
+                </p>
+              </motion.button>
+            </div>
+          </div>
+        ) : (
+          /* Для доплаты показываем инфо-блок */
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              marginBottom: 20,
+              padding: '14px 16px',
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(34,197,94,0.05))',
+              borderRadius: 14,
+              border: '1px solid rgba(34,197,94,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <CheckCircle size={20} color="#22c55e" />
+            <div>
+              <p style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#22c55e',
+                margin: 0,
+                marginBottom: 2,
+              }}>
+                Предоплата внесена: {order.paid_amount?.toLocaleString('ru-RU')} ₽
+              </p>
               <p style={{
                 fontSize: 11,
-                color: '#71717a',
+                color: '#a1a1aa',
                 margin: 0,
               }}>
-                Предоплата
+                Осталось доплатить полную сумму остатка
               </p>
-            </motion.button>
-          </div>
-        </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Payment Method Selector */}
         <div style={{ marginBottom: 24 }}>

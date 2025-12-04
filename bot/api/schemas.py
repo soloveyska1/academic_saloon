@@ -27,6 +27,18 @@ class LoyaltyInfo(BaseModel):
     orders_to_next: int  # Orders needed for next level
 
 
+class BonusExpiryInfo(BaseModel):
+    """Информация о сгорании бонусов"""
+    has_expiry: bool = False  # Есть ли активные бонусы с датой сгорания
+    balance: float = 0
+    days_left: Optional[int] = None  # Дней до сгорания
+    expiry_date: Optional[str] = None  # Дата сгорания
+    burn_amount: Optional[int] = None  # Сколько сгорит
+    status: Optional[str] = None  # ok / warning / expired
+    status_text: Optional[str] = None  # Текст для UI
+    color: Optional[str] = None  # Цвет для UI
+
+
 class OrderResponse(BaseModel):
     """Order data for Mini App"""
     id: int
@@ -67,6 +79,7 @@ class UserResponse(BaseModel):
     daily_luck_available: bool
     rank: RankInfo
     loyalty: LoyaltyInfo
+    bonus_expiry: Optional[BonusExpiryInfo] = None  # Информация о сгорании бонусов
     orders: List[OrderResponse]
 
     class Config:

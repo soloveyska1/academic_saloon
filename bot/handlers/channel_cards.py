@@ -295,6 +295,22 @@ async def card_reject_order_execute(callback: CallbackQuery, session: AsyncSessi
         "Попробуй оформить новый заказ с более подробным описанием."
     )
 
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ ОБ ОТКЛОНЕНИИ ═══
+    try:
+        from bot.services.realtime_notifications import send_custom_notification
+        await send_custom_notification(
+            telegram_id=order.user_id,
+            title="😔 Заказ отклонён",
+            message=f"Заказ #{order.id} не может быть выполнен",
+            notification_type="order_rejected",
+            icon="x-circle",
+            color="#ef4444",
+            action="view_orders",
+            data={"order_id": order.id, "status": OrderStatus.REJECTED.value},
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
+
     await callback.answer("✅ Заказ отклонён", show_alert=True)
 
 
