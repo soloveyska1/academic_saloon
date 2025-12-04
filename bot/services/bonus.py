@@ -2,12 +2,16 @@
 Сервис бонусной системы — начисление и списание бонусов
 """
 import logging
+from datetime import datetime
 from enum import Enum
+from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from aiogram import Bot
 
 from database.models.users import User
+
+MSK_TZ = ZoneInfo("Europe/Moscow")
 
 
 logger = logging.getLogger(__name__)
@@ -20,6 +24,7 @@ BONUS_REASON_DESCRIPTIONS = {
     "order_discount": "Использовано на заказ",
     "compensation": "Компенсация",
     "order_cashback": "Кешбэк за заказ",
+    "bonus_expired": "Сгорание бонусов",
 }
 
 
@@ -31,6 +36,7 @@ class BonusReason(str, Enum):
     ORDER_DISCOUNT = "order_discount"        # Списание на заказ
     COMPENSATION = "compensation"            # Компенсация
     ORDER_CASHBACK = "order_cashback"        # Кешбэк за выполненный заказ
+    BONUS_EXPIRED = "bonus_expired"          # Сгорание бонусов
 
 
 # Настройки бонусов
@@ -82,6 +88,11 @@ class BonusService:
 
         old_balance = user.balance
         user.balance += amount
+
+        # Обновляем дату последнего начисления и сбрасываем флаг уведомления о сгорании
+        user.last_bonus_at = datetime.now(MSK_TZ)
+        user.bonus_expiry_notified = False
+
         await session.commit()
 
         # Логируем в консоль
@@ -315,3 +326,179 @@ class BonusService:
         )
 
         return cashback_amount
+
+    @staticmethod
+    async def expire_bonus(
+        session: AsyncSession,
+        bot: Bot,
+        user: User,
+        expire_percent: int = 20,
+    ) -> float:
+        """
+        Списывает сгоревшие бонусы у пользователя
+
+        Args:
+            session: Сессия БД
+            bot: Бот для уведомлений
+            user: Пользователь
+            expire_percent: Процент сгорания (по умолчанию 20%)
+
+        Returns:
+            Сумма сгоревших бонусов
+        """
+        if user.balance <= 0:
+            return 0.0
+
+        expire_amount = int(user.balance * expire_percent / 100)
+        if expire_amount < 1:
+            return 0.0
+
+        old_balance = user.balance
+        user.balance -= expire_amount
+
+        # Сбрасываем таймер - следующее сгорание через 30 дней
+        user.last_bonus_at = datetime.now(MSK_TZ)
+        user.bonus_expiry_notified = False
+
+        await session.commit()
+
+        logger.info(
+            f"[BonusExpiry] User {user.telegram_id} lost {expire_amount:.0f}₽ "
+            f"({expire_percent}% of {old_balance:.0f}₽), new balance: {user.balance:.0f}₽"
+        )
+
+        # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О СГОРАНИИ ═══
+        try:
+            from bot.services.realtime_notifications import send_balance_notification
+            await send_balance_notification(
+                telegram_id=user.telegram_id,
+                change=-float(expire_amount),
+                new_balance=float(user.balance),
+                reason=f"Сгорело {expire_percent}% неиспользованных бонусов",
+                reason_key=BonusReason.BONUS_EXPIRED.value,
+            )
+        except Exception as e:
+            logger.warning(f"[WS] Failed to send expiry notification: {e}")
+
+        # ═══ TELEGRAM УВЕДОМЛЕНИЕ ═══
+        try:
+            await bot.send_message(
+                user.telegram_id,
+                f"🔥 <b>Бонусы сгорели!</b>\n\n"
+                f"Сгорело: <code>−{expire_amount:.0f}₽</code>\n"
+                f"Остаток: <code>{user.balance:.0f}₽</code>\n\n"
+                f"💡 <i>Используй бонусы, чтобы они не сгорали!</i>\n"
+                f"Следующее сгорание через 30 дней.",
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send Telegram expiry notification: {e}")
+
+        return float(expire_amount)
+
+    @staticmethod
+    async def send_expiry_warning(
+        bot: Bot,
+        user: User,
+        days_left: int,
+        burn_amount: int,
+    ) -> bool:
+        """
+        Отправляет предупреждение о скором сгорании бонусов
+
+        Args:
+            bot: Бот для уведомлений
+            user: Пользователь
+            days_left: Дней до сгорания
+            burn_amount: Сколько сгорит
+
+        Returns:
+            Успешно ли отправлено
+        """
+        try:
+            # WebSocket уведомление
+            from bot.services.realtime_notifications import send_custom_notification
+            await send_custom_notification(
+                telegram_id=user.telegram_id,
+                title="⚠️ Бонусы скоро сгорят!",
+                message=f"Через {days_left} дн. сгорит {burn_amount}₽",
+                notification_type="bonus_warning",
+                icon="fire",
+                color="#f59e0b",
+                action="view_profile",
+                data={"days_left": days_left, "burn_amount": burn_amount},
+            )
+        except Exception as e:
+            logger.warning(f"[WS] Failed to send expiry warning: {e}")
+
+        try:
+            # Telegram уведомление
+            await bot.send_message(
+                user.telegram_id,
+                f"⚠️ <b>Бонусы скоро сгорят!</b>\n\n"
+                f"Через <b>{days_left} дн.</b> сгорит <code>{burn_amount}₽</code>\n"
+                f"Текущий баланс: <code>{user.balance:.0f}₽</code>\n\n"
+                f"💡 <i>Используй бонусы на заказ, чтобы не потерять их!</i>",
+            )
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to send Telegram expiry warning: {e}")
+            return False
+
+    @staticmethod
+    async def process_bonus_expiry(
+        session: AsyncSession,
+        bot: Bot,
+    ) -> dict:
+        """
+        Обрабатывает сгорание бонусов для всех пользователей.
+        Вызывается по расписанию (раз в день).
+
+        Returns:
+            Статистика: warnings_sent, bonuses_expired, total_burned
+        """
+        from datetime import timedelta
+
+        now = datetime.now(MSK_TZ)
+        stats = {
+            "warnings_sent": 0,
+            "bonuses_expired": 0,
+            "total_burned": 0.0,
+        }
+
+        # Получаем всех пользователей с бонусами
+        query = select(User).where(User.balance > 0)
+        result = await session.execute(query)
+        users = result.scalars().all()
+
+        for user in users:
+            # Пропускаем пользователей без даты начисления
+            if user.last_bonus_at is None:
+                continue
+
+            expiry_date = user.last_bonus_at + timedelta(days=User.BONUS_EXPIRY_DAYS)
+            if expiry_date.tzinfo is None:
+                expiry_date = expiry_date.replace(tzinfo=MSK_TZ)
+
+            days_left = (expiry_date - now).days
+            burn_amount = int(user.balance * User.BONUS_EXPIRY_PERCENT / 100)
+
+            # Бонусы истекли - сжигаем
+            if days_left <= 0:
+                burned = await BonusService.expire_bonus(session, bot, user)
+                stats["bonuses_expired"] += 1
+                stats["total_burned"] += burned
+
+            # Скоро истекут - отправляем предупреждение (только если ещё не отправляли)
+            elif days_left <= User.BONUS_EXPIRY_WARNING_DAYS and not user.bonus_expiry_notified:
+                success = await BonusService.send_expiry_warning(bot, user, days_left, burn_amount)
+                if success:
+                    user.bonus_expiry_notified = True
+                    await session.commit()
+                    stats["warnings_sent"] += 1
+
+        logger.info(
+            f"[BonusExpiry] Processed: warnings={stats['warnings_sent']}, "
+            f"expired={stats['bonuses_expired']}, burned={stats['total_burned']:.0f}₽"
+        )
+
+        return stats

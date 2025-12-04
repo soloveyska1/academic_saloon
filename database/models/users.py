@@ -31,6 +31,10 @@ class User(Base):
     # Ежедневный бонус (Daily Luck)
     last_daily_bonus_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Сгорание бонусов
+    last_bonus_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Дата последнего начисления
+    bonus_expiry_notified: Mapped[bool] = mapped_column(Boolean, default=False)  # Флаг уведомления о сгорании
+
     # Оферта
     terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -279,3 +283,77 @@ class User(Base):
         except Exception:
             # Если колонка не существует в БД - разрешаем бонус
             return {"available": True, "remaining_text": None}
+
+    # ══════════════════════════════════════════════════════════════
+    #                    СГОРАНИЕ БОНУСОВ
+    # ══════════════════════════════════════════════════════════════
+
+    BONUS_EXPIRY_DAYS = 30  # Бонусы сгорают через 30 дней неактивности
+    BONUS_EXPIRY_WARNING_DAYS = 7  # Предупреждение за 7 дней
+    BONUS_EXPIRY_PERCENT = 20  # Сгорает 20% бонусов за раз
+
+    @property
+    def bonus_expiry_date(self) -> datetime | None:
+        """Дата сгорания бонусов (30 дней от последнего начисления)"""
+        if self.balance <= 0:
+            return None
+        if self.last_bonus_at is None:
+            return None
+
+        expiry = self.last_bonus_at + timedelta(days=self.BONUS_EXPIRY_DAYS)
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=MSK_TZ)
+        return expiry
+
+    @property
+    def bonus_expiry_info(self) -> dict:
+        """Информация о сгорании бонусов для отображения в UI"""
+        if self.balance <= 0:
+            return {"has_expiry": False, "balance": 0}
+
+        expiry_date = self.bonus_expiry_date
+        if expiry_date is None:
+            return {
+                "has_expiry": False,
+                "balance": self.balance,
+            }
+
+        now = datetime.now(MSK_TZ)
+        days_left = (expiry_date - now).days
+
+        # Сколько сгорит
+        burn_amount = int(self.balance * self.BONUS_EXPIRY_PERCENT / 100)
+
+        if days_left <= 0:
+            return {
+                "has_expiry": True,
+                "balance": self.balance,
+                "days_left": 0,
+                "expiry_date": expiry_date.strftime("%d.%m.%Y"),
+                "burn_amount": burn_amount,
+                "status": "expired",
+                "status_text": "Бонусы сгорели!",
+                "color": "#ef4444",
+            }
+        elif days_left <= self.BONUS_EXPIRY_WARNING_DAYS:
+            return {
+                "has_expiry": True,
+                "balance": self.balance,
+                "days_left": days_left,
+                "expiry_date": expiry_date.strftime("%d.%m.%Y"),
+                "burn_amount": burn_amount,
+                "status": "warning",
+                "status_text": f"Сгорят через {days_left} дн.",
+                "color": "#f59e0b",
+            }
+        else:
+            return {
+                "has_expiry": True,
+                "balance": self.balance,
+                "days_left": days_left,
+                "expiry_date": expiry_date.strftime("%d.%m.%Y"),
+                "burn_amount": burn_amount,
+                "status": "ok",
+                "status_text": f"Действуют до {expiry_date.strftime('%d.%m')}",
+                "color": "#22c55e",
+            }

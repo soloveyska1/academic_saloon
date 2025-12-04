@@ -619,6 +619,68 @@ export function ProfilePage({ user }: Props) {
         </div>
       </motion.div>
 
+      {/* Bonus Expiry Warning */}
+      {user.bonus_expiry?.has_expiry && user.balance > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          style={{
+            background: user.bonus_expiry.status === 'warning'
+              ? 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(20,20,23,0.95) 100%)'
+              : user.bonus_expiry.status === 'expired'
+                ? 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(20,20,23,0.95) 100%)'
+                : 'linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(20,20,23,0.95) 100%)',
+            border: `1px solid ${user.bonus_expiry.color || '#22c55e'}40`,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            background: `${user.bonus_expiry.color || '#22c55e'}20`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            {user.bonus_expiry.status === 'warning' || user.bonus_expiry.status === 'expired' ? (
+              <span style={{ fontSize: 22 }}>🔥</span>
+            ) : (
+              <Clock size={22} color={user.bonus_expiry.color || '#22c55e'} />
+            )}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: user.bonus_expiry.color || '#22c55e',
+              marginBottom: 4,
+            }}>
+              {user.bonus_expiry.status === 'expired'
+                ? '⚠️ Бонусы сгорели!'
+                : user.bonus_expiry.status === 'warning'
+                  ? `⚠️ Сгорят через ${user.bonus_expiry.days_left} дн.`
+                  : `Действуют до ${user.bonus_expiry.expiry_date}`}
+            </div>
+            <div style={{
+              fontSize: 11,
+              color: '#a1a1aa',
+            }}>
+              {user.bonus_expiry.burn_amount && user.bonus_expiry.status !== 'expired'
+                ? `Сгорит ~${user.bonus_expiry.burn_amount}₽ (20% от баланса)`
+                : 'Используй бонусы на заказ!'}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Referral Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
