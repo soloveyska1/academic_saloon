@@ -725,10 +725,11 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { haptic, openBot } = useTelegram()
+  const { haptic, hapticSuccess, openBot } = useTelegram()
   const [order, setOrder] = useState<Order | null>(null)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showPriceAlert, setShowPriceAlert] = useState(false)
 
   // WebSocket context for real-time updates
   const { addMessageHandler } = useWebSocketContext()
@@ -749,6 +750,15 @@ export function OrderDetailPage() {
         try {
           const payment = await fetchPaymentInfo(parseInt(id))
           setPaymentInfo(payment)
+
+          // Show price alert if order has price but user hasn't started payment
+          // Check sessionStorage to not show alert repeatedly
+          const alertKey = `price_alert_shown_${id}`
+          if (!sessionStorage.getItem(alertKey)) {
+            setShowPriceAlert(true)
+            hapticSuccess()
+            sessionStorage.setItem(alertKey, 'true')
+          }
         } catch (err) {
           console.error('Failed to load payment info:', err)
         }
@@ -758,7 +768,7 @@ export function OrderDetailPage() {
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, hapticSuccess])
 
   // Initial load
   useEffect(() => {
@@ -899,6 +909,109 @@ export function OrderDetailPage() {
       padding: 24,
       paddingBottom: showPaymentUI ? 40 : 180,
     }}>
+      {/* Price Ready Alert */}
+      <AnimatePresence>
+        {showPriceAlert && paymentInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            style={{
+              position: 'fixed',
+              top: 16,
+              left: 16,
+              right: 16,
+              zIndex: 1000,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(184,134,11,0.15) 100%)',
+              border: '1px solid rgba(212,175,55,0.4)',
+              borderRadius: 16,
+              padding: 16,
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(212,175,55,0.1)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, #d4af37 0%, #b8860b 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <CreditCard size={22} color="#0a0a0c" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: '#d4af37',
+                  marginBottom: 4,
+                }}>
+                  💰 Цена готова!
+                </div>
+                <div style={{
+                  fontSize: 13,
+                  color: 'rgba(242,242,242,0.8)',
+                  lineHeight: 1.4,
+                }}>
+                  К оплате: <span style={{ color: '#d4af37', fontWeight: 600 }}>
+                    {paymentInfo.final_price.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setShowPriceAlert(false)
+                    haptic('medium')
+                    // Scroll to payment section
+                    const paymentSection = document.getElementById('payment-section')
+                    paymentSection?.scrollIntoView({ behavior: 'smooth' })
+                  }}
+                  style={{
+                    marginTop: 12,
+                    padding: '10px 20px',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#0a0a0c',
+                    background: 'linear-gradient(135deg, #d4af37 0%, #f4d03f 100%)',
+                    border: 'none',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <CreditCard size={16} />
+                  Перейти к оплате
+                </motion.button>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowPriceAlert(false)}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <XCircle size={16} color="rgba(255,255,255,0.6)" />
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -975,6 +1088,7 @@ export function OrderDetailPage() {
       {/* Golden Invoice for orders needing payment */}
       {showPaymentUI && (
         <motion.div
+          id="payment-section"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
