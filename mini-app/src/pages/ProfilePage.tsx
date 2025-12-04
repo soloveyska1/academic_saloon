@@ -134,7 +134,7 @@ function TransactionItem({
         alignItems: 'center',
         gap: 12,
         padding: '12px 0',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid var(--border-subtle)',
       }}
     >
       <div style={{
@@ -149,10 +149,10 @@ function TransactionItem({
         <Icon size={18} color={color} />
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: '#fff', marginBottom: 2 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-main)', marginBottom: 2 }}>
           {title}
         </div>
-        <div style={{ fontSize: 11, color: '#71717a' }}>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
           {date}
         </div>
       </div>
@@ -160,7 +160,7 @@ function TransactionItem({
         fontSize: 14,
         fontWeight: 600,
         color: color,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "var(--font-mono)",
       }}>
         {prefix}{amount.toLocaleString('ru-RU')} ₽
       </div>
@@ -183,19 +183,21 @@ function AchievementBadge({ emoji, title, unlocked, description, progress }: {
       style={{
         position: 'relative',
         background: unlocked
-          ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05))'
-          : 'linear-gradient(135deg, rgba(30, 30, 35, 0.9), rgba(20, 20, 23, 0.95))',
+          ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.03))'
+          : 'var(--bg-card)',
         border: unlocked
-          ? '1px solid rgba(212, 175, 55, 0.4)'
-          : '1px solid rgba(255,255,255,0.08)',
+          ? '1px solid var(--border-gold-strong)'
+          : '1px solid var(--border-default)',
         borderRadius: 16,
         padding: 14,
         textAlign: 'center',
         overflow: 'hidden',
         transition: 'all 0.3s ease',
         boxShadow: unlocked
-          ? '0 4px 20px rgba(212, 175, 55, 0.2), inset 0 1px 0 rgba(255,255,255,0.1)'
-          : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+          ? 'var(--glow-gold)'
+          : 'var(--card-shadow)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
       }}
     >
       {/* Shine effect for unlocked */}
@@ -246,7 +248,7 @@ function AchievementBadge({ emoji, title, unlocked, description, progress }: {
       <div style={{
         fontSize: 12,
         fontWeight: 700,
-        color: unlocked ? '#f5d061' : '#71717a',
+        color: unlocked ? 'var(--gold-100)' : 'var(--text-muted)',
         marginBottom: 4,
         letterSpacing: '0.3px',
         position: 'relative',
@@ -258,7 +260,7 @@ function AchievementBadge({ emoji, title, unlocked, description, progress }: {
       {/* Description */}
       <div style={{
         fontSize: 10,
-        color: unlocked ? '#a1a1aa' : '#52525b',
+        color: unlocked ? 'var(--text-secondary)' : 'var(--text-muted)',
         lineHeight: 1.3,
         position: 'relative',
         zIndex: 1,
@@ -271,7 +273,7 @@ function AchievementBadge({ emoji, title, unlocked, description, progress }: {
         <div style={{
           marginTop: 8,
           height: 3,
-          background: 'rgba(255,255,255,0.1)',
+          background: 'var(--bg-glass)',
           borderRadius: 2,
           overflow: 'hidden',
         }}>
@@ -281,7 +283,7 @@ function AchievementBadge({ emoji, title, unlocked, description, progress }: {
             transition={{ duration: 0.5, ease: 'easeOut' }}
             style={{
               height: '100%',
-              background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+              background: 'var(--gold-metallic)',
               borderRadius: 2,
             }}
           />
@@ -320,13 +322,13 @@ function StatCard({ icon: Icon, label, value, suffix = '', color, delay, large }
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        background: 'rgba(20, 20, 23, 0.7)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-default)',
         borderRadius: 18,
         padding: 18,
         backdropFilter: 'blur(40px)',
         WebkitBackdropFilter: 'blur(40px)',
-        boxShadow: '0 10px 40px -15px rgba(0, 0, 0, 0.5)',
+        boxShadow: 'var(--card-shadow)',
       }}
     >
       <div style={{
@@ -345,8 +347,8 @@ function StatCard({ icon: Icon, label, value, suffix = '', color, delay, large }
       <div style={{
         fontSize: large ? 28 : 22,
         fontWeight: 800,
-        fontFamily: "'Montserrat', sans-serif",
-        color: '#f2f2f2',
+        fontFamily: "var(--font-serif)",
+        color: 'var(--text-main)',
         lineHeight: 1,
         marginBottom: 4,
       }}>
@@ -356,7 +358,7 @@ function StatCard({ icon: Icon, label, value, suffix = '', color, delay, large }
       </div>
       <div style={{
         fontSize: 10,
-        color: '#71717a',
+        color: 'var(--text-muted)',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
       }}>
@@ -449,27 +451,28 @@ export function ProfilePage({ user }: Props) {
           width: 40,
           height: 40,
           borderRadius: 12,
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
-          border: '1px solid rgba(212,175,55,0.3)',
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+          border: '1px solid var(--border-gold)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          boxShadow: 'var(--glow-gold)',
         }}>
-          <Shield size={20} color="#d4af37" />
+          <Shield size={20} color="var(--gold-400)" />
         </div>
         <div>
           <h1 style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "var(--font-serif)",
             fontSize: 24,
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+            background: 'var(--gold-text-shine)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             margin: 0,
           }}>
             Личный Кабинет
           </h1>
-          <p style={{ fontSize: 12, color: '#71717a', margin: 0 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
             Агент с {memberSince}
           </p>
         </div>
@@ -481,13 +484,18 @@ export function ProfilePage({ user }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         style={{
-          background: 'linear-gradient(180deg, rgba(212,175,55,0.12) 0%, rgba(20,20,23,0.95) 40%)',
-          border: '1px solid rgba(212,175,55,0.25)',
+          background: isDark
+            ? 'linear-gradient(180deg, rgba(212,175,55,0.1) 0%, var(--bg-card) 40%)'
+            : 'linear-gradient(180deg, rgba(212,175,55,0.06) 0%, var(--bg-card) 40%)',
+          border: '1px solid var(--border-gold)',
           borderRadius: 24,
           padding: 24,
           marginBottom: 16,
           position: 'relative',
           overflow: 'hidden',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         {/* Animated glow */}

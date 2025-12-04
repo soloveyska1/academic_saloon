@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import {
@@ -11,6 +11,8 @@ import { applyPromoCode } from '../api/userApi'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { Confetti } from '../components/ui/Confetti'
 import { DailyBonusModal } from '../components/ui/DailyBonus'
+import { openAdminPanel } from '../components/AdminPanel'
+import { useAdmin } from '../contexts/AdminContext'
 
 interface Props {
   user: UserData | null
@@ -166,6 +168,7 @@ function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
   const { haptic, hapticSuccess, webApp } = useTelegram()
+  const admin = useAdmin()
   const [copied, setCopied] = useState(false)
   const [promoCode, setPromoCode] = useState('')
   const [promoLoading, setPromoLoading] = useState(false)
@@ -173,6 +176,28 @@ export function HomePage({ user }: Props) {
   const [showQR, setShowQR] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showDailyBonus, setShowDailyBonus] = useState(false)
+
+  // Secret admin activation (5 quick taps on logo badge)
+  const tapCountRef = useRef(0)
+  const lastTapTimeRef = useRef(0)
+
+  const handleSecretTap = useCallback(() => {
+    if (!admin.isAdmin) return // Only for admins
+
+    const now = Date.now()
+    // Reset if more than 500ms between taps
+    if (now - lastTapTimeRef.current > 500) {
+      tapCountRef.current = 1
+    } else {
+      tapCountRef.current += 1
+      if (tapCountRef.current >= 5) {
+        haptic('heavy')
+        openAdminPanel() // Open the admin panel via global function
+        tapCountRef.current = 0
+      }
+    }
+    lastTapTimeRef.current = now
+  }, [admin.isAdmin, haptic])
 
   // Check if user can claim daily bonus (mock - should come from API)
   const dailyStreak = 3 // Mock streak
@@ -309,16 +334,21 @@ export function HomePage({ user }: Props) {
           </div>
         </div>
 
-        {/* Logo Badge — Glass Pill */}
-        <div style={{
-          padding: '10px 16px',
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
-          border: '1px solid var(--border-gold)',
-          borderRadius: 12,
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: '0 0 20px -5px rgba(212,175,55,0.2)',
-        }}>
+        {/* Logo Badge — Glass Pill (5 taps opens admin panel) */}
+        <div
+          onClick={handleSecretTap}
+          style={{
+            padding: '10px 16px',
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
+            border: '1px solid var(--border-gold)',
+            borderRadius: 12,
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            boxShadow: '0 0 20px -5px rgba(212,175,55,0.2)',
+            cursor: 'default',
+            userSelect: 'none',
+          }}
+        >
           <span style={{
             fontFamily: "var(--font-serif)",
             fontWeight: 700,

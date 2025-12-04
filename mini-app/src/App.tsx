@@ -14,8 +14,7 @@ import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { GoldParticles } from './components/ui/GoldParticles'
 import { ToastProvider } from './components/ui/Toast'
-import { FloatingMenu } from './components/ui/FloatingMenu'
-import { AdminProvider } from './contexts/AdminContext'
+import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
@@ -35,9 +34,12 @@ import {
 import { AlertTriangle, RefreshCw, Wifi, WifiOff } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-// WebSocket connection status indicator (debug)
-function WSStatusIndicator() {
+// WebSocket connection status indicator (only shown in debug mode)
+function WSStatusIndicator({ showDebug }: { showDebug: boolean }) {
   const { isConnected, reconnect } = useWebSocketContext()
+
+  // Only show when debug mode is enabled
+  if (!showDebug) return null
 
   return (
     <motion.div
@@ -45,8 +47,8 @@ function WSStatusIndicator() {
       animate={{ opacity: 1, scale: 1 }}
       style={{
         position: 'fixed',
-        bottom: 180,
-        right: 16,
+        top: 'calc(env(safe-area-inset-top, 10px) + 10px)',
+        left: 16,
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
@@ -56,6 +58,7 @@ function WSStatusIndicator() {
         border: `1px solid ${isConnected ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
         borderRadius: 20,
         cursor: 'pointer',
+        backdropFilter: 'blur(10px)',
       }}
       onClick={() => !isConnected && reconnect()}
     >
@@ -73,6 +76,12 @@ function WSStatusIndicator() {
       </span>
     </motion.div>
   )
+}
+
+// Wrapper to pass admin context to WSStatusIndicator
+function AdminAwareWSIndicator() {
+  const admin = useAdmin()
+  return <WSStatusIndicator showDebug={admin.showDebugInfo} />
 }
 
 function AppContent() {
@@ -322,15 +331,10 @@ function AppContent() {
                   <Route path="/support" element={<SupportPage />} />
                 </Routes>
                 <Navigation />
-                {/* Floating Action Menu */}
-                <FloatingMenu
-                  onNewOrder={() => window.location.href = '/create-order'}
-                  onBonus={() => window.location.href = '/roulette'}
-                />
                 {/* Admin Debug Panel */}
                 <AdminPanel />
-                {/* WebSocket Status Indicator */}
-                <WSStatusIndicator />
+                {/* WebSocket Status Indicator - only in debug mode */}
+                <AdminAwareWSIndicator />
               </div>
             </BrowserRouter>
           </WebSocketProvider>
