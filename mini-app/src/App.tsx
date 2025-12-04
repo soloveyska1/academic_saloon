@@ -25,13 +25,54 @@ import {
   ProgressUpdateMessage,
   NotificationMessage,
   RefreshMessage,
+  useWebSocketContext,
 } from './hooks/useWebSocket'
 import {
   SmartNotification,
   SmartNotificationData,
 } from './components/ui/RealtimeNotification'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
-import { AnimatePresence } from 'framer-motion'
+import { AlertTriangle, RefreshCw, Wifi, WifiOff } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+
+// WebSocket connection status indicator (debug)
+function WSStatusIndicator() {
+  const { isConnected, reconnect } = useWebSocketContext()
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      style={{
+        position: 'fixed',
+        bottom: 180,
+        right: 16,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '6px 10px',
+        background: isConnected ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+        border: `1px solid ${isConnected ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+        borderRadius: 20,
+        cursor: 'pointer',
+      }}
+      onClick={() => !isConnected && reconnect()}
+    >
+      {isConnected ? (
+        <Wifi size={14} color="#22c55e" />
+      ) : (
+        <WifiOff size={14} color="#ef4444" />
+      )}
+      <span style={{
+        fontSize: 10,
+        fontWeight: 600,
+        color: isConnected ? '#22c55e' : '#ef4444',
+      }}>
+        {isConnected ? 'WS' : 'Offline'}
+      </span>
+    </motion.div>
+  )
+}
 
 function AppContent() {
   const { userData, loading, error, refetch } = useUserData()
@@ -259,6 +300,8 @@ function AppContent() {
                 />
                 {/* Admin Debug Panel */}
                 <AdminPanel />
+                {/* WebSocket Status Indicator */}
+                <WSStatusIndicator />
               </div>
             </BrowserRouter>
           </WebSocketProvider>
