@@ -185,174 +185,241 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ROYAL PORCELAIN THEME (Light Mode) — Warm White
-   Subsurface scattering effect, warm golden-brown shadows
+   ROYAL PORCELAIN THEME (Light Mode) — Ultra-Premium Luxury v2.0
+   "Boutique Hotel Lobby" aesthetic — Warm Ivory, Bronze Gold, Silk Shadows
+   Designed to evoke: Cartier showroom, Swiss private bank, First-class lounge
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="light"] {
-  /* === BACKGROUNDS: THE PORCELAIN SURFACE === */
-  /* Not pure white! Warm cream like expensive paper */
-  --bg-void: #FAFAF9;
-  --bg-onyx: #F5F5F3;
-  --bg-base: #FAFAF9;
-  --bg-main: #FAFAF9;
+  /* ═══════════════════════════════════════════════════════════════════════════
+     BACKGROUND PALETTE — THE IVORY SUITE
+     Not pure white! Warm cream like Hermès gift paper
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --bg-void: #FAF9F7;         /* Warm ivory base */
+  --bg-onyx: #F5F4F1;         /* Silk undertone */
+  --bg-base: #FAF9F7;
+  --bg-main: #FAF9F7;
   --bg-surface: #FFFFFF;
   --bg-elevated: #FFFFFF;
-  --bg-card: rgba(255, 255, 255, 0.75);
+  /* Premium frosted glass — warm tint with gold shimmer */
+  --bg-card: rgba(255, 255, 255, 0.85);
   --bg-card-solid: #FFFFFF;
-  --bg-glass: rgba(0, 0, 0, 0.015);
+  --bg-glass: rgba(180, 142, 38, 0.02);
 
-  /* Card border for light mode */
-  --card-border: rgba(255, 255, 255, 0.6);
+  /* Card border — subtle warm edge */
+  --card-border: rgba(180, 142, 38, 0.08);
 
-  /* === THE ROYAL GOLD (Deeper for light mode contrast) === */
-  --gold-metallic: linear-gradient(135deg, #6b4f0f 0%, #9e7a1a 25%, #d4af37 50%, #9e7a1a 75%, #6b4f0f 100%);
-  --gold-text-shine: linear-gradient(to right, #8b6914, #c9a02f, #7d5c12, #b48e26);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     BRONZE GOLD PALETTE — Richer, Deeper, More Luxurious
+     The "Old Money" gold — darker and more sophisticated on light backgrounds
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --gold-metallic: linear-gradient(135deg, #5c4510 0%, #8b6914 20%, #c9a02f 45%, #e6c547 55%, #c9a02f 80%, #5c4510 100%);
+  --gold-text-shine: linear-gradient(to right, #7d5c12, #b48e26, #5c4510, #9e7a1a, #7d5c12);
 
-  --gold-950: #3d2e0a;
-  --gold-900: #5c4510;
-  --gold-800: #6b4f0f;
-  --gold-700: #7d5c12;
-  --gold-600: #8b6914;
-  --gold-500: #9e7a1a;
-  --gold-400: #b48e26;
-  --gold-350: #c9a02f;
-  --gold-300: #d4af37;
-  --gold-250: #dfc14a;
-  --gold-200: #e6c547;
-  --gold-150: #f0d35c;
-  --gold-100: #f5d061;
-  --gold-50: #ffeaa7;
+  /* Liquid gold for buttons — rich bronze-gold */
+  --liquid-gold: linear-gradient(135deg, #8b6914 0%, #b48e26 25%, #d4af37 50%, #b48e26 75%, #8b6914 100%);
+  --liquid-gold-text: linear-gradient(135deg, #5c4510 0%, #7d5c12 25%, #9e7a1a 50%, #7d5c12 75%, #5c4510 100%);
 
-  /* Anisotropic Gold for Light Mode (darker for contrast) */
+  /* Anisotropic Gold Luster — "polished bronze" effect */
   --gold-luster: linear-gradient(
     135deg,
-    #6b4f0f 0%,
-    #9e7a1a 25%,
-    #d4af37 50%,
-    #9e7a1a 75%,
-    #6b4f0f 100%
+    #5c4510 0%,
+    #8b6914 20%,
+    #c9a02f 45%,
+    #e6c547 55%,
+    #c9a02f 80%,
+    #5c4510 100%
   );
 
-  /* Legacy support */
-  --liquid-gold: linear-gradient(135deg, #9e7a1a 0%, #d4af37 50%, #8b6914 75%, #c9a02f 100%);
-  --liquid-gold-text: linear-gradient(135deg, #9e7a1a 0%, #7d5c12 30%, #5c4510 60%, #8b6914 100%);
+  /* The Royal Gold Scale — Richer tones for light mode */
+  --gold-950: #2d2207;        /* Deep espresso gold */
+  --gold-900: #3d2e0a;
+  --gold-800: #4d3a0d;
+  --gold-700: #5c4510;
+  --gold-600: #7d5c12;        /* Primary bronze gold */
+  --gold-500: #8b6914;
+  --gold-400: #9e7a1a;
+  --gold-350: #b48e26;
+  --gold-300: #c9a02f;
+  --gold-250: #d4af37;
+  --gold-200: #dfc14a;
+  --gold-150: #e6c547;
+  --gold-100: #f0d35c;
+  --gold-50: #f9e07a;
 
-  /* === STATUS COLORS — Glass Pills (Light Mode) === */
-  --success-glass: rgba(22, 163, 74, 0.1);
-  --success-text: #16a34a;
-  --success-border: rgba(22, 163, 74, 0.2);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     STATUS COLORS — Jewel Tones (Richer for Light Mode)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --success-glass: rgba(22, 163, 74, 0.08);
+  --success-text: #15803d;
+  --success-border: rgba(22, 163, 74, 0.15);
 
-  --warning-glass: rgba(202, 138, 4, 0.1);
-  --warning-text: #ca8a04;
-  --warning-border: rgba(202, 138, 4, 0.2);
+  --warning-glass: rgba(180, 142, 38, 0.08);
+  --warning-text: #a16207;
+  --warning-border: rgba(180, 142, 38, 0.15);
 
-  --error-glass: rgba(220, 38, 38, 0.1);
-  --error-text: #dc2626;
-  --error-border: rgba(220, 38, 38, 0.2);
+  --error-glass: rgba(185, 28, 28, 0.08);
+  --error-text: #b91c1c;
+  --error-border: rgba(185, 28, 28, 0.15);
 
-  --info-glass: rgba(37, 99, 235, 0.1);
-  --info-text: #2563eb;
-  --info-border: rgba(37, 99, 235, 0.2);
+  --info-glass: rgba(29, 78, 216, 0.08);
+  --info-text: #1d4ed8;
+  --info-border: rgba(29, 78, 216, 0.15);
 
-  /* Blood Crimson (deeper for light mode) */
+  /* Blood Crimson (deep ruby for light mode) */
   --red-900: #7f1d1d;
   --red-700: #991b1b;
   --red-500: #b91c1c;
   --red-400: #dc2626;
   --red-300: #ef4444;
 
-  /* Status Colors (saturated for light mode) */
-  --status-success: #16a34a;
-  --status-warning: #ca8a04;
-  --status-error: #dc2626;
-  --status-info: #2563eb;
+  /* Status Colors (jewel tones) */
+  --status-success: #15803d;
+  --status-warning: #a16207;
+  --status-error: #b91c1c;
+  --status-info: #1d4ed8;
 
-  /* Text Colors — Never pure black! */
-  --text-primary: #18181B;
-  --text-main: #18181B;
-  --text-secondary: rgba(82, 82, 82, 0.9);
-  --text-muted: #71717A;
+  /* ═══════════════════════════════════════════════════════════════════════════
+     TYPOGRAPHY — Rich Espresso & Bronze
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --text-primary: #1C1917;    /* Warm charcoal, not cold black */
+  --text-main: #1C1917;
+  --text-secondary: #57534E;  /* Warm stone */
+  --text-muted: #78716C;      /* Taupe */
   --text-gold: var(--gold-600);
 
-  /* Borders */
-  --border-subtle: rgba(0, 0, 0, 0.04);
-  --border-default: rgba(0, 0, 0, 0.06);
-  --border-strong: rgba(0, 0, 0, 0.1);
-  --border-gold: rgba(180, 142, 38, 0.2);
-  --border-gold-strong: rgba(180, 142, 38, 0.35);
+  /* ═══════════════════════════════════════════════════════════════════════════
+     BORDERS — Silk & Gold Thread
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --border-subtle: rgba(120, 113, 108, 0.06);
+  --border-default: rgba(120, 113, 108, 0.1);
+  --border-strong: rgba(120, 113, 108, 0.15);
+  --border-gold: rgba(180, 142, 38, 0.25);
+  --border-gold-strong: rgba(180, 142, 38, 0.4);
 
-  /* === WARM GOLD SHADOWS FOR LIGHT MODE === */
-  /* THE SECRET: Golden-brown shadows, NOT black! */
+  /* ═══════════════════════════════════════════════════════════════════════════
+     THE SECRET SAUCE: WARM BRONZE SHADOWS
+     Rule: Shadows are GOLDEN-BRONZE, never cold grey!
+     This creates the "lit by candlelight" boutique feel
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Card Shadow — The Signature (warm bronze glow) */
   --card-shadow:
-    0 10px 30px -10px rgba(166, 138, 58, 0.15),
-    inset 0 0 0 1px rgba(255, 255, 255, 1);
+    0 1px 2px rgba(120, 85, 40, 0.04),
+    0 4px 8px rgba(120, 85, 40, 0.06),
+    0 12px 24px -4px rgba(120, 85, 40, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8);
 
-  /* === EFFECTS (warm golden tones) === */
-  --glow-gold: 0 0 20px -5px rgba(180, 142, 38, 0.25);
-  --glow-gold-strong: 0 0 40px -5px rgba(180, 142, 38, 0.4);
-  --glow-gold-intense: 0 0 60px -10px rgba(180, 142, 38, 0.6);
-  --glow-red: 0 0 20px -5px rgba(185, 28, 28, 0.3);
+  /* Gold Glow Effects */
+  --glow-gold: 0 0 20px -4px rgba(180, 142, 38, 0.3);
+  --glow-gold-strong: 0 0 35px -4px rgba(180, 142, 38, 0.45);
+  --glow-gold-intense: 0 0 50px -8px rgba(180, 142, 38, 0.6);
+  --glow-red: 0 0 20px -4px rgba(185, 28, 28, 0.25);
 
-  /* Shadows — NEVER pure black! Use warm golden-brown */
-  --shadow-sm: 0 1px 2px rgba(166, 138, 58, 0.06);
-  --shadow-md: 0 4px 12px rgba(166, 138, 58, 0.08);
-  --shadow-lg: 0 10px 30px rgba(166, 138, 58, 0.1);
-  --shadow-xl: 0 25px 50px rgba(166, 138, 58, 0.12);
+  /* Layered Shadows — Warm Bronze Tones */
+  --shadow-sm: 0 1px 2px rgba(120, 85, 40, 0.05);
+  --shadow-md:
+    0 2px 4px rgba(120, 85, 40, 0.04),
+    0 6px 12px rgba(120, 85, 40, 0.08);
+  --shadow-lg:
+    0 4px 6px rgba(120, 85, 40, 0.03),
+    0 10px 20px rgba(120, 85, 40, 0.08),
+    0 20px 40px -8px rgba(120, 85, 40, 0.12);
+  --shadow-xl:
+    0 8px 16px rgba(120, 85, 40, 0.04),
+    0 20px 40px rgba(120, 85, 40, 0.1),
+    0 40px 80px -16px rgba(120, 85, 40, 0.15);
+
+  /* Premium Vault Shadow */
   --shadow-vault:
-    0 4px 6px -1px rgba(180, 142, 38, 0.05),
-    0 10px 15px -3px rgba(166, 138, 58, 0.08),
-    0 30px 60px -15px rgba(166, 138, 58, 0.12);
+    0 2px 4px rgba(120, 85, 40, 0.03),
+    0 8px 16px rgba(120, 85, 40, 0.06),
+    0 24px 48px -8px rgba(120, 85, 40, 0.12),
+    0 0 60px -20px rgba(180, 142, 38, 0.15);
+
+  /* Glass Card Shadow */
   --shadow-glass:
-    0 4px 24px rgba(166, 138, 58, 0.06),
-    0 20px 40px -10px rgba(255, 255, 255, 0.6) inset;
+    0 2px 8px rgba(120, 85, 40, 0.04),
+    0 12px 32px -8px rgba(120, 85, 40, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  /* Dossier/Document Shadow */
   --shadow-dossier:
-    0 4px 6px -1px rgba(180, 142, 38, 0.04),
-    0 15px 35px -10px rgba(166, 138, 58, 0.1);
+    0 1px 2px rgba(120, 85, 40, 0.03),
+    0 8px 24px -6px rgba(120, 85, 40, 0.12);
 }
 
-/* Light mode specific overrides */
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE COMPONENT OVERRIDES — Ultra-Premium Styling
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Glass Card — Frosted Silk */
 [data-theme="light"] .glass-card {
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(120, 85, 40, 0.08);
+  box-shadow:
+    0 1px 2px rgba(120, 85, 40, 0.04),
+    0 8px 24px -4px rgba(120, 85, 40, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
+/* Glass Card Gold — Champagne Tint */
 [data-theme="light"] .glass-card-gold {
   background: linear-gradient(
     135deg,
-    rgba(180, 142, 38, 0.08) 0%,
-    rgba(255, 255, 255, 0.9) 40%,
+    rgba(180, 142, 38, 0.06) 0%,
+    rgba(255, 255, 255, 0.95) 35%,
+    rgba(255, 255, 255, 0.92) 65%,
     rgba(180, 142, 38, 0.04) 100%
   );
-  border: 1px solid var(--border-gold);
-  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.1), 0 0 60px -20px rgba(180, 142, 38, 0.15);
+  border: 1px solid rgba(180, 142, 38, 0.2);
+  box-shadow:
+    0 2px 4px rgba(120, 85, 40, 0.04),
+    0 12px 32px -8px rgba(120, 85, 40, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 0 50px -15px rgba(180, 142, 38, 0.2);
 }
 
+/* Elevated Card — Pure Silk */
 [data-theme="light"] .glass-card-elevated {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(120, 85, 40, 0.06);
+  box-shadow:
+    0 4px 8px rgba(120, 85, 40, 0.04),
+    0 16px 40px -8px rgba(120, 85, 40, 0.1);
 }
 
+/* Bento Cell — Cream Paper */
 [data-theme="light"] .bento-cell {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(120, 85, 40, 0.08);
+  box-shadow:
+    0 2px 4px rgba(120, 85, 40, 0.03),
+    0 8px 16px -4px rgba(120, 85, 40, 0.06);
 }
 
+/* Bento Vault — Bronze Accent */
 [data-theme="light"] .bento-cell-vault {
   background: linear-gradient(
     135deg,
-    rgba(180, 142, 38, 0.1) 0%,
-    rgba(255, 255, 255, 0.95) 40%,
-    rgba(180, 142, 38, 0.05) 100%
+    rgba(180, 142, 38, 0.08) 0%,
+    rgba(255, 255, 255, 0.98) 30%,
+    rgba(255, 255, 255, 0.95) 70%,
+    rgba(180, 142, 38, 0.04) 100%
   );
-  border-color: var(--border-gold);
+  border: 1px solid rgba(180, 142, 38, 0.2);
+  box-shadow:
+    0 2px 4px rgba(120, 85, 40, 0.04),
+    0 12px 28px -8px rgba(120, 85, 40, 0.1),
+    0 0 40px -15px rgba(180, 142, 38, 0.15);
 }
 
+/* Input Fields — Refined */
 [data-theme="light"] .input {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(120, 85, 40, 0.12);
   color: var(--text-primary);
+  box-shadow: inset 0 1px 2px rgba(120, 85, 40, 0.04);
 }
 
 [data-theme="light"] .input::placeholder {
@@ -360,62 +427,81 @@
 }
 
 [data-theme="light"] .input:focus {
-  border-color: var(--gold-500);
-  box-shadow: 0 0 0 3px rgba(180, 142, 38, 0.15), var(--glow-gold);
+  border-color: rgba(180, 142, 38, 0.4);
+  box-shadow:
+    0 0 0 3px rgba(180, 142, 38, 0.1),
+    0 0 20px -4px rgba(180, 142, 38, 0.2),
+    inset 0 1px 2px rgba(120, 85, 40, 0.02);
 }
 
+/* Skeleton Loader — Warm Shimmer */
 [data-theme="light"] .skeleton {
   background: linear-gradient(
     90deg,
-    #f0f0f0 0%,
-    #e8e8e8 25%,
-    rgba(180, 142, 38, 0.08) 50%,
-    #e8e8e8 75%,
-    #f0f0f0 100%
+    #F5F4F1 0%,
+    #FDFCFA 25%,
+    rgba(180, 142, 38, 0.06) 50%,
+    #FDFCFA 75%,
+    #F5F4F1 100%
   );
+  background-size: 400% 100%;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BADGES — Jewel Tone Pills
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="light"] .badge-gold {
   color: var(--gold-700);
-  background: rgba(180, 142, 38, 0.12);
-  border-color: rgba(180, 142, 38, 0.25);
+  background: linear-gradient(135deg, rgba(180, 142, 38, 0.1) 0%, rgba(180, 142, 38, 0.06) 100%);
+  border: 1px solid rgba(180, 142, 38, 0.2);
+  box-shadow: 0 2px 6px -2px rgba(180, 142, 38, 0.15);
 }
 
 [data-theme="light"] .badge-success {
   color: #15803d;
-  background: rgba(22, 163, 74, 0.1);
-  border-color: rgba(22, 163, 74, 0.2);
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0.06) 100%);
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  box-shadow: 0 2px 6px -2px rgba(22, 163, 74, 0.12);
 }
 
 [data-theme="light"] .badge-warning {
   color: #a16207;
-  background: rgba(202, 138, 4, 0.1);
-  border-color: rgba(202, 138, 4, 0.2);
+  background: linear-gradient(135deg, rgba(161, 98, 7, 0.1) 0%, rgba(161, 98, 7, 0.06) 100%);
+  border: 1px solid rgba(161, 98, 7, 0.18);
+  box-shadow: 0 2px 6px -2px rgba(161, 98, 7, 0.12);
 }
 
 [data-theme="light"] .badge-error {
   color: #b91c1c;
-  background: rgba(220, 38, 38, 0.1);
-  border-color: rgba(220, 38, 38, 0.2);
+  background: linear-gradient(135deg, rgba(185, 28, 28, 0.1) 0%, rgba(185, 28, 28, 0.06) 100%);
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  box-shadow: 0 2px 6px -2px rgba(185, 28, 28, 0.12);
 }
 
 [data-theme="light"] .badge-info {
   color: #1d4ed8;
-  background: rgba(37, 99, 235, 0.1);
-  border-color: rgba(37, 99, 235, 0.2);
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.1) 0%, rgba(29, 78, 216, 0.06) 100%);
+  border: 1px solid rgba(29, 78, 216, 0.18);
+  box-shadow: 0 2px 6px -2px rgba(29, 78, 216, 0.12);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GOLD TEXT EFFECTS — Rich Bronze
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="light"] .liquid-gold-text,
 [data-theme="light"] .gold-gradient-text {
   background: linear-gradient(
     135deg,
-    #8b6914 0%,
-    #b48e26 25%,
-    #9e7a1a 50%,
-    #7d5c12 75%,
-    #8b6914 100%
+    #5c4510 0%,
+    #8b6914 20%,
+    #b48e26 40%,
+    #c9a02f 60%,
+    #8b6914 80%,
+    #5c4510 100%
   );
-  background-size: 200% 200%;
+  background-size: 250% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -423,34 +509,140 @@
 
 [data-theme="light"] .text-gold {
   color: var(--gold-600);
-  text-shadow: none;
+  text-shadow: 0 1px 2px rgba(180, 142, 38, 0.15);
 }
 
 [data-theme="light"] .avatar-gold-ring::after {
   background: var(--bg-void);
 }
 
-/* Light mode scrollbar */
+/* ═══════════════════════════════════════════════════════════════════════════
+   BUTTONS — Premium Bronze Gold
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] .btn-liquid-gold {
+  background: linear-gradient(
+    135deg,
+    #8b6914 0%,
+    #b48e26 20%,
+    #d4af37 45%,
+    #e6c547 55%,
+    #d4af37 80%,
+    #8b6914 100%
+  );
+  box-shadow:
+    0 2px 4px rgba(120, 85, 40, 0.15),
+    0 8px 20px -4px rgba(180, 142, 38, 0.25),
+    0 0 40px -10px rgba(180, 142, 38, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .btn-liquid-gold:hover {
+  box-shadow:
+    0 4px 8px rgba(120, 85, 40, 0.2),
+    0 12px 28px -4px rgba(180, 142, 38, 0.3),
+    0 0 50px -10px rgba(180, 142, 38, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .btn-gold {
+  background: linear-gradient(180deg, #d4af37 0%, #b48e26 50%, #9e7a1a 100%);
+  box-shadow:
+    0 2px 6px -2px rgba(180, 142, 38, 0.3),
+    0 6px 16px -4px rgba(120, 85, 40, 0.15);
+}
+
+[data-theme="light"] .btn-ghost {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(120, 85, 40, 0.1);
+}
+
+[data-theme="light"] .btn-ghost:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(180, 142, 38, 0.2);
+  box-shadow: 0 2px 8px -2px rgba(120, 85, 40, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBAR — Warm Bronze
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 [data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(120, 85, 40, 0.15);
+  border-radius: 100px;
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(120, 85, 40, 0.25);
 }
 
-/* Light mode: Reduce noise overlay and change ambient glow */
+/* ═══════════════════════════════════════════════════════════════════════════
+   AMBIENT EFFECTS — Warm Golden Light
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Subtle grain overlay — reduced for light mode */
 [data-theme="light"] body::before {
-  opacity: 0.015;
+  opacity: 0.012;
   mix-blend-mode: multiply;
 }
 
+/* Golden ambient light from top — boutique feel */
 [data-theme="light"] body::after {
   background: radial-gradient(
-    ellipse 120% 50% at 50% -10%,
-    rgba(180, 142, 38, 0.08) 0%,
-    rgba(180, 142, 38, 0.03) 35%,
-    transparent 65%
+    ellipse 140% 60% at 50% -15%,
+    rgba(180, 142, 38, 0.06) 0%,
+    rgba(180, 142, 38, 0.025) 40%,
+    transparent 70%
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM CARD SPOTLIGHT — Light Mode
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] .premium-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(120, 85, 40, 0.08);
+}
+
+[data-theme="light"] .premium-card::before {
+  background: linear-gradient(
+    135deg,
+    rgba(180, 142, 38, 0.15) 0%,
+    transparent 50%,
+    rgba(180, 142, 38, 0.08) 100%
+  );
+}
+
+[data-theme="light"] .premium-card::after {
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(180, 142, 38, 0.08),
+    transparent 40%
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROGRESS ELEMENTS — Bronze Gradient
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] .progress-ring-bg {
+  stroke: rgba(120, 85, 40, 0.1);
+}
+
+/* Avatar Gold Ring — Richer for light mode */
+[data-theme="light"] .avatar-gold-ring::before {
+  background: conic-gradient(
+    from 0deg,
+    #8b6914,
+    #c9a02f,
+    #e6c547,
+    #c9a02f,
+    #8b6914
   );
 }
 

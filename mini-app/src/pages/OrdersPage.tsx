@@ -90,7 +90,7 @@ export function OrdersPage({ orders }: Props) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0a0a0c',
+      background: 'var(--bg-main)',
       padding: 24,
       paddingBottom: 140,
     }}>
@@ -111,19 +111,20 @@ export function OrdersPage({ orders }: Props) {
             height: 48,
             borderRadius: 14,
             background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-            border: '1px solid rgba(212,175,55,0.2)',
+            border: '1px solid var(--border-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            boxShadow: 'var(--glow-gold)',
           }}>
-            <FileStack size={24} color="#d4af37" />
+            <FileStack size={24} color="var(--gold-400)" />
           </div>
           <div>
             <h1 style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 26,
               fontWeight: 700,
-              background: 'linear-gradient(135deg, #f5d061, #d4af37)',
+              background: 'var(--gold-text-shine)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -131,7 +132,7 @@ export function OrdersPage({ orders }: Props) {
             }}>
               Мои заказы
             </h1>
-            <p style={{ fontSize: 13, color: '#71717a', margin: 0 }}>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
               {orders.length} {orders.length === 1 ? 'заказ' : orders.length < 5 ? 'заказа' : 'заказов'}
             </p>
           </div>
@@ -148,9 +149,11 @@ export function OrdersPage({ orders }: Props) {
           gap: 10,
           marginBottom: 24,
           padding: 6,
-          background: '#14141a',
+          background: 'var(--bg-card)',
           borderRadius: 14,
-          border: '1px solid rgba(255,255,255,0.05)',
+          border: '1px solid var(--border-default)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
         }}
       >
         {[
@@ -167,15 +170,15 @@ export function OrdersPage({ orders }: Props) {
               padding: '12px 16px',
               fontSize: 14,
               fontWeight: 600,
-              color: filter === f.value ? '#050505' : '#a1a1aa',
+              color: filter === f.value ? 'var(--bg-void)' : 'var(--text-muted)',
               background: filter === f.value
-                ? 'linear-gradient(135deg, #f5d061, #d4af37)'
+                ? 'var(--gold-metallic)'
                 : 'transparent',
               border: 'none',
               borderRadius: 10,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              boxShadow: filter === f.value ? '0 4px 15px -3px rgba(212,175,55,0.4)' : 'none',
+              boxShadow: filter === f.value ? 'var(--glow-gold)' : 'none',
             }}
           >
             {f.label}
@@ -193,9 +196,11 @@ export function OrdersPage({ orders }: Props) {
               style={{
                 textAlign: 'center',
                 padding: '60px 20px',
-                background: '#14141a',
+                background: 'var(--bg-card)',
                 borderRadius: 20,
-                border: '1px solid rgba(255,255,255,0.05)',
+                border: '1px solid var(--border-default)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
               }}
             >
               <div style={{
@@ -204,17 +209,17 @@ export function OrdersPage({ orders }: Props) {
                 margin: '0 auto 20px',
                 borderRadius: 20,
                 background: 'rgba(212,175,55,0.1)',
-                border: '1px solid rgba(212,175,55,0.2)',
+                border: '1px solid var(--border-gold)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <FileStack size={36} color="#d4af37" strokeWidth={1.5} />
+                <FileStack size={36} color="var(--gold-400)" strokeWidth={1.5} />
               </div>
-              <p style={{ fontSize: 18, fontWeight: 600, color: '#f2f2f2', marginBottom: 8 }}>
+              <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)', marginBottom: 8 }}>
                 Нет заказов
               </p>
-              <p style={{ fontSize: 14, color: '#71717a' }}>
+              <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
                 {filter === 'active' ? 'Нет активных заказов' : filter === 'completed' ? 'Нет завершённых заказов' : 'Создайте первый заказ'}
               </p>
             </motion.div>
@@ -235,13 +240,16 @@ export function OrdersPage({ orders }: Props) {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleOrderClick(order.id)}
                   style={{
-                    background: '#14141a',
+                    background: 'var(--bg-card)',
                     borderRadius: 20,
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    border: '1px solid var(--border-default)',
                     padding: 20,
                     cursor: 'pointer',
                     position: 'relative',
                     overflow: 'hidden',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    boxShadow: 'var(--card-shadow)',
                   }}
                 >
                   {/* Subtle glow on tap */}
@@ -270,19 +278,19 @@ export function OrdersPage({ orders }: Props) {
                         height: 44,
                         borderRadius: 12,
                         background: 'rgba(212,175,55,0.1)',
-                        border: '1px solid rgba(212,175,55,0.2)',
+                        border: '1px solid var(--border-gold)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}>
-                        <WorkIcon size={22} color="#d4af37" strokeWidth={1.5} />
+                        <WorkIcon size={22} color="var(--gold-400)" strokeWidth={1.5} />
                       </div>
                       <div>
                         <h3 style={{
                           fontSize: 16,
                           fontWeight: 700,
-                          color: '#f2f2f2',
+                          color: 'var(--text-main)',
                           margin: 0,
                           marginBottom: 4,
                         }}>
@@ -290,7 +298,7 @@ export function OrdersPage({ orders }: Props) {
                         </h3>
                         <p style={{
                           fontSize: 14,
-                          color: '#71717a',
+                          color: 'var(--text-muted)',
                           margin: 0,
                           maxWidth: 180,
                           overflow: 'hidden',
@@ -334,7 +342,7 @@ export function OrdersPage({ orders }: Props) {
                     <div style={{ marginBottom: 14 }}>
                       <div style={{
                         height: 4,
-                        background: 'rgba(255,255,255,0.08)',
+                        background: 'var(--bg-glass)',
                         borderRadius: 2,
                         overflow: 'hidden',
                       }}>
@@ -344,9 +352,9 @@ export function OrdersPage({ orders }: Props) {
                           transition={{ duration: 0.5, delay: index * 0.05 + 0.2 }}
                           style={{
                             height: '100%',
-                            background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+                            background: 'var(--gold-metallic)',
                             borderRadius: 2,
-                            boxShadow: '0 0 10px rgba(212,175,55,0.5)',
+                            boxShadow: 'var(--glow-gold)',
                           }}
                         />
                       </div>
@@ -358,8 +366,8 @@ export function OrdersPage({ orders }: Props) {
                         <span style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          color: '#d4af37',
-                          fontFamily: "'JetBrains Mono', monospace",
+                          color: 'var(--gold-400)',
+                          fontFamily: "var(--font-mono)",
                         }}>
                           {order.progress}%
                         </span>
@@ -373,12 +381,12 @@ export function OrdersPage({ orders }: Props) {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     paddingTop: 14,
-                    borderTop: '1px solid rgba(255,255,255,0.05)',
+                    borderTop: '1px solid var(--border-subtle)',
                   }}>
                     <span style={{
                       fontSize: 12,
-                      color: '#52525b',
-                      fontFamily: "'JetBrains Mono', monospace",
+                      color: 'var(--text-muted)',
+                      fontFamily: "var(--font-mono)",
                     }}>
                       #{order.id}
                     </span>
@@ -387,12 +395,12 @@ export function OrdersPage({ orders }: Props) {
                       <span style={{
                         fontSize: 18,
                         fontWeight: 700,
-                        color: '#e6c547',
-                        fontFamily: "'JetBrains Mono', monospace",
+                        color: 'var(--gold-200)',
+                        fontFamily: "var(--font-mono)",
                       }}>
                         {order.final_price.toLocaleString('ru-RU')} ₽
                       </span>
-                      <ChevronRight size={18} color="#52525b" />
+                      <ChevronRight size={18} color="var(--text-muted)" />
                     </div>
                   </div>
                 </motion.div>
