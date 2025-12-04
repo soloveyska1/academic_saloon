@@ -78,6 +78,13 @@ CARD_STAGES = {
         "tag": "#REVIEW",
         "status_tag": "#status_review",
     },
+    # Правки запрошены
+    "revision": {
+        "statuses": [OrderStatus.REVISION.value],
+        "emoji": "🟠",
+        "tag": "#REVISION",
+        "status_tag": "#status_revision",
+    },
     # Завершён
     "done": {
         "statuses": [OrderStatus.COMPLETED.value],
@@ -472,7 +479,7 @@ def get_card_keyboard(
         buttons.append([
             InlineKeyboardButton(
                 text="📤 Сдать работу",
-                url=f"https://t.me/{bot_username}?start=upload_{order.id}"
+                callback_data=f"card_deliver:{order.id}"
             ),
         ])
         buttons.append([
@@ -503,6 +510,30 @@ def get_card_keyboard(
         buttons.append([
             InlineKeyboardButton(
                 text="✅ Завершить заказ",
+                callback_data=f"card_complete:{order.id}"
+            ),
+        ])
+
+    elif stage_name == "revision":
+        # ═══ ПРАВКИ ЗАПРОШЕНЫ ═══
+        # Прогресс
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"📊 Прогресс: {progress}%",
+                callback_data=f"card_progress:{order.id}"
+            ),
+        ])
+
+        # Сдача работы (повторная)
+        buttons.append([
+            InlineKeyboardButton(
+                text="📤 Сдать исправления",
+                callback_data=f"card_deliver:{order.id}"
+            ),
+        ])
+        buttons.append([
+            InlineKeyboardButton(
+                text="✅ Готово",
                 callback_data=f"card_complete:{order.id}"
             ),
         ])

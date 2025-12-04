@@ -989,6 +989,161 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
 
 
 # ══════════════════════════════════════════════════════════════
+#           СДАЧА РАБОТЫ (прямо в топике)
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("card_deliver:"))
+async def card_deliver_menu(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Показать меню сдачи работы прямо в топике"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    client_name = user.fullname if user else "Клиент"
+
+    text = f"""📤 <b>Сдача работы по заказу #{order_id}</b>
+
+👤 Клиент: <b>{client_name}</b>
+
+<b>Инструкция:</b>
+1️⃣ Отправьте файлы прямо в этот топик
+   <i>(они автоматически уйдут клиенту)</i>
+
+2️⃣ Добавьте комментарий если нужно
+
+3️⃣ Нажмите <b>«✅ Работа отправлена»</b>
+
+━━━━━━━━━━━━━━━━━━━━━━
+💡 <i>После подтверждения клиент получит уведомление
+и 30 дней на бесплатные правки</i>"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="✅ Работа отправлена",
+            callback_data=f"card_deliver_confirm:{order.id}"
+        )],
+        [InlineKeyboardButton(
+            text="◀️ Назад к карточке",
+            callback_data=f"card_back:{order.id}"
+        )],
+    ])
+
+    await callback.message.edit_text(text, reply_markup=keyboard)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("card_deliver_confirm:"))
+async def card_deliver_confirm(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Подтвердить сдачу работы → статус review + уведомление клиенту"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Меняем статус на "На проверке"
+    old_status = order.status
+    order.status = OrderStatus.REVIEW.value
+    order.delivered_at = datetime.utcnow()  # Фиксируем время сдачи для 30-дневного таймера
+    await session.commit()
+
+    # UNIFIED HUB: Обновляем название топика
+    await update_topic_name(bot, session, order, user)
+
+    # Обновляем карточку
+    await update_card_status(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+        extra_text=f"📤 Работа сдана — {datetime.now().strftime('%d.%m %H:%M')}"
+    )
+
+    # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ ═══
+    webapp_url = f"{settings.WEBAPP_URL}/order/{order.id}"
+    user_text = f"""🎉 <b>РАБОТА ГОТОВА!</b>
+
+Заказ <b>#{order.id}</b> выполнен и ждёт вашей проверки.
+
+📁 Файлы отправлены в чат
+⏰ <b>30 дней</b> на бесплатные правки
+
+Проверьте работу и подтвердите получение 👇"""
+
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="👀 Проверить работу", web_app=WebAppInfo(url=webapp_url))],
+        [InlineKeyboardButton(text="💬 Написать менеджеру", callback_data=f"enter_chat_order_{order.id}")],
+    ])
+
+    try:
+        await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
+    except Exception as e:
+        logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
+
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ ═══
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.REVIEW.value,
+            old_status=old_status,
+            extra_data={"delivered_at": datetime.utcnow().isoformat()},
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
+
+    await callback.answer("✅ Работа отправлена клиенту!", show_alert=True)
+
+
+@router.callback_query(F.data.startswith("card_back:"))
+async def card_back_to_card(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Вернуться к карточке заказа"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Перерендерим карточку
+    from bot.services.live_cards import render_order_card, get_card_keyboard
+
+    card_text = await render_order_card(
+        order=order,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+    )
+
+    keyboard = await get_card_keyboard(order, session, bot)
+
+    try:
+        await callback.message.edit_text(card_text, reply_markup=keyboard)
+    except Exception:
+        pass
+
+    await callback.answer()
+
+
+# ══════════════════════════════════════════════════════════════
 #           ПРОГРЕСС ЗАКАЗА (прямо в топике)
 # ══════════════════════════════════════════════════════════════
 

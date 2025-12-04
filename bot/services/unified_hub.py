@@ -63,6 +63,7 @@ STATUS_EMOJI = {
     OrderStatus.PAID_FULL.value: "🔵",
     OrderStatus.IN_PROGRESS.value: "🔵",
     OrderStatus.REVIEW.value: "🟣",
+    OrderStatus.REVISION.value: "🟠",
     OrderStatus.COMPLETED.value: "🟢",
     OrderStatus.CANCELLED.value: "⚫",
     OrderStatus.REJECTED.value: "⚫",
