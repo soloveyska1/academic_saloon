@@ -51,6 +51,7 @@ export interface Order {
   review_submitted: boolean  // Whether review was submitted
   created_at: string
   completed_at: string | null
+  delivered_at: string | null  // When work was delivered (30-day revision period starts)
 }
 
 export type OrderStatus =
@@ -64,6 +65,7 @@ export type OrderStatus =
   | 'paid_full'
   | 'in_progress'
   | 'review'
+  | 'revision'
   | 'completed'
   | 'cancelled'
   | 'rejected'
