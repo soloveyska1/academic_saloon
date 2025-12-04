@@ -416,6 +416,18 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
     # Отправляем полноценное уведомление с кнопками оплаты
     sent = await send_payment_notification(bot, order, client, price)
 
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.WAITING_PAYMENT.value,
+            extra_data={"final_price": final_price, "bonus_used": bonus_used},
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
+
     # Очищаем FSM
     await state.clear()
 
