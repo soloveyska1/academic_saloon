@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-// Admin Telegram IDs - добавь сюда свой ID
+// Admin Telegram IDs
 const ADMIN_IDS = [
-  123456789, // Replace with your Telegram ID
-  // Add more admin IDs here
+  872379852, // Main admin
 ]
 
 interface AdminSettings {
