@@ -125,7 +125,7 @@ def order_to_response(order: Order) -> OrderResponse:
         bonus_used=float(order.bonus_used or 0),
         progress=order.progress or 0,
         payment_scheme=order.payment_scheme,  # full / half
-        files_url=order.yadisk_url or getattr(order, 'files_url', None),  # Work files URL
+        files_url=getattr(order, 'files_url', None),  # Work files URL (Yandex.Disk)
         review_submitted=getattr(order, 'review_submitted', False),  # Whether review was submitted
         created_at=order.created_at.isoformat() if order.created_at else "",
         completed_at=order.completed_at.isoformat() if order.completed_at else None
