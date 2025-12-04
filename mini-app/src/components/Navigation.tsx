@@ -3,20 +3,13 @@ import { motion } from 'framer-motion'
 import { Home, ClipboardList, Target, User } from 'lucide-react'
 import { useTelegram } from '../hooks/useUserData'
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  NAVIGATION CONFIGURATION — INTELLIGENT LUXURY LABELS
-// ═══════════════════════════════════════════════════════════════════════════
-
+// Navigation items with premium labels
 const navItems = [
   { path: '/', icon: Home, label: 'Главная' },
   { path: '/orders', icon: ClipboardList, label: 'Портфель' },
   { path: '/roulette', icon: Target, label: 'Клуб' },
   { path: '/profile', icon: User, label: 'Профиль' },
 ]
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  NAVIGATION COMPONENT — PREMIUM FLOATING DOCK
-// ═══════════════════════════════════════════════════════════════════════════
 
 export function Navigation() {
   const location = useLocation()
@@ -48,6 +41,20 @@ export function Navigation() {
         paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
       }}
     >
+      {/* Background Gradient Fade */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 120,
+          background: 'linear-gradient(180deg, transparent 0%, #0a0a0c 40%)',
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      />
+
       {/* Floating Glass Dock */}
       <div
         style={{
@@ -56,16 +63,16 @@ export function Navigation() {
           alignItems: 'center',
           maxWidth: 380,
           margin: '0 auto',
-          padding: '10px 8px',
-          background: 'linear-gradient(180deg, rgba(20, 20, 23, 0.85) 0%, rgba(15, 15, 18, 0.95) 100%)',
+          padding: '12px 8px',
+          background: 'linear-gradient(180deg, rgba(20, 20, 23, 0.92) 0%, rgba(15, 15, 18, 0.98) 100%)',
           backdropFilter: 'blur(40px) saturate(150%)',
           WebkitBackdropFilter: 'blur(40px) saturate(150%)',
-          borderRadius: 20,
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          borderRadius: 22,
+          border: '1px solid rgba(212, 175, 55, 0.1)',
           boxShadow: `
             0 -4px 30px rgba(0, 0, 0, 0.4),
             0 8px 32px rgba(0, 0, 0, 0.6),
-            0 0 60px -20px rgba(212, 175, 55, 0.1),
+            0 0 60px -20px rgba(212, 175, 55, 0.15),
             inset 0 1px 0 rgba(255, 255, 255, 0.05)
           `,
         }}
@@ -90,7 +97,7 @@ export function Navigation() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: 4,
-                padding: '8px 16px',
+                padding: '10px 18px',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -110,9 +117,9 @@ export function Navigation() {
                     position: 'absolute',
                     inset: 0,
                     borderRadius: 14,
-                    background: 'linear-gradient(180deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 100%)',
-                    border: '1px solid rgba(212, 175, 55, 0.15)',
-                    boxShadow: '0 0 20px -5px rgba(212, 175, 55, 0.25)',
+                    background: 'linear-gradient(180deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%)',
+                    border: '1px solid rgba(212, 175, 55, 0.2)',
+                    boxShadow: '0 0 20px -5px rgba(212, 175, 55, 0.3)',
                   }}
                 />
               )}
@@ -128,13 +135,13 @@ export function Navigation() {
                   }}
                   style={{
                     position: 'absolute',
-                    bottom: 2,
+                    bottom: 4,
                     left: '50%',
                     transform: 'translateX(-50%)',
                     width: 24,
-                    height: 2,
-                    borderRadius: 2,
-                    background: 'linear-gradient(90deg, var(--gold-500), var(--gold-400), var(--gold-500))',
+                    height: 3,
+                    borderRadius: 3,
+                    background: 'linear-gradient(90deg, #d4af37, #f5d061, #d4af37)',
                     boxShadow: '0 0 12px rgba(212, 175, 55, 0.6)',
                   }}
                 />
@@ -143,7 +150,7 @@ export function Navigation() {
               {/* Icon Container */}
               <motion.div
                 animate={{
-                  y: isActive ? -3 : 0,
+                  y: isActive ? -2 : 0,
                   scale: isActive ? 1.1 : 1,
                 }}
                 transition={{
@@ -162,8 +169,8 @@ export function Navigation() {
                 <Icon
                   size={22}
                   strokeWidth={isActive ? 2.5 : 1.8}
+                  color={isActive ? '#d4af37' : '#71717a'}
                   style={{
-                    color: isActive ? 'var(--gold-400)' : 'var(--text-muted)',
                     filter: isActive ? 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.5))' : 'none',
                     transition: 'color 0.2s, filter 0.2s',
                   }}
@@ -183,9 +190,9 @@ export function Navigation() {
                   position: 'relative',
                   zIndex: 2,
                   fontSize: 10,
-                  fontWeight: isActive ? 600 : 500,
+                  fontWeight: isActive ? 700 : 500,
                   letterSpacing: '0.02em',
-                  color: isActive ? 'var(--gold-300)' : 'var(--text-muted)',
+                  color: isActive ? '#d4af37' : '#71717a',
                   textShadow: isActive ? '0 0 12px rgba(212, 175, 55, 0.4)' : 'none',
                   transition: 'color 0.2s, text-shadow 0.2s',
                 }}
@@ -196,20 +203,6 @@ export function Navigation() {
           )
         })}
       </div>
-
-      {/* Edge fade effect at bottom of screen */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 'calc(100% + 20px)',
-          background: 'linear-gradient(180deg, transparent 0%, var(--bg-void) 100%)',
-          pointerEvents: 'none',
-          zIndex: -1,
-        }}
-      />
     </motion.nav>
   )
 }
