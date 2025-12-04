@@ -14,12 +14,12 @@ interface Props {
   user: UserData | null
 }
 
-// Premium rank name mapping
+// Premium rank name mapping (backend rank names → display names)
 const PREMIUM_RANK_NAMES: Record<string, string> = {
   'Салага': 'Резидент',
   'Ковбой': 'Партнёр',
-  'Шериф': 'VIP-Клиент',
-  'Легенда': 'Премиум',
+  'Головорез': 'VIP-Клиент',
+  'Легенда Запада': 'Премиум',
 }
 
 // Premium loyalty status mapping (old -> new names)
@@ -167,51 +167,137 @@ function TransactionItem({
 }
 
 // Achievement Badge Component
-function AchievementBadge({ emoji, title, unlocked, description }: {
+function AchievementBadge({ emoji, title, unlocked, description, progress }: {
   emoji: string
   title: string
   unlocked: boolean
   description: string
+  progress?: number // 0-100, optional
 }) {
   return (
     <motion.div
-      whileHover={unlocked ? { scale: 1.05 } : undefined}
+      whileHover={unlocked ? { scale: 1.05 } : { scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       style={{
+        position: 'relative',
         background: unlocked
-          ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05))'
-          : 'rgba(20, 20, 23, 0.5)',
+          ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05))'
+          : 'linear-gradient(135deg, rgba(30, 30, 35, 0.9), rgba(20, 20, 23, 0.95))',
         border: unlocked
-          ? '1px solid rgba(212, 175, 55, 0.3)'
-          : '1px solid rgba(255,255,255,0.05)',
-        borderRadius: 14,
-        padding: 12,
+          ? '1px solid rgba(212, 175, 55, 0.4)'
+          : '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 16,
+        padding: 14,
         textAlign: 'center',
-        opacity: unlocked ? 1 : 0.5,
-        filter: unlocked ? 'none' : 'grayscale(1)',
+        overflow: 'hidden',
         transition: 'all 0.3s ease',
+        boxShadow: unlocked
+          ? '0 4px 20px rgba(212, 175, 55, 0.2), inset 0 1px 0 rgba(255,255,255,0.1)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.03)',
       }}
     >
-      <div style={{
-        fontSize: 28,
-        marginBottom: 6,
-        filter: unlocked ? 'none' : 'grayscale(1)',
-      }}>
+      {/* Shine effect for unlocked */}
+      {unlocked && (
+        <motion.div
+          animate={{
+            x: ['-100%', '200%'],
+            opacity: [0, 0.3, 0],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            repeatDelay: 5,
+            ease: "easeInOut"
+          }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+            transform: 'skewX(-20deg)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
+      {/* Emoji with glow effect */}
+      <motion.div
+        animate={unlocked ? {
+          scale: [1, 1.1, 1],
+          rotate: [0, 5, -5, 0],
+        } : {}}
+        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+        style={{
+          fontSize: 32,
+          marginBottom: 8,
+          filter: unlocked ? 'drop-shadow(0 0 8px rgba(212,175,55,0.5))' : 'grayscale(0.8) opacity(0.6)',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
         {emoji}
-      </div>
+      </motion.div>
+
+      {/* Title */}
       <div style={{
-        fontSize: 11,
-        fontWeight: 600,
-        color: unlocked ? '#d4af37' : '#71717a',
-        marginBottom: 2,
+        fontSize: 12,
+        fontWeight: 700,
+        color: unlocked ? '#f5d061' : '#71717a',
+        marginBottom: 4,
+        letterSpacing: '0.3px',
+        position: 'relative',
+        zIndex: 1,
       }}>
         {title}
       </div>
+
+      {/* Description */}
       <div style={{
-        fontSize: 9,
-        color: '#52525b',
+        fontSize: 10,
+        color: unlocked ? '#a1a1aa' : '#52525b',
+        lineHeight: 1.3,
+        position: 'relative',
+        zIndex: 1,
       }}>
         {description}
       </div>
+
+      {/* Progress bar for locked achievements */}
+      {!unlocked && progress !== undefined && progress > 0 && (
+        <div style={{
+          marginTop: 8,
+          height: 3,
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            style={{
+              height: '100%',
+              background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+              borderRadius: 2,
+            }}
+          />
+        </div>
+      )}
+
+      {/* Lock overlay for locked achievements */}
+      {!unlocked && (
+        <div style={{
+          position: 'absolute',
+          top: 6,
+          right: 6,
+          fontSize: 10,
+          opacity: 0.5,
+        }}>
+          🔒
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -1040,7 +1126,7 @@ export function ProfilePage({ user }: Props) {
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 12,
+                gap: 10,
               }}>
                 {/* First Order */}
                 <AchievementBadge
@@ -1055,6 +1141,7 @@ export function ProfilePage({ user }: Props) {
                   title="В ударе"
                   unlocked={user.orders_count >= 5}
                   description="5+ заказов"
+                  progress={user.orders_count < 5 ? (user.orders_count / 5) * 100 : undefined}
                 />
                 {/* 10 Orders */}
                 <AchievementBadge
@@ -1062,6 +1149,7 @@ export function ProfilePage({ user }: Props) {
                   title="Постоянный"
                   unlocked={user.orders_count >= 10}
                   description="10+ заказов"
+                  progress={user.orders_count < 10 ? (user.orders_count / 10) * 100 : undefined}
                 />
                 {/* 50k Spent */}
                 <AchievementBadge
@@ -1069,6 +1157,7 @@ export function ProfilePage({ user }: Props) {
                   title="Инвестор"
                   unlocked={user.total_spent >= 50000}
                   description="50 000₽ потрачено"
+                  progress={user.total_spent < 50000 ? (user.total_spent / 50000) * 100 : undefined}
                 />
                 {/* 100k Spent */}
                 <AchievementBadge
@@ -1076,6 +1165,7 @@ export function ProfilePage({ user }: Props) {
                   title="VIP Клиент"
                   unlocked={user.total_spent >= 100000}
                   description="100 000₽ потрачено"
+                  progress={user.total_spent < 100000 ? (user.total_spent / 100000) * 100 : undefined}
                 />
                 {/* 3 Completed */}
                 <AchievementBadge
@@ -1083,6 +1173,7 @@ export function ProfilePage({ user }: Props) {
                   title="Надёжный"
                   unlocked={completedOrders >= 3}
                   description="3+ завершённых"
+                  progress={completedOrders < 3 ? (completedOrders / 3) * 100 : undefined}
                 />
               </div>
             </motion.div>

@@ -40,10 +40,10 @@ router = APIRouter(prefix="/api", tags=["Mini App"])
 
 # Rank thresholds (from User model)
 RANK_LEVELS = [
-    {"name": "Салага", "emoji": "🌵", "min_spent": 0, "cashback": 0},
+    {"name": "Салага", "emoji": "🐣", "min_spent": 0, "cashback": 0},
     {"name": "Ковбой", "emoji": "🤠", "min_spent": 5000, "cashback": 3},
     {"name": "Головорез", "emoji": "🔫", "min_spent": 20000, "cashback": 5},
-    {"name": "Легенда Запада", "emoji": "⭐", "min_spent": 50000, "cashback": 7},
+    {"name": "Легенда Запада", "emoji": "👑", "min_spent": 50000, "cashback": 7},
 ]
 
 # Loyalty thresholds (premium naming)
@@ -1521,6 +1521,8 @@ class RevisionRequestResponse(BaseModel):
     success: bool
     message: str
     prefilled_text: str  # Текст для pre-filled чата
+    revision_count: int  # Какой круг правок
+    is_paid: bool  # Платная правка (>3)
 
 
 class ConfirmWorkResponse(BaseModel):
@@ -1570,9 +1572,11 @@ async def request_revision(
     # Get user
     user = await session.get(User, tg_user.id)
 
-    # Change status to revision
+    # Change status to revision and increment revision count
     old_status = order.status
     order.status = OrderStatus.REVISION.value
+    order.revision_count = (order.revision_count or 0) + 1
+    is_paid_revision = order.revision_count > 3  # 3 free, then paid
     await session.commit()
 
     # Create auto-message in chat
@@ -1606,10 +1610,13 @@ async def request_revision(
         if conv and topic_id:
             client_name = user.fullname if user else tg_user.first_name
             comment_text = f"💬 Комментарий:\n<i>{data.message}</i>" if data.message else "<i>Без комментария</i>"
+            paid_badge = "💰 <b>ПЛАТНАЯ ПРАВКА</b>\n" if is_paid_revision else ""
+            revision_info = f"🔄 Круг правок: <b>{order.revision_count}/3</b>" if order.revision_count <= 3 else f"🔄 Круг правок: <b>{order.revision_count}</b> (платный)"
             admin_text = f"""✏️ <b>ЗАПРОС НА ПРАВКИ</b>
-
+{paid_badge}
 👤 Клиент: <b>{client_name}</b>
 📦 Заказ: <code>#{order.id}</code>
+{revision_info}
 
 {comment_text}
 
@@ -1648,10 +1655,16 @@ async def request_revision(
     except Exception as ws_err:
         logger.debug(f"WebSocket notification failed: {ws_err}")
 
+    response_message = "Запрос на правки отправлен! Менеджер свяжется с вами."
+    if is_paid_revision:
+        response_message = f"⚠️ Это {order.revision_count}-й круг правок (платный). Менеджер свяжется для уточнения стоимости."
+
     return RevisionRequestResponse(
         success=True,
-        message="Запрос на правки отправлен! Менеджер свяжется с вами.",
+        message=response_message,
         prefilled_text=prefilled_text,
+        revision_count=order.revision_count,
+        is_paid=is_paid_revision,
     )
 
 

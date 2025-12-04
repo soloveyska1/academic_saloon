@@ -517,17 +517,17 @@ function getMockUserData(): UserData {
     referral_code: 'COWBOY123',
     daily_luck_available: true,
     rank: {
-      name: 'Рейнджер',
-      emoji: '🤠',
+      name: 'Головорез',
+      emoji: '🔫',
       level: 3,
-      next_rank: 'Шериф',
-      progress: 65,
+      next_rank: 'Легенда Запада',
+      progress: 90,
       spent_to_next: 5000,
     },
     loyalty: {
-      status: 'Серебряный',
-      emoji: '🥈',
-      level: 2,
+      status: 'VIP-Клиент',
+      emoji: '⭐',
+      level: 3,
       discount: 5,
       orders_to_next: 3,
     },
@@ -624,6 +624,8 @@ export interface RevisionRequestResult {
   success: boolean
   message: string
   prefilled_text: string
+  revision_count: number  // Какой круг правок
+  is_paid: boolean  // Платная правка (>3)
 }
 
 /**
@@ -650,7 +652,9 @@ export async function requestRevision(
     return {
       success: true,
       message: 'Запрос отправлен! (DEV)',
-      prefilled_text: 'Прошу внести правки:\n\n'
+      prefilled_text: 'Прошу внести правки:\n\n',
+      revision_count: 1,
+      is_paid: false,
     }
   }
 

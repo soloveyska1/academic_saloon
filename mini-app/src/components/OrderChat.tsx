@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageCircle, Send, ChevronDown, User, Headphones,
   Paperclip, Mic, MicOff, FileText, Image, Video, Play, Pause,
-  Download, X, Loader, StopCircle
+  Download, X, Loader, StopCircle, Check, CheckCheck, Circle
 } from 'lucide-react'
 import { ChatMessage } from '../types'
 import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessage } from '../api/userApi'
@@ -12,6 +12,44 @@ import { useWebSocketContext } from '../hooks/useWebSocket'
 
 interface Props {
   orderId: number
+}
+
+// Typing indicator animation
+const TypingDots = () => (
+  <div style={{ display: 'flex', gap: 4, padding: '12px 16px' }}>
+    {[0, 1, 2].map((i) => (
+      <motion.div
+        key={i}
+        animate={{
+          y: [0, -4, 0],
+          opacity: [0.4, 1, 0.4],
+        }}
+        transition={{
+          duration: 0.6,
+          repeat: Infinity,
+          delay: i * 0.15,
+          ease: "easeInOut"
+        }}
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: '#d4af37',
+        }}
+      />
+    ))}
+  </div>
+)
+
+// Message status indicator
+const MessageStatus = ({ isRead, isSent }: { isRead: boolean, isSent: boolean }) => {
+  if (!isSent) {
+    return <Circle size={12} color="#52525b" style={{ opacity: 0.5 }} />
+  }
+  if (isRead) {
+    return <CheckCheck size={14} color="#3b82f6" />
+  }
+  return <Check size={14} color="#71717a" />
 }
 
 // File type icons
@@ -25,7 +63,7 @@ const FILE_ICONS: Record<string, typeof FileText> = {
 
 export function OrderChat({ orderId }: Props) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
-  const { addMessageHandler } = useWebSocketContext()
+  const { addMessageHandler, isConnected } = useWebSocketContext()
 
   const [isExpanded, setIsExpanded] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -34,6 +72,7 @@ export function OrderChat({ orderId }: Props) {
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isAdminTyping, setIsAdminTyping] = useState(false)
 
   // File upload state
   const [uploading, setUploading] = useState(false)
@@ -74,8 +113,17 @@ export function OrderChat({ orderId }: Props) {
       if (message.type === 'chat_message' && (message as any).order_id === orderId) {
         // New message received via WebSocket
         console.log('[Chat] New message received:', message)
+        setIsAdminTyping(false) // Stop typing indicator
         loadMessages()
         hapticSuccess()
+      }
+      // Handle typing indicator
+      if (message.type === 'typing_indicator' && (message as any).order_id === orderId) {
+        setIsAdminTyping((message as any).is_typing)
+        // Auto-clear typing after 5 seconds
+        if ((message as any).is_typing) {
+          setTimeout(() => setIsAdminTyping(false), 5000)
+        }
       }
     })
     return unsubscribe
@@ -555,11 +603,40 @@ export function OrderChat({ orderId }: Props) {
         </div>
 
         <div style={{ flex: 1, textAlign: 'left' }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#f2f2f2' }}>
-            Чат с менеджером
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#f2f2f2' }}>
+              Чат с менеджером
+            </span>
+            {/* Online indicator */}
+            <motion.div
+              animate={{
+                scale: isConnected ? [1, 1.2, 1] : 1,
+                opacity: isConnected ? 1 : 0.5,
+              }}
+              transition={{ repeat: isConnected ? Infinity : 0, duration: 2 }}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: isConnected ? '#22c55e' : '#71717a',
+                boxShadow: isConnected ? '0 0 8px rgba(34,197,94,0.5)' : 'none',
+              }}
+            />
           </div>
           <div style={{ fontSize: 12, color: '#71717a' }}>
-            {messages.length > 0 ? `${messages.length} сообщений` : 'Задайте вопрос'}
+            {isAdminTyping ? (
+              <motion.span
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                style={{ color: '#d4af37' }}
+              >
+                печатает...
+              </motion.span>
+            ) : isConnected ? (
+              messages.length > 0 ? `${messages.length} сообщений • онлайн` : 'Задайте вопрос • онлайн'
+            ) : (
+              messages.length > 0 ? `${messages.length} сообщений` : 'Задайте вопрос'
+            )}
           </div>
         </div>
 
@@ -661,6 +738,10 @@ export function OrderChat({ orderId }: Props) {
                           <span style={{ fontSize: 10, color: '#52525b' }}>
                             {formatTime(msg.created_at)}
                           </span>
+                          {/* Message status for client messages */}
+                          {msg.sender_type === 'client' && (
+                            <MessageStatus isRead={msg.is_read} isSent={true} />
+                          )}
                         </div>
 
                         {/* Message Content */}
@@ -669,6 +750,37 @@ export function OrderChat({ orderId }: Props) {
                     </motion.div>
                   ))
                 )}
+
+                {/* Typing indicator */}
+                <AnimatePresence>
+                  {isAdminTyping && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <div style={{
+                        padding: '4px 8px',
+                        borderRadius: '16px 16px 16px 4px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <Headphones size={12} color="#d4af37" />
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#d4af37' }}>
+                            Менеджер
+                          </span>
+                        </div>
+                        <TypingDots />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div ref={messagesEndRef} />
               </div>
 

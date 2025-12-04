@@ -1848,27 +1848,77 @@ export function OrderDetailPage() {
                 </span>
               </div>
 
-              {/* 30-day timer */}
-              {order.delivered_at && (
+              {/* Revision info badges */}
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginBottom: 16,
+              }}>
+                {/* 30-day timer */}
+                {order.delivered_at && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 12px',
+                    background: 'rgba(245,158,11,0.1)',
+                    borderRadius: 10,
+                  }}>
+                    <Timer size={14} color="#f59e0b" />
+                    <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+                      {(() => {
+                        const deliveredDate = new Date(order.delivered_at)
+                        const now = new Date()
+                        const daysLeft = 30 - Math.floor((now.getTime() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24))
+                        return daysLeft > 0
+                          ? `${daysLeft} дн. на правки`
+                          : 'Период истёк'
+                      })()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Revision counter */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  background: (order.revision_count || 0) >= 3
+                    ? 'rgba(239,68,68,0.1)'
+                    : 'rgba(34,197,94,0.1)',
+                  borderRadius: 10,
+                  border: (order.revision_count || 0) >= 3
+                    ? '1px solid rgba(239,68,68,0.3)'
+                    : '1px solid rgba(34,197,94,0.3)',
+                }}>
+                  <RefreshCw size={14} color={(order.revision_count || 0) >= 3 ? '#ef4444' : '#22c55e'} />
+                  <span style={{
+                    fontSize: 12,
+                    color: (order.revision_count || 0) >= 3 ? '#ef4444' : '#22c55e',
+                    fontWeight: 600,
+                  }}>
+                    {(order.revision_count || 0)}/3 правок
+                  </span>
+                </div>
+              </div>
+
+              {/* Warning if next revision is paid */}
+              {(order.revision_count || 0) >= 3 && (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
+                  padding: '10px 14px',
                   marginBottom: 16,
-                  padding: '8px 12px',
-                  background: 'rgba(245,158,11,0.1)',
-                  borderRadius: 10,
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: 12,
                 }}>
-                  <Timer size={14} color="#f59e0b" />
-                  <span style={{ fontSize: 12, color: '#a1a1aa' }}>
-                    {(() => {
-                      const deliveredDate = new Date(order.delivered_at)
-                      const now = new Date()
-                      const daysLeft = 30 - Math.floor((now.getTime() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24))
-                      return daysLeft > 0
-                        ? `${daysLeft} дней на бесплатные правки`
-                        : 'Период бесплатных правок истёк'
-                    })()}
+                  <CreditCard size={16} color="#ef4444" />
+                  <span style={{ fontSize: 12, color: '#ef4444' }}>
+                    Следующая правка будет платной
                   </span>
                 </div>
               )}
@@ -2324,7 +2374,7 @@ export function OrderDetailPage() {
               onClick={() => {
                 haptic('medium')
                 // Navigate to order form with pre-filled data from this order
-                navigate('/order', {
+                navigate('/create-order', {
                   state: {
                     prefill: {
                       work_type: order.work_type,

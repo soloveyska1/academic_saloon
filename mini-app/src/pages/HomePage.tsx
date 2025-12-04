@@ -174,12 +174,12 @@ export function HomePage({ user }: Props) {
 
   const activeOrders = user.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length
 
-  // Premium rank name mapping
+  // Premium rank name mapping (backend rank names → display names)
   const rankNameMap: Record<string, string> = {
     'Салага': 'Резидент',
     'Ковбой': 'Партнёр',
-    'Шериф': 'VIP-Клиент',
-    'Легенда': 'Премиум',
+    'Головорез': 'VIP-Клиент',
+    'Легенда Запада': 'Премиум',
   }
   const displayRankName = rankNameMap[user.rank.name] || user.rank.name
   const displayNextRank = user.rank.next_rank ? (rankNameMap[user.rank.next_rank] || user.rank.next_rank) : null
