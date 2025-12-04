@@ -722,6 +722,48 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
 //                          MAIN ORDER DETAIL PAGE
 // ═══════════════════════════════════════════════════════════════════════
 
+// Status alert configuration
+interface StatusAlert {
+  title: string
+  message: string
+  icon: 'check' | 'clock' | 'play' | 'trophy' | 'alert'
+  color: string
+  action?: string
+}
+
+const STATUS_ALERTS: Record<string, StatusAlert> = {
+  paid: {
+    title: '🎉 Оплата подтверждена!',
+    message: 'Заказ принят в работу. Шериф уже запряг лошадей!',
+    icon: 'check',
+    color: '#22c55e',
+  },
+  in_progress: {
+    title: '⚡ Заказ в работе!',
+    message: 'Автор активно работает над вашим заказом',
+    icon: 'play',
+    color: '#3b82f6',
+  },
+  review: {
+    title: '✨ Работа готова!',
+    message: 'Проверьте результат и подтвердите выполнение',
+    icon: 'check',
+    color: '#a855f7',
+  },
+  completed: {
+    title: '🏆 Заказ выполнен!',
+    message: 'Спасибо за доверие! Будем рады видеть вас снова',
+    icon: 'trophy',
+    color: '#22c55e',
+  },
+  verification_pending: {
+    title: '⏳ Проверяем оплату',
+    message: 'Обычно это занимает 5-15 минут',
+    icon: 'clock',
+    color: '#8b5cf6',
+  },
+}
+
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -730,6 +772,7 @@ export function OrderDetailPage() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPriceAlert, setShowPriceAlert] = useState(false)
+  const [statusAlert, setStatusAlert] = useState<StatusAlert | null>(null)
 
   // WebSocket context for real-time updates
   const { addMessageHandler } = useWebSocketContext()
@@ -740,6 +783,19 @@ export function OrderDetailPage() {
     try {
       const data = await fetchOrderDetail(parseInt(id))
       setOrder(data)
+
+      // Check for status change alert - show notification if status changed
+      const lastSeenKey = `order_${id}_last_seen_status`
+      const lastSeenStatus = sessionStorage.getItem(lastSeenKey)
+
+      // Show status alert for important statuses user hasn't seen
+      if (lastSeenStatus !== data.status && STATUS_ALERTS[data.status]) {
+        setStatusAlert(STATUS_ALERTS[data.status])
+        hapticSuccess()
+      }
+
+      // Update last seen status
+      sessionStorage.setItem(lastSeenKey, data.status)
 
       // Load payment info if order has price and is not fully paid
       const needsPayment = data.final_price > 0 &&
@@ -752,9 +808,9 @@ export function OrderDetailPage() {
           setPaymentInfo(payment)
 
           // Show price alert if order has price but user hasn't started payment
-          // Check sessionStorage to not show alert repeatedly
+          // Only show if we're not already showing a status alert
           const alertKey = `price_alert_shown_${id}`
-          if (!sessionStorage.getItem(alertKey)) {
+          if (!sessionStorage.getItem(alertKey) && !STATUS_ALERTS[data.status]) {
             setShowPriceAlert(true)
             hapticSuccess()
             sessionStorage.setItem(alertKey, 'true')
@@ -783,7 +839,25 @@ export function OrderDetailPage() {
       // Check if this message is about our order
       const msgOrderId = (message as any).order_id
       if (msgOrderId && msgOrderId === parseInt(id)) {
-        console.log('[OrderDetail] Received update for this order, reloading...')
+        console.log('[OrderDetail] Received update for this order:', message)
+
+        // Show status alert from WebSocket message
+        if (message.type === 'order_update') {
+          const newStatus = (message as any).status
+          if (newStatus && STATUS_ALERTS[newStatus]) {
+            // Use the title/message from WebSocket if available, else from config
+            setStatusAlert({
+              ...STATUS_ALERTS[newStatus],
+              title: (message as any).title || STATUS_ALERTS[newStatus].title,
+              message: (message as any).message || STATUS_ALERTS[newStatus].message,
+            })
+            hapticSuccess()
+            // Update last seen status so we don't show it again on reload
+            sessionStorage.setItem(`order_${id}_last_seen_status`, newStatus)
+          }
+        }
+
+        // Reload order data
         loadOrder()
       }
 
@@ -798,7 +872,7 @@ export function OrderDetailPage() {
     })
 
     return unsubscribe
-  }, [id, addMessageHandler, loadOrder])
+  }, [id, addMessageHandler, loadOrder, hapticSuccess])
 
   const handleBack = () => {
     haptic('light')
@@ -1008,6 +1082,106 @@ export function OrderDetailPage() {
                 <XCircle size={16} color="rgba(255,255,255,0.6)" />
               </motion.button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Status Change Alert */}
+      <AnimatePresence>
+        {statusAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            style={{
+              position: 'fixed',
+              top: 16,
+              left: 16,
+              right: 16,
+              zIndex: 1000,
+              background: `linear-gradient(135deg, ${statusAlert.color}15 0%, ${statusAlert.color}10 100%)`,
+              border: `1px solid ${statusAlert.color}40`,
+              borderRadius: 16,
+              padding: 16,
+              backdropFilter: 'blur(20px)',
+              boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 40px ${statusAlert.color}20`,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.1, type: 'spring' }}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
+                  background: `linear-gradient(135deg, ${statusAlert.color} 0%, ${statusAlert.color}cc 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {statusAlert.icon === 'check' && <CheckCircle size={24} color="#0a0a0c" />}
+                {statusAlert.icon === 'clock' && <Clock size={24} color="#0a0a0c" />}
+                {statusAlert.icon === 'play' && <Sparkles size={24} color="#0a0a0c" />}
+                {statusAlert.icon === 'trophy' && <Sparkles size={24} color="#0a0a0c" />}
+              </motion.div>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: statusAlert.color,
+                  marginBottom: 4,
+                }}>
+                  {statusAlert.title}
+                </div>
+                <div style={{
+                  fontSize: 13,
+                  color: 'rgba(242,242,242,0.8)',
+                  lineHeight: 1.4,
+                }}>
+                  {statusAlert.message}
+                </div>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setStatusAlert(null)}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <XCircle size={16} color="rgba(255,255,255,0.6)" />
+              </motion.button>
+            </div>
+
+            {/* Progress bar for auto-dismiss */}
+            <motion.div
+              initial={{ scaleX: 1 }}
+              animate={{ scaleX: 0 }}
+              transition={{ duration: 6, ease: 'linear' }}
+              onAnimationComplete={() => setStatusAlert(null)}
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 16,
+                right: 16,
+                height: 2,
+                background: statusAlert.color,
+                borderRadius: 1,
+                transformOrigin: 'left',
+              }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
