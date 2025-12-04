@@ -177,8 +177,12 @@ async def get_user_profile(
     )
     orders = orders_result.scalars().all()
 
-    # Calculate completed orders count
+    # Calculate orders counts from actual orders (more reliable than DB field)
+    total_orders_count = len(orders)
     completed_orders = sum(1 for o in orders if str(o.status) == 'completed' or (hasattr(o.status, 'value') and o.status.value == 'completed'))
+
+    # Calculate total spent from actual orders (more reliable than DB field)
+    actual_total_spent = sum(float(o.paid_amount or o.price or 0) for o in orders if str(o.status) == 'completed' or (hasattr(o.status, 'value') and o.status.value == 'completed'))
 
     # Generate referral code from telegram_id
     referral_code = f"REF{user.telegram_id}"
@@ -201,12 +205,12 @@ async def get_user_profile(
         fullname=user.fullname or tg_user.first_name,
         balance=float(user.balance or 0),
         bonus_balance=float(user.referral_earnings or 0),  # Using referral_earnings as bonus
-        orders_count=user.orders_count or 0,
-        total_spent=float(user.total_spent or 0),
+        orders_count=total_orders_count,  # Use actual count from orders table
+        total_spent=actual_total_spent,   # Use actual sum from completed orders
         discount=get_loyalty_info(completed_orders).discount,
         referral_code=referral_code,
         daily_luck_available=can_spin,
-        rank=get_rank_info(float(user.total_spent or 0)),
+        rank=get_rank_info(actual_total_spent),  # Use actual total spent
         loyalty=get_loyalty_info(completed_orders),
         orders=[order_to_response(o) for o in orders]
     )
