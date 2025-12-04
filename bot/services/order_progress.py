@@ -290,7 +290,30 @@ async def update_order_progress(
     order.progress_updated_at = datetime.now()
     await session.commit()
 
-    # Проверяем достигнутые вехи
+    # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ В MINI APP ═══
+    if notify and new_progress > old_progress:
+        try:
+            from bot.services.realtime_notifications import send_progress_notification
+
+            # Определяем сообщение для вехи
+            milestone_msg = None
+            for milestone in PROGRESS_MILESTONES:
+                if old_progress < milestone <= new_progress:
+                    if milestone in MILESTONE_MESSAGES:
+                        milestone_msg = MILESTONE_MESSAGES[milestone]["message"]
+                        break
+
+            await send_progress_notification(
+                telegram_id=order.user_id,
+                order_id=order.id,
+                progress=new_progress,
+                custom_message=milestone_msg
+            )
+            logger.info(f"[WS] Sent progress notification to user {order.user_id}: {new_progress}%")
+        except Exception as e:
+            logger.warning(f"[WS] Failed to send progress notification: {e}")
+
+    # Проверяем достигнутые вехи (отправка в бота)
     reached_milestones = []
     if notify and new_progress > old_progress:
         for milestone in PROGRESS_MILESTONES:

@@ -22,6 +22,7 @@ import {
   WebSocketProvider,
   OrderUpdateMessage,
   BalanceUpdateMessage,
+  ProgressUpdateMessage,
   NotificationMessage,
   RefreshMessage,
 } from './hooks/useWebSocket'
@@ -97,7 +98,7 @@ function AppContent() {
   }, [])
 
   // Handle progress updates
-  const handleProgressUpdate = useCallback((msg: any) => {
+  const handleProgressUpdate = useCallback((msg: ProgressUpdateMessage) => {
     console.log('[App] Progress update received:', msg)
 
     const smartData: SmartNotificationData = {
@@ -215,6 +216,7 @@ function AppContent() {
             telegramId={telegramId}
             onOrderUpdate={handleOrderUpdate}
             onBalanceUpdate={handleBalanceUpdate}
+            onProgressUpdate={handleProgressUpdate}
             onNotification={handleNotification}
             onRefresh={handleRefresh}
           >
