@@ -81,6 +81,16 @@ export function HomePage({ user }: Props) {
 
   const activeOrders = user.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length
 
+  // Premium rank name mapping
+  const rankNameMap: Record<string, string> = {
+    'Салага': 'Резидент',
+    'Ковбой': 'Партнёр',
+    'Шериф': 'VIP-Клиент',
+    'Легенда': 'Премиум',
+  }
+  const displayRankName = rankNameMap[user.rank.name] || user.rank.name
+  const displayNextRank = user.rank.next_rank ? (rankNameMap[user.rank.next_rank] || user.rank.next_rank) : null
+
   return (
     <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: '#09090b' }}>
 
@@ -179,7 +189,7 @@ export function HomePage({ user }: Props) {
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
-            {user.rank.name}
+            {displayRankName}
           </div>
           <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 100, overflow: 'hidden' }}>
             <motion.div
@@ -313,7 +323,7 @@ export function HomePage({ user }: Props) {
       {/* ═══════════════════════════════════════════════════════════════════
           PROGRESS TO NEXT LEVEL
           ═══════════════════════════════════════════════════════════════════ */}
-      {user.rank.next_rank && (
+      {displayNextRank && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -335,7 +345,7 @@ export function HomePage({ user }: Props) {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Следующий уровень</div>
-              <div style={{ fontSize: 11, color: '#71717a' }}>{user.rank.next_rank}</div>
+              <div style={{ fontSize: 11, color: '#71717a' }}>{displayNextRank}</div>
             </div>
             <span style={{ fontFamily: 'monospace', color: '#d4af37', fontWeight: 600 }}>{user.rank.progress}%</span>
           </div>
