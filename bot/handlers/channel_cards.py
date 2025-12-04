@@ -743,7 +743,26 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
     # Завершаем заказ
     order.status = OrderStatus.COMPLETED.value
     order.completed_at = datetime.utcnow()
+
+    # Увеличиваем счётчик заказов пользователя
+    if user:
+        user.orders_count = (user.orders_count or 0) + 1
+        user.total_spent = (user.total_spent or 0) + float(order.paid_amount or order.final_price or order.price or 0)
+
     await session.commit()
+
+    # Начисляем кешбэк за заказ
+    cashback_amount = 0.0
+    if user:
+        from bot.services.bonus import BonusService
+        order_amount = float(order.paid_amount or order.final_price or order.price or 0)
+        cashback_amount = await BonusService.add_order_cashback(
+            session=session,
+            bot=bot,
+            user_id=order.user_id,
+            order_id=order.id,
+            order_amount=order_amount,
+        )
 
     # Обновляем карточку
     await update_card_status(
@@ -756,9 +775,13 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
     await close_order_topic(bot, session, order)
 
     # Уведомляем клиента
+    cashback_text = ""
+    if cashback_amount > 0:
+        cashback_text = f"\n💰 <b>Кешбэк:</b> +{cashback_amount:.0f}₽ на бонусный счёт"
+
     await notify_client(
         bot, order.user_id,
-        f"🎉 <b>Заказ #{order.id} завершён!</b>\n\n"
+        f"🎉 <b>Заказ #{order.id} завершён!</b>{cashback_text}\n\n"
         "Спасибо, что выбрал нас! Будем рады помочь снова.\n\n"
         "Оставь отзыв, если понравилось 🌟"
     )

@@ -19,6 +19,7 @@ BONUS_REASON_DESCRIPTIONS = {
     "admin_adjustment": "Корректировка админом",
     "order_discount": "Использовано на заказ",
     "compensation": "Компенсация",
+    "order_cashback": "Кешбэк за заказ",
 }
 
 
@@ -29,11 +30,21 @@ class BonusReason(str, Enum):
     ADMIN_ADJUSTMENT = "admin_adjustment"    # Корректировка админом
     ORDER_DISCOUNT = "order_discount"        # Списание на заказ
     COMPENSATION = "compensation"            # Компенсация
+    ORDER_CASHBACK = "order_cashback"        # Кешбэк за выполненный заказ
 
 
 # Настройки бонусов
 BONUS_FOR_ORDER = 50  # Бонусы за создание заказа
 REFERRAL_PERCENT = 5  # Процент рефереру от оплаты
+
+# Кешбэк по рангам (% от суммы заказа)
+# Резидент -> Партнёр -> VIP-Клиент -> Премиум
+RANK_CASHBACK = {
+    0: 0,      # Резидент - 0%
+    1: 3,      # Партнёр - 3%
+    2: 5,      # VIP-Клиент - 5%
+    3: 7,      # Премиум - 7%
+}
 
 
 class BonusService:
@@ -232,3 +243,75 @@ class BonusService:
             await session.commit()
 
         return bonus_amount
+
+    @staticmethod
+    async def add_order_cashback(
+        session: AsyncSession,
+        bot: Bot,
+        user_id: int,
+        order_id: int,
+        order_amount: float,
+    ) -> float:
+        """
+        Начисляет кешбэк за выполненный заказ на основе ранга пользователя
+
+        Args:
+            session: Сессия БД
+            bot: Бот для уведомлений
+            user_id: Telegram ID пользователя
+            order_id: ID заказа
+            order_amount: Сумма заказа
+
+        Returns:
+            Сумма начисленного кешбэка
+        """
+        # Получаем пользователя и его ранг
+        query = select(User).where(User.telegram_id == user_id)
+        result = await session.execute(query)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            logger.warning(f"[Cashback] User {user_id} not found")
+            return 0.0
+
+        # Определяем ранг по total_spent
+        # Используем orders_count как альтернативу для определения уровня
+        completed_orders = user.orders_count or 0
+
+        # Определяем процент кешбэка по количеству выполненных заказов
+        if completed_orders >= 15:
+            cashback_percent = 7   # Премиум
+        elif completed_orders >= 7:
+            cashback_percent = 5   # VIP-Клиент
+        elif completed_orders >= 3:
+            cashback_percent = 3   # Партнёр
+        else:
+            cashback_percent = 0   # Резидент
+
+        if cashback_percent == 0:
+            logger.info(f"[Cashback] User {user_id} has 0% cashback (Резидент level)")
+            return 0.0
+
+        # Рассчитываем кешбэк
+        cashback_amount = order_amount * cashback_percent / 100
+
+        if cashback_amount < 1:
+            logger.info(f"[Cashback] Cashback for user {user_id} too small: {cashback_amount:.2f}")
+            return 0.0
+
+        # Начисляем кешбэк
+        await BonusService.add_bonus(
+            session=session,
+            user_id=user_id,
+            amount=cashback_amount,
+            reason=BonusReason.ORDER_CASHBACK,
+            description=f"Кешбэк {cashback_percent}% за заказ #{order_id}",
+            bot=bot,
+        )
+
+        logger.info(
+            f"[Cashback] User {user_id} received {cashback_amount:.0f}₽ "
+            f"({cashback_percent}% of {order_amount:.0f}₽) for order #{order_id}"
+        )
+
+        return cashback_amount

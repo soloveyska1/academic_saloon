@@ -784,11 +784,37 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
     old_status = order.status
     order.status = new_status
 
-    # Если статус изменён на "completed", записываем время завершения
+    # Если статус изменён на "completed", записываем время завершения и начисляем кешбэк
+    cashback_amount = 0.0
     if new_status == OrderStatus.COMPLETED.value:
         order.completed_at = datetime.now(MSK_TZ)
 
+        # Получаем пользователя для обновления счетчиков и кешбэка
+        user_query = select(User).where(User.telegram_id == order.user_id)
+        user_result = await session.execute(user_query)
+        user = user_result.scalar_one_or_none()
+
+        if user:
+            # Увеличиваем счётчик заказов
+            user.orders_count = (user.orders_count or 0) + 1
+            user.total_spent = (user.total_spent or 0) + float(order.paid_amount or order.final_price or order.price or 0)
+
     await session.commit()
+
+    # Начисляем кешбэк после коммита (если заказ завершён)
+    if new_status == OrderStatus.COMPLETED.value:
+        try:
+            from bot.services.bonus import BonusService
+            order_amount = float(order.paid_amount or order.final_price or order.price or 0)
+            cashback_amount = await BonusService.add_order_cashback(
+                session=session,
+                bot=bot,
+                user_id=order.user_id,
+                order_id=order.id,
+                order_amount=order_amount,
+            )
+        except Exception as e:
+            logger.warning(f"[Admin] Failed to add cashback for order {order.id}: {e}")
 
     old_emoji, old_label = ORDER_STATUS_LABELS.get(old_status, ("", old_status))
     new_emoji, new_label = ORDER_STATUS_LABELS.get(new_status, ("", new_status))
@@ -818,11 +844,17 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
 
     if new_status in notify_statuses:
         try:
+            # Формируем сообщение о завершении с кешбэком
+            if new_status == OrderStatus.COMPLETED.value and cashback_amount > 0:
+                completed_msg = f"✨ Заказ успешно завершён!\n💰 Кешбэк: +{cashback_amount:.0f}₽ на бонусный счёт\n\nСпасибо за доверие 🤝"
+            else:
+                completed_msg = "✨ Заказ успешно завершён! Спасибо за доверие 🤝"
+
             status_messages = {
                 OrderStatus.PAID.value: "💰 Оплата получена! Приступаю к работе.",
                 OrderStatus.IN_PROGRESS.value: "⚙️ Твой заказ в работе!",
                 OrderStatus.REVIEW.value: "🔍 Работа готова и ждёт твоей проверки!",
-                OrderStatus.COMPLETED.value: "✨ Заказ успешно завершён! Спасибо за доверие 🤝",
+                OrderStatus.COMPLETED.value: completed_msg,
                 OrderStatus.CANCELLED.value: "❌ Заказ отменён.",
             }
             msg = status_messages.get(new_status, f"Статус заказа изменён на: {new_label}")

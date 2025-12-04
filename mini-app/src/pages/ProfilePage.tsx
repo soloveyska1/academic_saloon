@@ -22,6 +22,62 @@ const PREMIUM_RANK_NAMES: Record<string, string> = {
   'Легенда': 'Премиум',
 }
 
+// Premium loyalty status mapping (old -> new names)
+const PREMIUM_LOYALTY_NAMES: Record<string, { name: string; emoji: string }> = {
+  // Old system names
+  'Новичок': { name: 'Резидент', emoji: '🌵' },
+  'Завсегдатай': { name: 'Партнёр', emoji: '🤝' },
+  'Шериф': { name: 'VIP-Клиент', emoji: '⭐' },
+  'Легенда салуна': { name: 'Премиум', emoji: '👑' },
+  // In case API returns with emoji prefix
+  '🌵 Новичок': { name: 'Резидент', emoji: '🌵' },
+  '🤠 Завсегдатай': { name: 'Партнёр', emoji: '🤝' },
+  '⭐ Шериф': { name: 'VIP-Клиент', emoji: '⭐' },
+  '🏆 Легенда салуна': { name: 'Премиум', emoji: '👑' },
+}
+
+// Helper function to get real monthly activity from orders
+function getMonthlyActivity(orders: { created_at: string; status: string }[]): { label: string; value: number }[] {
+  const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
+  const now = new Date()
+  const currentMonth = now.getMonth()
+
+  // Get last 6 months of activity
+  const monthlyData: { label: string; value: number }[] = []
+
+  for (let i = 5; i >= 0; i--) {
+    const monthIndex = (currentMonth - i + 12) % 12
+    const year = i > currentMonth ? now.getFullYear() - 1 : now.getFullYear()
+
+    // Count orders in this month (all orders, not just completed)
+    const count = orders.filter(order => {
+      const orderDate = new Date(order.created_at)
+      return orderDate.getMonth() === monthIndex &&
+             orderDate.getFullYear() === year
+    }).length
+
+    monthlyData.push({
+      label: months[monthIndex],
+      value: count
+    })
+  }
+
+  return monthlyData
+}
+
+// Calculate activity trend percentage
+function getActivityTrend(monthlyData: { value: number }[]): { value: number; positive: boolean } {
+  if (monthlyData.length < 2) return { value: 0, positive: true }
+
+  const recent = monthlyData.slice(-2).reduce((sum, m) => sum + m.value, 0)
+  const previous = monthlyData.slice(0, -2).reduce((sum, m) => sum + m.value, 0)
+
+  if (previous === 0) return { value: recent > 0 ? 100 : 0, positive: true }
+
+  const change = Math.round(((recent - previous) / previous) * 100)
+  return { value: Math.abs(change), positive: change >= 0 }
+}
+
 // Animated Counter Component
 function AnimatedCounter({ value, suffix = '', prefix = '' }: {
   value: number
@@ -182,6 +238,15 @@ export function ProfilePage({ user }: Props) {
 
   // Premium rank name
   const premiumRankName = PREMIUM_RANK_NAMES[user.rank.name] || user.rank.name
+
+  // Premium loyalty name (map old names to new)
+  const loyaltyMapping = PREMIUM_LOYALTY_NAMES[user.loyalty.status]
+  const premiumLoyaltyName = loyaltyMapping?.name || user.loyalty.status
+  const premiumLoyaltyEmoji = loyaltyMapping?.emoji || user.loyalty.emoji
+
+  // Real activity data from orders
+  const monthlyActivity = getMonthlyActivity(user.orders)
+  const activityTrend = getActivityTrend(monthlyActivity)
 
   // Calculate stats
   const moneySaved = Math.round(user.total_spent * (user.discount / 100))
@@ -660,29 +725,29 @@ export function ProfilePage({ user }: Props) {
                     Активность
                   </span>
                 </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}>
-                  <Sparkline
-                    data={[2, 4, 3, 6, 5, 8, 7]}
-                    color="#22c55e"
-                    width={50}
-                    height={16}
-                  />
-                  <span style={{ fontSize: 10, color: '#22c55e' }}>+15%</span>
-                </div>
+                {monthlyActivity.some(m => m.value > 0) && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}>
+                    <Sparkline
+                      data={monthlyActivity.map(m => m.value)}
+                      color={activityTrend.positive ? '#22c55e' : '#ef4444'}
+                      width={50}
+                      height={16}
+                    />
+                    <span style={{
+                      fontSize: 10,
+                      color: activityTrend.positive ? '#22c55e' : '#ef4444'
+                    }}>
+                      {activityTrend.positive ? '+' : '-'}{activityTrend.value}%
+                    </span>
+                  </div>
+                )}
               </div>
               <AnimatedBarChart
-                data={[
-                  { label: 'Янв', value: user.orders_count > 0 ? Math.max(1, Math.floor(user.orders_count * 0.1)) : 1 },
-                  { label: 'Фев', value: user.orders_count > 0 ? Math.max(1, Math.floor(user.orders_count * 0.15)) : 2 },
-                  { label: 'Мар', value: user.orders_count > 0 ? Math.max(1, Math.floor(user.orders_count * 0.12)) : 1 },
-                  { label: 'Апр', value: user.orders_count > 0 ? Math.max(1, Math.floor(user.orders_count * 0.18)) : 3 },
-                  { label: 'Май', value: user.orders_count > 0 ? Math.max(1, Math.floor(user.orders_count * 0.2)) : 2 },
-                  { label: 'Июн', value: user.orders_count > 0 ? Math.max(2, Math.floor(user.orders_count * 0.25)) : 4 },
-                ]}
+                data={monthlyActivity}
                 height={100}
               />
             </motion.div>
@@ -717,7 +782,7 @@ export function ProfilePage({ user }: Props) {
                   justifyContent: 'center',
                   fontSize: 22,
                 }}>
-                  {user.loyalty.emoji}
+                  {premiumLoyaltyEmoji}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{
@@ -726,7 +791,7 @@ export function ProfilePage({ user }: Props) {
                     color: '#fff',
                     fontFamily: "'Montserrat', sans-serif"
                   }}>
-                    {user.loyalty.status}
+                    {premiumLoyaltyName}
                   </div>
                   {user.loyalty.orders_to_next > 0 && (
                     <div style={{
