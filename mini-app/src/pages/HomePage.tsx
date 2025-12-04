@@ -245,48 +245,112 @@ export function HomePage({ user }: Props) {
           />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative', zIndex: 1 }}>
-            {/* Avatar with Progress Ring */}
+            {/* Avatar with Spinning Gold Ring + "AS" Monogram */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
-              <ProgressRing progress={user.rank.progress} size={72} strokeWidth={3} />
+              {/* Spinning Gold Border */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  background: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
+                  filter: 'blur(0.5px)',
+                }}
+              />
+              {/* Inner Circle with Monogram */}
               <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 54,
-                height: 54,
+                position: 'relative',
+                width: 72,
+                height: 72,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #1a1a1e 0%, #0a0a0c 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 26,
-                boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.5)',
               }}>
-                {user.rank.emoji}
+                <div style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #141417 0%, #09090b 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                }}>
+                  <span style={{
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontSize: 22,
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}>
+                    AS
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Name & Rank */}
             <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{
+                fontFamily: "'Manrope', sans-serif",
+                fontSize: 12,
+                fontWeight: 300,
+                color: 'var(--text-secondary)',
+                marginBottom: 2,
+              }}>
+                Добро пожаловать,
+              </p>
               <h1 style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 20,
+                fontFamily: "'Montserrat', sans-serif",
+                fontSize: 18,
                 fontWeight: 700,
-                marginBottom: 4,
+                marginBottom: 6,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                letterSpacing: '0.02em',
               }}>
                 {user.fullname}
               </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span className="badge badge-gold" style={{ padding: '3px 10px', fontSize: 9 }}>
-                  <Award size={10} />
-                  {user.rank.name}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  Уровень {user.rank.level}
+              {/* Status Badge with Gold Border */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 12px',
+                borderRadius: 20,
+                background: 'transparent',
+                position: 'relative',
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: 20,
+                  padding: 1,
+                  background: 'linear-gradient(135deg, #BF953F, #FCF6BA, #B38728)',
+                  WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                  WebkitMaskComposite: 'xor',
+                  maskComposite: 'exclude',
+                }} />
+                <Crown size={10} color="#d4af37" />
+                <span style={{
+                  fontFamily: "'Montserrat', sans-serif",
+                  fontSize: 9,
+                  fontWeight: 600,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}>
+                  LEVEL {user.rank.level}: {user.rank.name.toUpperCase()}
                 </span>
               </div>
             </div>
@@ -553,13 +617,14 @@ export function HomePage({ user }: Props) {
               width: 40,
               height: 40,
               borderRadius: 12,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
+              border: '1px solid rgba(212,175,55,0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 20,
+              boxShadow: '0 0 20px -5px rgba(212,175,55,0.3)',
             }}>
-              {user.rank.emoji}
+              <Trophy size={20} color="#d4af37" />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, fontFamily: "'Playfair Display', serif" }}>
