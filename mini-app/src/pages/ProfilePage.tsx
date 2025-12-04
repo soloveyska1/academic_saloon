@@ -14,12 +14,12 @@ interface Props {
   user: UserData | null
 }
 
-// Premium rank name mapping
+// Premium rank name mapping (backend rank names → display names)
 const PREMIUM_RANK_NAMES: Record<string, string> = {
   'Салага': 'Резидент',
   'Ковбой': 'Партнёр',
-  'Шериф': 'VIP-Клиент',
-  'Легенда': 'Премиум',
+  'Головорез': 'VIP-Клиент',
+  'Легенда Запада': 'Премиум',
 }
 
 // Premium loyalty status mapping (old -> new names)

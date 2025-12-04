@@ -303,6 +303,7 @@ class Order(Base):
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Работа сдана (старт 30-дневных правок)
     reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Напоминание отправлено
     review_submitted: Mapped[bool] = mapped_column(default=False)  # Отзыв оставлен
+    revision_count: Mapped[int] = mapped_column(Integer, default=0)  # Счётчик кругов правок (3 бесплатно)
 
     # Live-карточка в канале заказов
     channel_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # ID сообщения в канале

@@ -49,6 +49,7 @@ export interface Order {
   payment_scheme: 'full' | 'half' | null  // full / half (prepayment)
   files_url: string | null  // Yandex.Disk URL with work files
   review_submitted: boolean  // Whether review was submitted
+  revision_count: number  // Счётчик кругов правок (3 бесплатно)
   created_at: string
   completed_at: string | null
   delivered_at: string | null  // When work was delivered (30-day revision period starts)
