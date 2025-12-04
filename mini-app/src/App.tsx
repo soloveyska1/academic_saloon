@@ -45,6 +45,12 @@ function AppContent() {
     console.log('[App] Order update received:', msg)
 
     // Smart notification data comes directly from server
+    // Merge order_id into data for navigation action
+    const mergedData = {
+      ...(msg.data || {}),
+      order_id: msg.order_id,
+    }
+
     const smartData: SmartNotificationData = {
       type: 'order_update',
       order_id: msg.order_id,
@@ -54,10 +60,10 @@ function AppContent() {
       icon: (msg as any).icon || 'package',
       color: (msg as any).color || '#d4af37',
       priority: (msg as any).priority || 'normal',
-      action: (msg as any).action,
+      action: (msg as any).action || 'view_order', // Default action to view order
       celebration: (msg as any).celebration,
       confetti: (msg as any).confetti,
-      data: msg.data,
+      data: mergedData,
     }
 
     setNotification(smartData)
@@ -109,6 +115,8 @@ function AppContent() {
       icon: 'trending-up',
       color: '#3b82f6',
       progress: msg.progress,
+      action: 'view_order',
+      data: { order_id: msg.order_id },
     }
 
     setNotification(smartData)
