@@ -521,6 +521,34 @@ async def admin_message_from_topic(
             increment_unread=False,
         )
 
+        # Send WebSocket notification to mini-app
+        if conv.order_id:
+            try:
+                from bot.services.realtime_notifications import notify_new_chat_message
+
+                # Determine file type for notification
+                file_type = None
+                if message.photo:
+                    file_type = "photo"
+                elif message.document:
+                    file_type = "document"
+                elif message.video:
+                    file_type = "video"
+                elif message.voice:
+                    file_type = "voice"
+                elif message.audio:
+                    file_type = "audio"
+
+                await notify_new_chat_message(
+                    telegram_id=conv.user_id,
+                    order_id=conv.order_id,
+                    sender_name="Менеджер",
+                    message_preview=message.text or message.caption or "",
+                    file_type=file_type,
+                )
+            except Exception as ws_error:
+                logger.debug(f"WebSocket notification failed (non-critical): {ws_error}")
+
         # Подтверждение в топик
         await message.reply("✅ Доставлено клиенту")
 

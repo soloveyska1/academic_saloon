@@ -43,6 +43,8 @@ class OrderResponse(BaseModel):
     bonus_used: float
     progress: int
     payment_scheme: Optional[str] = None  # full / half
+    files_url: Optional[str] = None  # Yandex.Disk folder URL with work files
+    review_submitted: bool = False  # Whether review was submitted
     created_at: str
     completed_at: Optional[str] = None
 

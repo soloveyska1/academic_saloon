@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   GraduationCap, FileText, BookOpen, Scroll, PenTool,
@@ -739,23 +739,38 @@ function DeadlineCard({ config, selected, onSelect, index }: DeadlineCardProps) 
 //  MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Prefill data interface for Quick Reorder feature
+interface PrefillData {
+  work_type?: WorkType
+  subject?: string
+  deadline?: string
+  topic?: string
+}
+
 export function CreateOrderPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const { haptic, hapticSuccess, hapticError } = useTelegram()
 
+  // Check for prefill data from navigation state (Quick Reorder)
+  const prefillData = (location.state as { prefill?: PrefillData })?.prefill
+
   // Check for urgent/panic mode from URL params
   const isUrgentMode = searchParams.get('urgent') === 'true'
-  const preselectedType = searchParams.get('type') as WorkType | null
+  const preselectedType = (prefillData?.work_type || searchParams.get('type')) as WorkType | null
+
+  // Is this a reorder?
+  const isReorder = !!prefillData
 
   // Wizard
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(0)
 
-  // Form data
+  // Form data - initialize with prefill values if available
   const [workType, setWorkType] = useState<WorkType | null>(preselectedType)
-  const [subject, setSubject] = useState('')
-  const [topic, setTopic] = useState('')
+  const [subject, setSubject] = useState(prefillData?.subject || '')
+  const [topic, setTopic] = useState(prefillData?.topic || '')
   const [description, setDescription] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
   const [files, setFiles] = useState<File[]>([])
   const [deadline, setDeadline] = useState<string | null>(isUrgentMode ? 'today' : null)
@@ -961,6 +976,44 @@ export function CreateOrderPage() {
       minHeight: '100vh',
       background: '#050505',
     }}>
+      {/* Reorder Banner */}
+      {isReorder && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '12px 16px',
+            marginBottom: 16,
+            background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))',
+            border: '1px solid rgba(34,197,94,0.3)',
+            borderRadius: 14,
+          }}
+        >
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Check size={20} color="#050505" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#22c55e', marginBottom: 2 }}>
+              Повторный заказ
+            </div>
+            <div style={{ fontSize: 12, color: '#a1a1aa' }}>
+              Данные предзаполнены из прошлого заказа
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

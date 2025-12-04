@@ -6,11 +6,11 @@ import {
   ClipboardCheck, Presentation, Scroll, Camera, Sparkles,
   Clock, Calendar, CreditCard, MessageCircle, XCircle, CheckCircle,
   Loader, Tag, Percent, Gift, Receipt, Copy, Check, Smartphone,
-  Building2, Timer, Shield, Zap
+  Building2, Timer, Shield, Zap, Download, ExternalLink, Star, RefreshCw
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { fetchOrderDetail, fetchPaymentInfo, confirmPayment, PaymentInfo } from '../api/userApi'
+import { fetchOrderDetail, fetchPaymentInfo, confirmPayment, submitOrderReview, PaymentInfo } from '../api/userApi'
 import { OrderChat } from '../components/OrderChat'
 import { useWebSocketContext } from '../hooks/useWebSocket'
 
@@ -742,6 +742,189 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           Обычно это занимает 5-15 минут.
         </p>
       </div>
+    </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//                          REVIEW SECTION COMPONENT
+// ═══════════════════════════════════════════════════════════════════════
+
+interface ReviewSectionProps {
+  orderId: number
+  haptic: (type: 'light' | 'medium' | 'heavy') => void
+  onReviewSubmitted: () => void
+}
+
+function ReviewSection({ orderId, haptic, onReviewSubmitted }: ReviewSectionProps) {
+  const [rating, setRating] = useState(5)
+  const [reviewText, setReviewText] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async () => {
+    if (reviewText.length < 10) {
+      setError('Минимум 10 символов')
+      return
+    }
+
+    haptic('medium')
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      const result = await submitOrderReview(orderId, rating, reviewText)
+      if (result.success) {
+        haptic('heavy')
+        onReviewSubmitted()
+      } else {
+        setError(result.message)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка отправки')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.28 }}
+      style={{
+        background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+        borderRadius: 20,
+        border: '1px solid rgba(212,175,55,0.3)',
+        padding: 20,
+        marginBottom: 16,
+      }}
+    >
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 16,
+      }}>
+        <Star size={18} color="#d4af37" fill="#d4af37" />
+        <span style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: '#d4af37',
+        }}>
+          Оставьте отзыв
+        </span>
+      </div>
+
+      <p style={{
+        fontSize: 13,
+        color: '#a1a1aa',
+        margin: 0,
+        marginBottom: 16,
+        lineHeight: 1.5,
+      }}>
+        Поделитесь впечатлениями — ваш отзыв будет опубликован анонимно
+      </p>
+
+      {/* Star Rating */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 8,
+        marginBottom: 16,
+      }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <motion.button
+            key={star}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => { haptic('light'); setRating(star) }}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 4,
+              cursor: 'pointer',
+            }}
+          >
+            <Star
+              size={32}
+              color="#d4af37"
+              fill={star <= rating ? '#d4af37' : 'transparent'}
+              style={{ transition: 'fill 0.2s' }}
+            />
+          </motion.button>
+        ))}
+      </div>
+
+      {/* Review Text */}
+      <textarea
+        value={reviewText}
+        onChange={(e) => setReviewText(e.target.value)}
+        placeholder="Напишите, что понравилось..."
+        style={{
+          width: '100%',
+          minHeight: 100,
+          padding: 14,
+          background: 'rgba(0,0,0,0.3)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          color: '#f2f2f2',
+          fontSize: 14,
+          resize: 'vertical',
+          fontFamily: 'inherit',
+          marginBottom: 12,
+        }}
+      />
+
+      {error && (
+        <p style={{
+          fontSize: 12,
+          color: '#ef4444',
+          margin: '0 0 12px 0',
+        }}>
+          {error}
+        </p>
+      )}
+
+      {/* Submit Button */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={handleSubmit}
+        disabled={submitting || reviewText.length < 10}
+        style={{
+          width: '100%',
+          padding: '14px 20px',
+          background: submitting || reviewText.length < 10
+            ? 'rgba(255,255,255,0.1)'
+            : 'linear-gradient(135deg, #d4af37, #b48e26)',
+          border: 'none',
+          borderRadius: 14,
+          color: '#fff',
+          fontSize: 15,
+          fontWeight: 600,
+          cursor: submitting || reviewText.length < 10 ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+        }}
+      >
+        {submitting ? (
+          <>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+            >
+              <Loader size={18} />
+            </motion.div>
+            Отправляем...
+          </>
+        ) : (
+          <>
+            <Star size={18} />
+            Отправить отзыв
+          </>
+        )}
+      </motion.button>
     </motion.div>
   )
 }
@@ -1633,6 +1816,102 @@ export function OrderDetailPage() {
             </motion.div>
           </div>
 
+          {/* Files Download Section - Only show when files are available */}
+          {order.files_url && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.28 }}
+              style={{
+                background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))',
+                borderRadius: 20,
+                border: '1px solid rgba(34,197,94,0.3)',
+                padding: 20,
+                marginBottom: 16,
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 16,
+              }}>
+                <Download size={18} color="#22c55e" />
+                <span style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: '#22c55e',
+                }}>
+                  Готовая работа
+                </span>
+              </div>
+              <p style={{
+                fontSize: 13,
+                color: '#a1a1aa',
+                margin: 0,
+                marginBottom: 16,
+                lineHeight: 1.5,
+              }}>
+                Ваша работа готова и доступна для скачивания.
+                Файлы хранятся на Яндекс.Диске.
+              </p>
+              <motion.a
+                href={order.files_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileTap={{ scale: 0.97 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  width: '100%',
+                  padding: '14px 20px',
+                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  border: 'none',
+                  borderRadius: 14,
+                  color: '#fff',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 20px rgba(34,197,94,0.3)',
+                }}
+              >
+                <Download size={18} />
+                Скачать файлы
+                <ExternalLink size={14} style={{ opacity: 0.7 }} />
+              </motion.a>
+            </motion.div>
+          )}
+
+          {/* Review Section - Only for completed orders without review */}
+          {order.status === 'completed' && !order.review_submitted && (
+            <ReviewSection orderId={order.id} haptic={haptic} onReviewSubmitted={() => setOrder(prev => prev ? {...prev, review_submitted: true} : null)} />
+          )}
+
+          {/* Review Submitted Badge */}
+          {order.status === 'completed' && order.review_submitted && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: 'rgba(34,197,94,0.1)',
+                borderRadius: 14,
+                border: '1px solid rgba(34,197,94,0.2)',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 16,
+              }}
+            >
+              <CheckCircle size={18} color="#22c55e" />
+              <span style={{ fontSize: 14, color: '#22c55e' }}>
+                Спасибо за отзыв!
+              </span>
+            </motion.div>
+          )}
+
           {/* Payment Details Card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -1872,8 +2151,8 @@ export function OrderDetailPage() {
               whileTap={{ scale: 0.97 }}
               onClick={handleChat}
               style={{
-                flex: 1,
-                padding: '18px 24px',
+                flex: order.status === 'completed' ? 'unset' : 1,
+                padding: order.status === 'completed' ? '18px' : '18px 24px',
                 fontSize: 16,
                 fontWeight: 600,
                 color: '#f2f2f2',
@@ -1888,7 +2167,46 @@ export function OrderDetailPage() {
               }}
             >
               <MessageCircle size={20} color="#d4af37" />
-              Поддержка
+              {order.status === 'completed' ? '' : 'Поддержка'}
+            </motion.button>
+          )}
+
+          {/* Quick Reorder Button (for completed orders) - Premium Feature */}
+          {order.status === 'completed' && (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                haptic('medium')
+                // Navigate to order form with pre-filled data from this order
+                navigate('/order', {
+                  state: {
+                    prefill: {
+                      work_type: order.work_type,
+                      subject: order.subject,
+                      deadline: order.deadline,
+                    },
+                  },
+                })
+              }}
+              style={{
+                flex: 1,
+                padding: '18px 24px',
+                fontSize: 16,
+                fontWeight: 600,
+                color: '#050505',
+                background: 'linear-gradient(135deg, #d4af37, #f5d061)',
+                border: 'none',
+                borderRadius: 16,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                boxShadow: '0 0 30px -5px rgba(212,175,55,0.5)',
+              }}
+            >
+              <RefreshCw size={20} />
+              Заказать снова
             </motion.button>
           )}
         </motion.div>

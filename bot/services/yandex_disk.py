@@ -454,5 +454,81 @@ class YandexDiskService:
             return None
 
 
+    async def upload_chat_file(
+        self,
+        file_bytes: bytes,
+        filename: str,
+        order_id: int,
+        client_name: str,
+        telegram_id: int,
+    ) -> UploadResult:
+        """
+        Загружает файл из чата на Яндекс Диск.
+
+        Структура: .../Заказ_123/Чат/filename
+
+        Args:
+            file_bytes: Содержимое файла
+            filename: Имя файла
+            order_id: ID заказа
+            client_name: Имя клиента
+            telegram_id: Telegram ID клиента
+
+        Returns:
+            UploadResult с публичной ссылкой на файл
+        """
+        if not self._configured:
+            return UploadResult(success=False, error="Yandex Disk not configured")
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                # Папка заказа + подпапка для чата
+                order_folder = self._get_order_folder_path(order_id, client_name, "", telegram_id)
+                chat_folder = f"{order_folder}/Чат"
+
+                # Создаём папку
+                if not await self._ensure_folder_exists(client, chat_folder):
+                    return UploadResult(success=False, error="Failed to create chat folder")
+
+                # Путь к файлу с timestamp для уникальности
+                timestamp = datetime.now().strftime("%H%M%S")
+                safe_filename = sanitize_filename(filename)
+                # Add timestamp prefix to avoid overwrites
+                file_path = f"{chat_folder}/{timestamp}_{safe_filename}"
+
+                # Получаем URL для загрузки
+                upload_url = await self._get_upload_url(client, file_path)
+                if not upload_url:
+                    return UploadResult(success=False, error="Failed to get upload URL")
+
+                # Загружаем файл
+                upload_resp = await client.put(
+                    upload_url,
+                    content=file_bytes,
+                    headers={"Content-Type": "application/octet-stream"},
+                )
+
+                if upload_resp.status_code not in (201, 202):
+                    return UploadResult(
+                        success=False,
+                        error=f"Upload failed: {upload_resp.status_code}"
+                    )
+
+                # Публикуем файл и получаем ссылку
+                public_url = await self._publish_folder(client, file_path)
+
+                logger.info(f"Chat file uploaded: {file_path}")
+
+                return UploadResult(
+                    success=True,
+                    public_url=public_url,
+                    folder_url=public_url,
+                )
+
+        except Exception as e:
+            logger.error(f"Error uploading chat file to Yandex Disk: {e}")
+            return UploadResult(success=False, error=str(e))
+
+
 # Singleton instance
 yandex_disk_service = YandexDiskService()

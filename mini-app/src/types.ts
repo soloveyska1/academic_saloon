@@ -47,6 +47,8 @@ export interface Order {
   bonus_used: number
   progress: number
   payment_scheme: 'full' | 'half' | null  // full / half (prepayment)
+  files_url: string | null  // Yandex.Disk URL with work files
+  review_submitted: boolean  // Whether review was submitted
   created_at: string
   completed_at: string | null
 }

@@ -166,6 +166,56 @@ function TransactionItem({
   )
 }
 
+// Achievement Badge Component
+function AchievementBadge({ emoji, title, unlocked, description }: {
+  emoji: string
+  title: string
+  unlocked: boolean
+  description: string
+}) {
+  return (
+    <motion.div
+      whileHover={unlocked ? { scale: 1.05 } : undefined}
+      style={{
+        background: unlocked
+          ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05))'
+          : 'rgba(20, 20, 23, 0.5)',
+        border: unlocked
+          ? '1px solid rgba(212, 175, 55, 0.3)'
+          : '1px solid rgba(255,255,255,0.05)',
+        borderRadius: 14,
+        padding: 12,
+        textAlign: 'center',
+        opacity: unlocked ? 1 : 0.5,
+        filter: unlocked ? 'none' : 'grayscale(1)',
+        transition: 'all 0.3s ease',
+      }}
+    >
+      <div style={{
+        fontSize: 28,
+        marginBottom: 6,
+        filter: unlocked ? 'none' : 'grayscale(1)',
+      }}>
+        {emoji}
+      </div>
+      <div style={{
+        fontSize: 11,
+        fontWeight: 600,
+        color: unlocked ? '#d4af37' : '#71717a',
+        marginBottom: 2,
+      }}>
+        {title}
+      </div>
+      <div style={{
+        fontSize: 9,
+        color: '#52525b',
+      }}>
+        {description}
+      </div>
+    </motion.div>
+  )
+}
+
 // Stat Card Component
 function StatCard({ icon: Icon, label, value, suffix = '', color, delay, large }: {
   icon: typeof FileText
@@ -451,23 +501,23 @@ export function ProfilePage({ user }: Props) {
             <div style={{
               fontSize: 22,
               fontWeight: 700,
+              color: '#22c55e',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              {Math.round(user.balance)}
+            </div>
+            <div style={{ fontSize: 10, color: '#71717a' }}>Кешбэк ₽</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              fontSize: 22,
+              fontWeight: 700,
               color: '#d4af37',
               fontFamily: "'JetBrains Mono', monospace",
             }}>
               {user.discount}%
             </div>
             <div style={{ fontSize: 10, color: '#71717a' }}>Скидка</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: '#22c55e',
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
-              {user.bonus_balance}
-            </div>
-            <div style={{ fontSize: 10, color: '#71717a' }}>Бонусы ₽</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{
@@ -935,6 +985,106 @@ export function ProfilePage({ user }: Props) {
                   <div style={{ fontSize: 10, color: '#71717a' }}>{stat.label}</div>
                 </div>
               ))}
+            </motion.div>
+
+            {/* Achievements Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              style={{
+                background: 'rgba(20, 20, 23, 0.7)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: 18,
+                padding: 18,
+                marginTop: 16,
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 16,
+              }}>
+                <Award size={18} color="#d4af37" />
+                <span style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: '#fff',
+                  fontFamily: "'Montserrat', sans-serif",
+                }}>
+                  Достижения
+                </span>
+                <div style={{
+                  marginLeft: 'auto',
+                  padding: '4px 8px',
+                  background: 'rgba(212, 175, 55, 0.1)',
+                  border: '1px solid rgba(212, 175, 55, 0.3)',
+                  borderRadius: 6,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: '#d4af37',
+                }}>
+                  {[
+                    user.orders_count >= 1,
+                    user.orders_count >= 5,
+                    user.orders_count >= 10,
+                    user.total_spent >= 50000,
+                    user.total_spent >= 100000,
+                    completedOrders >= 3,
+                  ].filter(Boolean).length}/6
+                </div>
+              </div>
+
+              {/* Achievement Badges */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 12,
+              }}>
+                {/* First Order */}
+                <AchievementBadge
+                  emoji="🎉"
+                  title="Первый заказ"
+                  unlocked={user.orders_count >= 1}
+                  description="Сделать первый заказ"
+                />
+                {/* 5 Orders */}
+                <AchievementBadge
+                  emoji="🔥"
+                  title="В ударе"
+                  unlocked={user.orders_count >= 5}
+                  description="5+ заказов"
+                />
+                {/* 10 Orders */}
+                <AchievementBadge
+                  emoji="⚡"
+                  title="Постоянный"
+                  unlocked={user.orders_count >= 10}
+                  description="10+ заказов"
+                />
+                {/* 50k Spent */}
+                <AchievementBadge
+                  emoji="💎"
+                  title="Инвестор"
+                  unlocked={user.total_spent >= 50000}
+                  description="50 000₽ потрачено"
+                />
+                {/* 100k Spent */}
+                <AchievementBadge
+                  emoji="👑"
+                  title="VIP Клиент"
+                  unlocked={user.total_spent >= 100000}
+                  description="100 000₽ потрачено"
+                />
+                {/* 3 Completed */}
+                <AchievementBadge
+                  emoji="✅"
+                  title="Надёжный"
+                  unlocked={completedOrders >= 3}
+                  description="3+ завершённых"
+                />
+              </div>
             </motion.div>
           </motion.div>
         ) : (
