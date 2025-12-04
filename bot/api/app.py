@@ -18,6 +18,15 @@ PROD_ORIGINS = [
     "https://academic-saloon.duckdns.org",
 ]
 
+# Vercel preview deployments (dynamic URLs)
+VERCEL_PREVIEW_ORIGINS = [
+    "https://academic-saloon-fbf58ua3b-soloveyska1s-projects.vercel.app",
+]
+
+# Regex pattern for ALL Vercel preview deployments from this project
+# Matches: https://academic-saloon-*-soloveyska1s-projects.vercel.app
+VERCEL_ORIGIN_REGEX = r"https://academic-saloon.*\.vercel\.app"
+
 # Dev origins (only added when DEBUG=true)
 DEV_ORIGINS = [
     "http://localhost:5173",
@@ -27,7 +36,7 @@ DEV_ORIGINS = [
 
 # Build allowed origins based on environment
 IS_DEBUG = os.getenv("DEBUG", "false").lower() == "true"
-ALLOWED_ORIGINS = PROD_ORIGINS + (DEV_ORIGINS if IS_DEBUG else [])
+ALLOWED_ORIGINS = PROD_ORIGINS + VERCEL_PREVIEW_ORIGINS + (DEV_ORIGINS if IS_DEBUG else [])
 
 
 @asynccontextmanager
@@ -55,9 +64,11 @@ def create_app() -> FastAPI:
 
     # CORS for Mini App
     # Note: Cannot use "*" with credentials=True, must specify origins explicitly
+    # Using allow_origin_regex to support Vercel preview deployments
     app.add_middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,
+        allow_origin_regex=VERCEL_ORIGIN_REGEX,  # Allow all Vercel preview URLs
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
