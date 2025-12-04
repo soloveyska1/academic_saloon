@@ -2,19 +2,28 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import {
-  Plus, Copy, Check, ChevronRight, TrendingUp,
-  Star, Zap, Crown, CreditCard, Briefcase
+  Plus, Copy, Check, ChevronRight, TrendingUp, Gift,
+  Star, Zap, Crown, CreditCard, Briefcase, Award, Target, Sparkles
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
+import { applyPromoCode } from '../api/userApi'
 
 interface Props {
   user: UserData | null
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ANIMATED COUNTER
+//  HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
+
+function getTimeGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'Доброе утро'
+  if (hour >= 12 && hour < 17) return 'Добрый день'
+  if (hour >= 17 && hour < 22) return 'Добрый вечер'
+  return 'Доброй ночи'
+}
 
 function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
   const count = useMotionValue(0)
@@ -31,7 +40,7 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  GLASS PANEL — INLINE STYLES
+//  STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 
 const glassStyle: React.CSSProperties = {
@@ -52,13 +61,67 @@ const glassGoldStyle: React.CSSProperties = {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIN HOMEPAGE — HEAVY LUXURY
+//  ACHIEVEMENT BADGE COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
+  icon: typeof Star
+  label: string
+  unlocked: boolean
+  glow?: boolean
+}) {
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6,
+        opacity: unlocked ? 1 : 0.35,
+      }}
+    >
+      <div style={{
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: unlocked
+          ? 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.08))'
+          : 'rgba(255,255,255,0.03)',
+        border: unlocked
+          ? '1px solid rgba(212,175,55,0.4)'
+          : '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: unlocked && glow ? '0 0 20px rgba(212,175,55,0.4)' : 'none',
+      }}>
+        <Icon size={20} color={unlocked ? '#d4af37' : '#52525b'} />
+      </div>
+      <span style={{
+        fontSize: 9,
+        color: unlocked ? '#a1a1aa' : '#52525b',
+        textAlign: 'center',
+        fontWeight: 500,
+      }}>
+        {label}
+      </span>
+    </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIN HOMEPAGE — HEAVY LUXURY PREMIUM
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
-  const { haptic, hapticSuccess } = useTelegram()
+  const { haptic, hapticSuccess, webApp } = useTelegram()
   const [copied, setCopied] = useState(false)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoMessage, setPromoMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   if (!user) return null
 
@@ -79,6 +142,26 @@ export function HomePage({ user }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handlePromoSubmit = async () => {
+    if (!promoCode.trim() || promoLoading) return
+    setPromoLoading(true)
+    setPromoMessage(null)
+    try {
+      const result = await applyPromoCode(promoCode.trim())
+      if (result.success) {
+        setPromoMessage({ type: 'success', text: result.message || 'Промокод активирован!' })
+        setPromoCode('')
+        hapticSuccess()
+      } else {
+        setPromoMessage({ type: 'error', text: result.message || 'Неверный промокод' })
+      }
+    } catch {
+      setPromoMessage({ type: 'error', text: 'Ошибка сети' })
+    }
+    setPromoLoading(false)
+    setTimeout(() => setPromoMessage(null), 3000)
+  }
+
   const activeOrders = user.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length
 
   // Premium rank name mapping
@@ -91,57 +174,96 @@ export function HomePage({ user }: Props) {
   const displayRankName = rankNameMap[user.rank.name] || user.rank.name
   const displayNextRank = user.rank.next_rank ? (rankNameMap[user.rank.next_rank] || user.rank.next_rank) : null
 
+  // Achievement badges based on user data
+  const achievements = [
+    { icon: Award, label: 'Первый заказ', unlocked: user.orders_count >= 1 },
+    { icon: Target, label: '5 заказов', unlocked: user.orders_count >= 5 },
+    { icon: Crown, label: 'VIP', unlocked: user.rank.level >= 3 },
+    { icon: Sparkles, label: 'Легенда', unlocked: user.rank.level >= 4, glow: true },
+  ]
+
+  // User's Telegram photo
+  const userPhoto = webApp?.initDataUnsafe?.user?.photo_url
+
   return (
     <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: '#09090b' }}>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HEADER
+          HEADER WITH AVATAR
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}
       >
-        <div>
-          <div style={{ fontSize: 10, letterSpacing: '0.3em', color: '#d4af37', fontWeight: 700, marginBottom: 4 }}>
-            INTELLIGENT CLUB
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* User Avatar with Gold Ring */}
+          <div style={{ position: 'relative' }}>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+              style={{
+                position: 'absolute',
+                inset: -3,
+                borderRadius: '50%',
+                background: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
+              }}
+            />
+            <div style={{
+              position: 'relative',
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              background: '#09090b',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              {userPhoto ? (
+                <img src={userPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{
+                  fontFamily: "'Montserrat', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 18,
+                  background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
+                  {user.fullname?.charAt(0) || 'U'}
+                </span>
+              )}
+            </div>
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
-            Academic Saloon
-          </h1>
+
+          {/* Greeting */}
+          <div>
+            <div style={{ fontSize: 11, color: '#71717a', marginBottom: 2 }}>
+              {getTimeGreeting()},
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
+              {user.fullname?.split(' ')[0] || 'Гость'}
+            </div>
+          </div>
         </div>
 
         {/* Logo */}
-        <div style={{ position: 'relative' }}>
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: '50%',
-              background: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
-            }}
-          />
-          <div style={{
-            position: 'relative',
-            width: 48,
-            height: 48,
-            borderRadius: '50%',
-            background: '#09090b',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <span style={{
-              fontFamily: "'Montserrat', sans-serif",
-              fontWeight: 700,
-              fontSize: 16,
-              background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>AS</span>
-          </div>
+        <div style={{
+          padding: '8px 14px',
+          background: 'rgba(212,175,55,0.1)',
+          border: '1px solid rgba(212,175,55,0.2)',
+          borderRadius: 10,
+        }}>
+          <span style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 12,
+            letterSpacing: '0.1em',
+            background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>ACADEMIC SALOON</span>
         </div>
       </motion.div>
 
@@ -149,15 +271,24 @@ export function HomePage({ user }: Props) {
           BENTO GRID: BALANCE & LEVEL
           ═══════════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-
         {/* BALANCE */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          style={glassGoldStyle}
+          style={{ ...glassGoldStyle, boxShadow: '0 0 40px -10px rgba(212,175,55,0.2)' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#71717a' }}>
+          <div style={{
+            position: 'absolute',
+            top: -20,
+            right: -20,
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#d4af37' }}>
             <CreditCard size={14} />
             <span style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 600 }}>СЧЁТ</span>
           </div>
@@ -194,9 +325,9 @@ export function HomePage({ user }: Props) {
           <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 100, overflow: 'hidden' }}>
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${user.rank.progress}%` }}
+              animate={{ width: `${Math.max(user.rank.progress, 5)}%` }}
               transition={{ duration: 1, delay: 0.5 }}
-              style={{ height: '100%', background: '#d4af37', borderRadius: 100 }}
+              style={{ height: '100%', background: 'linear-gradient(90deg, #8b6914, #d4af37)', borderRadius: 100 }}
             />
           </div>
           <div style={{ fontSize: 10, color: '#71717a', marginTop: 6 }}>Уровень {user.rank.level}</div>
@@ -215,7 +346,7 @@ export function HomePage({ user }: Props) {
         style={{
           width: '100%',
           padding: '20px 24px',
-          borderRadius: 12,
+          borderRadius: 14,
           border: 'none',
           cursor: 'pointer',
           display: 'flex',
@@ -223,7 +354,7 @@ export function HomePage({ user }: Props) {
           justifyContent: 'space-between',
           background: 'linear-gradient(90deg, #B38728, #D4AF37, #FBF5B7, #D4AF37, #B38728)',
           backgroundSize: '200% auto',
-          boxShadow: '0 0 30px -5px rgba(212,175,55,0.5), inset 0 2px 4px rgba(255,255,255,0.4)',
+          boxShadow: '0 0 40px -5px rgba(212,175,55,0.5), inset 0 2px 4px rgba(255,255,255,0.4)',
           marginBottom: 16,
         }}
       >
@@ -236,15 +367,15 @@ export function HomePage({ user }: Props) {
           </div>
         </div>
         <div style={{
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           borderRadius: '50%',
-          background: 'rgba(9,9,11,0.1)',
+          background: 'rgba(9,9,11,0.15)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <Plus size={22} color="#09090b" strokeWidth={2.5} />
+          <Plus size={24} color="#09090b" strokeWidth={2.5} />
         </div>
       </motion.button>
 
@@ -256,29 +387,111 @@ export function HomePage({ user }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
         onClick={handlePanicOrder}
-        style={{ ...glassStyle, marginBottom: 16, cursor: 'pointer' }}
+        style={{ ...glassStyle, marginBottom: 16, cursor: 'pointer', borderColor: 'rgba(239,68,68,0.2)' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 1.5, repeat: Infinity }}
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
+              width: 48,
+              height: 48,
+              borderRadius: 14,
               background: 'linear-gradient(135deg, #ef4444, #dc2626)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              boxShadow: '0 0 25px rgba(239,68,68,0.4)',
             }}
           >
-            <Zap size={22} color="#fff" />
+            <Zap size={24} color="#fff" />
           </motion.div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#ef4444' }}>Срочно?</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#ef4444' }}>Срочно?</div>
             <div style={{ fontSize: 11, color: '#71717a' }}>Скинь фото — оценим за 5 минут</div>
           </div>
-          <ChevronRight size={20} color="#ef4444" />
+          <ChevronRight size={22} color="#ef4444" />
+        </div>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          PROMO CODE INPUT
+          ═══════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28 }}
+        style={{ ...glassStyle, marginBottom: 16, padding: 16 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Gift size={14} color="#d4af37" />
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', letterSpacing: '0.1em' }}>ПРОМОКОД</span>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input
+            type="text"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            placeholder="Введите код"
+            style={{
+              flex: 1,
+              padding: '12px 14px',
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 10,
+              color: '#fff',
+              fontSize: 14,
+              fontFamily: 'monospace',
+              letterSpacing: '0.1em',
+              outline: 'none',
+            }}
+          />
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handlePromoSubmit}
+            disabled={promoLoading}
+            style={{
+              padding: '12px 20px',
+              background: promoLoading ? '#52525b' : 'linear-gradient(135deg, #d4af37, #b38728)',
+              border: 'none',
+              borderRadius: 10,
+              color: '#09090b',
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: promoLoading ? 'wait' : 'pointer',
+            }}
+          >
+            {promoLoading ? '...' : 'OK'}
+          </motion.button>
+        </div>
+        {promoMessage && (
+          <div style={{
+            marginTop: 10,
+            fontSize: 12,
+            color: promoMessage.type === 'success' ? '#22c55e' : '#ef4444',
+          }}>
+            {promoMessage.text}
+          </div>
+        )}
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ACHIEVEMENTS
+          ═══════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        style={{ ...glassStyle, marginBottom: 16 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <Award size={14} color="#d4af37" />
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', letterSpacing: '0.1em' }}>ДОСТИЖЕНИЯ</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          {achievements.map((a, i) => (
+            <AchievementBadge key={i} icon={a.icon} label={a.label} unlocked={a.unlocked} glow={a.glow} />
+          ))}
         </div>
       </motion.div>
 
@@ -288,15 +501,15 @@ export function HomePage({ user }: Props) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.32 }}
         style={{ ...glassGoldStyle, marginBottom: 16 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <Star size={14} color="#d4af37" fill="#d4af37" />
           <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>РЕПУТАЦИЯ</span>
         </div>
-        <p style={{ fontSize: 11, color: '#a1a1aa', marginBottom: 16, lineHeight: 1.5 }}>
-          Пригласите партнёра в клуб и получайте <span style={{ color: '#d4af37', fontWeight: 600 }}>5% роялти</span> с каждого заказа.
+        <p style={{ fontSize: 11, color: '#a1a1aa', marginBottom: 14, lineHeight: 1.5 }}>
+          Пригласите партнёра и получайте <span style={{ color: '#d4af37', fontWeight: 600 }}>5% роялти</span> с каждого заказа.
         </p>
         <motion.button
           onClick={(e) => { e.stopPropagation(); copyReferralCode() }}
@@ -318,6 +531,11 @@ export function HomePage({ user }: Props) {
           </code>
           {copied ? <Check size={16} color="#22c55e" /> : <Copy size={16} color="#71717a" />}
         </motion.button>
+        {user.referrals_count > 0 && (
+          <div style={{ marginTop: 10, fontSize: 11, color: '#71717a' }}>
+            Приглашено: <span style={{ color: '#d4af37', fontWeight: 600 }}>{user.referrals_count}</span>
+          </div>
+        )}
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -332,33 +550,33 @@ export function HomePage({ user }: Props) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <div style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
+              width: 44,
+              height: 44,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
               border: '1px solid rgba(212,175,55,0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <TrendingUp size={18} color="#d4af37" />
+              <TrendingUp size={20} color="#d4af37" />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Следующий уровень</div>
               <div style={{ fontSize: 11, color: '#71717a' }}>{displayNextRank}</div>
             </div>
-            <span style={{ fontFamily: 'monospace', color: '#d4af37', fontWeight: 600 }}>{user.rank.progress}%</span>
+            <span style={{ fontFamily: 'monospace', color: '#d4af37', fontWeight: 600, fontSize: 15 }}>{user.rank.progress}%</span>
           </div>
-          <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 100, overflow: 'hidden', marginBottom: 10 }}>
+          <div style={{ height: 10, background: 'rgba(255,255,255,0.05)', borderRadius: 100, overflow: 'hidden', marginBottom: 10 }}>
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${user.rank.progress}%` }}
+              animate={{ width: `${Math.max(user.rank.progress, 3)}%` }}
               transition={{ duration: 1, delay: 0.5 }}
               style={{
                 height: '100%',
                 background: 'linear-gradient(90deg, #8b6914, #d4af37, #f5d061)',
                 borderRadius: 100,
-                boxShadow: '0 0 15px rgba(212,175,55,0.5)',
+                boxShadow: '0 0 20px rgba(212,175,55,0.5)',
               }}
             />
           </div>
@@ -369,7 +587,7 @@ export function HomePage({ user }: Props) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          QUICK STATS
+          QUICK STATS — PREMIUM
           ═══════════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <motion.div
@@ -377,13 +595,27 @@ export function HomePage({ user }: Props) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           onClick={() => navigate('/orders')}
-          style={{ ...glassStyle, cursor: 'pointer' }}
+          style={{
+            ...glassStyle,
+            cursor: 'pointer',
+            borderColor: activeOrders > 0 ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)',
+          }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: '#71717a' }}>
+          <div style={{
+            position: 'absolute',
+            bottom: -10,
+            right: -10,
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            background: activeOrders > 0 ? 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)' : 'none',
+            pointerEvents: 'none',
+          }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: activeOrders > 0 ? '#3b82f6' : '#71717a' }}>
             <Briefcase size={16} />
-            <span style={{ fontSize: 10, letterSpacing: '0.1em', fontWeight: 500 }}>ЗАКАЗЫ</span>
+            <span style={{ fontSize: 10, letterSpacing: '0.1em', fontWeight: 600 }}>ЗАКАЗЫ</span>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{activeOrders}</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: activeOrders > 0 ? '#3b82f6' : '#fff' }}>{activeOrders}</div>
           <div style={{ fontSize: 10, color: '#71717a' }}>активных</div>
         </motion.div>
 
@@ -392,14 +624,28 @@ export function HomePage({ user }: Props) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
           onClick={() => navigate('/orders')}
-          style={{ ...glassStyle, cursor: 'pointer' }}
+          style={{
+            ...glassStyle,
+            cursor: 'pointer',
+            borderColor: 'rgba(212,175,55,0.2)',
+          }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: '#71717a' }}>
+          <div style={{
+            position: 'absolute',
+            bottom: -10,
+            right: -10,
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#d4af37' }}>
             <Star size={16} />
-            <span style={{ fontSize: 10, letterSpacing: '0.1em', fontWeight: 500 }}>ВСЕГО</span>
+            <span style={{ fontSize: 10, letterSpacing: '0.1em', fontWeight: 600 }}>ВЫПОЛНЕНО</span>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: '#d4af37' }}>{user.orders_count}</div>
-          <div style={{ fontSize: 10, color: '#71717a' }}>выполнено</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: '#d4af37' }}>{user.orders_count}</div>
+          <div style={{ fontSize: 10, color: '#71717a' }}>заказов</div>
         </motion.div>
       </div>
     </div>
