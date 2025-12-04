@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { fetchOrderDetail, fetchPaymentInfo, confirmPayment, submitOrderReview, PaymentInfo } from '../api/userApi'
+import { fetchOrderDetail, fetchPaymentInfo, confirmPayment, submitOrderReview, confirmWorkCompletion, requestRevision, PaymentInfo } from '../api/userApi'
 import { OrderChat } from '../components/OrderChat'
 import { useWebSocketContext } from '../hooks/useWebSocket'
 
@@ -47,6 +47,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
   paid_full: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', icon: Loader, step: 3 },
   in_progress: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', icon: Loader, step: 3 },
   review: { label: 'На проверке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', icon: Clock, step: 4 },
+  revision: { label: 'Правки', color: '#f97316', bgColor: 'rgba(249,115,22,0.15)', icon: RefreshCw, step: 3 },
   completed: { label: 'Завершён', color: '#22c55e', bgColor: 'rgba(34,197,94,0.15)', icon: CheckCircle, step: 5 },
   cancelled: { label: 'Отменён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.15)', icon: XCircle, step: 0 },
   rejected: { label: 'Отклонён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.15)', icon: XCircle, step: 0 },
@@ -992,7 +993,7 @@ const STATUS_ALERTS: Record<string, StatusAlert> = {
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { haptic, hapticSuccess, openBot } = useTelegram()
+  const { haptic, hapticSuccess, hapticError, openBot } = useTelegram()
   const [order, setOrder] = useState<Order | null>(null)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -1817,6 +1818,149 @@ export function OrderDetailPage() {
           </div>
 
           {/* Files Download Section - Only show when files are available */}
+          {/* Work Review Section - When work is delivered */}
+          {order.status === 'review' && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              style={{
+                background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))',
+                borderRadius: 20,
+                border: '1px solid rgba(245,158,11,0.3)',
+                padding: 20,
+                marginBottom: 16,
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 12,
+              }}>
+                <CheckCircle size={20} color="#f59e0b" />
+                <span style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: '#f59e0b',
+                }}>
+                  Работа готова к проверке!
+                </span>
+              </div>
+
+              {/* 30-day timer */}
+              {order.delivered_at && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 16,
+                  padding: '8px 12px',
+                  background: 'rgba(245,158,11,0.1)',
+                  borderRadius: 10,
+                }}>
+                  <Timer size={14} color="#f59e0b" />
+                  <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+                    {(() => {
+                      const deliveredDate = new Date(order.delivered_at)
+                      const now = new Date()
+                      const daysLeft = 30 - Math.floor((now.getTime() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24))
+                      return daysLeft > 0
+                        ? `${daysLeft} дней на бесплатные правки`
+                        : 'Период бесплатных правок истёк'
+                    })()}
+                  </span>
+                </div>
+              )}
+
+              <p style={{
+                fontSize: 13,
+                color: '#a1a1aa',
+                margin: 0,
+                marginBottom: 16,
+                lineHeight: 1.5,
+              }}>
+                Проверьте работу и подтвердите получение или запросите правки.
+              </p>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={async () => {
+                    try {
+                      haptic('medium')
+                      const result = await confirmWorkCompletion(order.id)
+                      if (result.success) {
+                        setOrder(prev => prev ? {...prev, status: 'completed'} : null)
+                        hapticSuccess()
+                      }
+                    } catch (e) {
+                      console.error('Failed to confirm:', e)
+                      hapticError()
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '14px 16px',
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    border: 'none',
+                    borderRadius: 14,
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 20px rgba(34,197,94,0.3)',
+                  }}
+                >
+                  <CheckCircle size={16} />
+                  Всё отлично
+                </motion.button>
+
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={async () => {
+                    try {
+                      haptic('light')
+                      const result = await requestRevision(order.id, '')
+                      if (result.success) {
+                        setOrder(prev => prev ? {...prev, status: 'revision'} : null)
+                        // Scroll to chat section
+                        const chatSection = document.getElementById('order-chat-section')
+                        chatSection?.scrollIntoView({ behavior: 'smooth' })
+                        hapticSuccess()
+                      }
+                    } catch (e) {
+                      console.error('Failed to request revision:', e)
+                      hapticError()
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '14px 16px',
+                    background: 'rgba(245,158,11,0.2)',
+                    border: '1px solid rgba(245,158,11,0.4)',
+                    borderRadius: 14,
+                    color: '#f59e0b',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <PenTool size={16} />
+                  Нужны правки
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
           {order.files_url && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -2100,7 +2244,9 @@ export function OrderDetailPage() {
 
       {/* In-App Chat — Premium Feature */}
       {isActive && !showPaymentUI && (
-        <OrderChat orderId={order.id} />
+        <div id="order-chat-section">
+          <OrderChat orderId={order.id} />
+        </div>
       )}
 
       {/* Fixed Action Bar (not during payment) */}

@@ -609,3 +609,53 @@ export async function submitOrderReview(
     body: JSON.stringify({ rating, text }),
   })
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  WORK CONFIRMATION & REVISION REQUESTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ConfirmWorkResult {
+  success: boolean
+  message: string
+}
+
+export interface RevisionRequestResult {
+  success: boolean
+  message: string
+  prefilled_text: string
+}
+
+/**
+ * Клиент подтверждает что работа выполнена качественно
+ */
+export async function confirmWorkCompletion(orderId: number): Promise<ConfirmWorkResult> {
+  if (!hasTelegramContext()) {
+    return { success: true, message: 'Заказ завершён! (DEV)' }
+  }
+
+  return apiFetch<ConfirmWorkResult>(`/orders/${orderId}/confirm-completion`, {
+    method: 'POST',
+  })
+}
+
+/**
+ * Клиент запрашивает правки
+ */
+export async function requestRevision(
+  orderId: number,
+  message: string = ''
+): Promise<RevisionRequestResult> {
+  if (!hasTelegramContext()) {
+    return {
+      success: true,
+      message: 'Запрос отправлен! (DEV)',
+      prefilled_text: 'Прошу внести правки:\n\n'
+    }
+  }
+
+  return apiFetch<RevisionRequestResult>(`/orders/${orderId}/request-revision`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  })
+}
