@@ -10,6 +10,7 @@ import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { GoldParticles } from './components/ui/GoldParticles'
+import { ToastProvider } from './components/ui/Toast'
 import { useUserData } from './hooks/useUserData'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
@@ -97,21 +98,23 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <div className="app">
-          {/* Animated Gold Particles Background */}
-          <GoldParticles />
-          <Routes>
-            <Route path="/" element={<HomePage user={userData} />} />
-            <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
-            <Route path="/order/:id" element={<OrderDetailPage />} />
-            <Route path="/roulette" element={<RoulettePage user={userData} />} />
-            <Route path="/profile" element={<ProfilePage user={userData} />} />
-            <Route path="/create-order" element={<CreateOrderPage />} />
-          </Routes>
-          <Navigation />
-        </div>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <div className="app">
+            {/* Animated Gold Particles Background */}
+            <GoldParticles />
+            <Routes>
+              <Route path="/" element={<HomePage user={userData} />} />
+              <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
+              <Route path="/order/:id" element={<OrderDetailPage />} />
+              <Route path="/roulette" element={<RoulettePage user={userData} />} />
+              <Route path="/profile" element={<ProfilePage user={userData} />} />
+              <Route path="/create-order" element={<CreateOrderPage />} />
+            </Routes>
+            <Navigation />
+          </div>
+        </BrowserRouter>
+      </ToastProvider>
     </ErrorBoundary>
   )
 }

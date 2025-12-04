@@ -96,7 +96,7 @@ function BetSelector({
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         }}
       >
-        <Minus size={20} color="var(--text-secondary)" />
+        <Minus size={20} color="#a1a1aa" />
       </motion.button>
 
       {/* Bet Display */}
@@ -109,8 +109,8 @@ function BetSelector({
         <div
           style={{
             fontSize: 11,
-            fontFamily: 'var(--font-mono)',
-            color: 'var(--text-muted)',
+            fontFamily: "'JetBrains Mono', monospace",
+            color: '#71717a',
             marginBottom: 4,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
@@ -123,7 +123,7 @@ function BetSelector({
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           style={{
-            fontFamily: 'var(--font-display)',
+            fontFamily: "'Playfair Display', serif",
             fontSize: 32,
             fontWeight: 800,
             background: 'linear-gradient(135deg, #f5d061, #d4af37, #b48e26)',
@@ -158,7 +158,7 @@ function BetSelector({
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.2)',
         }}
       >
-        <Plus size={20} color="var(--bg-void)" />
+        <Plus size={20} color="#0a0a0c" />
       </motion.button>
     </motion.div>
   )
@@ -416,10 +416,10 @@ function MetallicWheel({
                 left: x,
                 top: y,
                 transform: `translate(-50%, -50%) rotate(${angle + 90}deg)`,
-                fontFamily: 'var(--font-mono)',
+                fontFamily: "'JetBrains Mono', monospace",
                 fontSize: seg.type === 'jackpot' ? 15 : 13,
                 fontWeight: 800,
-                color: seg.type === 'nothing' ? 'var(--text-muted)' : '#0a0a0c',
+                color: seg.type === 'nothing' ? '#71717a' : '#0a0a0c',
                 textShadow: seg.type === 'nothing'
                   ? 'none'
                   : '0 1px 2px rgba(0,0,0,0.3)',
@@ -643,14 +643,14 @@ function TriggerButton({
               animate={{ rotate: 360 }}
               transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
             >
-              <Target size={24} color="var(--bg-void)" />
+              <Target size={24} color="#0a0a0c" />
             </motion.div>
             <span
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: "'Playfair Display', serif",
                 fontSize: 18,
                 fontWeight: 800,
-                color: 'var(--bg-void)',
+                color: '#0a0a0c',
                 letterSpacing: '0.05em',
               }}
             >
@@ -659,13 +659,13 @@ function TriggerButton({
           </>
         ) : canSpin ? (
           <>
-            <Crosshair size={24} color="var(--bg-void)" strokeWidth={2.5} />
+            <Crosshair size={24} color="#0a0a0c" strokeWidth={2.5} />
             <span
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: "'Playfair Display', serif",
                 fontSize: 18,
                 fontWeight: 800,
-                color: 'var(--bg-void)',
+                color: '#0a0a0c',
                 letterSpacing: '0.05em',
               }}
             >
@@ -675,10 +675,10 @@ function TriggerButton({
         ) : (
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: "'JetBrains Mono', monospace",
               fontSize: 14,
               fontWeight: 600,
-              color: 'var(--text-muted)',
+              color: '#71717a',
               letterSpacing: '0.05em',
             }}
           >
@@ -763,7 +763,7 @@ function ResultBanner({ result }: { result: RouletteResult }) {
           : 'linear-gradient(135deg, rgba(40, 40, 45, 0.8) 0%, rgba(20, 20, 23, 0.95) 100%)',
         border: isWin
           ? '2px solid rgba(212, 175, 55, 0.5)'
-          : '1px solid var(--border-default)',
+          : '1px solid rgba(255,255,255,0.06)',
         boxShadow: isWin
           ? '0 0 40px rgba(212, 175, 55, 0.4), 0 20px 40px -10px rgba(0, 0, 0, 0.6)'
           : '0 10px 30px rgba(0, 0, 0, 0.4)',
@@ -783,7 +783,7 @@ function ResultBanner({ result }: { result: RouletteResult }) {
           borderRadius: '50%',
           background: isWin
             ? 'linear-gradient(135deg, #f5d061 0%, #d4af37 50%, #8b6914 100%)'
-            : 'var(--bg-surface)',
+            : '#14141a',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -794,18 +794,18 @@ function ResultBanner({ result }: { result: RouletteResult }) {
       >
         <Icon
           size={32}
-          color={isWin ? 'var(--bg-void)' : 'var(--text-muted)'}
+          color={isWin ? '#0a0a0c' : '#71717a'}
           strokeWidth={2}
         />
       </motion.div>
 
       <h3
         style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: "'Playfair Display', serif",
           fontSize: 24,
           fontWeight: 800,
           marginBottom: 8,
-          color: isWin ? 'var(--gold-300)' : 'var(--text-secondary)',
+          color: isWin ? '#f5d061' : '#a1a1aa',
         }}
       >
         {isWin ? 'ПОЗДРАВЛЯЕМ!' : 'НЕ ПОВЕЗЛО'}
@@ -813,10 +813,10 @@ function ResultBanner({ result }: { result: RouletteResult }) {
 
       <p
         style={{
-          fontFamily: 'var(--font-mono)',
+          fontFamily: "'JetBrains Mono', monospace",
           fontSize: 18,
           fontWeight: 600,
-          color: isWin ? 'var(--text-primary)' : 'var(--text-muted)',
+          color: isWin ? '#f2f2f2' : '#71717a',
         }}
       >
         {result.prize}
@@ -946,21 +946,23 @@ export function RoulettePage({ user }: Props) {
       >
         <h1
           style={{
-            fontFamily: 'var(--font-display)',
+            fontFamily: "'Playfair Display', serif",
             fontSize: 32,
             fontWeight: 800,
             marginBottom: 8,
             letterSpacing: '0.02em',
+            background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
           }}
-          className="gold-gradient-text"
         >
           КОЛЕСО ФОРТУНЫ
         </h1>
         <p
           style={{
-            fontFamily: 'var(--font-mono)',
+            fontFamily: "'JetBrains Mono', monospace",
             fontSize: 12,
-            color: 'var(--text-muted)',
+            color: '#71717a',
             letterSpacing: '0.1em',
           }}
         >
@@ -1054,10 +1056,10 @@ export function RoulettePage({ user }: Props) {
       >
         <h4
           style={{
-            fontFamily: 'var(--font-display)',
+            fontFamily: "'Playfair Display', serif",
             fontSize: 13,
             marginBottom: 16,
-            color: 'var(--gold-400)',
+            color: '#d4af37',
             letterSpacing: '0.1em',
           }}
         >
@@ -1066,9 +1068,9 @@ export function RoulettePage({ user }: Props) {
         <ul
           style={{
             listStyle: 'none',
-            fontFamily: 'var(--font-mono)',
+            fontFamily: "'JetBrains Mono', monospace",
             fontSize: 11,
-            color: 'var(--text-muted)',
+            color: '#71717a',
             display: 'flex',
             flexDirection: 'column',
             gap: 10,
@@ -1088,7 +1090,7 @@ export function RoulettePage({ user }: Props) {
                   width: 5,
                   height: 5,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, var(--gold-400), var(--gold-600))',
+                  background: 'linear-gradient(135deg, #d4af37, #8b6914)',
                   boxShadow: '0 0 8px rgba(212, 175, 55, 0.4)',
                   flexShrink: 0,
                 }}
