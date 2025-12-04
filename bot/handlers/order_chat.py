@@ -689,6 +689,19 @@ async def cmd_send_template(
 
         await session.commit()
 
+        # WebSocket уведомление в Mini App
+        if conv.order_id:
+            try:
+                from bot.services.realtime_notifications import notify_new_chat_message
+                await notify_new_chat_message(
+                    telegram_id=conv.user_id,
+                    order_id=conv.order_id,
+                    sender_name="Менеджер",
+                    message_preview=template["text"],
+                )
+            except Exception as ws_error:
+                logger.debug(f"WebSocket notification failed (non-critical): {ws_error}")
+
         # Подтверждение
         await message.reply(f"✅ Шаблон «{template['name']}» отправлен клиенту")
 
