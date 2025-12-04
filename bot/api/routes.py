@@ -527,6 +527,19 @@ async def create_order(
 
     logger.info(f"[API /orders/create] Order #{order.id} created, status={initial_status}, price={price_calc.final_price}")
 
+    # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ О НОВОМ ЗАКАЗЕ ═══
+    try:
+        from bot.api.websocket import notify_order_update, notify_user
+        await notify_order_update(
+            telegram_id=tg_user.id,
+            order_id=order.id,
+            new_status=initial_status,
+            order_data={"work_type": data.work_type, "subject": data.subject, "is_new": True}
+        )
+        logger.info(f"[WS] Sent new order notification to user {tg_user.id}")
+    except Exception as e:
+        logger.warning(f"[WS] Failed to send new order notification: {e}")
+
     # ═══════════════════════════════════════════════════════════════
     #  ADMIN WORKFLOW INTEGRATION
     # ═══════════════════════════════════════════════════════════════
@@ -824,6 +837,19 @@ async def confirm_payment(
     order.payment_method = data.payment_method
     order.payment_scheme = data.payment_scheme
     await session.commit()
+
+    # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
+    try:
+        from bot.api.websocket import notify_order_update
+        await notify_order_update(
+            telegram_id=tg_user.id,
+            order_id=order_id,
+            new_status=order.status,
+            order_data={"payment_method": data.payment_method, "payment_scheme": data.payment_scheme}
+        )
+        logger.info(f"[WS] Sent payment confirmation update to user {tg_user.id}")
+    except Exception as e:
+        logger.warning(f"[WS] Failed to send payment notification: {e}")
 
     # Notify admin in topic
     try:
