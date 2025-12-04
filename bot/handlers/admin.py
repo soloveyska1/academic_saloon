@@ -3464,6 +3464,14 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
 
+    # ═══ WEBSOCKET NOTIFICATION ═══
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=OrderStatus.PAID.value,
+        old_status=OrderStatus.VERIFICATION_PENDING.value,
+    )
+
     # Начисляем бонусы клиенту за оплаченный заказ (50₽)
     order_bonus = 0
     try:
@@ -3855,6 +3863,13 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
     await session.commit()
     logger.info(f"[/paid] Заказ #{order_id} переведён в статус PAID")
 
+    # ═══ WEBSOCKET NOTIFICATION ═══
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=OrderStatus.PAID.value,
+    )
+
     # Начисляем бонусы клиенту за оплаченный заказ (50₽)
     order_bonus = 0
     try:
@@ -4056,8 +4071,17 @@ async def accept_offer_callback(callback: CallbackQuery, session: AsyncSession, 
 
     # ВАЖНО: Меняем статус на WAITING_PAYMENT чтобы confirm_payment работал
     if order.status == OrderStatus.WAITING_ESTIMATION.value:
+        old_status = order.status
         order.status = OrderStatus.WAITING_PAYMENT.value
         await session.commit()
+
+        # ═══ WEBSOCKET NOTIFICATION ═══
+        await ws_notify_order_update(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.WAITING_PAYMENT.value,
+            old_status=old_status,
+        )
 
     # Показываем реквизиты для P2P оплаты (используем конфиг)
     payment_text = f"""💳 <b>ОПЛАТА ЗАКАЗА #{order.id}</b>
@@ -5234,12 +5258,21 @@ async def mark_order_paid(callback: CallbackQuery, session: AsyncSession, bot: B
         return
 
     # Обновляем статус и paid_amount
+    old_status = order.status
     order.status = OrderStatus.PAID.value
     order.paid_amount = order.price or 0
     order.paid_at = datetime.now(MSK_TZ)
 
     await session.commit()
     await callback.answer("✅ Заказ отмечен как оплаченный!")
+
+    # ═══ WEBSOCKET NOTIFICATION ═══
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=OrderStatus.PAID.value,
+        old_status=old_status,
+    )
 
     # Уведомляем клиента
     user_notification = f"""✅ <b>ОПЛАТА ПОДТВЕРЖДЕНА</b>
@@ -5372,6 +5405,14 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
 
+    # ═══ WEBSOCKET NOTIFICATION ═══
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=OrderStatus.PAID.value,
+        old_status=OrderStatus.VERIFICATION_PENDING.value,
+    )
+
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ С КАРТИНКОЙ ═══
     user_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
 
@@ -5473,6 +5514,14 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
         )
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
+
+    # ═══ WEBSOCKET NOTIFICATION ═══
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=OrderStatus.WAITING_PAYMENT.value,
+        old_status=OrderStatus.VERIFICATION_PENDING.value,
+    )
 
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ ═══
     user_text = f"""⚠️ <b>Оплата не найдена</b>

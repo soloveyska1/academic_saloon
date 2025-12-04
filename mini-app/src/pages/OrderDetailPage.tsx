@@ -12,6 +12,7 @@ import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { fetchOrderDetail, fetchPaymentInfo, confirmPayment, PaymentInfo } from '../api/userApi'
 import { OrderChat } from '../components/OrderChat'
+import { useWebSocketContext } from '../hooks/useWebSocket'
 
 // Work type icons mapping
 const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
@@ -729,34 +730,65 @@ export function OrderDetailPage() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function loadOrder() {
-      if (!id) return
-      try {
-        const data = await fetchOrderDetail(parseInt(id))
-        setOrder(data)
+  // WebSocket context for real-time updates
+  const { addMessageHandler } = useWebSocketContext()
 
-        // Load payment info if order has price and is not fully paid
-        const needsPayment = data.final_price > 0 &&
-          (data.paid_amount || 0) < data.final_price &&
-          !['completed', 'cancelled', 'rejected'].includes(data.status)
+  // Load order function
+  const loadOrder = useCallback(async () => {
+    if (!id) return
+    try {
+      const data = await fetchOrderDetail(parseInt(id))
+      setOrder(data)
 
-        if (needsPayment) {
-          try {
-            const payment = await fetchPaymentInfo(parseInt(id))
-            setPaymentInfo(payment)
-          } catch (err) {
-            console.error('Failed to load payment info:', err)
-          }
+      // Load payment info if order has price and is not fully paid
+      const needsPayment = data.final_price > 0 &&
+        (data.paid_amount || 0) < data.final_price &&
+        !['completed', 'cancelled', 'rejected'].includes(data.status)
+
+      if (needsPayment) {
+        try {
+          const payment = await fetchPaymentInfo(parseInt(id))
+          setPaymentInfo(payment)
+        } catch (err) {
+          console.error('Failed to load payment info:', err)
         }
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
       }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
-    loadOrder()
   }, [id])
+
+  // Initial load
+  useEffect(() => {
+    loadOrder()
+  }, [loadOrder])
+
+  // Subscribe to WebSocket updates for this order
+  useEffect(() => {
+    if (!id) return
+
+    const unsubscribe = addMessageHandler((message) => {
+      // Check if this message is about our order
+      const msgOrderId = (message as any).order_id
+      if (msgOrderId && msgOrderId === parseInt(id)) {
+        console.log('[OrderDetail] Received update for this order, reloading...')
+        loadOrder()
+      }
+
+      // Also refresh on general refresh messages
+      if (message.type === 'refresh') {
+        const refreshType = (message as any).refresh_type
+        if (refreshType === 'all' || refreshType === 'orders') {
+          console.log('[OrderDetail] Refresh requested, reloading...')
+          loadOrder()
+        }
+      }
+    })
+
+    return unsubscribe
+  }, [id, addMessageHandler, loadOrder])
 
   const handleBack = () => {
     haptic('light')
@@ -770,10 +802,7 @@ export function OrderDetailPage() {
 
   const handlePaymentConfirmed = async () => {
     // Reload order to get updated status
-    if (id) {
-      const data = await fetchOrderDetail(parseInt(id))
-      setOrder(data)
-    }
+    await loadOrder()
   }
 
   const getStatusConfig = (status: string): StatusConfig => {

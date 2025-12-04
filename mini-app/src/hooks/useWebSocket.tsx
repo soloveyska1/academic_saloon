@@ -5,6 +5,7 @@ export type WSMessageType =
   | 'connected'
   | 'order_update'
   | 'balance_update'
+  | 'progress_update'
   | 'notification'
   | 'refresh'
   | 'ping'
@@ -42,11 +43,21 @@ export interface RefreshMessage extends WSMessage {
   refresh_type: 'all' | 'orders' | 'profile' | 'balance'
 }
 
+export interface ProgressUpdateMessage extends WSMessage {
+  type: 'progress_update'
+  order_id: number
+  progress: number
+  title?: string
+  message?: string
+  emoji?: string
+}
+
 type MessageHandler = (message: WSMessage) => void
 
 interface UseWebSocketOptions {
   onOrderUpdate?: (msg: OrderUpdateMessage) => void
   onBalanceUpdate?: (msg: BalanceUpdateMessage) => void
+  onProgressUpdate?: (msg: ProgressUpdateMessage) => void
   onNotification?: (msg: NotificationMessage) => void
   onRefresh?: (msg: RefreshMessage) => void
   onConnect?: () => void
@@ -66,6 +77,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
   const {
     onOrderUpdate,
     onBalanceUpdate,
+    onProgressUpdate,
     onNotification,
     onRefresh,
     onConnect,
@@ -115,6 +127,9 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
         case 'balance_update':
           onBalanceUpdate?.(message as BalanceUpdateMessage)
           break
+        case 'progress_update':
+          onProgressUpdate?.(message as ProgressUpdateMessage)
+          break
         case 'notification':
           onNotification?.(message as NotificationMessage)
           break
@@ -132,7 +147,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     } catch (e) {
       console.error('[WS] Failed to parse message:', e)
     }
-  }, [onOrderUpdate, onBalanceUpdate, onNotification, onRefresh, sendMessage])
+  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onNotification, onRefresh, sendMessage])
 
   // Connect to WebSocket
   const connect = useCallback(() => {
@@ -275,6 +290,7 @@ interface WebSocketProviderProps {
   children: ReactNode
   onOrderUpdate?: (msg: OrderUpdateMessage) => void
   onBalanceUpdate?: (msg: BalanceUpdateMessage) => void
+  onProgressUpdate?: (msg: ProgressUpdateMessage) => void
   onNotification?: (msg: NotificationMessage) => void
   onRefresh?: (msg: RefreshMessage) => void
 }
@@ -284,12 +300,14 @@ export function WebSocketProvider({
   children,
   onOrderUpdate,
   onBalanceUpdate,
+  onProgressUpdate,
   onNotification,
   onRefresh,
 }: WebSocketProviderProps) {
   const ws = useWebSocket(telegramId, {
     onOrderUpdate,
     onBalanceUpdate,
+    onProgressUpdate,
     onNotification,
     onRefresh,
   })
