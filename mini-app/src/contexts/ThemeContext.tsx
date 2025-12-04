@@ -1,0 +1,110 @@
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
+
+export type Theme = 'dark' | 'light'
+
+interface ThemeContextType {
+  theme: Theme
+  toggleTheme: () => void
+  setTheme: (theme: Theme) => void
+  isDark: boolean
+  isLight: boolean
+}
+
+const ThemeContext = createContext<ThemeContextType | null>(null)
+
+const STORAGE_KEY = 'academic_saloon_theme'
+
+// Get theme colors for Telegram WebApp
+const getThemeColors = (theme: Theme) => ({
+  header: theme === 'dark' ? '#09090b' : '#f8f7f4',
+  background: theme === 'dark' ? '#09090b' : '#f8f7f4',
+})
+
+export function useTheme() {
+  const context = useContext(ThemeContext)
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider')
+  }
+  return context
+}
+
+// Helper hook that doesn't throw (for optional theme usage)
+export function useThemeValue(): Theme {
+  const context = useContext(ThemeContext)
+  return context?.theme ?? 'dark'
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    // Load saved theme from localStorage
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved === 'light' || saved === 'dark') {
+        return saved
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    // Default to dark theme
+    return 'dark'
+  })
+
+  // Apply theme to document and Telegram
+  useEffect(() => {
+    // Set data-theme attribute on document root
+    document.documentElement.setAttribute('data-theme', theme)
+
+    // Update Telegram WebApp colors
+    const tg = window.Telegram?.WebApp
+    if (tg) {
+      const colors = getThemeColors(theme)
+      try {
+        tg.setHeaderColor(colors.header as `#${string}`)
+        tg.setBackgroundColor(colors.background as `#${string}`)
+      } catch (e) {
+        console.warn('[Theme] Failed to set Telegram colors:', e)
+      }
+    }
+
+    // Update meta theme-color
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', getThemeColors(theme).header)
+    }
+
+    // Save to localStorage
+    try {
+      localStorage.setItem(STORAGE_KEY, theme)
+    } catch {
+      // Ignore storage errors
+    }
+  }, [theme])
+
+  const toggleTheme = useCallback(() => {
+    setThemeState(prev => prev === 'dark' ? 'light' : 'dark')
+
+    // Haptic feedback on toggle
+    const tg = window.Telegram?.WebApp
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred('light')
+    }
+  }, [])
+
+  const setTheme = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme)
+  }, [])
+
+  return (
+    <ThemeContext.Provider
+      value={{
+        theme,
+        toggleTheme,
+        setTheme,
+        isDark: theme === 'dark',
+        isLight: theme === 'light',
+      }}
+    >
+      {children}
+    </ThemeContext.Provider>
+  )
+}

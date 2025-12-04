@@ -9,6 +9,8 @@ import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { AnimatedBarChart, AnimatedLineChart, Sparkline } from '../components/ui/AnimatedCharts'
+import { ThemeToggle } from '../components/ui/ThemeToggle'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface Props {
   user: UserData | null
@@ -366,6 +368,7 @@ function StatCard({ icon: Icon, label, value, suffix = '', color, delay, large }
 
 export function ProfilePage({ user }: Props) {
   const { haptic, hapticSuccess, openSupport } = useTelegram()
+  const { isDark } = useTheme()
   const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [activeTab, setActiveTab] = useState<'stats' | 'history'>('stats')
@@ -429,7 +432,7 @@ export function ProfilePage({ user }: Props) {
     <div style={{
       padding: '20px 16px 110px 16px',
       minHeight: '100vh',
-      background: '#0a0a0c',
+      background: 'var(--bg-base)',
     }}>
       {/* Page Header */}
       <motion.div
@@ -1369,21 +1372,64 @@ export function ProfilePage({ user }: Props) {
         )}
       </AnimatePresence>
 
+      {/* Settings Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.65 }}
+        style={{ marginTop: 20 }}
+      >
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          marginBottom: 16,
+        }}>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: 10,
+            background: isDark
+              ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))'
+              : 'linear-gradient(135deg, rgba(180,142,38,0.15), rgba(180,142,38,0.05))',
+            border: `1px solid ${isDark ? 'rgba(212,175,55,0.3)' : 'rgba(180,142,38,0.25)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Sparkles size={16} color={isDark ? '#d4af37' : '#9e7a1a'} />
+          </div>
+          <span style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            fontFamily: "'Montserrat', sans-serif",
+          }}>
+            Настройки
+          </span>
+        </div>
+
+        {/* Theme Toggle Card */}
+        <ThemeToggle variant="card" />
+      </motion.div>
+
       {/* Support Button */}
       <motion.button
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.7 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleSupportClick}
         style={{
           width: '100%',
           padding: '16px',
           marginTop: 20,
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-          border: '1px solid rgba(212,175,55,0.3)',
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
+            : 'linear-gradient(135deg, rgba(180,142,38,0.12), rgba(180,142,38,0.05))',
+          border: `1px solid ${isDark ? 'rgba(212,175,55,0.3)' : 'rgba(180,142,38,0.25)'}`,
           borderRadius: 16,
-          color: '#d4af37',
+          color: isDark ? '#d4af37' : '#9e7a1a',
           fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',

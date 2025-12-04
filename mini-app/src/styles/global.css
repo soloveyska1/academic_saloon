@@ -121,6 +121,243 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME — INTELLIGENT LUXURY (Warm Elegance)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] {
+  /* === COLORS: THE IVORY VAULT === */
+
+  /* Backgrounds - Warm Ivory/Cream (Never pure white) */
+  --bg-void: #f8f7f4;
+  --bg-onyx: #f4f3f0;
+  --bg-base: #f6f5f2;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-solid: #ffffff;
+  --bg-glass: rgba(0, 0, 0, 0.02);
+
+  /* === LIQUID GOLD (Deeper for light mode contrast) === */
+  --gold-950: #3d2e0a;
+  --gold-900: #5c4510;
+  --gold-800: #6b4f0f;
+  --gold-700: #7d5c12;
+  --gold-600: #8b6914;
+  --gold-500: #9e7a1a;
+  --gold-400: #b48e26;
+  --gold-350: #c9a02f;
+  --gold-300: #d4af37;
+  --gold-250: #dfc14a;
+  --gold-200: #e6c547;
+  --gold-150: #f0d35c;
+  --gold-100: #f5d061;
+  --gold-50: #ffeaa7;
+
+  /* Signature Liquid Gold (unchanged - looks great on light) */
+  --liquid-gold: linear-gradient(135deg, #9e7a1a 0%, #d4af37 50%, #8b6914 75%, #c9a02f 100%);
+  --liquid-gold-text: linear-gradient(135deg, #9e7a1a 0%, #7d5c12 30%, #5c4510 60%, #8b6914 100%);
+
+  /* Blood Crimson (deeper for light mode) */
+  --red-900: #7f1d1d;
+  --red-700: #991b1b;
+  --red-500: #b91c1c;
+  --red-400: #dc2626;
+  --red-300: #ef4444;
+
+  /* Status Colors (saturated for light mode) */
+  --status-success: #16a34a;
+  --status-warning: #ca8a04;
+  --status-error: #dc2626;
+  --status-info: #2563eb;
+
+  /* Text Colors */
+  --text-primary: #1a1a1a;
+  --text-secondary: #525252;
+  --text-muted: #737373;
+  --text-gold: var(--gold-600);
+
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-default: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --border-gold: rgba(180, 142, 38, 0.25);
+  --border-gold-strong: rgba(180, 142, 38, 0.4);
+
+  /* === EFFECTS (adapted for light mode) === */
+  --glow-gold: 0 0 20px -5px rgba(180, 142, 38, 0.35);
+  --glow-gold-strong: 0 0 40px -5px rgba(180, 142, 38, 0.5);
+  --glow-gold-intense: 0 0 60px -10px rgba(180, 142, 38, 0.7);
+  --glow-red: 0 0 20px -5px rgba(185, 28, 28, 0.35);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.12);
+  --shadow-vault: 0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 0 80px -20px rgba(180, 142, 38, 0.08);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+  --shadow-dossier: 0 15px 35px -10px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* Light mode specific overrides */
+[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+[data-theme="light"] .glass-card-gold {
+  background: linear-gradient(
+    135deg,
+    rgba(180, 142, 38, 0.08) 0%,
+    rgba(255, 255, 255, 0.9) 40%,
+    rgba(180, 142, 38, 0.04) 100%
+  );
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.1), 0 0 60px -20px rgba(180, 142, 38, 0.15);
+}
+
+[data-theme="light"] .glass-card-elevated {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .bento-cell {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .bento-cell-vault {
+  background: linear-gradient(
+    135deg,
+    rgba(180, 142, 38, 0.1) 0%,
+    rgba(255, 255, 255, 0.95) 40%,
+    rgba(180, 142, 38, 0.05) 100%
+  );
+  border-color: var(--border-gold);
+}
+
+[data-theme="light"] .input {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .input::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .input:focus {
+  border-color: var(--gold-500);
+  box-shadow: 0 0 0 3px rgba(180, 142, 38, 0.15), var(--glow-gold);
+}
+
+[data-theme="light"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0%,
+    #e8e8e8 25%,
+    rgba(180, 142, 38, 0.08) 50%,
+    #e8e8e8 75%,
+    #f0f0f0 100%
+  );
+}
+
+[data-theme="light"] .badge-gold {
+  color: var(--gold-700);
+  background: rgba(180, 142, 38, 0.12);
+  border-color: rgba(180, 142, 38, 0.25);
+}
+
+[data-theme="light"] .badge-success {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+[data-theme="light"] .badge-warning {
+  color: #a16207;
+  background: rgba(202, 138, 4, 0.1);
+  border-color: rgba(202, 138, 4, 0.2);
+}
+
+[data-theme="light"] .badge-error {
+  color: #b91c1c;
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+[data-theme="light"] .badge-info {
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+[data-theme="light"] .liquid-gold-text,
+[data-theme="light"] .gold-gradient-text {
+  background: linear-gradient(
+    135deg,
+    #8b6914 0%,
+    #b48e26 25%,
+    #9e7a1a 50%,
+    #7d5c12 75%,
+    #8b6914 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="light"] .text-gold {
+  color: var(--gold-600);
+  text-shadow: none;
+}
+
+[data-theme="light"] .avatar-gold-ring::after {
+  background: var(--bg-void);
+}
+
+/* Light mode scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Light mode: Reduce noise overlay and change ambient glow */
+[data-theme="light"] body::before {
+  opacity: 0.015;
+  mix-blend-mode: multiply;
+}
+
+[data-theme="light"] body::after {
+  background: radial-gradient(
+    ellipse 120% 50% at 50% -10%,
+    rgba(180, 142, 38, 0.08) 0%,
+    rgba(180, 142, 38, 0.03) 35%,
+    transparent 65%
+  );
+}
+
+/* Smooth theme transition */
+html {
+  transition: background-color 0.3s ease;
+}
+
+body,
+.glass-card,
+.glass-card-gold,
+.glass-card-elevated,
+.bento-cell,
+.input,
+.badge,
+.btn-ghost {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    RESET & BASE
    ═══════════════════════════════════════════════════════════════════════════ */
 
