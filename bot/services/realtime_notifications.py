@@ -45,10 +45,10 @@ ORDER_STATUS_NOTIFICATIONS = {
     # Цена назначена, ожидание оплаты
     "waiting_payment": {
         "type": NotificationType.PRICE_SET,
-        "title": "Цена готова!",
+        "title": "💰 Цена подтверждена!",
         "message": "Ознакомьтесь с расчётом и оплатите заказ",
-        "icon": "calculator",
-        "color": "#f59e0b",
+        "icon": "check-circle",
+        "color": "#d4af37",  # Золотой для премиальности
         "priority": "high",
         "action": "view_order",  # кнопка действия
     },
@@ -249,6 +249,21 @@ async def send_order_status_notification(
             logger.warning(f"[Notify] No notification config for status: {new_status}")
             return False
 
+        # Динамически формируем сообщение с ценой для waiting_payment
+        msg_text = config["message"]
+        title_text = config["title"]
+
+        if extra_data and new_status == "waiting_payment":
+            final_price = extra_data.get("final_price")
+            bonus_used = extra_data.get("bonus_used", 0)
+            if final_price:
+                # Форматируем цену с пробелами для читаемости
+                price_formatted = f"{final_price:,.0f}".replace(",", " ")
+                msg_text = f"К оплате: {price_formatted} ₽"
+                if bonus_used > 0:
+                    bonus_formatted = f"{bonus_used:,.0f}".replace(",", " ")
+                    msg_text += f" (бонусы: −{bonus_formatted} ₽)"
+
         # Формируем сообщение
         message = {
             "type": "order_update",
@@ -256,8 +271,8 @@ async def send_order_status_notification(
             "order_id": order_id,
             "status": new_status,
             "old_status": old_status,
-            "title": config["title"],
-            "message": config["message"],
+            "title": title_text,
+            "message": msg_text,
             "icon": config.get("icon", "package"),
             "color": config.get("color", "#d4af37"),
             "priority": config.get("priority", "normal"),

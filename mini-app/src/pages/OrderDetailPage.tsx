@@ -729,9 +729,23 @@ interface StatusAlert {
   icon: 'check' | 'clock' | 'play' | 'trophy' | 'alert'
   color: string
   action?: string
+  price?: number
+  bonusUsed?: number
 }
 
 const STATUS_ALERTS: Record<string, StatusAlert> = {
+  waiting_payment: {
+    title: '💰 Цена подтверждена!',
+    message: 'Ознакомьтесь с расчётом и оплатите заказ',
+    icon: 'check',
+    color: '#d4af37',
+  },
+  confirmed: {
+    title: '💰 Цена подтверждена!',
+    message: 'Ознакомьтесь с расчётом и оплатите заказ',
+    icon: 'check',
+    color: '#d4af37',
+  },
   paid: {
     title: '🎉 Оплата подтверждена!',
     message: 'Заказ принят в работу. Шериф уже запряг лошадей!',
@@ -844,12 +858,20 @@ export function OrderDetailPage() {
         // Show status alert from WebSocket message
         if (message.type === 'order_update') {
           const newStatus = (message as any).status
+          const msgData = (message as any).data || {}
+
           if (newStatus && STATUS_ALERTS[newStatus]) {
             // Use the title/message from WebSocket if available, else from config
+            // Extract price data for price confirmation notifications
+            const finalPrice = msgData.final_price || (message as any).final_price
+            const bonusUsed = msgData.bonus_used || 0
+
             setStatusAlert({
               ...STATUS_ALERTS[newStatus],
               title: (message as any).title || STATUS_ALERTS[newStatus].title,
               message: (message as any).message || STATUS_ALERTS[newStatus].message,
+              price: finalPrice,
+              bonusUsed: bonusUsed,
             })
             hapticSuccess()
             // Update last seen status so we don't show it again on reload
@@ -1144,6 +1166,77 @@ export function OrderDetailPage() {
                 }}>
                   {statusAlert.message}
                 </div>
+
+                {/* Premium Price Display */}
+                {statusAlert.price && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, type: 'spring' }}
+                    style={{
+                      marginTop: 12,
+                      padding: '12px 16px',
+                      background: `linear-gradient(135deg, ${statusAlert.color}20, ${statusAlert.color}10)`,
+                      borderRadius: 12,
+                      border: `1px solid ${statusAlert.color}40`,
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                      <div>
+                        <div style={{
+                          fontSize: 11,
+                          color: 'rgba(255,255,255,0.6)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          marginBottom: 4,
+                        }}>
+                          К оплате
+                        </div>
+                        <motion.div
+                          initial={{ scale: 0.9 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+                          style={{
+                            fontSize: 28,
+                            fontWeight: 700,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            background: `linear-gradient(135deg, ${statusAlert.color}, ${statusAlert.color}cc)`,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text',
+                          }}
+                        >
+                          {statusAlert.price.toLocaleString('ru-RU')} ₽
+                        </motion.div>
+                      </div>
+                      {statusAlert.bonusUsed && statusAlert.bonusUsed > 0 && (
+                        <div style={{
+                          textAlign: 'right',
+                        }}>
+                          <div style={{
+                            fontSize: 10,
+                            color: '#f59e0b',
+                            marginBottom: 2,
+                          }}>
+                            Бонусы
+                          </div>
+                          <div style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: '#f59e0b',
+                            fontFamily: "'JetBrains Mono', monospace",
+                          }}>
+                            −{statusAlert.bonusUsed.toLocaleString('ru-RU')} ₽
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
               </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
