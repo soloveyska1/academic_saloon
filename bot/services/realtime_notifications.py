@@ -223,6 +223,12 @@ BALANCE_NOTIFICATIONS = {
             "message": "+{amount}₽ за отменённый заказ",
         },
     },
+    "order_cashback": {
+        "positive": {
+            "title": "🎁 Кешбэк за заказ!",
+            "message": "+{amount}₽ начислено на баланс",
+        },
+    },
 }
 
 
@@ -414,4 +420,48 @@ async def send_custom_notification(
 
     except Exception as e:
         logger.error(f"[Notify] Failed to send custom notification: {e}")
+        return False
+
+
+async def notify_new_chat_message(
+    telegram_id: int,
+    order_id: int,
+    sender_name: str,
+    message_preview: str,
+    file_type: str | None = None,
+) -> bool:
+    """
+    Send WebSocket notification about new chat message.
+    Used when admin sends message to client in mini-app chat.
+    """
+    try:
+        from bot.api.websocket import manager
+
+        # Determine message content preview
+        if file_type:
+            file_icons = {
+                "photo": "🖼 Фото",
+                "video": "🎬 Видео",
+                "document": "📎 Документ",
+                "voice": "🎤 Голосовое",
+                "audio": "🎵 Аудио",
+            }
+            content = file_icons.get(file_type, "📎 Файл")
+        else:
+            content = message_preview[:100] if message_preview else "Новое сообщение"
+
+        message = {
+            "type": "chat_message",
+            "order_id": order_id,
+            "title": f"💬 {sender_name}",
+            "message": content,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        await manager.send_to_user(telegram_id, message)
+        logger.info(f"[Notify] Sent chat message notification to user {telegram_id} for order #{order_id}")
+        return True
+
+    except Exception as e:
+        logger.error(f"[Notify] Failed to send chat message notification: {e}")
         return False

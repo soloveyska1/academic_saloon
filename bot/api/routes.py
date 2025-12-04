@@ -125,6 +125,8 @@ def order_to_response(order: Order) -> OrderResponse:
         bonus_used=float(order.bonus_used or 0),
         progress=order.progress or 0,
         payment_scheme=order.payment_scheme,  # full / half
+        files_url=order.yadisk_url or getattr(order, 'files_url', None),  # Work files URL
+        review_submitted=getattr(order, 'review_submitted', False),  # Whether review was submitted
         created_at=order.created_at.isoformat() if order.created_at else "",
         completed_at=order.completed_at.isoformat() if order.completed_at else None
     )
@@ -1177,3 +1179,331 @@ async def send_order_message(
         message_id=message.id,
         message="Сообщение отправлено"
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  CHAT FILE UPLOADS
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ChatFileUploadResponse(BaseModel):
+    success: bool
+    message_id: int
+    message: str
+    file_url: Optional[str] = None
+
+
+@router.post("/orders/{order_id}/messages/file", response_model=ChatFileUploadResponse)
+async def upload_chat_file(
+    order_id: int,
+    file: UploadFile = File(...),
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Upload a file to order chat.
+    File is stored on Yandex Disk and message is forwarded to admin.
+    """
+    from bot.services.yandex_disk import yandex_disk_service
+
+    # Verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Not your order")
+
+    # Get user
+    user = await session.get(User, tg_user.id)
+
+    # Validate file size (max 20MB)
+    MAX_FILE_SIZE = 20 * 1024 * 1024
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="Файл слишком большой (макс. 20 МБ)")
+
+    # Determine file type
+    filename = file.filename or "file"
+    content_type = file.content_type or ""
+
+    if content_type.startswith("image/"):
+        file_type = "photo"
+    elif content_type.startswith("audio/") or filename.endswith((".ogg", ".mp3", ".wav")):
+        file_type = "voice" if "ogg" in filename.lower() else "audio"
+    elif content_type.startswith("video/"):
+        file_type = "video"
+    else:
+        file_type = "document"
+
+    # Upload to Yandex Disk
+    file_url = None
+    if yandex_disk_service.is_available:
+        result = await yandex_disk_service.upload_chat_file(
+            file_bytes=content,
+            filename=filename,
+            order_id=order_id,
+            client_name=user.fullname if user else "Client",
+            telegram_id=tg_user.id,
+        )
+        if result.success:
+            file_url = result.public_url
+
+    # Create message record
+    message = OrderMessage(
+        order_id=order_id,
+        sender_type='client',
+        sender_id=tg_user.id,
+        message_text=None,
+        file_type=file_type,
+        file_name=filename,
+        yadisk_url=file_url,
+        is_read=False,
+    )
+    session.add(message)
+    await session.commit()
+    await session.refresh(message)
+
+    # Forward to admin via Forum Topic
+    try:
+        bot = get_bot()
+        from bot.handlers.order_chat import get_or_create_topic
+
+        conv = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=tg_user.id,
+            order_id=order_id,
+            user_full_name=user.fullname if user else tg_user.first_name,
+            username=user.username if user else tg_user.username,
+        )
+
+        if conv and conv.topic_id:
+            user_name = user.fullname if user else tg_user.first_name
+            username_part = f" (@{user.username})" if user and user.username else ""
+
+            # Send file info to admin
+            file_emoji = {"photo": "🖼", "voice": "🎤", "audio": "🎵", "video": "🎬"}.get(file_type, "📎")
+            admin_text = (
+                f"{file_emoji} <b>Файл от клиента</b> (Mini App)\n"
+                f"👤 {user_name}{username_part}\n\n"
+                f"📁 {filename}"
+            )
+
+            if file_url:
+                admin_text += f"\n🔗 <a href='{file_url}'>Скачать с Я.Диска</a>"
+
+            await bot.send_message(
+                chat_id=settings.ADMIN_GROUP_ID,
+                message_thread_id=conv.topic_id,
+                text=admin_text,
+            )
+
+    except Exception as e:
+        logger.error(f"[Chat API] Failed to forward file to admin: {e}")
+
+    return ChatFileUploadResponse(
+        success=True,
+        message_id=message.id,
+        message="Файл отправлен",
+        file_url=file_url,
+    )
+
+
+@router.post("/orders/{order_id}/messages/voice", response_model=ChatFileUploadResponse)
+async def upload_voice_message(
+    order_id: int,
+    file: UploadFile = File(...),
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Upload a voice message to order chat.
+    Voice is stored on Yandex Disk and forwarded to admin.
+    """
+    from bot.services.yandex_disk import yandex_disk_service
+
+    # Verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Not your order")
+
+    # Get user
+    user = await session.get(User, tg_user.id)
+
+    # Validate file size (max 10MB for voice)
+    MAX_VOICE_SIZE = 10 * 1024 * 1024
+    content = await file.read()
+    if len(content) > MAX_VOICE_SIZE:
+        raise HTTPException(status_code=400, detail="Голосовое слишком длинное (макс. 10 МБ)")
+
+    # Generate voice filename
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"voice_{timestamp}.ogg"
+
+    # Upload to Yandex Disk
+    file_url = None
+    if yandex_disk_service.is_available:
+        result = await yandex_disk_service.upload_chat_file(
+            file_bytes=content,
+            filename=filename,
+            order_id=order_id,
+            client_name=user.fullname if user else "Client",
+            telegram_id=tg_user.id,
+        )
+        if result.success:
+            file_url = result.public_url
+
+    # Create message record
+    message = OrderMessage(
+        order_id=order_id,
+        sender_type='client',
+        sender_id=tg_user.id,
+        message_text=None,
+        file_type='voice',
+        file_name=filename,
+        yadisk_url=file_url,
+        is_read=False,
+    )
+    session.add(message)
+    await session.commit()
+    await session.refresh(message)
+
+    # Forward to admin
+    try:
+        bot = get_bot()
+        from bot.handlers.order_chat import get_or_create_topic
+
+        conv = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=tg_user.id,
+            order_id=order_id,
+            user_full_name=user.fullname if user else tg_user.first_name,
+            username=user.username if user else tg_user.username,
+        )
+
+        if conv and conv.topic_id:
+            user_name = user.fullname if user else tg_user.first_name
+            username_part = f" (@{user.username})" if user and user.username else ""
+
+            admin_text = (
+                f"🎤 <b>Голосовое от клиента</b> (Mini App)\n"
+                f"👤 {user_name}{username_part}"
+            )
+
+            if file_url:
+                admin_text += f"\n🔗 <a href='{file_url}'>Прослушать</a>"
+
+            await bot.send_message(
+                chat_id=settings.ADMIN_GROUP_ID,
+                message_thread_id=conv.topic_id,
+                text=admin_text,
+            )
+
+    except Exception as e:
+        logger.error(f"[Chat API] Failed to forward voice to admin: {e}")
+
+    return ChatFileUploadResponse(
+        success=True,
+        message_id=message.id,
+        message="Голосовое отправлено",
+        file_url=file_url,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ORDER REVIEWS
+# ═══════════════════════════════════════════════════════════════════════════
+
+REVIEWS_CHANNEL_ID = -1003241736635  # Channel for anonymous reviews
+
+
+class SubmitReviewRequest(BaseModel):
+    rating: int = Field(..., ge=1, le=5)  # 1-5 stars
+    text: str = Field(..., min_length=10, max_length=2000)
+
+
+class SubmitReviewResponse(BaseModel):
+    success: bool
+    message: str
+
+
+@router.post("/orders/{order_id}/review", response_model=SubmitReviewResponse)
+async def submit_order_review(
+    order_id: int,
+    data: SubmitReviewRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Submit a review for a completed order.
+    Review is sent anonymously to the reviews channel.
+    """
+    # Get order and verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Not your order")
+
+    # Only allow reviews for completed orders
+    if order.status != OrderStatus.COMPLETED.value:
+        raise HTTPException(
+            status_code=400,
+            detail="Отзывы можно оставлять только для завершённых заказов"
+        )
+
+    # Check if review already submitted (use a simple check via order field)
+    if getattr(order, 'review_submitted', False):
+        raise HTTPException(
+            status_code=400,
+            detail="Вы уже оставили отзыв на этот заказ"
+        )
+
+    # Format star rating
+    stars = "⭐" * data.rating + "☆" * (5 - data.rating)
+
+    # Get work type label
+    work_label = order.work_type_label or order.work_type
+
+    # Format anonymous review message
+    review_text = f"""💬 <b>Новый отзыв</b>
+
+{stars}
+
+📚 <b>Тип работы:</b> {work_label}
+📝 <b>Предмет:</b> {order.subject or 'Не указан'}
+
+<i>"{data.text}"</i>
+
+━━━━━━━━━━━━━━━
+<i>Отзыв проверен • Academic Saloon</i>"""
+
+    # Send to reviews channel
+    try:
+        bot = get_bot()
+        await bot.send_message(
+            chat_id=REVIEWS_CHANNEL_ID,
+            text=review_text,
+        )
+
+        # Mark order as reviewed (we can use a simple attribute or create a field)
+        order.review_submitted = True
+        await session.commit()
+
+        logger.info(f"[Review] Order #{order_id} review submitted: {data.rating} stars")
+
+        return SubmitReviewResponse(
+            success=True,
+            message="Спасибо за отзыв! Он опубликован анонимно."
+        )
+
+    except Exception as e:
+        logger.error(f"[Review] Failed to send review to channel: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Не удалось отправить отзыв. Попробуйте позже."
+        )

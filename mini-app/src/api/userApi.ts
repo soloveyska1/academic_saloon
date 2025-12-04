@@ -381,6 +381,127 @@ export async function sendOrderMessage(orderId: number, text: string): Promise<S
   })
 }
 
+// Chat file upload response
+export interface ChatFileUploadResponse {
+  success: boolean
+  message_id: number
+  message: string
+  file_url: string | null
+}
+
+// Upload file to chat
+export async function uploadChatFile(
+  orderId: number,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<ChatFileUploadResponse> {
+  if (!hasTelegramContext()) {
+    if (IS_DEV) {
+      // Simulate upload progress
+      if (onProgress) {
+        for (let i = 0; i <= 100; i += 20) {
+          await new Promise(r => setTimeout(r, 150))
+          onProgress(i)
+        }
+      }
+      return {
+        success: true,
+        message_id: Date.now(),
+        message: 'Файл отправлен (Dev)',
+        file_url: 'https://disk.yandex.ru/mock-file',
+      }
+    }
+    throw new Error('Откройте приложение через Telegram')
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const initData = getInitData()
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable && onProgress) {
+        const percent = Math.round((e.loaded / e.total) * 100)
+        onProgress(percent)
+      }
+    })
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText))
+      } else {
+        const error = JSON.parse(xhr.responseText)
+        reject(new Error(error.detail || 'Upload failed'))
+      }
+    })
+
+    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
+
+    xhr.open('POST', `${API_BASE}/orders/${orderId}/messages/file`)
+    xhr.setRequestHeader('X-Telegram-Init-Data', initData)
+    xhr.send(formData)
+  })
+}
+
+// Upload voice message to chat
+export async function uploadVoiceMessage(
+  orderId: number,
+  audioBlob: Blob,
+  onProgress?: (percent: number) => void
+): Promise<ChatFileUploadResponse> {
+  if (!hasTelegramContext()) {
+    if (IS_DEV) {
+      if (onProgress) {
+        for (let i = 0; i <= 100; i += 25) {
+          await new Promise(r => setTimeout(r, 100))
+          onProgress(i)
+        }
+      }
+      return {
+        success: true,
+        message_id: Date.now(),
+        message: 'Голосовое отправлено (Dev)',
+        file_url: 'https://disk.yandex.ru/mock-voice',
+      }
+    }
+    throw new Error('Откройте приложение через Telegram')
+  }
+
+  const formData = new FormData()
+  formData.append('file', audioBlob, 'voice.ogg')
+
+  const initData = getInitData()
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable && onProgress) {
+        const percent = Math.round((e.loaded / e.total) * 100)
+        onProgress(percent)
+      }
+    })
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText))
+      } else {
+        const error = JSON.parse(xhr.responseText)
+        reject(new Error(error.detail || 'Upload failed'))
+      }
+    })
+
+    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
+
+    xhr.open('POST', `${API_BASE}/orders/${orderId}/messages/voice`)
+    xhr.setRequestHeader('X-Telegram-Init-Data', initData)
+    xhr.send(formData)
+  })
+}
+
 // Mock data for development
 function getMockUserData(): UserData {
   return {
@@ -461,4 +582,30 @@ function getMockUserData(): UserData {
       },
     ],
   }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ORDER REVIEWS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ReviewSubmitResult {
+  success: boolean
+  message: string
+}
+
+export async function submitOrderReview(
+  orderId: number,
+  rating: number,
+  text: string
+): Promise<ReviewSubmitResult> {
+  if (!hasTelegramContext()) {
+    // Mock for dev
+    return { success: true, message: 'Спасибо за отзыв! (DEV)' }
+  }
+
+  return apiFetch<ReviewSubmitResult>(`/orders/${orderId}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ rating, text }),
+  })
 }
