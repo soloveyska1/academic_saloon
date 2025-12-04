@@ -112,12 +112,16 @@ function PrizeCard({
         borderRadius: 16,
         background: isHighlighted
           ? tier.bgGradient
-          : 'linear-gradient(135deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 23, 0.98))',
-        border: `1px solid ${isHighlighted ? tier.color : 'rgba(255,255,255,0.08)'}`,
+          : 'var(--bg-card)',
+        border: isHighlighted
+          ? `2px solid ${tier.color}`
+          : '1px solid var(--border-default)',
         boxShadow: isHighlighted
           ? `0 0 40px ${tier.glow}, 0 8px 32px rgba(0,0,0,0.4)`
-          : '0 4px 16px rgba(0,0,0,0.3)',
+          : 'var(--card-shadow)',
         overflow: 'hidden',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
       }}
     >
       {/* Shine effect */}
@@ -152,7 +156,8 @@ function PrizeCard({
             borderRadius: 12,
             background: isHighlighted
               ? 'rgba(0,0,0,0.2)'
-              : `${tier.color}20`,
+              : `${tier.color}15`,
+            border: `1px solid ${tier.color}30`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -171,7 +176,7 @@ function PrizeCard({
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: isHighlighted ? 'rgba(255,255,255,0.8)' : '#71717a',
+              color: isHighlighted ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)',
               letterSpacing: '0.1em',
               marginBottom: 2,
             }}
@@ -180,7 +185,7 @@ function PrizeCard({
           </div>
           <div
             style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 22,
               fontWeight: 800,
               color: isHighlighted ? '#fff' : tier.color,
@@ -193,10 +198,10 @@ function PrizeCard({
           style={{
             padding: '4px 8px',
             borderRadius: 6,
-            background: 'rgba(0,0,0,0.3)',
+            background: 'var(--bg-glass)',
             fontSize: 9,
-            fontFamily: "'JetBrains Mono', monospace",
-            color: isHighlighted ? 'rgba(255,255,255,0.7)' : '#52525b',
+            fontFamily: "var(--font-mono)",
+            color: isHighlighted ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
             fontWeight: 600,
           }}
         >
@@ -340,7 +345,7 @@ function EliteVault({
                 <div
                   style={{
                     marginTop: 8,
-                    fontFamily: "'Playfair Display', serif",
+                    fontFamily: "var(--font-serif)",
                     fontSize: 28,
                     fontWeight: 800,
                     color: '#d4af37',
@@ -471,7 +476,7 @@ function SpinButton({
             </motion.div>
             <span
               style={{
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "var(--font-serif)",
                 fontSize: 18,
                 fontWeight: 800,
                 color: '#0a0a0c',
@@ -486,7 +491,7 @@ function SpinButton({
             <Crown size={24} color="#0a0a0c" />
             <span
               style={{
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "var(--font-serif)",
                 fontSize: 18,
                 fontWeight: 800,
                 color: '#0a0a0c',
@@ -518,7 +523,7 @@ function SpinButton({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  RESULT MODAL
+//  RESULT MODAL — ULTRA PREMIUM REDESIGN
 // ═══════════════════════════════════════════════════════════════════════════
 
 function ResultModal({
@@ -544,9 +549,11 @@ function ResultModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: isWin
+          ? 'radial-gradient(ellipse at 50% 30%, rgba(212, 175, 55, 0.15) 0%, rgba(0, 0, 0, 0.95) 70%)'
+          : 'radial-gradient(ellipse at 50% 30%, rgba(100, 100, 110, 0.1) 0%, rgba(0, 0, 0, 0.95) 70%)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -555,101 +562,209 @@ function ResultModal({
       }}
     >
       <motion.div
-        initial={{ scale: 0.8, y: 50 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.8, y: 50 }}
+        initial={{ scale: 0.7, y: 60, rotateX: 30 }}
+        animate={{ scale: 1, y: 0, rotateX: 0 }}
+        exit={{ scale: 0.8, y: 60, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
           maxWidth: 340,
-          padding: 32,
-          borderRadius: 28,
+          borderRadius: 32,
           background: isWin
-            ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(20, 20, 23, 0.98))'
-            : 'linear-gradient(135deg, rgba(40, 40, 45, 0.95), rgba(20, 20, 23, 0.98))',
+            ? 'linear-gradient(180deg, rgba(40, 35, 25, 0.98) 0%, rgba(20, 18, 12, 0.99) 100%)'
+            : 'linear-gradient(180deg, rgba(45, 45, 50, 0.98) 0%, rgba(25, 25, 28, 0.99) 100%)',
           border: isWin
-            ? '2px solid rgba(212, 175, 55, 0.5)'
-            : '1px solid rgba(255,255,255,0.08)',
+            ? '2px solid rgba(212, 175, 55, 0.4)'
+            : '1px solid rgba(120, 120, 130, 0.15)',
           boxShadow: isWin
-            ? '0 0 80px rgba(212, 175, 55, 0.4), 0 32px 64px rgba(0,0,0,0.6)'
-            : '0 32px 64px rgba(0,0,0,0.6)',
-          textAlign: 'center',
+            ? `
+              0 0 100px rgba(212, 175, 55, 0.3),
+              0 40px 80px rgba(0,0,0,0.7),
+              inset 0 1px 0 rgba(255,255,255,0.1)
+            `
+            : `
+              0 40px 80px rgba(0,0,0,0.6),
+              inset 0 1px 0 rgba(255,255,255,0.05)
+            `,
+          overflow: 'hidden',
+          position: 'relative',
         }}
       >
-        <motion.div
-          animate={isWin ? {
-            rotate: [0, -10, 10, -5, 5, 0],
-            scale: [1, 1.2, 1],
-          } : {}}
-          transition={{ duration: 0.8 }}
-          style={{
-            width: 80,
-            height: 80,
-            margin: '0 auto 24px',
-            borderRadius: '50%',
-            background: isWin
-              ? tier?.bgGradient || 'linear-gradient(135deg, #d4af37, #8b6914)'
-              : '#1a1a1e',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: isWin
-              ? `0 0 60px ${tier?.glow || 'rgba(212, 175, 55, 0.5)'}`
-              : 'none',
-          }}
-        >
-          {isWin ? (
-            <Sparkles size={40} color="#fff" />
-          ) : (
-            <Lock size={40} color="#52525b" />
-          )}
-        </motion.div>
+        {/* Top glow bar */}
+        <div style={{
+          height: 4,
+          background: isWin
+            ? 'linear-gradient(90deg, #8b6914, #d4af37, #f5d061, #d4af37, #8b6914)'
+            : 'linear-gradient(90deg, #3a3a40, #5a5a65, #3a3a40)',
+        }} />
 
-        <h2
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 28,
-            fontWeight: 800,
-            color: isWin ? '#f5d061' : '#71717a',
-            marginBottom: 12,
-          }}
-        >
-          {isWin ? 'ПОБЕДА!' : 'НЕ ПОВЕЗЛО'}
-        </h2>
+        {/* Content */}
+        <div style={{ padding: '36px 28px 32px' }}>
+          {/* Icon */}
+          <motion.div
+            animate={isWin ? {
+              rotate: [0, -8, 8, -4, 4, 0],
+              scale: [1, 1.15, 1],
+            } : {
+              y: [0, -4, 0],
+            }}
+            transition={{
+              duration: isWin ? 0.8 : 2,
+              repeat: isWin ? 0 : Infinity,
+              repeatType: 'reverse',
+            }}
+            style={{
+              width: 100,
+              height: 100,
+              margin: '0 auto 28px',
+              borderRadius: 28,
+              background: isWin
+                ? tier?.bgGradient || 'linear-gradient(135deg, #d4af37, #8b6914)'
+                : 'linear-gradient(145deg, #35353a, #28282c)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: isWin
+                ? `
+                  0 0 60px ${tier?.glow || 'rgba(212, 175, 55, 0.5)'},
+                  0 20px 40px rgba(0,0,0,0.4),
+                  inset 0 2px 4px rgba(255,255,255,0.3),
+                  inset 0 -4px 8px rgba(0,0,0,0.2)
+                `
+                : `
+                  0 16px 32px rgba(0,0,0,0.4),
+                  inset 0 1px 2px rgba(255,255,255,0.08),
+                  inset 0 -2px 6px rgba(0,0,0,0.3)
+                `,
+              border: isWin
+                ? '3px solid rgba(255,255,255,0.2)'
+                : '2px solid rgba(80, 80, 90, 0.3)',
+            }}
+          >
+            {isWin ? (
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+              >
+                <Sparkles size={48} color="#fff" strokeWidth={1.5} />
+              </motion.div>
+            ) : (
+              <Lock size={48} color="#6a6a70" strokeWidth={1.5} />
+            )}
+          </motion.div>
 
-        <p
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 16,
-            color: isWin ? '#f2f2f2' : '#52525b',
-            marginBottom: 24,
-          }}
-        >
-          {isWin
-            ? `+${result.value.toLocaleString('ru-RU')}₽ на баланс!`
-            : 'Попробуй ещё раз!'}
-        </p>
+          {/* Title */}
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: 32,
+              fontWeight: 800,
+              color: isWin ? '#f5d061' : '#8a8a90',
+              marginBottom: 8,
+              textAlign: 'center',
+              letterSpacing: '0.05em',
+              textShadow: isWin
+                ? '0 2px 20px rgba(212, 175, 55, 0.4)'
+                : 'none',
+            }}
+          >
+            {isWin ? 'ПОБЕДА!' : 'НЕ ПОВЕЗЛО'}
+          </motion.h2>
 
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={onClose}
-          style={{
-            width: '100%',
-            padding: '16px 24px',
-            borderRadius: 14,
-            background: isWin
-              ? 'linear-gradient(135deg, #d4af37, #8b6914)'
-              : 'rgba(255,255,255,0.08)',
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: "'Montserrat', sans-serif",
-            fontSize: 15,
-            fontWeight: 700,
-            color: isWin ? '#0a0a0c' : '#a1a1aa',
-          }}
-        >
-          {isWin ? 'ЗАБРАТЬ' : 'ЗАКРЫТЬ'}
-        </motion.button>
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 15,
+              color: isWin ? 'var(--text-main)' : '#6a6a70',
+              marginBottom: 28,
+              textAlign: 'center',
+              letterSpacing: '0.02em',
+            }}
+          >
+            {isWin
+              ? `+${result.value.toLocaleString('ru-RU')}₽ на баланс!`
+              : 'Попробуй ещё раз!'}
+          </motion.p>
+
+          {/* Close Button */}
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onClose}
+            style={{
+              width: '100%',
+              padding: '18px 24px',
+              borderRadius: 16,
+              background: isWin
+                ? 'linear-gradient(180deg, #f5d061 0%, #d4af37 50%, #9e7a1a 100%)'
+                : 'linear-gradient(180deg, #4a4a52 0%, #38383f 50%, #2a2a30 100%)',
+              border: isWin
+                ? '2px solid rgba(255,255,255,0.2)'
+                : '1px solid rgba(100, 100, 110, 0.2)',
+              cursor: 'pointer',
+              fontFamily: "var(--font-serif)",
+              fontSize: 16,
+              fontWeight: 700,
+              color: isWin ? '#0a0a0c' : '#a0a0a8',
+              letterSpacing: '0.1em',
+              boxShadow: isWin
+                ? `
+                  0 8px 24px rgba(212, 175, 55, 0.3),
+                  inset 0 2px 4px rgba(255,255,255,0.3),
+                  inset 0 -2px 4px rgba(0,0,0,0.15)
+                `
+                : `
+                  0 6px 16px rgba(0,0,0,0.3),
+                  inset 0 1px 2px rgba(255,255,255,0.06)
+                `,
+            }}
+          >
+            {isWin ? 'ЗАБРАТЬ' : 'ЗАКРЫТЬ'}
+          </motion.button>
+        </div>
+
+        {/* Ambient particles for win */}
+        {isWin && (
+          <>
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={i}
+                animate={{
+                  y: [0, -60, 0],
+                  x: [0, Math.sin(i * 60) * 20, 0],
+                  opacity: [0.3, 0.8, 0.3],
+                  scale: [0.8, 1.2, 0.8],
+                }}
+                transition={{
+                  duration: 2 + i * 0.3,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                }}
+                style={{
+                  position: 'absolute',
+                  bottom: 60 + i * 40,
+                  left: 30 + i * 45,
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: '#d4af37',
+                  boxShadow: '0 0 12px rgba(212, 175, 55, 0.6)',
+                }}
+              />
+            ))}
+          </>
+        )}
       </motion.div>
     </motion.div>
   )
@@ -756,7 +871,7 @@ export function RoulettePage({ user }: Props) {
           <Crown size={28} color="#d4af37" />
           <h1
             style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 28,
               fontWeight: 800,
               background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
@@ -770,9 +885,9 @@ export function RoulettePage({ user }: Props) {
         </div>
         <p
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: '#71717a',
+            color: 'var(--text-muted)',
             letterSpacing: '0.15em',
           }}
         >
@@ -810,7 +925,7 @@ export function RoulettePage({ user }: Props) {
           <Diamond size={16} color="#d4af37" />
           <span
             style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 14,
               fontWeight: 700,
               color: '#d4af37',
@@ -847,9 +962,12 @@ export function RoulettePage({ user }: Props) {
         transition={{ delay: 0.5 }}
         style={{
           padding: '20px 24px',
-          background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.9), rgba(10, 10, 12, 0.95))',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
           borderRadius: 16,
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         <div
@@ -860,12 +978,12 @@ export function RoulettePage({ user }: Props) {
             marginBottom: 16,
           }}
         >
-          <Zap size={14} color="#d4af37" />
+          <Zap size={14} color="var(--gold-400)" />
           <span
             style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 12,
-              color: '#d4af37',
+              color: 'var(--gold-400)',
               letterSpacing: '0.1em',
             }}
           >
@@ -875,9 +993,9 @@ export function RoulettePage({ user }: Props) {
         <ul
           style={{
             listStyle: 'none',
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: '#71717a',
+            color: 'var(--text-muted)',
             display: 'flex',
             flexDirection: 'column',
             gap: 10,

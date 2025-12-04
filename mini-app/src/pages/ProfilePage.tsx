@@ -99,7 +99,7 @@ function AnimatedCounter({ value, suffix = '', prefix = '' }: {
     return () => { controls.stop(); unsubscribe() }
   }, [value, count, rounded, prefix, suffix])
 
-  return <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{displayValue}</span>
+  return <span style={{ fontFamily: "var(--font-mono)" }}>{displayValue}</span>
 }
 
 // Transaction Item Component
@@ -535,14 +535,14 @@ export function ProfilePage({ user }: Props) {
               width: 72,
               height: 72,
               borderRadius: '50%',
-              background: '#09090b',
+              background: 'var(--bg-card-solid)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 32,
               position: 'relative',
               zIndex: 1,
-              border: '3px solid #09090b',
+              border: '3px solid var(--bg-card-solid)',
             }}>
               {user.rank.emoji}
             </div>
@@ -551,10 +551,10 @@ export function ProfilePage({ user }: Props) {
           {/* Name & Status */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <h2 style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 20,
               fontWeight: 700,
-              color: '#fff',
+              color: 'var(--text-main)',
               marginBottom: 8,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -578,7 +578,7 @@ export function ProfilePage({ user }: Props) {
                 <Award size={10} />
                 {premiumRankName}
               </span>
-              <span style={{ fontSize: 10, color: '#71717a' }}>
+              <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
                 Уровень {user.loyalty.level}
               </span>
             </div>
@@ -592,40 +592,40 @@ export function ProfilePage({ user }: Props) {
           gap: 12,
           marginTop: 20,
           paddingTop: 20,
-          borderTop: '1px solid rgba(255,255,255,0.05)',
+          borderTop: '1px solid var(--border-subtle)',
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{
               fontSize: 22,
               fontWeight: 700,
               color: '#22c55e',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "var(--font-mono)",
             }}>
               {Math.round(user.balance)}
             </div>
-            <div style={{ fontSize: 10, color: '#71717a' }}>Кешбэк ₽</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Кешбэк ₽</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{
               fontSize: 22,
               fontWeight: 700,
               color: '#d4af37',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "var(--font-mono)",
             }}>
               {user.discount}%
             </div>
-            <div style={{ fontSize: 10, color: '#71717a' }}>Скидка</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Скидка</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{
               fontSize: 22,
               fontWeight: 700,
               color: '#3b82f6',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "var(--font-mono)",
             }}>
               {user.orders_count}
             </div>
-            <div style={{ fontSize: 10, color: '#71717a' }}>Заказов</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Заказов</div>
           </div>
         </div>
       </motion.div>
@@ -682,7 +682,7 @@ export function ProfilePage({ user }: Props) {
             </div>
             <div style={{
               fontSize: 11,
-              color: '#a1a1aa',
+              color: 'var(--text-secondary)',
             }}>
               {user.bonus_expiry.burn_amount && user.bonus_expiry.status !== 'expired'
                 ? `Сгорит ~${user.bonus_expiry.burn_amount}₽ (20% от баланса)`
@@ -698,11 +698,16 @@ export function ProfilePage({ user }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
         style={{
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(20,20,23,0.95) 100%)',
-          border: '1px solid rgba(212,175,55,0.3)',
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, var(--bg-card) 100%)'
+            : 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 100%)',
+          border: '1px solid var(--border-gold)',
           borderRadius: 20,
           padding: 20,
           marginBottom: 16,
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         <div style={{
@@ -715,7 +720,7 @@ export function ProfilePage({ user }: Props) {
           <span style={{
             fontSize: 14,
             fontWeight: 700,
-            color: '#fff',
+            color: 'var(--text-main)',
             fontFamily: "'Montserrat', sans-serif",
           }}>
             Реферальная программа
@@ -740,29 +745,29 @@ export function ProfilePage({ user }: Props) {
           gap: 16,
           marginBottom: 16,
           padding: '14px',
-          background: 'rgba(0,0,0,0.3)',
+          background: 'var(--bg-glass)',
           borderRadius: 12,
-          border: '1px solid rgba(212,175,55,0.15)',
+          border: '1px solid var(--border-gold)',
         }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, color: '#71717a', marginBottom: 4 }}>Приглашённых</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Приглашённых</div>
             <div style={{
               fontSize: 20,
               fontWeight: 700,
               color: '#d4af37',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "var(--font-mono)",
             }}>
               0
             </div>
           </div>
           <div style={{ width: 1, background: 'rgba(212,175,55,0.2)' }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, color: '#71717a', marginBottom: 4 }}>Заработано</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Заработано</div>
             <div style={{
               fontSize: 20,
               fontWeight: 700,
               color: '#22c55e',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "var(--font-mono)",
             }}>
               {user.bonus_balance} ₽
             </div>
@@ -778,13 +783,13 @@ export function ProfilePage({ user }: Props) {
               flex: 1,
               padding: '14px 16px',
               background: copied
-                ? 'rgba(34, 197, 94, 0.1)'
-                : 'rgba(255,255,255,0.05)',
+                ? 'var(--success-glass)'
+                : 'var(--bg-glass)',
               border: copied
-                ? '1px solid rgba(34, 197, 94, 0.3)'
-                : '1px solid rgba(255,255,255,0.1)',
+                ? '1px solid var(--success-border)'
+                : '1px solid var(--border-default)',
               borderRadius: 12,
-              color: copied ? '#22c55e' : '#fff',
+              color: copied ? 'var(--status-success)' : 'var(--text-main)',
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
@@ -802,15 +807,15 @@ export function ProfilePage({ user }: Props) {
             onClick={() => setShowQR(true)}
             style={{
               padding: '14px 18px',
-              background: 'linear-gradient(135deg, #d4af37, #b38728)',
+              background: 'var(--gold-metallic)',
               border: 'none',
               borderRadius: 12,
-              color: '#09090b',
+              color: 'var(--bg-void)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 15px rgba(212,175,55,0.3)',
+              boxShadow: 'var(--glow-gold)',
             }}
           >
             <QrCode size={18} />
@@ -828,9 +833,11 @@ export function ProfilePage({ user }: Props) {
           gap: 8,
           marginBottom: 16,
           padding: 4,
-          background: 'rgba(20, 20, 23, 0.7)',
+          background: 'var(--bg-card)',
           borderRadius: 14,
-          border: '1px solid rgba(255,255,255,0.05)',
+          border: '1px solid var(--border-default)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
         }}
       >
         {[
@@ -848,13 +855,13 @@ export function ProfilePage({ user }: Props) {
               flex: 1,
               padding: '12px 16px',
               background: activeTab === tab.id
-                ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
+                ? 'var(--gold-metallic)'
                 : 'transparent',
               border: activeTab === tab.id
-                ? '1px solid rgba(212,175,55,0.3)'
+                ? '1px solid var(--border-gold-strong)'
                 : '1px solid transparent',
               borderRadius: 10,
-              color: activeTab === tab.id ? '#d4af37' : '#71717a',
+              color: activeTab === tab.id ? 'var(--bg-void)' : 'var(--text-muted)',
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
@@ -863,6 +870,7 @@ export function ProfilePage({ user }: Props) {
               justifyContent: 'center',
               gap: 6,
               transition: 'all 0.2s',
+              boxShadow: activeTab === tab.id ? 'var(--glow-gold)' : 'none',
             }}
           >
             <tab.icon size={16} />
@@ -929,7 +937,7 @@ export function ProfilePage({ user }: Props) {
                   <span style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#fff',
+                    color: 'var(--text-main)',
                   }}>
                     Активность
                   </span>
@@ -997,7 +1005,7 @@ export function ProfilePage({ user }: Props) {
                   <div style={{
                     fontSize: 15,
                     fontWeight: 600,
-                    color: '#fff',
+                    color: 'var(--text-main)',
                     fontFamily: "'Montserrat', sans-serif"
                   }}>
                     {premiumLoyaltyName}
@@ -1005,7 +1013,7 @@ export function ProfilePage({ user }: Props) {
                   {user.loyalty.orders_to_next > 0 && (
                     <div style={{
                       fontSize: 11,
-                      color: '#71717a',
+                      color: 'var(--text-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4
@@ -1020,11 +1028,11 @@ export function ProfilePage({ user }: Props) {
                     fontSize: 18,
                     color: '#d4af37',
                     fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace"
+                    fontFamily: "var(--font-mono)"
                   }}>
                     +{user.loyalty.discount}%
                   </span>
-                  <div style={{ fontSize: 9, color: '#71717a' }}>скидка</div>
+                  <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>скидка</div>
                 </div>
               </div>
 
@@ -1068,7 +1076,7 @@ export function ProfilePage({ user }: Props) {
                 <div>
                   <div style={{
                     fontSize: 10,
-                    color: '#71717a',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.15em',
                     marginBottom: 4,
@@ -1078,8 +1086,8 @@ export function ProfilePage({ user }: Props) {
                   <div style={{
                     fontSize: 26,
                     fontWeight: 700,
-                    color: '#fff',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    color: 'var(--text-main)',
+                    fontFamily: "var(--font-mono)",
                   }}>
                     <AnimatedCounter value={user.total_spent} suffix=" ₽" />
                   </div>
@@ -1095,11 +1103,11 @@ export function ProfilePage({ user }: Props) {
                     fontSize: 14,
                     color: '#22c55e',
                     fontWeight: 600,
-                    fontFamily: "'JetBrains Mono', monospace"
+                    fontFamily: "var(--font-mono)"
                   }}>
                     -{moneySaved.toLocaleString('ru-RU')} ₽
                   </span>
-                  <div style={{ fontSize: 9, color: '#71717a', marginTop: 2 }}>
+                  <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>
                     сэкономлено
                   </div>
                 </div>
@@ -1136,12 +1144,12 @@ export function ProfilePage({ user }: Props) {
                     fontSize: 24,
                     fontWeight: 700,
                     color: stat.color,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "var(--font-mono)",
                     marginBottom: 4,
                   }}>
                     {stat.value}
                   </div>
-                  <div style={{ fontSize: 10, color: '#71717a' }}>{stat.label}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{stat.label}</div>
                 </div>
               ))}
             </motion.div>
@@ -1169,7 +1177,7 @@ export function ProfilePage({ user }: Props) {
                 <span style={{
                   fontSize: 14,
                   fontWeight: 700,
-                  color: '#fff',
+                  color: 'var(--text-main)',
                   fontFamily: "'Montserrat', sans-serif",
                 }}>
                   Достижения
@@ -1279,12 +1287,12 @@ export function ProfilePage({ user }: Props) {
                 <span style={{
                   fontSize: 14,
                   fontWeight: 600,
-                  color: '#fff',
+                  color: 'var(--text-main)',
                   fontFamily: "'Montserrat', sans-serif"
                 }}>
                   Последние операции
                 </span>
-                <span style={{ fontSize: 11, color: '#71717a' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                   {transactions.length} записей
                 </span>
               </div>
@@ -1308,7 +1316,7 @@ export function ProfilePage({ user }: Props) {
                   textAlign: 'center',
                 }}>
                   <Clock size={40} color="#52525b" style={{ marginBottom: 12 }} />
-                  <div style={{ fontSize: 14, color: '#71717a' }}>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
                     История пуста
                   </div>
                   <div style={{ fontSize: 12, color: '#52525b', marginTop: 4 }}>
@@ -1352,12 +1360,12 @@ export function ProfilePage({ user }: Props) {
                   <div style={{
                     fontSize: 15,
                     fontWeight: 600,
-                    color: '#fff',
+                    color: 'var(--text-main)',
                     marginBottom: 4,
                   }}>
                     Ваш рейтинг
                   </div>
-                  <div style={{ fontSize: 12, color: '#71717a' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                     {completedOrders} успешных заказов
                   </div>
                 </div>

@@ -147,7 +147,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         style={{
-          background: '#14141a',
+          background: 'var(--bg-card-solid)',
           borderRadius: 24,
           border: '1px solid rgba(212,175,55,0.3)',
           padding: 40,
@@ -188,7 +188,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "var(--font-serif)",
             fontSize: 24,
             fontWeight: 700,
             color: '#22c55e',
@@ -205,7 +205,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           transition={{ delay: 0.4 }}
           style={{
             fontSize: 14,
-            color: '#a1a1aa',
+            color: 'var(--text-secondary)',
             margin: 0,
             textAlign: 'center',
             lineHeight: 1.6,
@@ -223,7 +223,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        background: '#14141a',
+        background: 'var(--bg-card-solid)',
         borderRadius: 24,
         border: '1px solid rgba(212,175,55,0.3)',
         overflow: 'hidden',
@@ -259,10 +259,10 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           </div>
           <div>
             <h3 style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 20,
               fontWeight: 700,
-              color: '#f2f2f2',
+              color: 'var(--text-main)',
               margin: 0,
               marginBottom: 4,
             }}>
@@ -270,9 +270,9 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
             </h3>
             <p style={{
               fontSize: 12,
-              color: '#71717a',
+              color: 'var(--text-muted)',
               margin: 0,
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "var(--font-mono)",
             }}>
               Заказ #{order.id}
             </p>
@@ -309,7 +309,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
         }}>
           <p style={{
             fontSize: 12,
-            color: '#71717a',
+            color: 'var(--text-muted)',
             margin: 0,
             marginBottom: 8,
             textTransform: 'uppercase',
@@ -324,7 +324,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
             style={{
               fontSize: 48,
               fontWeight: 700,
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "var(--font-mono)",
               background: 'linear-gradient(135deg, #f5d061, #d4af37)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -350,14 +350,14 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
                 display: 'inline-block',
               }}
             >
-              <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 Доплата после выполнения:{' '}
               </span>
               <span style={{
                 fontSize: 14,
                 fontWeight: 600,
                 color: '#d4af37',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "var(--font-mono)",
               }}>
                 {amountToPay.toLocaleString('ru-RU')} ₽
               </span>
@@ -371,7 +371,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
             <p style={{
               fontSize: 11,
               fontWeight: 700,
-              color: '#71717a',
+              color: 'var(--text-muted)',
               margin: 0,
               marginBottom: 12,
               textTransform: 'uppercase',
@@ -412,7 +412,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
                 </div>
                 <p style={{
                   fontSize: 11,
-                  color: '#71717a',
+                  color: 'var(--text-muted)',
                   margin: 0,
                 }}>
                   Полная оплата
@@ -447,7 +447,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
                 </div>
                 <p style={{
                   fontSize: 11,
-                  color: '#71717a',
+                  color: 'var(--text-muted)',
                   margin: 0,
                 }}>
                   Предоплата
@@ -484,7 +484,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
               </p>
               <p style={{
                 fontSize: 11,
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 margin: 0,
               }}>
                 Осталось доплатить полную сумму остатка
@@ -498,7 +498,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           <p style={{
             fontSize: 11,
             fontWeight: 700,
-            color: '#71717a',
+            color: 'var(--text-muted)',
             margin: 0,
             marginBottom: 12,
             textTransform: 'uppercase',
@@ -605,8 +605,8 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
                 style={{
                   width: '100%',
                   padding: '14px 16px',
-                  background: '#0a0a0c',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'var(--bg-main)',
+                  border: '1px solid var(--border-strong)',
                   borderRadius: 12,
                   cursor: 'pointer',
                   display: 'flex',
@@ -618,8 +618,8 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
                 <span style={{
                   fontSize: 18,
                   fontWeight: 600,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  color: '#f2f2f2',
+                  fontFamily: "var(--font-mono)",
+                  color: 'var(--text-main)',
                   letterSpacing: '0.05em',
                 }}>
                   {paymentInfo.card_number}
@@ -634,7 +634,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
               {/* Card Holder */}
               <p style={{
                 fontSize: 13,
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 margin: 0,
                 textAlign: 'center',
               }}>
@@ -671,8 +671,8 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
                 style={{
                   width: '100%',
                   padding: '14px 16px',
-                  background: '#0a0a0c',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'var(--bg-main)',
+                  border: '1px solid var(--border-strong)',
                   borderRadius: 12,
                   cursor: 'pointer',
                   display: 'flex',
@@ -684,8 +684,8 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
                 <span style={{
                   fontSize: 18,
                   fontWeight: 600,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  color: '#f2f2f2',
+                  fontFamily: "var(--font-mono)",
+                  color: 'var(--text-main)',
                 }}>
                   {paymentInfo.sbp_phone}
                 </span>
@@ -699,7 +699,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
               {/* Bank */}
               <p style={{
                 fontSize: 13,
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 margin: 0,
                 textAlign: 'center',
               }}>
@@ -743,7 +743,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
             padding: '18px 24px',
             fontSize: 17,
             fontWeight: 700,
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "var(--font-serif)",
             color: processing ? '#71717a' : '#050505',
             background: processing
               ? 'rgba(255,255,255,0.1)'
@@ -780,7 +780,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
         {/* Note */}
         <p style={{
           fontSize: 11,
-          color: '#52525b',
+          color: 'var(--text-muted)',
           margin: 0,
           marginTop: 16,
           textAlign: 'center',
@@ -866,7 +866,7 @@ function ReviewSection({ orderId, haptic, onReviewSubmitted }: ReviewSectionProp
 
       <p style={{
         fontSize: 13,
-        color: '#a1a1aa',
+        color: 'var(--text-secondary)',
         margin: 0,
         marginBottom: 16,
         lineHeight: 1.5,
@@ -913,9 +913,9 @@ function ReviewSection({ orderId, haptic, onReviewSubmitted }: ReviewSectionProp
           minHeight: 100,
           padding: 14,
           background: 'rgba(0,0,0,0.3)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid var(--border-strong)',
           borderRadius: 12,
-          color: '#f2f2f2',
+          color: 'var(--text-main)',
           fontSize: 14,
           resize: 'vertical',
           fontFamily: 'inherit',
@@ -1183,7 +1183,7 @@ export function OrderDetailPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#0a0a0c',
+        background: 'var(--bg-main)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1203,7 +1203,7 @@ export function OrderDetailPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#0a0a0c',
+        background: 'var(--bg-main)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -1223,7 +1223,7 @@ export function OrderDetailPage() {
         }}>
           <XCircle size={40} color="#ef4444" />
         </div>
-        <p style={{ fontSize: 18, fontWeight: 600, color: '#f2f2f2' }}>Заказ не найден</p>
+        <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>Заказ не найден</p>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={handleBack}
@@ -1231,9 +1231,9 @@ export function OrderDetailPage() {
             padding: '14px 28px',
             fontSize: 15,
             fontWeight: 600,
-            color: '#f2f2f2',
-            background: '#14141a',
-            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'var(--text-main)',
+            background: 'var(--bg-card-solid)',
+            border: '1px solid var(--border-strong)',
             borderRadius: 12,
             cursor: 'pointer',
           }}
@@ -1260,7 +1260,7 @@ export function OrderDetailPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0a0a0c',
+      background: 'var(--bg-main)',
       padding: 24,
       paddingBottom: showPaymentUI ? 40 : 180,
     }}>
@@ -1462,7 +1462,7 @@ export function OrderDetailPage() {
                           style={{
                             fontSize: 28,
                             fontWeight: 700,
-                            fontFamily: "'JetBrains Mono', monospace",
+                            fontFamily: "var(--font-mono)",
                             background: `linear-gradient(135deg, ${statusAlert.color}, ${statusAlert.color}cc)`,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
@@ -1487,7 +1487,7 @@ export function OrderDetailPage() {
                             fontSize: 14,
                             fontWeight: 600,
                             color: '#f59e0b',
-                            fontFamily: "'JetBrains Mono', monospace",
+                            fontFamily: "var(--font-mono)",
                           }}>
                             −{statusAlert.bonusUsed.toLocaleString('ru-RU')} ₽
                           </div>
@@ -1556,8 +1556,8 @@ export function OrderDetailPage() {
             width: 46,
             height: 46,
             borderRadius: 14,
-            background: '#14141a',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-card-solid)',
+            border: '1px solid var(--border-default)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1569,7 +1569,7 @@ export function OrderDetailPage() {
 
         <div style={{ flex: 1 }}>
           <h1 style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "var(--font-serif)",
             fontSize: 24,
             fontWeight: 700,
             background: 'linear-gradient(135deg, #f5d061, #d4af37)',
@@ -1583,9 +1583,9 @@ export function OrderDetailPage() {
           </h1>
           <p style={{
             fontSize: 13,
-            color: '#71717a',
+            color: 'var(--text-muted)',
             margin: 0,
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "var(--font-mono)",
           }}>
             Заказ #{order.id}
           </p>
@@ -1635,9 +1635,9 @@ export function OrderDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           style={{
-            background: '#14141a',
+            background: 'var(--bg-card-solid)',
             borderRadius: 20,
-            border: '1px solid rgba(255,255,255,0.05)',
+            border: '1px solid var(--border-subtle)',
             padding: 20,
             marginBottom: 20,
           }}
@@ -1685,7 +1685,7 @@ export function OrderDetailPage() {
                       <span style={{
                         fontSize: 12,
                         fontWeight: 700,
-                        color: '#52525b',
+                        color: 'var(--text-muted)',
                       }}>
                         {step.num}
                       </span>
@@ -1748,9 +1748,9 @@ export function OrderDetailPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
             style={{
-              background: '#14141a',
+              background: 'var(--bg-card-solid)',
               borderRadius: 20,
-              border: '1px solid rgba(255,255,255,0.05)',
+              border: '1px solid var(--border-subtle)',
               padding: 20,
             }}
           >
@@ -1774,7 +1774,7 @@ export function OrderDetailPage() {
             <p style={{
               fontSize: 18,
               fontWeight: 600,
-              color: '#f2f2f2',
+              color: 'var(--text-main)',
               margin: 0,
               lineHeight: 1.4,
             }}>
@@ -1790,9 +1790,9 @@ export function OrderDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               style={{
-                background: '#14141a',
+                background: 'var(--bg-card-solid)',
                 borderRadius: 20,
-                border: '1px solid rgba(255,255,255,0.05)',
+                border: '1px solid var(--border-subtle)',
                 padding: 20,
               }}
             >
@@ -1816,7 +1816,7 @@ export function OrderDetailPage() {
               <p style={{
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#f2f2f2',
+                color: 'var(--text-main)',
                 margin: 0,
               }}>
                 {order.deadline || 'Не указан'}
@@ -1857,7 +1857,7 @@ export function OrderDetailPage() {
                 fontWeight: 700,
                 color: '#e6c547',
                 margin: 0,
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "var(--font-mono)",
               }}>
                 {order.final_price.toLocaleString('ru-RU')} ₽
               </p>
@@ -1913,7 +1913,7 @@ export function OrderDetailPage() {
                     borderRadius: 10,
                   }}>
                     <Timer size={14} color="#f59e0b" />
-                    <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                       {(() => {
                         const deliveredDate = new Date(order.delivered_at)
                         const now = new Date()
@@ -1972,7 +1972,7 @@ export function OrderDetailPage() {
 
               <p style={{
                 fontSize: 13,
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 margin: 0,
                 marginBottom: 16,
                 lineHeight: 1.5,
@@ -2088,7 +2088,7 @@ export function OrderDetailPage() {
               </div>
               <p style={{
                 fontSize: 13,
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 margin: 0,
                 marginBottom: 16,
                 lineHeight: 1.5,
@@ -2159,9 +2159,9 @@ export function OrderDetailPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             style={{
-              background: '#14141a',
+              background: 'var(--bg-card-solid)',
               borderRadius: 20,
-              border: '1px solid rgba(255,255,255,0.05)',
+              border: '1px solid var(--border-subtle)',
               padding: 20,
             }}
           >
@@ -2188,13 +2188,13 @@ export function OrderDetailPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Tag size={14} color="#71717a" />
-                  <span style={{ fontSize: 14, color: '#a1a1aa' }}>Стоимость</span>
+                  <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Стоимость</span>
                 </div>
                 <span style={{
                   fontSize: 15,
                   fontWeight: 600,
-                  color: '#f2f2f2',
-                  fontFamily: "'JetBrains Mono', monospace",
+                  color: 'var(--text-main)',
+                  fontFamily: "var(--font-mono)",
                 }}>
                   {order.price.toLocaleString('ru-RU')} ₽
                 </span>
@@ -2211,7 +2211,7 @@ export function OrderDetailPage() {
                     fontSize: 15,
                     fontWeight: 600,
                     color: '#22c55e',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "var(--font-mono)",
                   }}>
                     −{Math.round(order.price * order.discount / 100).toLocaleString('ru-RU')} ₽
                   </span>
@@ -2229,7 +2229,7 @@ export function OrderDetailPage() {
                     fontSize: 15,
                     fontWeight: 600,
                     color: '#f59e0b',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "var(--font-mono)",
                   }}>
                     −{order.bonus_used.toLocaleString('ru-RU')} ₽
                   </span>
@@ -2239,7 +2239,7 @@ export function OrderDetailPage() {
               {/* Divider */}
               <div style={{
                 height: 1,
-                background: 'rgba(255,255,255,0.08)',
+                background: 'var(--bg-glass)',
                 margin: '4px 0',
               }} />
 
@@ -2275,7 +2275,7 @@ export function OrderDetailPage() {
                     fontSize: 15,
                     fontWeight: 600,
                     color: '#22c55e',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "var(--font-mono)",
                   }}>
                     {order.paid_amount.toLocaleString('ru-RU')} ₽
                   </span>
@@ -2295,7 +2295,7 @@ export function OrderDetailPage() {
                     fontSize: 15,
                     fontWeight: 600,
                     color: '#f59e0b',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "var(--font-mono)",
                   }}>
                     {(order.final_price - order.paid_amount).toLocaleString('ru-RU')} ₽
                   </span>
@@ -2310,9 +2310,9 @@ export function OrderDetailPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
             style={{
-              background: '#14141a',
+              background: 'var(--bg-card-solid)',
               borderRadius: 20,
-              border: '1px solid rgba(255,255,255,0.05)',
+              border: '1px solid var(--border-subtle)',
               padding: 20,
               display: 'flex',
               alignItems: 'center',
@@ -2321,13 +2321,13 @@ export function OrderDetailPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <Clock size={16} color="#71717a" />
-              <span style={{ fontSize: 14, color: '#71717a' }}>Создан</span>
+              <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Создан</span>
             </div>
             <span style={{
               fontSize: 14,
               fontWeight: 600,
-              color: '#a1a1aa',
-              fontFamily: "'JetBrains Mono', monospace",
+              color: 'var(--text-secondary)',
+              fontFamily: "var(--font-mono)",
             }}>
               {new Date(order.created_at).toLocaleDateString('ru-RU', {
                 day: 'numeric',
@@ -2372,9 +2372,9 @@ export function OrderDetailPage() {
                 padding: '18px 24px',
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#f2f2f2',
-                background: '#14141a',
-                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'var(--text-main)',
+                background: 'var(--bg-card-solid)',
+                border: '1px solid var(--border-strong)',
                 borderRadius: 16,
                 cursor: 'pointer',
                 display: 'flex',
@@ -2398,9 +2398,9 @@ export function OrderDetailPage() {
                 padding: order.status === 'completed' ? '18px' : '18px 24px',
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#f2f2f2',
-                background: '#14141a',
-                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'var(--text-main)',
+                background: 'var(--bg-card-solid)',
+                border: '1px solid var(--border-strong)',
                 borderRadius: 16,
                 cursor: 'pointer',
                 display: 'flex',
@@ -2436,7 +2436,7 @@ export function OrderDetailPage() {
                 padding: '18px 24px',
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#050505',
+                color: 'var(--bg-void)',
                 background: 'linear-gradient(135deg, #d4af37, #f5d061)',
                 border: 'none',
                 borderRadius: 16,
