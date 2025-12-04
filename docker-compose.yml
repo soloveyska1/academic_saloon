@@ -39,6 +39,8 @@ services:
     command: python main.py
     env_file:
       - .env
+    ports:
+      - "8000:8000"  # FastAPI + WebSocket endpoint
     depends_on:
       db:
         condition: service_healthy
