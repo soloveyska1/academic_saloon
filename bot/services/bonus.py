@@ -81,13 +81,14 @@ class BonusService:
 
         # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
         try:
-            from bot.api.websocket import notify_balance_update
+            from bot.services.realtime_notifications import send_balance_notification
             reason_text = BONUS_REASON_DESCRIPTIONS.get(reason.value, description or reason.value)
-            await notify_balance_update(
+            await send_balance_notification(
                 telegram_id=user_id,
-                new_balance=float(user.balance),
                 change=float(amount),
-                reason=reason_text
+                new_balance=float(user.balance),
+                reason=reason_text,
+                reason_key=reason.value,
             )
         except Exception as e:
             logger.warning(f"[WS] Failed to send balance notification: {e}")
@@ -137,6 +138,20 @@ class BonusService:
             f"Bonus deducted: user={user_id}, amount=-{amount:.0f}₽, "
             f"reason={reason.value}, balance: {old_balance:.0f}₽ → {user.balance:.0f}₽"
         )
+
+        # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ О СПИСАНИИ ═══
+        try:
+            from bot.services.realtime_notifications import send_balance_notification
+            reason_text = BONUS_REASON_DESCRIPTIONS.get(reason.value, description or reason.value)
+            await send_balance_notification(
+                telegram_id=user_id,
+                change=-float(amount),  # Отрицательное значение для списания
+                new_balance=float(user.balance),
+                reason=reason_text,
+                reason_key=reason.value,
+            )
+        except Exception as e:
+            logger.warning(f"[WS] Failed to send deduction notification: {e}")
 
         return True, user.balance
 

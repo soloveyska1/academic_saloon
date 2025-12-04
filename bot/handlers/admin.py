@@ -3470,7 +3470,11 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
 
     # Обновляем статус заказа
     order.status = OrderStatus.PAID.value
-    order.paid_amount = order.final_price
+    # Учитываем схему оплаты (50% предоплата или 100%)
+    if order.payment_scheme == "half":
+        order.paid_amount = order.final_price / 2
+    else:
+        order.paid_amount = order.final_price
 
     # Увеличиваем счётчик заказов и общую сумму
     user.orders_count += 1
@@ -3880,7 +3884,11 @@ async def cmd_paid(message: Message, command: CommandObject, session: AsyncSessi
 
     # Обновляем статус заказа
     order.status = OrderStatus.PAID.value
-    order.paid_amount = order.final_price
+    # Учитываем схему оплаты (50% предоплата или 100%)
+    if order.payment_scheme == "half":
+        order.paid_amount = order.final_price / 2
+    else:
+        order.paid_amount = order.final_price
 
     # Увеличиваем счётчик заказов и общую сумму
     user.orders_count += 1
