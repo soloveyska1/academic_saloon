@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   ACADEMIC SALOON — DIGITAL LUXURY DESIGN SYSTEM v4.0
-   "Cinematic Realism" — Royal Porcelain & Obsidian Glass
-   Material surfaces, anisotropic reflections, subsurface scattering
+   ACADEMIC SALOON — ULTRA-PREMIUM DESIGN SYSTEM v5.0
+   "Luxury Digital Artifact" — Old Money meets Cyberpunk
+   Cartier aesthetics + High-end dark mode crypto wallet
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TAILWIND CSS — MUST BE AT THE TOP
@@ -14,25 +14,77 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CSS CUSTOM PROPERTIES (Design Tokens) — INTELLIGENT LUXURY
+   THE ROYAL PALETTE — ULTRA-PREMIUM CSS VARIABLES
+   Rule #1: NO FLAT COLORS — Gold must always be gradient or glow
+   Rule #2: NO BLACK SHADOWS — Shadows must be colored (Gold/Bronze tint)
+   Rule #3: NO BORING BORDERS — Borders must be subtle gradients
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════════════
-     OBSIDIAN GLASS THEME (Dark Mode) — Deep charcoal with blue undertones
+     TEXTURE — The "Expensive Paper" Feel
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --noise-overlay: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     LUXURY GOLD — Anisotropic Metal (Never Flat!)
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* The Signature Metallic Gold Gradient — for buttons, icons, highlights */
+  --gold-metallic: linear-gradient(135deg, #8E6E27 0%, #D4AF37 25%, #FFF8D6 50%, #D4AF37 75%, #8E6E27 100%);
+
+  /* Text Gradient Shine — for "Элитный клуб" style headlines */
+  --gold-text-shine: linear-gradient(to right, #BF953F, #FCF6BA, #B38728, #FBF5B7);
+
+  /* Liquid Gold — Premium flowing gradient */
+  --liquid-gold: linear-gradient(135deg, #BF953F 0%, #FCF6BA 50%, #B38728 75%, #FBF5B7 100%);
+  --liquid-gold-text: linear-gradient(135deg, #FCF6BA 0%, #D4AF37 30%, #B38728 60%, #FBF5B7 100%);
+
+  /* Anisotropic Metal Surface — The "Luster" gradient */
+  --gold-luster: linear-gradient(
+    135deg,
+    #8E6E27 0%,
+    #D4AF37 25%,
+    #FFF8D6 50%,
+    #D4AF37 75%,
+    #8E6E27 100%
+  );
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     STATUS COLORS — Neon Glass Effect
+     ═══════════════════════════════════════════════════════════════════════════ */
+  --success-glass: rgba(34, 197, 94, 0.15);
+  --success-text: #4ade80;
+  --success-border: rgba(34, 197, 94, 0.2);
+
+  --warning-glass: rgba(234, 179, 8, 0.15);
+  --warning-text: #fbbf24;
+  --warning-border: rgba(234, 179, 8, 0.2);
+
+  --error-glass: rgba(239, 68, 68, 0.15);
+  --error-text: #f87171;
+  --error-border: rgba(239, 68, 68, 0.2);
+
+  --info-glass: rgba(59, 130, 246, 0.15);
+  --info-text: #60a5fa;
+  --info-border: rgba(59, 130, 246, 0.2);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     OBSIDIAN GLASS THEME (Dark Mode) — Deepest Charcoal
      ═══════════════════════════════════════════════════════════════════════════ */
 
   /* Backgrounds - Deepest Obsidian (Never pure black, slight blue undertone) */
   --bg-void: #050507;
   --bg-onyx: #08080b;
   --bg-base: #050507;
+  --bg-main: #050507;
   --bg-surface: #0c0c10;
   --bg-elevated: #121218;
-  --bg-card: rgba(18, 18, 23, 0.65);
+  --bg-card: rgba(20, 20, 23, 0.6);
   --bg-card-solid: #101015;
   --bg-glass: rgba(255, 255, 255, 0.04);
 
-  /* === THE ROYAL GOLD — Anisotropic Metal Surface === */
+  /* === THE ROYAL GOLD SCALE === */
   --gold-950: #5c4510;
   --gold-900: #6b4f0f;
   --gold-800: #7d5c12;
@@ -48,30 +100,6 @@
   --gold-100: #FCF6BA;
   --gold-50: #fff8e1;
 
-  /* Anisotropic Metal Surface — The "Luster" gradient */
-  --gold-luster: linear-gradient(
-    135deg,
-    #8E6E27 0%,
-    #D4AF37 25%,
-    #FFF8D6 50%,
-    #D4AF37 75%,
-    #8E6E27 100%
-  );
-
-  /* Text Reveal Shine (for animated headlines) */
-  --gold-text-shine: linear-gradient(
-    to right,
-    #BF953F 0%,
-    #FCF6BA 45%,
-    #FFF8D6 50%,
-    #FCF6BA 55%,
-    #BF953F 100%
-  );
-
-  /* The Signature Liquid Gold Gradient (legacy support) */
-  --liquid-gold: linear-gradient(135deg, #BF953F 0%, #FCF6BA 50%, #B38728 75%, #FBF5B7 100%);
-  --liquid-gold-text: linear-gradient(135deg, #FCF6BA 0%, #D4AF37 30%, #B38728 60%, #FBF5B7 100%);
-
   /* Blood Crimson */
   --red-900: #3d0a0a;
   --red-700: #5c1010;
@@ -79,48 +107,49 @@
   --red-400: #b93c3c;
   --red-300: #dc4c4c;
 
-  /* Status Colors */
+  /* Status Colors (legacy) */
   --status-success: #22c55e;
   --status-warning: #eab308;
   --status-error: #ef4444;
   --status-info: #3b82f6;
 
-  /* Text Colors */
-  --text-primary: #f2f2f2;
+  /* Text Colors — Never pure white! Off-white for warmth */
+  --text-primary: #EDEDED;
+  --text-main: #EDEDED;
   --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-muted: #A1A1AA;
   --text-gold: var(--gold-400);
 
-  /* Borders */
+  /* Borders — Must simulate light hitting edges */
   --border-subtle: rgba(255, 255, 255, 0.03);
   --border-default: rgba(255, 255, 255, 0.05);
   --border-strong: rgba(255, 255, 255, 0.08);
   --border-gold: rgba(212, 175, 55, 0.2);
   --border-gold-strong: rgba(212, 175, 55, 0.35);
+  --card-border: rgba(255, 255, 255, 0.08);
 
   /* === TYPOGRAPHY — Editorial Luxury === */
-  --font-display: 'Cinzel', 'Cinzel Decorative', Georgia, serif;  /* Headlines: журнальная эстетика */
-  --font-serif: 'Cinzel', Georgia, serif;
+  /* Headers: Cinzel or Playfair Display — MUST be serif for premium feel */
+  --font-display: 'Cinzel', 'Playfair Display', Georgia, serif;
+  --font-serif: 'Cinzel', 'Playfair Display', Georgia, serif;
+  --font-heading: 'Cinzel', 'Playfair Display', Georgia, serif;
+  /* Body: Manrope — Clean, modern, readable */
   --font-sans: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
-  --font-heading: 'Cinzel', Georgia, serif;  /* Specifically for big numbers & titles */
 
-  /* === OBSIDIAN GLASS EFFECTS === */
+  /* === THE SECRET SAUCE: GOLD GLOW SHADOWS === */
+  /* Rule: Shadows must have gold/bronze tint to simulate light through glass */
   --glow-gold: 0 0 20px -5px rgba(212, 175, 55, 0.4);
   --glow-gold-strong: 0 0 40px -5px rgba(212, 175, 55, 0.6);
   --glow-gold-intense: 0 0 60px -10px rgba(212, 175, 55, 0.8);
   --glow-red: 0 0 20px -5px rgba(185, 60, 60, 0.4);
 
-  /* Card shadow — Black glass with gold aura */
+  /* Card Shadow — Gold Aura Effect (THE SIGNATURE) */
   --card-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.2),
-    0 20px 50px -12px rgba(0, 0, 0, 1),
-    0 0 80px -20px rgba(212, 175, 55, 0.15);
+    0 20px 40px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px -5px rgba(212, 175, 55, 0.1);
 
-  /* Rim light border — the thin line of light on edges */
-  --card-border: 1px solid rgba(255, 255, 255, 0.08);
-  --card-border-gold: 1px solid rgba(212, 175, 55, 0.2);
-
+  /* Legacy shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.7);
@@ -146,6 +175,7 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-2xl: 24px;
+  --radius-3xl: 32px;
   --radius-full: 9999px;
 
   /* === TRANSITIONS === */
@@ -155,8 +185,8 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ROYAL PORCELAIN THEME (Light Mode) — Warm ivory, golden-brown shadows
-   Like expensive matte paper under sunlight, subsurface scattering effect
+   ROYAL PORCELAIN THEME (Light Mode) — Warm White
+   Subsurface scattering effect, warm golden-brown shadows
    ═══════════════════════════════════════════════════════════════════════════ */
 
 [data-theme="light"] {
@@ -165,13 +195,20 @@
   --bg-void: #FAFAF9;
   --bg-onyx: #F5F5F3;
   --bg-base: #FAFAF9;
+  --bg-main: #FAFAF9;
   --bg-surface: #FFFFFF;
   --bg-elevated: #FFFFFF;
-  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-card: rgba(255, 255, 255, 0.75);
   --bg-card-solid: #FFFFFF;
   --bg-glass: rgba(0, 0, 0, 0.015);
 
+  /* Card border for light mode */
+  --card-border: rgba(255, 255, 255, 0.6);
+
   /* === THE ROYAL GOLD (Deeper for light mode contrast) === */
+  --gold-metallic: linear-gradient(135deg, #6b4f0f 0%, #9e7a1a 25%, #d4af37 50%, #9e7a1a 75%, #6b4f0f 100%);
+  --gold-text-shine: linear-gradient(to right, #8b6914, #c9a02f, #7d5c12, #b48e26);
+
   --gold-950: #3d2e0a;
   --gold-900: #5c4510;
   --gold-800: #6b4f0f;
@@ -197,18 +234,26 @@
     #6b4f0f 100%
   );
 
-  --gold-text-shine: linear-gradient(
-    to right,
-    #8b6914 0%,
-    #c9a02f 45%,
-    #d4af37 50%,
-    #c9a02f 55%,
-    #8b6914 100%
-  );
-
   /* Legacy support */
   --liquid-gold: linear-gradient(135deg, #9e7a1a 0%, #d4af37 50%, #8b6914 75%, #c9a02f 100%);
   --liquid-gold-text: linear-gradient(135deg, #9e7a1a 0%, #7d5c12 30%, #5c4510 60%, #8b6914 100%);
+
+  /* === STATUS COLORS — Glass Pills (Light Mode) === */
+  --success-glass: rgba(22, 163, 74, 0.1);
+  --success-text: #16a34a;
+  --success-border: rgba(22, 163, 74, 0.2);
+
+  --warning-glass: rgba(202, 138, 4, 0.1);
+  --warning-text: #ca8a04;
+  --warning-border: rgba(202, 138, 4, 0.2);
+
+  --error-glass: rgba(220, 38, 38, 0.1);
+  --error-text: #dc2626;
+  --error-border: rgba(220, 38, 38, 0.2);
+
+  --info-glass: rgba(37, 99, 235, 0.1);
+  --info-text: #2563eb;
+  --info-border: rgba(37, 99, 235, 0.2);
 
   /* Blood Crimson (deeper for light mode) */
   --red-900: #7f1d1d;
@@ -224,9 +269,10 @@
   --status-info: #2563eb;
 
   /* Text Colors — Never pure black! */
-  --text-primary: rgba(26, 26, 26, 0.92);
+  --text-primary: #18181B;
+  --text-main: #18181B;
   --text-secondary: rgba(82, 82, 82, 0.9);
-  --text-muted: #737373;
+  --text-muted: #71717A;
   --text-gold: var(--gold-600);
 
   /* Borders */
@@ -236,15 +282,11 @@
   --border-gold: rgba(180, 142, 38, 0.2);
   --border-gold-strong: rgba(180, 142, 38, 0.35);
 
-  /* === PORCELAIN CARD EFFECTS (Subsurface Scattering) === */
+  /* === WARM GOLD SHADOWS FOR LIGHT MODE === */
   /* THE SECRET: Golden-brown shadows, NOT black! */
   --card-shadow:
-    0 4px 6px -1px rgba(180, 142, 38, 0.05),
-    0 10px 15px -3px rgba(166, 138, 58, 0.1),
-    0 20px 40px -10px rgba(255, 255, 255, 0.8) inset;
-
-  --card-border: 1px solid rgba(255, 255, 255, 0.4);
-  --card-border-gold: 1px solid rgba(180, 142, 38, 0.2);
+    0 10px 30px -10px rgba(166, 138, 58, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 1);
 
   /* === EFFECTS (warm golden tones) === */
   --glow-gold: 0 0 20px -5px rgba(180, 142, 38, 0.25);
@@ -447,14 +489,30 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-void);
-  color: var(--text-primary);
+  background-color: var(--bg-main);
+  color: var(--text-main);
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
   line-height: 1.5;
   position: relative;
   font-weight: 400;
+  transition: background-color 0.5s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL NOISE TEXTURE OVERLAY — The "Expensive Paper" Feel
+   This subtle noise adds tactile quality to everything
+   ═══════════════════════════════════════════════════════════════════════════ */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: var(--noise-overlay);
+  opacity: 1;
+  mix-blend-mode: overlay;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

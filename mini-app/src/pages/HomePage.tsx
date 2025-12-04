@@ -43,28 +43,55 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  STYLES
+//  ULTRA-PREMIUM GLASS CARD STYLES
+//  Rule: Never flat backgrounds, always gradient borders, gold-tinted shadows
 // ═══════════════════════════════════════════════════════════════════════════
 
 const glassStyle: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.05)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
-  borderRadius: 16,
-  padding: 20,
   position: 'relative',
   overflow: 'hidden',
+  borderRadius: 24,
+  padding: 20,
+  // Glass background
+  background: 'var(--bg-card)',
+  // Heavy blur
+  backdropFilter: 'blur(24px) saturate(130%)',
+  WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+  // Gradient border simulating light on edges
+  border: '1px solid var(--card-border)',
+  // Gold-tinted shadow (THE SECRET)
+  boxShadow: 'var(--card-shadow)',
 }
 
 const glassGoldStyle: React.CSSProperties = {
-  ...glassStyle,
-  background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(20,20,23,0.9) 50%, rgba(212,175,55,0.05) 100%)',
-  border: '1px solid rgba(212, 175, 55, 0.2)',
+  position: 'relative',
+  overflow: 'hidden',
+  borderRadius: 24,
+  padding: 20,
+  // Premium gold gradient background
+  background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
+  // Heavy blur
+  backdropFilter: 'blur(24px) saturate(130%)',
+  WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+  // Gold gradient border
+  border: '1px solid var(--border-gold)',
+  // Gold aura shadow
+  boxShadow: 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)',
 }
 
+// Inner shine effect component for cards
+const CardInnerShine = () => (
+  <div style={{
+    position: 'absolute',
+    inset: 0,
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%)',
+    pointerEvents: 'none',
+    borderRadius: 'inherit',
+  }} />
+)
+
 // ═══════════════════════════════════════════════════════════════════════════
-//  ACHIEVEMENT BADGE COMPONENT
+//  ACHIEVEMENT BADGE COMPONENT — Glass Pills Style
 // ═══════════════════════════════════════════════════════════════════════════
 
 function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
@@ -85,28 +112,46 @@ function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
         opacity: unlocked ? 1 : 0.35,
       }}
     >
+      {/* Glass Pill Badge */}
       <div style={{
-        width: 44,
-        height: 44,
-        borderRadius: 12,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        // Glass pill background
         background: unlocked
-          ? 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.08))'
-          : 'rgba(255,255,255,0.03)',
+          ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))'
+          : 'var(--bg-glass)',
+        // Gradient border
         border: unlocked
-          ? '1px solid rgba(212,175,55,0.4)'
-          : '1px solid rgba(255,255,255,0.05)',
+          ? '1px solid rgba(212,175,55,0.35)'
+          : '1px solid var(--border-default)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: unlocked && glow ? '0 0 20px rgba(212,175,55,0.4)' : 'none',
+        // Gold glow for special badges
+        boxShadow: unlocked && glow
+          ? '0 0 25px rgba(212,175,55,0.5), inset 0 1px 0 rgba(255,255,255,0.1)'
+          : unlocked
+          ? '0 0 15px rgba(212,175,55,0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
       }}>
-        <Icon size={20} color={unlocked ? '#d4af37' : '#52525b'} />
+        <Icon
+          size={22}
+          color={unlocked ? 'var(--gold-400)' : 'var(--text-muted)'}
+          strokeWidth={unlocked ? 2 : 1.5}
+          style={{
+            filter: unlocked && glow ? 'drop-shadow(0 0 6px rgba(212,175,55,0.5))' : 'none',
+          }}
+        />
       </div>
       <span style={{
         fontSize: 9,
-        color: unlocked ? '#a1a1aa' : '#52525b',
+        color: unlocked ? 'var(--text-secondary)' : 'var(--text-muted)',
         textAlign: 'center',
-        fontWeight: 500,
+        fontWeight: 600,
+        letterSpacing: '0.02em',
       }}>
         {label}
       </span>
@@ -196,10 +241,10 @@ export function HomePage({ user }: Props) {
   const userPhoto = webApp?.initDataUnsafe?.user?.photo_url
 
   return (
-    <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: '#09090b' }}>
+    <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: 'var(--bg-main)' }}>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HEADER WITH AVATAR
+          HEADER WITH AVATAR — Ultra-Premium
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -207,7 +252,7 @@ export function HomePage({ user }: Props) {
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* User Avatar with Gold Ring */}
+          {/* User Avatar with Spinning Gold Ring */}
           <div style={{ position: 'relative' }}>
             <motion.div
               animate={{ rotate: 360 }}
@@ -224,7 +269,7 @@ export function HomePage({ user }: Props) {
               width: 52,
               height: 52,
               borderRadius: '50%',
-              background: '#09090b',
+              background: 'var(--bg-main)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -234,10 +279,10 @@ export function HomePage({ user }: Props) {
                 <img src={userPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <span style={{
-                  fontFamily: "'Montserrat', sans-serif",
+                  fontFamily: "var(--font-serif)",
                   fontWeight: 700,
-                  fontSize: 18,
-                  background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                  fontSize: 20,
+                  background: 'var(--gold-metallic)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}>
@@ -247,105 +292,173 @@ export function HomePage({ user }: Props) {
             </div>
           </div>
 
-          {/* Greeting */}
+          {/* Greeting — Serif headline */}
           <div>
-            <div style={{ fontSize: 11, color: '#71717a', marginBottom: 2 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2, fontWeight: 500 }}>
               {getTimeGreeting()},
             </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
+            <div style={{
+              fontSize: 20,
+              fontWeight: 600,
+              color: 'var(--text-main)',
+              fontFamily: "var(--font-serif)",
+              letterSpacing: '0.02em',
+            }}>
               {user.fullname?.split(' ')[0] || 'Гость'}
             </div>
           </div>
         </div>
 
-        {/* Logo */}
+        {/* Logo Badge — Glass Pill */}
         <div style={{
-          padding: '8px 14px',
-          background: 'rgba(212,175,55,0.1)',
-          border: '1px solid rgba(212,175,55,0.2)',
-          borderRadius: 10,
+          padding: '10px 16px',
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
+          border: '1px solid var(--border-gold)',
+          borderRadius: 12,
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          boxShadow: '0 0 20px -5px rgba(212,175,55,0.2)',
         }}>
           <span style={{
-            fontFamily: "'Montserrat', sans-serif",
+            fontFamily: "var(--font-serif)",
             fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: '0.1em',
-            background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+            fontSize: 11,
+            letterSpacing: '0.15em',
+            background: 'var(--gold-text-shine)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-          }}>ACADEMIC SALOON</span>
+          }}>ЭЛИТНЫЙ КЛУБ</span>
         </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          BENTO GRID: BALANCE & LEVEL
+          BENTO GRID: BALANCE & LEVEL — Ultra-Premium Glass Cards
           ═══════════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-        {/* BALANCE */}
+        {/* BALANCE — Vault Style with Gold Gradient Text */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          style={{ ...glassGoldStyle, boxShadow: '0 0 40px -10px rgba(212,175,55,0.2)' }}
+          style={{ ...glassGoldStyle, boxShadow: 'var(--card-shadow), 0 0 50px -15px rgba(212,175,55,0.25)' }}
         >
+          {/* Inner Shine Effect */}
+          <CardInnerShine />
+          {/* Gold Radial Glow */}
           <div style={{
             position: 'absolute',
-            top: -20,
-            right: -20,
-            width: 80,
-            height: 80,
+            top: -30,
+            right: -30,
+            width: 100,
+            height: 100,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
             pointerEvents: 'none',
           }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#d4af37' }}>
-            <CreditCard size={14} />
-            <span style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 600 }}>СЧЁТ</span>
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
-            <AnimatedCounter value={user.balance} />
-            <span style={{ color: '#d4af37', marginLeft: 4 }}>₽</span>
-          </div>
-          <div style={{ fontSize: 11, color: '#71717a', marginTop: 8 }}>
-            +{user.bonus_balance} бонусов
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <CreditCard size={14} color="var(--gold-400)" strokeWidth={1.5} />
+              <span style={{
+                fontSize: 10,
+                letterSpacing: '0.15em',
+                fontWeight: 700,
+                background: 'var(--gold-text-shine)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>СЧЁТ</span>
+            </div>
+            {/* Balance with Gold Gradient Currency Symbol */}
+            <div style={{
+              fontSize: 30,
+              fontWeight: 800,
+              fontFamily: "var(--font-serif)",
+              color: 'var(--text-main)',
+              display: 'flex',
+              alignItems: 'baseline',
+            }}>
+              <AnimatedCounter value={user.balance} />
+              <span style={{
+                marginLeft: 6,
+                fontSize: 24,
+                background: 'var(--gold-metallic)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.4))',
+              }}>₽</span>
+            </div>
+            {/* Bonus Balance — Glass Pill */}
+            <div style={{
+              marginTop: 10,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              background: 'var(--success-glass)',
+              border: '1px solid var(--success-border)',
+              borderRadius: 100,
+            }}>
+              <span style={{ fontSize: 10, color: 'var(--success-text)', fontWeight: 600 }}>
+                +{user.bonus_balance} бонусов
+              </span>
+            </div>
           </div>
         </motion.div>
 
-        {/* LEVEL */}
+        {/* LEVEL — Glass Card with Serif Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
           style={glassStyle}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#71717a' }}>
-            <Crown size={14} />
-            <span style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 600 }}>УРОВЕНЬ</span>
+          <CardInnerShine />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: 'var(--text-muted)' }}>
+              <Crown size={14} strokeWidth={1.5} />
+              <span style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 700 }}>УРОВЕНЬ</span>
+            </div>
+            {/* Rank Name — Serif with Gold Gradient */}
+            <div style={{
+              fontSize: 18,
+              fontWeight: 700,
+              fontFamily: "var(--font-serif)",
+              marginBottom: 10,
+              background: 'var(--gold-text-shine)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '0.02em',
+            }}>
+              {displayRankName}
+            </div>
+            {/* Progress Bar */}
+            <div style={{
+              height: 5,
+              background: 'var(--bg-glass)',
+              borderRadius: 100,
+              overflow: 'hidden',
+              border: '1px solid var(--border-subtle)',
+            }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.max(user.rank.progress, 5)}%` }}
+                transition={{ duration: 1, delay: 0.5 }}
+                style={{
+                  height: '100%',
+                  background: 'var(--gold-metallic)',
+                  borderRadius: 100,
+                  boxShadow: '0 0 10px rgba(212,175,55,0.4)',
+                }}
+              />
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontWeight: 500 }}>
+              Уровень {user.rank.level}
+            </div>
           </div>
-          <div style={{
-            fontSize: 18,
-            fontWeight: 700,
-            marginBottom: 8,
-            background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>
-            {displayRankName}
-          </div>
-          <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 100, overflow: 'hidden' }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.max(user.rank.progress, 5)}%` }}
-              transition={{ duration: 1, delay: 0.5 }}
-              style={{ height: '100%', background: 'linear-gradient(90deg, #8b6914, #d4af37)', borderRadius: 100 }}
-            />
-          </div>
-          <div style={{ fontSize: 10, color: '#71717a', marginTop: 6 }}>Уровень {user.rank.level}</div>
         </motion.div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HERO BUTTON — ПОРУЧИТЬ ЗАДАЧУ
+          HERO BUTTON — Liquid Gold Premium CTA
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.button
         initial={{ opacity: 0, scale: 0.95 }}
@@ -353,140 +466,203 @@ export function HomePage({ user }: Props) {
         transition={{ delay: 0.2 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleNewOrder}
+        className="shimmer-gold"
         style={{
+          position: 'relative',
           width: '100%',
-          padding: '20px 24px',
-          borderRadius: 14,
+          padding: '22px 26px',
+          borderRadius: 18,
           border: 'none',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: 'linear-gradient(90deg, #B38728, #D4AF37, #FBF5B7, #D4AF37, #B38728)',
-          backgroundSize: '200% auto',
-          boxShadow: '0 0 40px -5px rgba(212,175,55,0.5), inset 0 2px 4px rgba(255,255,255,0.4)',
+          // Liquid Gold Metallic Gradient
+          background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #D4AF37 50%, #B38728 75%, #FBF5B7 100%)',
+          backgroundSize: '200% 200%',
+          // Gold glow + inset highlights
+          boxShadow: `
+            0 0 50px -10px rgba(212,175,55,0.6),
+            0 15px 35px -10px rgba(0,0,0,0.4),
+            inset 0 2px 4px rgba(255,255,255,0.5),
+            inset 0 -2px 4px rgba(0,0,0,0.1)
+          `,
           marginBottom: 16,
+          overflow: 'hidden',
+          animation: 'liquid-gold-shift 4s ease-in-out infinite',
         }}
       >
-        <div style={{ textAlign: 'left' }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#09090b', fontFamily: "'Montserrat', sans-serif" }}>
-            ПОРУЧИТЬ ЗАДАЧУ
+        {/* Shimmer shine sweep effect */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: '-100%',
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+          animation: 'shimmer-pass 3s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
+          <div style={{
+            fontSize: 16,
+            fontWeight: 800,
+            color: '#09090b',
+            fontFamily: "var(--font-serif)",
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+          }}>
+            Поручить задачу
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(9,9,11,0.7)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'rgba(9,9,11,0.65)', marginTop: 4, fontWeight: 500 }}>
             Персональный менеджер
           </div>
         </div>
         <div style={{
-          width: 48,
-          height: 48,
+          position: 'relative',
+          zIndex: 1,
+          width: 50,
+          height: 50,
           borderRadius: '50%',
-          background: 'rgba(9,9,11,0.15)',
+          background: 'rgba(9,9,11,0.12)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          backdropFilter: 'blur(4px)',
         }}>
-          <Plus size={24} color="#09090b" strokeWidth={2.5} />
+          <Plus size={26} color="#09090b" strokeWidth={2.5} />
         </div>
       </motion.button>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PANIC BUTTON
+          PANIC BUTTON — Error Glass Style
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
         onClick={handlePanicOrder}
-        style={{ ...glassStyle, marginBottom: 16, cursor: 'pointer', borderColor: 'rgba(239,68,68,0.2)' }}
+        style={{
+          ...glassStyle,
+          marginBottom: 16,
+          cursor: 'pointer',
+          border: '1px solid var(--error-border)',
+          background: 'linear-gradient(135deg, var(--error-glass) 0%, var(--bg-card) 50%)',
+        }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <CardInnerShine />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
           <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
+            animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 1.5, repeat: Infinity }}
             style={{
-              width: 48,
-              height: 48,
+              width: 50,
+              height: 50,
               borderRadius: 14,
               background: 'linear-gradient(135deg, #ef4444, #dc2626)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 25px rgba(239,68,68,0.4)',
+              boxShadow: '0 0 30px rgba(239,68,68,0.5)',
             }}
           >
-            <Zap size={24} color="#fff" />
+            <Zap size={24} color="#fff" strokeWidth={2} />
           </motion.div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#ef4444' }}>Срочно?</div>
-            <div style={{ fontSize: 11, color: '#71717a' }}>Скинь фото — оценим за 5 минут</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--error-text)' }}>Срочно?</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Скинь фото — оценим за 5 минут</div>
           </div>
-          <ChevronRight size={22} color="#ef4444" />
+          <ChevronRight size={22} color="var(--error-text)" strokeWidth={1.5} />
         </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PROMO CODE INPUT
+          PROMO CODE INPUT — Glass Card Style
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.28 }}
-        style={{ ...glassStyle, marginBottom: 16, padding: 16 }}
+        style={{ ...glassStyle, marginBottom: 16, padding: 18 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Gift size={14} color="#d4af37" />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', letterSpacing: '0.1em' }}>ПРОМОКОД</span>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input
-            type="text"
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-            placeholder="Введите код"
-            style={{
-              flex: 1,
-              padding: '12px 14px',
-              background: 'rgba(0,0,0,0.3)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 10,
-              color: '#fff',
-              fontSize: 14,
-              fontFamily: 'monospace',
-              letterSpacing: '0.1em',
-              outline: 'none',
-            }}
-          />
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handlePromoSubmit}
-            disabled={promoLoading}
-            style={{
-              padding: '12px 20px',
-              background: promoLoading ? '#52525b' : 'linear-gradient(135deg, #d4af37, #b38728)',
-              border: 'none',
-              borderRadius: 10,
-              color: '#09090b',
+        <CardInnerShine />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <Gift size={14} color="var(--gold-400)" strokeWidth={1.5} />
+            <span style={{
+              fontSize: 10,
               fontWeight: 700,
-              fontSize: 13,
-              cursor: promoLoading ? 'wait' : 'pointer',
-            }}
-          >
-            {promoLoading ? '...' : 'OK'}
-          </motion.button>
-        </div>
-        {promoMessage && (
-          <div style={{
-            marginTop: 10,
-            fontSize: 12,
-            color: promoMessage.type === 'success' ? '#22c55e' : '#ef4444',
-          }}>
-            {promoMessage.text}
+              color: 'var(--text-secondary)',
+              letterSpacing: '0.15em',
+            }}>ПРОМОКОД</span>
           </div>
-        )}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              placeholder="Введите код"
+              style={{
+                flex: 1,
+                padding: '14px 16px',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 12,
+                color: 'var(--text-main)',
+                fontSize: 14,
+                fontFamily: 'var(--font-mono)',
+                letterSpacing: '0.12em',
+                outline: 'none',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'var(--border-gold)'
+                e.target.style.boxShadow = '0 0 0 3px rgba(212,175,55,0.1), var(--glow-gold)'
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'var(--border-default)'
+                e.target.style.boxShadow = 'none'
+              }}
+            />
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handlePromoSubmit}
+              disabled={promoLoading}
+              style={{
+                padding: '14px 22px',
+                background: promoLoading ? 'var(--text-muted)' : 'var(--gold-metallic)',
+                border: 'none',
+                borderRadius: 12,
+                color: '#09090b',
+                fontWeight: 700,
+                fontSize: 13,
+                fontFamily: 'var(--font-sans)',
+                cursor: promoLoading ? 'wait' : 'pointer',
+                boxShadow: promoLoading ? 'none' : '0 0 20px -5px rgba(212,175,55,0.4)',
+              }}
+            >
+              {promoLoading ? '...' : 'OK'}
+            </motion.button>
+          </div>
+          {promoMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                marginTop: 12,
+                fontSize: 12,
+                fontWeight: 500,
+                color: promoMessage.type === 'success' ? 'var(--success-text)' : 'var(--error-text)',
+              }}
+            >
+              {promoMessage.text}
+            </motion.div>
+          )}
+        </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ACHIEVEMENTS
+          ACHIEVEMENTS — Glass Card with Pills
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -494,19 +670,27 @@ export function HomePage({ user }: Props) {
         transition={{ delay: 0.3 }}
         style={{ ...glassStyle, marginBottom: 16 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <Award size={14} color="#d4af37" />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', letterSpacing: '0.1em' }}>ДОСТИЖЕНИЯ</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          {achievements.map((a, i) => (
-            <AchievementBadge key={i} icon={a.icon} label={a.label} unlocked={a.unlocked} glow={a.glow} />
-          ))}
+        <CardInnerShine />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+            <Award size={14} color="var(--gold-400)" strokeWidth={1.5} />
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--text-secondary)',
+              letterSpacing: '0.15em',
+            }}>ДОСТИЖЕНИЯ</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            {achievements.map((a, i) => (
+              <AchievementBadge key={i} icon={a.icon} label={a.label} unlocked={a.unlocked} glow={a.glow} />
+            ))}
+          </div>
         </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          REPUTATION (Referral)
+          REPUTATION (Referral) — Premium Gold Card
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -514,61 +698,105 @@ export function HomePage({ user }: Props) {
         transition={{ delay: 0.32 }}
         style={{ ...glassGoldStyle, marginBottom: 16 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Star size={14} color="#d4af37" fill="#d4af37" />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>РЕПУТАЦИЯ</span>
-        </div>
-        <p style={{ fontSize: 11, color: '#a1a1aa', marginBottom: 14, lineHeight: 1.5 }}>
-          Пригласите партнёра и получайте <span style={{ color: '#d4af37', fontWeight: 600 }}>5% роялти</span> с каждого заказа.
-        </p>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <motion.button
-            onClick={(e) => { e.stopPropagation(); copyReferralCode() }}
-            whileTap={{ scale: 0.97 }}
-            style={{
-              flex: 1,
-              padding: '14px 16px',
-              background: 'rgba(0,0,0,0.4)',
-              border: '1px solid rgba(212,175,55,0.3)',
-              borderRadius: 10,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <code style={{ color: '#d4af37', fontFamily: 'monospace', fontSize: 14, fontWeight: 700, letterSpacing: '0.1em' }}>
-              {user.referral_code}
-            </code>
-            {copied ? <Check size={16} color="#22c55e" /> : <Copy size={16} color="#71717a" />}
-          </motion.button>
-          <motion.button
-            onClick={(e) => { e.stopPropagation(); setShowQR(true); haptic('light') }}
-            whileTap={{ scale: 0.95 }}
-            style={{
-              width: 50,
-              height: 50,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
-              border: '1px solid rgba(212,175,55,0.3)',
-              borderRadius: 10,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <QrCode size={20} color="#d4af37" />
-          </motion.button>
-        </div>
-        {user.referrals_count > 0 && (
-          <div style={{ marginTop: 10, fontSize: 11, color: '#71717a' }}>
-            Приглашено: <span style={{ color: '#d4af37', fontWeight: 600 }}>{user.referrals_count}</span>
+        <CardInnerShine />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <Star size={14} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
+            <span style={{
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: 'var(--font-serif)',
+              background: 'var(--gold-text-shine)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '0.1em',
+            }}>РЕПУТАЦИЯ</span>
           </div>
-        )}
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
+            Пригласите партнёра и получайте{' '}
+            <span style={{
+              background: 'var(--gold-text-shine)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 700,
+            }}>5% роялти</span>{' '}
+            с каждого заказа.
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <motion.button
+              onClick={(e) => { e.stopPropagation(); copyReferralCode() }}
+              whileTap={{ scale: 0.97 }}
+              style={{
+                flex: 1,
+                padding: '14px 18px',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-gold)',
+                borderRadius: 14,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+              }}
+            >
+              <code style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 15,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                background: 'var(--gold-metallic)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>
+                {user.referral_code}
+              </code>
+              {copied ? (
+                <Check size={18} color="var(--success-text)" strokeWidth={2} />
+              ) : (
+                <Copy size={18} color="var(--text-muted)" strokeWidth={1.5} />
+              )}
+            </motion.button>
+            <motion.button
+              onClick={(e) => { e.stopPropagation(); setShowQR(true); haptic('light') }}
+              whileTap={{ scale: 0.95 }}
+              style={{
+                width: 52,
+                height: 52,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
+                border: '1px solid var(--border-gold)',
+                borderRadius: 14,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 20px -5px rgba(212,175,55,0.2)',
+              }}
+            >
+              <QrCode size={22} color="var(--gold-400)" strokeWidth={1.5} />
+            </motion.button>
+          </div>
+          {user.referrals_count > 0 && (
+            <div style={{
+              marginTop: 12,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              background: 'var(--success-glass)',
+              border: '1px solid var(--success-border)',
+              borderRadius: 100,
+            }}>
+              <span style={{ fontSize: 10, color: 'var(--success-text)', fontWeight: 600 }}>
+                Приглашено: {user.referrals_count}
+              </span>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PROGRESS TO NEXT LEVEL
+          PROGRESS TO NEXT LEVEL — Glass Card
           ═══════════════════════════════════════════════════════════════════ */}
       {displayNextRank && (
         <motion.div
@@ -577,48 +805,81 @@ export function HomePage({ user }: Props) {
           transition={{ delay: 0.35 }}
           style={{ ...glassStyle, marginBottom: 16 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <CardInnerShine />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
+                border: '1px solid var(--border-gold)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 15px -5px rgba(212,175,55,0.2)',
+              }}>
+                <TrendingUp size={22} color="var(--gold-400)" strokeWidth={1.5} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>Следующий уровень</div>
+                <div style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-serif)',
+                  background: 'var(--gold-text-shine)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginTop: 2,
+                }}>{displayNextRank}</div>
+              </div>
+              <span style={{
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 700,
+                fontSize: 16,
+                background: 'var(--gold-metallic)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>{user.rank.progress}%</span>
+            </div>
             <div style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
-              border: '1px solid rgba(212,175,55,0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              height: 10,
+              background: 'var(--bg-glass)',
+              borderRadius: 100,
+              overflow: 'hidden',
+              marginBottom: 12,
+              border: '1px solid var(--border-subtle)',
             }}>
-              <TrendingUp size={20} color="#d4af37" />
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.max(user.rank.progress, 3)}%` }}
+                transition={{ duration: 1, delay: 0.5 }}
+                style={{
+                  height: '100%',
+                  background: 'var(--gold-metallic)',
+                  borderRadius: 100,
+                  boxShadow: '0 0 15px rgba(212,175,55,0.5)',
+                }}
+              />
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Следующий уровень</div>
-              <div style={{ fontSize: 11, color: '#71717a' }}>{displayNextRank}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
+              Осталось{' '}
+              <span style={{
+                background: 'var(--gold-text-shine)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 700,
+              }}>{user.rank.spent_to_next.toLocaleString('ru-RU')} ₽</span>
             </div>
-            <span style={{ fontFamily: 'monospace', color: '#d4af37', fontWeight: 600, fontSize: 15 }}>{user.rank.progress}%</span>
-          </div>
-          <div style={{ height: 10, background: 'rgba(255,255,255,0.05)', borderRadius: 100, overflow: 'hidden', marginBottom: 10 }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.max(user.rank.progress, 3)}%` }}
-              transition={{ duration: 1, delay: 0.5 }}
-              style={{
-                height: '100%',
-                background: 'linear-gradient(90deg, #8b6914, #d4af37, #f5d061)',
-                borderRadius: 100,
-                boxShadow: '0 0 20px rgba(212,175,55,0.5)',
-              }}
-            />
-          </div>
-          <div style={{ fontSize: 11, color: '#71717a', textAlign: 'center' }}>
-            Осталось <span style={{ color: '#d4af37', fontWeight: 600 }}>{user.rank.spent_to_next.toLocaleString('ru-RU')} ₽</span>
           </div>
         </motion.div>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          QUICK STATS — PREMIUM
+          QUICK STATS — Ultra-Premium Glass Cards
           ═══════════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {/* Active Orders Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -627,27 +888,47 @@ export function HomePage({ user }: Props) {
           style={{
             ...glassStyle,
             cursor: 'pointer',
-            borderColor: activeOrders > 0 ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)',
+            border: activeOrders > 0 ? '1px solid var(--info-border)' : '1px solid var(--card-border)',
+            background: activeOrders > 0
+              ? 'linear-gradient(135deg, var(--info-glass) 0%, var(--bg-card) 50%)'
+              : 'var(--bg-card)',
           }}
         >
+          <CardInnerShine />
           <div style={{
             position: 'absolute',
-            bottom: -10,
-            right: -10,
-            width: 60,
-            height: 60,
+            bottom: -15,
+            right: -15,
+            width: 70,
+            height: 70,
             borderRadius: '50%',
-            background: activeOrders > 0 ? 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)' : 'none',
+            background: activeOrders > 0
+              ? 'radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)',
             pointerEvents: 'none',
           }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: activeOrders > 0 ? '#3b82f6' : '#71717a' }}>
-            <Briefcase size={16} />
-            <span style={{ fontSize: 10, letterSpacing: '0.1em', fontWeight: 600 }}>ЗАКАЗЫ</span>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Briefcase size={16} color={activeOrders > 0 ? 'var(--info-text)' : 'var(--text-muted)'} strokeWidth={1.5} />
+              <span style={{
+                fontSize: 10,
+                letterSpacing: '0.15em',
+                fontWeight: 700,
+                color: activeOrders > 0 ? 'var(--info-text)' : 'var(--text-muted)',
+              }}>ЗАКАЗЫ</span>
+            </div>
+            <div style={{
+              fontSize: 32,
+              fontWeight: 800,
+              fontFamily: 'var(--font-serif)',
+              color: activeOrders > 0 ? 'var(--info-text)' : 'var(--text-main)',
+              textShadow: activeOrders > 0 ? '0 0 20px rgba(59,130,246,0.3)' : 'none',
+            }}>{activeOrders}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>активных</div>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: activeOrders > 0 ? '#3b82f6' : '#fff' }}>{activeOrders}</div>
-          <div style={{ fontSize: 10, color: '#71717a' }}>активных</div>
         </motion.div>
 
+        {/* Completed Orders Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -656,70 +937,96 @@ export function HomePage({ user }: Props) {
           style={{
             ...glassStyle,
             cursor: 'pointer',
-            borderColor: 'rgba(212,175,55,0.2)',
+            border: '1px solid var(--border-gold)',
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, var(--bg-card) 50%)',
           }}
         >
+          <CardInnerShine />
           <div style={{
             position: 'absolute',
-            bottom: -10,
-            right: -10,
-            width: 60,
-            height: 60,
+            bottom: -15,
+            right: -15,
+            width: 70,
+            height: 70,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
             pointerEvents: 'none',
           }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#d4af37' }}>
-            <Star size={16} />
-            <span style={{ fontSize: 10, letterSpacing: '0.1em', fontWeight: 600 }}>ВЫПОЛНЕНО</span>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Star size={16} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
+              <span style={{
+                fontSize: 10,
+                letterSpacing: '0.15em',
+                fontWeight: 700,
+                background: 'var(--gold-text-shine)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>ВЫПОЛНЕНО</span>
+            </div>
+            <div style={{
+              fontSize: 32,
+              fontWeight: 800,
+              fontFamily: 'var(--font-serif)',
+              background: 'var(--gold-metallic)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.3))',
+            }}>{user.orders_count}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>заказов</div>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#d4af37' }}>{user.orders_count}</div>
-          <div style={{ fontSize: 10, color: '#71717a' }}>заказов</div>
         </motion.div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          DAILY BONUS FLOATING BUTTON
+          DAILY BONUS FLOATING BUTTON — Premium Gold
           ═══════════════════════════════════════════════════════════════════ */}
       {canClaimBonus && (
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 1, type: 'spring' }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => { setShowDailyBonus(true); haptic('medium') }}
           style={{
             position: 'fixed',
-            bottom: 100,
+            bottom: 110,
             right: 20,
-            width: 56,
-            height: 56,
+            width: 60,
+            height: 60,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #d4af37, #b38728)',
+            background: 'var(--gold-metallic)',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 30px rgba(212,175,55,0.5)',
+            boxShadow: '0 0 40px rgba(212,175,55,0.6), 0 10px 30px -10px rgba(0,0,0,0.4)',
             zIndex: 100,
           }}
         >
-          <Gift size={24} color="#09090b" />
+          <Gift size={26} color="#09090b" strokeWidth={2} />
           {/* Notification badge */}
-          <div style={{
-            position: 'absolute',
-            top: -2,
-            right: -2,
-            width: 18,
-            height: 18,
-            borderRadius: '50%',
-            background: '#ef4444',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <Flame size={10} color="#fff" />
-          </div>
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 0 15px rgba(239,68,68,0.5)',
+              border: '2px solid var(--bg-main)',
+            }}
+          >
+            <Flame size={12} color="#fff" />
+          </motion.div>
         </motion.button>
       )}
 
