@@ -26,72 +26,105 @@ import {
   RefreshMessage,
 } from './hooks/useWebSocket'
 import {
-  OrderStatusNotification,
-  BalanceNotification,
-  RealtimeNotification,
-  RealtimeNotificationData,
+  SmartNotification,
+  SmartNotificationData,
 } from './components/ui/RealtimeNotification'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
-
-// Notification state types
-interface OrderNotificationState {
-  orderId: number
-  status: string
-}
-
-interface BalanceNotificationState {
-  change: number
-  newBalance: number
-  reason: string
-}
 
 function AppContent() {
   const { userData, loading, error, refetch } = useUserData()
   const [isReady, setIsReady] = useState(false)
 
-  // Realtime notification states
-  const [orderNotification, setOrderNotification] = useState<OrderNotificationState | null>(null)
-  const [balanceNotification, setBalanceNotification] = useState<BalanceNotificationState | null>(null)
-  const [generalNotification, setGeneralNotification] = useState<RealtimeNotificationData | null>(null)
+  // Smart notification state - handles all notification types
+  const [notification, setNotification] = useState<SmartNotificationData | null>(null)
 
-  // WebSocket handlers
+  // WebSocket handlers - now unified for smart notifications
   const handleOrderUpdate = useCallback((msg: OrderUpdateMessage) => {
     console.log('[App] Order update received:', msg)
-    setOrderNotification({
-      orderId: msg.order_id,
+
+    // Smart notification data comes directly from server
+    const smartData: SmartNotificationData = {
+      type: 'order_update',
+      order_id: msg.order_id,
       status: msg.status,
-    })
-    // Refresh data to get latest order status
+      title: (msg as any).title || 'Обновление заказа',
+      message: (msg as any).message || `Статус: ${msg.status}`,
+      icon: (msg as any).icon || 'package',
+      color: (msg as any).color || '#d4af37',
+      priority: (msg as any).priority || 'normal',
+      action: (msg as any).action,
+      celebration: (msg as any).celebration,
+      confetti: (msg as any).confetti,
+      data: msg.data,
+    }
+
+    setNotification(smartData)
     refetch()
   }, [refetch])
 
   const handleBalanceUpdate = useCallback((msg: BalanceUpdateMessage) => {
     console.log('[App] Balance update received:', msg)
-    setBalanceNotification({
+
+    const smartData: SmartNotificationData = {
+      type: 'balance_update',
+      title: (msg as any).title || (msg.change > 0 ? 'Баланс пополнен' : 'Списание'),
+      message: (msg as any).message || msg.reason,
+      icon: (msg as any).icon || (msg.change > 0 ? 'trending-up' : 'trending-down'),
+      color: (msg as any).color || (msg.change > 0 ? '#22c55e' : '#ef4444'),
+      balance: msg.balance,
       change: msg.change,
-      newBalance: msg.balance,
-      reason: msg.reason,
-    })
-    // Refresh data to get latest balance
+      celebration: (msg as any).celebration,
+    }
+
+    setNotification(smartData)
     refetch()
   }, [refetch])
 
   const handleNotification = useCallback((msg: NotificationMessage) => {
     console.log('[App] Notification received:', msg)
-    setGeneralNotification({
-      id: Date.now().toString(),
-      type: msg.notification_type as 'info' | 'success' | 'warning' | 'error',
+
+    const smartData: SmartNotificationData = {
+      type: 'notification',
+      notification_type: msg.notification_type,
       title: msg.title,
       message: msg.message,
-      timestamp: new Date(),
-    })
+      icon: (msg as any).icon || 'bell',
+      color: (msg as any).color || '#d4af37',
+    }
+
+    setNotification(smartData)
   }, [])
+
+  // Handle progress updates
+  const handleProgressUpdate = useCallback((msg: any) => {
+    console.log('[App] Progress update received:', msg)
+
+    const smartData: SmartNotificationData = {
+      type: 'progress_update',
+      order_id: msg.order_id,
+      title: msg.title || `Прогресс: ${msg.progress}%`,
+      message: msg.message || '',
+      icon: 'trending-up',
+      color: '#3b82f6',
+      progress: msg.progress,
+    }
+
+    setNotification(smartData)
+    refetch()
+  }, [refetch])
 
   const handleRefresh = useCallback((msg: RefreshMessage) => {
     console.log('[App] Refresh requested:', msg.refresh_type)
     refetch()
   }, [refetch])
+
+  // Handle notification action (e.g., navigate to order)
+  const handleNotificationAction = useCallback((action: string, data: Record<string, unknown>) => {
+    if (action === 'view_order' && data.order_id) {
+      window.location.href = `/order/${data.order_id}`
+    }
+  }, [])
 
   useEffect(() => {
     // Simulate initial load
@@ -190,40 +223,12 @@ function AppContent() {
                 {/* Animated Gold Particles Background */}
                 <GoldParticles />
 
-                {/* Realtime Notifications */}
-                <AnimatePresence>
-                  {orderNotification && (
-                    <OrderStatusNotification
-                      orderId={orderNotification.orderId}
-                      status={orderNotification.status}
-                      onDismiss={() => setOrderNotification(null)}
-                      onClick={() => {
-                        setOrderNotification(null)
-                        window.location.href = `/order/${orderNotification.orderId}`
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                  {balanceNotification && (
-                    <BalanceNotification
-                      change={balanceNotification.change}
-                      newBalance={balanceNotification.newBalance}
-                      reason={balanceNotification.reason}
-                      onDismiss={() => setBalanceNotification(null)}
-                    />
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                  {generalNotification && (
-                    <RealtimeNotification
-                      notification={generalNotification}
-                      onDismiss={() => setGeneralNotification(null)}
-                    />
-                  )}
-                </AnimatePresence>
+                {/* Smart Realtime Notifications */}
+                <SmartNotification
+                  notification={notification}
+                  onDismiss={() => setNotification(null)}
+                  onAction={handleNotificationAction}
+                />
 
                 <Routes>
                   <Route path="/" element={<HomePage user={userData} />} />
