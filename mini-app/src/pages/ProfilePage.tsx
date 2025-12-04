@@ -478,7 +478,7 @@ export function ProfilePage({ user }: Props) {
               color: '#d4af37',
               fontFamily: "'JetBrains Mono', monospace",
             }}>
-              {user.orders_count > 0 ? Math.floor(user.orders_count / 3) : 0}
+              0
             </div>
           </div>
           <div style={{ width: 1, background: 'rgba(212,175,55,0.2)' }} />
@@ -1012,10 +1012,10 @@ export function ProfilePage({ user }: Props) {
           width: '100%',
           padding: '16px',
           marginTop: 20,
-          background: 'rgba(168, 85, 247, 0.1)',
-          border: '1px solid rgba(168, 85, 247, 0.3)',
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+          border: '1px solid rgba(212,175,55,0.3)',
           borderRadius: 16,
-          color: '#a855f7',
+          color: '#d4af37',
           fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',

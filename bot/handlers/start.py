@@ -286,6 +286,28 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             await message.answer("❌ Неверный формат ссылки")
             # Continue to main menu
 
+    # ═══════════════════════════════════════════════════════════════
+    #  SUPPORT DEEP LINK: /start support
+    # ═══════════════════════════════════════════════════════════════
+
+    if deep_link == "support":
+        # Enter support chat mode
+        await state.set_state(ChatStates.in_chat)
+        await state.update_data(
+            order_id=None,
+            conv_type=ConversationType.SUPPORT.value,
+        )
+
+        await message.answer(
+            "💬 <b>Поддержка Academic Saloon</b>\n\n"
+            "Вы подключены к службе поддержки.\n"
+            "Напишите ваш вопрос — мы ответим в ближайшее время.\n\n"
+            "Чтобы выйти — нажмите кнопку внизу 👇",
+            reply_markup=get_exit_chat_keyboard(),
+        )
+
+        return  # Don't show main menu
+
     # === ГЛАВНОЕ МЕНЮ — App-First Portal ===
 
     # 1. Typing для визуального отклика
