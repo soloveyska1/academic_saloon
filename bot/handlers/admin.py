@@ -800,8 +800,8 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
         telegram_id=order.user_id,
         order_id=order.id,
         new_status=new_status,
+        old_status=old_status,
         order_data={
-            "old_status": old_status,
             "work_type": order.work_type,
             "subject": order.subject,
         }
@@ -2197,6 +2197,15 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
     # Рассчитываем итоговую цену
     final_price = price - bonus_to_use
 
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=OrderStatus.WAITING_PAYMENT.value,
+        old_status=OrderStatus.WAITING_ESTIMATION.value,
+        order_data={"final_price": final_price, "bonus_used": bonus_to_use}
+    )
+
     # Формируем премиум-уведомление для Mini App
     price_formatted = f"{int(final_price):,}".replace(",", " ")
     bonus_line = ""
@@ -3115,6 +3124,15 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
     order.status = OrderStatus.CONFIRMED.value
     await session.commit()
 
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=OrderStatus.WAITING_PAYMENT.value,  # Для UI - показываем как "ожидает оплаты"
+        old_status=OrderStatus.WAITING_ESTIMATION.value,
+        order_data={"final_price": price - bonus_to_use, "bonus_used": bonus_to_use}
+    )
+
     # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
     try:
         await update_card_status(
@@ -3249,6 +3267,15 @@ async def process_order_price_input(message: Message, state: FSMContext, session
 
     # Рассчитываем итоговую цену
     final_price = price - bonus_to_use
+
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
+    await ws_notify_order_update(
+        telegram_id=order.user_id,
+        order_id=order.id,
+        new_status=OrderStatus.WAITING_PAYMENT.value,
+        old_status=OrderStatus.WAITING_ESTIMATION.value,
+        order_data={"final_price": final_price, "bonus_used": bonus_to_use}
+    )
 
     # Формируем премиум-уведомление для Mini App
     price_formatted = f"{int(final_price):,}".replace(",", " ")
