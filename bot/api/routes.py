@@ -506,9 +506,20 @@ async def create_order(
         status=initial_status,
     )
 
-    session.add(order)
-    await session.commit()
-    await session.refresh(order)
+    try:
+        session.add(order)
+        await session.commit()
+        await session.refresh(order)
+    except Exception as db_error:
+        logger.error(f"[API /orders/create] Database error: {db_error}")
+        await session.rollback()
+        return OrderCreateResponse(
+            success=False,
+            order_id=0,
+            message="Ошибка создания заказа. Попробуйте позже.",
+            price=None,
+            is_manual_required=False
+        )
 
     logger.info(f"[API /orders/create] Order #{order.id} created, status={initial_status}, price={price_calc.final_price}")
 
