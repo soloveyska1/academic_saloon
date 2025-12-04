@@ -46,6 +46,7 @@ export interface Order {
   discount: number
   bonus_used: number
   progress: number
+  payment_scheme: 'full' | 'half' | null  // full / half (prepayment)
   created_at: string
   completed_at: string | null
 }

@@ -544,17 +544,26 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
 
 @router.callback_query(F.data.startswith("card_confirm_pay:"))
 async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Подтвердить оплату — использует тот же формат, что и admin.py"""
+    """Подтвердить оплату (полную или предоплату 50%)"""
     from aiogram.types import FSInputFile
 
     # Путь к картинке успешной оплаты
     PAYMENT_SUCCESS_IMAGE = Path(__file__).parent.parent / "media" / "payment_success.jpg"
 
+    # Парсим callback_data: card_confirm_pay:{order_id}:{type}
+    parts = callback.data.split(":")
+    if len(parts) < 2:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
     try:
-        order_id = parse_order_id(callback.data)
+        order_id = int(parts[1])
     except ValueError:
         await callback.answer("Ошибка данных", show_alert=True)
         return
+
+    # Определяем тип оплаты (full/half), по умолчанию full для обратной совместимости
+    payment_type = parts[2] if len(parts) > 2 else "full"
 
     order, user = await get_order_with_user(session, order_id)
 
@@ -562,9 +571,24 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    # Меняем статус на "Оплачен"
-    order.status = OrderStatus.PAID_FULL.value
-    order.paid_amount = order.price
+    final_price = float(order.final_price or order.price or 0)
+
+    if payment_type == "half":
+        # Предоплата 50%
+        half_amount = final_price / 2
+        order.status = OrderStatus.PAID.value  # В работу!
+        order.paid_amount = half_amount
+        order.payment_scheme = "half"
+        extra_text = f"💰 Предоплата 50% ({int(half_amount)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
+        answer_text = f"💰 Предоплата {int(half_amount)} ₽ подтверждена"
+    else:
+        # Полная оплата
+        order.status = OrderStatus.PAID_FULL.value
+        order.paid_amount = final_price
+        order.payment_scheme = "full"
+        extra_text = f"✅ Полная оплата ({int(final_price)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
+        answer_text = "✅ Оплата подтверждена"
+
     await session.commit()
 
     # UNIFIED HUB: Обновляем название топика
@@ -575,12 +599,23 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
         bot, order, session,
         client_username=user.username if user else None,
         client_name=user.fullname if user else None,
-        extra_text=f"✅ Оплата подтверждена {datetime.now().strftime('%d.%m %H:%M')}"
+        extra_text=extra_text
     )
 
-    # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ (как в admin.py) ═══
+    # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ ═══
     paid_formatted = f"{int(order.paid_amount):,}".replace(",", " ")
-    user_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
+
+    if payment_type == "half":
+        remaining = int(final_price - order.paid_amount)
+        user_text = f"""💰 <b>ПРЕДОПЛАТА ПОЛУЧЕНА!</b>
+
+Заказ <b>#{order.id}</b> принят в работу.
+✅ Внесено: <b>{paid_formatted} ₽</b>
+💳 Доплата после выполнения: <b>{remaining} ₽</b>
+
+Работа уже началась. Следи за прогрессом в кабинете!"""
+    else:
+        user_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
 💰 Получено: <b>{paid_formatted} ₽</b>
@@ -608,7 +643,106 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     except Exception as e:
         logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
 
-    await callback.answer("✅ Оплата подтверждена, клиент уведомлён", show_alert=True)
+    await callback.answer(answer_text, show_alert=True)
+
+
+# ══════════════════════════════════════════════════════════════
+#           ДОПЛАТА (для схемы 50% предоплаты)
+# ══════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("card_request_final:"))
+async def card_request_final_payment(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Запросить доплату у клиента (для предоплаты 50%)"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    remaining = float(order.final_price or 0) - float(order.paid_amount or 0)
+    if remaining <= 0:
+        await callback.answer("Заказ уже полностью оплачен", show_alert=True)
+        return
+
+    remaining_formatted = f"{int(remaining):,}".replace(",", " ")
+
+    # Уведомляем клиента о необходимости доплаты
+    user_text = f"""💳 <b>РАБОТА ГОТОВА — НУЖНА ДОПЛАТА</b>
+
+Заказ <b>#{order.id}</b> выполнен!
+
+💰 К доплате: <b>{remaining_formatted} ₽</b>
+
+После оплаты вы получите готовую работу.
+Реквизиты для оплаты — в Mini App."""
+
+    webapp_url = f"{settings.WEBAPP_URL}/order/{order.id}"
+    user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💳 Перейти к оплате", web_app=WebAppInfo(url=webapp_url))],
+        [InlineKeyboardButton(text="💬 Связаться", callback_data=f"chat_order:{order.id}")],
+    ])
+
+    try:
+        await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
+        await callback.answer(f"📤 Запрос на доплату {int(remaining)} ₽ отправлен клиенту", show_alert=True)
+    except Exception as e:
+        logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
+        await callback.answer("⚠️ Не удалось отправить уведомление клиенту", show_alert=True)
+
+
+@router.callback_query(F.data.startswith("card_confirm_final:"))
+async def card_confirm_final_payment(callback: CallbackQuery, session: AsyncSession, bot: Bot):
+    """Подтвердить получение доплаты"""
+    try:
+        order_id = parse_order_id(callback.data)
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    order, user = await get_order_with_user(session, order_id)
+
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    remaining = float(order.final_price or 0) - float(order.paid_amount or 0)
+    if remaining <= 0:
+        await callback.answer("Заказ уже полностью оплачен", show_alert=True)
+        return
+
+    # Фиксируем полную оплату
+    order.paid_amount = order.final_price
+    order.status = OrderStatus.PAID_FULL.value
+    await session.commit()
+
+    # Обновляем карточку
+    await update_card_status(
+        bot, order, session,
+        client_username=user.username if user else None,
+        client_name=user.fullname if user else None,
+        extra_text=f"✅ Доплата {int(remaining)} ₽ получена — {datetime.now().strftime('%d.%m %H:%M')}"
+    )
+
+    # Уведомляем клиента
+    user_text = f"""✅ <b>ДОПЛАТА ПОЛУЧЕНА!</b>
+
+Заказ <b>#{order.id}</b> полностью оплачен.
+💰 Всего оплачено: <b>{int(order.final_price):,} ₽</b>
+
+Готовая работа уже ждёт вас!"""
+
+    try:
+        await bot.send_message(order.user_id, user_text)
+    except Exception as e:
+        logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
+
+    await callback.answer(f"✅ Доплата {int(remaining)} ₽ подтверждена", show_alert=True)
 
 
 @router.callback_query(F.data.startswith("card_reject_pay:"))

@@ -124,6 +124,7 @@ def order_to_response(order: Order) -> OrderResponse:
         discount=float(order.discount or 0),
         bonus_used=float(order.bonus_used or 0),
         progress=order.progress or 0,
+        payment_scheme=order.payment_scheme,  # full / half
         created_at=order.created_at.isoformat() if order.created_at else "",
         completed_at=order.completed_at.isoformat() if order.completed_at else None
     )

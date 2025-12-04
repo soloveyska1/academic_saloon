@@ -42,6 +42,7 @@ class OrderResponse(BaseModel):
     discount: float
     bonus_used: float
     progress: int
+    payment_scheme: Optional[str] = None  # full / half
     created_at: str
     completed_at: Optional[str] = None
 
