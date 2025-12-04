@@ -204,11 +204,18 @@ def get_card_keyboard(
     bot_username = settings.BOT_USERNAME or "academic_saloon_bot"
     buttons = []
 
+    # Получаем данные для расчётов
+    payment_scheme = getattr(order, 'payment_scheme', None)
+    paid_amount = getattr(order, 'paid_amount', 0) or 0
+    final_price = getattr(order, 'final_price', 0) or 0
+    is_half_paid = payment_scheme == 'half' and 0 < paid_amount < final_price
+    is_fully_paid = paid_amount >= final_price
+
     if stage_name == "new":
-        # Новый заказ - оценить, отклонить, бан
+        # ═══ НОВЫЙ ЗАКАЗ ═══
         buttons.append([
             InlineKeyboardButton(
-                text="💵 Оценить",
+                text="💵 Оценить заказ",
                 callback_data=f"card_price:{order.id}"
             ),
         ])
@@ -224,52 +231,91 @@ def get_card_keyboard(
         ])
 
     elif stage_name == "waiting":
-        # Ждёт оплаты
+        # ═══ ОЖИДАЕТ ОПЛАТЫ ═══
+        half_amount = int(final_price / 2) if final_price else 0
+
+        # Кнопки подтверждения оплаты
         buttons.append([
             InlineKeyboardButton(
-                text="✅ Оплачено (подтвердить)",
-                callback_data=f"card_confirm_pay:{order.id}"
+                text=f"✅ 100% оплачено ({int(final_price)} ₽)",
+                callback_data=f"card_confirm_pay:{order.id}:full"
             ),
         ])
         buttons.append([
             InlineKeyboardButton(
-                text="🔔 Напомнить клиенту",
+                text=f"💰 Предоплата 50% ({half_amount} ₽)",
+                callback_data=f"card_confirm_pay:{order.id}:half"
+            ),
+        ])
+
+        # Служебные кнопки
+        buttons.append([
+            InlineKeyboardButton(
+                text="🔔 Напомнить",
                 callback_data=f"card_remind:{order.id}"
             ),
             InlineKeyboardButton(
-                text="✏️ Изменить цену",
+                text="✏️ Цена",
                 callback_data=f"card_price:{order.id}"
             ),
-        ])
-        buttons.append([
             InlineKeyboardButton(
-                text="🚫 Отклонить",
+                text="🚫 Отмена",
                 callback_data=f"card_reject:{order.id}"
             ),
         ])
 
     elif stage_name == "verification":
-        # Проверка оплаты
+        # ═══ ПРОВЕРКА ОПЛАТЫ (клиент нажал "Я оплатил") ═══
+        half_amount = int(final_price / 2) if final_price else 0
+
         buttons.append([
             InlineKeyboardButton(
-                text="✅ Подтвердить оплату",
-                callback_data=f"card_confirm_pay:{order.id}"
+                text=f"✅ Полная оплата ({int(final_price)} ₽)",
+                callback_data=f"card_confirm_pay:{order.id}:full"
             ),
+        ])
+        buttons.append([
             InlineKeyboardButton(
-                text="❌ Отклонить (не оплачено)",
+                text=f"💰 Предоплата 50% ({half_amount} ₽)",
+                callback_data=f"card_confirm_pay:{order.id}:half"
+            ),
+        ])
+        buttons.append([
+            InlineKeyboardButton(
+                text="❌ Не оплачено",
                 callback_data=f"card_reject_pay:{order.id}"
             ),
         ])
 
     elif stage_name == "work":
-        # В работе — показываем прогресс и управление
+        # ═══ В РАБОТЕ ═══
         progress = getattr(order, 'progress', 0) or 0
+
+        # Прогресс
         buttons.append([
             InlineKeyboardButton(
                 text=f"📊 Прогресс: {progress}%",
                 callback_data=f"card_progress:{order.id}"
             ),
         ])
+
+        # Если предоплата 50% и нужна доплата
+        if is_half_paid:
+            remaining = int(final_price - paid_amount)
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"💳 Запросить доплату ({remaining} ₽)",
+                    callback_data=f"card_request_final:{order.id}"
+                ),
+            ])
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"✅ Доплата получена ({remaining} ₽)",
+                    callback_data=f"card_confirm_final:{order.id}"
+                ),
+            ])
+
+        # Сдача работы
         buttons.append([
             InlineKeyboardButton(
                 text="📤 Сдать работу",
@@ -278,13 +324,29 @@ def get_card_keyboard(
         ])
         buttons.append([
             InlineKeyboardButton(
-                text="✅ Готово (без файла)",
+                text="✅ Готово",
                 callback_data=f"card_complete:{order.id}"
             ),
         ])
 
     elif stage_name == "review":
-        # На проверке
+        # ═══ НА ПРОВЕРКЕ ═══
+        # Если есть недоплата - сначала получить деньги
+        if is_half_paid:
+            remaining = int(final_price - paid_amount)
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"💳 Запросить доплату ({remaining} ₽)",
+                    callback_data=f"card_request_final:{order.id}"
+                ),
+            ])
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"✅ Доплата получена",
+                    callback_data=f"card_confirm_final:{order.id}"
+                ),
+            ])
+
         buttons.append([
             InlineKeyboardButton(
                 text="✅ Завершить заказ",
@@ -293,7 +355,7 @@ def get_card_keyboard(
         ])
 
     elif stage_name in ("done", "cancelled"):
-        # Завершённые - минимальные кнопки (можно переоткрыть)
+        # ═══ ЗАВЕРШЁН / ОТМЕНЁН ═══
         buttons.append([
             InlineKeyboardButton(
                 text="🔄 Переоткрыть",

@@ -1723,12 +1723,33 @@ export function OrderDetailPage() {
                 margin: '4px 0',
               }} />
 
+              {/* Payment Scheme Badge */}
+              {order.payment_scheme === 'half' && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 12px',
+                  background: 'rgba(212,175,55,0.1)',
+                  borderRadius: 10,
+                  border: '1px solid rgba(212,175,55,0.2)',
+                }}>
+                  <span style={{ fontSize: 13, color: '#d4af37' }}>
+                    💳 Схема: <b>Предоплата 50%</b>
+                  </span>
+                </div>
+              )}
+
               {/* Paid Amount */}
               {order.paid_amount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <CheckCircle size={14} color="#22c55e" />
-                    <span style={{ fontSize: 14, color: '#22c55e' }}>Оплачено</span>
+                    <span style={{ fontSize: 14, color: '#22c55e' }}>
+                      {order.payment_scheme === 'half' && order.paid_amount < order.final_price
+                        ? 'Предоплата внесена'
+                        : 'Оплачено'}
+                    </span>
                   </div>
                   <span style={{
                     fontSize: 15,
@@ -1745,13 +1766,15 @@ export function OrderDetailPage() {
               {!isPaid && order.final_price > order.paid_amount && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Clock size={14} color="#ef4444" />
-                    <span style={{ fontSize: 14, color: '#ef4444' }}>К оплате</span>
+                    <Clock size={14} color="#f59e0b" />
+                    <span style={{ fontSize: 14, color: '#f59e0b' }}>
+                      {order.payment_scheme === 'half' ? 'Доплата после выполнения' : 'К оплате'}
+                    </span>
                   </div>
                   <span style={{
                     fontSize: 15,
                     fontWeight: 600,
-                    color: '#ef4444',
+                    color: '#f59e0b',
                     fontFamily: "'JetBrains Mono', monospace",
                   }}>
                     {(order.final_price - order.paid_amount).toLocaleString('ru-RU')} ₽
