@@ -1,7 +1,7 @@
 """add delivered_at to orders
 
 Revision ID: d1e2f3g4h5i6
-Revises: m3n4o5p6q7r8
+Revises: o5p6q7r8s9t0
 Create Date: 2025-12-04
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'd1e2f3g4h5i6'
-down_revision: Union[str, None] = 'm3n4o5p6q7r8'
+down_revision: Union[str, None] = 'o5p6q7r8s9t0'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
