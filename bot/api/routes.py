@@ -1605,12 +1605,13 @@ async def request_revision(
 
         if conv and topic_id:
             client_name = user.fullname if user else tg_user.first_name
+            comment_text = f"💬 Комментарий:\n<i>{data.message}</i>" if data.message else "<i>Без комментария</i>"
             admin_text = f"""✏️ <b>ЗАПРОС НА ПРАВКИ</b>
 
 👤 Клиент: <b>{client_name}</b>
 📦 Заказ: <code>#{order.id}</code>
 
-{f'💬 Комментарий:\n<i>{data.message}</i>' if data.message else '<i>Без комментария</i>'}
+{comment_text}
 
 ━━━━━━━━━━━━━━━━━━━━
 📌 Статус изменён на <b>«Правки»</b>"""
