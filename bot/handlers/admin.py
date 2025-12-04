@@ -47,6 +47,7 @@ from bot.services.order_progress import (
     update_order_progress,
     sync_progress_with_status,
 )
+from bot.api.websocket import notify_order_update, notify_balance_update
 
 router = Router()
 
@@ -761,6 +762,22 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
 
     await callback.answer(f"✅ Статус изменён: {new_emoji} {new_label}", show_alert=True)
 
+    # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
+    try:
+        await notify_order_update(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=new_status,
+            order_data={
+                "old_status": old_status,
+                "work_type": order.work_type,
+                "subject": order.subject,
+            }
+        )
+        logger.info(f"[WS] Sent order update to user {order.user_id}: order #{order.id} -> {new_status}")
+    except Exception as e:
+        logger.warning(f"[WS] Failed to send order update: {e}")
+
     # Уведомляем клиента о смене статуса (опционально для важных статусов)
     notify_statuses = [
         OrderStatus.PAID.value,
@@ -865,6 +882,29 @@ async def cancel_order(callback: CallbackQuery, session: AsyncSession, bot: Bot)
     # Отменяем заказ
     order.status = OrderStatus.CANCELLED.value
     await session.commit()
+
+    # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
+    try:
+        await notify_order_update(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.CANCELLED.value,
+            order_data={"bonus_returned": bonus_returned}
+        )
+        # Если вернули бонусы - уведомляем о изменении баланса
+        if bonus_returned > 0:
+            user_query = select(User).where(User.telegram_id == order.user_id)
+            user_result = await session.execute(user_query)
+            user_obj = user_result.scalar_one_or_none()
+            if user_obj:
+                await notify_balance_update(
+                    telegram_id=order.user_id,
+                    new_balance=float(user_obj.balance),
+                    change=float(bonus_returned),
+                    reason="Возврат бонусов за отменённый заказ"
+                )
+    except Exception as e:
+        logger.warning(f"[WS] Failed to send cancel notification: {e}")
 
     # Уведомляем клиента
     try:

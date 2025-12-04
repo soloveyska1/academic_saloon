@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
 import { OrdersPage } from './pages/OrdersPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
@@ -18,11 +18,80 @@ import { FloatingMenu } from './components/ui/FloatingMenu'
 import { AdminProvider } from './contexts/AdminContext'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
+import {
+  WebSocketProvider,
+  OrderUpdateMessage,
+  BalanceUpdateMessage,
+  NotificationMessage,
+  RefreshMessage,
+} from './hooks/useWebSocket'
+import {
+  OrderStatusNotification,
+  BalanceNotification,
+  RealtimeNotification,
+  RealtimeNotificationData,
+} from './components/ui/RealtimeNotification'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 
-function App() {
-  const { userData, loading, error } = useUserData()
+// Notification state types
+interface OrderNotificationState {
+  orderId: number
+  status: string
+}
+
+interface BalanceNotificationState {
+  change: number
+  newBalance: number
+  reason: string
+}
+
+function AppContent() {
+  const { userData, loading, error, refetch } = useUserData()
   const [isReady, setIsReady] = useState(false)
+
+  // Realtime notification states
+  const [orderNotification, setOrderNotification] = useState<OrderNotificationState | null>(null)
+  const [balanceNotification, setBalanceNotification] = useState<BalanceNotificationState | null>(null)
+  const [generalNotification, setGeneralNotification] = useState<RealtimeNotificationData | null>(null)
+
+  // WebSocket handlers
+  const handleOrderUpdate = useCallback((msg: OrderUpdateMessage) => {
+    console.log('[App] Order update received:', msg)
+    setOrderNotification({
+      orderId: msg.order_id,
+      status: msg.status,
+    })
+    // Refresh data to get latest order status
+    refetch()
+  }, [refetch])
+
+  const handleBalanceUpdate = useCallback((msg: BalanceUpdateMessage) => {
+    console.log('[App] Balance update received:', msg)
+    setBalanceNotification({
+      change: msg.change,
+      newBalance: msg.balance,
+      reason: msg.reason,
+    })
+    // Refresh data to get latest balance
+    refetch()
+  }, [refetch])
+
+  const handleNotification = useCallback((msg: NotificationMessage) => {
+    console.log('[App] Notification received:', msg)
+    setGeneralNotification({
+      id: Date.now().toString(),
+      type: msg.notification_type as 'info' | 'success' | 'warning' | 'error',
+      title: msg.title,
+      message: msg.message,
+      timestamp: new Date(),
+    })
+  }, [])
+
+  const handleRefresh = useCallback((msg: RefreshMessage) => {
+    console.log('[App] Refresh requested:', msg.refresh_type)
+    refetch()
+  }, [refetch])
 
   useEffect(() => {
     // Simulate initial load
@@ -102,39 +171,91 @@ function App() {
     )
   }
 
+  // Get telegram ID for WebSocket
+  const telegramId = userData?.telegram_id || null
+
   return (
     <ErrorBoundary>
       <AdminProvider>
         <ToastProvider>
-          <BrowserRouter>
-            <div className="app">
-              {/* Animated Gold Particles Background */}
-              <GoldParticles />
-              <Routes>
-                <Route path="/" element={<HomePage user={userData} />} />
-                <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
-                <Route path="/order/:id" element={<OrderDetailPage />} />
-                <Route path="/roulette" element={<RoulettePage user={userData} />} />
-                <Route path="/profile" element={<ProfilePage user={userData} />} />
-                <Route path="/create-order" element={<CreateOrderPage />} />
-                <Route path="/referral" element={<ReferralPage user={userData} />} />
-                <Route path="/achievements" element={<AchievementsPage user={userData} />} />
-                <Route path="/support" element={<SupportPage />} />
-              </Routes>
-              <Navigation />
-              {/* Floating Action Menu */}
-              <FloatingMenu
-                onNewOrder={() => window.location.href = '/create-order'}
-                onBonus={() => window.location.href = '/roulette'}
-              />
-              {/* Admin Debug Panel */}
-              <AdminPanel />
-            </div>
-          </BrowserRouter>
+          <WebSocketProvider
+            telegramId={telegramId}
+            onOrderUpdate={handleOrderUpdate}
+            onBalanceUpdate={handleBalanceUpdate}
+            onNotification={handleNotification}
+            onRefresh={handleRefresh}
+          >
+            <BrowserRouter>
+              <div className="app">
+                {/* Animated Gold Particles Background */}
+                <GoldParticles />
+
+                {/* Realtime Notifications */}
+                <AnimatePresence>
+                  {orderNotification && (
+                    <OrderStatusNotification
+                      orderId={orderNotification.orderId}
+                      status={orderNotification.status}
+                      onDismiss={() => setOrderNotification(null)}
+                      onClick={() => {
+                        setOrderNotification(null)
+                        window.location.href = `/order/${orderNotification.orderId}`
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {balanceNotification && (
+                    <BalanceNotification
+                      change={balanceNotification.change}
+                      newBalance={balanceNotification.newBalance}
+                      reason={balanceNotification.reason}
+                      onDismiss={() => setBalanceNotification(null)}
+                    />
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {generalNotification && (
+                    <RealtimeNotification
+                      notification={generalNotification}
+                      onDismiss={() => setGeneralNotification(null)}
+                    />
+                  )}
+                </AnimatePresence>
+
+                <Routes>
+                  <Route path="/" element={<HomePage user={userData} />} />
+                  <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
+                  <Route path="/order/:id" element={<OrderDetailPage />} />
+                  <Route path="/roulette" element={<RoulettePage user={userData} />} />
+                  <Route path="/profile" element={<ProfilePage user={userData} />} />
+                  <Route path="/create-order" element={<CreateOrderPage />} />
+                  <Route path="/referral" element={<ReferralPage user={userData} />} />
+                  <Route path="/achievements" element={<AchievementsPage user={userData} />} />
+                  <Route path="/support" element={<SupportPage />} />
+                </Routes>
+                <Navigation />
+                {/* Floating Action Menu */}
+                <FloatingMenu
+                  onNewOrder={() => window.location.href = '/create-order'}
+                  onBonus={() => window.location.href = '/roulette'}
+                />
+                {/* Admin Debug Panel */}
+                <AdminPanel />
+              </div>
+            </BrowserRouter>
+          </WebSocketProvider>
         </ToastProvider>
       </AdminProvider>
     </ErrorBoundary>
   )
+}
+
+// Main App wrapper
+function App() {
+  return <AppContent />
 }
 
 export default App
