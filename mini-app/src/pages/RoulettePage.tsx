@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Crosshair, Zap, Gift, Star, Sparkles, Minus, Plus, Target, Infinity } from 'lucide-react'
+import { Crosshair, Zap, Gift, Star, Sparkles, Minus, Plus, Target, Infinity, Ticket } from 'lucide-react'
 import { UserData, RouletteResult } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { spinRoulette } from '../api/userApi'
 import { useAdmin } from '../contexts/AdminContext'
+import { Confetti, useConfetti } from '../components/ui/Confetti'
+import { ScratchCard, getRandomPrize } from '../components/ui/ScratchCard'
 
 interface Props {
   user: UserData | null
@@ -838,6 +840,13 @@ export function RoulettePage({ user }: Props) {
   const [canSpinBase, setCanSpinBase] = useState(user?.daily_luck_available ?? false)
   const [betAmount, setBetAmount] = useState(100)
 
+  // Scratch Card state
+  const [showScratchCard, setShowScratchCard] = useState(false)
+  const [scratchPrize, setScratchPrize] = useState<{ prize: string; amount: number } | null>(null)
+
+  // Confetti hook
+  const confetti = useConfetti()
+
   // Admin can always spin with unlimited mode
   const canSpin = unlimitedRoulette || canSpinBase
 
@@ -915,6 +924,7 @@ export function RoulettePage({ user }: Props) {
             hapticError()
           } else {
             hapticSuccess()
+            confetti.fire() // Celebration confetti on win!
           }
         } catch {
           hapticError()
@@ -1049,13 +1059,47 @@ export function RoulettePage({ user }: Props) {
         betAmount={betAmount}
       />
 
+      {/* Scratch Card Button */}
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => {
+          const prize = getRandomPrize()
+          setScratchPrize({ prize: prize.prize, amount: prize.amount })
+          setShowScratchCard(true)
+          haptic('medium')
+        }}
+        style={{
+          marginTop: 20,
+          padding: '14px 24px',
+          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.1))',
+          border: '1px solid rgba(168, 85, 247, 0.4)',
+          borderRadius: 14,
+          color: '#a855f7',
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          maxWidth: 280,
+          width: '100%',
+          justifyContent: 'center',
+        }}
+      >
+        <Ticket size={20} />
+        Открыть Скретч-Карту
+      </motion.button>
+
       {/* Rules */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
         style={{
-          marginTop: 32,
+          marginTop: 24,
           padding: '20px 24px',
           background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.8) 0%, rgba(10, 10, 12, 0.9) 100%)',
           backdropFilter: 'blur(24px)',
@@ -1112,6 +1156,30 @@ export function RoulettePage({ user }: Props) {
           ))}
         </ul>
       </motion.div>
+
+      {/* Confetti Effect */}
+      <Confetti
+        active={confetti.isActive}
+        onComplete={confetti.reset}
+        intensity="extreme"
+      />
+
+      {/* Scratch Card Modal */}
+      <AnimatePresence>
+        {showScratchCard && scratchPrize && (
+          <ScratchCard
+            prize={scratchPrize.prize}
+            prizeAmount={scratchPrize.amount}
+            onReveal={() => {
+              hapticSuccess()
+            }}
+            onClose={() => {
+              setShowScratchCard(false)
+              setScratchPrize(null)
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

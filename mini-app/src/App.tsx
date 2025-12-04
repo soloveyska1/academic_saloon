@@ -14,6 +14,7 @@ import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { GoldParticles } from './components/ui/GoldParticles'
 import { ToastProvider } from './components/ui/Toast'
+import { FloatingMenu } from './components/ui/FloatingMenu'
 import { AdminProvider } from './contexts/AdminContext'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
@@ -121,6 +122,11 @@ function App() {
                 <Route path="/support" element={<SupportPage />} />
               </Routes>
               <Navigation />
+              {/* Floating Action Menu */}
+              <FloatingMenu
+                onNewOrder={() => window.location.href = '/create-order'}
+                onBonus={() => window.location.href = '/roulette'}
+              />
               {/* Admin Debug Panel */}
               <AdminPanel />
             </div>
