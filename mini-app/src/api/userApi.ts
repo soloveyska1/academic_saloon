@@ -116,6 +116,65 @@ export async function applyPromoCode(code: string): Promise<PromoResult> {
   })
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  DAILY BONUS API
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface DailyBonusInfo {
+  can_claim: boolean
+  streak: number
+  next_bonus: number
+  cooldown_remaining: string | null
+  bonuses: number[]
+}
+
+export interface DailyBonusClaimResult {
+  success: boolean
+  won: boolean
+  bonus: number
+  streak: number
+  message: string
+  next_claim_at: string | null
+}
+
+export async function fetchDailyBonusInfo(): Promise<DailyBonusInfo> {
+  if (!hasTelegramContext()) {
+    if (IS_DEV) {
+      return {
+        can_claim: true,
+        streak: 1,
+        next_bonus: 10,
+        cooldown_remaining: null,
+        bonuses: [10, 20, 30, 40, 50, 100, 150]
+      }
+    }
+    throw new Error('Откройте приложение через Telegram')
+  }
+
+  return await apiFetch<DailyBonusInfo>('/daily-bonus/info')
+}
+
+export async function claimDailyBonus(): Promise<DailyBonusClaimResult> {
+  if (!hasTelegramContext()) {
+    if (IS_DEV) {
+      const won = Math.random() < 0.5
+      return {
+        success: true,
+        won,
+        bonus: won ? 10 : 0,
+        streak: 1,
+        message: won ? 'Поздравляем! Ты выиграл 10₽!' : 'Не повезло! Попробуй завтра!',
+        next_claim_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      }
+    }
+    throw new Error('Откройте приложение через Telegram')
+  }
+
+  return await apiFetch<DailyBonusClaimResult>('/daily-bonus/claim', {
+    method: 'POST',
+  })
+}
+
 // Daily roulette
 export async function spinRoulette(): Promise<RouletteResult> {
   if (!hasTelegramContext()) {

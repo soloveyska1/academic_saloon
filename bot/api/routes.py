@@ -24,7 +24,8 @@ from .schemas import (
     PromoCodeRequest, PromoCodeResponse,
     RouletteResponse, ConfigResponse,
     RankInfo, LoyaltyInfo, BonusExpiryInfo,
-    OrderCreateRequest, OrderCreateResponse
+    OrderCreateRequest, OrderCreateResponse,
+    DailyBonusInfoResponse, DailyBonusClaimResponse
 )
 from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
 from bot.services.pricing import calculate_price, DEADLINE_LABELS
@@ -434,6 +435,174 @@ async def spin_roulette(
         message=f"Поздравляем! Ты выиграл {selected['value']}₽!",
         next_spin_at=None  # Без лимита
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  DAILY BONUS (Ежедневный бонус с серией)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Бонусы по дням серии (7 дней, потом сброс)
+DAILY_BONUS_AMOUNTS = [10, 20, 30, 40, 50, 100, 150]  # Дни 1-7
+DAILY_BONUS_WIN_CHANCE = 0.5  # 50% шанс выигрыша
+
+
+@router.get("/daily-bonus/info", response_model=DailyBonusInfoResponse)
+async def get_daily_bonus_info(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Получить информацию о ежедневном бонусе
+    """
+    # Get user
+    result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = datetime.now(timezone.utc)
+    streak = getattr(user, 'daily_bonus_streak', 0) or 0
+    last_claim = user.last_daily_bonus_at
+
+    # Проверяем, можно ли получить бонус
+    can_claim = True
+    cooldown_remaining = None
+
+    if last_claim:
+        # Убеждаемся, что время с timezone
+        if last_claim.tzinfo is None:
+            last_claim = last_claim.replace(tzinfo=timezone.utc)
+
+        next_claim = last_claim + timedelta(hours=24)
+        if now < next_claim:
+            can_claim = False
+            remaining = next_claim - now
+            hours = int(remaining.total_seconds() // 3600)
+            minutes = int((remaining.total_seconds() % 3600) // 60)
+            if hours > 0:
+                cooldown_remaining = f"{hours}ч {minutes}мин"
+            else:
+                cooldown_remaining = f"{minutes}мин"
+
+        # Если прошло больше 48 часов - сброс серии
+        if now > last_claim + timedelta(hours=48):
+            streak = 0
+
+    # Определяем текущий день серии (1-7)
+    if can_claim:
+        current_day = (streak % 7) + 1  # Следующий день для получения
+    else:
+        current_day = ((streak - 1) % 7) + 1 if streak > 0 else 1  # Текущий полученный день
+
+    next_bonus = DAILY_BONUS_AMOUNTS[current_day - 1] if can_claim else (
+        DAILY_BONUS_AMOUNTS[current_day % 7] if streak > 0 else DAILY_BONUS_AMOUNTS[0]
+    )
+
+    return DailyBonusInfoResponse(
+        can_claim=can_claim,
+        streak=current_day if not can_claim else current_day,
+        next_bonus=next_bonus,
+        cooldown_remaining=cooldown_remaining,
+        bonuses=DAILY_BONUS_AMOUNTS
+    )
+
+
+@router.post("/daily-bonus/claim", response_model=DailyBonusClaimResponse)
+async def claim_daily_bonus(
+    request: Request,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Получить ежедневный бонус (50% шанс выигрыша)
+    """
+    # Rate limit check
+    await rate_limit_roulette.check(request)
+
+    # Get user
+    result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = datetime.now(timezone.utc)
+    streak = getattr(user, 'daily_bonus_streak', 0) or 0
+    last_claim = user.last_daily_bonus_at
+
+    # Проверяем, можно ли получить бонус
+    if last_claim:
+        if last_claim.tzinfo is None:
+            last_claim = last_claim.replace(tzinfo=timezone.utc)
+
+        next_claim_time = last_claim + timedelta(hours=24)
+        if now < next_claim_time:
+            remaining = next_claim_time - now
+            hours = int(remaining.total_seconds() // 3600)
+            minutes = int((remaining.total_seconds() % 3600) // 60)
+            cooldown_text = f"{hours}ч {minutes}мин" if hours > 0 else f"{minutes}мин"
+
+            return DailyBonusClaimResponse(
+                success=False,
+                won=False,
+                bonus=0,
+                streak=((streak - 1) % 7) + 1 if streak > 0 else 0,
+                message=f"Бонус уже получен. Следующий через {cooldown_text}",
+                next_claim_at=next_claim_time.isoformat()
+            )
+
+        # Если прошло больше 48 часов - сброс серии
+        if now > last_claim + timedelta(hours=48):
+            streak = 0
+
+    # Определяем текущий день серии (0-6 внутренне, 1-7 для отображения)
+    current_day_index = streak % 7
+    bonus_amount = DAILY_BONUS_AMOUNTS[current_day_index]
+
+    # 50% шанс выигрыша
+    won = random.random() < DAILY_BONUS_WIN_CHANCE
+
+    # Обновляем данные пользователя
+    new_streak = streak + 1
+    user.daily_bonus_streak = new_streak
+    user.last_daily_bonus_at = now
+
+    if won:
+        # Начисляем бонус на баланс
+        user.balance = (user.balance or 0) + bonus_amount
+        # Обновляем дату последнего начисления для сгорания бонусов
+        from zoneinfo import ZoneInfo
+        user.last_bonus_at = datetime.now(ZoneInfo("Europe/Moscow"))
+        user.bonus_expiry_notified = False
+
+    await session.commit()
+
+    # Следующее время получения
+    next_claim_at = (now + timedelta(hours=24)).isoformat()
+
+    if won:
+        return DailyBonusClaimResponse(
+            success=True,
+            won=True,
+            bonus=bonus_amount,
+            streak=(current_day_index + 1),  # День 1-7
+            message=f"Поздравляем! Ты выиграл {bonus_amount}₽!",
+            next_claim_at=next_claim_at
+        )
+    else:
+        return DailyBonusClaimResponse(
+            success=True,
+            won=False,
+            bonus=0,
+            streak=(current_day_index + 1),  # День 1-7
+            message="Не повезло! Попробуй завтра!",
+            next_claim_at=next_claim_at
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════

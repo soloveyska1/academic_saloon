@@ -549,9 +549,7 @@ function ResultModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: isWin
-          ? 'radial-gradient(ellipse at 50% 30%, rgba(212, 175, 55, 0.15) 0%, rgba(0, 0, 0, 0.95) 70%)'
-          : 'radial-gradient(ellipse at 50% 30%, rgba(100, 100, 110, 0.1) 0%, rgba(0, 0, 0, 0.95) 70%)',
+        background: 'var(--overlay-bg)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         display: 'flex',
@@ -572,21 +570,12 @@ function ResultModal({
           maxWidth: 340,
           borderRadius: 32,
           background: isWin
-            ? 'linear-gradient(180deg, rgba(40, 35, 25, 0.98) 0%, rgba(20, 18, 12, 0.99) 100%)'
-            : 'linear-gradient(180deg, rgba(45, 45, 50, 0.98) 0%, rgba(25, 25, 28, 0.99) 100%)',
+            ? 'var(--modal-bg)'
+            : 'var(--bg-card-solid)',
           border: isWin
-            ? '2px solid rgba(212, 175, 55, 0.4)'
-            : '1px solid rgba(120, 120, 130, 0.15)',
-          boxShadow: isWin
-            ? `
-              0 0 100px rgba(212, 175, 55, 0.3),
-              0 40px 80px rgba(0,0,0,0.7),
-              inset 0 1px 0 rgba(255,255,255,0.1)
-            `
-            : `
-              0 40px 80px rgba(0,0,0,0.6),
-              inset 0 1px 0 rgba(255,255,255,0.05)
-            `,
+            ? '2px solid var(--border-gold-strong)'
+            : '1px solid var(--border-default)',
+          boxShadow: 'var(--modal-shadow)',
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -663,7 +652,7 @@ function ResultModal({
               fontFamily: "var(--font-serif)",
               fontSize: 32,
               fontWeight: 800,
-              color: isWin ? '#f5d061' : '#8a8a90',
+              color: isWin ? 'var(--gold-300)' : 'var(--text-muted)',
               marginBottom: 8,
               textAlign: 'center',
               letterSpacing: '0.05em',
@@ -683,7 +672,7 @@ function ResultModal({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 15,
-              color: isWin ? 'var(--text-main)' : '#6a6a70',
+              color: isWin ? 'var(--text-main)' : 'var(--text-muted)',
               marginBottom: 28,
               textAlign: 'center',
               letterSpacing: '0.02em',
@@ -707,27 +696,20 @@ function ResultModal({
               padding: '18px 24px',
               borderRadius: 16,
               background: isWin
-                ? 'linear-gradient(180deg, #f5d061 0%, #d4af37 50%, #9e7a1a 100%)'
-                : 'linear-gradient(180deg, #4a4a52 0%, #38383f 50%, #2a2a30 100%)',
+                ? 'var(--liquid-gold)'
+                : 'var(--bg-glass)',
               border: isWin
                 ? '2px solid rgba(255,255,255,0.2)'
-                : '1px solid rgba(100, 100, 110, 0.2)',
+                : '1px solid var(--border-default)',
               cursor: 'pointer',
               fontFamily: "var(--font-serif)",
               fontSize: 16,
               fontWeight: 700,
-              color: isWin ? '#0a0a0c' : '#a0a0a8',
+              color: isWin ? '#0a0a0c' : 'var(--text-secondary)',
               letterSpacing: '0.1em',
               boxShadow: isWin
-                ? `
-                  0 8px 24px rgba(212, 175, 55, 0.3),
-                  inset 0 2px 4px rgba(255,255,255,0.3),
-                  inset 0 -2px 4px rgba(0,0,0,0.15)
-                `
-                : `
-                  0 6px 16px rgba(0,0,0,0.3),
-                  inset 0 1px 2px rgba(255,255,255,0.06)
-                `,
+                ? 'var(--glow-gold-strong)'
+                : 'none',
             }}
           >
             {isWin ? 'ЗАБРАТЬ' : 'ЗАКРЫТЬ'}
