@@ -55,12 +55,11 @@ interface UseWebSocketOptions {
   reconnectInterval?: number
 }
 
-// Get WebSocket URL based on current API URL
+// Get WebSocket URL - using hardcoded base to avoid double /api issue
 function getWebSocketUrl(telegramId: number): string {
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://academic-saloon.duckdns.org'
-  // Convert http(s) to ws(s)
-  const wsUrl = apiUrl.replace(/^http/, 'ws')
-  return `${wsUrl}/api/ws?telegram_id=${telegramId}`
+  // Always use the base domain, not API_URL which may include /api
+  const baseUrl = 'wss://academic-saloon.duckdns.org'
+  return `${baseUrl}/api/ws?telegram_id=${telegramId}`
 }
 
 export function useWebSocket(telegramId: number | null, options: UseWebSocketOptions = {}) {
