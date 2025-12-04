@@ -74,7 +74,9 @@ export function useTelegram() {
   }
 
   const openSupport = () => {
-    tg?.openTelegramLink('https://t.me/Thisissaymoon')
+    // Open bot with support command to create topic
+    const url = `https://t.me/${botUsername}?start=support`
+    tg?.openTelegramLink(url)
   }
 
   const showAlert = (message: string) => {

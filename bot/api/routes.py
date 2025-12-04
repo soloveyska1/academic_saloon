@@ -46,12 +46,12 @@ RANK_LEVELS = [
     {"name": "Легенда Запада", "emoji": "⭐", "min_spent": 50000, "cashback": 7},
 ]
 
-# Loyalty thresholds
+# Loyalty thresholds (premium naming)
 LOYALTY_LEVELS = [
-    {"name": "Новичок", "emoji": "🌱", "min_orders": 0, "discount": 0},
-    {"name": "Завсегдатай", "emoji": "🍺", "min_orders": 3, "discount": 3},
-    {"name": "Шериф", "emoji": "⭐", "min_orders": 7, "discount": 5},
-    {"name": "Легенда салуна", "emoji": "👑", "min_orders": 15, "discount": 10},
+    {"name": "Резидент", "emoji": "🌵", "min_orders": 0, "discount": 0},
+    {"name": "Партнёр", "emoji": "🤝", "min_orders": 3, "discount": 3},
+    {"name": "VIP-Клиент", "emoji": "⭐", "min_orders": 7, "discount": 5},
+    {"name": "Премиум", "emoji": "👑", "min_orders": 15, "discount": 10},
 ]
 
 

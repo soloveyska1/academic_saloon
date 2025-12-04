@@ -171,8 +171,15 @@ function AppContent() {
 
   // Handle notification action (e.g., navigate to order)
   const handleNotificationAction = useCallback((action: string, data: Record<string, unknown>) => {
-    if (action === 'view_order' && data.order_id) {
-      window.location.href = `/order/${data.order_id}`
+    console.log('[App] Notification action:', action, 'data:', data)
+    if (action === 'view_order') {
+      const orderId = data.order_id || data.orderId
+      if (orderId) {
+        // Navigate to order page
+        window.location.href = `/order/${orderId}`
+      } else {
+        console.warn('[App] No order_id in notification data')
+      }
     }
   }, [])
 

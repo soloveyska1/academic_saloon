@@ -325,6 +325,34 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           >
             {amountToPay.toLocaleString('ru-RU')} ₽
           </motion.p>
+
+          {/* Show remaining amount when prepayment selected */}
+          {paymentScheme === 'half' && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                marginTop: 12,
+                padding: '8px 16px',
+                background: 'rgba(212,175,55,0.1)',
+                borderRadius: 10,
+                border: '1px solid rgba(212,175,55,0.2)',
+                display: 'inline-block',
+              }}
+            >
+              <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+                Доплата после выполнения:{' '}
+              </span>
+              <span style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: '#d4af37',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
+                {amountToPay.toLocaleString('ru-RU')} ₽
+              </span>
+            </motion.div>
+          )}
         </div>
 
         {/* Payment Scheme Selector */}
