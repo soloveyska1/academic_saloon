@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import {
   Plus, Copy, Check, ChevronRight, TrendingUp,
-  Wallet, Star, Zap, Crown, CreditCard, Briefcase
+  Star, Zap, Crown, CreditCard, Briefcase
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -13,72 +13,46 @@ interface Props {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ANIMATED COUNTER COMPONENT
+//  ANIMATED COUNTER
 // ═══════════════════════════════════════════════════════════════════════════
 
-function AnimatedCounter({ value, suffix = '', prefix = '' }: {
-  value: number
-  suffix?: string
-  prefix?: string
-}) {
+function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
   const count = useMotionValue(0)
-  const rounded = useTransform(count, (v) => `${prefix}${Math.round(v).toLocaleString('ru-RU')}${suffix}`)
-  const [displayValue, setDisplayValue] = useState(`${prefix}0${suffix}`)
+  const rounded = useTransform(count, (v) => `${Math.round(v).toLocaleString('ru-RU')}${suffix}`)
+  const [displayValue, setDisplayValue] = useState(`0${suffix}`)
 
   useEffect(() => {
-    const controls = animate(count, value, {
-      duration: 1.5,
-      ease: [0.16, 1, 0.3, 1],
-    })
+    const controls = animate(count, value, { duration: 1.5, ease: [0.16, 1, 0.3, 1] })
     const unsubscribe = rounded.on('change', (v) => setDisplayValue(v))
     return () => { controls.stop(); unsubscribe() }
-  }, [value, count, rounded, prefix, suffix])
+  }, [value, count, rounded, suffix])
 
   return <span>{displayValue}</span>
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  GLASS PANEL COMPONENT
+//  GLASS PANEL — INLINE STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface GlassPanelProps {
-  children: React.ReactNode
-  className?: string
-  delay?: number
-  onClick?: () => void
-  variant?: 'default' | 'gold' | 'accent'
+const glassStyle: React.CSSProperties = {
+  background: 'rgba(255, 255, 255, 0.05)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  borderRadius: 16,
+  padding: 20,
+  position: 'relative',
+  overflow: 'hidden',
 }
 
-function GlassPanel({ children, className = '', delay = 0, onClick, variant = 'default' }: GlassPanelProps) {
-  const variants = {
-    default: 'bg-white/5 border-white/10',
-    gold: 'bg-gradient-to-br from-gold-400/10 via-transparent to-gold-400/5 border-gold-400/20',
-    accent: 'bg-gradient-to-b from-gold-400/15 to-transparent border-gold-400/25',
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
-      whileTap={onClick ? { scale: 0.98 } : undefined}
-      onClick={onClick}
-      className={`
-        relative overflow-hidden rounded-2xl p-5
-        backdrop-blur-xl border
-        shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.04)]
-        ${variants[variant]}
-        ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''}
-        ${className}
-      `}
-    >
-      {children}
-    </motion.div>
-  )
+const glassGoldStyle: React.CSSProperties = {
+  ...glassStyle,
+  background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(20,20,23,0.9) 50%, rgba(212,175,55,0.05) 100%)',
+  border: '1px solid rgba(212, 175, 55, 0.2)',
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIN HOMEPAGE COMPONENT — HEAVY LUXURY / INTELLIGENT CLUB
+//  MAIN HOMEPAGE — HEAVY LUXURY
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function HomePage({ user }: Props) {
@@ -108,267 +82,315 @@ export function HomePage({ user }: Props) {
   const activeOrders = user.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length
 
   return (
-    <div className="min-h-screen pb-28 px-5 pt-6 overflow-x-hidden">
+    <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: '#09090b' }}>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HEADER — INTELLIGENT CLUB BRANDING
+          HEADER
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-center mb-8"
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}
       >
         <div>
-          <h2 className="text-[10px] tracking-[0.3em] uppercase mb-1 font-bold text-gold-400">
-            Intelligent Club
-          </h2>
-          <h1 className="text-2xl font-display font-bold text-white tracking-tight">
+          <div style={{ fontSize: 10, letterSpacing: '0.3em', color: '#d4af37', fontWeight: 700, marginBottom: 4 }}>
+            INTELLIGENT CLUB
+          </div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
             Academic Saloon
           </h1>
         </div>
 
-        {/* Logo Monogram */}
-        <div className="relative">
+        {/* Logo */}
+        <div style={{ position: 'relative' }}>
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
-            className="absolute inset-0 rounded-full"
             style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
               background: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
-              filter: 'blur(0.5px)',
             }}
           />
-          <div className="relative w-12 h-12 rounded-full bg-onyx flex items-center justify-center border border-gold-500/30 shadow-[0_0_20px_rgba(212,175,55,0.2)]">
-            <span className="font-display font-bold text-lg gold-gradient-text">AS</span>
+          <div style={{
+            position: 'relative',
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            background: '#09090b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <span style={{
+              fontFamily: "'Montserrat', sans-serif",
+              fontWeight: 700,
+              fontSize: 16,
+              background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>AS</span>
           </div>
         </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          BENTO GRID: BALANCE & STATUS
+          BENTO GRID: BALANCE & LEVEL
           ═══════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
 
-        {/* BALANCE CARD */}
-        <GlassPanel delay={0.1} variant="gold">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gold-500/10 blur-3xl rounded-full pointer-events-none" />
-
-          <div className="flex items-center gap-2 mb-4 text-zinc-400">
-            <CreditCard size={14} strokeWidth={1.5} />
-            <span className="text-[10px] uppercase tracking-widest font-bold">Счёт</span>
+        {/* BALANCE */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          style={glassGoldStyle}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#71717a' }}>
+            <CreditCard size={14} />
+            <span style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 600 }}>СЧЁТ</span>
           </div>
-
-          <div className="text-3xl font-display font-bold text-white mb-1">
+          <div style={{ fontSize: 28, fontWeight: 700, color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
             <AnimatedCounter value={user.balance} />
-            <span className="text-gold-400 text-2xl ml-1">₽</span>
+            <span style={{ color: '#d4af37', marginLeft: 4 }}>₽</span>
           </div>
-
-          <div className="text-[10px] text-zinc-500">
+          <div style={{ fontSize: 11, color: '#71717a', marginTop: 8 }}>
             +{user.bonus_balance} бонусов
           </div>
-        </GlassPanel>
+        </motion.div>
 
-        {/* STATUS / LEVEL CARD */}
-        <GlassPanel delay={0.15}>
-          <div className="absolute -bottom-4 -right-4 w-20 h-20 border border-gold-500/10 rounded-full pointer-events-none" />
-
-          <div className="flex items-center gap-2 mb-3 text-zinc-400">
-            <Crown size={14} strokeWidth={1.5} />
-            <span className="text-[10px] uppercase tracking-widest font-bold">Уровень</span>
+        {/* LEVEL */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          style={glassStyle}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#71717a' }}>
+            <Crown size={14} />
+            <span style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 600 }}>УРОВЕНЬ</span>
           </div>
-
-          <div className="text-lg font-display font-bold gold-gradient-text mb-2">
+          <div style={{
+            fontSize: 18,
+            fontWeight: 700,
+            marginBottom: 8,
+            background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>
             {user.rank.name}
           </div>
-
-          {/* Progress Bar */}
-          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+          <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 100, overflow: 'hidden' }}>
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${user.rank.progress}%` }}
-              transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="h-full bg-gold-400 rounded-full shadow-[0_0_10px_#D4AF37]"
+              transition={{ duration: 1, delay: 0.5 }}
+              style={{ height: '100%', background: '#d4af37', borderRadius: 100 }}
             />
           </div>
-
-          <div className="text-[10px] text-zinc-500 mt-2">
-            Уровень {user.rank.level}
-          </div>
-        </GlassPanel>
+          <div style={{ fontSize: 10, color: '#71717a', marginTop: 6 }}>Уровень {user.rank.level}</div>
+        </motion.div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HERO CTA — ПОРУЧИТЬ ЗАДАЧУ (Liquid Gold Button)
+          HERO BUTTON — ПОРУЧИТЬ ЗАДАЧУ
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.button
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleNewOrder}
-        className="w-full rounded-xl py-5 flex items-center justify-between px-6 mb-5 group relative overflow-hidden"
         style={{
-          background: 'linear-gradient(90deg, #B38728 0%, #D4AF37 30%, #FBF5B7 50%, #D4AF37 70%, #B38728 100%)',
+          width: '100%',
+          padding: '20px 24px',
+          borderRadius: 12,
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'linear-gradient(90deg, #B38728, #D4AF37, #FBF5B7, #D4AF37, #B38728)',
           backgroundSize: '200% auto',
-          boxShadow: '0 0 30px -5px rgba(212, 175, 55, 0.5), 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255,255,255,0.4)',
+          boxShadow: '0 0 30px -5px rgba(212,175,55,0.5), inset 0 2px 4px rgba(255,255,255,0.4)',
+          marginBottom: 16,
         }}
       >
-        {/* Shimmer Effect */}
-        <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 blur-md" />
-
-        <div className="flex flex-col items-start z-10">
-          <span className="text-lg font-black text-onyx tracking-wide font-display">
+        <div style={{ textAlign: 'left' }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#09090b', fontFamily: "'Montserrat', sans-serif" }}>
             ПОРУЧИТЬ ЗАДАЧУ
-          </span>
-          <span className="text-[11px] text-onyx/70 font-semibold tracking-wide">
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(9,9,11,0.7)', marginTop: 2 }}>
             Персональный менеджер
-          </span>
+          </div>
         </div>
-
-        <div className="w-12 h-12 bg-onyx/10 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform z-10">
-          <Plus size={24} className="text-onyx" strokeWidth={2.5} />
+        <div style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: 'rgba(9,9,11,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <Plus size={22} color="#09090b" strokeWidth={2.5} />
         </div>
       </motion.button>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PANIC BUTTON — СРОЧНО
+          PANIC BUTTON
           ═══════════════════════════════════════════════════════════════════ */}
-      <GlassPanel delay={0.25} onClick={handlePanicOrder} className="mb-5">
-        <div className="flex items-center gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        onClick={handlePanicOrder}
+        style={{ ...glassStyle, marginBottom: 16, cursor: 'pointer' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              boxShadow: [
-                '0 0 0 0 rgba(239, 68, 68, 0)',
-                '0 0 20px 4px rgba(239, 68, 68, 0.3)',
-                '0 0 0 0 rgba(239, 68, 68, 0)',
-              ],
-            }}
+            animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-11 h-11 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <Zap size={22} className="text-white" strokeWidth={2} />
+            <Zap size={22} color="#fff" />
           </motion.div>
-
-          <div className="flex-1">
-            <h3 className="text-[15px] font-bold text-red-400 mb-0.5">Срочно?</h3>
-            <p className="text-[11px] text-zinc-500">Скинь фото — оценим за 5 минут</p>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#ef4444' }}>Срочно?</div>
+            <div style={{ fontSize: 11, color: '#71717a' }}>Скинь фото — оценим за 5 минут</div>
           </div>
-
-          <ChevronRight size={20} className="text-red-400" />
+          <ChevronRight size={20} color="#ef4444" />
         </div>
-      </GlassPanel>
+      </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          REPUTATION CARD (Referral as "Репутация")
+          REPUTATION (Referral)
           ═══════════════════════════════════════════════════════════════════ */}
-      <GlassPanel delay={0.3} variant="gold" className="mb-5">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
-              <Star size={14} className="text-gold-400 fill-gold-400" />
-              РЕПУТАЦИЯ
-            </h3>
-            <p className="text-[11px] text-zinc-400 leading-relaxed max-w-[85%]">
-              Пригласите партнёра в клуб и получайте{' '}
-              <span className="text-gold-400 font-bold">5% роялти</span> с каждого заказа.
-            </p>
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        style={{ ...glassGoldStyle, marginBottom: 16 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Star size={14} color="#d4af37" fill="#d4af37" />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>РЕПУТАЦИЯ</span>
         </div>
-
-        {/* Referral Code */}
+        <p style={{ fontSize: 11, color: '#a1a1aa', marginBottom: 16, lineHeight: 1.5 }}>
+          Пригласите партнёра в клуб и получайте <span style={{ color: '#d4af37', fontWeight: 600 }}>5% роялти</span> с каждого заказа.
+        </p>
         <motion.button
           onClick={(e) => { e.stopPropagation(); copyReferralCode() }}
           whileTap={{ scale: 0.97 }}
-          className="w-full bg-onyx/60 border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-gold-500/30 transition-colors"
+          style={{
+            width: '100%',
+            padding: '14px 16px',
+            background: 'rgba(0,0,0,0.4)',
+            border: '1px solid rgba(212,175,55,0.3)',
+            borderRadius: 10,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          <code className="text-gold-400 font-mono tracking-widest text-sm font-bold">
+          <code style={{ color: '#d4af37', fontFamily: 'monospace', fontSize: 14, fontWeight: 700, letterSpacing: '0.1em' }}>
             {user.referral_code}
           </code>
-          {copied ? (
-            <Check size={16} className="text-green-500" />
-          ) : (
-            <Copy size={16} className="text-zinc-500" />
-          )}
+          {copied ? <Check size={16} color="#22c55e" /> : <Copy size={16} color="#71717a" />}
         </motion.button>
-
-        {user.referrals_count > 0 && (
-          <div className="mt-3 text-[11px] text-zinc-500">
-            Приглашено: <span className="text-gold-400 font-semibold">{user.referrals_count}</span> партнёров
-          </div>
-        )}
-      </GlassPanel>
+      </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           PROGRESS TO NEXT LEVEL
           ═══════════════════════════════════════════════════════════════════ */}
       {user.rank.next_rank && (
-        <GlassPanel delay={0.35} className="mb-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400/20 to-gold-400/5 border border-gold-400/30 flex items-center justify-center shadow-[0_0_20px_-5px_rgba(212,175,55,0.3)]">
-              <TrendingUp size={18} className="text-gold-400" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          style={{ ...glassStyle, marginBottom: 16 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
+              border: '1px solid rgba(212,175,55,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <TrendingUp size={18} color="#d4af37" />
             </div>
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-white">
-                Следующий уровень
-              </div>
-              <div className="text-[11px] text-zinc-500">
-                {user.rank.next_rank}
-              </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Следующий уровень</div>
+              <div style={{ fontSize: 11, color: '#71717a' }}>{user.rank.next_rank}</div>
             </div>
-            <div className="text-right">
-              <span className="font-mono text-gold-400 font-semibold">
-                {user.rank.progress}%
-              </span>
-            </div>
+            <span style={{ fontFamily: 'monospace', color: '#d4af37', fontWeight: 600 }}>{user.rank.progress}%</span>
           </div>
-
-          {/* Progress Bar */}
-          <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-3">
+          <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 100, overflow: 'hidden', marginBottom: 10 }}>
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${user.rank.progress}%` }}
-              transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="h-full rounded-full"
+              transition={{ duration: 1, delay: 0.5 }}
               style={{
+                height: '100%',
                 background: 'linear-gradient(90deg, #8b6914, #d4af37, #f5d061)',
-                boxShadow: '0 0 15px rgba(212, 175, 55, 0.5)',
+                borderRadius: 100,
+                boxShadow: '0 0 15px rgba(212,175,55,0.5)',
               }}
             />
           </div>
-
-          <div className="text-[11px] text-zinc-500 text-center">
-            Осталось <span className="text-gold-400 font-semibold">{user.rank.spent_to_next.toLocaleString('ru-RU')} ₽</span>
+          <div style={{ fontSize: 11, color: '#71717a', textAlign: 'center' }}>
+            Осталось <span style={{ color: '#d4af37', fontWeight: 600 }}>{user.rank.spent_to_next.toLocaleString('ru-RU')} ₽</span>
           </div>
-        </GlassPanel>
+        </motion.div>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          QUICK STATS ROW
+          QUICK STATS
           ═══════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 gap-3">
-        <GlassPanel delay={0.4} onClick={() => navigate('/orders')}>
-          <div className="flex items-center gap-2 mb-2 text-zinc-400">
-            <Briefcase size={16} strokeWidth={1.5} />
-            <span className="text-[10px] uppercase tracking-wider font-medium">Заказы</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          onClick={() => navigate('/orders')}
+          style={{ ...glassStyle, cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: '#71717a' }}>
+            <Briefcase size={16} />
+            <span style={{ fontSize: 10, letterSpacing: '0.1em', fontWeight: 500 }}>ЗАКАЗЫ</span>
           </div>
-          <div className="text-2xl font-display font-bold text-white">
-            {activeOrders}
-          </div>
-          <div className="text-[10px] text-zinc-500">активных</div>
-        </GlassPanel>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{activeOrders}</div>
+          <div style={{ fontSize: 10, color: '#71717a' }}>активных</div>
+        </motion.div>
 
-        <GlassPanel delay={0.45} onClick={() => navigate('/orders')}>
-          <div className="flex items-center gap-2 mb-2 text-zinc-400">
-            <Star size={16} strokeWidth={1.5} />
-            <span className="text-[10px] uppercase tracking-wider font-medium">Всего</span>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          onClick={() => navigate('/orders')}
+          style={{ ...glassStyle, cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: '#71717a' }}>
+            <Star size={16} />
+            <span style={{ fontSize: 10, letterSpacing: '0.1em', fontWeight: 500 }}>ВСЕГО</span>
           </div>
-          <div className="text-2xl font-display font-bold text-gold-400">
-            {user.orders_count}
-          </div>
-          <div className="text-[10px] text-zinc-500">выполнено</div>
-        </GlassPanel>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#d4af37' }}>{user.orders_count}</div>
+          <div style={{ fontSize: 10, color: '#71717a' }}>выполнено</div>
+        </motion.div>
       </div>
     </div>
   )
