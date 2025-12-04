@@ -92,12 +92,12 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        background: '#14141a',
+        background: 'var(--bg-card-solid)',
         borderRadius: 16,
-        border: focused ? '2px solid rgba(212,175,55,0.5)' : '2px solid rgba(255,255,255,0.06)',
+        border: focused ? '2px solid var(--border-gold-strong)' : '2px solid var(--border-default)',
         padding: '16px 18px',
         transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-        boxShadow: focused ? '0 0 20px -5px rgba(212,175,55,0.3)' : 'none',
+        boxShadow: focused ? 'var(--glow-gold)' : 'none',
       }}
     >
       {/* Label */}
@@ -107,13 +107,13 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
         gap: 8,
         marginBottom: 10,
       }}>
-        {Icon && <Icon size={14} color="#d4af37" strokeWidth={2} />}
+        {Icon && <Icon size={14} color="var(--gold-400)" strokeWidth={2} />}
         <span style={{
           fontSize: 11,
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
-          color: '#d4af37',
+          color: 'var(--gold-400)',
         }}>
           {label} {required && <span style={{ opacity: 0.7 }}>*</span>}
         </span>
@@ -133,7 +133,7 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
               width: '100%',
               fontSize: 16,
               fontFamily: "'Inter', sans-serif",
-              color: '#f2f2f2',
+              color: 'var(--text-main)',
               background: 'transparent',
               border: 'none',
               outline: 'none',
@@ -154,7 +154,7 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
                 flex: 1,
                 fontSize: 16,
                 fontFamily: "'Inter', sans-serif",
-                color: '#f2f2f2',
+                color: 'var(--text-main)',
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
@@ -162,7 +162,7 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
               }}
             />
             {hasDropdown && (
-              <ChevronDown size={20} color="#71717a" style={{ flexShrink: 0 }} />
+              <ChevronDown size={20} color="var(--text-muted)" style={{ flexShrink: 0 }} />
             )}
           </div>
         )}
@@ -198,9 +198,9 @@ function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        background: '#14141a',
+        background: 'var(--bg-card-solid)',
         borderRadius: 16,
-        border: isDragging ? '2px solid rgba(212,175,55,0.5)' : '2px solid rgba(255,255,255,0.06)',
+        border: isDragging ? '2px solid var(--border-gold-strong)' : '2px solid var(--border-default)',
         padding: '16px 18px',
         transition: 'border-color 0.2s ease',
       }}
@@ -212,19 +212,19 @@ function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
         gap: 8,
         marginBottom: 12,
       }}>
-        <Paperclip size={14} color="#d4af37" strokeWidth={2} />
+        <Paperclip size={14} color="var(--gold-400)" strokeWidth={2} />
         <span style={{
           fontSize: 11,
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
-          color: '#d4af37',
+          color: 'var(--gold-400)',
         }}>
           Файлы
         </span>
         <span style={{
           fontSize: 10,
-          color: '#71717a',
+          color: 'var(--text-muted)',
           marginLeft: 'auto',
         }}>
           Необязательно
@@ -234,7 +234,7 @@ function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
       {/* Drop Zone */}
       <motion.div
         animate={{
-          background: isDragging ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.02)',
+          background: isDragging ? 'rgba(212,175,55,0.08)' : 'var(--bg-glass)',
         }}
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
         onDragLeave={() => setIsDragging(false)}
@@ -243,7 +243,7 @@ function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
         style={{
           padding: '20px 16px',
           borderRadius: 12,
-          border: '1px dashed rgba(212,175,55,0.25)',
+          border: '1px dashed var(--border-gold)',
           cursor: 'pointer',
           textAlign: 'center',
         }}
@@ -271,13 +271,13 @@ function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <FileUp size={18} color="#d4af37" />
+            <FileUp size={18} color="var(--gold-400)" />
           </div>
           <div style={{ textAlign: 'left' }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#a1a1aa', margin: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>
               Прикрепить файлы
             </p>
-            <p style={{ fontSize: 11, color: '#52525b', margin: 0 }}>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
               Методички, примеры, требования
             </p>
           </div>
@@ -297,22 +297,22 @@ function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
                 alignItems: 'center',
                 gap: 10,
                 padding: '10px 12px',
-                background: 'rgba(255,255,255,0.03)',
+                background: 'var(--bg-glass)',
                 borderRadius: 10,
               }}
             >
-              <Upload size={16} color="#d4af37" />
+              <Upload size={16} color="var(--gold-400)" />
               <span style={{
                 flex: 1,
                 fontSize: 13,
-                color: '#f2f2f2',
+                color: 'var(--text-main)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}>
                 {file.name}
               </span>
-              <span style={{ fontSize: 11, color: '#52525b' }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                 {(file.size / 1024).toFixed(0)} KB
               </span>
               <button
@@ -321,7 +321,7 @@ function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
                   width: 24,
                   height: 24,
                   borderRadius: 6,
-                  background: 'rgba(239,68,68,0.1)',
+                  background: 'var(--error-glass)',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -329,7 +329,7 @@ function FileVaultMini({ files, onAdd, onRemove }: FileVaultMiniProps) {
                   justifyContent: 'center',
                 }}
               >
-                <X size={12} color="#ef4444" />
+                <X size={12} color="var(--error-text)" />
               </button>
             </motion.div>
           ))}
@@ -371,18 +371,18 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
         minHeight: 140,
         background: selected
           ? 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
-          : 'rgba(20,20,23,0.6)',
+          : 'var(--bg-card)',
         backdropFilter: 'blur(12px)',
         border: selected
-          ? '2px solid rgba(212,175,55,0.6)'
-          : '1px solid rgba(255,255,255,0.06)',
+          ? '2px solid var(--border-gold-strong)'
+          : '1px solid var(--border-default)',
         borderRadius: 20,
         cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
         boxShadow: selected
-          ? '0 0 30px -5px rgba(212,175,55,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
-          : '0 4px 24px -8px rgba(0,0,0,0.5)',
+          ? 'var(--glow-gold-strong)'
+          : 'var(--card-shadow)',
         WebkitTapHighlightColor: 'transparent',
       }}
     >
@@ -412,7 +412,7 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
           color: '#050505',
-          background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+          background: 'var(--gold-metallic)',
           borderRadius: 6,
         }}>
           Premium
@@ -426,15 +426,15 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
         borderRadius: 14,
         background: selected
           ? 'linear-gradient(145deg, rgba(212,175,55,0.3), rgba(212,175,55,0.1))'
-          : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${selected ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.06)'}`,
+          : 'var(--bg-glass)',
+        border: `1px solid ${selected ? 'var(--border-gold-strong)' : 'var(--border-default)'}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
         zIndex: 1,
       }}>
-        <Icon size={26} color={selected ? '#e6c547' : '#71717a'} strokeWidth={1.5} />
+        <Icon size={26} color={selected ? 'var(--gold-300)' : 'var(--text-muted)'} strokeWidth={1.5} />
       </div>
 
       {/* Text */}
@@ -442,7 +442,7 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
         <div style={{
           fontSize: 14,
           fontWeight: 600,
-          color: selected ? '#f2f2f2' : '#a1a1aa',
+          color: selected ? 'var(--text-main)' : 'var(--text-secondary)',
           marginBottom: 4,
         }}>
           {config.label}
@@ -450,7 +450,7 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
         <div style={{
           fontSize: 12,
           fontWeight: 600,
-          color: selected ? '#e6c547' : '#71717a',
+          color: selected ? 'var(--gold-300)' : 'var(--text-muted)',
           fontFamily: "'JetBrains Mono', monospace",
         }}>
           {config.price}
@@ -471,11 +471,11 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
               width: 24,
               height: 24,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #e6c547, #b48e26)',
+              background: 'var(--gold-metallic)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 10px rgba(212,175,55,0.4)',
+              boxShadow: 'var(--glow-gold)',
             }}
           >
             <Check size={14} color="#050505" strokeWidth={3} />
@@ -513,8 +513,8 @@ function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
       {/* Drop Zone */}
       <motion.div
         animate={{
-          borderColor: isDragging ? 'rgba(212,175,55,0.6)' : 'rgba(212,175,55,0.2)',
-          background: isDragging ? 'rgba(212,175,55,0.08)' : 'rgba(20,20,23,0.4)',
+          borderColor: isDragging ? 'var(--border-gold-strong)' : 'var(--border-gold)',
+          background: isDragging ? 'rgba(212,175,55,0.08)' : 'var(--bg-card)',
         }}
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
         onDragLeave={() => setIsDragging(false)}
@@ -545,19 +545,19 @@ function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
             margin: '0 auto 20px',
             borderRadius: 20,
             background: 'rgba(212,175,55,0.1)',
-            border: '1px solid rgba(212,175,55,0.2)',
+            border: '1px solid var(--border-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <FileUp size={32} color="#d4af37" strokeWidth={1.5} />
+          <FileUp size={32} color="var(--gold-400)" strokeWidth={1.5} />
         </motion.div>
 
-        <p style={{ fontSize: 15, fontWeight: 600, color: '#f2f2f2', marginBottom: 8 }}>
+        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)', marginBottom: 8 }}>
           Нажмите или перетащите файлы
         </p>
-        <p style={{ fontSize: 13, color: '#71717a' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           Методички, примеры, требования
         </p>
       </motion.div>
@@ -565,7 +565,7 @@ function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
       {/* File List */}
       {files.length > 0 && (
         <div style={{ marginTop: 20 }}>
-          <p style={{ fontSize: 12, color: '#71717a', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             Прикреплено ({files.length})
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -579,16 +579,16 @@ function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
                   alignItems: 'center',
                   gap: 12,
                   padding: '12px 16px',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'var(--bg-glass)',
+                  border: '1px solid var(--border-default)',
                   borderRadius: 12,
                 }}
               >
-                <Upload size={18} color="#d4af37" />
-                <span style={{ flex: 1, fontSize: 14, color: '#f2f2f2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <Upload size={18} color="var(--gold-400)" />
+                <span style={{ flex: 1, fontSize: 14, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {file.name}
                 </span>
-                <span style={{ fontSize: 12, color: '#71717a' }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {(file.size / 1024).toFixed(0)} KB
                 </span>
                 <button
@@ -597,7 +597,7 @@ function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
                     width: 28,
                     height: 28,
                     borderRadius: 8,
-                    background: 'rgba(239,68,68,0.1)',
+                    background: 'var(--error-glass)',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
@@ -605,7 +605,7 @@ function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
                     justifyContent: 'center',
                   }}
                 >
-                  <X size={14} color="#ef4444" />
+                  <X size={14} color="var(--error-text)" />
                 </button>
               </motion.div>
             ))}
@@ -646,10 +646,10 @@ function DeadlineCard({ config, selected, onSelect, index }: DeadlineCardProps) 
         padding: '18px 20px',
         background: selected
           ? 'linear-gradient(90deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
-          : 'rgba(20,20,23,0.6)',
+          : 'var(--bg-card)',
         border: selected
-          ? '2px solid rgba(212,175,55,0.5)'
-          : '1px solid rgba(255,255,255,0.06)',
+          ? '2px solid var(--border-gold-strong)'
+          : '1px solid var(--border-default)',
         borderRadius: 16,
         cursor: 'pointer',
         position: 'relative',
@@ -675,7 +675,7 @@ function DeadlineCard({ config, selected, onSelect, index }: DeadlineCardProps) 
       {/* Content */}
       <div style={{ flex: 1, textAlign: 'left' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: selected ? '#f2f2f2' : '#a1a1aa' }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: selected ? 'var(--text-main)' : 'var(--text-secondary)' }}>
             {config.label}
           </span>
           <span style={{
@@ -865,7 +865,7 @@ export function CreateOrderPage() {
 
   if (step === 4 && result) {
     return (
-      <div style={{ padding: 24, paddingBottom: 160, minHeight: '100vh', background: '#050505' }}>
+      <div style={{ padding: 24, paddingBottom: 160, minHeight: '100vh', background: 'var(--bg-main)' }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -908,13 +908,13 @@ export function CreateOrderPage() {
             fontFamily: "'Playfair Display', serif",
             fontSize: 28,
             fontWeight: 700,
-            color: result.ok ? '#f2f2f2' : '#ef4444',
+            color: result.ok ? 'var(--text-main)' : 'var(--error-text)',
             marginBottom: 16,
           }}>
             {result.ok ? 'Заказ создан!' : 'Ошибка'}
           </h2>
 
-          <p style={{ fontSize: 16, color: '#a1a1aa', marginBottom: 40, maxWidth: 300, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: 40, maxWidth: 300, lineHeight: 1.6 }}>
             {result.msg}
           </p>
 
@@ -946,9 +946,9 @@ export function CreateOrderPage() {
                 padding: '16px 28px',
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#a1a1aa',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 16,
                 cursor: 'pointer',
               }}
@@ -974,7 +974,7 @@ export function CreateOrderPage() {
       padding: 24,
       paddingBottom: 180, // Space for button + nav
       minHeight: '100vh',
-      background: '#050505',
+      background: 'var(--bg-main)',
     }}>
       {/* Reorder Banner */}
       {isReorder && (
@@ -1027,15 +1027,15 @@ export function CreateOrderPage() {
             width: 46,
             height: 46,
             borderRadius: 14,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-default)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
           }}
         >
-          <ArrowLeft size={22} color="#a1a1aa" />
+          <ArrowLeft size={22} color="var(--text-secondary)" />
         </motion.button>
 
         <div style={{ flex: 1 }}>
@@ -1043,7 +1043,7 @@ export function CreateOrderPage() {
             fontFamily: "'Playfair Display', serif",
             fontSize: 26,
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #f5d061, #d4af37)',
+            background: 'var(--gold-metallic)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
@@ -1051,17 +1051,17 @@ export function CreateOrderPage() {
           }}>
             {currentConfig?.title}
           </h1>
-          <p style={{ fontSize: 14, color: '#71717a' }}>{currentConfig?.subtitle}</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>{currentConfig?.subtitle}</p>
         </div>
 
         <div style={{
           padding: '10px 16px',
           background: 'rgba(212,175,55,0.1)',
-          border: '1px solid rgba(212,175,55,0.2)',
+          border: '1px solid var(--border-gold)',
           borderRadius: 12,
           fontSize: 14,
           fontWeight: 700,
-          color: '#d4af37',
+          color: 'var(--gold-400)',
           fontFamily: "'JetBrains Mono', monospace",
         }}>
           {step}/3
@@ -1182,7 +1182,7 @@ export function CreateOrderPage() {
                   marginTop: 24,
                   padding: 20,
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.03))',
-                  border: '1px solid rgba(212,175,55,0.2)',
+                  border: '1px solid var(--border-gold)',
                   borderRadius: 16,
                   display: 'flex',
                   alignItems: 'center',
@@ -1190,13 +1190,13 @@ export function CreateOrderPage() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Thermometer size={22} color="#d4af37" />
-                  <span style={{ fontSize: 14, color: '#a1a1aa' }}>Ориентировочно:</span>
+                  <Thermometer size={22} color="var(--gold-400)" />
+                  <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Ориентировочно:</span>
                 </div>
                 <span style={{
                   fontSize: 22,
                   fontWeight: 700,
-                  color: '#e6c547',
+                  color: 'var(--gold-300)',
                   fontFamily: "'JetBrains Mono', monospace",
                 }}>
                   {estimate.toLocaleString('ru-RU')} ₽
@@ -1231,15 +1231,15 @@ export function CreateOrderPage() {
             fontWeight: 700,
             fontFamily: "'Playfair Display', serif",
             letterSpacing: '0.02em',
-            color: canProceed ? '#050505' : '#71717a',
+            color: canProceed ? '#050505' : 'var(--text-muted)',
             background: canProceed
-              ? 'linear-gradient(180deg, #f5d061 0%, #d4af37 50%, #b48e26 100%)'
-              : 'rgba(255,255,255,0.08)',
+              ? 'var(--liquid-gold)'
+              : 'var(--bg-glass)',
             border: 'none',
             borderRadius: 18,
             cursor: canProceed && !submitting ? 'pointer' : 'not-allowed',
             boxShadow: canProceed
-              ? '0 0 50px -10px rgba(212,175,55,0.7), 0 15px 30px -15px rgba(0,0,0,0.5)'
+              ? 'var(--glow-gold-intense)'
               : 'none',
             opacity: canProceed ? 1 : 0.5,
             display: 'flex',

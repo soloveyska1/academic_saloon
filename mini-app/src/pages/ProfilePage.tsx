@@ -638,10 +638,10 @@ export function ProfilePage({ user }: Props) {
           transition={{ delay: 0.15 }}
           style={{
             background: user.bonus_expiry.status === 'warning'
-              ? 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(20,20,23,0.95) 100%)'
+              ? 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, var(--bg-card) 100%)'
               : user.bonus_expiry.status === 'expired'
-                ? 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(20,20,23,0.95) 100%)'
-                : 'linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(20,20,23,0.95) 100%)',
+                ? 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, var(--bg-card) 100%)'
+                : 'linear-gradient(135deg, rgba(34,197,94,0.1) 0%, var(--bg-card) 100%)',
             border: `1px solid ${user.bonus_expiry.color || '#22c55e'}40`,
             borderRadius: 16,
             padding: 16,
@@ -918,12 +918,14 @@ export function ProfilePage({ user }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.42 }}
               style={{
-                background: 'rgba(20, 20, 23, 0.7)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 18,
                 padding: 18,
                 marginBottom: 16,
                 backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
+                boxShadow: 'var(--card-shadow)',
               }}
             >
               <div style={{
@@ -975,12 +977,14 @@ export function ProfilePage({ user }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45 }}
               style={{
-                background: 'rgba(20, 20, 23, 0.7)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 18,
                 padding: 18,
                 marginBottom: 16,
                 backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
+                boxShadow: 'var(--card-shadow)',
               }}
             >
               <div style={{
@@ -1065,11 +1069,12 @@ export function ProfilePage({ user }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
               style={{
-                background: 'rgba(20, 20, 23, 0.7)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 18,
                 padding: 18,
                 marginBottom: 16,
+                boxShadow: 'var(--card-shadow)',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1133,11 +1138,12 @@ export function ProfilePage({ user }: Props) {
                 <div
                   key={stat.label}
                   style={{
-                    background: 'rgba(20, 20, 23, 0.7)',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-default)',
                     borderRadius: 14,
                     padding: '14px 12px',
                     textAlign: 'center',
+                    boxShadow: 'var(--card-shadow)',
                   }}
                 >
                   <div style={{
@@ -1160,11 +1166,12 @@ export function ProfilePage({ user }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
               style={{
-                background: 'rgba(20, 20, 23, 0.7)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 18,
                 padding: 18,
                 marginTop: 16,
+                boxShadow: 'var(--card-shadow)',
               }}
             >
               <div style={{
@@ -1271,11 +1278,13 @@ export function ProfilePage({ user }: Props) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               style={{
-                background: 'rgba(20, 20, 23, 0.7)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 18,
                 padding: '16px 18px',
                 backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
+                boxShadow: 'var(--card-shadow)',
               }}
             >
               <div style={{
@@ -1332,11 +1341,12 @@ export function ProfilePage({ user }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               style={{
-                background: 'rgba(20, 20, 23, 0.7)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 18,
                 padding: 18,
                 marginTop: 16,
+                boxShadow: 'var(--card-shadow)',
               }}
             >
               <div style={{

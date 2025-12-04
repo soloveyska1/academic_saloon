@@ -99,8 +99,8 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
     <motion.div
       initial={false}
       style={{
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
+        background: 'var(--bg-glass)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: 12,
         overflow: 'hidden',
       }}
@@ -124,7 +124,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
           style={{
             fontSize: 14,
             fontWeight: 500,
-            color: '#f2f2f2',
+            color: 'var(--text-main)',
             lineHeight: 1.4,
           }}
         >
@@ -135,7 +135,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
           transition={{ duration: 0.2 }}
           style={{ flexShrink: 0 }}
         >
-          <ChevronDown size={18} color="#71717a" />
+          <ChevronDown size={18} color="var(--text-muted)" />
         </motion.div>
       </button>
 
@@ -151,7 +151,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
               style={{
                 padding: '0 16px 14px',
                 fontSize: 13,
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 lineHeight: 1.6,
               }}
             >
@@ -185,8 +185,8 @@ function FAQCategory({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       style={{
-        background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.9) 0%, rgba(15, 15, 18, 0.95) 100%)',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
+        background: 'var(--bg-card-solid)',
+        border: '1px solid var(--border-default)',
         borderRadius: 18,
         overflow: 'hidden',
       }}
@@ -226,7 +226,7 @@ function FAQCategory({
             flex: 1,
             fontSize: 15,
             fontWeight: 600,
-            color: '#f2f2f2',
+            color: 'var(--text-main)',
             textAlign: 'left',
           }}
         >
@@ -236,7 +236,7 @@ function FAQCategory({
           animate={{ rotate: isExpanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown size={20} color="#71717a" />
+          <ChevronDown size={20} color="var(--text-muted)" />
         </motion.div>
       </button>
 
@@ -327,7 +327,7 @@ export function SupportPage() {
         <p
           style={{
             fontSize: 14,
-            color: '#a1a1aa',
+            color: 'var(--text-muted)',
           }}
         >
           Мы всегда готовы помочь
@@ -351,7 +351,7 @@ export function SupportPage() {
           whileTap={{ scale: 0.95 }}
           style={{
             padding: 20,
-            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(20, 20, 23, 0.95) 100%)',
+            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, var(--bg-card-solid) 100%)',
             border: '1px solid rgba(212, 175, 55, 0.3)',
             borderRadius: 18,
             cursor: 'pointer',
@@ -378,7 +378,7 @@ export function SupportPage() {
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: '#f2f2f2',
+              color: 'var(--text-main)',
             }}
           >
             Написать в чат
@@ -393,7 +393,7 @@ export function SupportPage() {
           whileTap={{ scale: 0.95 }}
           style={{
             padding: 20,
-            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(20, 20, 23, 0.95) 100%)',
+            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, var(--bg-card-solid) 100%)',
             border: '1px solid rgba(34, 197, 94, 0.2)',
             borderRadius: 18,
             cursor: 'pointer',
@@ -420,7 +420,7 @@ export function SupportPage() {
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: '#f2f2f2',
+              color: 'var(--text-main)',
             }}
           >
             Позвонить
@@ -435,7 +435,7 @@ export function SupportPage() {
         transition={{ delay: 0.2 }}
         style={{
           padding: 18,
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(20, 20, 23, 0.95) 100%)',
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, var(--bg-card-solid) 100%)',
           border: '1px solid rgba(59, 130, 246, 0.2)',
           borderRadius: 16,
           marginBottom: 24,
@@ -462,7 +462,7 @@ export function SupportPage() {
             style={{
               fontSize: 14,
               fontWeight: 600,
-              color: '#f2f2f2',
+              color: 'var(--text-main)',
               marginBottom: 2,
             }}
           >
@@ -471,7 +471,7 @@ export function SupportPage() {
           <div
             style={{
               fontSize: 12,
-              color: '#a1a1aa',
+              color: 'var(--text-muted)',
             }}
           >
             Ежедневно с 9:00 до 22:00 (МСК)
@@ -504,7 +504,7 @@ export function SupportPage() {
             fontFamily: "'Playfair Display', serif",
             fontSize: 18,
             fontWeight: 700,
-            color: '#f2f2f2',
+            color: 'var(--text-main)',
             marginBottom: 16,
             display: 'flex',
             alignItems: 'center',
@@ -542,7 +542,7 @@ export function SupportPage() {
         style={{
           marginTop: 32,
           padding: 24,
-          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(20, 20, 23, 0.95) 100%)',
+          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, var(--bg-card-solid) 100%)',
           border: '1px solid rgba(212, 175, 55, 0.2)',
           borderRadius: 20,
           textAlign: 'center',
@@ -553,7 +553,7 @@ export function SupportPage() {
             fontFamily: "'Playfair Display', serif",
             fontSize: 16,
             fontWeight: 700,
-            color: '#f2f2f2',
+            color: 'var(--text-main)',
             marginBottom: 8,
           }}
         >
@@ -562,7 +562,7 @@ export function SupportPage() {
         <p
           style={{
             fontSize: 13,
-            color: '#a1a1aa',
+            color: 'var(--text-muted)',
             marginBottom: 16,
             lineHeight: 1.5,
           }}

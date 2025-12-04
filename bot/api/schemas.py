@@ -124,6 +124,25 @@ class RouletteResponse(BaseModel):
     next_spin_at: Optional[str] = None
 
 
+class DailyBonusInfoResponse(BaseModel):
+    """Daily bonus info for Mini App"""
+    can_claim: bool
+    streak: int  # Current streak (1-7)
+    next_bonus: int  # Bonus amount for current/next day
+    cooldown_remaining: Optional[str] = None  # "Xч Yмин" or None if can claim
+    bonuses: List[int]  # Array of bonus amounts [10, 20, 30, 40, 50, 100, 150]
+
+
+class DailyBonusClaimResponse(BaseModel):
+    """Daily bonus claim result"""
+    success: bool
+    won: bool
+    bonus: int  # Actual bonus won (0 if lost)
+    streak: int  # Updated streak
+    message: str
+    next_claim_at: Optional[str] = None  # When can claim next
+
+
 class ConfigResponse(BaseModel):
     """Public configuration for Mini App"""
     bot_username: str

@@ -1,36 +1,36 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Gift, Flame, X } from 'lucide-react'
+import { Gift, Flame, X, Frown, PartyPopper } from 'lucide-react'
+import { DailyBonusClaimResult } from '../../api/userApi'
 
 interface Props {
   streak: number
   canClaim: boolean
-  onClaim: () => Promise<{ bonus: number }>
+  bonuses: number[]
+  cooldownRemaining?: string | null
+  onClaim: () => Promise<DailyBonusClaimResult>
   onClose: () => void
 }
 
-export function DailyBonusModal({ streak, canClaim, onClaim, onClose }: Props) {
+export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, onClaim, onClose }: Props) {
   const [claiming, setClaiming] = useState(false)
-  const [claimed, setClaimed] = useState(false)
-  const [bonus, setBonus] = useState(0)
+  const [result, setResult] = useState<DailyBonusClaimResult | null>(null)
 
   const handleClaim = async () => {
     if (!canClaim || claiming) return
     setClaiming(true)
     try {
-      const result = await onClaim()
-      setBonus(result.bonus)
-      setClaimed(true)
+      const claimResult = await onClaim()
+      setResult(claimResult)
     } catch (e) {
       console.error(e)
     }
     setClaiming(false)
   }
 
-  // Bonus multiplier based on streak
-  const multiplier = Math.min(streak, 7)
-  const baseBonus = 10
-  const todayBonus = baseBonus * multiplier
+  // Current day bonus (1-7)
+  const currentDayIndex = canClaim ? (streak % 7) : ((streak - 1) % 7)
+  const todayBonus = bonuses[currentDayIndex] || 10
 
   const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
@@ -43,8 +43,9 @@ export function DailyBonusModal({ streak, canClaim, onClaim, onClose }: Props) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.85)',
+        background: 'var(--overlay-bg)',
         backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -58,14 +59,15 @@ export function DailyBonusModal({ streak, canClaim, onClaim, onClose }: Props) {
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(180deg, rgba(212,175,55,0.15) 0%, rgba(20,20,23,0.98) 30%)',
-          border: '1px solid rgba(212,175,55,0.3)',
+          background: 'var(--modal-bg)',
+          border: '1px solid var(--border-gold)',
           borderRadius: 24,
           padding: 24,
           textAlign: 'center',
           maxWidth: 340,
           width: '100%',
           position: 'relative',
+          boxShadow: 'var(--modal-shadow)',
         }}
       >
         {/* Close button */}
@@ -75,196 +77,286 @@ export function DailyBonusModal({ streak, canClaim, onClaim, onClose }: Props) {
             position: 'absolute',
             top: 16,
             right: 16,
-            background: 'rgba(255,255,255,0.1)',
-            border: 'none',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-default)',
             borderRadius: 8,
             padding: 8,
             cursor: 'pointer',
-            color: '#71717a',
+            color: 'var(--text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <X size={16} />
         </button>
 
-        {/* Icon */}
-        <motion.div
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 0.5, repeat: claimed ? 3 : 0 }}
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 20,
-            background: 'linear-gradient(135deg, #d4af37, #b38728)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 20px',
-            boxShadow: '0 0 40px rgba(212,175,55,0.4)',
-          }}
-        >
-          <Gift size={40} color="#09090b" />
-        </motion.div>
-
-        <h2 style={{
-          fontSize: 22,
-          fontWeight: 700,
-          color: '#fff',
-          marginBottom: 8,
-          fontFamily: "'Montserrat', sans-serif",
-        }}>
-          Ежедневный бонус
-        </h2>
-
-        {/* Streak */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-          marginBottom: 20,
-        }}>
-          <Flame size={18} color="#ef4444" />
-          <span style={{ fontSize: 14, color: '#a1a1aa' }}>
-            Серия: <span style={{ color: '#d4af37', fontWeight: 700 }}>{streak} дней</span>
-          </span>
-        </div>
-
-        {/* Week Progress */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 24,
-          padding: '0 10px',
-        }}>
-          {weekDays.map((day, i) => {
-            const dayNum = i + 1
-            const isCompleted = dayNum <= streak % 7 || (streak >= 7 && streak % 7 === 0)
-            const isCurrent = dayNum === (streak % 7) + 1 || (streak % 7 === 0 && dayNum === 1)
-
-            return (
-              <div key={day} style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: isCompleted
-                    ? 'linear-gradient(135deg, rgba(212,175,55,0.3), rgba(212,175,55,0.1))'
-                    : 'rgba(255,255,255,0.05)',
-                  border: isCurrent && canClaim
-                    ? '2px solid #d4af37'
-                    : isCompleted
-                      ? '1px solid rgba(212,175,55,0.3)'
-                      : '1px solid rgba(255,255,255,0.1)',
+        <AnimatePresence mode="wait">
+          {result ? (
+            // Result state (won or lost)
+            <motion.div
+              key="result"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              {/* Result Icon */}
+              <motion.div
+                animate={result.won ? { rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] } : { scale: [1, 0.95, 1] }}
+                transition={{ duration: 0.5, repeat: result.won ? 3 : 0 }}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 20,
+                  background: result.won
+                    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                    : 'var(--bg-glass)',
+                  border: result.won ? 'none' : '1px solid var(--border-default)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: 4,
-                  boxShadow: isCurrent && canClaim ? '0 0 15px rgba(212,175,55,0.3)' : 'none',
-                }}>
-                  {isCompleted ? (
-                    <span style={{ fontSize: 14 }}>✓</span>
-                  ) : (
-                    <span style={{ fontSize: 12, color: '#52525b' }}>{dayNum}</span>
-                  )}
-                </div>
-                <span style={{ fontSize: 9, color: '#52525b' }}>{day}</span>
-              </div>
-            )
-          })}
-        </div>
+                  margin: '0 auto 20px',
+                  boxShadow: result.won ? '0 0 40px rgba(34,197,94,0.4)' : 'none',
+                }}
+              >
+                {result.won ? (
+                  <PartyPopper size={40} color="#fff" />
+                ) : (
+                  <Frown size={40} color="var(--text-muted)" />
+                )}
+              </motion.div>
 
-        {/* Bonus Amount */}
-        <AnimatePresence mode="wait">
-          {claimed ? (
-            <motion.div
-              key="claimed"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              style={{
-                fontSize: 36,
-                fontWeight: 800,
-                color: '#22c55e',
+              <h2 style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: result.won ? 'var(--success-text)' : 'var(--text-main)',
+                marginBottom: 12,
+                fontFamily: "var(--font-serif)",
+              }}>
+                {result.won ? 'Поздравляем!' : 'Не повезло'}
+              </h2>
+
+              {result.won ? (
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, type: 'spring' }}
+                  style={{
+                    fontSize: 42,
+                    fontWeight: 800,
+                    color: 'var(--success-text)',
+                    marginBottom: 16,
+                    fontFamily: "var(--font-serif)",
+                    textShadow: '0 0 20px rgba(34,197,94,0.3)',
+                  }}
+                >
+                  +{result.bonus} ₽
+                </motion.div>
+              ) : (
+                <p style={{
+                  fontSize: 14,
+                  color: 'var(--text-secondary)',
+                  marginBottom: 16,
+                  lineHeight: 1.5,
+                }}>
+                  Попробуй снова завтра!<br/>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                    Шанс выигрыша: 50%
+                  </span>
+                </p>
+              )}
+
+              {/* Streak info */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 14px',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 100,
                 marginBottom: 20,
-                fontFamily: "'Montserrat', sans-serif",
-              }}
-            >
-              +{bonus} ₽
+              }}>
+                <Flame size={16} color="#ef4444" />
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  День {result.streak} из 7
+                </span>
+              </div>
+
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onClose}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: result.won ? 'var(--gold-metallic)' : 'var(--bg-glass)',
+                  border: result.won ? 'none' : '1px solid var(--border-default)',
+                  borderRadius: 14,
+                  color: result.won ? '#09090b' : 'var(--text-main)',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: result.won ? '0 0 25px rgba(212,175,55,0.3)' : 'none',
+                }}
+              >
+                {result.won ? 'Отлично!' : 'Понятно'}
+              </motion.button>
             </motion.div>
           ) : (
+            // Initial state (can claim or cooldown)
             <motion.div
-              key="unclaimed"
+              key="initial"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              style={{
+              exit={{ opacity: 0 }}
+            >
+              {/* Icon */}
+              <motion.div
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 20,
+                  background: 'linear-gradient(135deg, #d4af37, #b38728)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px',
+                  boxShadow: '0 0 40px rgba(212,175,55,0.4)',
+                }}
+              >
+                <Gift size={40} color="#09090b" />
+              </motion.div>
+
+              <h2 style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: 'var(--text-main)',
+                marginBottom: 8,
+                fontFamily: "var(--font-serif)",
+              }}>
+                Ежедневный бонус
+              </h2>
+
+              {/* Streak */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                marginBottom: 20,
+              }}>
+                <Flame size={18} color="#ef4444" />
+                <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+                  Серия: <span style={{ color: 'var(--gold-400)', fontWeight: 700 }}>{streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'}</span>
+                </span>
+              </div>
+
+              {/* Week Progress */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 24,
+                padding: '0 4px',
+              }}>
+                {weekDays.map((day, i) => {
+                  const dayNum = i + 1
+                  const dayBonus = bonuses[i] || 10
+                  const isCompleted = dayNum < (canClaim ? streak + 1 : streak + 1) && dayNum <= streak
+                  const isCurrent = dayNum === (canClaim ? (streak % 7) + 1 : ((streak - 1) % 7) + 1)
+
+                  return (
+                    <div key={day} style={{ textAlign: 'center', flex: 1 }}>
+                      <div style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        background: isCompleted
+                          ? 'linear-gradient(135deg, rgba(212,175,55,0.3), rgba(212,175,55,0.1))'
+                          : 'var(--bg-glass)',
+                        border: isCurrent && canClaim
+                          ? '2px solid var(--gold-400)'
+                          : isCompleted
+                            ? '1px solid var(--border-gold)'
+                            : '1px solid var(--border-default)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 4px',
+                        boxShadow: isCurrent && canClaim ? '0 0 15px rgba(212,175,55,0.3)' : 'none',
+                        position: 'relative',
+                      }}>
+                        {isCompleted ? (
+                          <span style={{ fontSize: 14, color: 'var(--gold-400)' }}>✓</span>
+                        ) : (
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>{dayBonus}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{day}</span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Bonus Amount */}
+              <div style={{
                 fontSize: 32,
                 fontWeight: 700,
-                marginBottom: 20,
-                background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                marginBottom: 8,
+                background: 'var(--gold-metallic)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-              }}
-            >
-              +{todayBonus} ₽
+              }}>
+                +{todayBonus} ₽
+              </div>
+
+              <p style={{
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                marginBottom: 20,
+              }}>
+                Шанс выигрыша: 50%
+              </p>
+
+              {/* Claim Button */}
+              <motion.button
+                whileTap={{ scale: canClaim ? 0.95 : 1 }}
+                onClick={handleClaim}
+                disabled={!canClaim || claiming}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: canClaim
+                    ? 'linear-gradient(90deg, #B38728, #D4AF37, #FBF5B7, #D4AF37, #B38728)'
+                    : 'var(--bg-glass)',
+                  backgroundSize: '200% auto',
+                  border: canClaim ? 'none' : '1px solid var(--border-default)',
+                  borderRadius: 14,
+                  color: canClaim ? '#09090b' : 'var(--text-muted)',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  cursor: canClaim ? 'pointer' : 'not-allowed',
+                  boxShadow: canClaim ? '0 0 30px rgba(212,175,55,0.4)' : 'none',
+                }}
+              >
+                {claiming ? 'Крутим...' : canClaim ? 'Испытать удачу!' : `Через ${cooldownRemaining || '24ч'}`}
+              </motion.button>
+
+              {/* Tip */}
+              <p style={{
+                fontSize: 11,
+                color: 'var(--text-muted)',
+                marginTop: 16,
+              }}>
+                Заходите каждый день для увеличения бонуса!
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Claim Button */}
-        {!claimed && (
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handleClaim}
-            disabled={!canClaim || claiming}
-            style={{
-              width: '100%',
-              padding: '16px',
-              background: canClaim
-                ? 'linear-gradient(90deg, #B38728, #D4AF37, #FBF5B7, #D4AF37, #B38728)'
-                : 'rgba(255,255,255,0.1)',
-              backgroundSize: '200% auto',
-              border: 'none',
-              borderRadius: 14,
-              color: canClaim ? '#09090b' : '#52525b',
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: canClaim ? 'pointer' : 'not-allowed',
-              boxShadow: canClaim ? '0 0 30px rgba(212,175,55,0.4)' : 'none',
-            }}
-          >
-            {claiming ? 'Получаем...' : canClaim ? 'Забрать бонус' : 'Приходите завтра!'}
-          </motion.button>
-        )}
-
-        {claimed && (
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onClose}
-            style={{
-              width: '100%',
-              padding: '16px',
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 14,
-              color: '#fff',
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Отлично!
-          </motion.button>
-        )}
-
-        {/* Tip */}
-        <p style={{
-          fontSize: 11,
-          color: '#52525b',
-          marginTop: 16,
-        }}>
-          Заходите каждый день для увеличения бонуса!
-        </p>
       </motion.div>
     </motion.div>
   )

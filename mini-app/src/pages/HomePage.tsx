@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { applyPromoCode } from '../api/userApi'
+import { applyPromoCode, fetchDailyBonusInfo, claimDailyBonus, DailyBonusInfo } from '../api/userApi'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { Confetti } from '../components/ui/Confetti'
 import { DailyBonusModal } from '../components/ui/DailyBonus'
@@ -176,6 +176,14 @@ export function HomePage({ user }: Props) {
   const [showQR, setShowQR] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showDailyBonus, setShowDailyBonus] = useState(false)
+  const [dailyBonusInfo, setDailyBonusInfo] = useState<DailyBonusInfo | null>(null)
+
+  // Fetch daily bonus info on mount
+  useEffect(() => {
+    fetchDailyBonusInfo()
+      .then(setDailyBonusInfo)
+      .catch(console.error)
+  }, [])
 
   // Secret admin activation (5 quick taps on logo badge)
   const tapCountRef = useRef(0)
@@ -199,9 +207,9 @@ export function HomePage({ user }: Props) {
     lastTapTimeRef.current = now
   }, [admin.isAdmin, haptic])
 
-  // Check if user can claim daily bonus (mock - should come from API)
-  const dailyStreak = 3 // Mock streak
-  const canClaimBonus = true // Mock - should check last claim time
+  // Use real daily bonus data from API
+  const canClaimBonus = dailyBonusInfo?.can_claim ?? false
+  const dailyStreak = dailyBonusInfo?.streak ?? 1
 
   if (!user) return null
 
@@ -1073,13 +1081,20 @@ export function HomePage({ user }: Props) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showDailyBonus && (
+        {showDailyBonus && dailyBonusInfo && (
           <DailyBonusModal
             streak={dailyStreak}
             canClaim={canClaimBonus}
+            bonuses={dailyBonusInfo.bonuses}
+            cooldownRemaining={dailyBonusInfo.cooldown_remaining}
             onClaim={async () => {
-              setShowConfetti(true)
-              return { bonus: 30 }
+              const result = await claimDailyBonus()
+              if (result.won) {
+                setShowConfetti(true)
+              }
+              // Refresh daily bonus info after claim
+              setDailyBonusInfo(prev => prev ? { ...prev, can_claim: false, cooldown_remaining: '24ч' } : null)
+              return result
             }}
             onClose={() => setShowDailyBonus(false)}
           />
