@@ -17,10 +17,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # files_url already exists in DB, only add review_submitted
     op.add_column('orders', sa.Column('review_submitted', sa.Boolean(), nullable=False, server_default='false'))
-    op.add_column('orders', sa.Column('files_url', sa.String(500), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column('orders', 'files_url')
     op.drop_column('orders', 'review_submitted')
