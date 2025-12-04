@@ -2,6 +2,7 @@ import asyncio
 import logging
 from aiogram import Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.types import BotCommand, BotCommandScopeDefault
 
 from core.config import settings
 from bot.bot_instance import get_bot, set_bot, close_bot
@@ -116,6 +117,15 @@ async def run_bot():
     try:
         # Удаляем вебхук, чтобы не было конфликтов
         await bot.delete_webhook(drop_pending_updates=True)
+
+        # Настраиваем команды бота — минималистичный App-First подход
+        commands = [
+            BotCommand(command="start", description="Открыть приложение"),
+            BotCommand(command="help", description="Помощь"),
+        ]
+        await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+        logger.info("📋 Bot commands set")
+
         logger.info("🤖 Bot polling started...")
         await dp.start_polling(bot)
     except Exception as e:
