@@ -29,9 +29,10 @@ function InvitedFriendCard({ name, bonus, date }: { name: string; bonus: number;
         alignItems: 'center',
         gap: 12,
         padding: 14,
-        background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.8) 0%, rgba(15, 15, 18, 0.9) 100%)',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-default)',
         borderRadius: 14,
+        boxShadow: 'var(--card-shadow)',
       }}
     >
       <div
@@ -40,13 +41,13 @@ function InvitedFriendCard({ name, bonus, date }: { name: string; bonus: number;
           height: 44,
           borderRadius: 12,
           background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1))',
-          border: '1px solid rgba(212, 175, 55, 0.3)',
+          border: '1px solid var(--border-gold)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Users size={20} color="#d4af37" />
+        <Users size={20} color="var(--gold-400)" />
       </div>
 
       <div style={{ flex: 1 }}>
@@ -54,7 +55,7 @@ function InvitedFriendCard({ name, bonus, date }: { name: string; bonus: number;
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#f2f2f2',
+            color: 'var(--text-main)',
             marginBottom: 2,
           }}
         >
@@ -64,7 +65,7 @@ function InvitedFriendCard({ name, bonus, date }: { name: string; bonus: number;
           style={{
             fontSize: 11,
             fontFamily: "'JetBrains Mono', monospace",
-            color: '#71717a',
+            color: 'var(--text-muted)',
           }}
         >
           {date}
@@ -74,13 +75,13 @@ function InvitedFriendCard({ name, bonus, date }: { name: string; bonus: number;
       <div
         style={{
           padding: '6px 12px',
-          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))',
-          border: '1px solid rgba(34, 197, 94, 0.3)',
+          background: 'var(--success-glass)',
+          border: '1px solid var(--success-border)',
           borderRadius: 8,
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 12,
           fontWeight: 600,
-          color: '#22c55e',
+          color: 'var(--success-text)',
         }}
       >
         +{bonus}₽
@@ -199,11 +200,11 @@ export function ReferralPage({ user }: Props) {
         <p
           style={{
             fontSize: 14,
-            color: '#a1a1aa',
+            color: 'var(--text-secondary)',
             lineHeight: 1.5,
           }}
         >
-          Получай <span style={{ color: '#d4af37', fontWeight: 600 }}>100₽</span> за каждого друга
+          Получай <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>100₽</span> за каждого друга
         </p>
       </motion.header>
 
@@ -222,10 +223,11 @@ export function ReferralPage({ user }: Props) {
         <div
           style={{
             padding: 16,
-            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(20, 20, 23, 0.9) 100%)',
-            border: '1px solid rgba(212, 175, 55, 0.2)',
+            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, var(--bg-card) 100%)',
+            border: '1px solid var(--border-gold)',
             borderRadius: 16,
             textAlign: 'center',
+            boxShadow: 'var(--card-shadow)',
           }}
         >
           <div
@@ -233,7 +235,7 @@ export function ReferralPage({ user }: Props) {
               fontFamily: "'Playfair Display', serif",
               fontSize: 32,
               fontWeight: 800,
-              color: '#d4af37',
+              color: 'var(--gold-400)',
               marginBottom: 4,
             }}
           >
@@ -242,7 +244,7 @@ export function ReferralPage({ user }: Props) {
           <div
             style={{
               fontSize: 12,
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontFamily: "'JetBrains Mono', monospace",
             }}
           >
@@ -253,10 +255,11 @@ export function ReferralPage({ user }: Props) {
         <div
           style={{
             padding: 16,
-            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(20, 20, 23, 0.9) 100%)',
-            border: '1px solid rgba(34, 197, 94, 0.2)',
+            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, var(--bg-card) 100%)',
+            border: '1px solid var(--success-border)',
             borderRadius: 16,
             textAlign: 'center',
+            boxShadow: 'var(--card-shadow)',
           }}
         >
           <div
@@ -264,7 +267,7 @@ export function ReferralPage({ user }: Props) {
               fontFamily: "'Playfair Display', serif",
               fontSize: 32,
               fontWeight: 800,
-              color: '#22c55e',
+              color: 'var(--success-text)',
               marginBottom: 4,
             }}
           >
@@ -273,7 +276,7 @@ export function ReferralPage({ user }: Props) {
           <div
             style={{
               fontSize: 12,
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontFamily: "'JetBrains Mono', monospace",
             }}
           >
@@ -289,10 +292,11 @@ export function ReferralPage({ user }: Props) {
         transition={{ delay: 0.2 }}
         style={{
           padding: 20,
-          background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.9) 0%, rgba(15, 15, 18, 0.95) 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
           borderRadius: 18,
           marginBottom: 24,
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         <div
@@ -304,12 +308,12 @@ export function ReferralPage({ user }: Props) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Crown size={18} color="#d4af37" />
+            <Crown size={18} color="var(--gold-400)" />
             <span
               style={{
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#f2f2f2',
+                color: 'var(--text-main)',
               }}
             >
               {currentTier?.label || 'Максимум достигнут'}
@@ -319,7 +323,7 @@ export function ReferralPage({ user }: Props) {
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 12,
-              color: '#d4af37',
+              color: 'var(--gold-400)',
             }}
           >
             {referralCount}/{currentTier?.count || referralCount}
@@ -329,7 +333,7 @@ export function ReferralPage({ user }: Props) {
         <div
           style={{
             height: 8,
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: 'var(--bg-glass)',
             borderRadius: 4,
             overflow: 'hidden',
           }}
@@ -340,9 +344,9 @@ export function ReferralPage({ user }: Props) {
             transition={{ delay: 0.3, duration: 0.8 }}
             style={{
               height: '100%',
-              background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+              background: 'var(--gold-metallic)',
               borderRadius: 4,
-              boxShadow: '0 0 10px rgba(212, 175, 55, 0.4)',
+              boxShadow: 'var(--glow-gold)',
             }}
           />
         </div>
@@ -352,16 +356,16 @@ export function ReferralPage({ user }: Props) {
             style={{
               marginTop: 10,
               fontSize: 12,
-              color: '#71717a',
+              color: 'var(--text-muted)',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
             }}
           >
-            <Sparkles size={14} color="#d4af37" />
+            <Sparkles size={14} color="var(--gold-400)" />
             <span>
               Ещё {currentTier.count - referralCount} до бонуса{' '}
-              <span style={{ color: '#22c55e', fontWeight: 600 }}>+{currentTier.bonus}₽</span>
+              <span style={{ color: 'var(--success-text)', fontWeight: 600 }}>+{currentTier.bonus}₽</span>
             </span>
           </div>
         )}
@@ -374,16 +378,17 @@ export function ReferralPage({ user }: Props) {
         transition={{ delay: 0.25 }}
         style={{
           padding: 20,
-          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(20, 20, 23, 0.95) 100%)',
-          border: '1px solid rgba(212, 175, 55, 0.2)',
+          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, var(--bg-card) 100%)',
+          border: '1px solid var(--border-gold)',
           borderRadius: 18,
           marginBottom: 24,
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         <div
           style={{
             fontSize: 12,
-            color: '#71717a',
+            color: 'var(--text-muted)',
             marginBottom: 8,
             textAlign: 'center',
             fontFamily: "'JetBrains Mono', monospace",
@@ -398,7 +403,7 @@ export function ReferralPage({ user }: Props) {
             fontSize: 28,
             fontWeight: 800,
             textAlign: 'center',
-            color: '#d4af37',
+            color: 'var(--gold-400)',
             letterSpacing: '0.15em',
             marginBottom: 16,
           }}
@@ -419,18 +424,18 @@ export function ReferralPage({ user }: Props) {
               flex: 1,
               padding: '14px 20px',
               background: copied
-                ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1))'
-                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
+                ? 'var(--success-glass)'
+                : 'var(--bg-glass)',
               border: copied
-                ? '1px solid rgba(34, 197, 94, 0.4)'
-                : '1px solid rgba(255, 255, 255, 0.1)',
+                ? '1px solid var(--success-border)'
+                : '1px solid var(--border-default)',
               borderRadius: 12,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              color: copied ? '#22c55e' : '#f2f2f2',
+              color: copied ? 'var(--success-text)' : 'var(--text-main)',
               fontSize: 14,
               fontWeight: 600,
             }}
@@ -445,7 +450,7 @@ export function ReferralPage({ user }: Props) {
             style={{
               flex: 1,
               padding: '14px 20px',
-              background: 'linear-gradient(135deg, #d4af37 0%, #8b6914 100%)',
+              background: 'var(--gold-metallic)',
               border: 'none',
               borderRadius: 12,
               cursor: 'pointer',
@@ -456,7 +461,7 @@ export function ReferralPage({ user }: Props) {
               color: '#0a0a0c',
               fontSize: 14,
               fontWeight: 600,
-              boxShadow: '0 4px 16px rgba(212, 175, 55, 0.3)',
+              boxShadow: 'var(--glow-gold)',
             }}
           >
             <Share2 size={18} />
@@ -485,7 +490,7 @@ export function ReferralPage({ user }: Props) {
                 fontFamily: "'Playfair Display', serif",
                 fontSize: 16,
                 fontWeight: 700,
-                color: '#f2f2f2',
+                color: 'var(--text-main)',
               }}
             >
               Приглашённые друзья
@@ -493,7 +498,7 @@ export function ReferralPage({ user }: Props) {
             <span
               style={{
                 fontSize: 12,
-                color: '#71717a',
+                color: 'var(--text-muted)',
                 fontFamily: "'JetBrains Mono', monospace",
               }}
             >
@@ -523,16 +528,17 @@ export function ReferralPage({ user }: Props) {
         style={{
           marginTop: 24,
           padding: 20,
-          background: 'linear-gradient(135deg, rgba(20, 20, 23, 0.8) 0%, rgba(15, 15, 18, 0.9) 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
           borderRadius: 18,
+          boxShadow: 'var(--card-shadow)',
         }}
       >
         <h4
           style={{
             fontFamily: "'Playfair Display', serif",
             fontSize: 14,
-            color: '#d4af37',
+            color: 'var(--gold-400)',
             marginBottom: 16,
             letterSpacing: '0.05em',
           }}
@@ -564,7 +570,7 @@ export function ReferralPage({ user }: Props) {
                     borderRadius: 8,
                     background: referralCount >= tier.count
                       ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-                      : 'rgba(255, 255, 255, 0.05)',
+                      : 'var(--bg-glass)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -573,17 +579,17 @@ export function ReferralPage({ user }: Props) {
                   {referralCount >= tier.count ? (
                     <Check size={14} color="#fff" />
                   ) : (
-                    <span style={{ fontSize: 11, color: '#71717a' }}>{tier.count}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tier.count}</span>
                   )}
                 </div>
-                <span style={{ fontSize: 13, color: '#a1a1aa' }}>{tier.label}</span>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{tier.label}</span>
               </div>
               <span
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 13,
                   fontWeight: 600,
-                  color: referralCount >= tier.count ? '#22c55e' : '#71717a',
+                  color: referralCount >= tier.count ? 'var(--success-text)' : 'var(--text-muted)',
                 }}
               >
                 +{tier.bonus}₽

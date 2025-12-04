@@ -44,12 +44,12 @@ const TypingDots = () => (
 // Message status indicator
 const MessageStatus = ({ isRead, isSent }: { isRead: boolean, isSent: boolean }) => {
   if (!isSent) {
-    return <Circle size={12} color="#52525b" style={{ opacity: 0.5 }} />
+    return <Circle size={12} color="var(--text-muted)" style={{ opacity: 0.5 }} />
   }
   if (isRead) {
     return <CheckCheck size={14} color="#3b82f6" />
   }
-  return <Check size={14} color="#71717a" />
+  return <Check size={14} color="var(--text-muted)" />
 }
 
 // File type icons
@@ -423,7 +423,7 @@ export function OrderChat({ orderId }: Props) {
       return (
         <div style={{
           fontSize: 14,
-          color: '#f2f2f2',
+          color: 'var(--text-main)',
           lineHeight: 1.5,
           wordBreak: 'break-word',
         }}>
@@ -476,7 +476,7 @@ export function OrderChat({ orderId }: Props) {
                 }}
               />
             </div>
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {msg.file_name || 'Голосовое'}
             </span>
           </motion.button>
@@ -495,8 +495,8 @@ export function OrderChat({ orderId }: Props) {
             alignItems: 'center',
             gap: 10,
             padding: '10px 14px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-default)',
             borderRadius: 12,
             textDecoration: 'none',
           }}
@@ -516,7 +516,7 @@ export function OrderChat({ orderId }: Props) {
             <div style={{
               fontSize: 13,
               fontWeight: 500,
-              color: '#f2f2f2',
+              color: 'var(--text-main)',
               marginBottom: 2,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -525,12 +525,12 @@ export function OrderChat({ orderId }: Props) {
             }}>
               {msg.file_name || 'Файл'}
             </div>
-            <div style={{ fontSize: 11, color: '#71717a' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {msg.file_type === 'photo' ? 'Фото' :
                msg.file_type === 'video' ? 'Видео' : 'Документ'}
             </div>
           </div>
-          <Download size={16} color="#71717a" />
+          <Download size={16} color="var(--text-muted)" />
         </motion.a>
       )
     }
@@ -543,12 +543,15 @@ export function OrderChat({ orderId }: Props) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        background: 'rgba(20, 20, 23, 0.95)',
+        background: 'var(--bg-card-solid)',
         backdropFilter: 'blur(20px)',
         borderRadius: 20,
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        border: '1px solid var(--border-default)',
         overflow: 'hidden',
         marginTop: 16,
+        marginBottom: 80,
+        position: 'relative',
+        zIndex: 10,
       }}
     >
       {/* Header */}
@@ -604,7 +607,7 @@ export function OrderChat({ orderId }: Props) {
 
         <div style={{ flex: 1, textAlign: 'left' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#f2f2f2' }}>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>
               Чат с менеджером
             </span>
             {/* Online indicator */}
@@ -623,7 +626,7 @@ export function OrderChat({ orderId }: Props) {
               }}
             />
           </div>
-          <div style={{ fontSize: 12, color: '#71717a' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {isAdminTyping ? (
               <motion.span
                 animate={{ opacity: [0.5, 1, 0.5] }}
@@ -644,7 +647,7 @@ export function OrderChat({ orderId }: Props) {
           animate={{ rotate: isExpanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown size={20} color="#71717a" />
+          <ChevronDown size={20} color="var(--text-muted)" />
         </motion.div>
       </motion.button>
 
@@ -659,7 +662,7 @@ export function OrderChat({ orderId }: Props) {
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              borderTop: '1px solid var(--border-subtle)',
               padding: '0 16px 16px',
             }}>
               {/* Messages Area */}
@@ -675,7 +678,7 @@ export function OrderChat({ orderId }: Props) {
                   <div style={{
                     textAlign: 'center',
                     padding: 24,
-                    color: '#71717a',
+                    color: 'var(--text-muted)',
                     fontSize: 14,
                   }}>
                     <Loader size={24} className="animate-spin" style={{ margin: '0 auto 8px' }} />
@@ -685,7 +688,7 @@ export function OrderChat({ orderId }: Props) {
                   <div style={{
                     textAlign: 'center',
                     padding: 24,
-                    color: '#71717a',
+                    color: 'var(--text-muted)',
                     fontSize: 14,
                   }}>
                     Нет сообщений. Напишите первым!
@@ -710,10 +713,10 @@ export function OrderChat({ orderId }: Props) {
                           : '16px 16px 16px 4px',
                         background: msg.sender_type === 'client'
                           ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1))'
-                          : 'rgba(255, 255, 255, 0.05)',
+                          : 'var(--bg-glass)',
                         border: msg.sender_type === 'client'
                           ? '1px solid rgba(212, 175, 55, 0.3)'
-                          : '1px solid rgba(255, 255, 255, 0.08)',
+                          : '1px solid var(--border-default)',
                       }}>
                         {/* Message Header */}
                         <div style={{
@@ -726,16 +729,16 @@ export function OrderChat({ orderId }: Props) {
                           {msg.sender_type === 'admin' ? (
                             <Headphones size={12} color="#d4af37" />
                           ) : (
-                            <User size={12} color="#71717a" />
+                            <User size={12} color="var(--text-muted)" />
                           )}
                           <span style={{
                             fontSize: 11,
                             fontWeight: 600,
-                            color: msg.sender_type === 'admin' ? '#d4af37' : '#71717a',
+                            color: msg.sender_type === 'admin' ? '#d4af37' : 'var(--text-muted)',
                           }}>
                             {msg.sender_name}
                           </span>
-                          <span style={{ fontSize: 10, color: '#52525b' }}>
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
                             {formatTime(msg.created_at)}
                           </span>
                           {/* Message status for client messages */}
@@ -766,8 +769,8 @@ export function OrderChat({ orderId }: Props) {
                       <div style={{
                         padding: '4px 8px',
                         borderRadius: '16px 16px 16px 4px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        background: 'var(--bg-glass)',
+                        border: '1px solid var(--border-default)',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                           <Headphones size={12} color="#d4af37" />
@@ -871,7 +874,7 @@ export function OrderChat({ orderId }: Props) {
                           width: 36,
                           height: 36,
                           borderRadius: 18,
-                          background: 'rgba(255, 255, 255, 0.1)',
+                          background: 'var(--bg-glass)',
                           border: 'none',
                           display: 'flex',
                           alignItems: 'center',
@@ -959,8 +962,8 @@ export function OrderChat({ orderId }: Props) {
                     width: 42,
                     height: 42,
                     borderRadius: 12,
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'var(--bg-glass)',
+                    border: '1px solid var(--border-default)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -968,7 +971,7 @@ export function OrderChat({ orderId }: Props) {
                     opacity: uploading || isRecording ? 0.5 : 1,
                   }}
                 >
-                  <Paperclip size={18} color="#71717a" />
+                  <Paperclip size={18} color="var(--text-muted)" />
                 </motion.button>
 
                 {/* Text Input */}
@@ -983,11 +986,11 @@ export function OrderChat({ orderId }: Props) {
                   style={{
                     flex: 1,
                     padding: '12px 16px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: 'var(--bg-glass)',
+                    border: '1px solid var(--border-default)',
                     borderRadius: 12,
                     fontSize: 15,
-                    color: '#f2f2f2',
+                    color: 'var(--text-main)',
                     outline: 'none',
                   }}
                 />
@@ -1027,10 +1030,10 @@ export function OrderChat({ orderId }: Props) {
                       borderRadius: 12,
                       background: isRecording
                         ? 'rgba(239, 68, 68, 0.2)'
-                        : 'rgba(255, 255, 255, 0.05)',
+                        : 'var(--bg-glass)',
                       border: isRecording
                         ? '1px solid rgba(239, 68, 68, 0.5)'
-                        : '1px solid rgba(255, 255, 255, 0.1)',
+                        : '1px solid var(--border-default)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1041,7 +1044,7 @@ export function OrderChat({ orderId }: Props) {
                     {isRecording ? (
                       <MicOff size={18} color="#ef4444" />
                     ) : (
-                      <Mic size={18} color="#71717a" />
+                      <Mic size={18} color="var(--text-muted)" />
                     )}
                   </motion.button>
                 )}
