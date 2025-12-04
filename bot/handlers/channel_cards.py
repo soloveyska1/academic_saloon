@@ -531,6 +531,18 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     # Отправляем полноценное уведомление с кнопками оплаты
     sent = await send_payment_notification(bot, order, user, price)
 
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЦЕНЕ ═══
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.WAITING_PAYMENT.value,
+            extra_data={"final_price": final_price, "bonus_used": bonus_used},
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
+
     price_formatted = f"{price:,}".replace(",", " ")
     if sent:
         await callback.answer(f"✅ Цена {price_formatted}₽ — клиент получил счёт!", show_alert=True)
@@ -643,6 +655,18 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     except Exception as e:
         logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
 
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ ОБ ОПЛАТЕ ═══
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=order.status,
+            extra_data={"paid_amount": float(order.paid_amount or 0), "payment_type": payment_type},
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
+
     await callback.answer(answer_text, show_alert=True)
 
 
@@ -690,6 +714,23 @@ async def card_request_final_payment(callback: CallbackQuery, session: AsyncSess
 
     try:
         await bot.send_message(order.user_id, user_text, reply_markup=user_keyboard)
+
+        # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ДОПЛАТЕ ═══
+        try:
+            from bot.services.realtime_notifications import send_custom_notification
+            await send_custom_notification(
+                telegram_id=order.user_id,
+                title="💳 Нужна доплата",
+                message=f"Работа готова! К оплате: {remaining_formatted} ₽",
+                notification_type="payment",
+                icon="credit-card",
+                color="#f59e0b",
+                action="view_order",
+                data={"order_id": order.id, "amount": remaining},
+            )
+        except Exception as ws_err:
+            logger.debug(f"WebSocket notification failed: {ws_err}")
+
         await callback.answer(f"📤 Запрос на доплату {int(remaining)} ₽ отправлен клиенту", show_alert=True)
     except Exception as e:
         logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
@@ -741,6 +782,18 @@ async def card_confirm_final_payment(callback: CallbackQuery, session: AsyncSess
         await bot.send_message(order.user_id, user_text)
     except Exception as e:
         logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
+
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ДОПЛАТЕ ═══
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.PAID_FULL.value,
+            extra_data={"total_paid": float(order.final_price or 0)},
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
 
     await callback.answer(f"✅ Доплата {int(remaining)} ₽ подтверждена", show_alert=True)
 
@@ -919,6 +972,18 @@ async def card_complete_order(callback: CallbackQuery, session: AsyncSession, bo
         "Спасибо, что выбрал нас! Будем рады помочь снова.\n\n"
         "Оставь отзыв, если понравилось 🌟"
     )
+
+    # ═══ WEBSOCKET УВЕДОМЛЕНИЕ О ЗАВЕРШЕНИИ ═══
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.COMPLETED.value,
+            extra_data={"cashback": cashback_amount} if cashback_amount > 0 else None,
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
 
     await callback.answer("✅ Заказ завершён!", show_alert=True)
 
