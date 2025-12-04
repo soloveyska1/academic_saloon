@@ -1507,3 +1507,270 @@ async def submit_order_review(
             status_code=500,
             detail="Не удалось отправить отзыв. Попробуйте позже."
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ЗАПРОС ПРАВОК И ПОДТВЕРЖДЕНИЕ РАБОТЫ
+# ═══════════════════════════════════════════════════════════════════════════
+
+class RevisionRequestData(BaseModel):
+    message: str = Field(default="", description="Описание правок (опционально)")
+
+
+class RevisionRequestResponse(BaseModel):
+    success: bool
+    message: str
+    prefilled_text: str  # Текст для pre-filled чата
+
+
+class ConfirmWorkResponse(BaseModel):
+    success: bool
+    message: str
+
+
+@router.post("/orders/{order_id}/request-revision", response_model=RevisionRequestResponse)
+async def request_revision(
+    order_id: int,
+    data: RevisionRequestData,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Клиент запрашивает правки.
+    - Меняет статус на revision
+    - Отправляет уведомление админу
+    - Возвращает prefilled_text для чата
+    """
+    from database.models.orders import OrderMessage, MessageSender
+
+    # Get order and verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Это не ваш заказ")
+
+    # Check if order is in review status
+    if order.status != OrderStatus.REVIEW.value:
+        raise HTTPException(
+            status_code=400,
+            detail="Правки можно запросить только для работы на проверке"
+        )
+
+    # Check 30-day limit
+    if order.delivered_at:
+        days_since_delivery = (datetime.now(timezone.utc) - order.delivered_at.replace(tzinfo=timezone.utc)).days
+        if days_since_delivery > 30:
+            raise HTTPException(
+                status_code=400,
+                detail="Период бесплатных правок (30 дней) истёк"
+            )
+
+    # Get user
+    user = await session.get(User, tg_user.id)
+
+    # Change status to revision
+    old_status = order.status
+    order.status = OrderStatus.REVISION.value
+    await session.commit()
+
+    # Create auto-message in chat
+    prefilled_text = "Прошу внести правки:\n\n"
+    if data.message:
+        prefilled_text += data.message
+
+    # Save revision request as message
+    revision_message = OrderMessage(
+        order_id=order_id,
+        sender_type=MessageSender.CLIENT.value,
+        sender_id=tg_user.id,
+        message_text=f"📝 <b>Запрос на правки</b>\n\n{data.message}" if data.message else "📝 <b>Запрос на правки</b>",
+        is_read=False,
+    )
+    session.add(revision_message)
+    await session.commit()
+
+    # Notify admin via Forum Topic
+    try:
+        bot = get_bot()
+        from bot.handlers.order_chat import get_or_create_topic
+
+        conv, topic_id = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=tg_user.id,
+            order_id=order_id,
+        )
+
+        if conv and topic_id:
+            client_name = user.fullname if user else tg_user.first_name
+            admin_text = f"""✏️ <b>ЗАПРОС НА ПРАВКИ</b>
+
+👤 Клиент: <b>{client_name}</b>
+📦 Заказ: <code>#{order.id}</code>
+
+{f'💬 Комментарий:\n<i>{data.message}</i>' if data.message else '<i>Без комментария</i>'}
+
+━━━━━━━━━━━━━━━━━━━━
+📌 Статус изменён на <b>«Правки»</b>"""
+
+            await bot.send_message(
+                chat_id=settings.ADMIN_GROUP_ID,
+                message_thread_id=topic_id,
+                text=admin_text,
+            )
+
+        # Update live card
+        from bot.services.live_cards import send_or_update_card
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            extra_text=f"✏️ Запрос правок — {datetime.now().strftime('%d.%m %H:%M')}",
+        )
+
+    except Exception as e:
+        logger.error(f"[Revision] Failed to notify admin: {e}")
+
+    # WebSocket notification to admin (if connected)
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.REVISION.value,
+            old_status=old_status,
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
+
+    return RevisionRequestResponse(
+        success=True,
+        message="Запрос на правки отправлен! Менеджер свяжется с вами.",
+        prefilled_text=prefilled_text,
+    )
+
+
+@router.post("/orders/{order_id}/confirm-completion", response_model=ConfirmWorkResponse)
+async def confirm_work_completion(
+    order_id: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Клиент подтверждает, что работа выполнена качественно.
+    - Меняет статус на completed
+    - Начисляет кешбэк
+    - Отправляет уведомления
+    """
+    # Get order and verify ownership
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+
+    if order.user_id != tg_user.id:
+        raise HTTPException(status_code=403, detail="Это не ваш заказ")
+
+    # Check if order is in review status
+    if order.status != OrderStatus.REVIEW.value:
+        raise HTTPException(
+            status_code=400,
+            detail="Подтвердить можно только работу на проверке"
+        )
+
+    # Get user
+    user = await session.get(User, tg_user.id)
+
+    # Complete order
+    old_status = order.status
+    order.status = OrderStatus.COMPLETED.value
+    order.completed_at = datetime.utcnow()
+
+    # Increment user stats
+    if user:
+        user.orders_count = (user.orders_count or 0) + 1
+        user.total_spent = (user.total_spent or 0) + float(order.paid_amount or order.final_price or order.price or 0)
+
+    await session.commit()
+
+    # Add cashback
+    cashback_amount = 0.0
+    try:
+        bot = get_bot()
+        from bot.services.bonus import BonusService
+        order_amount = float(order.paid_amount or order.final_price or order.price or 0)
+        cashback_amount = await BonusService.add_order_cashback(
+            session=session,
+            bot=bot,
+            user_id=order.user_id,
+            order_id=order.id,
+            order_amount=order_amount,
+        )
+    except Exception as e:
+        logger.error(f"[Confirm] Failed to add cashback: {e}")
+
+    # Notify admin
+    try:
+        bot = get_bot()
+        from bot.handlers.order_chat import get_or_create_topic
+        from bot.services.unified_hub import close_order_topic
+
+        conv, topic_id = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=tg_user.id,
+            order_id=order_id,
+        )
+
+        if conv and topic_id:
+            client_name = user.fullname if user else tg_user.first_name
+            admin_text = f"""✅ <b>КЛИЕНТ ПОДТВЕРДИЛ РАБОТУ!</b>
+
+👤 Клиент: <b>{client_name}</b>
+📦 Заказ: <code>#{order.id}</code>
+
+🎉 Заказ успешно завершён!"""
+
+            await bot.send_message(
+                chat_id=settings.ADMIN_GROUP_ID,
+                message_thread_id=topic_id,
+                text=admin_text,
+            )
+
+        # Close topic
+        await close_order_topic(bot, session, order)
+
+        # Update live card
+        from bot.services.live_cards import send_or_update_card
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+        )
+
+    except Exception as e:
+        logger.error(f"[Confirm] Failed to notify admin: {e}")
+
+    # WebSocket notification
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order.id,
+            new_status=OrderStatus.COMPLETED.value,
+            old_status=old_status,
+            extra_data={"cashback": cashback_amount} if cashback_amount > 0 else None,
+        )
+    except Exception as ws_err:
+        logger.debug(f"WebSocket notification failed: {ws_err}")
+
+    cashback_text = f" +{cashback_amount:.0f}₽ кешбэк!" if cashback_amount > 0 else ""
+    return ConfirmWorkResponse(
+        success=True,
+        message=f"Спасибо! Заказ завершён.{cashback_text}",
+    )

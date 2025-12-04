@@ -17,6 +17,7 @@ class OrderStatus(str, enum.Enum):
     PAID_FULL = "paid_full"      # Оплачен полностью
     IN_PROGRESS = "in_progress"  # В работе
     REVIEW = "review"            # На проверке у клиента
+    REVISION = "revision"        # Правки запрошены клиентом
     COMPLETED = "completed"      # Завершён
     CANCELLED = "cancelled"      # Отменён
     REJECTED = "rejected"        # Отклонён админом
@@ -192,6 +193,16 @@ ORDER_STATUS_META = {
         "user_can_cancel": False,
         "show_in_history": False,
     },
+    OrderStatus.REVISION: {
+        "emoji": "✏️",
+        "label": "Правки",
+        "short_label": "Правки",
+        "description": "Вносим исправления",
+        "is_active": True,
+        "is_final": False,
+        "user_can_cancel": False,
+        "show_in_history": False,
+    },
     OrderStatus.COMPLETED: {
         "emoji": "✅",
         "label": "Завершён",
@@ -289,6 +300,7 @@ class Order(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Работа сдана (старт 30-дневных правок)
     reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Напоминание отправлено
     review_submitted: Mapped[bool] = mapped_column(default=False)  # Отзыв оставлен
 
