@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
+import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import {
-  Plus, Copy, Check, ChevronRight, TrendingUp, Gift,
-  Star, Zap, Crown, CreditCard, Briefcase, Award, Target, Sparkles
+  Plus, Copy, Check, ChevronRight, TrendingUp, Gift, QrCode,
+  Star, Zap, Crown, CreditCard, Briefcase, Award, Target, Sparkles, Flame
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { applyPromoCode } from '../api/userApi'
+import { QRCodeModal } from '../components/ui/QRCode'
+import { Confetti } from '../components/ui/Confetti'
+import { DailyBonusModal } from '../components/ui/DailyBonus'
 
 interface Props {
   user: UserData | null
@@ -122,6 +125,13 @@ export function HomePage({ user }: Props) {
   const [promoCode, setPromoCode] = useState('')
   const [promoLoading, setPromoLoading] = useState(false)
   const [promoMessage, setPromoMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [showQR, setShowQR] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [showDailyBonus, setShowDailyBonus] = useState(false)
+
+  // Check if user can claim daily bonus (mock - should come from API)
+  const dailyStreak = 3 // Mock streak
+  const canClaimBonus = true // Mock - should check last claim time
 
   if (!user) return null
 
@@ -511,26 +521,45 @@ export function HomePage({ user }: Props) {
         <p style={{ fontSize: 11, color: '#a1a1aa', marginBottom: 14, lineHeight: 1.5 }}>
           Пригласите партнёра и получайте <span style={{ color: '#d4af37', fontWeight: 600 }}>5% роялти</span> с каждого заказа.
         </p>
-        <motion.button
-          onClick={(e) => { e.stopPropagation(); copyReferralCode() }}
-          whileTap={{ scale: 0.97 }}
-          style={{
-            width: '100%',
-            padding: '14px 16px',
-            background: 'rgba(0,0,0,0.4)',
-            border: '1px solid rgba(212,175,55,0.3)',
-            borderRadius: 10,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <code style={{ color: '#d4af37', fontFamily: 'monospace', fontSize: 14, fontWeight: 700, letterSpacing: '0.1em' }}>
-            {user.referral_code}
-          </code>
-          {copied ? <Check size={16} color="#22c55e" /> : <Copy size={16} color="#71717a" />}
-        </motion.button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <motion.button
+            onClick={(e) => { e.stopPropagation(); copyReferralCode() }}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              flex: 1,
+              padding: '14px 16px',
+              background: 'rgba(0,0,0,0.4)',
+              border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: 10,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <code style={{ color: '#d4af37', fontFamily: 'monospace', fontSize: 14, fontWeight: 700, letterSpacing: '0.1em' }}>
+              {user.referral_code}
+            </code>
+            {copied ? <Check size={16} color="#22c55e" /> : <Copy size={16} color="#71717a" />}
+          </motion.button>
+          <motion.button
+            onClick={(e) => { e.stopPropagation(); setShowQR(true); haptic('light') }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              width: 50,
+              height: 50,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
+              border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: 10,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <QrCode size={20} color="#d4af37" />
+          </motion.button>
+        </div>
         {user.referrals_count > 0 && (
           <div style={{ marginTop: 10, fontSize: 11, color: '#71717a' }}>
             Приглашено: <span style={{ color: '#d4af37', fontWeight: 600 }}>{user.referrals_count}</span>
@@ -648,6 +677,80 @@ export function HomePage({ user }: Props) {
           <div style={{ fontSize: 10, color: '#71717a' }}>заказов</div>
         </motion.div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          DAILY BONUS FLOATING BUTTON
+          ═══════════════════════════════════════════════════════════════════ */}
+      {canClaimBonus && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 1, type: 'spring' }}
+          onClick={() => { setShowDailyBonus(true); haptic('medium') }}
+          style={{
+            position: 'fixed',
+            bottom: 100,
+            right: 20,
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #d4af37, #b38728)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 30px rgba(212,175,55,0.5)',
+            zIndex: 100,
+          }}
+        >
+          <Gift size={24} color="#09090b" />
+          {/* Notification badge */}
+          <div style={{
+            position: 'absolute',
+            top: -2,
+            right: -2,
+            width: 18,
+            height: 18,
+            borderRadius: '50%',
+            background: '#ef4444',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Flame size={10} color="#fff" />
+          </div>
+        </motion.button>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          MODALS
+          ═══════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showQR && (
+          <QRCodeModal
+            value={user.referral_code}
+            onClose={() => setShowQR(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDailyBonus && (
+          <DailyBonusModal
+            streak={dailyStreak}
+            canClaim={canClaimBonus}
+            onClaim={async () => {
+              setShowConfetti(true)
+              return { bonus: 30 }
+            }}
+            onClose={() => setShowDailyBonus(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Confetti Effect */}
+      <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>
   )
 }
