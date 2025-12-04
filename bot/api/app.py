@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routes import router
+from .websocket import router as ws_router
 
 
 # Production origins only
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
 
     # Include routes
     app.include_router(router)
+    app.include_router(ws_router)  # WebSocket for real-time updates
 
     # Health check
     @app.get("/api/health")

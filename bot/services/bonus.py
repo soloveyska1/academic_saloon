@@ -12,6 +12,15 @@ from database.models.users import User
 
 logger = logging.getLogger(__name__)
 
+# Описания причин изменения баланса для уведомлений
+BONUS_REASON_DESCRIPTIONS = {
+    "order_created": "Бонус за новый заказ",
+    "referral_bonus": "Реферальный бонус",
+    "admin_adjustment": "Корректировка админом",
+    "order_discount": "Использовано на заказ",
+    "compensation": "Компенсация",
+}
+
 
 class BonusReason(str, Enum):
     """Причины изменения баланса"""
@@ -69,6 +78,19 @@ class BonusService:
             f"Bonus added: user={user_id}, amount=+{amount:.0f}₽, "
             f"reason={reason.value}, balance: {old_balance:.0f}₽ → {user.balance:.0f}₽"
         )
+
+        # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
+        try:
+            from bot.api.websocket import notify_balance_update
+            reason_text = BONUS_REASON_DESCRIPTIONS.get(reason.value, description or reason.value)
+            await notify_balance_update(
+                telegram_id=user_id,
+                new_balance=float(user.balance),
+                change=float(amount),
+                reason=reason_text
+            )
+        except Exception as e:
+            logger.warning(f"[WS] Failed to send balance notification: {e}")
 
         return user.balance
 
