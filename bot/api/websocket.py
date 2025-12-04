@@ -57,14 +57,20 @@ class ConnectionManager:
     async def send_to_user(self, telegram_id: int, message: dict):
         """Send a message to all connections of a specific user"""
         if telegram_id not in self.active_connections:
+            logger.info(f"[WS] User {telegram_id} not connected, cannot send: {message.get('type', 'unknown')}")
             return False
 
         dead_connections = set()
+        sent_count = 0
+
+        logger.info(f"[WS] Sending {message.get('type', 'unknown')} to user {telegram_id} ({len(self.active_connections[telegram_id])} connections)")
 
         for websocket in self.active_connections[telegram_id]:
             try:
                 if websocket.client_state == WebSocketState.CONNECTED:
                     await websocket.send_json(message)
+                    sent_count += 1
+                    logger.info(f"[WS] Successfully sent {message.get('type')} to user {telegram_id}")
                 else:
                     dead_connections.add(websocket)
             except Exception as e:
@@ -76,7 +82,7 @@ class ConnectionManager:
             if telegram_id in self.active_connections:
                 self.active_connections[telegram_id] -= dead_connections
 
-        return True
+        return sent_count > 0
 
     async def broadcast(self, message: dict, exclude_user: Optional[int] = None):
         """Broadcast a message to all connected users"""

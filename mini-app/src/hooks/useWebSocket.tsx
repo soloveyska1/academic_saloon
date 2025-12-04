@@ -95,6 +95,30 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
   const pingIntervalRef = useRef<number | null>(null)
   const messageHandlersRef = useRef<Set<MessageHandler>>(new Set())
 
+  // Store handlers in refs to avoid stale closures
+  const handlersRef = useRef({
+    onOrderUpdate,
+    onBalanceUpdate,
+    onProgressUpdate,
+    onNotification,
+    onRefresh,
+    onConnect,
+    onDisconnect,
+  })
+
+  // Update refs when handlers change
+  useEffect(() => {
+    handlersRef.current = {
+      onOrderUpdate,
+      onBalanceUpdate,
+      onProgressUpdate,
+      onNotification,
+      onRefresh,
+      onConnect,
+      onDisconnect,
+    }
+  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onNotification, onRefresh, onConnect, onDisconnect])
+
   // Add message handler
   const addMessageHandler = useCallback((handler: MessageHandler) => {
     messageHandlersRef.current.add(handler)
@@ -110,31 +134,38 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     }
   }, [])
 
-  // Handle incoming message
+  // Handle incoming message - uses refs to always have latest handlers
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const message: WSMessage = JSON.parse(event.data)
+      console.log('[WS] Received message:', message.type, message)
       setLastMessage(message)
 
       // Call all registered handlers
       messageHandlersRef.current.forEach(handler => handler(message))
 
-      // Call specific handlers based on message type
+      // Call specific handlers based on message type (using refs for latest versions)
+      const handlers = handlersRef.current
       switch (message.type) {
         case 'order_update':
-          onOrderUpdate?.(message as OrderUpdateMessage)
+          console.log('[WS] Calling onOrderUpdate handler')
+          handlers.onOrderUpdate?.(message as OrderUpdateMessage)
           break
         case 'balance_update':
-          onBalanceUpdate?.(message as BalanceUpdateMessage)
+          console.log('[WS] Calling onBalanceUpdate handler')
+          handlers.onBalanceUpdate?.(message as BalanceUpdateMessage)
           break
         case 'progress_update':
-          onProgressUpdate?.(message as ProgressUpdateMessage)
+          console.log('[WS] Calling onProgressUpdate handler')
+          handlers.onProgressUpdate?.(message as ProgressUpdateMessage)
           break
         case 'notification':
-          onNotification?.(message as NotificationMessage)
+          console.log('[WS] Calling onNotification handler')
+          handlers.onNotification?.(message as NotificationMessage)
           break
         case 'refresh':
-          onRefresh?.(message as RefreshMessage)
+          console.log('[WS] Calling onRefresh handler')
+          handlers.onRefresh?.(message as RefreshMessage)
           break
         case 'ping':
           // Respond to server ping
@@ -147,11 +178,14 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     } catch (e) {
       console.error('[WS] Failed to parse message:', e)
     }
-  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onNotification, onRefresh, sendMessage])
+  }, [sendMessage]) // Only depends on sendMessage now, handlers are from refs
 
   // Connect to WebSocket
   const connect = useCallback(() => {
-    if (!telegramId) return
+    if (!telegramId) {
+      console.log('[WS] No telegramId, skipping connection')
+      return
+    }
 
     // Clear any existing connection
     if (wsRef.current) {
@@ -165,10 +199,10 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       const ws = new WebSocket(url)
 
       ws.onopen = () => {
-        console.log('[WS] Connection opened')
+        console.log('[WS] Connection opened successfully!')
         setIsConnected(true)
         setConnectionError(null)
-        onConnect?.()
+        handlersRef.current.onConnect?.()
 
         // Start ping interval to keep connection alive
         if (pingIntervalRef.current) {
@@ -186,7 +220,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       ws.onclose = (event) => {
         console.log('[WS] Connection closed:', event.code, event.reason)
         setIsConnected(false)
-        onDisconnect?.()
+        handlersRef.current.onDisconnect?.()
 
         // Clear ping interval
         if (pingIntervalRef.current) {
@@ -212,7 +246,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       console.error('[WS] Failed to create WebSocket:', e)
       setConnectionError('Failed to connect')
     }
-  }, [telegramId, handleMessage, onConnect, onDisconnect, autoReconnect, reconnectInterval, sendMessage])
+  }, [telegramId, handleMessage, autoReconnect, reconnectInterval, sendMessage])
 
   // Disconnect
   const disconnect = useCallback(() => {
