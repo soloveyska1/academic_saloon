@@ -1,5 +1,5 @@
 from aiogram import Router, Bot, F
-from aiogram.filters import CommandStart, CommandObject
+from aiogram.filters import CommandStart, CommandObject, Command
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
@@ -53,6 +53,41 @@ WELCOME_BACK_MESSAGE = """<b>АКАДЕМИЧЕСКИЙ САЛУН</b>
 <i>Заказы, чат, оплата — всё внутри.</i>"""
 
 router = Router()
+
+
+# ══════════════════════════════════════════════════════════════
+#  /help COMMAND — Premium App-First
+# ══════════════════════════════════════════════════════════════
+
+HELP_MESSAGE = """<b>АКАДЕМИЧЕСКИЙ САЛУН</b>
+
+<b>Как это работает:</b>
+
+1. Нажмите кнопку «Открыть приложение»
+2. Выберите тип работы и заполните детали
+3. Получите расчёт стоимости
+4. Оплатите и отслеживайте выполнение
+
+<b>Гарантии:</b>
+• Уникальность от 85%
+• Оформление по ГОСТ
+• 3 бесплатные итерации правок
+• Поддержка 24/7
+
+<b>Команды:</b>
+/start — Открыть приложение
+/help — Эта справка
+
+<i>Вопросы? Нажмите «Поддержка» в меню.</i>"""
+
+
+@router.message(Command("help"))
+async def cmd_help(message: Message):
+    """Обработчик команды /help"""
+    await message.answer(
+        HELP_MESSAGE,
+        reply_markup=get_main_menu_keyboard()
+    )
 
 
 async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
