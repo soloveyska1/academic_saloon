@@ -2205,21 +2205,19 @@ async def get_referral_qr(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Build referral link
+    # Referral code for display
     referral_code = f"REF{user.telegram_id}"
-    bot_username = settings.BOT_USERNAME.lstrip("@")
-    referral_link = f"https://t.me/{bot_username}?start=ref_{user.telegram_id}"
 
-    # Get username
+    # Get username for personalization
     username = user.username or user.fullname or "друг"
 
     if style == "simple":
-        # Simple QR code
-        qr_bytes = generate_simple_qr(referral_link, size=400)
+        # Simple QR code (just the QR, no card)
+        qr_bytes = generate_simple_qr(user_id=user.telegram_id, size=400)
     else:
-        # Premium card
+        # Premium branded card with QR
         qr_bytes = generate_premium_qr_card(
-            referral_link=referral_link,
+            user_id=user.telegram_id,
             username=username,
             referral_code=referral_code,
             invited_count=user.referrals_count or 0,
