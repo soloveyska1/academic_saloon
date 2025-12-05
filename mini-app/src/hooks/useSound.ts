@@ -1,21 +1,22 @@
 import { useCallback, useRef } from 'react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  LEGACY SOUND ENGINE — Premium Mechanical Audio via Web Audio API
-//  No external files needed - all sounds synthesized in realtime
+//  HACKER SOUND ENGINE — Premium Mechanical Audio via Web Audio API
+//  No external files - all sounds synthesized in realtime
 // ═══════════════════════════════════════════════════════════════════════════
 
 type SoundType =
-  | 'click'       // Button click
-  | 'latch'       // Heavy lock latch
-  | 'open'        // Vault door pneumatics
-  | 'win'         // Success chord
+  | 'click'       // UI click
   | 'tick'        // Dial tick
-  | 'spin_start'  // Spin beginning whoosh
-  | 'spin_stop'   // Spin ending
-  | 'jackpot'     // Jackpot fanfare
+  | 'spin_start'  // Spin beginning
+  | 'spin_tick'   // Fast tick during spin
+  | 'latch'       // Heavy lock latch
+  | 'unlock'      // Vault door opening
+  | 'win'         // Success chord
+  | 'jackpot'     // Epic fanfare
+  | 'alarm'       // Urgency alarm
   | 'error'       // Error buzz
-  | 'hover'       // Subtle hover sound
+  | 'hover'       // Subtle hover
 
 interface SoundEngine {
   play: (type: SoundType) => void
@@ -44,7 +45,7 @@ export const useSound = (): SoundEngine => {
     }
   }, [])
 
-  // Play a single tone
+  // Play a single tone with envelope
   const playTone = useCallback((
     freq: number,
     type: OscillatorType,
@@ -76,8 +77,13 @@ export const useSound = (): SoundEngine => {
     osc.stop(startTime + duration)
   }, [])
 
-  // Play white noise burst
-  const playNoise = useCallback((duration: number, startTime: number, vol: number = 0.1) => {
+  // Play white noise burst with filter
+  const playNoise = useCallback((
+    duration: number,
+    startTime: number,
+    vol: number = 0.1,
+    filterFreq: number = 1000
+  ) => {
     const ctx = audioContextRef.current
     if (!ctx || !masterGainRef.current) return
 
@@ -95,7 +101,7 @@ export const useSound = (): SoundEngine => {
 
     noise.buffer = buffer
     filter.type = 'bandpass'
-    filter.frequency.value = 1000
+    filter.frequency.value = filterFreq
 
     gain.gain.setValueAtTime(vol * volumeRef.current, startTime)
     gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration)
@@ -119,87 +125,98 @@ export const useSound = (): SoundEngine => {
 
       switch (type) {
         case 'click':
-          // Sharp mechanical click
-          playTone(2000, 'square', 0.05, t, 0.3)
-          playTone(400, 'triangle', 0.05, t + 0.01, 0.5)
+          // Sharp UI click
+          playTone(2000, 'square', 0.04, t, 0.25)
+          playTone(500, 'triangle', 0.05, t + 0.01, 0.4)
           break
 
         case 'tick':
           // Single dial tick
-          playTone(1200, 'square', 0.03, t, 0.2)
-          break
-
-        case 'latch':
-          // Heavy lock mechanism
-          playTone(800, 'sawtooth', 0.1, t, 0.4)
-          playTone(300, 'square', 0.15, t + 0.05, 0.4)
-          playTone(150, 'triangle', 0.3, t + 0.1, 0.6)
-          playNoise(0.1, t + 0.05, 0.15)
-          break
-
-        case 'open':
-          // Pneumatic door opening
-          playTone(400, 'sawtooth', 0.6, t, 0.4, 80)
-          playNoise(0.3, t, 0.2)
-          playTone(120, 'triangle', 0.4, t + 0.3, 0.3)
-          break
-
-        case 'win':
-          // Success chord (C-E-G-C)
-          const winNotes = [523.25, 659.25, 783.99, 1046.50]
-          winNotes.forEach((freq, i) => {
-            playTone(freq, 'triangle', 0.8, t + i * 0.05, 0.4)
-            playTone(freq, 'sine', 1.0, t + i * 0.05, 0.3)
-          })
+          playTone(1000, 'square', 0.025, t, 0.2)
+          playNoise(0.02, t, 0.08, 2000)
           break
 
         case 'spin_start':
-          // Rising whoosh
-          playTone(100, 'triangle', 1.0, t, 0.3, 800)
-          playNoise(0.5, t, 0.1)
+          // Rising whoosh with tension
+          playTone(80, 'sawtooth', 0.8, t, 0.25, 500)
+          playNoise(0.4, t, 0.12, 600)
+          playTone(40, 'sine', 0.5, t, 0.3, 150)
           break
 
-        case 'spin_stop':
-          // Descending stop
-          playTone(600, 'triangle', 0.4, t, 0.35, 100)
-          playTone(80, 'triangle', 0.15, t + 0.35, 0.4)
+        case 'spin_tick':
+          // Fast tick for spinning
+          playTone(1200, 'square', 0.015, t, 0.12)
+          break
+
+        case 'latch':
+          // Heavy mechanical latch
+          playTone(200, 'sawtooth', 0.12, t, 0.5)
+          playTone(100, 'square', 0.18, t + 0.04, 0.5)
+          playTone(60, 'triangle', 0.25, t + 0.08, 0.6)
+          playNoise(0.12, t + 0.02, 0.18, 400)
+          break
+
+        case 'unlock':
+          // Vault door pneumatic opening
+          playTone(300, 'sawtooth', 0.5, t, 0.35, 50)
+          playNoise(0.35, t + 0.05, 0.18, 250)
+          playTone(80, 'triangle', 0.4, t + 0.25, 0.35)
+          // Mechanical release
+          playTone(450, 'square', 0.08, t + 0.35, 0.25)
+          playTone(350, 'sine', 0.12, t + 0.4, 0.2)
+          break
+
+        case 'win':
+          // Victory chord (C-E-G-C)
+          const winNotes = [523.25, 659.25, 783.99, 1046.50]
+          winNotes.forEach((freq, i) => {
+            playTone(freq, 'triangle', 0.7, t + i * 0.06, 0.35)
+            playTone(freq, 'sine', 0.9, t + i * 0.06, 0.25)
+          })
           break
 
         case 'jackpot':
-          // Epic fanfare
+          // Epic fanfare arpeggio
           const fanfare = [
             { freq: 523.25, delay: 0 },
-            { freq: 659.25, delay: 0.08 },
-            { freq: 783.99, delay: 0.16 },
-            { freq: 1046.50, delay: 0.24 },
-            { freq: 1318.51, delay: 0.32 },
-            { freq: 1567.98, delay: 0.40 },
-            { freq: 2093.00, delay: 0.48 },
+            { freq: 659.25, delay: 0.07 },
+            { freq: 783.99, delay: 0.14 },
+            { freq: 1046.50, delay: 0.21 },
+            { freq: 1318.51, delay: 0.28 },
+            { freq: 1567.98, delay: 0.35 },
+            { freq: 2093.00, delay: 0.42 },
           ]
           fanfare.forEach(({ freq, delay }) => {
-            playTone(freq, 'triangle', 0.6, t + delay, 0.35)
-            playTone(freq / 2, 'sine', 0.5, t + delay, 0.2)
-            playTone(freq * 2, 'square', 0.15, t + delay, 0.1)
+            playTone(freq, 'triangle', 0.55, t + delay, 0.3)
+            playTone(freq / 2, 'sine', 0.45, t + delay, 0.18)
+            playTone(freq * 1.5, 'square', 0.12, t + delay, 0.08)
           })
-          // Shimmer
-          for (let i = 0; i < 10; i++) {
-            playTone(2000 + Math.random() * 2000, 'sine', 0.15, t + 0.6 + i * 0.06, 0.12)
+          // Sparkle shimmer
+          for (let i = 0; i < 8; i++) {
+            playTone(2000 + Math.random() * 2500, 'sine', 0.12, t + 0.55 + i * 0.05, 0.1)
           }
           break
 
+        case 'alarm':
+          // Urgent timer alarm
+          playTone(880, 'square', 0.08, t, 0.35)
+          playTone(660, 'square', 0.08, t + 0.12, 0.35)
+          playTone(880, 'square', 0.08, t + 0.24, 0.35)
+          break
+
         case 'error':
-          // Error buzz
-          playTone(200, 'sawtooth', 0.15, t, 0.3)
-          playTone(180, 'sawtooth', 0.15, t + 0.1, 0.3)
+          // Error/fail buzz
+          playTone(180, 'sawtooth', 0.18, t, 0.35)
+          playTone(140, 'sawtooth', 0.2, t + 0.08, 0.35)
           break
 
         case 'hover':
-          // Subtle hover
-          playTone(800, 'sine', 0.05, t, 0.1)
+          // Subtle hover feedback
+          playTone(900, 'sine', 0.04, t, 0.06)
           break
       }
     } catch {
-      // Silently fail - sound is enhancement
+      // Silently fail - sound is enhancement only
     }
   }, [initAudio, playTone, playNoise])
 
