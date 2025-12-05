@@ -87,7 +87,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
       {/* TOP TICKER */}
       <LiveWinnersTicker />
 
-      <main className="flex-1 w-full flex flex-col items-center justify-center relative z-20 pt-12 pb-8 px-4">
+      <main className="flex-1 w-full flex flex-col items-center justify-center relative z-20 pt-12 pb-32 px-4">
 
         {/* HEADER */}
         <motion.div
@@ -117,69 +117,80 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
         </div>
 
         {/* INTERACTION AREA */}
-        <div className="mt-auto mb-8 relative w-full max-w-xs h-16 flex items-center justify-center">
-          <AnimatePresence mode='wait'>
-            {gameState === 'idle' ? (
-              <motion.button
-                key="hack-btn"
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="relative group w-full h-full overflow-hidden rounded-sm"
-                onMouseDown={startHolding}
-                onMouseUp={stopHolding}
-                onMouseLeave={stopHolding}
-                onTouchStart={startHolding}
-                onTouchEnd={stopHolding}
-              >
-                {/* Button Background */}
-                <div className="absolute inset-0 bg-[#09090b] border border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.2)] group-active:scale-95 transition-transform duration-100"></div>
+        <div className="mt-auto relative w-full max-w-xs flex flex-col items-center justify-center gap-2">
+          {gameState === 'idle' && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="text-[10px] font-mono text-[#D4AF37]/60 tracking-[0.3em] uppercase animate-pulse"
+            >
+              Удерживайте для взлома
+            </motion.div>
+          )}
 
-                {/* Progress Fill */}
+          <div className="w-full h-16 relative">
+            <AnimatePresence mode='wait'>
+              {gameState === 'idle' ? (
+                <motion.button
+                  key="hack-btn"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="relative group w-full h-full overflow-hidden rounded-sm"
+                  onMouseDown={startHolding}
+                  onMouseUp={stopHolding}
+                  onMouseLeave={stopHolding}
+                  onTouchStart={startHolding}
+                  onTouchEnd={stopHolding}
+                >
+                  {/* Button Background */}
+                  <div className="absolute inset-0 bg-[#09090b] border border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.2)] group-active:scale-95 transition-transform duration-100"></div>
+
+                  {/* Progress Fill */}
+                  <motion.div
+                    className="absolute bottom-0 left-0 h-full bg-[#D4AF37] mix-blend-difference"
+                    style={{ width: `${progress}%` }}
+                  />
+
+                  {/* Text */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <span className={`text-lg font-bold tracking-[0.2em] transition-colors ${progress > 50 ? 'text-black' : 'text-[#D4AF37]'} ${progress > 0 ? 'glitch-text' : ''}`} data-text="ВЗЛОМАТЬ">
+                      {progress > 0 ? `HACKING ${Math.floor(progress)}%` : 'ВЗЛОМАТЬ СИСТЕМУ'}
+                    </span>
+                  </div>
+                </motion.button>
+              ) : (
                 <motion.div
-                  className="absolute bottom-0 left-0 h-full bg-[#D4AF37] mix-blend-difference"
-                  style={{ width: `${progress}%` }}
-                />
-
-                {/* Text */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                  <span className={`text-lg font-bold tracking-[0.2em] transition-colors ${progress > 50 ? 'text-black' : 'text-[#D4AF37]'} ${progress > 0 ? 'glitch-text' : ''}`} data-text="ВЗЛОМАТЬ">
-                    {progress > 0 ? `HACKING ${Math.floor(progress)}%` : 'ВЗЛОМАТЬ СИСТЕМУ'}
-                  </span>
-                </div>
-              </motion.button>
-            ) : (
-              <motion.div
-                key="status"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center w-full"
-              >
-                {gameState === 'spinning' && (
-                  <div className="text-[#D4AF37] tracking-widest text-xs font-mono animate-pulse">
-                    BRUTE FORCE ATTACK IN PROGRESS...
-                  </div>
-                )}
-                {gameState === 'near-miss' && (
-                  <div className="text-[#FF3B30] tracking-widest text-xs font-bold font-mono">
-                    WARNING: FIREWALL DETECTED
-                  </div>
-                )}
-                {gameState === 'landed' && (
-                  <motion.button
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full h-14 bg-gradient-to-r from-[#D4AF37] to-[#FBF5B7] text-black font-black tracking-widest shadow-[0_0_30px_rgba(212,175,55,0.6)] rounded-sm uppercase"
-                    onClick={() => console.log('Claimed')}
-                  >
-                    ЗАБРАТЬ ВЫИГРЫШ
-                  </motion.button>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  key="status"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center w-full h-full flex items-center justify-center"
+                >
+                  {gameState === 'spinning' && (
+                    <div className="text-[#D4AF37] tracking-widest text-xs font-mono animate-pulse">
+                      BRUTE FORCE ATTACK IN PROGRESS...
+                    </div>
+                  )}
+                  {gameState === 'near-miss' && (
+                    <div className="text-[#FF3B30] tracking-widest text-xs font-bold font-mono">
+                      WARNING: FIREWALL DETECTED
+                    </div>
+                  )}
+                  {gameState === 'landed' && (
+                    <motion.button
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="w-full h-full bg-gradient-to-r from-[#D4AF37] to-[#FBF5B7] text-black font-black tracking-widest shadow-[0_0_30px_rgba(212,175,55,0.6)] rounded-sm uppercase"
+                      onClick={() => console.log('Claimed')}
+                    >
+                      ЗАБРАТЬ ВЫИГРЫШ
+                    </motion.button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </main>
 
