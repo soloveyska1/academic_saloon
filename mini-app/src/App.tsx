@@ -87,7 +87,7 @@ function AdminAwareWSIndicator() {
 }
 
 function AppContent() {
-  const { userData, error, refetch } = useUserData()
+  const { userData, loading: userDataLoading, error, refetch } = useUserData()
   const [isReady, setIsReady] = useState(false)
 
   // Smart notification state - handles all notification types
@@ -204,9 +204,9 @@ function AppContent() {
   // Get telegram ID for WebSocket - need it before loading check
   const telegramId = userData?.telegram_id || null
 
-  // Show loading only on initial load, NOT during refetch
-  // Use isReady as the only initial load flag
-  if (!isReady) {
+  // Show loading during initial load
+  // We wait for BOTH the minimum splash time (isReady) AND the user data fetch (userDataLoading)
+  if (!isReady || userDataLoading) {
     return <LoadingScreen />
   }
 
