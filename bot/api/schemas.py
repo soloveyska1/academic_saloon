@@ -206,3 +206,30 @@ class OrderCreateResponse(BaseModel):
     message: str
     price: Optional[float] = None
     is_manual_required: bool = False  # True for 'other' type - needs admin estimation
+
+
+class ChatMessage(BaseModel):
+    """Message in a support/order chat"""
+    id: int
+    sender_type: str  # admin / client
+    sender_name: str
+    message_text: Optional[str] = None
+    file_type: Optional[str] = None
+    file_name: Optional[str] = None
+    file_url: Optional[str] = None
+    created_at: str
+    is_read: bool
+
+
+class ChatMessagesResponse(BaseModel):
+    """List of chat messages"""
+    order_id: int
+    messages: List[ChatMessage]
+    unread_count: int
+
+
+class SendMessageResponse(BaseModel):
+    """Response for sending a message"""
+    success: bool
+    message_id: int
+    message: str

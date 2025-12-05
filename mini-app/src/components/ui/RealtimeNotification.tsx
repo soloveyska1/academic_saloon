@@ -117,23 +117,36 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
   const color = notification.color || '#d4af37' // Default Gold
   const isHighPriority = notification.priority === 'high'
 
+  // Bonus/Balance specific styling (Two-tone aesthetic)
+  const isBonus = notification.type === 'balance_update' || notification.icon === 'gift' || notification.icon === 'wallet'
+
   // Premium Theme Configuration
   const theme = {
-    bg: isDark
-      ? 'rgba(20, 20, 23, 0.95)' // Dark: Deep luxury black
-      : 'rgba(255, 255, 252, 0.95)', // Light: Warm Cream White
+    bg: isBonus
+      ? isDark
+        ? 'linear-gradient(135deg, rgba(20, 20, 23, 0.98) 0%, rgba(13, 33, 13, 0.98) 100%)' // Black to Deep Green
+        : 'linear-gradient(135deg, rgba(255, 255, 252, 0.98) 0%, rgba(240, 253, 240, 0.98) 100%)' // Cream to Light Green
+      : isDark
+        ? 'rgba(20, 20, 23, 0.95)'
+        : 'rgba(255, 255, 252, 0.95)',
     backdrop: 'blur(25px)',
-    border: isDark
-      ? '1px solid rgba(255, 255, 255, 0.08)'
-      : '1px solid rgba(212, 175, 55, 0.15)', // Light gold border
-    shadow: isDark
-      ? '0 12px 40px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.1)'
-      : '0 20px 60px -15px rgba(212, 175, 55, 0.25), 0 10px 25px -10px rgba(0,0,0,0.05)', // Luxurious golden shadow
+    border: isBonus
+      ? '1px solid rgba(34, 197, 94, 0.3)' // Green Accent Border
+      : isDark
+        ? '1px solid rgba(255, 255, 255, 0.08)'
+        : '1px solid rgba(212, 175, 55, 0.15)',
+    shadow: isBonus
+      ? '0 12px 40px -12px rgba(34, 197, 94, 0.2), 0 0 20px rgba(212, 175, 55, 0.1)' // Green/Gold Glow
+      : isDark
+        ? '0 12px 40px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.1)'
+        : '0 20px 60px -15px rgba(212, 175, 55, 0.25), 0 10px 25px -10px rgba(0,0,0,0.05)',
     titleColor: isDark ? '#fff' : '#1a1a1a',
     textColor: isDark ? '#a1a1aa' : '#5c5c5c',
-    iconBg: isDark
-      ? `linear-gradient(135deg, ${color}20, ${color}10)`
-      : `linear-gradient(135deg, ${color}15, #fff 100%)`, // Subtle gradient for icon
+    iconBg: isBonus
+      ? `linear-gradient(135deg, #d4af37 0%, #22c55e 100%)` // Gold to Green Gradient Icon
+      : isDark
+        ? `linear-gradient(135deg, ${color}20, ${color}10)`
+        : `linear-gradient(135deg, ${color}15, #fff 100%)`,
     iconBorder: isDark ? `${color}30` : `${color}20`,
     closeBtn: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
     actionText: isDark ? '#71717a' : '#a1a1aa',
@@ -209,7 +222,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                   boxShadow: `0 4px 12px ${color}15`,
                 }}
               >
-                <Icon size={22} color={color} strokeWidth={2} />
+                <Icon size={22} color={isBonus ? '#fff' : color} strokeWidth={2} />
 
                 {/* Ping animation for high priority */}
                 {isHighPriority && (

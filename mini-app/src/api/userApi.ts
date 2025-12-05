@@ -215,6 +215,7 @@ export async function spinRoulette(): Promise<RouletteResult> {
     prize: result.prize || result.message,
     type: result.type || 'nothing',
     value: result.value || 0,
+    message: result.message
   }
 }
 
@@ -748,5 +749,55 @@ export async function requestRevision(
   return apiFetch<RevisionRequestResult>(`/orders/${orderId}/request-revision`, {
     method: 'POST',
     body: JSON.stringify({ message }),
+  })
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SUPPORT CHAT API
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function fetchSupportMessages(): Promise<ChatMessagesResponse> {
+  if (!hasTelegramContext()) {
+    if (IS_DEV) {
+      return {
+        order_id: 99999,
+        messages: [
+          {
+            id: 1,
+            sender_type: 'admin',
+            sender_name: 'Поддержка',
+            message_text: 'Здравствуйте! Чем можем помочь?',
+            file_type: null,
+            file_name: null,
+            file_url: null,
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+            is_read: true,
+          }
+        ],
+        unread_count: 0
+      }
+    }
+    throw new Error('Откройте приложение через Telegram')
+  }
+
+  return await apiFetch<ChatMessagesResponse>('/support/messages')
+}
+
+export async function sendSupportMessage(text: string): Promise<SendMessageResponse> {
+  if (!hasTelegramContext()) {
+    if (IS_DEV) {
+      return {
+        success: true,
+        message_id: Date.now(),
+        message: 'Сообщение отправлено (Dev)'
+      }
+    }
+    throw new Error('Откройте приложение через Telegram')
+  }
+
+  return await apiFetch<SendMessageResponse>('/support/messages', {
+    method: 'POST',
+    body: JSON.stringify({ text })
   })
 }

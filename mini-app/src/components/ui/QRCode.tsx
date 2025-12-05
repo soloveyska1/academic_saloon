@@ -6,9 +6,17 @@ interface Props {
   value: string
   size?: number
   onClose: () => void
+  title?: string
+  subtitle?: string
 }
 
-export function QRCodeModal({ value, size = 200, onClose }: Props) {
+export function QRCodeModal({
+  value,
+  size = 200,
+  onClose,
+  title = 'Ваш QR-код',
+  subtitle = 'Покажите друзьям для быстрой регистрации'
+}: Props) {
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
 
@@ -17,15 +25,34 @@ export function QRCodeModal({ value, size = 200, onClose }: Props) {
   const qrUrlSvg = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}&bgcolor=09090b&color=d4af37&format=svg`
 
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
+    if (!navigator.share) return
+
+    try {
+      // Try to share the image
+      const response = await fetch(qrUrlPng)
+      const blob = await response.blob()
+      const file = new File([blob], 'academic-saloon-qr.png', { type: 'image/png' })
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: 'Academic Saloon - Реферальный код',
-          text: `Присоединяйся к Academic Saloon! Мой реферальный код: ${value}`,
+          files: [file],
+          title: 'Academic Saloon',
+          text: `Присоединяйся к Academic Saloon! Мой код: ${value}`,
         })
-      } catch (e) {
-        console.log('Share cancelled')
+        return
       }
+    } catch (e) {
+      console.warn('Image share failed, falling back to text:', e)
+    }
+
+    // Fallback to text share
+    try {
+      await navigator.share({
+        title: 'Academic Saloon - Реферальный код',
+        text: `Присоединяйся к Academic Saloon! Мой реферальный код: ${value}`,
+      })
+    } catch (e) {
+      console.log('Share cancelled')
     }
   }
 
@@ -124,14 +151,15 @@ export function QRCodeModal({ value, size = 200, onClose }: Props) {
           marginTop: 8,
           fontFamily: "'Montserrat', sans-serif",
         }}>
-          Ваш QR-код
+          {title}
         </h3>
         <p style={{ fontSize: 12, color: '#71717a', marginBottom: 24 }}>
-          Покажите друзьям для быстрой регистрации
+          {subtitle}
         </p>
 
         {/* QR Code Container */}
         <motion.div
+
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.1 }}

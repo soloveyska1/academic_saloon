@@ -8,6 +8,7 @@ import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 import { useNavigate } from 'react-router-dom'
 import { FloatingParticles, glassStyle, glassGoldStyle, CardInnerShine } from '../components/ui/PremiumDesign'
+import { TransactionHistory } from '../components/profile/TransactionHistory'
 import { QRCodeModal } from '../components/ui/QRCode'
 
 interface Props {
@@ -335,6 +336,16 @@ export function ProfilePage({ user }: Props) {
         </div>
       </motion.div>
 
+      {/* Transaction History - Premium */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        style={{ marginBottom: 24 }}
+      >
+        <TransactionHistory orders={user.orders} />
+      </motion.div>
+
       {/* Support Button - Premium */}
       <motion.button
         initial={{ opacity: 0, y: 20 }}
@@ -358,19 +369,22 @@ export function ProfilePage({ user }: Props) {
       >
         <MessageCircle size={20} color="var(--text-secondary)" />
         <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>
-          Связаться с поддержкой
+          Чат с поддержкой
         </span>
         <ChevronRight size={16} color="var(--text-muted)" style={{ marginLeft: 'auto' }} />
       </motion.button>
 
       {/* QR Modal */}
-      <QRCodeModal
-        isOpen={showQR}
-        onClose={() => setShowQR(false)}
-        value={`https://t.me/AcademicSaloonBot?start=ref_${user.telegram_id}`}
-        title="Ваша реферальная ссылка"
-        subtitle="Дайте отсканировать этот код другу, чтобы он стал вашим рефералом"
-      />
+      <AnimatePresence>
+        {showQR && (
+          <QRCodeModal
+            onClose={() => setShowQR(false)}
+            value={`https://t.me/AcademicSaloonBot?start=ref_${user.telegram_id}`}
+            title="Ваша реферальная ссылка"
+            subtitle="Дайте отсканировать этот код другу, чтобы он стал вашим рефералом"
+          />
+        )}
+      </AnimatePresence>
 
     </div>
   )

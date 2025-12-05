@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Loader } from 'lucide-react'
 import { submitOrderReview } from '../../api/userApi'
+import { useTheme } from '../../contexts/ThemeContext'
 
 interface ReviewSectionProps {
     orderId: number
@@ -10,7 +11,9 @@ interface ReviewSectionProps {
 }
 
 export function ReviewSection({ orderId, haptic, onReviewSubmitted }: ReviewSectionProps) {
+    const { isDark } = useTheme()
     const [rating, setRating] = useState(5)
+    // ... rest of state
     const [reviewText, setReviewText] = useState('')
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -117,7 +120,7 @@ export function ReviewSection({ orderId, haptic, onReviewSubmitted }: ReviewSect
                     width: '100%',
                     minHeight: 100,
                     padding: 14,
-                    background: 'rgba(0,0,0,0.3)',
+                    background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.6)',
                     border: '1px solid var(--border-strong)',
                     borderRadius: 12,
                     color: 'var(--text-main)',

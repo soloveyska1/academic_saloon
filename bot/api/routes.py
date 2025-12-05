@@ -259,7 +259,10 @@ async def get_orders(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    query = select(Order).where(Order.user_id == user.telegram_id)
+    query = select(Order).where(
+        Order.user_id == user.telegram_id,
+        Order.work_type != 'support_chat'  # Exclude hidden support chat
+    )
 
     if status:
         # Filter by status
@@ -1995,7 +1998,183 @@ async def confirm_work_completion(
         logger.debug(f"WebSocket notification failed: {ws_err}")
 
     cashback_text = f" +{cashback_amount:.0f}₽ кешбэк!" if cashback_amount > 0 else ""
+    cashback_text = f" +{cashback_amount:.0f}₽ кешбэк!" if cashback_amount > 0 else ""
     return ConfirmWorkResponse(
         success=True,
         message=f"Спасибо! Заказ завершён.{cashback_text}",
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  SUPPORT CHAT API (Hidden Order Strategy)
+# ═══════════════════════════════════════════════════════════════════════════
+
+async def get_or_create_support_order(session: AsyncSession, user: User) -> Order:
+    """Find or create a hidden order for support chat history"""
+    # Try to find existing support order
+    result = await session.execute(
+        select(Order).where(
+            Order.user_id == user.telegram_id,
+            Order.work_type == 'support_chat'
+        ).limit(1)
+    )
+    order = result.scalar_one_or_none()
+
+    if not order:
+        # Create new hidden order
+        order = Order(
+            user_id=user.telegram_id,
+            work_type='support_chat',
+            subject='Техническая Поддержка',
+            topic='Чат с поддержкой из Mini App',
+            description='Автоматически созданный диалог для поддержки',
+            status=OrderStatus.DRAFT.value,
+            price=0,
+            paid_amount=0,
+            discount=0
+        )
+        session.add(order)
+        await session.commit()
+        await session.refresh(order)
+        logger.info(f"[Support] Created hidden order #{order.id} for user {user.telegram_id}")
+
+    return order
+
+
+@router.get("/support/messages", response_model=ChatMessagesResponse)
+async def get_support_messages(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get support chat history (creates hidden order if needed)"""
+    
+    # Get user
+    result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get hidden order
+    order = await get_or_create_support_order(session, user)
+
+    # Get messages
+    msgs_result = await session.execute(
+        select(OrderMessage)
+        .where(OrderMessage.order_id == order.id)
+        .order_by(OrderMessage.created_at.asc())
+    )
+    messages = msgs_result.scalars().all()
+
+    # Create pydantic models
+    from bot.api.schemas import ChatMessage
+    
+    chat_messages = []
+    
+    for msg in messages:
+        # Determine sender name
+        sender_name = "Вы"
+        if msg.sender_type == MessageSender.ADMIN.value:
+            sender_name = "Поддержка"
+        elif msg.sender_type == MessageSender.CLIENT.value:
+            sender_name = user.fullname or "Вы"
+
+        # Check read status for client
+        if msg.sender_type == MessageSender.ADMIN.value and not msg.is_read:
+            msg.is_read = True
+            session.add(msg)
+        
+        chat_messages.append(ChatMessage(
+            id=msg.id,
+            sender_type=msg.sender_type,
+            sender_name=sender_name,
+            message_text=msg.message_text,
+            file_type=msg.file_type,
+            file_name=msg.file_name,
+            file_url=msg.yadisk_url,
+            created_at=msg.created_at.isoformat(),
+            is_read=msg.is_read
+        ))
+
+    await session.commit()
+
+    return ChatMessagesResponse(
+        order_id=order.id,
+        messages=chat_messages,
+        unread_count=0
+    )
+
+
+@router.post("/support/messages", response_model=SendMessageResponse)
+async def send_support_message(
+    request: Request,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Send message to support"""
+    data = await request.json()
+    text = data.get("text")
+    
+    if not text:
+        raise HTTPException(status_code=400, detail="Text required")
+
+    # Get user
+    result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get hidden order
+    order = await get_or_create_support_order(session, user)
+
+    # Save to DB
+    message = OrderMessage(
+        order_id=order.id,
+        sender_type=MessageSender.CLIENT.value,
+        sender_id=user.telegram_id,
+        message_text=text
+    )
+    session.add(message)
+    await session.commit()
+    await session.refresh(message)
+
+    # Notify admins
+    try:
+        from bot.bot_instance import get_bot
+        from bot.handlers.order_chat import get_or_create_topic, update_conversation
+        
+        bot = get_bot()
+        
+        conv, topic_id = await get_or_create_topic(
+            bot=bot,
+            session=session,
+            user_id=user.telegram_id,
+            order_id=order.id,
+            conv_type=ConversationType.SUPPORT.value 
+        )
+
+        await bot.send_message(
+            chat_id=settings.ADMIN_GROUP_ID,
+            message_thread_id=topic_id,
+            text=f"✉️ <b>Сообщение от клиента:</b>\n{html.escape(text)}",
+            parse_mode="HTML"
+        )
+        
+        await update_conversation(
+            session, conv,
+            last_message=text[:100],
+            sender=MessageSender.CLIENT.value,
+            increment_unread=True
+        )
+
+    except Exception as e:
+        logger.error(f"[Support API] Failed to notify admins: {e}")
+    
+    return SendMessageResponse(
+        success=True,
+        message_id=message.id,
+        message="Сообщение отправлено"
     )
