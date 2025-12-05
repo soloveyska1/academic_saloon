@@ -4,10 +4,8 @@ import {
   HelpCircle,
   MessageCircle,
   Phone,
-  Mail,
   Clock,
   ChevronDown,
-  ExternalLink,
   Headphones,
   FileText,
   CreditCard,
@@ -16,6 +14,7 @@ import {
   Send
 } from 'lucide-react'
 import { useTelegram } from '../hooks/useUserData'
+import { FloatingParticles, glassStyle, glassGoldStyle, CardInnerShine } from '../components/ui/PremiumDesign'
 
 // FAQ data
 const FAQ_ITEMS = [
@@ -99,7 +98,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
     <motion.div
       initial={false}
       style={{
-        background: 'var(--bg-glass)',
+        background: 'rgba(255, 255, 255, 0.03)',
         border: '1px solid var(--border-subtle)',
         borderRadius: 12,
         overflow: 'hidden',
@@ -184,85 +183,84 @@ function FAQCategory({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      style={{
-        background: 'var(--bg-card-solid)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 18,
-        overflow: 'hidden',
-      }}
+      style={glassStyle}
     >
-      <button
-        onClick={() => {
-          haptic('light')
-          setIsExpanded(!isExpanded)
-        }}
-        style={{
-          width: '100%',
-          padding: 18,
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 14,
-        }}
-      >
-        <div
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <button
+          onClick={() => {
+            haptic('light')
+            setIsExpanded(!isExpanded)
+          }}
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05))',
-            border: '1px solid rgba(212, 175, 55, 0.2)',
+            width: '100%',
+            padding: 0,
+            marginBottom: isExpanded ? 16 : 0,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 14,
+            transition: 'margin-bottom 0.2s'
           }}
         >
-          <Icon size={22} color="#d4af37" />
-        </div>
-        <span
-          style={{
-            flex: 1,
-            fontSize: 15,
-            fontWeight: 600,
-            color: 'var(--text-main)',
-            textAlign: 'left',
-          }}
-        >
-          {category}
-        </span>
-        <motion.div
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown size={20} color="var(--text-muted)" />
-        </motion.div>
-      </button>
-
-      <AnimatePresence>
-        {isExpanded && (
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05))',
+              border: '1px solid rgba(212, 175, 55, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon size={22} color="#d4af37" />
+          </div>
+          <span
+            style={{
+              flex: 1,
+              fontSize: 16,
+              fontWeight: 700,
+              color: 'var(--text-main)',
+              textAlign: 'left',
+              fontFamily: "var(--font-serif)",
+            }}
+          >
+            {category}
+          </span>
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+            animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div
-              style={{
-                padding: '0 16px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              {questions.map((item, i) => (
-                <FAQItem key={i} question={item.q} answer={item.a} />
-              ))}
-            </div>
+            <ChevronDown size={20} color="var(--text-muted)" />
           </motion.div>
-        )}
-      </AnimatePresence>
+        </button>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                {questions.map((item, i) => (
+                  <FAQItem key={i} question={item.q} answer={item.a} />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   )
 }
@@ -281,15 +279,22 @@ export function SupportPage() {
       style={{
         padding: '16px 16px 120px',
         minHeight: '100vh',
+        background: 'var(--bg-main)',
+        position: 'relative',
+        overflow: 'hidden'
       }}
     >
+      <FloatingParticles />
+
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
           textAlign: 'center',
-          marginBottom: 24,
+          marginBottom: 32,
+          position: 'relative',
+          zIndex: 1
         }}
       >
         <motion.div
@@ -306,18 +311,26 @@ export function SupportPage() {
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: '0 8px 32px rgba(212, 175, 55, 0.3)',
+            position: 'relative'
           }}
         >
+          <div style={{
+            position: 'absolute',
+            inset: -2,
+            borderRadius: 24,
+            border: '2px solid rgba(255,255,255,0.2)',
+            pointerEvents: 'none'
+          }} />
           <Headphones size={40} color="#0a0a0c" strokeWidth={1.5} />
         </motion.div>
 
         <h1
           style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 28,
+            fontFamily: "var(--font-serif)",
+            fontSize: 32,
             fontWeight: 800,
             marginBottom: 8,
-            background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
+            background: 'var(--gold-text-shine)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}
@@ -344,16 +357,16 @@ export function SupportPage() {
           gridTemplateColumns: '1fr 1fr',
           gap: 12,
           marginBottom: 24,
+          position: 'relative',
+          zIndex: 1
         }}
       >
         <motion.button
           onClick={handleContactSupport}
           whileTap={{ scale: 0.95 }}
           style={{
+            ...glassGoldStyle,
             padding: 20,
-            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, var(--bg-card-solid) 100%)',
-            border: '1px solid rgba(212, 175, 55, 0.3)',
-            borderRadius: 18,
             cursor: 'pointer',
             display: 'flex',
             flexDirection: 'column',
@@ -361,28 +374,32 @@ export function SupportPage() {
             gap: 10,
           }}
         >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              background: 'linear-gradient(135deg, #d4af37, #8b6914)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <MessageCircle size={24} color="#0a0a0c" />
+          <CardInnerShine />
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, #d4af37, #8b6914)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 15px rgba(212, 175, 55, 0.3)'
+              }}
+            >
+              <MessageCircle size={24} color="#0a0a0c" />
+            </div>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--text-main)',
+              }}
+            >
+              Написать в чат
+            </span>
           </div>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--text-main)',
-            }}
-          >
-            Написать в чат
-          </span>
         </motion.button>
 
         <motion.button
@@ -392,10 +409,8 @@ export function SupportPage() {
           }}
           whileTap={{ scale: 0.95 }}
           style={{
+            ...glassStyle,
             padding: 20,
-            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, var(--bg-card-solid) 100%)',
-            border: '1px solid rgba(34, 197, 94, 0.2)',
-            borderRadius: 18,
             cursor: 'pointer',
             display: 'flex',
             flexDirection: 'column',
@@ -403,28 +418,32 @@ export function SupportPage() {
             gap: 10,
           }}
         >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Phone size={24} color="#fff" />
+          <CardInnerShine />
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)'
+              }}
+            >
+              <Phone size={24} color="#fff" />
+            </div>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--text-main)',
+              }}
+            >
+              Позвонить
+            </span>
           </div>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--text-main)',
-            }}
-          >
-            Позвонить
-          </span>
         </motion.button>
       </motion.div>
 
@@ -433,11 +452,10 @@ export function SupportPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+        className="shimmer-gold"
         style={{
+          ...glassStyle,
           padding: 18,
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, var(--bg-card-solid) 100%)',
-          border: '1px solid rgba(59, 130, 246, 0.2)',
-          borderRadius: 16,
           marginBottom: 24,
           display: 'flex',
           alignItems: 'center',
@@ -498,10 +516,11 @@ export function SupportPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.25 }}
+        style={{ position: 'relative', zIndex: 1 }}
       >
         <h2
           style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "var(--font-serif)",
             fontSize: 18,
             fontWeight: 700,
             color: 'var(--text-main)',
@@ -540,58 +559,59 @@ export function SupportPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
         style={{
+          ...glassGoldStyle,
           marginTop: 32,
           padding: 24,
-          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, var(--bg-card-solid) 100%)',
-          border: '1px solid rgba(212, 175, 55, 0.2)',
-          borderRadius: 20,
           textAlign: 'center',
         }}
       >
-        <h3
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 16,
-            fontWeight: 700,
-            color: 'var(--text-main)',
-            marginBottom: 8,
-          }}
-        >
-          Не нашли ответ?
-        </h3>
-        <p
-          style={{
-            fontSize: 13,
-            color: 'var(--text-muted)',
-            marginBottom: 16,
-            lineHeight: 1.5,
-          }}
-        >
-          Наша команда поддержки ответит на любой вопрос в течение 5 минут
-        </p>
-        <motion.button
-          onClick={handleContactSupport}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            width: '100%',
-            padding: '16px 24px',
-            background: 'linear-gradient(135deg, #d4af37 0%, #8b6914 100%)',
-            border: 'none',
-            borderRadius: 14,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-            fontSize: 15,
-            fontWeight: 600,
-            color: '#0a0a0c',
-            boxShadow: '0 4px 20px rgba(212, 175, 55, 0.3)',
-          }}
-        >
-          <Send size={18} />
-          Написать в поддержку
-        </motion.button>
+        <CardInnerShine />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h3
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: 18,
+              fontWeight: 700,
+              color: 'var(--text-main)',
+              marginBottom: 8,
+            }}
+          >
+            Не нашли ответ?
+          </h3>
+          <p
+            style={{
+              fontSize: 13,
+              color: 'var(--text-muted)',
+              marginBottom: 16,
+              lineHeight: 1.5,
+            }}
+          >
+            Наша команда поддержки ответит на любой вопрос в течение 5 минут
+          </p>
+          <motion.button
+            onClick={handleContactSupport}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              width: '100%',
+              padding: '16px 24px',
+              background: 'linear-gradient(135deg, #d4af37 0%, #8b6914 100%)',
+              border: 'none',
+              borderRadius: 14,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              fontSize: 15,
+              fontWeight: 600,
+              color: '#0a0a0c',
+              boxShadow: '0 4px 20px rgba(212, 175, 55, 0.3)',
+            }}
+          >
+            <Send size={18} />
+            Написать в поддержку
+          </motion.button>
+        </div>
       </motion.div>
     </div>
   )
