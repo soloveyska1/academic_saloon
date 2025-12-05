@@ -1,201 +1,219 @@
-import React, { memo } from 'react'
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { LucideIcon } from 'lucide-react'
-import { useTheme } from '../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PRIZE TICKER — Asset List with Scanning Animation
-//  Hacker-style prize display with scanning effect
+//  АКТИВЫ TICKER — Compact Asset List (FORCED DARK)
+//  NO PROBABILITIES - Use rarity badges instead
+//  Shows only 3-4 items, compact vertical stack
 // ═══════════════════════════════════════════════════════════════════════════
 
-export interface PrizeTier {
+export type AssetRarity = 'mythic' | 'legendary' | 'epic' | 'rare' | 'common'
+
+export interface Asset {
   id: string
-  name: string
-  desc: string
-  val: string
-  chance: string
+  name: string           // Russian name
+  value: string          // Value display
+  rarity: AssetRarity    // Rarity badge
   icon: LucideIcon
 }
 
 interface PrizeTickerProps {
-  tiers: PrizeTier[]
-  highlightedId: string | null
+  assets: Asset[]
+  activeId: string | null
 }
 
-export const PrizeTicker = memo(({ tiers, highlightedId }: PrizeTickerProps) => {
-  const { isDark } = useTheme()
+const RARITY_CONFIG: Record<AssetRarity, { label: string; class: string }> = {
+  mythic: { label: 'МИФИЧЕСКИЙ', class: 'badge-mythic' },
+  legendary: { label: 'ЛЕГЕНДАРНЫЙ', class: 'badge-legendary' },
+  epic: { label: 'ЭПИЧЕСКИЙ', class: 'badge-epic' },
+  rare: { label: 'РЕДКИЙ', class: 'badge-rare' },
+  common: { label: 'ОБЫЧНЫЙ', class: 'badge-common' },
+}
+
+export const PrizeTicker = memo(({ assets, activeId }: PrizeTickerProps) => {
+  // Show only first 4 assets to keep compact
+  const visibleAssets = assets.slice(0, 4)
 
   return (
-    <div style={{ padding: '0 20px', paddingBottom: 100 }}>
+    <div
+      style={{
+        flex: '0 0 auto',
+        padding: '0 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
       {/* Header */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          padding: '0 4px',
-          marginBottom: 16,
-          opacity: 0.5,
+          alignItems: 'center',
+          paddingBottom: 6,
+          borderBottom: '1px solid rgba(212, 175, 55, 0.1)',
         }}
       >
         <span
           style={{
-            fontSize: 10,
-            fontFamily: 'var(--font-mono)',
+            fontSize: 9,
+            fontFamily: 'var(--font-hack, monospace)',
             color: '#D4AF37',
-            textTransform: 'uppercase',
             letterSpacing: '0.2em',
           }}
         >
-          Available Assets
+          ДОСТУПНЫЕ АКТИВЫ
         </span>
         <span
           style={{
-            fontSize: 10,
-            fontFamily: 'var(--font-mono)',
-            color: isDark ? '#666' : '#999',
+            fontSize: 8,
+            fontFamily: 'var(--font-hack, monospace)',
+            color: '#444',
+            letterSpacing: '0.1em',
           }}
         >
-          LIVE ENCRYPTION
+          LIVE
         </span>
       </div>
 
-      {/* Prize List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {tiers.map((tier) => {
-          const isActive = highlightedId === tier.id
-          const isPassed = highlightedId !== null &&
-            tiers.findIndex(t => t.id === highlightedId) > tiers.findIndex(t => t.id === tier.id)
+      {/* Asset List */}
+      {visibleAssets.map((asset, index) => {
+        const isActive = activeId === asset.id
+        const isPassed = activeId !== null &&
+          assets.findIndex(a => a.id === activeId) > index
+        const rarity = RARITY_CONFIG[asset.rarity]
+        const Icon = asset.icon
 
-          return (
-            <motion.div
-              key={tier.id}
-              animate={{
-                scale: isActive ? 1.02 : isPassed ? 0.98 : 1,
-                opacity: isPassed ? 0.4 : 1,
-              }}
-              transition={{ duration: 0.15 }}
-              className={`asset-card ${isActive ? 'highlighted' : ''} ${isPassed ? 'passed' : ''}`}
+        return (
+          <motion.div
+            key={asset.id}
+            animate={{
+              scale: isActive ? 1.02 : 1,
+              opacity: isPassed ? 0.3 : 1,
+            }}
+            transition={{ duration: 0.12 }}
+            className={isActive ? 'asset-glow-active' : ''}
+            style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: isActive
+                ? 'rgba(212, 175, 55, 0.08)'
+                : 'rgba(255, 255, 255, 0.02)',
+              border: `1px solid ${isActive ? '#D4AF37' : 'rgba(255,255,255,0.04)'}`,
+              overflow: 'hidden',
+            }}
+          >
+            {/* Active glow bar */}
+            {isActive && (
+              <motion.div
+                layoutId="assetGlow"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 3,
+                  background: '#D4AF37',
+                  boxShadow: '0 0 12px #D4AF37',
+                }}
+              />
+            )}
+
+            {/* Icon */}
+            <div
               style={{
-                position: 'relative',
+                width: 32,
+                height: 32,
+                borderRadius: 6,
+                background: isActive
+                  ? 'linear-gradient(135deg, #D4AF37, #8b6914)'
+                  : '#111115',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 16,
-                borderRadius: 12,
-                border: `1px solid ${isActive ? '#D4AF37' : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)'}`,
-                background: isActive
-                  ? 'rgba(212, 175, 55, 0.05)'
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.02)'
-                    : 'rgba(255, 255, 255, 0.8)',
-                overflow: 'hidden',
-                transition: 'all 0.3s ease',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: isActive
+                  ? '0 0 15px rgba(212, 175, 55, 0.4)'
+                  : 'none',
               }}
             >
-              {/* Active Glow Line */}
-              {isActive && (
-                <motion.div
-                  layoutId="activeGlow"
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: 2,
-                    background: '#D4AF37',
-                    boxShadow: '0 0 10px #D4AF37',
-                  }}
-                />
-              )}
+              <Icon
+                size={16}
+                color={isActive ? '#050505' : '#555'}
+                strokeWidth={isActive ? 2.5 : 1.5}
+              />
+            </div>
 
-              {/* Shimmer Effect */}
-              {isActive && (
-                <div
-                  className="shimmer-effect"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
-                    transform: 'skewX(-20deg)',
-                    animation: 'shimmer 1s infinite',
-                  }}
-                />
-              )}
-
-              {/* Left: Icon & Info */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, zIndex: 10 }}>
-                <div
-                  className="asset-icon"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: isActive ? '#D4AF37' : isDark ? '#141417' : '#f0ede8',
-                    color: isActive ? '#000' : isDark ? '#444' : '#999',
-                    boxShadow: isActive ? '0 0 20px rgba(212, 175, 55, 0.4)' : 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <tier.icon size={18} strokeWidth={isActive ? 2 : 1.5} />
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontFamily: 'var(--font-serif)',
-                      letterSpacing: '0.1em',
-                      color: isActive ? (isDark ? '#fff' : '#1a1a1a') : (isDark ? '#666' : '#888'),
-                    }}
-                  >
-                    {tier.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      marginTop: 2,
-                      color: isActive ? '#D4AF37' : (isDark ? '#444' : '#aaa'),
-                    }}
-                  >
-                    {tier.desc}
-                  </span>
-                </div>
+            {/* Name & Value */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'var(--font-elite, Georgia, serif)',
+                  fontWeight: 600,
+                  color: isActive ? '#fff' : '#888',
+                  letterSpacing: '0.05em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {asset.name}
               </div>
-
-              {/* Right: Value */}
-              <div style={{ textAlign: 'right', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: isActive ? '#D4AF37' : (isDark ? '#444' : '#888'),
-                    textShadow: isActive ? '0 0 10px rgba(212, 175, 55, 0.5)' : 'none',
-                  }}
-                >
-                  {tier.val}
-                </span>
-                {isActive && (
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontFamily: 'var(--font-mono)',
-                      color: isDark ? '#666' : '#999',
-                      marginTop: 4,
-                    }}
-                  >
-                    CHANCE: {tier.chance}
-                  </span>
-                )}
+              <div
+                style={{
+                  fontSize: 13,
+                  fontFamily: 'var(--font-hack, monospace)',
+                  fontWeight: 700,
+                  color: isActive ? '#D4AF37' : '#555',
+                  textShadow: isActive
+                    ? '0 0 10px rgba(212, 175, 55, 0.5)'
+                    : 'none',
+                }}
+              >
+                {asset.value}
               </div>
-            </motion.div>
-          )
-        })}
-      </div>
+            </div>
+
+            {/* Rarity Badge */}
+            <div
+              className={rarity.class}
+              style={{
+                padding: '3px 8px',
+                borderRadius: 4,
+                fontSize: 7,
+                fontFamily: 'var(--font-hack, monospace)',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {rarity.label}
+            </div>
+          </motion.div>
+        )
+      })}
+
+      {/* More indicator if there are hidden assets */}
+      {assets.length > 4 && (
+        <div
+          style={{
+            textAlign: 'center',
+            fontSize: 8,
+            color: '#444',
+            fontFamily: 'var(--font-hack, monospace)',
+            letterSpacing: '0.1em',
+            padding: '4px 0',
+          }}
+        >
+          +{assets.length - 4} СКРЫТЫХ АКТИВОВ
+        </div>
+      )}
     </div>
   )
 })
