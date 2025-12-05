@@ -26,7 +26,8 @@ from .schemas import (
     RouletteResponse, ConfigResponse,
     RankInfo, LoyaltyInfo, BonusExpiryInfo,
     OrderCreateRequest, OrderCreateResponse,
-    DailyBonusInfoResponse, DailyBonusClaimResponse
+    DailyBonusInfoResponse, DailyBonusClaimResponse,
+    ChatMessage, ChatMessagesResponse
 )
 from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
 from bot.services.pricing import calculate_price, DEADLINE_LABELS
