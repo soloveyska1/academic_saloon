@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageCircle, Send, ChevronDown, User, Headphones,
@@ -9,6 +9,10 @@ import { ChatMessage } from '../types'
 import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessage } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
+
+export interface OrderChatHandle {
+  open: () => void
+}
 
 interface Props {
   orderId: number
@@ -61,11 +65,23 @@ const FILE_ICONS: Record<string, typeof FileText> = {
   audio: Mic,
 }
 
-export function OrderChat({ orderId }: Props) {
+export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) => {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
   const { addMessageHandler, isConnected } = useWebSocketContext()
 
   const [isExpanded, setIsExpanded] = useState(false)
+
+  useImperativeHandle(ref, () => ({
+    open: () => {
+      setIsExpanded(true)
+      // Small delay to allow expansion before scrolling if needed
+      setTimeout(() => {
+        containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
+    }
+  }))
+
+  const containerRef = useRef<HTMLDivElement>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [newMessage, setNewMessage] = useState('')
@@ -223,7 +239,7 @@ export function OrderChat({ orderId }: Props) {
           sender_name: 'Вы',
           message_text: null,
           file_type: file.type.startsWith('image/') ? 'photo' :
-                     file.type.startsWith('video/') ? 'video' : 'document',
+            file.type.startsWith('video/') ? 'video' : 'document',
           file_name: file.name,
           file_url: response.file_url,
           created_at: new Date().toISOString(),
@@ -527,7 +543,7 @@ export function OrderChat({ orderId }: Props) {
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {msg.file_type === 'photo' ? 'Фото' :
-               msg.file_type === 'video' ? 'Видео' : 'Документ'}
+                msg.file_type === 'video' ? 'Видео' : 'Документ'}
             </div>
           </div>
           <Download size={16} color="var(--text-muted)" />
@@ -540,6 +556,7 @@ export function OrderChat({ orderId }: Props) {
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
@@ -1055,4 +1072,4 @@ export function OrderChat({ orderId }: Props) {
       </AnimatePresence>
     </motion.div>
   )
-}
+})

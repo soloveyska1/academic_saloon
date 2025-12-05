@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, BookOpen, PenTool, Sparkles,
   Clock, Calendar, CreditCard, MessageCircle, XCircle, CheckCircle,
   Loader, Tag, Percent, Gift, Receipt, Copy, Check, Smartphone,
-  Building2, Timer, Shield, Zap, Download, ExternalLink, Star, RefreshCw
+  Building2, Timer, Shield, Zap, Download, ExternalLink, Star, RefreshCw, Headphones
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { fetchOrderDetail, fetchPaymentInfo, confirmPayment, submitOrderReview, confirmWorkCompletion, requestRevision, PaymentInfo } from '../api/userApi'
-import { OrderChat } from '../components/OrderChat'
+import { OrderChat, OrderChatHandle } from '../components/OrderChat'
 import { useWebSocketContext } from '../hooks/useWebSocket'
 
 // Work type icons mapping
@@ -58,10 +58,19 @@ interface GoldenInvoiceProps {
   onPaymentConfirmed: () => void
   paymentScheme: 'full' | 'half'
   setPaymentScheme: (scheme: 'full' | 'half') => void
+  onChatStart: () => void
 }
 
-function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, setPaymentScheme }: GoldenInvoiceProps) {
+function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, setPaymentScheme, onChatStart }: GoldenInvoiceProps) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
+
+  // ... (rest of logic)
+
+  // I need to find where to insert the button. I'll insert it after the payment scheme selection or at the bottom of the card.
+  // Since I don't have the full content of GoldenInvoice in view, I will use a broader search/replace or just view it first to be safe.
+  // Actually, I should view GoldenInvoice first to make sure I insert it in the right place.
+  // But I can try to replace the interface and function signature first.
+
 
   // Определяем, это первая оплата или доплата
   const isSecondPayment = (order.paid_amount || 0) > 0
@@ -766,7 +775,6 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, 
           )}
         </motion.button>
 
-        {/* Note */}
         <p style={{
           fontSize: 11,
           color: 'var(--text-muted)',
@@ -778,6 +786,34 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, 
           После нажатия менеджер проверит оплату.<br />
           Обычно это занимает 5-15 минут.
         </p>
+
+        {/* Chat with Manager Button */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={onChatStart}
+          style={{
+            width: '100%',
+            marginTop: 16,
+            padding: '12px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <Headphones size={16} color="var(--text-secondary)" />
+          <span style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text-secondary)',
+          }}>
+            Нужна помощь? Написать менеджеру
+          </span>
+        </motion.button>
       </div>
     </motion.div>
   )
@@ -1029,7 +1065,7 @@ const STATUS_ALERTS: Record<string, StatusAlert> = {
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { haptic, hapticSuccess, hapticError, openBot } = useTelegram()
+  const { haptic, hapticSuccess, hapticError } = useTelegram()
   const [order, setOrder] = useState<Order | null>(null)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -1159,9 +1195,17 @@ export function OrderDetailPage() {
     navigate('/orders')
   }
 
+  const chatRef = useRef<OrderChatHandle>(null)
+
+  const handleOpenChat = useCallback(() => {
+    haptic('medium')
+    chatRef.current?.open()
+  }, [haptic])
+
   const handleChat = () => {
     haptic('medium')
-    openBot(`order_chat_${order?.id}`)
+    // openBot(`order_chat_${order?.id}`) // Old bot link
+    handleOpenChat()
   }
 
   const handlePaymentConfirmed = async () => {
@@ -1622,9 +1666,13 @@ export function OrderDetailPage() {
             onPaymentConfirmed={handlePaymentConfirmed}
             paymentScheme={paymentScheme}
             setPaymentScheme={setPaymentScheme}
+            onChatStart={handleOpenChat}
           />
         </motion.div>
       )}
+
+      {/* Order Chat - Always available at the bottom */}
+      <OrderChat ref={chatRef} orderId={order.id} />
 
       {/* Progress Steps (only for active non-cancelled orders, not during payment) */}
       {!isCancelled && !showPaymentUI && (
