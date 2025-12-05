@@ -96,6 +96,8 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
   const reconnectTimeoutRef = useRef<number | null>(null)
   const pingIntervalRef = useRef<number | null>(null)
   const messageHandlersRef = useRef<Set<MessageHandler>>(new Set())
+  const reconnectAttemptsRef = useRef<number>(0)
+  const maxReconnectAttempts = 10 // Максимум попыток переподключения
 
   // Store handlers in refs to avoid stale closures
   const handlersRef = useRef({
@@ -204,6 +206,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
         console.log('[WS] Connection opened successfully!')
         setIsConnected(true)
         setConnectionError(null)
+        reconnectAttemptsRef.current = 0 // Сброс счётчика при успешном подключении
         handlersRef.current.onConnect?.()
 
         // Start ping interval to keep connection alive
@@ -229,12 +232,23 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
           clearInterval(pingIntervalRef.current)
         }
 
-        // Auto-reconnect
+        // Auto-reconnect с экспоненциальным backoff для экономии батареи
         if (autoReconnect && event.code !== 1000) {
-          console.log(`[WS] Reconnecting in ${reconnectInterval}ms...`)
-          reconnectTimeoutRef.current = window.setTimeout(() => {
-            connect()
-          }, reconnectInterval)
+          if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+            // Экспоненциальный backoff: 5s, 10s, 20s, 40s... до макс 60s
+            const backoffDelay = Math.min(
+              reconnectInterval * Math.pow(2, reconnectAttemptsRef.current),
+              60000 // Максимум 60 секунд
+            )
+            reconnectAttemptsRef.current++
+            console.log(`[WS] Reconnecting in ${backoffDelay}ms... (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`)
+            reconnectTimeoutRef.current = window.setTimeout(() => {
+              connect()
+            }, backoffDelay)
+          } else {
+            console.log('[WS] Max reconnection attempts reached, stopping auto-reconnect')
+            setConnectionError('Connection lost. Please refresh the page.')
+          }
         }
       }
 

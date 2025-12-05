@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSound } from './useSound';
 import { UserData, RouletteResult } from '../types';
 
@@ -17,8 +17,18 @@ export const useRoulette = (user: UserData | null) => {
     const [result, setResult] = useState<RouletteResult | null>(null);
     const [freeSpins, setFreeSpins] = useState(user?.free_spins || 3); // Default to 3 if undefined
     const { playSound } = useSound();
+    const spinTimeoutRef = useRef<number | null>(null);
 
     const SPIN_COST = 100; // Cost in bonuses
+
+    // Cleanup timeout on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (spinTimeoutRef.current) {
+                clearTimeout(spinTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const spin = useCallback(() => {
         if (isSpinning) return;
@@ -53,8 +63,11 @@ export const useRoulette = (user: UserData | null) => {
             }
         }
 
-        // Simulate spin duration
-        setTimeout(() => {
+        // Simulate spin duration (with cleanup to prevent memory leaks)
+        if (spinTimeoutRef.current) {
+            clearTimeout(spinTimeoutRef.current);
+        }
+        spinTimeoutRef.current = window.setTimeout(() => {
             setIsSpinning(false);
             setResult({
                 prize: selectedPrize.label,
@@ -72,6 +85,7 @@ export const useRoulette = (user: UserData | null) => {
                     window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
                 }
             }
+            spinTimeoutRef.current = null;
         }, 4000); // 4 seconds spin
 
     }, [isSpinning, freeSpins, user, playSound]);
