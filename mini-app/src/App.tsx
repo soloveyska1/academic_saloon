@@ -356,21 +356,23 @@ function AppContent() {
 
 // Main App wrapper
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
-  const [appReady, setAppReady] = useState(false);
+  const [showIntro, setShowIntro] = useState(true)
+  const [appReady, setAppReady] = useState(false)
 
-  const handleSplashComplete = useCallback(() => {
-    setShowSplash(false);
+  const handleIntroComplete = useCallback(() => {
+    setShowIntro(false)
     // Small delay before showing app content for smooth transition
-    setTimeout(() => setAppReady(true), 100);
-  }, []);
+    setTimeout(() => setAppReady(true), 100)
+  }, [])
 
   return (
     <>
       {/* Splash Screen - blocks everything until complete */}
-      {showSplash && (
-        <SplashScreen onComplete={handleSplashComplete} />
-      )}
+      <AnimatePresence>
+        {showIntro && (
+          <SplashScreen onComplete={handleIntroComplete} />
+        )}
+      </AnimatePresence>
 
       {/* Main App - only renders after splash is done */}
       {appReady && (
