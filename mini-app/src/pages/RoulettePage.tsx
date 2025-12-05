@@ -1,244 +1,514 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Crown, Sparkles, Gift, Star, Zap, Trophy, ChevronDown } from 'lucide-react';
 import { LiveWinnersTicker } from '../components/LiveWinnersTicker';
-import { VaultLock } from '../components/VaultLock';
-import { PrizeTicker } from '../components/PrizeTicker';
+import { PremiumFortuneWheel } from '../components/PremiumFortuneWheel';
+import { PremiumPrizeModal } from '../components/PremiumPrizeModal';
+import { VIPStatusCard } from '../components/VIPStatusCard';
+import { JackpotCounter } from '../components/JackpotCounter';
+import { DailyStreak } from '../components/DailyStreak';
+import { ConfettiExplosion } from '../components/ConfettiExplosion';
 import { useSound } from '../hooks/useSound';
 import { UserData } from '../types';
 import '../styles/Roulette.css';
+import '../styles/PremiumClub.css';
 
 interface RoulettePageProps {
   user: UserData | null;
 }
 
+// Премиальные призы с редкостью
+const PREMIUM_PRIZES = [
+  { id: 'jackpot', label: 'ДЖЕКПОТ', sublabel: '50 000 ₽', color: '#7C3AED', textColor: '#F5E6B8', icon: '👑', rarity: 'legendary' as const },
+  { id: 'mega', label: '10 000 ₽', sublabel: 'Мега-бонус', color: '#1B4D3E', textColor: '#F5E6B8', icon: '💎', rarity: 'epic' as const },
+  { id: 'super', label: '5 000 ₽', sublabel: 'Супер-бонус', color: '#722F37', textColor: '#F5E6B8', icon: '🔥', rarity: 'epic' as const },
+  { id: 'gold', label: '1 000 ₽', sublabel: 'Золотой бонус', color: '#2D2A24', textColor: '#F5E6B8', icon: '✨', rarity: 'rare' as const },
+  { id: 'silver', label: '500 ₽', sublabel: 'Серебряный бонус', color: '#1B4D3E', textColor: '#F5E6B8', icon: '⭐', rarity: 'rare' as const },
+  { id: 'bronze', label: '200 ₽', sublabel: 'Бронзовый бонус', color: '#722F37', textColor: '#F5E6B8', icon: '🎁', rarity: 'common' as const },
+  { id: 'bonus100', label: '100 ₽', sublabel: 'Бонус', color: '#2D2A24', textColor: '#F5E6B8', icon: '💫', rarity: 'common' as const },
+  { id: 'bonus50', label: '50 ₽', sublabel: 'Мини-бонус', color: '#1B4D3E', textColor: '#F5E6B8', icon: '🌟', rarity: 'common' as const },
+];
+
+// Генерация позиций частиц
+const generateParticles = (count: number) => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    delay: Math.random() * 8,
+    duration: 10 + Math.random() * 10,
+    size: 1 + Math.random() * 2,
+  }));
+};
+
 export const RoulettePage = ({ user }: RoulettePageProps) => {
-  const [gameState, setGameState] = useState<'idle' | 'spinning' | 'near-miss' | 'landed' | 'failed'>('idle');
-  const [progress, setProgress] = useState(0);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [attempts, setAttempts] = useState(3);
+  const [currentPrize, setCurrentPrize] = useState<typeof PREMIUM_PRIZES[0] | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [userXP, setUserXP] = useState(1250); // Demo XP
+  const [currentStreak] = useState(4); // Demo streak
+  const [activeSection, setActiveSection] = useState<'wheel' | 'rewards'>('wheel');
   const { playSound, initAudio } = useSound();
 
-  // Refs for hold logic
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isHoldingRef = useRef(false);
+  // Мемоизация частиц
+  const particles = useMemo(() => generateParticles(20), []);
 
-  // --- "INCEPTION ALGORITHM" ---
-  const startHolding = () => {
-    if (gameState !== 'idle') return;
-    initAudio(); // Ensure audio is ready
-    isHoldingRef.current = true;
-    playSound('turbine');
+  // Intro animation state
+  const [showIntro, setShowIntro] = useState(true);
 
-    intervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + 1.5; // ~2 seconds to fill
-        if (next >= 100) {
-          clearInterval(intervalRef.current!);
-          triggerSpin();
-          return 100;
-        }
-        return next;
-      });
-    }, 30);
-  };
-
-  const stopHolding = () => {
-    if (gameState !== 'idle') return;
-    isHoldingRef.current = false;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setProgress(0);
-  };
-
-  const triggerSpin = async () => {
-    setGameState('spinning');
-    setProgress(0);
-
-    // 1. Violent Spin Phase (3s)
-    setTimeout(async () => {
-      // 2. Near Miss Phase (The "Hook")
-      setGameState('near-miss');
-      setHighlightId('dip'); // 'Diploma' (Legendary)
-      playSound('heavy_latch');
-
-      // 3. The Hesitation (0.8s)
-      setTimeout(() => {
-        // 4. The Payoff
-        playSound('glitch');
-        setGameState('landed');
-        setHighlightId('dsc'); // 'Discount' (Target)
-        playSound('success');
-      }, 800);
-
-    }, 3000);
-  };
-
-  // --- HAPTIC FEEDBACK ---
   useEffect(() => {
-    if (progress > 0 && progress < 100) {
-      if (Math.random() > 0.7) {
-        // Try Telegram Haptics first (Best for mobile)
-        const tg = (window as any).Telegram?.WebApp;
-        if (tg?.HapticFeedback) {
-          try {
-            tg.HapticFeedback.impactOccurred('light');
-          } catch (e) {
-            // Ignore haptic errors
-          }
-        }
-        // Fallback to navigator.vibrate (Android Chrome)
-        else if (navigator.vibrate) {
-          navigator.vibrate(5);
-        }
+    const timer = setTimeout(() => setShowIntro(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSpin = useCallback(() => {
+    if (isSpinning || attempts <= 0) return;
+
+    initAudio();
+    playSound('click');
+
+    setIsSpinning(true);
+    setAttempts(prev => prev - 1);
+
+    // Haptic на старт
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+  }, [isSpinning, attempts, initAudio, playSound]);
+
+  const handleSpinEnd = useCallback(() => {
+    // Выбираем случайный приз с весами (в реальном приложении это от сервера)
+    const weights = [1, 10, 50, 200, 500, 1000, 2000, 3000];
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    let random = Math.random() * totalWeight;
+
+    let prizeIndex = 0;
+    for (let i = 0; i < weights.length; i++) {
+      random -= weights[i];
+      if (random <= 0) {
+        prizeIndex = i;
+        break;
       }
     }
-  }, [progress]);
+
+    const prize = PREMIUM_PRIZES[prizeIndex];
+    setCurrentPrize(prize);
+    setIsSpinning(false);
+    setShowModal(true);
+
+    // Показываем конфетти для редких призов
+    if (prize.rarity === 'epic' || prize.rarity === 'legendary') {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 4000);
+    }
+
+    // Добавляем XP
+    setUserXP(prev => prev + 50);
+
+    playSound('success');
+
+    // Haptic feedback
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      if (prize.rarity === 'legendary') {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      } else if (prize.rarity === 'epic') {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      } else {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+      }
+    }
+  }, [playSound]);
+
+  const closeModal = () => {
+    setShowModal(false);
+    setCurrentPrize(null);
+  };
+
+  const handleClaim = () => {
+    // В реальном приложении здесь отправка на сервер
+    closeModal();
+    playSound('success');
+  };
 
   return (
-    <div className="relative w-full min-h-[100dvh] bg-[#050505] overflow-y-auto flex flex-col items-center font-sans text-[#D4AF37]">
-      {/* AMBIENT EFFECTS */}
-      <div className="god-rays opacity-30"></div>
-      <div className="scanlines opacity-20"></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80 pointer-events-none z-10"></div>
+    <div className="premium-club-page">
+      {/* === Intro Animation === */}
+      <AnimatePresence>
+        {showIntro && (
+          <motion.div
+            className="club-intro"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: 'spring', damping: 10 }}
+            >
+              <Crown size={64} className="intro-icon" />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="intro-title"
+            >
+              Premium Club
+            </motion.h1>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* MATRIX RAIN EFFECT (CSS ONLY FOR PERFORMANCE) */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{
-        backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(0, 255, 0, .3) 25%, rgba(0, 255, 0, .3) 26%, transparent 27%, transparent 74%, rgba(0, 255, 0, .3) 75%, rgba(0, 255, 0, .3) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 255, 0, .3) 25%, rgba(0, 255, 0, .3) 26%, transparent 27%, transparent 74%, rgba(0, 255, 0, .3) 75%, rgba(0, 255, 0, .3) 76%, transparent 77%, transparent)',
-        backgroundSize: '50px 50px'
-      }}></div>
+      {/* === Атмосферные слои === */}
+      <div className="club-bg-base" />
+      <div className="club-glow" />
 
-      {/* TOP TICKER */}
-      <LiveWinnersTicker />
+      <div className="club-particles">
+        {particles.map((p) => (
+          <motion.div
+            key={p.id}
+            className="particle gold"
+            style={{
+              left: p.left,
+              width: p.size,
+              height: p.size,
+            }}
+            animate={{
+              y: ['100vh', '-10vh'],
+              opacity: [0, 0.8, 0.8, 0],
+            }}
+            transition={{
+              duration: p.duration,
+              delay: p.delay,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          />
+        ))}
+      </div>
 
-      <main className="flex-1 w-full flex flex-col items-center justify-center relative z-20 pt-8 pb-48 px-4">
+      <div className="club-vignette" />
 
-        {/* HEADER */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
+      {/* === Тикер победителей === */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <LiveWinnersTicker />
+      </div>
+
+      {/* === Confetti === */}
+      <ConfettiExplosion isActive={showConfetti} />
+
+      {/* === Основной контент === */}
+      <main className="club-content">
+        {/* Header */}
+        <motion.header
+          initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-2"
+          transition={{ duration: 0.8, delay: showIntro ? 2 : 0 }}
+          className="club-header"
         >
-          <h1 className="text-2xl font-black tracking-[0.2em] metallic-text uppercase drop-shadow-lg">
-            Система Взлома
-          </h1>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#0F0]"></div>
-            <div className="text-[10px] text-[#D4AF37]/50 font-mono tracking-widest">
-              SECURE_CHANNEL :: <span className="text-red-500 animate-pulse">REC</span>
+          <div className="club-header-top">
+            <div className="club-brand">
+              <Crown className="brand-icon" size={24} />
+              <div className="brand-text">
+                <h1 className="club-title">Premium Club</h1>
+                <span className="club-tagline">Эксклюзивные привилегии</span>
+              </div>
             </div>
+            <motion.div
+              className="vip-quick-badge"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Star size={14} fill="currentColor" />
+              <span>VIP</span>
+            </motion.div>
           </div>
+        </motion.header>
+
+        {/* VIP Status Card */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: showIntro ? 2.2 : 0.2 }}
+        >
+          <VIPStatusCard
+            currentXP={userXP}
+            userName={user?.fullname?.split(' ')[0] || user?.username || 'VIP Гость'}
+          />
+        </motion.section>
+
+        {/* Section Toggle */}
+        <motion.div
+          className="section-toggle"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: showIntro ? 2.4 : 0.4 }}
+        >
+          <button
+            className={`toggle-btn ${activeSection === 'wheel' ? 'active' : ''}`}
+            onClick={() => setActiveSection('wheel')}
+          >
+            <Sparkles size={16} />
+            <span>Колесо Фортуны</span>
+          </button>
+          <button
+            className={`toggle-btn ${activeSection === 'rewards' ? 'active' : ''}`}
+            onClick={() => setActiveSection('rewards')}
+          >
+            <Gift size={16} />
+            <span>Награды</span>
+          </button>
         </motion.div>
 
-        {/* 3D VAULT */}
-        <div className="mb-4 scale-90 md:scale-100 relative">
-          {/* Holographic Circle Behind */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full border border-[#D4AF37]/10 animate-[spin_10s_linear_infinite]"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full border border-dashed border-[#D4AF37]/20 animate-[spin_15s_linear_infinite_reverse]"></div>
-
-          <VaultLock
-            state={gameState === 'landed' ? 'success' : gameState === 'spinning' ? 'spinning' : gameState === 'failed' ? 'failed' : 'idle'}
-            userPhotoUrl={undefined}
-          />
-        </div>
-
-        {/* PRIZE SCROLLER */}
-        <div className="w-full max-w-md mb-4">
-          <PrizeTicker highlightId={highlightId} state={gameState} />
-        </div>
-
-        {/* INTERACTION AREA */}
-        <div className="mt-auto relative w-full max-w-xs flex flex-col items-center justify-center gap-3">
-
-          {/* Session Timer - Urgency */}
-          <div className="flex items-center gap-2 text-[10px] font-mono text-red-500 tracking-widest bg-red-500/10 px-3 py-1 rounded border border-red-500/20">
-            <span>SESSION_EXPIRES:</span>
-            <span className="font-bold countdown-urgent">00:59</span>
-          </div>
-
-          {gameState === 'idle' && (
+        {/* Wheel Section */}
+        <AnimatePresence mode="wait">
+          {activeSection === 'wheel' && (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-[10px] font-mono text-[#D4AF37] tracking-[0.3em] uppercase animate-pulse drop-shadow-[0_0_5px_rgba(212,175,55,0.8)]"
+              key="wheel"
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              transition={{ duration: 0.3 }}
+              className="wheel-section"
             >
-              ▼ УДЕРЖИВАЙТЕ КНОПКУ ▼
+              {/* Jackpot Counter */}
+              <JackpotCounter baseAmount={125000} growthRate={0.5} />
+
+              {/* Wheel */}
+              <div className="wheel-area">
+                <PremiumFortuneWheel
+                  prizes={PREMIUM_PRIZES}
+                  isSpinning={isSpinning}
+                  onSpinEnd={handleSpinEnd}
+                />
+              </div>
+
+              {/* Spin Button */}
+              <motion.div
+                className="spin-section"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <motion.button
+                  onClick={handleSpin}
+                  disabled={isSpinning || attempts <= 0}
+                  className="premium-spin-button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <motion.span
+                    className="spin-button-glow"
+                    animate={{
+                      opacity: [0.5, 1, 0.5],
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  <span className="spin-button-content">
+                    <Zap size={20} className="spin-icon" />
+                    <span className="spin-text">
+                      {isSpinning ? 'Вращается...' : 'Крутить'}
+                    </span>
+                  </span>
+                  <motion.span
+                    className="spin-button-shine"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                  />
+                </motion.button>
+
+                {/* Attempts counter */}
+                <div className="attempts-container">
+                  <span className="attempts-label">Попытки</span>
+                  <div className="attempts-gems">
+                    {[...Array(3)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className={`attempt-gem ${i < attempts ? 'active' : 'used'}`}
+                        initial={{ scale: 1 }}
+                        animate={i < attempts ? {
+                          scale: [1, 1.1, 1],
+                          boxShadow: ['0 0 10px #D4AF37', '0 0 20px #D4AF37', '0 0 10px #D4AF37'],
+                        } : { scale: 0.8, opacity: 0.3 }}
+                        transition={{ duration: 2, repeat: i < attempts ? Infinity : 0, delay: i * 0.3 }}
+                      >
+                        <Star size={12} fill={i < attempts ? '#D4AF37' : '#4a4a4a'} />
+                      </motion.div>
+                    ))}
+                  </div>
+                  {attempts === 0 && (
+                    <motion.span
+                      className="attempts-refill"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      Обновление через 23:59:59
+                    </motion.span>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Prize preview cards */}
+              <motion.div
+                className="prize-preview"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <h3 className="preview-title">
+                  <Trophy size={16} />
+                  <span>Главные призы</span>
+                </h3>
+                <div className="preview-grid">
+                  {PREMIUM_PRIZES.slice(0, 4).map((prize, i) => (
+                    <motion.div
+                      key={prize.id}
+                      className={`preview-card rarity-${prize.rarity}`}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.9 + i * 0.1 }}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                    >
+                      <span className="preview-icon">{prize.icon}</span>
+                      <span className="preview-label">{prize.label}</span>
+                      <span className={`rarity-badge ${prize.rarity}`}>
+                        {prize.rarity === 'legendary' ? 'Легенда' :
+                          prize.rarity === 'epic' ? 'Эпик' :
+                            prize.rarity === 'rare' ? 'Редкий' : ''}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
             </motion.div>
           )}
 
-          <div className="w-full h-16 relative z-30">
-            <AnimatePresence mode='wait'>
-              {gameState === 'idle' ? (
-                <motion.button
-                  key="hack-btn"
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="relative group w-full h-full overflow-hidden rounded-lg border-2 border-[#D4AF37] bg-black shadow-[0_0_20px_rgba(212,175,55,0.3)]"
-                  onMouseDown={startHolding}
-                  onMouseUp={stopHolding}
-                  onMouseLeave={stopHolding}
-                  onTouchStart={startHolding}
-                  onTouchEnd={stopHolding}
-                >
-                  {/* Animated Background Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
+          {activeSection === 'rewards' && (
+            <motion.div
+              key="rewards"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.3 }}
+              className="rewards-section"
+            >
+              {/* Daily Streak */}
+              <DailyStreak
+                currentStreak={currentStreak}
+                lastClaimDate={new Date().toDateString()}
+              />
 
-                  {/* Progress Fill */}
+              {/* Quick rewards */}
+              <div className="quick-rewards">
+                <h3 className="rewards-title">
+                  <Gift size={18} />
+                  <span>Дополнительные бонусы</span>
+                </h3>
+
+                <div className="reward-cards">
                   <motion.div
-                    className="absolute bottom-0 left-0 h-full bg-[#D4AF37]"
-                    style={{ width: `${progress}%` }}
-                  />
+                    className="reward-card"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="reward-icon-wrap">
+                      <Zap size={24} />
+                    </div>
+                    <div className="reward-info">
+                      <span className="reward-name">Бонус за активность</span>
+                      <span className="reward-desc">+100 XP за каждый заказ</span>
+                    </div>
+                    <ChevronDown className="reward-arrow" size={20} />
+                  </motion.div>
 
-                  {/* Text */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 mix-blend-difference">
-                    <span className={`text-xl font-black tracking-[0.2em] ${progress > 0 ? 'glitch-text' : ''}`} data-text="ВЗЛОМАТЬ">
-                      {progress > 0 ? `HACKING ${Math.floor(progress)}%` : 'ВЗЛОМАТЬ'}
-                    </span>
-                  </div>
-                </motion.button>
-              ) : (
-                <motion.div
-                  key="status"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center w-full h-full flex items-center justify-center"
-                >
-                  {gameState === 'spinning' && (
-                    <div className="text-[#D4AF37] tracking-widest text-xs font-mono animate-pulse bg-black/50 px-4 py-2 rounded border border-[#D4AF37]/30">
-                      &gt; BRUTE_FORCE_ATTACK...
+                  <motion.div
+                    className="reward-card"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="reward-icon-wrap purple">
+                      <Crown size={24} />
                     </div>
-                  )}
-                  {gameState === 'near-miss' && (
-                    <div className="text-[#FF3B30] tracking-widest text-xs font-bold font-mono bg-red-500/10 px-4 py-2 rounded border border-red-500/30 animate-shake">
-                      ⚠ FIREWALL DETECTED ⚠
+                    <div className="reward-info">
+                      <span className="reward-name">Реферальный бонус</span>
+                      <span className="reward-desc">500₽ за каждого друга</span>
                     </div>
-                  )}
-                  {gameState === 'landed' && (
-                    <motion.button
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="w-full h-full bg-gradient-to-r from-[#D4AF37] via-[#FBF5B7] to-[#D4AF37] text-black font-black tracking-widest shadow-[0_0_40px_rgba(212,175,55,0.8)] rounded-lg uppercase border-2 border-white/50 relative overflow-hidden"
-                      onClick={() => console.log('Claimed')}
+                    <ChevronDown className="reward-arrow" size={20} />
+                  </motion.div>
+
+                  <motion.div
+                    className="reward-card"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="reward-icon-wrap green">
+                      <Star size={24} />
+                    </div>
+                    <div className="reward-info">
+                      <span className="reward-name">VIP Кэшбэк</span>
+                      <span className="reward-desc">До 15% с каждого заказа</span>
+                    </div>
+                    <ChevronDown className="reward-arrow" size={20} />
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Achievements preview */}
+              <div className="achievements-preview">
+                <h3 className="achievements-title">
+                  <Trophy size={18} />
+                  <span>Достижения</span>
+                </h3>
+                <div className="achievement-badges">
+                  {[
+                    { icon: '🎯', name: 'Первый спин', done: true },
+                    { icon: '🔥', name: 'Серия 7 дней', done: false },
+                    { icon: '💎', name: 'VIP Gold', done: false },
+                    { icon: '👑', name: 'Джекпот', done: false },
+                  ].map((ach, i) => (
+                    <motion.div
+                      key={i}
+                      className={`achievement-badge ${ach.done ? 'done' : 'locked'}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
                     >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        ЗАБРАТЬ ВЫИГРЫШ <span className="text-xl">➔</span>
-                      </span>
-                      {/* Shine Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]"></div>
-                    </motion.button>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
+                      <span className="ach-icon">{ach.icon}</span>
+                      <span className="ach-name">{ach.name}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* User info */}
+        {user && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="club-user-info"
+          >
+            <span>Участник: {user.fullname?.split(' ')[0] || user.username || 'VIP Гость'}</span>
+          </motion.div>
+        )}
       </main>
 
-      {/* FOOTER DECORATION */}
-      <div className="fixed bottom-4 text-[8px] text-[#D4AF37]/20 font-mono tracking-widest z-10 pointer-events-none text-center w-full">
-        ID: {user?.id || 'ANONYMOUS'} :: ENCRYPTED_CONNECTION_V4.0
-      </div>
+      {/* === Prize Modal === */}
+      <AnimatePresence>
+        {showModal && currentPrize && (
+          <PremiumPrizeModal
+            prize={currentPrize}
+            onClose={closeModal}
+            onClaim={handleClaim}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

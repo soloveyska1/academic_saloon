@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   GraduationCap, FileText, BookOpen, Scroll, PenTool,
   ClipboardCheck, Presentation, Briefcase, Sparkles, Camera,
-  Calendar, Clock, Zap, Flame, ChevronRight, Check, ArrowLeft,
+  Clock, Zap, Flame, ChevronRight, Check, ArrowLeft,
   Send, AlertCircle, Upload, X, FileUp, Thermometer, ChevronDown, Paperclip,
   Timer, Rocket, Hourglass
 } from 'lucide-react'
@@ -12,6 +12,10 @@ import { WorkType, OrderCreateRequest } from '../types'
 import { createOrder } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
+
+const DRAFT_KEY = 'order_draft_v1'
+
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  UPDATED PRICE LIST (from bot)
@@ -492,131 +496,7 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
 //  FILE UPLOAD ZONE
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface FileUploadProps {
-  files: File[]
-  onAdd: (files: FileList) => void
-  onRemove: (index: number) => void
-}
 
-function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    if (e.dataTransfer.files.length > 0) {
-      onAdd(e.dataTransfer.files)
-    }
-  }
-
-  return (
-    <div>
-      {/* Drop Zone */}
-      <motion.div
-        animate={{
-          borderColor: isDragging ? 'var(--border-gold-strong)' : 'var(--border-gold)',
-          background: isDragging ? 'rgba(212,175,55,0.08)' : 'var(--bg-card)',
-        }}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
-        style={{
-          padding: 40,
-          borderRadius: 20,
-          border: '2px dashed',
-          cursor: 'pointer',
-          textAlign: 'center',
-          transition: 'all 0.3s ease',
-        }}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          onChange={(e) => e.target.files && onAdd(e.target.files)}
-          style={{ display: 'none' }}
-        />
-
-        <motion.div
-          animate={{ y: isDragging ? -5 : 0 }}
-          style={{
-            width: 70,
-            height: 70,
-            margin: '0 auto 20px',
-            borderRadius: 20,
-            background: 'rgba(212,175,55,0.1)',
-            border: '1px solid var(--border-gold)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <FileUp size={32} color="var(--gold-400)" strokeWidth={1.5} />
-        </motion.div>
-
-        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)', marginBottom: 8 }}>
-          Нажмите или перетащите файлы
-        </p>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          Методички, примеры, требования
-        </p>
-      </motion.div>
-
-      {/* File List */}
-      {files.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            Прикреплено ({files.length})
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {files.map((file, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '12px 16px',
-                  background: 'var(--bg-glass)',
-                  border: '1px solid var(--border-default)',
-                  borderRadius: 12,
-                }}
-              >
-                <Upload size={18} color="var(--gold-400)" />
-                <span style={{ flex: 1, fontSize: 14, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {file.name}
-                </span>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  {(file.size / 1024).toFixed(0)} KB
-                </span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onRemove(i) }}
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 8,
-                    background: 'var(--error-glass)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <X size={14} color="var(--error-text)" />
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  PREMIUM DEADLINE CARD — Ultra-luxe urgency selection
@@ -1007,6 +887,9 @@ export function CreateOrderPage() {
     try {
       const res = await createOrder(data)
       if (res.success) {
+        // Clear draft on success
+        localStorage.removeItem(DRAFT_KEY)
+
         hapticSuccess()
         setResult({ ok: true, msg: res.message, id: res.order_id })
       } else {
@@ -1432,17 +1315,17 @@ export function CreateOrderPage() {
         )}
       </AnimatePresence>
 
-      {/* Action Button */}
+      {/* Action Button — Premium Shimmer Effect */}
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, type: 'spring', stiffness: 300, damping: 30 }}
         style={{
           position: 'fixed',
-          bottom: 100,
+          bottom: 'calc(110px + env(safe-area-inset-bottom, 0px))',
           left: 24,
           right: 24,
-          zIndex: 1000,
+          zIndex: 999,
         }}
       >
         <motion.button
@@ -1450,6 +1333,7 @@ export function CreateOrderPage() {
           onClick={step === 3 ? handleSubmit : goNext}
           disabled={!canProceed || submitting}
           style={{
+            position: 'relative',
             width: '100%',
             padding: '20px 28px',
             fontSize: 18,
@@ -1458,39 +1342,70 @@ export function CreateOrderPage() {
             letterSpacing: '0.02em',
             color: canProceed ? '#050505' : 'var(--text-muted)',
             background: canProceed
-              ? 'var(--liquid-gold)'
+              ? 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #D4AF37 50%, #B38728 75%, #FBF5B7 100%)'
               : 'var(--bg-glass)',
+            backgroundSize: canProceed ? '200% 200%' : 'auto',
             border: 'none',
             borderRadius: 18,
             cursor: canProceed && !submitting ? 'pointer' : 'not-allowed',
             boxShadow: canProceed
-              ? 'var(--glow-gold-intense)'
+              ? '0 0 40px -5px rgba(212, 175, 55, 0.5), 0 10px 30px -10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
               : 'none',
             opacity: canProceed ? 1 : 0.5,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 12,
+            overflow: 'hidden',
+            animation: canProceed ? 'liquid-gold-shift 4s ease-in-out infinite' : 'none',
           }}
         >
-          {submitting ? (
-            <>
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-                <Clock size={22} />
-              </motion.div>
-              Отправка...
-            </>
-          ) : step === 3 ? (
-            <>
-              <Send size={20} />
-              Рассчитать стоимость
-            </>
-          ) : (
-            <>
-              {step === 2 ? 'Выбрать сроки' : 'Продолжить'}
-              <ChevronRight size={24} />
-            </>
+          {/* Premium Shimmer Sweep */}
+          {canProceed && !submitting && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '-100%',
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+              animation: 'shimmer-pass 2.5s ease-in-out infinite',
+              pointerEvents: 'none',
+            }} />
           )}
+          {/* Inner Highlight */}
+          {canProceed && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '50%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)',
+              borderRadius: '18px 18px 0 0',
+              pointerEvents: 'none',
+            }} />
+          )}
+          <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
+            {submitting ? (
+              <>
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                  <Clock size={22} />
+                </motion.div>
+                Отправка...
+              </>
+            ) : step === 3 ? (
+              <>
+                <Send size={20} />
+                Рассчитать стоимость
+              </>
+            ) : (
+              <>
+                {step === 2 ? 'Выбрать сроки' : 'Продолжить'}
+                <ChevronRight size={24} />
+              </>
+            )}
+          </span>
         </motion.button>
       </motion.div>
     </div>

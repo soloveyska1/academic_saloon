@@ -1,33 +1,20 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, GraduationCap, FileText, BookOpen, Briefcase, PenTool,
-  ClipboardCheck, Presentation, Scroll, Camera, Sparkles,
-  Clock, Calendar, CreditCard, MessageCircle, XCircle, CheckCircle,
+  ArrowLeft, BookOpen, PenTool, Sparkles,
+  Clock, Calendar, CreditCard, XCircle, CheckCircle,
   Loader, Tag, Percent, Gift, Receipt, Copy, Check, Smartphone,
   Building2, Timer, Shield, Zap, Download, ExternalLink, Star, RefreshCw
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { fetchOrderDetail, fetchPaymentInfo, confirmPayment, submitOrderReview, confirmWorkCompletion, requestRevision, PaymentInfo } from '../api/userApi'
-import { OrderChat } from '../components/OrderChat'
+import { OrderChat, OrderChatHandle } from '../components/OrderChat'
 import { useWebSocketContext } from '../hooks/useWebSocket'
 
 // Work type icons mapping
-const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
-  masters: GraduationCap,
-  diploma: GraduationCap,
-  coursework: BookOpen,
-  practice: Briefcase,
-  essay: PenTool,
-  presentation: Presentation,
-  control: ClipboardCheck,
-  independent: Scroll,
-  report: FileText,
-  photo_task: Camera,
-  other: Sparkles,
-}
+
 
 // Status config
 interface StatusConfig {
@@ -69,17 +56,28 @@ interface GoldenInvoiceProps {
   order: Order
   paymentInfo: PaymentInfo | null
   onPaymentConfirmed: () => void
+  paymentScheme: 'full' | 'half'
+  setPaymentScheme: (scheme: 'full' | 'half') => void
+
 }
 
-function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoiceProps) {
+function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, setPaymentScheme }: GoldenInvoiceProps) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
+
+  // ... (rest of logic)
+
+  // I need to find where to insert the button. I'll insert it after the payment scheme selection or at the bottom of the card.
+  // Since I don't have the full content of GoldenInvoice in view, I will use a broader search/replace or just view it first to be safe.
+  // Actually, I should view GoldenInvoice first to make sure I insert it in the right place.
+  // But I can try to replace the interface and function signature first.
+
 
   // Определяем, это первая оплата или доплата
   const isSecondPayment = (order.paid_amount || 0) > 0
   const remainingAmount = paymentInfo?.remaining || order.final_price - (order.paid_amount || 0)
 
   // При доплате - только полная оплата остатка, без выбора схемы
-  const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
+  // const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full') // Lifted up
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'sbp'>('card')
   const [copied, setCopied] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
@@ -733,6 +731,8 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           </motion.div>
         )}
 
+
+
         {/* Confirm Button */}
         <motion.button
           whileTap={{ scale: 0.97 }}
@@ -777,7 +777,6 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed }: GoldenInvoice
           )}
         </motion.button>
 
-        {/* Note */}
         <p style={{
           fontSize: 11,
           color: 'var(--text-muted)',
@@ -1040,12 +1039,15 @@ const STATUS_ALERTS: Record<string, StatusAlert> = {
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { haptic, hapticSuccess, hapticError, openBot } = useTelegram()
+  const { haptic, hapticSuccess, hapticError } = useTelegram()
   const [order, setOrder] = useState<Order | null>(null)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPriceAlert, setShowPriceAlert] = useState(false)
   const [statusAlert, setStatusAlert] = useState<StatusAlert | null>(null)
+
+  // Payment Scheme State (Lifted from GoldenInvoice)
+  const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
 
   // WebSocket context for real-time updates
   const { addMessageHandler } = useWebSocketContext()
@@ -1056,6 +1058,11 @@ export function OrderDetailPage() {
     try {
       const data = await fetchOrderDetail(parseInt(id))
       setOrder(data)
+
+      // Initialize payment scheme from order if available
+      if (data.payment_scheme) {
+        setPaymentScheme(data.payment_scheme as 'full' | 'half')
+      }
 
       // Check for status change alert - show notification if status changed
       const lastSeenKey = `order_${id}_last_seen_status`
@@ -1162,10 +1169,9 @@ export function OrderDetailPage() {
     navigate('/orders')
   }
 
-  const handleChat = () => {
-    haptic('medium')
-    openBot(`order_chat_${order?.id}`)
-  }
+  const chatRef = useRef<OrderChatHandle>(null)
+
+
 
   const handlePaymentConfirmed = async () => {
     // Reload order to get updated status
@@ -1176,9 +1182,7 @@ export function OrderDetailPage() {
     return STATUS_CONFIG[status] || STATUS_CONFIG.pending
   }
 
-  const getWorkTypeIcon = (workType: string) => {
-    return WORK_TYPE_ICONS[workType] || FileText
-  }
+
 
   // Loading state
   if (loading) {
@@ -1247,7 +1251,6 @@ export function OrderDetailPage() {
   }
 
   const statusConfig = getStatusConfig(order.status)
-  const WorkIcon = getWorkTypeIcon(order.work_type)
   const StatusIcon = statusConfig.icon
   const isPaid = order.paid_amount >= order.final_price
   const isActive = !['completed', 'cancelled', 'rejected'].includes(order.status)
@@ -1626,9 +1629,17 @@ export function OrderDetailPage() {
             order={order}
             paymentInfo={paymentInfo}
             onPaymentConfirmed={handlePaymentConfirmed}
+            paymentScheme={paymentScheme}
+            setPaymentScheme={setPaymentScheme}
+
           />
         </motion.div>
       )}
+
+      {/* Universal Chat Button REMOVED - Now handled by OrderChat collapsed state */}
+
+      {/* Order Chat - Always available at the bottom */}
+
 
       {/* Progress Steps (only for active non-cancelled orders, not during payment) */}
       {!isCancelled && !showPaymentUI && (
@@ -1990,7 +2001,7 @@ export function OrderDetailPage() {
                       haptic('medium')
                       const result = await confirmWorkCompletion(order.id)
                       if (result.success) {
-                        setOrder(prev => prev ? {...prev, status: 'completed'} : null)
+                        setOrder(prev => prev ? { ...prev, status: 'completed' } : null)
                         hapticSuccess()
                       }
                     } catch (e) {
@@ -2026,7 +2037,7 @@ export function OrderDetailPage() {
                       haptic('light')
                       const result = await requestRevision(order.id, '')
                       if (result.success) {
-                        setOrder(prev => prev ? {...prev, status: 'revision'} : null)
+                        setOrder(prev => prev ? { ...prev, status: 'revision' } : null)
                         // Scroll to chat section
                         const chatSection = document.getElementById('order-chat-section')
                         chatSection?.scrollIntoView({ behavior: 'smooth' })
@@ -2129,7 +2140,7 @@ export function OrderDetailPage() {
 
           {/* Review Section - Only for completed orders without review */}
           {order.status === 'completed' && !order.review_submitted && (
-            <ReviewSection orderId={order.id} haptic={haptic} onReviewSubmitted={() => setOrder(prev => prev ? {...prev, review_submitted: true} : null)} />
+            <ReviewSection orderId={order.id} haptic={haptic} onReviewSubmitted={() => setOrder(prev => prev ? { ...prev, review_submitted: true } : null)} />
           )}
 
           {/* Review Submitted Badge */}
@@ -2245,8 +2256,8 @@ export function OrderDetailPage() {
                 margin: '4px 0',
               }} />
 
-              {/* Payment Scheme Badge */}
-              {order.payment_scheme === 'half' && (
+              {/* Payment Scheme Badge - Dynamic based on selection */}
+              {(paymentScheme === 'half' || order.payment_scheme === 'half') && (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -2268,7 +2279,7 @@ export function OrderDetailPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <CheckCircle size={14} color="#22c55e" />
                     <span style={{ fontSize: 14, color: '#22c55e' }}>
-                      {order.payment_scheme === 'half' && order.paid_amount < order.final_price
+                      {(paymentScheme === 'half' || order.payment_scheme === 'half') && order.paid_amount < order.final_price
                         ? 'Предоплата внесена'
                         : 'Оплачено'}
                     </span>
@@ -2284,13 +2295,13 @@ export function OrderDetailPage() {
                 </div>
               )}
 
-              {/* Remaining */}
+              {/* Remaining / Surcharge - Dynamic based on selection */}
               {!isPaid && order.final_price > order.paid_amount && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Clock size={14} color="#f59e0b" />
                     <span style={{ fontSize: 14, color: '#f59e0b' }}>
-                      {order.payment_scheme === 'half' ? 'Доплата после выполнения' : 'К оплате'}
+                      {paymentScheme === 'half' ? 'Доплата после выполнения' : 'К оплате'}
                     </span>
                   </div>
                   <span style={{
@@ -2299,7 +2310,19 @@ export function OrderDetailPage() {
                     color: '#f59e0b',
                     fontFamily: "var(--font-mono)",
                   }}>
-                    {(order.final_price - order.paid_amount).toLocaleString('ru-RU')} ₽
+                    {/* Calculate remaining based on scheme if not yet paid */}
+                    {(() => {
+                      if (order.paid_amount > 0) {
+                        return (order.final_price - order.paid_amount).toLocaleString('ru-RU')
+                      }
+                      // If not paid yet, calculate based on selected scheme
+                      if (paymentScheme === 'half') {
+                        // Surcharge is the OTHER half (50%)
+                        return Math.floor(order.final_price / 2).toLocaleString('ru-RU')
+                      }
+                      // Full payment
+                      return order.final_price.toLocaleString('ru-RU')
+                    })()} ₽
                   </span>
                 </div>
               )}
@@ -2342,9 +2365,9 @@ export function OrderDetailPage() {
       )}
 
       {/* In-App Chat — Premium Feature */}
-      {isActive && !showPaymentUI && (
+      {!showPaymentUI && (
         <div id="order-chat-section">
-          <OrderChat orderId={order.id} />
+          <OrderChat ref={chatRef} orderId={order.id} />
         </div>
       )}
 
@@ -2364,57 +2387,9 @@ export function OrderDetailPage() {
             zIndex: 1000,
           }}
         >
-          {/* Chat Button */}
-          {isActive && (
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleChat}
-              style={{
-                flex: 1,
-                padding: '18px 24px',
-                fontSize: 16,
-                fontWeight: 600,
-                color: 'var(--text-main)',
-                background: 'var(--bg-card-solid)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: 16,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-              }}
-            >
-              <MessageCircle size={20} color="#d4af37" />
-              Написать менеджеру
-            </motion.button>
-          )}
 
-          {/* Support Button (for completed/cancelled) */}
-          {!isActive && (
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleChat}
-              style={{
-                flex: order.status === 'completed' ? 'unset' : 1,
-                padding: order.status === 'completed' ? '18px' : '18px 24px',
-                fontSize: 16,
-                fontWeight: 600,
-                color: 'var(--text-main)',
-                background: 'var(--bg-card-solid)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: 16,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-              }}
-            >
-              <MessageCircle size={20} color="#d4af37" />
-              {order.status === 'completed' ? '' : 'Поддержка'}
-            </motion.button>
-          )}
+
+
 
           {/* Quick Reorder Button (for completed orders) - Premium Feature */}
           {order.status === 'completed' && (
