@@ -75,8 +75,9 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
     if (progress > 0 && progress < 100) {
       if (Math.random() > 0.7) {
         // Try Telegram Haptics first (Best for mobile)
-        if (window.Telegram?.WebApp?.HapticFeedback) {
-          window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        const tg = window.Telegram?.WebApp;
+        if (tg?.HapticFeedback) {
+          tg.HapticFeedback.impactOccurred('light');
         }
         // Fallback to navigator.vibrate (Android Chrome)
         else if (navigator.vibrate) {
