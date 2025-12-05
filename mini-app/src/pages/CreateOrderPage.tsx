@@ -5,11 +5,13 @@ import {
   GraduationCap, FileText, BookOpen, Scroll, PenTool,
   ClipboardCheck, Presentation, Briefcase, Sparkles, Camera,
   Calendar, Clock, Zap, Flame, ChevronRight, Check, ArrowLeft,
-  Send, AlertCircle, Upload, X, FileUp, Thermometer, ChevronDown, Paperclip
+  Send, AlertCircle, Upload, X, FileUp, Thermometer, ChevronDown, Paperclip,
+  Timer, Rocket, Hourglass
 } from 'lucide-react'
 import { WorkType, OrderCreateRequest } from '../types'
 import { createOrder } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
+import { useTheme } from '../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  UPDATED PRICE LIST (from bot)
@@ -617,7 +619,7 @@ function FileUploadZone({ files, onAdd, onRemove }: FileUploadProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  DEADLINE CARD (Urgency Meter)
+//  PREMIUM DEADLINE CARD — Ultra-luxe urgency selection
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface DeadlineCardProps {
@@ -625,109 +627,278 @@ interface DeadlineCardProps {
   selected: boolean
   onSelect: () => void
   index: number
+  isDark: boolean
 }
 
-function DeadlineCard({ config, selected, onSelect, index }: DeadlineCardProps) {
-  const Icon = config.urgency > 70 ? Flame : config.urgency > 30 ? Zap : Calendar
+function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCardProps) {
+  // Choose icon based on urgency level
+  const getIcon = () => {
+    if (config.urgency >= 85) return Flame
+    if (config.urgency >= 60) return Rocket
+    if (config.urgency >= 40) return Zap
+    if (config.urgency >= 20) return Timer
+    return Hourglass
+  }
+  const Icon = getIcon()
+
+  // Theme-aware colors
+  const theme = {
+    cardBg: isDark
+      ? 'rgba(18, 18, 22, 0.95)'
+      : 'rgba(255, 255, 255, 0.95)',
+    cardBgSelected: isDark
+      ? `linear-gradient(135deg, ${config.color}15 0%, ${config.color}08 100%)`
+      : `linear-gradient(135deg, ${config.color}12 0%, ${config.color}05 100%)`,
+    border: isDark
+      ? 'rgba(255, 255, 255, 0.06)'
+      : 'rgba(120, 85, 40, 0.08)',
+    borderSelected: isDark
+      ? `${config.color}60`
+      : `${config.color}50`,
+    shadow: isDark
+      ? '0 4px 20px -4px rgba(0, 0, 0, 0.5)'
+      : '0 4px 20px -4px rgba(120, 85, 40, 0.12)',
+    shadowSelected: isDark
+      ? `0 8px 32px -4px ${config.color}30, 0 0 0 1px ${config.color}30`
+      : `0 8px 32px -4px ${config.color}25, 0 0 0 1px ${config.color}25`,
+    text: isDark ? '#f2f2f2' : '#18181b',
+    textSecondary: isDark ? '#a1a1aa' : '#52525b',
+    barBg: isDark
+      ? 'rgba(255, 255, 255, 0.06)'
+      : 'rgba(0, 0, 0, 0.06)',
+    iconBg: isDark
+      ? `${config.color}18`
+      : `${config.color}12`,
+    iconBorder: isDark
+      ? `${config.color}35`
+      : `${config.color}25`,
+  }
 
   return (
     <motion.button
       type="button"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        delay: index * 0.06,
+        type: 'spring',
+        stiffness: 400,
+        damping: 30,
+      }}
+      whileHover={{ scale: 1.01, y: -2 }}
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
+        gap: 14,
         width: '100%',
-        padding: '18px 20px',
-        background: selected
-          ? 'linear-gradient(90deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
-          : 'var(--bg-card)',
-        border: selected
-          ? '2px solid var(--border-gold-strong)'
-          : '1px solid var(--border-default)',
-        borderRadius: 16,
+        padding: '16px 18px',
+        background: selected ? theme.cardBgSelected : theme.cardBg,
+        border: `2px solid ${selected ? theme.borderSelected : theme.border}`,
+        borderRadius: 18,
         cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
         WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation',
+        boxShadow: selected ? theme.shadowSelected : theme.shadow,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
       }}
     >
-      {/* Icon */}
-      <div style={{
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        background: `${config.color}15`,
-        border: `1px solid ${config.color}30`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <Icon size={22} color={config.color} />
-      </div>
+      {/* Animated glow for selected */}
+      {selected && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            position: 'absolute',
+            inset: -1,
+            borderRadius: 18,
+            background: `radial-gradient(ellipse at 30% 50%, ${config.color}20 0%, transparent 70%)`,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
-      {/* Content */}
-      <div style={{ flex: 1, textAlign: 'left' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: selected ? 'var(--text-main)' : 'var(--text-secondary)' }}>
-            {config.label}
-          </span>
-          <span style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: config.color,
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            {config.multiplier}
-          </span>
-        </div>
+      {/* Premium shimmer on selected */}
+      {selected && (
+        <motion.div
+          animate={{
+            x: ['-100%', '200%'],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            repeatDelay: 3,
+          }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '50%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+            transform: 'skewX(-20deg)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
-        {/* Urgency Bar */}
-        <div style={{
-          height: 4,
-          background: 'rgba(255,255,255,0.08)',
-          borderRadius: 2,
-          overflow: 'hidden',
-        }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${config.urgency}%` }}
-            transition={{ delay: index * 0.08 + 0.2, duration: 0.5 }}
+      {/* Icon container with glow */}
+      <motion.div
+        animate={selected ? {
+          boxShadow: [
+            `0 0 20px ${config.color}40`,
+            `0 0 30px ${config.color}50`,
+            `0 0 20px ${config.color}40`,
+          ],
+        } : {}}
+        transition={{ duration: 2, repeat: Infinity }}
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 14,
+          background: theme.iconBg,
+          border: `1.5px solid ${theme.iconBorder}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <motion.div
+          animate={selected && config.urgency >= 70 ? {
+            rotate: [0, -5, 5, -5, 0],
+            scale: [1, 1.1, 1],
+          } : {}}
+          transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 1.5 }}
+        >
+          <Icon
+            size={24}
+            color={config.color}
+            strokeWidth={selected ? 2.5 : 2}
             style={{
-              height: '100%',
-              background: `linear-gradient(90deg, ${config.color}, ${config.color}80)`,
-              borderRadius: 2,
-              boxShadow: `0 0 8px ${config.color}60`,
+              filter: selected ? `drop-shadow(0 0 8px ${config.color}60)` : 'none',
             }}
           />
+        </motion.div>
+      </motion.div>
+
+      {/* Content */}
+      <div style={{ flex: 1, textAlign: 'left', position: 'relative', zIndex: 1, minWidth: 0 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 10,
+        }}>
+          <span style={{
+            fontSize: 16,
+            fontWeight: selected ? 700 : 600,
+            color: selected ? theme.text : theme.textSecondary,
+            letterSpacing: '-0.01em',
+          }}>
+            {config.label}
+          </span>
+          <motion.span
+            animate={selected ? {
+              scale: [1, 1.05, 1],
+            } : {}}
+            transition={{ duration: 1, repeat: Infinity }}
+            style={{
+              fontSize: 14,
+              fontWeight: 800,
+              color: config.color,
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '-0.02em',
+              textShadow: selected ? `0 0 12px ${config.color}50` : 'none',
+            }}
+          >
+            {config.multiplier}
+          </motion.span>
+        </div>
+
+        {/* Premium urgency bar */}
+        <div style={{
+          height: 6,
+          background: theme.barBg,
+          borderRadius: 4,
+          overflow: 'hidden',
+          position: 'relative',
+        }}>
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: `${config.urgency}%`, opacity: 1 }}
+            transition={{
+              delay: index * 0.06 + 0.2,
+              duration: 0.6,
+              ease: [0.4, 0, 0.2, 1],
+            }}
+            style={{
+              height: '100%',
+              background: `linear-gradient(90deg, ${config.color}cc, ${config.color})`,
+              borderRadius: 4,
+              boxShadow: selected
+                ? `0 0 16px ${config.color}60, inset 0 1px 0 rgba(255,255,255,0.3)`
+                : `0 0 8px ${config.color}40`,
+              position: 'relative',
+            }}
+          >
+            {/* Animated shine on bar */}
+            <motion.div
+              animate={{
+                x: ['-100%', '200%'],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                repeatDelay: 2,
+                delay: index * 0.1,
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '30%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+              }}
+            />
+          </motion.div>
         </div>
       </div>
 
-      {/* Checkmark */}
+      {/* Premium checkmark */}
       <AnimatePresence>
         {selected && (
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            exit={{ scale: 0, rotate: 180 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             style={{
-              width: 24,
-              height: 24,
+              width: 28,
+              height: 28,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #e6c547, #b48e26)',
+              background: isDark
+                ? 'linear-gradient(145deg, #f5d061, #d4af37, #b48e26)'
+                : 'linear-gradient(145deg, #d4af37, #b48e26, #8b6914)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
+              boxShadow: isDark
+                ? '0 4px 16px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255,255,255,0.3)'
+                : '0 4px 12px rgba(180, 142, 38, 0.35)',
+              position: 'relative',
+              zIndex: 1,
             }}
           >
-            <Check size={14} color="#050505" strokeWidth={3} />
+            <Check size={16} color="#050505" strokeWidth={3} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -752,6 +923,7 @@ export function CreateOrderPage() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const { haptic, hapticSuccess, hapticError } = useTelegram()
+  const { isDark } = useTheme()
 
   // Check for prefill data from navigation state (Quick Reorder)
   const prefillData = (location.state as { prefill?: PrefillData })?.prefill
@@ -1160,7 +1332,7 @@ export function CreateOrderPage() {
             exit="exit"
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {DEADLINES.map((dl, i) => (
                 <DeadlineCard
                   key={dl.value}
@@ -1168,39 +1340,92 @@ export function CreateOrderPage() {
                   selected={deadline === dl.value}
                   onSelect={() => { haptic('light'); setDeadline(dl.value) }}
                   index={i}
+                  isDark={isDark}
                 />
               ))}
             </div>
 
-            {/* Estimate */}
+            {/* Premium Estimate Card */}
             {estimate && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
                 style={{
                   marginTop: 24,
-                  padding: 20,
-                  background: 'linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.03))',
-                  border: '1px solid var(--border-gold)',
-                  borderRadius: 16,
+                  padding: '20px 24px',
+                  background: isDark
+                    ? 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)'
+                    : 'linear-gradient(135deg, rgba(180,142,38,0.1) 0%, rgba(180,142,38,0.03) 100%)',
+                  border: isDark
+                    ? '2px solid rgba(212, 175, 55, 0.3)'
+                    : '2px solid rgba(180, 142, 38, 0.25)',
+                  borderRadius: 20,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  boxShadow: isDark
+                    ? '0 8px 32px -8px rgba(212, 175, 55, 0.25)'
+                    : '0 8px 32px -8px rgba(180, 142, 38, 0.2)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Thermometer size={22} color="var(--gold-400)" />
-                  <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Ориентировочно:</span>
+                {/* Shimmer effect */}
+                <motion.div
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '50%',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transform: 'skewX(-20deg)',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: isDark ? 'rgba(212, 175, 55, 0.15)' : 'rgba(180, 142, 38, 0.12)',
+                    border: isDark ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(180, 142, 38, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Thermometer size={22} color={isDark ? '#d4af37' : '#9e7a1a'} />
+                  </div>
+                  <span style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: isDark ? '#a1a1aa' : '#52525b',
+                  }}>
+                    Ориентировочно:
+                  </span>
                 </div>
-                <span style={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: 'var(--gold-300)',
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}>
+                <motion.span
+                  animate={{ scale: [1, 1.02, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 800,
+                    color: isDark ? '#d4af37' : '#9e7a1a',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '-0.02em',
+                    textShadow: isDark
+                      ? '0 0 20px rgba(212, 175, 55, 0.4)'
+                      : '0 0 16px rgba(180, 142, 38, 0.3)',
+                    position: 'relative',
+                    zIndex: 1,
+                  }}
+                >
                   {estimate.toLocaleString('ru-RU')} ₽
-                </span>
+                </motion.span>
               </motion.div>
             )}
           </motion.div>
