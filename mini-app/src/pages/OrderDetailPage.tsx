@@ -731,6 +731,34 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, 
           </motion.div>
         )}
 
+        {/* Chat with Manager Button */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={onChatStart}
+          style={{
+            width: '100%',
+            marginBottom: 16,
+            padding: '12px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <Headphones size={16} color="var(--text-secondary)" />
+          <span style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text-secondary)',
+          }}>
+            Нужна помощь? Написать менеджеру
+          </span>
+        </motion.button>
+
         {/* Confirm Button */}
         <motion.button
           whileTap={{ scale: 0.97 }}
@@ -786,34 +814,6 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, 
           После нажатия менеджер проверит оплату.<br />
           Обычно это занимает 5-15 минут.
         </p>
-
-        {/* Chat with Manager Button */}
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={onChatStart}
-          style={{
-            width: '100%',
-            marginTop: 16,
-            padding: '12px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 12,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-          }}
-        >
-          <Headphones size={16} color="var(--text-secondary)" />
-          <span style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'var(--text-secondary)',
-          }}>
-            Нужна помощь? Написать менеджеру
-          </span>
-        </motion.button>
       </div>
     </motion.div>
   )
@@ -1668,6 +1668,41 @@ export function OrderDetailPage() {
             setPaymentScheme={setPaymentScheme}
             onChatStart={handleOpenChat}
           />
+        </motion.div>
+      )}
+
+      {/* Universal Chat Button - Visible if payment UI is NOT shown (to ensure it's always accessible) */}
+      {!showPaymentUI && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ marginBottom: 20, padding: '0 20px' }}
+        >
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleOpenChat}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <Headphones size={16} color="var(--text-secondary)" />
+            <span style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+            }}>
+              Написать менеджеру
+            </span>
+          </motion.button>
         </motion.div>
       )}
 

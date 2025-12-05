@@ -5,7 +5,7 @@ import { fetchUserData, fetchConfig } from '../api/userApi'
 // Wait until Telegram injects initData.
 // On some mobile clients initData arrives a bit later than the first render,
 // which caused the app to throw "Open via Telegram" before WebApp was ready.
-async function waitForTelegramContext(timeoutMs = 2000, pollMs = 50) {
+async function waitForTelegramContext(timeoutMs = 7000, pollMs = 50) {
   const started = Date.now()
 
   while (Date.now() - started < timeoutMs) {
