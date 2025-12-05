@@ -1,7 +1,7 @@
 import { UserData, PromoResult, RouletteResult, Order, OrderCreateRequest, OrderCreateResponse, ChatMessagesResponse, SendMessageResponse } from '../types'
 
-// API base URL
-const API_BASE = 'https://academic-saloon.duckdns.org/api'
+// API base URL - exported for use in other components
+export const API_BASE_URL = 'https://academic-saloon.duckdns.org/api'
 
 // Development mode flag - set to false in production
 const IS_DEV = import.meta.env.DEV || false
@@ -9,6 +9,14 @@ const IS_DEV = import.meta.env.DEV || false
 // Get init data from Telegram
 function getInitData(): string {
   return window.Telegram?.WebApp?.initData || ''
+}
+
+// Get auth headers - exported for direct fetch calls
+export function getAuthHeaders(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    'X-Telegram-Init-Data': getInitData(),
+  }
 }
 
 // Check if we have valid Telegram context
@@ -20,7 +28,7 @@ function hasTelegramContext(): boolean {
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const initData = getInitData()
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -278,7 +286,7 @@ export async function uploadOrderFiles(
 
     xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
 
-    xhr.open('POST', `${API_BASE}/orders/${orderId}/upload-files`)
+    xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/upload-files`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
   })
@@ -511,7 +519,7 @@ export async function uploadChatFile(
 
     xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
 
-    xhr.open('POST', `${API_BASE}/orders/${orderId}/messages/file`)
+    xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/file`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
   })
@@ -567,7 +575,7 @@ export async function uploadVoiceMessage(
 
     xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
 
-    xhr.open('POST', `${API_BASE}/orders/${orderId}/messages/voice`)
+    xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/voice`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
   })

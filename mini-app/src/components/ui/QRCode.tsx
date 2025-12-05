@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Share2, X, Check, Loader2 } from 'lucide-react'
+import { Download, Share2, X, Check, Loader2, Sparkles } from 'lucide-react'
+import { API_BASE_URL, getAuthHeaders } from '../../api/userApi'
 
 interface Props {
   value: string
@@ -12,33 +13,82 @@ interface Props {
 
 export function QRCodeModal({
   value,
-  size = 200,
+  size = 220,
   onClose,
   title = 'Ваш QR-код',
   subtitle = 'Покажите друзьям для быстрой регистрации'
 }: Props) {
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [premiumCardUrl, setPremiumCardUrl] = useState<string | null>(null)
+  const [cardLoading, setCardLoading] = useState(true)
+  const [cardError, setCardError] = useState(false)
 
-  // Using QR Server API - PNG for download, SVG for display
-  const qrUrlPng = `https://api.qrserver.com/v1/create-qr-code/?size=${size * 2}x${size * 2}&data=${encodeURIComponent(value)}&bgcolor=09090b&color=d4af37&format=png`
-  const qrUrlSvg = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}&bgcolor=09090b&color=d4af37&format=svg`
+  // Fallback QR using external service (for display only)
+  const fallbackQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size * 2}x${size * 2}&data=${encodeURIComponent(value)}&bgcolor=09090b&color=d4af37&format=png`
+
+  // Load premium card from our API
+  useEffect(() => {
+    const loadPremiumCard = async () => {
+      try {
+        setCardLoading(true)
+        setCardError(false)
+
+        const response = await fetch(`${API_BASE_URL}/qr/referral?style=card`, {
+          headers: getAuthHeaders(),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to load premium QR')
+        }
+
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        setPremiumCardUrl(url)
+      } catch (err) {
+        console.error('Premium QR load failed:', err)
+        setCardError(true)
+      } finally {
+        setCardLoading(false)
+      }
+    }
+
+    loadPremiumCard()
+
+    return () => {
+      if (premiumCardUrl) {
+        URL.revokeObjectURL(premiumCardUrl)
+      }
+    }
+  }, [])
 
   const handleShare = async () => {
     if (!navigator.share) return
+    setSharing(true)
 
     try {
-      // Try to share the image
-      const response = await fetch(qrUrlPng)
-      const blob = await response.blob()
-      const file = new File([blob], 'academic-saloon-qr.png', { type: 'image/png' })
+      // Try to share the premium card
+      let blob: Blob | null = null
+
+      if (premiumCardUrl) {
+        const response = await fetch(premiumCardUrl)
+        blob = await response.blob()
+      } else {
+        // Fallback to external QR
+        const response = await fetch(fallbackQrUrl)
+        blob = await response.blob()
+      }
+
+      const file = new File([blob], 'academic-saloon-invite.png', { type: 'image/png' })
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'Academic Saloon',
-          text: `Присоединяйся к Academic Saloon! Мой код: ${value}`,
+          title: 'Academic Saloon — Приглашение',
+          text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\nМой код: ${value}`,
         })
+        setSharing(false)
         return
       }
     } catch (e) {
@@ -48,20 +98,37 @@ export function QRCodeModal({
     // Fallback to text share
     try {
       await navigator.share({
-        title: 'Academic Saloon - Реферальный код',
-        text: `Присоединяйся к Academic Saloon! Мой реферальный код: ${value}`,
+        title: 'Academic Saloon — Приглашение',
+        text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\nМой код: ${value}`,
       })
     } catch (e) {
       console.log('Share cancelled')
     }
+    setSharing(false)
   }
 
   const handleDownload = async () => {
     setDownloading(true)
     try {
-      // Fetch the image
-      const response = await fetch(qrUrlPng)
-      const blob = await response.blob()
+      // Prefer premium card for download
+      let blob: Blob
+
+      if (premiumCardUrl) {
+        const response = await fetch(premiumCardUrl)
+        blob = await response.blob()
+      } else {
+        // Fetch premium card directly for download
+        const response = await fetch(`${API_BASE_URL}/qr/referral?style=card`, {
+          headers: getAuthHeaders(),
+        })
+        if (response.ok) {
+          blob = await response.blob()
+        } else {
+          // Ultimate fallback
+          const fallbackResponse = await fetch(fallbackQrUrl)
+          blob = await fallbackResponse.blob()
+        }
+      }
 
       // Create download link
       const url = window.URL.createObjectURL(blob)
@@ -78,7 +145,7 @@ export function QRCodeModal({
     } catch (error) {
       console.error('Download failed:', error)
       // Fallback: open in new tab
-      window.open(qrUrlPng, '_blank')
+      window.open(fallbackQrUrl, '_blank')
     }
     setDownloading(false)
   }
@@ -92,9 +159,9 @@ export function QRCodeModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.85)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: 'rgba(0,0,0,0.9)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -109,16 +176,37 @@ export function QRCodeModal({
         transition={{ type: 'spring', damping: 25 }}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(180deg, rgba(212,175,55,0.12) 0%, rgba(20,20,23,0.98) 25%)',
-          border: '1px solid rgba(212,175,55,0.3)',
-          borderRadius: 24,
-          padding: 24,
+          background: 'linear-gradient(180deg, rgba(212,175,55,0.15) 0%, rgba(20,20,23,0.98) 30%)',
+          border: '1px solid rgba(212,175,55,0.35)',
+          borderRadius: 28,
+          padding: 28,
           textAlign: 'center',
-          maxWidth: 340,
+          maxWidth: 380,
           width: '100%',
           position: 'relative',
+          boxShadow: '0 0 60px -20px rgba(212,175,55,0.4)',
         }}
       >
+        {/* Premium Badge */}
+        <div style={{
+          position: 'absolute',
+          top: -12,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'linear-gradient(135deg, #d4af37, #f5d061)',
+          padding: '6px 16px',
+          borderRadius: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          boxShadow: '0 4px 15px rgba(212,175,55,0.4)',
+        }}>
+          <Sparkles size={14} color="#09090b" />
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#09090b', letterSpacing: '0.05em' }}>
+            PREMIUM
+          </span>
+        </div>
+
         {/* Close Button */}
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -131,7 +219,7 @@ export function QRCodeModal({
             width: 36,
             height: 36,
             borderRadius: 10,
-            background: 'rgba(255,255,255,0.1)',
+            background: 'rgba(255,255,255,0.08)',
             border: '1px solid rgba(255,255,255,0.1)',
             cursor: 'pointer',
             display: 'flex',
@@ -144,64 +232,98 @@ export function QRCodeModal({
         </motion.button>
 
         <h3 style={{
-          fontSize: 20,
+          fontSize: 22,
           fontWeight: 700,
           color: '#fff',
           marginBottom: 6,
-          marginTop: 8,
-          fontFamily: "'Montserrat', sans-serif",
+          marginTop: 16,
+          fontFamily: "'Playfair Display', serif",
+          letterSpacing: '0.02em',
         }}>
           {title}
         </h3>
-        <p style={{ fontSize: 12, color: '#71717a', marginBottom: 24 }}>
+        <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24 }}>
           {subtitle}
         </p>
 
         {/* QR Code Container */}
         <motion.div
-
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.1 }}
           style={{
             background: '#09090b',
             borderRadius: 20,
-            padding: 24,
+            padding: 20,
             marginBottom: 20,
-            border: '1px solid rgba(212,175,55,0.25)',
-            boxShadow: '0 0 40px -10px rgba(212,175,55,0.3), inset 0 0 20px rgba(212,175,55,0.05)',
+            border: '1px solid rgba(212,175,55,0.3)',
+            boxShadow: '0 0 50px -15px rgba(212,175,55,0.4), inset 0 0 30px rgba(212,175,55,0.05)',
+            minHeight: size + 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <img
-            src={qrUrlSvg}
-            alt="QR Code"
-            style={{
-              width: size,
-              height: size,
-              borderRadius: 12,
-              display: 'block',
-              margin: '0 auto',
-            }}
-          />
+          {cardLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              <Loader2 size={32} color="#d4af37" style={{ animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: 12, color: '#71717a' }}>Генерируем карточку...</span>
+            </div>
+          ) : cardError ? (
+            // Fallback to simple QR
+            <img
+              src={fallbackQrUrl}
+              alt="QR Code"
+              style={{
+                width: size,
+                height: size,
+                borderRadius: 12,
+                display: 'block',
+              }}
+            />
+          ) : premiumCardUrl ? (
+            <img
+              src={premiumCardUrl}
+              alt="Premium QR Card"
+              style={{
+                maxWidth: '100%',
+                maxHeight: 350,
+                borderRadius: 12,
+                display: 'block',
+              }}
+            />
+          ) : (
+            <img
+              src={fallbackQrUrl}
+              alt="QR Code"
+              style={{
+                width: size,
+                height: size,
+                borderRadius: 12,
+                display: 'block',
+              }}
+            />
+          )}
         </motion.div>
 
         {/* Referral Code Display */}
         <div style={{
-          background: 'rgba(0,0,0,0.5)',
-          borderRadius: 12,
-          padding: '14px 18px',
+          background: 'rgba(0,0,0,0.6)',
+          borderRadius: 14,
+          padding: '14px 20px',
           marginBottom: 20,
-          border: '1px solid rgba(212,175,55,0.2)',
+          border: '1px solid rgba(212,175,55,0.25)',
         }}>
-          <div style={{ fontSize: 10, color: '#71717a', marginBottom: 4, letterSpacing: '0.1em' }}>
-            РЕФЕРАЛЬНЫЙ КОД
+          <div style={{ fontSize: 10, color: '#71717a', marginBottom: 6, letterSpacing: '0.12em', fontWeight: 600 }}>
+            ВАШ РЕФЕРАЛЬНЫЙ КОД
           </div>
           <code style={{
             color: '#d4af37',
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 18,
+            fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
+            fontSize: 20,
             fontWeight: 700,
             letterSpacing: '0.15em',
+            textShadow: '0 0 20px rgba(212,175,55,0.3)',
           }}>
             {value}
           </code>
@@ -215,8 +337,8 @@ export function QRCodeModal({
             disabled={downloading}
             style={{
               flex: 1,
-              padding: '14px 16px',
-              background: 'rgba(255,255,255,0.05)',
+              padding: '16px 18px',
+              background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.15)',
               borderRadius: 14,
               color: downloaded ? '#22c55e' : '#fff',
@@ -237,30 +359,35 @@ export function QRCodeModal({
             ) : (
               <Download size={18} />
             )}
-            {downloaded ? 'Сохранено!' : 'Скачать'}
+            {downloaded ? 'Готово!' : 'Скачать'}
           </motion.button>
 
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleShare}
+            disabled={sharing}
             style={{
               flex: 1,
-              padding: '14px 16px',
+              padding: '16px 18px',
               background: 'linear-gradient(135deg, #d4af37, #b38728)',
               border: 'none',
               borderRadius: 14,
               color: '#09090b',
               fontSize: 14,
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: sharing ? 'wait' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              boxShadow: '0 4px 15px rgba(212,175,55,0.3)',
+              boxShadow: '0 4px 20px rgba(212,175,55,0.35)',
             }}
           >
-            <Share2 size={18} />
+            {sharing ? (
+              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+            ) : (
+              <Share2 size={18} />
+            )}
             Поделиться
           </motion.button>
         </div>
@@ -269,10 +396,12 @@ export function QRCodeModal({
         <p style={{
           fontSize: 11,
           color: '#52525b',
-          marginTop: 16,
-          lineHeight: 1.4,
+          marginTop: 18,
+          lineHeight: 1.5,
         }}>
-          Друзья получат бонус при регистрации, а вы — 5% с их заказов
+          💎 Друзья получат скидку 5% на первый заказ
+          <br />
+          💰 Вы — пожизненные 5% роялти с их оплат
         </p>
       </motion.div>
 

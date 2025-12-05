@@ -207,12 +207,31 @@ export function HomePage({ user }: Props) {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showDailyBonus, setShowDailyBonus] = useState(false)
   const [dailyBonusInfo, setDailyBonusInfo] = useState<DailyBonusInfo | null>(null)
+  const [dailyBonusError, setDailyBonusError] = useState(false)
 
-  // Fetch daily bonus info on mount
+  // Fetch daily bonus info on mount with retry
   useEffect(() => {
-    fetchDailyBonusInfo()
-      .then(setDailyBonusInfo)
-      .catch(console.error)
+    let retryCount = 0
+    const maxRetries = 3
+
+    const loadDailyBonus = async () => {
+      try {
+        const info = await fetchDailyBonusInfo()
+        setDailyBonusInfo(info)
+        setDailyBonusError(false)
+      } catch (err) {
+        console.error('Failed to load daily bonus:', err)
+        retryCount++
+        if (retryCount < maxRetries) {
+          // Retry with exponential backoff
+          setTimeout(loadDailyBonus, 1000 * retryCount)
+        } else {
+          setDailyBonusError(true)
+        }
+      }
+    }
+
+    loadDailyBonus()
   }, [])
 
   // Secret admin activation (5 quick taps on logo badge)
@@ -1058,7 +1077,7 @@ export function HomePage({ user }: Props) {
       {/* ═══════════════════════════════════════════════════════════════════
           DAILY BONUS FLOATING BUTTON — Premium Gold
           ═══════════════════════════════════════════════════════════════════ */}
-      {canClaimBonus && (
+      {canClaimBonus && !dailyBonusError && (
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
