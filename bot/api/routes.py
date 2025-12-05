@@ -4,6 +4,7 @@ API routes for Mini App
 
 import logging
 import random
+import html
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
@@ -33,6 +34,7 @@ from bot.bot_instance import get_bot
 from bot.services.mini_app_logger import (
     log_order_created, log_roulette_spin, log_mini_app_event, MiniAppEvent
 )
+from aiogram.types import BufferedInputFile
 
 logger = logging.getLogger(__name__)
 
@@ -1320,13 +1322,13 @@ async def send_order_message(
 
         if topic_id:
             # Send message to admin topic
-            user_name = user.fullname if user else tg_user.first_name
+            user_name = html.escape(user.fullname if user else tg_user.first_name)
             username_part = f" (@{user.username})" if user and user.username else ""
 
             admin_text = (
                 f"💬 <b>Сообщение от клиента</b> (Mini App)\n"
                 f"👤 {user_name}{username_part}\n\n"
-                f"{text}"
+                f"{html.escape(text)}"
             )
 
             await bot.send_message(
@@ -1440,25 +1442,45 @@ async def upload_chat_file(
         )
 
         if topic_id:
-            user_name = user.fullname if user else tg_user.first_name
+            user_name = html.escape(user.fullname if user else tg_user.first_name)
             username_part = f" (@{user.username})" if user and user.username else ""
+            safe_filename = html.escape(filename)
 
             # Send file info to admin
             file_emoji = {"photo": "🖼", "voice": "🎤", "audio": "🎵", "video": "🎬"}.get(file_type, "📎")
-            admin_text = (
+            caption = (
                 f"{file_emoji} <b>Файл от клиента</b> (Mini App)\n"
-                f"👤 {user_name}{username_part}\n\n"
-                f"📁 {filename}"
+                f"👤 {user_name}{username_part}\n"
+                f"📁 {safe_filename}"
             )
 
             if file_url:
-                admin_text += f"\n🔗 <a href='{file_url}'>Скачать с Я.Диска</a>"
+                caption += f"\n🔗 <a href='{file_url}'>Скачать с Я.Диска</a>"
 
-            await bot.send_message(
-                chat_id=settings.ADMIN_GROUP_ID,
-                message_thread_id=conv.topic_id,
-                text=admin_text,
-            )
+            # Send actual file if possible
+            input_file = BufferedInputFile(content, filename=filename)
+            
+            if file_type == "photo":
+                await bot.send_photo(
+                    chat_id=settings.ADMIN_GROUP_ID,
+                    message_thread_id=conv.topic_id,
+                    photo=input_file,
+                    caption=caption,
+                )
+            elif file_type == "video":
+                await bot.send_video(
+                    chat_id=settings.ADMIN_GROUP_ID,
+                    message_thread_id=conv.topic_id,
+                    video=input_file,
+                    caption=caption,
+                )
+            else:
+                await bot.send_document(
+                    chat_id=settings.ADMIN_GROUP_ID,
+                    message_thread_id=conv.topic_id,
+                    document=input_file,
+                    caption=caption,
+                )
 
     except Exception as e:
         logger.error(f"[Chat API] Failed to forward file to admin: {e}")
@@ -1546,21 +1568,24 @@ async def upload_voice_message(
         )
 
         if topic_id:
-            user_name = user.fullname if user else tg_user.first_name
+            user_name = html.escape(user.fullname if user else tg_user.first_name)
             username_part = f" (@{user.username})" if user and user.username else ""
 
-            admin_text = (
+            caption = (
                 f"🎤 <b>Голосовое от клиента</b> (Mini App)\n"
                 f"👤 {user_name}{username_part}"
             )
 
             if file_url:
-                admin_text += f"\n🔗 <a href='{file_url}'>Прослушать</a>"
+                caption += f"\n🔗 <a href='{file_url}'>Прослушать</a>"
 
-            await bot.send_message(
+            # Send actual voice message
+            input_file = BufferedInputFile(content, filename=filename)
+            await bot.send_voice(
                 chat_id=settings.ADMIN_GROUP_ID,
                 message_thread_id=conv.topic_id,
-                text=admin_text,
+                voice=input_file,
+                caption=caption,
             )
 
     except Exception as e:
