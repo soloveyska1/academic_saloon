@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useTelegram } from '../../hooks/useUserData'
 import { Confetti, useConfetti } from './Confetti'
+import { useTheme } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SMART NOTIFICATION DATA TYPES
@@ -75,6 +76,7 @@ const iconMap: Record<string, React.ComponentType<{ size?: number; color?: strin
 
 export function SmartNotification({ notification, onDismiss, onAction }: Props) {
   const { haptic, hapticSuccess } = useTelegram()
+  const { isDark } = useTheme()
   const confetti = useConfetti()
   const [isVisible, setIsVisible] = useState(false)
 
@@ -111,6 +113,23 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
   const color = notification.color || '#d4af37'
   const isHighPriority = notification.priority === 'high'
 
+  // Theme-aware colors
+  const theme = {
+    bg: isDark ? 'rgba(20, 20, 23, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+    title: isDark ? '#fff' : '#18181b',
+    message: isDark ? '#a1a1aa' : '#52525b',
+    hint: isDark ? '#71717a' : '#a1a1aa',
+    closeBg: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    closeIcon: isDark ? '#71717a' : '#a1a1aa',
+    border: isDark ? `1px solid ${color}50` : `1px solid ${color}40`,
+    shadow: isDark
+      ? `0 10px 40px rgba(0,0,0,0.5), 0 0 40px ${color}30`
+      : `0 10px 40px rgba(0,0,0,0.15), 0 4px 16px ${color}20`,
+    progressBg: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+    actionBg: isDark ? `${color}15` : `${color}12`,
+    actionBorder: isDark ? `${color}30` : `${color}25`,
+  }
+
   return (
     <>
       {/* Confetti overlay */}
@@ -138,14 +157,14 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
               left: 16,
               right: 16,
               zIndex: 10000,
-              background: 'rgba(20, 20, 23, 0.98)',
+              background: theme.bg,
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
-              border: `1px solid ${color}50`,
+              border: theme.border,
               borderRadius: 16,
               padding: 16,
               cursor: notification.action ? 'pointer' : 'default',
-              boxShadow: `0 10px 40px rgba(0,0,0,0.5), 0 0 40px ${color}30`,
+              boxShadow: theme.shadow,
             }}
           >
             {/* Celebration glow effect */}
@@ -238,7 +257,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                   <span style={{
                     fontSize: 15,
                     fontWeight: 600,
-                    color: '#fff',
+                    color: theme.title,
                   }}>
                     {notification.title}
                   </span>
@@ -262,7 +281,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                   transition={{ delay: 0.2 }}
                   style={{
                     fontSize: 13,
-                    color: '#a1a1aa',
+                    color: theme.message,
                     lineHeight: 1.4,
                   }}
                 >
@@ -279,7 +298,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                   >
                     <div style={{
                       height: 6,
-                      background: 'rgba(255,255,255,0.1)',
+                      background: theme.progressBg,
                       borderRadius: 3,
                       overflow: 'hidden',
                     }}>
@@ -317,9 +336,9 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                       gap: 4,
                       marginTop: 6,
                       padding: '4px 10px',
-                      background: `${color}15`,
+                      background: theme.actionBg,
                       borderRadius: 8,
-                      border: `1px solid ${color}30`,
+                      border: `1px solid ${theme.actionBorder}`,
                     }}
                   >
                     <span style={{
@@ -346,7 +365,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                   width: 28,
                   height: 28,
                   borderRadius: 8,
-                  background: 'rgba(255,255,255,0.05)',
+                  background: theme.closeBg,
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -355,7 +374,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                   flexShrink: 0,
                 }}
               >
-                <X size={16} color="#71717a" />
+                <X size={16} color={theme.closeIcon} />
               </motion.button>
             </div>
 
@@ -368,21 +387,21 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                 style={{
                   marginTop: 10,
                   paddingTop: 10,
-                  borderTop: '1px solid rgba(255,255,255,0.05)',
+                  borderTop: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.06)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
                 }}
               >
-                <span style={{ fontSize: 12, color: '#71717a' }}>
+                <span style={{ fontSize: 12, color: theme.hint }}>
                   Нажмите чтобы посмотреть
                 </span>
                 <motion.div
                   animate={{ x: [0, 4, 0] }}
                   transition={{ duration: 1, repeat: Infinity }}
                 >
-                  <TrendingUp size={12} color="#71717a" />
+                  <TrendingUp size={12} color={theme.hint} />
                 </motion.div>
               </motion.div>
             )}
