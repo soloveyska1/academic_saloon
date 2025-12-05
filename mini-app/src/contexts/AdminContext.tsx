@@ -65,17 +65,42 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     return defaultSettings
   })
 
-  // Check if current user is admin
+  // Check if current user is admin with retry logic
   useEffect(() => {
-    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
-    const userId = tgUser?.id
+    let attempts = 0
+    const maxAttempts = 20 // 2 seconds (100ms * 20)
 
-    // Check if user is in admin list OR if running in dev mode without Telegram
-    const isAdmin = userId
-      ? ADMIN_IDS.includes(userId)
-      : process.env.NODE_ENV === 'development' || !window.Telegram?.WebApp
+    const checkAdmin = () => {
+      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
+      const userId = tgUser?.id
 
-    setSettings(prev => ({ ...prev, isAdmin }))
+      if (userId) {
+        const isAdmin = ADMIN_IDS.includes(userId)
+        setSettings(prev => ({ ...prev, isAdmin }))
+        return true
+      }
+
+      // Fallback for dev mode
+      if (import.meta.env.DEV || !window.Telegram?.WebApp) {
+        setSettings(prev => ({ ...prev, isAdmin: true })) // Default to admin in dev
+        return true
+      }
+
+      return false
+    }
+
+    // Try immediately
+    if (checkAdmin()) return
+
+    // Poll if not ready
+    const interval = setInterval(() => {
+      attempts++
+      if (checkAdmin() || attempts >= maxAttempts) {
+        clearInterval(interval)
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
   }, [])
 
   // Save settings to localStorage when they change

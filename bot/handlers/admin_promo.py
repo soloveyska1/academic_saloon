@@ -1,39 +1,39 @@
-from aiogram import Router, F, types
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
+from aiogram import Router, F, types, Bot
+from aiogram.filters import Command, CommandObject
 from sqlalchemy import select
 
 from database.db import get_session
 from database.models.promocodes import PromoCode
-from database.models.users import User
 from bot.services.promo_service import PromoService
 from core.config import settings
 
 router = Router()
 
-# Filter for admin only
-# Assuming there is an admin filter or checking IDs manually
-def is_admin(user_id: int) -> bool:
-    return user_id in settings.ADMIN_IDS
-
 @router.message(Command("promo_create"), F.from_user.id.in_(settings.ADMIN_IDS))
-async def cmd_promo_create(message: types.Message):
+async def cmd_promo_create(message: types.Message, command: CommandObject):
     """
-    /promo_create <CODE> <PERCENT> <MAX_USES>
+    /promo_create <CODE> <PERCENT> [MAX_USES]
     """
-    args = message.text.split()
-    if len(args) < 3:
+    if not command.args:
         await message.answer("⚠️ Формат: `/promo_create CODE PERCENT [MAX_USES]`")
         return
 
-    code = args[1].upper()
     try:
-        percent = float(args[2])
-    except ValueError:
-        await message.answer("⚠️ Процент должен быть числом.")
-        return
+        args = command.args.split()
+        if len(args) < 2:
+            raise ValueError("Мало аргументов")
+
+        code = args[0].upper()
+        percent = float(args[1])
+        max_uses = int(args[2]) if len(args) > 2 else 0
         
-    max_uses = int(args[3]) if len(args) > 3 else 0
+        if not (0 < percent <= 100):
+            await message.answer("⚠️ Процент скидки должен быть от 1 до 100.")
+            return
+
+    except ValueError:
+        await message.answer("⚠️ Ошибка в формате данных. Пример: `/promo_create SUMMER 20 100`")
+        return
 
     async for session in get_session():
         try:
@@ -48,7 +48,7 @@ async def cmd_promo_create(message: types.Message):
                 f"📅 Действует до: {promo.valid_until.strftime('%d.%m.%Y')}"
             )
         except Exception as e:
-            await message.answer(f"❌ Ошибка: {str(e)}")
+            await message.answer(f"❌ Ошибка при создании: {str(e)}")
 
 @router.message(Command("promo_list"), F.from_user.id.in_(settings.ADMIN_IDS))
 async def cmd_promo_list(message: types.Message):
@@ -70,21 +70,23 @@ async def cmd_promo_list(message: types.Message):
         await message.answer(text)
 
 @router.message(Command("promo_send"), F.from_user.id.in_(settings.ADMIN_IDS))
-async def cmd_promo_send(message: types.Message, bot: types.Bot):
+async def cmd_promo_send(message: types.Message, command: CommandObject, bot: Bot):
     """
     /promo_send <USER_ID> <CODE>
-    Отправляет пользователю красивую карточку с промокодом.
     """
-    args = message.text.split()
-    if len(args) < 3:
+    if not command.args:
         await message.answer("⚠️ Формат: `/promo_send USER_ID CODE`")
         return
 
     try:
-        user_id = int(args[1])
-        code = args[2]
+        args = command.args.split()
+        if len(args) < 2:
+            raise ValueError("Мало аргументов")
+
+        user_id = int(args[0])
+        code = args[1].upper()
     except ValueError:
-        await message.answer("⚠️ Некорректные аргументы.")
+        await message.answer("⚠️ Некорректные данные. ID пользователя должен быть числом.")
         return
 
     async for session in get_session():
@@ -93,9 +95,7 @@ async def cmd_promo_send(message: types.Message, bot: types.Bot):
             await message.answer("❌ Промокод не найден.")
             return
             
-        # Отправка юзеру
         try:
-            # Текст "Luxury" стиля
             user_text = (
                 f"🎁 **Персональный подарок от Academic Saloon**\n\n"
                 f"Мы ценим, что вы с нами. Для вашего следующего заказа мы подготовили особый бонус.\n\n"
@@ -104,17 +104,21 @@ async def cmd_promo_send(message: types.Message, bot: types.Bot):
                 f"💡 _Чтобы активировать, введите код при оплате заказа._"
             )
             
-            # Можно отправить картинку (если есть в конфиге, например MENU_IMAGE или что-то подарочное)
-            # Используем MENU_IMAGE как заглушку, или просто текст.
-            # Если есть возможность, лучше использовать generate_image, но сейчас используем статику.
+            # Используем safe send (если картинки нет - просто текст)
+            try:
+                if settings.MENU_IMAGE:
+                     await bot.send_photo(
+                        chat_id=user_id,
+                        photo=types.FSInputFile(path=settings.MENU_IMAGE),
+                        caption=user_text,
+                        parse_mode="Markdown"
+                    )
+                else:
+                    await bot.send_message(user_id, user_text, parse_mode="Markdown")
+            except Exception:
+                 # Fallback if image fails
+                 await bot.send_message(user_id, user_text, parse_mode="Markdown")
             
-            await bot.send_photo(
-                chat_id=user_id,
-                photo=types.FSInputFile(path=settings.MENU_IMAGE),
-                caption=user_text,
-                parse_mode="Markdown"
-            )
-            
-            await message.answer(f"✅ Промокод `{code}` успешно отправлен пользователю `{user_id}`.")
+            await message.answer(f"✅ Промокод `{code}` отправлен пользователю `{user_id}`.")
         except Exception as e:
-            await message.answer(f"❌ Не удалось отправить: {str(e)}")
+            await message.answer(f"❌ Не удалось отправить (возможно, бот заблокирован пользователем): {str(e)}")

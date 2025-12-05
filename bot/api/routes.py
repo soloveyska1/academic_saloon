@@ -10,7 +10,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models.users import User
@@ -120,7 +120,7 @@ def order_to_response(order: Order) -> OrderResponse:
         work_type_label=order.work_type_label,
         subject=order.subject,
         topic=order.topic,
-        deadline=None,  # TODO: add deadline field to Order model if needed
+        deadline=order.deadline,
         price=float(order.price or 0),
         final_price=float(order.final_price),
         paid_amount=float(order.paid_amount or 0),
@@ -183,12 +183,26 @@ async def get_user_profile(
     )
     orders = orders_result.scalars().all()
 
-    # Calculate orders counts from actual orders (more reliable than DB field)
-    total_orders_count = len(orders)
-    completed_orders = sum(1 for o in orders if str(o.status) == 'completed' or (hasattr(o.status, 'value') and o.status.value == 'completed'))
+    # Calculate orders counts from DB
+    order_count_query = select(func.count(Order.id)).where(Order.user_id == user.telegram_id)
+    total_orders_result = await session.execute(order_count_query)
+    total_orders_count = total_orders_result.scalar() or 0
 
-    # Calculate total spent from actual orders (more reliable than DB field)
-    actual_total_spent = sum(float(o.paid_amount or o.price or 0) for o in orders if str(o.status) == 'completed' or (hasattr(o.status, 'value') and o.status.value == 'completed'))
+    # Calculate completed orders count
+    completed_query = select(func.count(Order.id)).where(
+        Order.user_id == user.telegram_id,
+        Order.status == 'completed'
+    )
+    completed_result = await session.execute(completed_query)
+    completed_orders = completed_result.scalar() or 0
+
+    # Calculate total spent from DB (sum paid_amount for completed orders)
+    spent_query = select(func.sum(Order.paid_amount)).where(
+        Order.user_id == user.telegram_id,
+        Order.status == 'completed'
+    )
+    spent_result = await session.execute(spent_query)
+    actual_total_spent = float(spent_result.scalar() or 0)
 
     # Generate referral code from telegram_id
     referral_code = f"REF{user.telegram_id}"
