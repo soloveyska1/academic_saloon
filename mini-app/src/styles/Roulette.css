@@ -1,0 +1,546 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LEGACY EDITION — Ultra-Premium Hacker Aesthetic
+   God Rays, Glitch Effects, Scanner Lines, Sales Psychology
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --lux-black: #050505;
+  --lux-gold: #D4AF37;
+  --lux-gold-bright: #FCE7A4;
+  --lux-red: #FF3B30;
+  --font-elite: 'Cinzel', serif;
+  --font-tech: 'JetBrains Mono', monospace;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1. GOD RAYS — Rotating Light Beams
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.god-rays {
+  position: fixed;
+  top: -50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(212, 175, 55, 0) 0deg,
+    rgba(212, 175, 55, 0.03) 20deg,
+    rgba(212, 175, 55, 0) 40deg,
+    rgba(212, 175, 55, 0.05) 60deg,
+    rgba(212, 175, 55, 0) 80deg,
+    rgba(212, 175, 55, 0.03) 100deg,
+    rgba(212, 175, 55, 0) 120deg,
+    rgba(212, 175, 55, 0.04) 140deg,
+    rgba(212, 175, 55, 0) 160deg,
+    rgba(212, 175, 55, 0.03) 180deg,
+    rgba(212, 175, 55, 0) 200deg,
+    rgba(212, 175, 55, 0.05) 220deg,
+    rgba(212, 175, 55, 0) 240deg,
+    rgba(212, 175, 55, 0.03) 260deg,
+    rgba(212, 175, 55, 0) 280deg,
+    rgba(212, 175, 55, 0.04) 300deg,
+    rgba(212, 175, 55, 0) 320deg,
+    rgba(212, 175, 55, 0.03) 340deg,
+    rgba(212, 175, 55, 0) 360deg
+  );
+  transform: translateX(-50%) rotate(0deg);
+  animation: rotateRays 60s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes rotateRays {
+  from { transform: translateX(-50%) rotate(0deg); }
+  to { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2. GLITCH TEXT — Cyberpunk Distortion
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.glitch-text {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.glitch-text::before {
+  left: 2px;
+  text-shadow: -1px 0 #ff00c1;
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitch-anim 5s infinite linear alternate-reverse;
+}
+
+.glitch-text::after {
+  left: -2px;
+  text-shadow: -1px 0 #00fff9;
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitch-anim2 5s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim {
+  0% { clip: rect(12px, 9999px, 32px, 0); transform: skew(0.2deg); }
+  5% { clip: rect(64px, 9999px, 80px, 0); transform: skew(0.4deg); }
+  10% { clip: rect(10px, 9999px, 84px, 0); transform: skew(-0.2deg); }
+  15% { clip: rect(40px, 9999px, 12px, 0); transform: skew(0.6deg); }
+  20% { clip: rect(70px, 9999px, 62px, 0); transform: skew(-0.4deg); }
+  25% { clip: rect(24px, 9999px, 44px, 0); transform: skew(0.2deg); }
+  30% { clip: rect(55px, 9999px, 75px, 0); transform: skew(-0.3deg); }
+  35% { clip: rect(15px, 9999px, 35px, 0); transform: skew(0.5deg); }
+  40% { clip: rect(80px, 9999px, 95px, 0); transform: skew(-0.1deg); }
+  45% { clip: rect(5px, 9999px, 25px, 0); transform: skew(0.3deg); }
+  50% { clip: rect(45px, 9999px, 65px, 0); transform: skew(-0.5deg); }
+  55% { clip: rect(30px, 9999px, 50px, 0); transform: skew(0.1deg); }
+  60% { clip: rect(60px, 9999px, 85px, 0); transform: skew(-0.2deg); }
+  65% { clip: rect(20px, 9999px, 40px, 0); transform: skew(0.4deg); }
+  70% { clip: rect(75px, 9999px, 90px, 0); transform: skew(-0.6deg); }
+  75% { clip: rect(10px, 9999px, 30px, 0); transform: skew(0.2deg); }
+  80% { clip: rect(50px, 9999px, 70px, 0); transform: skew(-0.4deg); }
+  85% { clip: rect(35px, 9999px, 55px, 0); transform: skew(0.3deg); }
+  90% { clip: rect(65px, 9999px, 88px, 0); transform: skew(-0.1deg); }
+  95% { clip: rect(8px, 9999px, 28px, 0); transform: skew(0.5deg); }
+  100% { clip: rect(24px, 9999px, 44px, 0); transform: skew(0deg); }
+}
+
+@keyframes glitch-anim2 {
+  0% { clip: rect(54px, 9999px, 74px, 0); transform: skew(-0.3deg); }
+  5% { clip: rect(14px, 9999px, 34px, 0); transform: skew(0.2deg); }
+  10% { clip: rect(74px, 9999px, 94px, 0); transform: skew(-0.5deg); }
+  15% { clip: rect(34px, 9999px, 54px, 0); transform: skew(0.4deg); }
+  20% { clip: rect(4px, 9999px, 24px, 0); transform: skew(-0.1deg); }
+  25% { clip: rect(64px, 9999px, 84px, 0); transform: skew(0.3deg); }
+  30% { clip: rect(24px, 9999px, 44px, 0); transform: skew(-0.4deg); }
+  35% { clip: rect(84px, 9999px, 100px, 0); transform: skew(0.1deg); }
+  40% { clip: rect(44px, 9999px, 64px, 0); transform: skew(-0.2deg); }
+  45% { clip: rect(14px, 9999px, 34px, 0); transform: skew(0.5deg); }
+  50% { clip: rect(54px, 9999px, 74px, 0); transform: skew(-0.3deg); }
+  55% { clip: rect(94px, 9999px, 100px, 0); transform: skew(0.2deg); }
+  60% { clip: rect(34px, 9999px, 54px, 0); transform: skew(-0.6deg); }
+  65% { clip: rect(74px, 9999px, 94px, 0); transform: skew(0.4deg); }
+  70% { clip: rect(4px, 9999px, 24px, 0); transform: skew(-0.2deg); }
+  75% { clip: rect(44px, 9999px, 64px, 0); transform: skew(0.3deg); }
+  80% { clip: rect(84px, 9999px, 100px, 0); transform: skew(-0.5deg); }
+  85% { clip: rect(24px, 9999px, 44px, 0); transform: skew(0.1deg); }
+  90% { clip: rect(64px, 9999px, 84px, 0); transform: skew(-0.4deg); }
+  95% { clip: rect(14px, 9999px, 34px, 0); transform: skew(0.6deg); }
+  100% { clip: rect(54px, 9999px, 74px, 0); transform: skew(0deg); }
+}
+
+/* Glitch trigger on hover/active */
+.glitch-active .glitch-text::before,
+.glitch-active .glitch-text::after {
+  animation-duration: 0.3s;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3. SCANNER LINE — Retina/Face Scan Effect
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.scanner-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #D4AF37, #D4AF37, transparent);
+  box-shadow:
+    0 0 10px #D4AF37,
+    0 0 20px rgba(212, 175, 55, 0.5),
+    0 0 40px rgba(212, 175, 55, 0.3);
+  opacity: 0.7;
+  animation: scanVertical 2s ease-in-out infinite;
+  z-index: 20;
+  pointer-events: none;
+}
+
+@keyframes scanVertical {
+  0% { top: 0%; opacity: 0; }
+  5% { opacity: 0.8; }
+  50% { opacity: 0.9; }
+  95% { opacity: 0.8; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Horizontal scan variant */
+.scanner-line-horizontal {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, #D4AF37, #D4AF37, transparent);
+  box-shadow: 0 0 10px #D4AF37;
+  opacity: 0.5;
+  animation: scanHorizontal 1.5s ease-in-out infinite;
+}
+
+@keyframes scanHorizontal {
+  0% { left: 0%; opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4. LUX MODAL — Ultra Premium Overlay
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.lux-modal-content {
+  background: linear-gradient(160deg, #0a0a0c 0%, #000000 100%);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow:
+    0 0 50px rgba(212, 175, 55, 0.15),
+    0 0 100px rgba(212, 175, 55, 0.08),
+    inset 0 0 20px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.lux-modal-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, transparent 50%, rgba(212, 175, 55, 0.05) 100%);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. DISCOUNT TIMER — Urgency Effect
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.discount-timer {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px rgba(255, 59, 48, 0.6);
+  color: #FF3B30;
+  animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6. GOLD GLOW TEXT — Premium Typography
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.text-gold-glow {
+  text-shadow:
+    0 0 10px rgba(212, 175, 55, 0.4),
+    0 0 20px rgba(212, 175, 55, 0.3),
+    0 0 40px rgba(212, 175, 55, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7. VAULT ANIMATIONS — 3D Mechanical Effects
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Dial rotation */
+@keyframes dialSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(1800deg); }
+}
+
+.vault-dial-spinning {
+  animation: dialSpin 3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* Handle opening with spring */
+@keyframes handleOpen {
+  0% { transform: rotate(0deg); }
+  40% { transform: rotate(100deg); }
+  60% { transform: rotate(85deg); }
+  80% { transform: rotate(92deg); }
+  100% { transform: rotate(90deg); }
+}
+
+.vault-handle-open {
+  animation: handleOpen 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Vault body pulse during spin */
+@keyframes vaultPulse {
+  0%, 100% {
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.7),
+      0 0 30px rgba(212, 175, 55, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.7),
+      0 0 50px rgba(212, 175, 55, 0.25);
+  }
+}
+
+.vault-spinning {
+  animation: vaultPulse 0.5s ease-in-out infinite;
+}
+
+/* LED indicators */
+.led-indicator {
+  transition: all 0.3s ease;
+}
+
+.led-indicator.active {
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. SHIMMER ANIMATION — Scanning Effect for Cards
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  100% { transform: translateX(200%) skewX(-20deg); }
+}
+
+.shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: shimmer 2s infinite;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9. NOISE OVERLAY — Film Grain Texture
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 9998;
+  mix-blend-mode: overlay;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   10. ASSET CARD — Prize Tier Styling
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.asset-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.asset-card.highlighted {
+  background: rgba(212, 175, 55, 0.05);
+  border-color: #D4AF37;
+  transform: scale(1.02);
+}
+
+.asset-card.highlighted::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #D4AF37;
+  box-shadow: 0 0 10px #D4AF37;
+}
+
+.asset-card.passed {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+
+.asset-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #141417;
+  color: #444;
+  transition: all 0.3s ease;
+}
+
+.asset-card.highlighted .asset-icon {
+  background: #D4AF37;
+  color: #000;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   11. WINNERS TICKER — Social Proof Banner
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.winners-ticker {
+  background: rgba(212, 175, 55, 0.05);
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+  position: relative;
+}
+
+.winners-ticker::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   12. TRIGGER BUTTON — Main CTA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.trigger-button {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  height: 72px;
+  border-radius: 12px;
+  border: 1px solid #D4AF37;
+  background: linear-gradient(180deg, #1a1a1e 0%, #000000 100%);
+  box-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.trigger-button:hover:not(:disabled) {
+  box-shadow: 0 0 60px rgba(212, 175, 55, 0.4);
+  transform: translateY(-2px);
+}
+
+.trigger-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.trigger-button:disabled {
+  border-color: #333;
+  background: #000;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.trigger-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
+  opacity: 0.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   13. STATUS BADGE — Protocol Indicators
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  font-size: 9px;
+  font-family: var(--font-tech);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #D4AF37;
+}
+
+.status-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   14. SCREEN SHAKE — Glitch Trigger Effect
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2px, -1px); }
+  20% { transform: translate(2px, 1px); }
+  30% { transform: translate(-1px, 2px); }
+  40% { transform: translate(1px, -2px); }
+  50% { transform: translate(-2px, 1px); }
+  60% { transform: translate(2px, -1px); }
+  70% { transform: translate(-1px, -2px); }
+  80% { transform: translate(1px, 2px); }
+  90% { transform: translate(-2px, -1px); }
+}
+
+.screen-shake {
+  animation: screenShake 0.15s ease-in-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   15. USER PHOTO OVERLAY — Identity Fusion
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.user-photo-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  opacity: 0.3;
+  mix-blend-mode: overlay;
+  filter: grayscale(100%) blur(4px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   16. SAFE AREA — iOS Notch Support
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

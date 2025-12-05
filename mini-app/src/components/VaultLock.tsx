@@ -1,428 +1,314 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react'
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Lock, Unlock, Sparkles } from 'lucide-react'
+import React, { useEffect, useRef, useState, memo } from 'react'
+import { motion } from 'framer-motion'
+import { Lock, Unlock, Sparkles, User } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
-import { useSound } from '../hooks/useSound'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM VAULT LOCK — 3D Parallax with Gyroscope Support
-//  Mechanical animations, real physics, premium haptics
+//  LEGACY VAULT — 3D Mechanical Safe with Gyroscope Parallax
+//  Features: User photo integration, LED indicators, 3D perspective
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface VaultLockProps {
   isSpinning: boolean
   isOpen: boolean
-  onOpenComplete?: () => void
-  prizeValue?: number
-  isJackpot?: boolean
+  resultValue?: string
+  userPhotoUrl?: string
 }
 
-// Vault dial markings
-const DIAL_MARKINGS = Array.from({ length: 60 }, (_, i) => i)
-const MAJOR_MARKINGS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
-
-export const VaultLock = React.memo(({
-  isSpinning,
-  isOpen,
-  onOpenComplete,
-  prizeValue,
-  isJackpot,
-}: VaultLockProps) => {
+export const VaultLock = memo(({ isSpinning, isOpen, resultValue, userPhotoUrl }: VaultLockProps) => {
   const { isDark } = useTheme()
-  const sound = useSound()
+  const [rotation, setRotation] = useState({ x: 0, y: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  // Motion values for 3D effect
-  const rotateX = useMotionValue(0)
-  const rotateY = useMotionValue(0)
-  const dialRotation = useMotionValue(0)
-  const handleRotation = useMotionValue(0)
+  // Gyroscope / Mouse parallax
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const x = (e.clientY - rect.top - rect.height / 2) / 20
+      const y = (e.clientX - rect.left - rect.width / 2) / -20
+      setRotation({
+        x: Math.max(-15, Math.min(15, x)),
+        y: Math.max(-15, Math.min(15, y))
+      })
+    }
 
-  // Transform 3D perspective
-  const transform = useTransform(
-    [rotateX, rotateY],
-    ([x, y]) => `perspective(800px) rotateX(${x}deg) rotateY(${y}deg)`
-  )
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (!e.beta || !e.gamma) return
+      const x = (e.beta - 45) * 0.3
+      const y = e.gamma * 0.3
+      setRotation({
+        x: Math.max(-15, Math.min(15, x)),
+        y: Math.max(-15, Math.min(15, y))
+      })
+    }
 
-  // Gyroscope support
-  const [hasGyroscope, setHasGyroscope] = useState(false)
-  const gyroPermissionRef = useRef(false)
+    window.addEventListener('mousemove', handleMouseMove)
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', handleOrientation)
+    }
 
-  // Request gyroscope permission (iOS 13+)
-  const requestGyroscope = useCallback(async () => {
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission === 'function') {
-      try {
-        const permission = await (DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> }).requestPermission()
-        gyroPermissionRef.current = permission === 'granted'
-        setHasGyroscope(permission === 'granted')
-      } catch {
-        // Permission denied or error
-      }
-    } else {
-      // Non-iOS or older iOS - gyro might work without permission
-      setHasGyroscope(true)
-      gyroPermissionRef.current = true
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('deviceorientation', handleOrientation)
     }
   }, [])
 
-  // Handle device orientation
-  useEffect(() => {
-    requestGyroscope()
-
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (!gyroPermissionRef.current) return
-
-      const gamma = e.gamma || 0 // Left-right tilt (-90 to 90)
-      const beta = e.beta || 0   // Front-back tilt (-180 to 180)
-
-      // Clamp values for smooth parallax
-      const clampedX = Math.max(-15, Math.min(15, (beta - 45) * 0.3))
-      const clampedY = Math.max(-15, Math.min(15, gamma * 0.3))
-
-      rotateX.set(clampedX)
-      rotateY.set(clampedY)
-    }
-
-    window.addEventListener('deviceorientation', handleOrientation)
-    return () => window.removeEventListener('deviceorientation', handleOrientation)
-  }, [rotateX, rotateY, requestGyroscope])
-
-  // Fallback: mouse/touch parallax
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (hasGyroscope) return // Prefer gyroscope when available
-
-    const rect = e.currentTarget.getBoundingClientRect()
-    const centerX = rect.left + rect.width / 2
-    const centerY = rect.top + rect.height / 2
-
-    const x = (e.clientY - centerY) / rect.height * 20
-    const y = (e.clientX - centerX) / rect.width * -20
-
-    rotateX.set(Math.max(-15, Math.min(15, x)))
-    rotateY.set(Math.max(-15, Math.min(15, y)))
-  }, [hasGyroscope, rotateX, rotateY])
-
-  const handlePointerLeave = useCallback(() => {
-    if (hasGyroscope) return
-
-    animate(rotateX, 0, { duration: 0.5, ease: 'easeOut' })
-    animate(rotateY, 0, { duration: 0.5, ease: 'easeOut' })
-  }, [hasGyroscope, rotateX, rotateY])
-
-  // Spinning animation for dial
-  useEffect(() => {
-    if (isSpinning) {
-      sound.play('spin_start')
-
-      // Dial spins with easing
-      const dialAnim = animate(dialRotation, [0, 360 * 5], {
-        duration: 3,
-        ease: [0.25, 0.1, 0.25, 1],
-        onUpdate: (value) => {
-          // Play tick sound at intervals
-          if (Math.floor(value) % 30 === 0) {
-            sound.play('tick')
-          }
-        },
-        onComplete: () => {
-          sound.play('latch')
-        }
-      })
-
-      return () => dialAnim.stop()
-    }
-  }, [isSpinning, dialRotation, sound])
-
-  // Opening animation for handle
-  useEffect(() => {
-    if (isOpen) {
-      sound.play('open')
-
-      // Handle rotates down
-      animate(handleRotation, 90, {
-        duration: 0.6,
-        ease: [0.34, 1.56, 0.64, 1], // Spring overshoot
-        onComplete: () => {
-          if (isJackpot) {
-            sound.play('jackpot')
-          } else if (prizeValue && prizeValue > 0) {
-            sound.play('win')
-          }
-          onOpenComplete?.()
-        }
-      })
-    } else {
-      animate(handleRotation, 0, { duration: 0.3 })
-    }
-  }, [isOpen, handleRotation, onOpenComplete, isJackpot, prizeValue, sound])
-
-  // Theme-aware colors
   const colors = {
-    vaultBody: isDark
+    vaultBg: isDark
       ? 'linear-gradient(145deg, #2a2a2e 0%, #1a1a1e 100%)'
       : 'linear-gradient(145deg, #f5f4f1 0%, #e5e2dc 100%)',
-    vaultBorder: isDark ? '#4a4a50' : '#c9a02f',
     vaultShadow: isDark
-      ? '0 20px 60px rgba(0, 0, 0, 0.7), inset 0 2px 8px rgba(255,255,255,0.08)'
+      ? '0 20px 60px rgba(0,0,0,0.7), inset 0 2px 8px rgba(255,255,255,0.08)'
       : '0 12px 40px rgba(120, 85, 40, 0.2), inset 0 2px 4px rgba(255,255,255,0.9)',
+    vaultBorder: isDark ? '#4a4a50' : '#c9a02f',
     dialBg: isDark
       ? 'linear-gradient(145deg, #3a3a40, #25252a)'
       : 'linear-gradient(145deg, #e8e6e1, #d5d2cc)',
     dialBorder: isDark ? '#5a5a60' : '#b48e26',
     goldColor: isDark ? '#d4af37' : '#9e7a1a',
-    goldGlow: isDark
-      ? 'rgba(212, 175, 55, 0.4)'
-      : 'rgba(180, 142, 38, 0.3)',
-    markingColor: isDark ? '#6a6a70' : '#8a7a6a',
+    centerBg: isDark
+      ? 'linear-gradient(135deg, #d4af37, #8b6914)'
+      : 'linear-gradient(135deg, #c9a02f, #8b6914)',
     handleBg: isDark
       ? 'linear-gradient(180deg, #4a4a50, #35353a)'
       : 'linear-gradient(180deg, #d4af37, #9e7a1a)',
-    handleShadow: isDark
-      ? 'inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.5)'
-      : 'inset 0 2px 4px rgba(255,255,255,0.6), 0 4px 12px rgba(0,0,0,0.2)',
-    centerBg: isDark
-      ? 'radial-gradient(circle, #3a3a40, #25252a)'
-      : 'radial-gradient(circle, #d4af37, #9e7a1a)',
-    prizeText: isDark ? '#d4af37' : '#6b4f0f',
   }
 
   return (
-    <motion.div
+    <div
+      ref={containerRef}
       style={{
+        perspective: '800px',
+        width: 260,
+        height: 260,
+        margin: '0 auto',
         position: 'relative',
-        width: 220,
-        height: 220,
-        margin: '0 auto 32px',
-        transformStyle: 'preserve-3d',
-        transform,
       }}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
     >
-      {/* Ambient glow */}
+      {/* User Photo Overlay (Identity Fusion) */}
+      {userPhotoUrl && (
+        <div
+          className="user-photo-overlay"
+          style={{
+            backgroundImage: `url(${userPhotoUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      )}
+
+      {/* Main Vault Body */}
       <motion.div
         animate={{
-          opacity: isSpinning ? [0.3, 0.7, 0.3] : 0.2,
-          scale: isSpinning ? [1, 1.15, 1] : 1,
+          rotateX: rotation.x,
+          rotateY: rotation.y,
         }}
-        transition={{
-          duration: 0.8,
-          repeat: isSpinning ? Infinity : 0,
-        }}
+        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+        className={isSpinning ? 'vault-spinning' : ''}
         style={{
-          position: 'absolute',
-          inset: -50,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${colors.goldGlow} 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Vault body */}
-      <motion.div
-        animate={isSpinning ? { scale: [1, 1.02, 1] } : {}}
-        transition={{ duration: 0.3, repeat: isSpinning ? Infinity : 0 }}
-        style={{
-          position: 'absolute',
-          inset: 0,
+          position: 'relative',
+          width: '100%',
+          height: '100%',
           borderRadius: 28,
-          background: colors.vaultBody,
-          border: `4px solid ${colors.vaultBorder}`,
+          background: colors.vaultBg,
           boxShadow: colors.vaultShadow,
+          border: `1px solid ${colors.vaultBorder}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transformStyle: 'preserve-3d',
         }}
       >
-        {/* Dial ring */}
-        <motion.div
+        {/* LED Indicators */}
+        <div
           style={{
-            position: 'relative',
-            width: 160,
-            height: 160,
+            position: 'absolute',
+            top: 16,
+            display: 'flex',
+            gap: 8,
+            transform: 'translateZ(10px)',
+          }}
+        >
+          <div
+            className="led-indicator"
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: isSpinning ? '#eab308' : '#3f3f00',
+              boxShadow: isSpinning ? '0 0 10px #eab308' : 'none',
+              transition: 'all 0.3s',
+            }}
+          />
+          <div
+            className="led-indicator"
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: isOpen ? '#22c55e' : '#0a3f0a',
+              boxShadow: isOpen ? '0 0 10px #22c55e' : 'none',
+              transition: 'all 0.3s',
+            }}
+          />
+        </div>
+
+        {/* Dial Ring */}
+        <div
+          className={isSpinning ? 'vault-dial-spinning' : ''}
+          style={{
+            position: 'absolute',
+            width: 180,
+            height: 180,
             borderRadius: '50%',
             background: colors.dialBg,
-            border: `3px solid ${colors.dialBorder}`,
-            boxShadow: `inset 0 4px 12px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2)`,
+            border: `2px solid ${colors.dialBorder}`,
+            transform: 'translateZ(20px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            rotate: dialRotation,
+            boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.3)',
           }}
         >
-          {/* Dial markings */}
-          {DIAL_MARKINGS.map((i) => {
-            const isMajor = MAJOR_MARKINGS.includes(i)
-            const angle = (i / 60) * 360 - 90
+          {/* Dial Markings */}
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                width: 3,
+                height: 12,
+                background: colors.goldColor,
+                borderRadius: 2,
+                transformOrigin: '50% 90px',
+                transform: `rotate(${i * 30}deg)`,
+                boxShadow: `0 0 6px ${colors.goldColor}40`,
+              }}
+            />
+          ))}
 
+          {/* Minor Markings */}
+          {[...Array(60)].map((_, i) => {
+            if (i % 5 === 0) return null
             return (
               <div
-                key={i}
+                key={`minor-${i}`}
                 style={{
                   position: 'absolute',
-                  width: isMajor ? 3 : 1,
-                  height: isMajor ? 14 : 8,
-                  background: isMajor ? colors.goldColor : colors.markingColor,
-                  borderRadius: 1,
-                  transform: `rotate(${angle}deg) translateY(-65px)`,
-                  transformOrigin: '50% 50%',
-                  boxShadow: isMajor ? `0 0 6px ${colors.goldGlow}` : 'none',
+                  width: 1,
+                  height: 6,
+                  background: isDark ? '#555' : '#999',
+                  transformOrigin: '50% 90px',
+                  transform: `rotate(${i * 6}deg)`,
                 }}
               />
             )
           })}
 
-          {/* Center hub */}
+          {/* Center Circle */}
           <div
             style={{
-              width: 80,
-              height: 80,
+              width: 100,
+              height: 100,
               borderRadius: '50%',
               background: colors.centerBg,
-              border: `2px solid ${colors.dialBorder}`,
-              boxShadow: `inset 0 2px 8px rgba(0,0,0,0.3), 0 0 20px ${colors.goldGlow}`,
+              boxShadow: `inset 0 2px 8px rgba(0,0,0,0.3), 0 0 20px ${colors.goldColor}40`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               position: 'relative',
             }}
           >
-            {/* Lock/Prize display */}
-            {isOpen && prizeValue !== undefined ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3, type: 'spring' }}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                {prizeValue > 0 ? (
-                  <>
-                    <Sparkles size={20} color="#fff" />
-                    <span style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 14,
-                      fontWeight: 800,
-                      color: '#fff',
-                      textShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                    }}>
-                      {prizeValue.toLocaleString('ru-RU')}₽
-                    </span>
-                  </>
-                ) : (
-                  <span style={{
-                    fontSize: 11,
-                    color: 'rgba(255,255,255,0.7)',
-                  }}>
-                    Пусто
-                  </span>
-                )}
-              </motion.div>
-            ) : (
-              <motion.div
-                animate={isSpinning ? { rotate: 360 } : {}}
-                transition={{
-                  duration: 2,
-                  repeat: isSpinning ? Infinity : 0,
-                  ease: 'linear',
-                }}
-              >
-                {isOpen ? (
-                  <Unlock size={32} color="#22c55e" strokeWidth={1.5} />
-                ) : (
-                  <Lock size={32} color="#fff" strokeWidth={1.5} />
-                )}
-              </motion.div>
-            )}
-
-            {/* Handle (for opening) */}
-            <motion.div
+            {/* Knurled texture overlay */}
+            <div
               style={{
                 position: 'absolute',
-                top: -8,
-                left: '50%',
-                width: 12,
-                height: 45,
-                marginLeft: -6,
-                borderRadius: 6,
-                background: colors.handleBg,
-                boxShadow: colors.handleShadow,
-                transformOrigin: '50% 100%',
-                rotate: handleRotation,
-              }}
-            >
-              {/* Handle knob */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: -8,
-                  left: '50%',
-                  marginLeft: -10,
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: colors.handleBg,
-                  boxShadow: colors.handleShadow,
-                }}
-              />
-            </motion.div>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* Floating particles during spin/jackpot */}
-      {(isSpinning || isJackpot) && (
-        <>
-          {[0, 60, 120, 180, 240, 300].map((angle, i) => (
-            <motion.div
-              key={i}
-              animate={{
-                opacity: [0.3, 0.9, 0.3],
-                scale: [0.8, 1.3, 0.8],
-                y: isJackpot ? [0, -30, 0] : 0,
-              }}
-              transition={{
-                duration: isJackpot ? 1 : 0.6,
-                delay: i * 0.1,
-                repeat: Infinity,
-              }}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                width: isJackpot ? 10 : 6,
-                height: isJackpot ? 10 : 6,
+                inset: 0,
                 borderRadius: '50%',
-                background: colors.goldColor,
-                boxShadow: `0 0 12px ${colors.goldGlow}`,
-                transform: `rotate(${angle}deg) translateY(-120px)`,
+                background: 'repeating-conic-gradient(transparent 0deg, rgba(0,0,0,0.1) 5deg, transparent 10deg)',
               }}
             />
-          ))}
-        </>
-      )}
+          </div>
+        </div>
 
-      {/* Jackpot rays */}
-      {isJackpot && (
+        {/* Handle */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: [0, 0.8, 0], scale: [0.5, 1.5], rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity }}
+          className={isOpen ? 'vault-handle-open' : ''}
           style={{
             position: 'absolute',
-            inset: -80,
-            borderRadius: '50%',
-            background: `conic-gradient(from 0deg, transparent, ${colors.goldGlow}, transparent, ${colors.goldGlow}, transparent)`,
-            pointerEvents: 'none',
+            zIndex: 20,
+            width: 20,
+            height: 80,
+            background: colors.handleBg,
+            borderRadius: 10,
+            boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2), 0 4px 12px rgba(0,0,0,0.4)',
+            transform: 'translateZ(40px)',
+            transformOrigin: 'center center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        />
-      )}
-    </motion.div>
+        >
+          {/* Handle bar */}
+          <div
+            style={{
+              position: 'absolute',
+              width: 60,
+              height: 12,
+              background: isDark ? '#35353a' : '#b48e26',
+              borderRadius: 6,
+              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+            }}
+          />
+
+          {/* Lock icon */}
+          {isOpen ? (
+            <Unlock size={24} color="#22c55e" style={{ transform: 'rotate(90deg)' }} />
+          ) : (
+            <Lock size={24} color={colors.goldColor} style={{ transform: 'rotate(90deg)' }} />
+          )}
+        </motion.div>
+
+        {/* Result Popup (3D Popout) */}
+        {isOpen && resultValue && (
+          <motion.div
+            initial={{ opacity: 0, z: 0, scale: 0.5 }}
+            animate={{ opacity: 1, z: 100, scale: 1, y: -130 }}
+            transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+            style={{
+              position: 'absolute',
+              background: 'rgba(0, 0, 0, 0.95)',
+              border: '1px solid #d4af37',
+              padding: '12px 20px',
+              borderRadius: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              boxShadow: '0 0 30px rgba(212, 175, 55, 0.4), 0 10px 40px rgba(0,0,0,0.6)',
+              transformStyle: 'preserve-3d',
+              zIndex: 50,
+            }}
+          >
+            <Sparkles size={20} color="#d4af37" />
+            <span
+              style={{
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 14,
+                whiteSpace: 'nowrap',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              {resultValue}
+            </span>
+          </motion.div>
+        )}
+
+        {/* Scanner line during spin */}
+        {isSpinning && <div className="scanner-line" />}
+      </motion.div>
+    </div>
   )
 })
 
