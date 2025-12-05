@@ -91,9 +91,13 @@ async def run_bot():
     init_logger(bot)
 
     # UNIFIED HUB: инициализация служебных топиков
-    async with async_session_maker() as session:
-        await init_unified_hub(bot, session)
-    logger.info("UNIFIED HUB initialized")
+    try:
+        async with async_session_maker() as session:
+            await init_unified_hub(bot, session)
+        logger.info("UNIFIED HUB initialized")
+    except Exception as e:
+        logger.error(f"⚠️ UNIFIED HUB initialization failed: {e}")
+        logger.info("Bot will continue without service topics...")
 
     abandoned_tracker = init_abandoned_tracker(bot, storage)
     logger.info("Abandoned order tracker started")

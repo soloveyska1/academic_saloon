@@ -14,7 +14,7 @@ from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models.users import User
-from database.models.orders import Order, Conversation, ConversationType
+from database.models.orders import Order, Conversation, ConversationType, MessageSender
 from database.db import get_session
 from core.config import settings
 
