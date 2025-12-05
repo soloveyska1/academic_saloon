@@ -212,20 +212,21 @@ function AppContent() {
   if (error && !userData) {
     return (
       <ErrorBoundary>
-        <WebSocketProvider
-          telegramId={telegramId}
-          onOrderUpdate={handleOrderUpdate}
-          onBalanceUpdate={handleBalanceUpdate}
-          onProgressUpdate={handleProgressUpdate}
-          onNotification={handleNotification}
-          onRefresh={handleRefresh}
-        >
-          {/* Always show notifications even on error screen */}
-          <SmartNotification
-            notification={notification}
-            onDismiss={() => setNotification(null)}
-            onAction={handleNotificationAction}
-          />
+        <ThemeProvider>
+          <WebSocketProvider
+            telegramId={telegramId}
+            onOrderUpdate={handleOrderUpdate}
+            onBalanceUpdate={handleBalanceUpdate}
+            onProgressUpdate={handleProgressUpdate}
+            onNotification={handleNotification}
+            onRefresh={handleRefresh}
+          >
+            {/* Always show notifications even on error screen */}
+            <SmartNotification
+              notification={notification}
+              onDismiss={() => setNotification(null)}
+              onAction={handleNotificationAction}
+            />
           <div style={{
             minHeight: '100vh',
             background: '#0a0a0c',
@@ -289,7 +290,8 @@ function AppContent() {
               Попробовать снова
             </button>
           </div>
-        </WebSocketProvider>
+          </WebSocketProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     )
   }

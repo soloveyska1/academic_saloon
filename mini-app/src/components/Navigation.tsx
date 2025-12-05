@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Home, ClipboardList, Target, User } from 'lucide-react'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
+import { useCallback } from 'react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  FLOATING ISLAND NAVIGATION — Ultra-Premium Glass Dock
@@ -23,10 +24,15 @@ export function Navigation() {
   const { haptic } = useTelegram()
   const { isDark } = useTheme()
 
-  const handleClick = (path: string) => {
-    haptic('light')
+  // Simple navigation handler - just navigate and haptic
+  const handleNavigation = useCallback((path: string) => {
     navigate(path)
-  }
+    try {
+      haptic('light')
+    } catch {
+      // Ignore haptic errors
+    }
+  }, [navigate, haptic])
 
   // Theme-aware colors — Obsidian Glass / Royal Porcelain
   const colors = {
@@ -132,7 +138,7 @@ export function Navigation() {
             return (
               <button
                 key={item.path}
-                onClick={() => handleClick(item.path)}
+                onClick={() => handleNavigation(item.path)}
                 style={{
                   position: 'relative',
                   display: 'flex',
@@ -146,7 +152,6 @@ export function Navigation() {
                   outline: 'none',
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
-                  userSelect: 'none',
                 }}
               >
                 {/* Gold Spotlight Background for Active Tab */}
@@ -162,6 +167,7 @@ export function Navigation() {
                         ? '0 0 25px -5px rgba(212, 175, 55, 0.35)'
                         : '0 0 20px -5px rgba(180, 142, 38, 0.25)',
                       transition: 'all 0.2s ease-out',
+                      pointerEvents: 'none',
                     }}
                   />
                 )}
@@ -182,6 +188,7 @@ export function Navigation() {
                         ? '0 0 12px rgba(212, 175, 55, 0.6)'
                         : '0 0 10px rgba(180, 142, 38, 0.5)',
                       transition: 'all 0.2s ease-out',
+                      pointerEvents: 'none',
                     }}
                   />
                 )}

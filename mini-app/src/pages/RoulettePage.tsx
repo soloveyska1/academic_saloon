@@ -9,6 +9,7 @@ import { useTelegram } from '../hooks/useUserData'
 import { spinRoulette } from '../api/userApi'
 import { useAdmin } from '../contexts/AdminContext'
 import { Confetti, useConfetti } from '../components/ui/Confetti'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface Props {
   user: UserData | null
@@ -90,12 +91,25 @@ function PrizeCard({
   tier,
   delay,
   isHighlighted,
+  isDark,
 }: {
   tier: typeof PRIZE_TIERS[0]
   delay: number
   isHighlighted: boolean
+  isDark: boolean
 }) {
   const Icon = tier.icon
+
+  // Theme-aware card colors
+  const cardColors = {
+    bg: isDark ? 'var(--bg-card)' : 'rgba(255, 255, 255, 0.9)',
+    border: isDark ? 'var(--border-default)' : 'rgba(120, 85, 40, 0.1)',
+    shadow: isDark
+      ? 'var(--card-shadow)'
+      : '0 2px 8px rgba(120, 85, 40, 0.08), 0 8px 24px -8px rgba(120, 85, 40, 0.12)',
+    iconBg: isDark ? `${tier.color}15` : `${tier.color}12`,
+    chanceBg: isDark ? 'var(--bg-glass)' : 'rgba(120, 85, 40, 0.06)',
+  }
 
   return (
     <motion.div
@@ -112,13 +126,13 @@ function PrizeCard({
         borderRadius: 16,
         background: isHighlighted
           ? tier.bgGradient
-          : 'var(--bg-card)',
+          : cardColors.bg,
         border: isHighlighted
           ? `2px solid ${tier.color}`
-          : '1px solid var(--border-default)',
+          : `1px solid ${cardColors.border}`,
         boxShadow: isHighlighted
           ? `0 0 40px ${tier.glow}, 0 8px 32px rgba(0,0,0,0.4)`
-          : 'var(--card-shadow)',
+          : cardColors.shadow,
         overflow: 'hidden',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
@@ -156,7 +170,7 @@ function PrizeCard({
             borderRadius: 12,
             background: isHighlighted
               ? 'rgba(0,0,0,0.2)'
-              : `${tier.color}15`,
+              : cardColors.iconBg,
             border: `1px solid ${tier.color}30`,
             display: 'flex',
             alignItems: 'center',
@@ -198,7 +212,7 @@ function PrizeCard({
           style={{
             padding: '4px 8px',
             borderRadius: 6,
-            background: 'var(--bg-glass)',
+            background: cardColors.chanceBg,
             fontSize: 9,
             fontFamily: "var(--font-mono)",
             color: isHighlighted ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
@@ -220,11 +234,42 @@ function EliteVault({
   isOpening,
   isOpen,
   result,
+  isDark,
 }: {
   isOpening: boolean
   isOpen: boolean
   result: RouletteResult | null
+  isDark: boolean
 }) {
+  // Theme-aware vault colors
+  const vault = {
+    // Vault body gradient
+    bodyGradient: isDark
+      ? 'linear-gradient(180deg, #3a3a40 0%, #2a2a2e 50%, #1a1a1e 100%)'
+      : 'linear-gradient(180deg, #f5f4f1 0%, #e8e6e1 50%, #d9d6d0 100%)',
+    // Border color
+    border: isDark ? '#4a4a50' : '#c9a02f',
+    // Shadow
+    shadow: isDark
+      ? '0 20px 60px rgba(0, 0, 0, 0.7), inset 0 2px 8px rgba(255,255,255,0.1), inset 0 -4px 12px rgba(0,0,0,0.4)'
+      : '0 12px 40px rgba(120, 85, 40, 0.2), 0 4px 16px rgba(120, 85, 40, 0.1), inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -2px 8px rgba(120, 85, 40, 0.1)',
+    // Door gradient
+    doorGradient: isDark
+      ? 'linear-gradient(135deg, #4a4a50 0%, #3a3a40 50%, #2a2a2e 100%)'
+      : 'linear-gradient(135deg, #faf9f7 0%, #f0ede8 50%, #e5e2dc 100%)',
+    doorBorder: isDark ? '#5a5a60' : '#b48e26',
+    doorShadow: isDark
+      ? 'inset 0 2px 8px rgba(255,255,255,0.1)'
+      : 'inset 0 2px 4px rgba(255,255,255,0.8), 0 4px 12px rgba(120, 85, 40, 0.15)',
+    // Text
+    vaultText: isDark ? '#71717a' : '#7d5c12',
+    goldColor: isDark ? '#d4af37' : '#9e7a1a',
+    // Glow
+    glowBg: isDark
+      ? 'radial-gradient(circle, rgba(212, 175, 55, 0.3) 0%, transparent 70%)'
+      : 'radial-gradient(circle, rgba(180, 142, 38, 0.2) 0%, transparent 70%)',
+  }
+
   return (
     <motion.div
       style={{
@@ -248,7 +293,7 @@ function EliteVault({
           position: 'absolute',
           inset: -40,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(212, 175, 55, 0.3) 0%, transparent 70%)',
+          background: vault.glowBg,
         }}
       />
 
@@ -263,13 +308,9 @@ function EliteVault({
           position: 'absolute',
           inset: 0,
           borderRadius: 24,
-          background: 'linear-gradient(180deg, #3a3a40 0%, #2a2a2e 50%, #1a1a1e 100%)',
-          border: '4px solid #4a4a50',
-          boxShadow: `
-            0 20px 60px rgba(0, 0, 0, 0.7),
-            inset 0 2px 8px rgba(255,255,255,0.1),
-            inset 0 -4px 12px rgba(0,0,0,0.4)
-          `,
+          background: vault.bodyGradient,
+          border: `4px solid ${vault.border}`,
+          boxShadow: vault.shadow,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -284,9 +325,9 @@ function EliteVault({
             width: 140,
             height: 140,
             borderRadius: 16,
-            background: 'linear-gradient(135deg, #4a4a50 0%, #3a3a40 50%, #2a2a2e 100%)',
-            border: '3px solid #5a5a60',
-            boxShadow: 'inset 0 2px 8px rgba(255,255,255,0.1)',
+            background: vault.doorGradient,
+            border: `3px solid ${vault.doorBorder}`,
+            boxShadow: vault.doorShadow,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -307,7 +348,7 @@ function EliteVault({
             {isOpen ? (
               <Unlock size={48} color="#22c55e" strokeWidth={1.5} />
             ) : (
-              <Lock size={48} color="#d4af37" strokeWidth={1.5} />
+              <Lock size={48} color={vault.goldColor} strokeWidth={1.5} />
             )}
           </motion.div>
           {!isOpen && (
@@ -316,7 +357,7 @@ function EliteVault({
                 marginTop: 8,
                 fontSize: 10,
                 fontWeight: 600,
-                color: '#71717a',
+                color: vault.vaultText,
                 letterSpacing: '0.1em',
               }}
             >
@@ -341,14 +382,14 @@ function EliteVault({
           >
             {result.type !== 'nothing' ? (
               <>
-                <Sparkles size={32} color="#d4af37" />
+                <Sparkles size={32} color={vault.goldColor} />
                 <div
                   style={{
                     marginTop: 8,
                     fontFamily: "var(--font-serif)",
                     fontSize: 28,
                     fontWeight: 800,
-                    color: '#d4af37',
+                    color: vault.goldColor,
                   }}
                 >
                   {result.value.toLocaleString('ru-RU')}₽
@@ -358,7 +399,7 @@ function EliteVault({
               <div
                 style={{
                   fontSize: 12,
-                  color: '#71717a',
+                  color: vault.vaultText,
                   textAlign: 'center',
                 }}
               >
@@ -389,8 +430,10 @@ function EliteVault({
             width: 8,
             height: 8,
             borderRadius: '50%',
-            background: '#d4af37',
-            boxShadow: '0 0 10px rgba(212, 175, 55, 0.5)',
+            background: vault.goldColor,
+            boxShadow: isDark
+              ? '0 0 10px rgba(212, 175, 55, 0.5)'
+              : '0 0 10px rgba(180, 142, 38, 0.4)',
             transform: `rotate(${angle}deg) translateY(-110px)`,
           }}
         />
@@ -407,11 +450,32 @@ function SpinButton({
   onClick,
   disabled,
   spinning,
+  isDark,
 }: {
   onClick: () => void
   disabled: boolean
   spinning: boolean
+  isDark: boolean
 }) {
+  // Theme-aware button colors
+  const btn = {
+    shadowBg: isDark
+      ? 'linear-gradient(180deg, #5a4010, #2a1f08)'
+      : 'linear-gradient(180deg, rgba(120, 85, 40, 0.3), rgba(120, 85, 40, 0.15))',
+    disabledBg: isDark
+      ? 'linear-gradient(180deg, #3a3a40 0%, #2a2a2e 100%)'
+      : 'linear-gradient(180deg, #e5e2dc 0%, #d9d6d0 100%)',
+    disabledBorder: isDark
+      ? '2px solid rgba(255,255,255,0.06)'
+      : '2px solid rgba(120, 85, 40, 0.1)',
+    activeBg: 'linear-gradient(180deg, #f5d061 0%, #d4af37 50%, #8b6914 100%)',
+    activeBorder: '3px solid #6b4f0f',
+    activeShadow: isDark
+      ? 'inset 0 3px 6px rgba(255,255,255,0.35), inset 0 -4px 8px rgba(0,0,0,0.25), 0 0 60px rgba(212, 175, 55, 0.4)'
+      : 'inset 0 2px 4px rgba(255,255,255,0.5), inset 0 -2px 6px rgba(0,0,0,0.15), 0 0 40px rgba(180, 142, 38, 0.3), 0 8px 24px rgba(120, 85, 40, 0.2)',
+    textColor: '#0a0a0c',
+  }
+
   return (
     <motion.button
       onClick={onClick}
@@ -435,7 +499,7 @@ function SpinButton({
           inset: 0,
           top: 6,
           borderRadius: 20,
-          background: 'linear-gradient(180deg, #5a4010, #2a1f08)',
+          background: btn.shadowBg,
           filter: 'blur(2px)',
         }}
       />
@@ -446,19 +510,11 @@ function SpinButton({
           position: 'relative',
           padding: '20px 32px',
           borderRadius: 18,
-          background: disabled
-            ? 'linear-gradient(180deg, #3a3a40 0%, #2a2a2e 100%)'
-            : 'linear-gradient(180deg, #f5d061 0%, #d4af37 50%, #8b6914 100%)',
-          border: disabled
-            ? '2px solid rgba(255,255,255,0.06)'
-            : '3px solid #6b4f0f',
+          background: disabled ? btn.disabledBg : btn.activeBg,
+          border: disabled ? btn.disabledBorder : btn.activeBorder,
           boxShadow: disabled
             ? 'inset 0 2px 4px rgba(255,255,255,0.03)'
-            : `
-              inset 0 3px 6px rgba(255,255,255,0.35),
-              inset 0 -4px 8px rgba(0,0,0,0.25),
-              0 0 60px rgba(212, 175, 55, 0.4)
-            `,
+            : btn.activeShadow,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -472,14 +528,14 @@ function SpinButton({
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              <Target size={24} color="#0a0a0c" />
+              <Target size={24} color={btn.textColor} />
             </motion.div>
             <span
               style={{
                 fontFamily: "var(--font-serif)",
                 fontSize: 18,
                 fontWeight: 800,
-                color: '#0a0a0c',
+                color: btn.textColor,
                 letterSpacing: '0.05em',
               }}
             >
@@ -488,13 +544,13 @@ function SpinButton({
           </>
         ) : (
           <>
-            <Crown size={24} color="#0a0a0c" />
+            <Crown size={24} color={btn.textColor} />
             <span
               style={{
                 fontFamily: "var(--font-serif)",
                 fontSize: 18,
                 fontWeight: 800,
-                color: '#0a0a0c',
+                color: btn.textColor,
                 letterSpacing: '0.05em',
               }}
             >
@@ -759,6 +815,7 @@ function ResultModal({
 export function RoulettePage({ user }: Props) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
   const { unlimitedRoulette } = useAdmin()
+  const { isDark } = useTheme()
   const [spinning, setSpinning] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [result, setResult] = useState<RouletteResult | null>(null)
@@ -766,6 +823,9 @@ export function RoulettePage({ user }: Props) {
   const [highlightedTier, setHighlightedTier] = useState<string | null>(null)
 
   const confetti = useConfetti()
+
+  // Theme-aware gold color
+  const goldColor = isDark ? '#d4af37' : '#9e7a1a'
 
   // Animate through tiers during spin
   useEffect(() => {
@@ -850,20 +910,22 @@ export function RoulettePage({ user }: Props) {
             marginBottom: 8,
           }}
         >
-          <Crown size={28} color="#d4af37" />
+          <Crown size={28} color={goldColor} />
           <h1
             style={{
               fontFamily: "var(--font-serif)",
               fontSize: 28,
               fontWeight: 800,
-              background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
+              background: isDark
+                ? 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)'
+                : 'linear-gradient(135deg, #5c4510, #9e7a1a, #c9a02f)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}
           >
             ЭЛИТНЫЙ КЛУБ
           </h1>
-          <Crown size={28} color="#d4af37" />
+          <Crown size={28} color={goldColor} />
         </div>
         <p
           style={{
@@ -882,6 +944,7 @@ export function RoulettePage({ user }: Props) {
         isOpening={spinning}
         isOpen={isOpen}
         result={result}
+        isDark={isDark}
       />
 
       {/* Spin Button */}
@@ -890,6 +953,7 @@ export function RoulettePage({ user }: Props) {
           onClick={handleSpin}
           disabled={spinning}
           spinning={spinning}
+          isDark={isDark}
         />
       </div>
 
@@ -904,19 +968,19 @@ export function RoulettePage({ user }: Props) {
             marginBottom: 16,
           }}
         >
-          <Diamond size={16} color="#d4af37" />
+          <Diamond size={16} color={goldColor} />
           <span
             style={{
               fontFamily: "var(--font-serif)",
               fontSize: 14,
               fontWeight: 700,
-              color: '#d4af37',
+              color: goldColor,
               letterSpacing: '0.1em',
             }}
           >
             ПРИЗОВОЙ ФОНД
           </span>
-          <Diamond size={16} color="#d4af37" />
+          <Diamond size={16} color={goldColor} />
         </div>
 
         <div
@@ -932,6 +996,7 @@ export function RoulettePage({ user }: Props) {
               tier={tier}
               delay={0.1 + i * 0.05}
               isHighlighted={highlightedTier === tier.id}
+              isDark={isDark}
             />
           ))}
         </div>
@@ -998,8 +1063,10 @@ export function RoulettePage({ user }: Props) {
                   width: 5,
                   height: 5,
                   borderRadius: '50%',
-                  background: '#d4af37',
-                  boxShadow: '0 0 8px rgba(212, 175, 55, 0.4)',
+                  background: goldColor,
+                  boxShadow: isDark
+                    ? '0 0 8px rgba(212, 175, 55, 0.4)'
+                    : '0 0 8px rgba(180, 142, 38, 0.35)',
                   flexShrink: 0,
                 }}
               />
