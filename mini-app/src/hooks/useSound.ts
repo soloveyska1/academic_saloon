@@ -90,7 +90,7 @@ export const useSound = () => {
         break;
 
       case 'glitch':
-        // White noise burst logic requires a buffer usually, but using random frequency saw also works for cheap glitch
+        // Random frequency saw
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(50, now);
         // Rapid frequency changes

@@ -1,55 +1,43 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import '../styles/Roulette.css';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const ACTIONS = ['ВЗЛОМАЛ СИСТЕМУ', 'ЗАБРАЛ КУШ', 'АКТИВИРОВАЛ КОД', 'ОБОШЕЛ ЗАЩИТУ', 'ВЫВЕЛ СРЕДСТВА'];
-const ASSETS = ['ДИПЛОМ ПОД КЛЮЧ', 'СКИДКА -90%', 'PREMIUM ДОСТУП', 'БАЗА ДАННЫХ', 'VIP СТАТУС'];
-const NAMES = ['ALEX_M', 'DIMITRI_K', 'GHOST_01', 'CYBER_V', 'KATYA_R', 'SYSTEM_ADMIN', 'ZERO_COOL', 'NEO_X'];
+const FAKE_WINNERS = [
+  { name: 'Алексей К.', prize: 'СКИДКА 50%', time: '2 сек назад' },
+  { name: 'Мария В.', prize: '500 БОНУСОВ', time: '5 сек назад' },
+  { name: 'Дмитрий П.', prize: 'СКИДКА 10%', time: '12 сек назад' },
+  { name: 'Елена С.', prize: '100 БОНУСОВ', time: '18 сек назад' },
+  { name: 'Иван Р.', prize: 'СКИДКА 20%', time: '25 сек назад' },
+];
 
 export const LiveWinnersTicker = () => {
-  // We duplicate the content to ensure seamless infinite scroll
-  const [items, setItems] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    const generateBatch = () => Array.from({ length: 10 }).map(() => {
-      const name = NAMES[Math.floor(Math.random() * NAMES.length)];
-      const action = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
-      const asset = ASSETS[Math.floor(Math.random() * ASSETS.length)];
-      return `${name} :: ${action} :: ${asset}`;
-    });
-    setItems([...generateBatch(), ...generateBatch()]); // Double for loop
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % FAKE_WINNERS.length);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="absolute top-0 left-0 w-full bg-[#09090b] border-b border-[#D4AF37]/30 z-40 overflow-hidden h-10 flex items-center shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
-      {/* Gradient overlay for fade effect */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none"></div>
-      <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none"></div>
+    <div className="w-full h-8 bg-[var(--roulette-scanline)] border-y border-[var(--roulette-gold)]/20 flex items-center justify-center overflow-hidden relative">
+      <div className="absolute left-2 text-[8px] text-[var(--roulette-danger)] font-mono animate-pulse">
+        ● LIVE
+      </div>
 
-      {/* Scanline Overlay */}
-      <div className="absolute inset-0 bg-[url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzQx/giphy.gif')] opacity-5 pointer-events-none mix-blend-overlay"></div>
-
-      <motion.div
-        className="flex whitespace-nowrap"
-        animate={{ x: [0, -1000] }} // Adjust based on content width, or use percentage if possible but pixels are smoother for text
-        transition={{
-          x: {
-            repeat: Infinity,
-            repeatType: "loop",
-            duration: 20,
-            ease: "linear",
-          }
-        }}
-      >
-        {items.map((entry, i) => (
-          <div key={i} className="flex items-center mx-6">
-            <span className="w-2 h-2 bg-[#0F0] rounded-full animate-pulse mr-2 shadow-[0_0_5px_#0F0]"></span>
-            <span className="text-xs font-mono font-bold tracking-widest text-[#D4AF37] opacity-90 hover:opacity-100 hover:text-[#FBF5B7] transition-colors cursor-default uppercase">
-              {entry}
-            </span>
-          </div>
-        ))}
-      </motion.div>
+      <AnimatePresence mode='wait'>
+        <motion.div
+          key={currentIndex}
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -20, opacity: 0 }}
+          className="text-[10px] font-mono text-[var(--roulette-text)] tracking-widest"
+        >
+          <span className="opacity-70">{FAKE_WINNERS[currentIndex].name}</span>
+          <span className="mx-2 text-[var(--roulette-gold)]">::</span>
+          <span className="text-[var(--roulette-gold)] font-bold">{FAKE_WINNERS[currentIndex].prize}</span>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };
