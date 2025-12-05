@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
@@ -71,124 +70,10 @@ body {
   height: 200%;
   background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 60%);
   animation: rotateRays 20s linear infinite;
-=======
-/* ═══════════════════════════════════════════════════════════════════════════
-   HACKER LUXURY — Dark Psychology Interface
-   Telegram-First Compact Sales Weapon
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-:root {
-  --hacker-black: #050505;
-  --hacker-dark: #0a0a0c;
-  --hacker-surface: #111115;
-  --hacker-border: #1a1a1f;
-  --rolex-gold: #D4AF37;
-  --rolex-gold-dim: #8b7355;
-  --rolex-gold-bright: #f5d061;
-  --cyber-red: #FF3B30;
-  --cyber-green: #22c55e;
-  --pure-white: #ffffff;
-  --ghost-white: rgba(255, 255, 255, 0.7);
-  --font-elite: 'Playfair Display', 'Georgia', serif;
-  --font-hack: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   1. BASE CONTAINER — Forced Dark Mode
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.hacker-container {
-  position: fixed;
-  inset: 0;
-  height: 100dvh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  background: var(--hacker-black);
-  color: var(--pure-white);
-  overflow: hidden;
-  font-family: var(--font-hack);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   2. NOISE TEXTURE OVERLAY
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.noise-overlay {
-  position: fixed;
-  inset: 0;
-  opacity: 0.03;
-  pointer-events: none;
-  z-index: 1;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   3. CRT SCANLINES EFFECT
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.crt-scanlines {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.15) 0px,
-    rgba(0, 0, 0, 0.15) 1px,
-    transparent 1px,
-    transparent 2px
-  );
-  animation: scanlineFlicker 0.1s infinite;
-}
-
-@keyframes scanlineFlicker {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.25; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   4. GOD RAYS — Rotating Light from Top
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.god-rays {
-  position: fixed;
-  top: -100%;
-  left: 50%;
-  width: 300%;
-  height: 300%;
-  transform: translateX(-50%);
-  background: conic-gradient(
-    from 0deg at 50% 0%,
-    transparent 0deg,
-    rgba(212, 175, 55, 0.02) 10deg,
-    transparent 20deg,
-    rgba(212, 175, 55, 0.03) 40deg,
-    transparent 50deg,
-    rgba(212, 175, 55, 0.02) 70deg,
-    transparent 80deg,
-    rgba(212, 175, 55, 0.04) 100deg,
-    transparent 110deg,
-    rgba(212, 175, 55, 0.02) 130deg,
-    transparent 140deg,
-    rgba(212, 175, 55, 0.03) 160deg,
-    transparent 180deg,
-    rgba(212, 175, 55, 0.02) 200deg,
-    transparent 220deg,
-    rgba(212, 175, 55, 0.03) 250deg,
-    transparent 270deg,
-    rgba(212, 175, 55, 0.02) 300deg,
-    transparent 330deg,
-    rgba(212, 175, 55, 0.03) 350deg,
-    transparent 360deg
-  );
-  animation: rotateGodRays 120s linear infinite;
->>>>>>> origin/main
   pointer-events: none;
   z-index: 0;
 }
 
-<<<<<<< HEAD
 @keyframes rotateRays {
   from {
     transform: rotate(0deg);
@@ -198,21 +83,10 @@ body {
     transform: rotate(360deg);
   }
 }
-=======
-@keyframes rotateGodRays {
-  from { transform: translateX(-50%) rotate(0deg); }
-  to { transform: translateX(-50%) rotate(360deg); }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   5. GLITCH TEXT EFFECT
-   ═══════════════════════════════════════════════════════════════════════════ */
->>>>>>> origin/main
 
 .glitch-text {
   position: relative;
   display: inline-block;
-  animation: glitchShift 8s ease-in-out infinite;
 }
 
 .glitch-text::before,
@@ -223,24 +97,23 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-<<<<<<< HEAD
   background: var(--void);
-=======
-  opacity: 0;
->>>>>>> origin/main
 }
 
 .glitch-text::before {
-  color: #ff00c1;
-  animation: glitchLeft 3s ease-in-out infinite;
+  left: 2px;
+  text-shadow: -1px 0 #ff00c1;
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitch-anim 5s infinite linear alternate-reverse;
 }
 
 .glitch-text::after {
-  color: #00fff9;
-  animation: glitchRight 3s ease-in-out infinite;
+  left: -2px;
+  text-shadow: -1px 0 #00fff9;
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitch-anim2 5s infinite linear alternate-reverse;
 }
 
-<<<<<<< HEAD
 @keyframes glitch-anim {
   0% {
     clip: rect(38px, 9999px, 86px, 0);
@@ -357,327 +230,3 @@ body {
     transform: translate3d(4px, 0, 0);
   }
 }
-=======
-.glitch-active .glitch-text::before,
-.glitch-active .glitch-text::after {
-  opacity: 0.8;
-  animation-duration: 0.2s;
-}
-
-@keyframes glitchLeft {
-  0%, 90%, 100% {
-    transform: translate(0);
-    opacity: 0;
-    clip-path: inset(0 0 0 0);
-  }
-  92% {
-    transform: translate(-3px, 1px);
-    opacity: 0.7;
-    clip-path: inset(20% 0 30% 0);
-  }
-  94% {
-    transform: translate(2px, -1px);
-    opacity: 0.5;
-    clip-path: inset(50% 0 20% 0);
-  }
-  96% {
-    transform: translate(-1px, 2px);
-    opacity: 0.6;
-    clip-path: inset(10% 0 60% 0);
-  }
-}
-
-@keyframes glitchRight {
-  0%, 90%, 100% {
-    transform: translate(0);
-    opacity: 0;
-    clip-path: inset(0 0 0 0);
-  }
-  91% {
-    transform: translate(3px, -1px);
-    opacity: 0.6;
-    clip-path: inset(40% 0 10% 0);
-  }
-  93% {
-    transform: translate(-2px, 1px);
-    opacity: 0.8;
-    clip-path: inset(10% 0 50% 0);
-  }
-  95% {
-    transform: translate(1px, -2px);
-    opacity: 0.5;
-    clip-path: inset(60% 0 5% 0);
-  }
-}
-
-@keyframes glitchShift {
-  0%, 95%, 100% { transform: translate(0); }
-  96% { transform: translate(-2px, 0); }
-  97% { transform: translate(2px, 0); }
-  98% { transform: translate(-1px, 1px); }
-  99% { transform: translate(1px, -1px); }
-}
-
-/* Intense glitch for near-miss */
-.glitch-intense {
-  animation: screenShake 0.15s ease-in-out;
-}
-
-@keyframes screenShake {
-  0%, 100% { transform: translate(0, 0) rotate(0); }
-  10% { transform: translate(-3px, -2px) rotate(-0.5deg); }
-  20% { transform: translate(3px, 2px) rotate(0.5deg); }
-  30% { transform: translate(-2px, 3px) rotate(-0.3deg); }
-  40% { transform: translate(2px, -3px) rotate(0.3deg); }
-  50% { transform: translate(-3px, 2px) rotate(-0.5deg); }
-  60% { transform: translate(3px, -2px) rotate(0.5deg); }
-  70% { transform: translate(-2px, -3px) rotate(-0.3deg); }
-  80% { transform: translate(2px, 3px) rotate(0.3deg); }
-  90% { transform: translate(-3px, -2px) rotate(-0.5deg); }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   6. SCANNER LINE — Horizontal Sweep
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.scanner-sweep {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--rolex-gold) 20%,
-    var(--rolex-gold-bright) 50%,
-    var(--rolex-gold) 80%,
-    transparent 100%
-  );
-  box-shadow:
-    0 0 20px var(--rolex-gold),
-    0 0 40px rgba(212, 175, 55, 0.5);
-  animation: scanSweep 2s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes scanSweep {
-  0% { top: 0%; opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   7. PULSE ANIMATIONS
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.pulse-gold {
-  animation: pulseGold 2s ease-in-out infinite;
-}
-
-@keyframes pulseGold {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(212, 175, 55, 0.6), 0 0 60px rgba(212, 175, 55, 0.3);
-  }
-}
-
-.pulse-red {
-  animation: pulseRed 1s ease-in-out infinite;
-}
-
-@keyframes pulseRed {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   8. TICKER MARQUEE
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.ticker-scroll {
-  display: flex;
-  animation: tickerScroll 20s linear infinite;
-}
-
-@keyframes tickerScroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   9. VAULT DIAL ROTATION
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.dial-spin {
-  animation: dialSpin 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes dialSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(1440deg); }
-}
-
-.dial-idle {
-  animation: dialFloat 4s ease-in-out infinite;
-}
-
-@keyframes dialFloat {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(3deg); }
-  75% { transform: rotate(-3deg); }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   10. BUTTON STYLES
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.hack-button {
-  position: relative;
-  width: 100%;
-  padding: 18px 24px;
-  background: linear-gradient(180deg, #f5d061 0%, #D4AF37 40%, #8b6914 100%);
-  border: 2px solid #6b4f0f;
-  border-radius: 12px;
-  color: #050505;
-  font-family: var(--font-elite);
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.2s ease;
-  box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.3),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.2),
-    0 4px 20px rgba(212, 175, 55, 0.4);
-}
-
-.hack-button:active {
-  transform: scale(0.98);
-  box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.2),
-    0 2px 10px rgba(212, 175, 55, 0.3);
-}
-
-.hack-button:disabled {
-  background: linear-gradient(180deg, #3a3a40 0%, #2a2a2e 100%);
-  border-color: #1a1a1f;
-  color: #666;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.hack-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  animation: buttonShine 3s ease-in-out infinite;
-}
-
-@keyframes buttonShine {
-  0%, 100% { left: -100%; }
-  50% { left: 100%; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   11. RARITY BADGES
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.badge-mythic {
-  background: linear-gradient(135deg, #ff6b00, #ff0000);
-  color: white;
-  text-shadow: 0 0 10px rgba(255, 107, 0, 0.8);
-  box-shadow: 0 0 15px rgba(255, 107, 0, 0.5);
-}
-
-.badge-legendary {
-  background: linear-gradient(135deg, #D4AF37, #f5d061);
-  color: #050505;
-  text-shadow: none;
-  box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
-}
-
-.badge-epic {
-  background: linear-gradient(135deg, #9333ea, #c084fc);
-  color: white;
-  text-shadow: 0 0 10px rgba(147, 51, 234, 0.8);
-  box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
-}
-
-.badge-rare {
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
-  color: white;
-  text-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-}
-
-.badge-common {
-  background: linear-gradient(135deg, #4b5563, #6b7280);
-  color: white;
-  box-shadow: 0 0 10px rgba(75, 85, 99, 0.3);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   12. ASSET CARD GLOW
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.asset-glow-active {
-  background: rgba(212, 175, 55, 0.08) !important;
-  border-color: var(--rolex-gold) !important;
-  box-shadow:
-    0 0 20px rgba(212, 175, 55, 0.3),
-    inset 0 0 20px rgba(212, 175, 55, 0.05);
-}
-
-.asset-glow-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--rolex-gold);
-  box-shadow: 0 0 15px var(--rolex-gold);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   13. COUNTDOWN TIMER
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.countdown-urgent {
-  color: var(--cyber-red);
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 20px rgba(255, 59, 48, 0.6);
-  animation: countdownPulse 1s ease-in-out infinite;
-}
-
-@keyframes countdownPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.02); }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   14. SAFE AREA PADDING
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
->>>>>>> origin/main
