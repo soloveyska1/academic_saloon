@@ -2192,3 +2192,339 @@ h4 {
   animation: floatParticle 2s ease-in-out infinite;
   animation-delay: var(--particle-delay, 0s);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ULTRA-PREMIUM EFFECTS v2.0
+   Holographic, Liquid Morphing, Aurora Drift
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Aurora Drift for depth background */
+@keyframes aurora-drift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Holographic rainbow shift */
+@keyframes holo-shift {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(15deg);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+}
+
+.holo-rainbow-layer {
+  animation: holo-shift 8s ease-in-out infinite;
+}
+
+/* Liquid morphing transition for cards */
+@keyframes liquid-morph {
+  0% {
+    border-radius: 24px;
+  }
+  25% {
+    border-radius: 26px 22px 26px 22px;
+  }
+  50% {
+    border-radius: 22px 26px 22px 26px;
+  }
+  75% {
+    border-radius: 26px 22px 26px 22px;
+  }
+  100% {
+    border-radius: 24px;
+  }
+}
+
+.liquid-morph {
+  animation: liquid-morph 8s ease-in-out infinite;
+}
+
+/* Liquid gold button background animation */
+@keyframes liquid-gold-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Premium magnetic glow pulse */
+@keyframes magnetic-glow {
+  0%, 100% {
+    box-shadow: 0 0 30px -10px rgba(212, 175, 55, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 50px -10px rgba(212, 175, 55, 0.5);
+  }
+}
+
+.magnetic-glow {
+  animation: magnetic-glow 3s ease-in-out infinite;
+}
+
+/* Holographic card shine sweep */
+@keyframes holo-shine-sweep {
+  0% {
+    transform: translateX(-100%) rotate(45deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateX(100%) rotate(45deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(100%) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.holo-shine::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  animation: holo-shine-sweep 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Depth layer parallax animation */
+@keyframes depth-float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  33% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  66% {
+    transform: translateY(5px) translateX(-8px);
+  }
+}
+
+.depth-float-slow {
+  animation: depth-float 20s ease-in-out infinite;
+}
+
+.depth-float-medium {
+  animation: depth-float 15s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+.depth-float-fast {
+  animation: depth-float 10s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+/* Premium card 3D perspective container */
+.card-3d-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* Holographic card base styles */
+.holographic-card {
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Rainbow border gradient animation */
+@keyframes rainbow-border-spin {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.rainbow-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #ff0080,
+    #ff8c00,
+    #ffd700,
+    #00ff80,
+    #00bfff,
+    #8000ff,
+    #ff0080
+  );
+  background-size: 200% 100%;
+  animation: rainbow-border-spin 4s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Luxurious text glow */
+.text-luxe-glow {
+  text-shadow:
+    0 0 10px rgba(212, 175, 55, 0.5),
+    0 0 20px rgba(212, 175, 55, 0.3),
+    0 0 40px rgba(212, 175, 55, 0.2);
+}
+
+/* Dynamic Island pill animation */
+@keyframes island-expand {
+  0% {
+    width: auto;
+    border-radius: 50px;
+    padding: 10px 16px;
+  }
+  100% {
+    width: 340px;
+    border-radius: 28px;
+    padding: 16px 20px;
+  }
+}
+
+@keyframes island-collapse {
+  0% {
+    width: 340px;
+    border-radius: 28px;
+  }
+  100% {
+    width: auto;
+    border-radius: 50px;
+  }
+}
+
+/* Magnetic button hover zone */
+.magnetic-button {
+  position: relative;
+  transition: filter 0.3s ease;
+}
+
+.magnetic-button::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  pointer-events: none;
+}
+
+.magnetic-button:hover {
+  filter: brightness(1.05);
+}
+
+/* Premium skeleton with holographic shimmer */
+.skeleton-holo {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 0%,
+    rgba(212, 175, 55, 0.08) 25%,
+    rgba(255, 248, 214, 0.12) 50%,
+    rgba(212, 175, 55, 0.08) 75%,
+    var(--bg-surface) 100%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+}
+
+/* Frosted glass premium */
+.glass-frosted-premium {
+  background: rgba(20, 20, 23, 0.7);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 30px -10px rgba(212, 175, 55, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Card inner highlight (top edge light) */
+.card-inner-highlight::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* Smooth spring transition */
+.spring-transition {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Premium tap feedback */
+.tap-scale {
+  transition: transform 0.15s ease;
+}
+
+.tap-scale:active {
+  transform: scale(0.97);
+}
+
+/* Gold ember particles */
+@keyframes ember-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1);
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(0.5);
+  }
+}
+
+.ember-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold-400);
+  box-shadow: 0 0 10px var(--gold-400);
+  animation: ember-float 3s ease-out infinite;
+  pointer-events: none;
+}
