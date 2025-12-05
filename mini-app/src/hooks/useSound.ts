@@ -9,13 +9,21 @@ export const useSound = () => {
     // Initialize AudioContext on first user interaction if needed, 
     // but usually it's better to init it and suspend/resume.
     // Ideally we init on a user gesture.
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (AudioContextClass) {
-      audioContextRef.current = new AudioContextClass();
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        audioContextRef.current = new AudioContextClass();
+      }
+    } catch (e) {
+      console.error('AudioContext init failed (likely mobile policy):', e);
     }
 
     return () => {
-      audioContextRef.current?.close();
+      try {
+        audioContextRef.current?.close();
+      } catch (e) {
+        console.error('AudioContext close failed:', e);
+      }
     };
   }, []);
 
