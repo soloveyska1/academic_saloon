@@ -47,7 +47,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
   const [showModal, setShowModal] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [userXP, setUserXP] = useState(1250); // Demo XP
-  const [currentStreak, setCurrentStreak] = useState(4); // Demo streak
+  const [currentStreak] = useState(4); // Demo streak
   const [activeSection, setActiveSection] = useState<'wheel' | 'rewards'>('wheel');
   const { playSound, initAudio } = useSound();
 
@@ -235,7 +235,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
         >
           <VIPStatusCard
             currentXP={userXP}
-            userName={user?.first_name || 'VIP Гость'}
+            userName={user?.fullname?.split(' ')[0] || user?.username || 'VIP Гость'}
           />
         </motion.section>
 
@@ -494,7 +494,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
             transition={{ delay: 1.2 }}
             className="club-user-info"
           >
-            <span>Участник: {user.first_name || 'VIP Гость'}</span>
+            <span>Участник: {user.fullname?.split(' ')[0] || user.username || 'VIP Гость'}</span>
           </motion.div>
         )}
       </main>

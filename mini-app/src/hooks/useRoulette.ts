@@ -59,7 +59,8 @@ export const useRoulette = (user: UserData | null) => {
             setResult({
                 prize: selectedPrize.label,
                 type: selectedPrize.type as any,
-                value: selectedPrize.value
+                value: selectedPrize.value,
+                message: `Вы выиграли ${selectedPrize.label}!`
             });
 
             if (selectedPrize.type === 'nothing') {

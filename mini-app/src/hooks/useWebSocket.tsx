@@ -10,6 +10,8 @@ export type WSMessageType =
   | 'refresh'
   | 'ping'
   | 'pong'
+  | 'chat_message'
+  | 'typing_indicator'
 
 export interface WSMessage {
   type: WSMessageType

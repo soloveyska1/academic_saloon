@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, BookOpen, PenTool, Sparkles,
-  Clock, Calendar, CreditCard, MessageCircle, XCircle, CheckCircle,
+  Clock, Calendar, CreditCard, XCircle, CheckCircle,
   Loader, Tag, Percent, Gift, Receipt, Copy, Check, Smartphone,
   Building2, Timer, Shield, Zap, Download, ExternalLink, Star, RefreshCw
 } from 'lucide-react'
@@ -1171,16 +1171,7 @@ export function OrderDetailPage() {
 
   const chatRef = useRef<OrderChatHandle>(null)
 
-  const handleOpenChat = useCallback(() => {
-    haptic('medium')
-    chatRef.current?.open()
-  }, [haptic])
 
-  const handleChat = () => {
-    haptic('medium')
-    // openBot(`order_chat_${order?.id}`) // Old bot link
-    handleOpenChat()
-  }
 
   const handlePaymentConfirmed = async () => {
     // Reload order to get updated status
@@ -1648,7 +1639,7 @@ export function OrderDetailPage() {
       {/* Universal Chat Button REMOVED - Now handled by OrderChat collapsed state */}
 
       {/* Order Chat - Always available at the bottom */}
-      <OrderChat ref={chatRef} orderId={order.id} />
+
 
       {/* Progress Steps (only for active non-cancelled orders, not during payment) */}
       {!isCancelled && !showPaymentUI && (
@@ -2374,9 +2365,9 @@ export function OrderDetailPage() {
       )}
 
       {/* In-App Chat — Premium Feature */}
-      {isActive && !showPaymentUI && (
+      {!showPaymentUI && (
         <div id="order-chat-section">
-          <OrderChat orderId={order.id} />
+          <OrderChat ref={chatRef} orderId={order.id} />
         </div>
       )}
 
@@ -2396,57 +2387,9 @@ export function OrderDetailPage() {
             zIndex: 1000,
           }}
         >
-          {/* Chat Button */}
-          {isActive && (
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleChat}
-              style={{
-                flex: 1,
-                padding: '18px 24px',
-                fontSize: 16,
-                fontWeight: 600,
-                color: 'var(--text-main)',
-                background: 'var(--bg-card-solid)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: 16,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-              }}
-            >
-              <MessageCircle size={20} color="#d4af37" />
-              Написать менеджеру
-            </motion.button>
-          )}
 
-          {/* Support Button (for completed/cancelled) */}
-          {!isActive && (
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleChat}
-              style={{
-                flex: order.status === 'completed' ? 'unset' : 1,
-                padding: order.status === 'completed' ? '18px' : '18px 24px',
-                fontSize: 16,
-                fontWeight: 600,
-                color: 'var(--text-main)',
-                background: 'var(--bg-card-solid)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: 16,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-              }}
-            >
-              <MessageCircle size={20} color="#d4af37" />
-              {order.status === 'completed' ? '' : 'Поддержка'}
-            </motion.button>
-          )}
+
+
 
           {/* Quick Reorder Button (for completed orders) - Premium Feature */}
           {order.status === 'completed' && (
