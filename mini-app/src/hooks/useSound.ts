@@ -1,6 +1,6 @@
 import { useCallback, useRef, useEffect } from 'react';
 
-type SoundType = 'click' | 'heavy_latch' | 'turbine' | 'glitch' | 'success';
+type SoundType = 'click' | 'heavy_latch' | 'turbine' | 'glitch' | 'success' | 'error';
 
 export const useSound = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -118,6 +118,17 @@ export const useSound = () => {
           o.start(now);
           o.stop(now + 1.5);
         });
+        break;
+
+      case 'error':
+        // Low buzz "Wrong" sound
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
         break;
     }
   }, []);

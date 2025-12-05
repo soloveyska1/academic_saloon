@@ -15,6 +15,8 @@ export interface UserData {
   referral_code: string
   orders: Order[]
   daily_luck_available: boolean
+  free_spins: number
+  roulette_onboarding_seen: boolean
 }
 
 export interface RankInfo {
