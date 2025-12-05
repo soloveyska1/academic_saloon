@@ -20,8 +20,8 @@ export const LiveWinnersTicker = () => {
   }, []);
 
   return (
-    <div className="w-full h-8 bg-[var(--roulette-scanline)] border-y border-[var(--roulette-gold)]/20 flex items-center justify-center overflow-hidden relative">
-      <div className="absolute left-2 text-[8px] text-[var(--roulette-danger)] font-mono animate-pulse">
+    <div className="w-full h-8 bg-[var(--r-bg-deep)] border-b border-[var(--r-glass-border)] flex items-center justify-center overflow-hidden relative z-50">
+      <div className="absolute left-4 text-[8px] text-[var(--r-danger)] font-sans font-bold animate-pulse tracking-widest">
         ● LIVE
       </div>
 
@@ -31,11 +31,11 @@ export const LiveWinnersTicker = () => {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -20, opacity: 0 }}
-          className="text-[10px] font-mono text-[var(--roulette-text)] tracking-widest"
+          className="text-[10px] font-sans text-[var(--r-text-primary)] tracking-widest"
         >
           <span className="opacity-70">{FAKE_WINNERS[currentIndex].name}</span>
-          <span className="mx-2 text-[var(--roulette-gold)]">::</span>
-          <span className="text-[var(--roulette-gold)] font-bold">{FAKE_WINNERS[currentIndex].prize}</span>
+          <span className="mx-2 text-[var(--r-gold-500)]">::</span>
+          <span className="text-[var(--r-gold-300)] font-bold">{FAKE_WINNERS[currentIndex].prize}</span>
         </motion.div>
       </AnimatePresence>
     </div>

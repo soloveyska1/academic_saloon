@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { LiveWinnersTicker } from '../components/LiveWinnersTicker';
 import { VaultLock } from '../components/VaultLock';
 import { PrizeTicker } from '../components/PrizeTicker';
+import { SpinButton } from '../components/SpinButton';
 import { useSound } from '../hooks/useSound';
 import { UserData } from '../types';
 import '../styles/Roulette.css';
@@ -17,20 +18,26 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const { playSound, initAudio } = useSound();
 
+  // Parallax Scroll Hooks
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 300], [0, 150]); // Move slower
+  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]); // Fade out
+  const heroBlur = useTransform(scrollY, [0, 300], ["0px", "10px"]); // Blur out
+
   // Refs for hold logic
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isHoldingRef = useRef(false);
 
-  // --- "INCEPTION ALGORITHM" ---
+  // --- "INCEPTION ALGORITHM" (Hold to Hack) ---
   const startHolding = () => {
     if (gameState !== 'idle') return;
-    initAudio(); // Ensure audio is ready
+    initAudio();
     isHoldingRef.current = true;
     playSound('turbine');
 
     intervalRef.current = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + 1.5; // ~2 seconds to fill
+        const next = prev + 1.5;
         if (next >= 100) {
           clearInterval(intervalRef.current!);
           triggerSpin();
@@ -71,174 +78,99 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
     }, 3000);
   };
 
-  // --- HAPTIC FEEDBACK ---
-  useEffect(() => {
-    if (progress > 0 && progress < 100) {
-      if (Math.random() > 0.7) {
-        // Try Telegram Haptics first (Best for mobile)
-        const tg = (window as any).Telegram?.WebApp;
-        if (tg?.HapticFeedback) {
-          try {
-            tg.HapticFeedback.impactOccurred('light');
-          } catch (e) {
-            // Ignore haptic errors
-          }
-        }
-        // Fallback to navigator.vibrate (Android Chrome)
-        else if (navigator.vibrate) {
-          navigator.vibrate(5);
-        }
-      }
-    }
-  }, [progress]);
-
   return (
-    <div className="relative w-full min-h-[100dvh] bg-[var(--roulette-bg)] overflow-hidden flex flex-col items-center font-sans text-[var(--roulette-text)]">
-      {/* AMBIENT EFFECTS */}
-      <div className="god-rays opacity-30"></div>
-      <div className="scanlines opacity-20"></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--roulette-bg)]/80 via-transparent to-[var(--roulette-bg)]/80 pointer-events-none z-10"></div>
+    <div className="relative w-full min-h-[100dvh] bg-void overflow-x-hidden text-[var(--r-text-primary)]">
 
-      {/* MATRIX RAIN EFFECT (CSS ONLY FOR PERFORMANCE) */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{
-        backgroundImage: 'linear-gradient(0deg, transparent 24%, var(--roulette-hacker) 25%, var(--roulette-hacker) 26%, transparent 27%, transparent 74%, var(--roulette-hacker) 75%, var(--roulette-hacker) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, var(--roulette-hacker) 25%, var(--roulette-hacker) 26%, transparent 27%, transparent 74%, var(--roulette-hacker) 75%, var(--roulette-hacker) 76%, transparent 77%, transparent)',
-        backgroundSize: '50px 50px'
-      }}></div>
+      {/* --- LIVING ATMOSPHERE --- */}
+      <div className="living-bg"></div>
+      <div className="atmosphere-pulse"></div>
+
+      {/* Tilt-Shift Blur (Top/Bottom) */}
+      <div className="fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-[var(--r-bg-base)] to-transparent z-10 pointer-events-none backdrop-blur-[1px]"></div>
+      <div className="fixed bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[var(--r-bg-base)] to-transparent z-10 pointer-events-none backdrop-blur-[1px]"></div>
 
       {/* TOP TICKER */}
-      <LiveWinnersTicker />
+      <div className="fixed top-0 w-full z-50">
+        <LiveWinnersTicker />
+      </div>
 
-      <main className="flex-1 w-full flex flex-col items-center justify-center relative z-20 pt-8 pb-48 px-4">
+      {/* --- SCROLLABLE CONTENT --- */}
+      <main className="relative w-full pt-20 px-4 pb-48 flex flex-col items-center">
 
-        {/* HEADER */}
+        {/* HERO SECTION (Parallax) */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-2"
+          style={{ y: heroY, opacity: heroOpacity, filter: `blur(${heroBlur})` }}
+          className="w-full flex flex-col items-center mb-12 z-0"
         >
-          <h1 className="text-2xl font-black tracking-[0.2em] metallic-text uppercase drop-shadow-lg">
-            Система Взлома
-          </h1>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <div className="w-2 h-2 rounded-full bg-[var(--roulette-hacker)] animate-pulse shadow-[0_0_10px_var(--roulette-hacker)]"></div>
-            <div className="text-[10px] text-[var(--roulette-text)]/50 font-mono tracking-widest">
-              ЗАЩИЩЕННЫЙ_КАНАЛ :: <span className="text-[var(--roulette-danger)] animate-pulse">REC</span>
+          {/* Header Plaque */}
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-serif font-black tracking-[0.1em] metallic-text drop-shadow-2xl">
+              THE ACADEMIC VAULT
+            </h1>
+            <div className="flex items-center justify-center gap-2 mt-2 opacity-70">
+              <div className="w-1 h-1 rounded-full bg-[var(--r-gold-500)]"></div>
+              <span className="text-[10px] font-sans tracking-[0.3em] uppercase text-[var(--r-gold-300)]">
+                Secure Access V.9
+              </span>
+              <div className="w-1 h-1 rounded-full bg-[var(--r-gold-500)]"></div>
             </div>
           </div>
-        </motion.div>
 
-        {/* 3D VAULT */}
-        <div className="mb-4 scale-90 md:scale-100 relative">
-          {/* Holographic Circle Behind */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full border border-[var(--roulette-gold)]/10 animate-[spin_10s_linear_infinite]"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full border border-dashed border-[var(--roulette-gold)]/20 animate-[spin_15s_linear_infinite_reverse]"></div>
-
+          {/* The Mechanism */}
           <VaultLock
             state={gameState === 'landed' ? 'success' : gameState === 'spinning' ? 'spinning' : gameState === 'failed' ? 'failed' : 'idle'}
-            userPhotoUrl={undefined}
+            userPhotoUrl={user?.username ? undefined : undefined} // Placeholder logic
           />
-        </div>
+        </motion.div>
 
-        {/* PRIZE SCROLLER */}
-        <div className="w-full max-w-md mb-4">
-          <PrizeTicker highlightId={highlightId} state={gameState} />
-        </div>
-
-        {/* INTERACTION AREA */}
-        <div className="mt-auto relative w-full max-w-xs flex flex-col items-center justify-center gap-3">
-
-          {/* Session Timer - Urgency */}
-          <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--roulette-danger)] tracking-widest bg-[var(--roulette-danger)]/10 px-3 py-1 rounded border border-[var(--roulette-danger)]/20">
-            <span>СЕССИЯ_ИСТЕКАЕТ:</span>
-            <span className="font-bold countdown-urgent">00:59</span>
+        {/* PRIZE LIST (Glass Boards) */}
+        <div className="w-full max-w-md z-10 relative">
+          <div className="text-center mb-6 opacity-50">
+            <span className="text-[10px] font-serif italic text-[var(--r-gold-300)]">
+              Scroll to view potential assets
+            </span>
+            <div className="w-px h-8 bg-gradient-to-b from-[var(--r-gold-300)] to-transparent mx-auto mt-2"></div>
           </div>
 
-          {gameState === 'idle' && (
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-[10px] font-mono text-[var(--roulette-gold)] tracking-[0.3em] uppercase animate-pulse drop-shadow-[0_0_5px_rgba(212,175,55,0.8)]"
-            >
-              ▼ УДЕРЖИВАЙТЕ КНОПКУ ▼
-            </motion.div>
-          )}
-
-          <div className="w-full h-16 relative z-30">
-            <AnimatePresence mode='wait'>
-              {gameState === 'idle' ? (
-                <motion.button
-                  key="hack-btn"
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="relative group w-full h-full overflow-hidden rounded-lg border-2 border-[var(--roulette-gold)] bg-black shadow-[0_0_20px_rgba(212,175,55,0.3)]"
-                  onMouseDown={startHolding}
-                  onMouseUp={stopHolding}
-                  onMouseLeave={stopHolding}
-                  onTouchStart={startHolding}
-                  onTouchEnd={stopHolding}
-                >
-                  {/* Animated Background Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--roulette-gold)]/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
-
-                  {/* Progress Fill */}
-                  <motion.div
-                    className="absolute bottom-0 left-0 h-full bg-[var(--roulette-gold)]"
-                    style={{ width: `${progress}%` }}
-                  />
-
-                  {/* Text */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 mix-blend-difference">
-                    <span className={`text-xl font-black tracking-[0.2em] ${progress > 0 ? 'glitch-text' : ''}`} data-text="ВЗЛОМАТЬ">
-                      {progress > 0 ? `ВЗЛОМ ${Math.floor(progress)}%` : 'ВЗЛОМАТЬ'}
-                    </span>
-                  </div>
-                </motion.button>
-              ) : (
-                <motion.div
-                  key="status"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center w-full h-full flex items-center justify-center"
-                >
-                  {gameState === 'spinning' && (
-                    <div className="text-[var(--roulette-gold)] tracking-widest text-xs font-mono animate-pulse bg-black/50 px-4 py-2 rounded border border-[var(--roulette-gold)]/30">
-                      &gt; ПОДБОР_ПАРОЛЯ...
-                    </div>
-                  )}
-                  {gameState === 'near-miss' && (
-                    <div className="text-[var(--roulette-danger)] tracking-widest text-xs font-bold font-mono bg-[var(--roulette-danger)]/10 px-4 py-2 rounded border border-[var(--roulette-danger)]/30 animate-shake">
-                      ⚠ ОБНАРУЖЕН ФАЕРВОЛ ⚠
-                    </div>
-                  )}
-                  {gameState === 'landed' && (
-                    <motion.button
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="w-full h-full bg-gradient-to-r from-[var(--roulette-gold)] via-[var(--roulette-gold-bright)] to-[var(--roulette-gold)] text-black font-black tracking-widest shadow-[0_0_40px_rgba(212,175,55,0.8)] rounded-lg uppercase border-2 border-white/50 relative overflow-hidden"
-                      onClick={() => console.log('Claimed')}
-                    >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        ЗАБРАТЬ АКТИВ <span className="text-xl">➔</span>
-                      </span>
-                      {/* Shine Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/80 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]"></div>
-                    </motion.button>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <PrizeTicker highlightId={highlightId} />
         </div>
+
       </main>
 
-      {/* FOOTER DECORATION */}
-      <div className="fixed bottom-4 text-[8px] text-[var(--roulette-text)]/20 font-mono tracking-widest z-10 pointer-events-none text-center w-full">
-        ID: {user?.id || 'ANONYMOUS'} :: ШИФРОВАНИЕ_V4.0
+      {/* --- FIXED FOOTER (Mahogany/Marble Anchor) --- */}
+      <div className="fixed bottom-0 left-0 w-full z-40">
+        {/* Glassmorphism Bar */}
+        <div className="absolute inset-0 bg-[var(--r-bg-deep)]/90 backdrop-blur-xl border-t border-[var(--r-glass-border)] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"></div>
+
+        <div className="relative w-full max-w-md mx-auto px-6 py-6 flex items-center justify-between gap-4">
+
+          {/* Status Text */}
+          <div className="hidden md:block text-[10px] font-sans text-[var(--r-text-secondary)] w-24">
+            ID: {user?.id || 'GUEST'}
+            <br />
+            <span className="text-[var(--r-hacker)]">CONNECTED</span>
+          </div>
+
+          {/* SPIN BUTTON (The Jewel) */}
+          <div className="flex-1 max-w-[200px] mx-auto">
+            <SpinButton
+              onMouseDown={startHolding}
+              onMouseUp={stopHolding}
+              disabled={gameState !== 'idle'}
+              progress={progress}
+            />
+          </div>
+
+          {/* Session Timer */}
+          <div className="hidden md:block text-[10px] font-mono text-[var(--r-danger)] w-24 text-right">
+            SESSION
+            <br />
+            <span className="font-bold">00:59</span>
+          </div>
+
+        </div>
       </div>
+
     </div>
   );
 };

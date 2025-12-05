@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 
 interface PrizeTickerProps {
   highlightId: string | null;
-  state: 'idle' | 'spinning' | 'near-miss' | 'landed' | 'failed';
 }
 
 const PRIZES = [
@@ -13,9 +12,38 @@ const PRIZES = [
   { id: 'off', label: 'СКИДКА 5%', rarity: 'common', chance: '25%' },
 ];
 
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 50 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 50,
+      damping: 20
+    }
+  }
+};
+
 export const PrizeTicker = ({ highlightId }: PrizeTickerProps) => {
   return (
-    <div className="w-full flex flex-col gap-2 p-4">
+    <motion.div
+      variants={container}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-50px" }}
+      className="w-full flex flex-col gap-4 p-4 pb-32" // Added padding-bottom for scroll space
+    >
       {PRIZES.map((prize) => {
         const isHighlighted = highlightId === prize.id;
         const isLegendary = prize.rarity === 'legendary';
@@ -23,37 +51,37 @@ export const PrizeTicker = ({ highlightId }: PrizeTickerProps) => {
         return (
           <motion.div
             key={prize.id}
-            initial={false}
-            animate={{
-              scale: isHighlighted ? 1.05 : 1,
-              opacity: isHighlighted ? 1 : 0.5,
-              x: isHighlighted ? 10 : 0,
-              backgroundColor: isHighlighted ? 'rgba(212, 175, 55, 0.1)' : 'transparent'
-            }}
+            variants={item}
             className={`
-              relative p-3 border-l-2 flex justify-between items-center
-              ${isLegendary ? 'border-[var(--roulette-danger)]' : 'border-[var(--roulette-gold)]'}
-              ${isHighlighted ? 'shadow-[0_0_15px_rgba(212,175,55,0.2)]' : ''}
+              glass-panel relative p-6 rounded-xl flex justify-between items-center
+              transition-all duration-500
+              ${isHighlighted ? 'border-[var(--r-gold-300)] shadow-[0_0_30px_rgba(212,175,55,0.3)] scale-105' : 'border-[var(--r-glass-border)]'}
             `}
           >
-            <div className="flex flex-col">
-              <span className={`text-xs font-bold tracking-widest ${isLegendary ? 'text-[var(--roulette-danger)]' : 'text-[var(--roulette-text)]'}`}>
+            {/* Left Accent Bar */}
+            <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${isLegendary ? 'bg-[var(--r-danger)]' : 'bg-[var(--r-gold-500)]'}`}></div>
+
+            <div className="flex flex-col pl-4">
+              <span className={`text-sm font-bold tracking-widest font-serif metallic-text`}>
                 {prize.label}
               </span>
-              <span className="text-[8px] font-mono opacity-50 uppercase">
+              <span className="text-[9px] font-sans text-[var(--r-text-secondary)] uppercase mt-1 tracking-wider">
                 КЛАСС: {prize.rarity} // ШАНС: {prize.chance}
               </span>
             </div>
 
-            {isHighlighted && (
-              <motion.div
-                layoutId="indicator"
-                className="w-2 h-2 bg-[var(--roulette-hacker)] rounded-full shadow-[0_0_5px_#0F0]"
-              />
-            )}
+            {/* Icon / Status */}
+            <div className="w-8 h-8 rounded-full border border-[var(--r-gold-700)] flex items-center justify-center bg-[var(--r-bg-deep)] shadow-inner">
+              {isHighlighted ? (
+                <motion.div layoutId="active-dot" className="w-2 h-2 bg-[var(--r-hacker)] rounded-full shadow-[0_0_5px_#0F0]" />
+              ) : (
+                <div className="w-1 h-1 bg-[var(--r-gold-700)] rounded-full opacity-50" />
+              )}
+            </div>
+
           </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 };

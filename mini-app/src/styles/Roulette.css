@@ -1,107 +1,172 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Montserrat:wght@300;400;600;800&display=swap');
 
 /* --- THEME VARIABLES --- */
 :root {
-  /* Default Dark Mode (Obsidian) */
-  --roulette-bg: #050505;
-  --roulette-text: #D4AF37;
-  --roulette-gold: #D4AF37;
-  --roulette-gold-dim: #AA872C;
-  --roulette-gold-bright: #FBF5B7;
-  --roulette-danger: #FF3B30;
-  --roulette-hacker: #0F0;
-  --roulette-scanline: rgba(0, 0, 0, 0.5);
-  --roulette-overlay: rgba(0, 0, 0, 0.8);
+  /* Default Dark Mode (Opulent Obsidian) */
+  --r-bg-base: #050505;
+  --r-bg-deep: #020202;
+  --r-gold-100: #FBF5B7;
+  --r-gold-300: #D4AF37;
+  --r-gold-500: #AA872C;
+  --r-gold-700: #5C4510;
+  --r-glass-bg: rgba(10, 10, 10, 0.6);
+  --r-glass-border: rgba(212, 175, 55, 0.3);
+  --r-glass-shine: rgba(255, 255, 255, 0.05);
+  --r-text-primary: #FBF5B7;
+  --r-text-secondary: rgba(212, 175, 55, 0.7);
+  --r-danger: #FF3B30;
+  --r-hacker: #0F0;
+  /* Kept for legacy "hack" feel, but refined */
+
+  /* Living Texture Gradients */
+  --r-living-gradient: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #050505 100%);
 }
 
 [data-theme="light"] {
   /* Light Mode (Royal Porcelain) */
-  --roulette-bg: #FAFAF9;
-  --roulette-text: #5c4510;
-  --roulette-gold: #8b6914;
-  --roulette-gold-dim: #b48e26;
-  --roulette-gold-bright: #5c4510;
-  --roulette-danger: #b91c1c;
-  --roulette-hacker: #15803d;
-  /* Darker green for light mode */
-  --roulette-scanline: rgba(180, 142, 38, 0.1);
-  --roulette-overlay: rgba(255, 255, 255, 0.8);
+  --r-bg-base: #F5F5F0;
+  /* Cream Cardstock */
+  --r-bg-deep: #EBEBE0;
+  --r-gold-100: #5C4510;
+  /* Dark Gold for text */
+  --r-gold-300: #8B6914;
+  --r-gold-500: #D4AF37;
+  --r-gold-700: #FBF5B7;
+  --r-glass-bg: rgba(255, 255, 255, 0.7);
+  --r-glass-border: rgba(139, 105, 20, 0.2);
+  --r-glass-shine: rgba(255, 255, 255, 0.4);
+  --r-text-primary: #3D3D3D;
+  /* Charcoal */
+  --r-text-secondary: rgba(61, 61, 61, 0.6);
+  --r-danger: #B91C1C;
+  --r-hacker: #15803D;
+
+  --r-living-gradient: radial-gradient(circle at 50% 50%, #FFFFFF 0%, #F5F5F0 100%);
 }
 
 body {
-  background-color: var(--roulette-bg);
-  color: var(--roulette-text);
+  background-color: var(--r-bg-base);
+  color: var(--r-text-primary);
   min-height: 100dvh;
   margin: 0;
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-family: 'Montserrat', sans-serif;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
-  /* STRICT NO SCROLLING */
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Cinematic Scroll Enabled */
+  scroll-behavior: smooth;
+}
+
+/* --- TYPOGRAPHY --- */
+h1,
+h2,
+h3,
+.font-serif {
+  font-family: 'Cinzel Decorative', serif;
+}
+
+.font-sans {
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* --- UTILITIES --- */
 .text-gold {
-  color: var(--roulette-gold);
+  color: var(--r-gold-300);
 }
 
 .bg-void {
-  background-color: var(--roulette-bg);
+  background: var(--r-living-gradient);
 }
 
-.border-gold {
-  border-color: var(--roulette-gold);
-}
-
+/* Cinematic Gold Text */
 .metallic-text {
-  background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+  background: linear-gradient(135deg, var(--r-gold-300) 0%, var(--r-gold-100) 50%, var(--r-gold-500) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0px 0px 10px rgba(212, 175, 55, 0.4);
+  text-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-[data-theme="light"] .metallic-text {
-  background: linear-gradient(135deg, #5c4510, #8b6914, #c9a02f, #5c4510);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: none;
+/* --- GLASSMORPHISM (The "Glass Boards") --- */
+.glass-panel {
+  background: var(--r-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--r-glass-border);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 0 var(--r-glass-shine);
 }
 
-/* --- EFFECTS --- */
-.scanlines {
+/* --- LIVING ATMOSPHERE --- */
+.living-bg {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(0deg,
-      var(--roulette-scanline),
-      var(--roulette-scanline) 1px,
-      transparent 1px,
-      transparent 2px);
+  inset: 0;
+  background: var(--r-living-gradient);
+  z-index: -2;
+}
+
+/* Caustics / Pulse Animation */
+.atmosphere-pulse {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.03), transparent 70%);
+  animation: breathe 8s ease-in-out infinite;
+  z-index: -1;
   pointer-events: none;
-  z-index: 50;
-  opacity: 0.3;
 }
 
-.god-rays {
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 60%);
-  animation: rotateRays 20s linear infinite;
-  pointer-events: none;
-  z-index: 0;
+@keyframes breathe {
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
 }
 
-[data-theme="light"] .god-rays {
-  background: radial-gradient(circle, rgba(180, 142, 38, 0.15) 0%, transparent 60%);
+/* --- ANIMATIONS --- */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
-@keyframes rotateRays {
+.floating {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* --- 3D VAULT (Swiss Watch Style) --- */
+.vault-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.vault-lock {
+  transform-style: preserve-3d;
+  transition: transform 0.1s ease-out;
+  /* Smooth gyro follow */
+  will-change: transform;
+}
+
+/* Idle Rotation */
+.idle-rotate {
+  animation: idle-spin 60s linear infinite;
+}
+
+@keyframes idle-spin {
   from {
     transform: rotate(0deg);
   }
@@ -111,146 +176,16 @@ body {
   }
 }
 
-.glitch-text {
-  position: relative;
-  display: inline-block;
+/* --- SCROLLBAR (Custom "Mercury" Indicator) --- */
+::-webkit-scrollbar {
+  width: 4px;
 }
 
-.glitch-text::before,
-.glitch-text::after {
-  content: attr(data-text);
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--roulette-bg);
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.glitch-text::before {
-  left: 2px;
-  text-shadow: -1px 0 #ff00c1;
-  clip: rect(44px, 450px, 56px, 0);
-  animation: glitch-anim 5s infinite linear alternate-reverse;
-}
-
-.glitch-text::after {
-  left: -2px;
-  text-shadow: -1px 0 #00fff9;
-  clip: rect(44px, 450px, 56px, 0);
-  animation: glitch-anim2 5s infinite linear alternate-reverse;
-}
-
-@keyframes glitch-anim {
-  0% {
-    clip: rect(38px, 9999px, 86px, 0);
-  }
-
-  20% {
-    clip: rect(6px, 9999px, 83px, 0);
-  }
-
-  40% {
-    clip: rect(12px, 9999px, 16px, 0);
-  }
-
-  60% {
-    clip: rect(67px, 9999px, 3px, 0);
-  }
-
-  80% {
-    clip: rect(98px, 9999px, 66px, 0);
-  }
-
-  100% {
-    clip: rect(31px, 9999px, 91px, 0);
-  }
-}
-
-@keyframes glitch-anim2 {
-  0% {
-    clip: rect(2px, 9999px, 25px, 0);
-  }
-
-  20% {
-    clip: rect(76px, 9999px, 13px, 0);
-  }
-
-  40% {
-    clip: rect(44px, 9999px, 59px, 0);
-  }
-
-  60% {
-    clip: rect(81px, 9999px, 3px, 0);
-  }
-
-  80% {
-    clip: rect(10px, 9999px, 93px, 0);
-  }
-
-  100% {
-    clip: rect(54px, 9999px, 19px, 0);
-  }
-}
-
-/* --- 3D VAULT --- */
-.vault-container {
-  perspective: 1000px;
-  transform-style: preserve-3d;
-}
-
-.vault-lock {
-  transform-style: preserve-3d;
-  transition: transform 0.1s ease-out;
-  will-change: transform;
-}
-
-.tumbler {
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-}
-
-/* Animations */
-@keyframes spin-fast {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(3600deg);
-  }
-}
-
-.spinning {
-  animation: spin-fast 5s cubic-bezier(0.5, 0, 0.5, 1) forwards;
-}
-
-.shaking {
-  animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-}
-
-@keyframes shake {
-
-  10%,
-  90% {
-    transform: translate3d(-1px, 0, 0);
-  }
-
-  20%,
-  80% {
-    transform: translate3d(2px, 0, 0);
-  }
-
-  30%,
-  50%,
-  70% {
-    transform: translate3d(-4px, 0, 0);
-  }
-
-  40%,
-  60% {
-    transform: translate3d(4px, 0, 0);
-  }
+::-webkit-scrollbar-thumb {
+  background: var(--r-gold-500);
+  border-radius: 2px;
 }

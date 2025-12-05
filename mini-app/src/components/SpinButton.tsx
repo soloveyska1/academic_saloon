@@ -2,55 +2,62 @@ import { motion } from 'framer-motion';
 import { useSound } from '../hooks/useSound';
 
 interface SpinButtonProps {
-    onClick: () => void;
+    onMouseDown: () => void;
+    onMouseUp: () => void;
     disabled: boolean;
-    freeSpins: number;
-    cost: number;
+    progress: number;
 }
 
-export const SpinButton = ({ onClick, disabled, freeSpins, cost }: SpinButtonProps) => {
+export const SpinButton = ({ onMouseDown, onMouseUp, disabled, progress }: SpinButtonProps) => {
     const { playSound } = useSound();
 
-    const handleClick = () => {
+    const handlePress = () => {
         if (disabled) return;
         playSound('click');
         if (window.Telegram?.WebApp?.HapticFeedback) {
             window.Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
         }
-        onClick();
+        onMouseDown();
     };
 
     return (
         <motion.button
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.95 }}
             disabled={disabled}
-            onClick={handleClick}
+            onMouseDown={handlePress}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            onTouchStart={handlePress}
+            onTouchEnd={onMouseUp}
             className={`
-        relative w-full max-w-xs h-16 rounded-xl overflow-hidden
+        relative w-full h-14 rounded-full overflow-hidden
         flex items-center justify-center gap-3
         transition-all duration-300
-        ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : 'shadow-[var(--glow-gold-strong)]'}
+        ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : 'shadow-[0_0_20px_rgba(212,175,55,0.4)]'}
       `}
+            style={{
+                background: 'linear-gradient(145deg, var(--r-gold-700), var(--r-gold-300))',
+                boxShadow: 'inset 2px 2px 5px rgba(255,255,255,0.2), inset -2px -2px 5px rgba(0,0,0,0.3)'
+            }}
         >
-            {/* Background - Liquid Gold */}
-            <div className="absolute inset-0 bg-[var(--liquid-gold)]"></div>
-
-            {/* Shine Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+            {/* Progress Overlay (Liquid Fill) */}
+            <motion.div
+                className="absolute inset-0 bg-[var(--r-gold-100)] mix-blend-overlay origin-left"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: progress / 100 }}
+                transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+            />
 
             {/* Content */}
-            <div className="relative z-10 flex flex-col items-center leading-none text-black font-black tracking-widest uppercase">
-                <span className="text-xl">
-                    {freeSpins > 0 ? 'FREE SPIN' : 'SPIN'}
-                </span>
-                <span className="text-[10px] opacity-80 font-mono">
-                    {freeSpins > 0 ? `${freeSpins} LEFT` : `${cost} BONUSES`}
+            <div className="relative z-10 flex flex-col items-center leading-none text-[var(--r-bg-base)] font-serif font-black tracking-[0.2em] uppercase">
+                <span className="text-lg drop-shadow-md">
+                    {progress > 0 ? `ВЗЛОМ ${Math.floor(progress)}%` : 'ВЗЛОМАТЬ'}
                 </span>
             </div>
 
-            {/* Border Overlay */}
-            <div className="absolute inset-0 rounded-xl border-2 border-white/30 pointer-events-none"></div>
+            {/* Shine Effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
         </motion.button>
     );
 };
