@@ -917,7 +917,7 @@ async def upload_chat_file_to_yadisk(
             if upload_resp.status_code not in (201, 202):
                 return None
 
-            public_url = await yandex_disk_service._publish_folder(client, dialog_folder)
+            public_url = await yandex_disk_service._publish_folder(client, file_path)
             logger.info(f"Chat file uploaded: {file_path}")
             return public_url
 
