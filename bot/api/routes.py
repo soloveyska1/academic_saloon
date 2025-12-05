@@ -1311,16 +1311,14 @@ async def send_order_message(
         # Get or create conversation topic
         from bot.handlers.order_chat import get_or_create_topic
 
-        conv = await get_or_create_topic(
+        conv, topic_id = await get_or_create_topic(
             bot=bot,
             session=session,
             user_id=tg_user.id,
             order_id=order_id,
-            user_full_name=user.fullname if user else tg_user.first_name,
-            username=user.username if user else tg_user.username,
         )
 
-        if conv and conv.topic_id:
+        if topic_id:
             # Send message to admin topic
             user_name = user.fullname if user else tg_user.first_name
             username_part = f" (@{user.username})" if user and user.username else ""
@@ -1434,16 +1432,14 @@ async def upload_chat_file(
         bot = get_bot()
         from bot.handlers.order_chat import get_or_create_topic
 
-        conv = await get_or_create_topic(
+        conv, topic_id = await get_or_create_topic(
             bot=bot,
             session=session,
             user_id=tg_user.id,
             order_id=order_id,
-            user_full_name=user.fullname if user else tg_user.first_name,
-            username=user.username if user else tg_user.username,
         )
 
-        if conv and conv.topic_id:
+        if topic_id:
             user_name = user.fullname if user else tg_user.first_name
             username_part = f" (@{user.username})" if user and user.username else ""
 
@@ -1542,16 +1538,14 @@ async def upload_voice_message(
         bot = get_bot()
         from bot.handlers.order_chat import get_or_create_topic
 
-        conv = await get_or_create_topic(
+        conv, topic_id = await get_or_create_topic(
             bot=bot,
             session=session,
             user_id=tg_user.id,
             order_id=order_id,
-            user_full_name=user.fullname if user else tg_user.first_name,
-            username=user.username if user else tg_user.username,
         )
 
-        if conv and conv.topic_id:
+        if topic_id:
             user_name = user.fullname if user else tg_user.first_name
             username_part = f" (@{user.username})" if user and user.username else ""
 
