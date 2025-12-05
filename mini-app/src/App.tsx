@@ -88,8 +88,8 @@ function AdminAwareWSIndicator() {
   return <WSStatusIndicator showDebug={admin.showDebugInfo} />
 }
 
-function AppContent() {
-  const { userData, error, refetch } = useUserData()
+function AppContent({ onDataReady }: { onDataReady?: () => void }) {
+  const { userData, error, refetch, loading } = useUserData()
   const [isReady, setIsReady] = useState(false)
 
   // Smart notification state - handles all notification types
@@ -196,6 +196,12 @@ function AppContent() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (!loading) {
+      onDataReady?.()
+    }
+  }, [loading, onDataReady])
 
   useEffect(() => {
     // Simulate initial load
@@ -356,32 +362,35 @@ function AppContent() {
 
 // Main App wrapper
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
-  const [appReady, setAppReady] = useState(false);
+  const [showIntro, setShowIntro] = useState(true)
+  const [appVisible, setAppVisible] = useState(false)
+  const [dataReady, setDataReady] = useState(false)
 
-  const handleSplashComplete = useCallback(() => {
-    setShowSplash(false);
+  const handleDataReady = useCallback(() => setDataReady(true), [])
+
+  const handleIntroComplete = useCallback(() => {
+    setShowIntro(false)
     // Small delay before showing app content for smooth transition
-    setTimeout(() => setAppReady(true), 100);
-  }, []);
+    setTimeout(() => setAppVisible(true), 100)
+  }, [])
 
   return (
     <>
       {/* Splash Screen - blocks everything until complete */}
-      {showSplash && (
-        <SplashScreen onComplete={handleSplashComplete} />
-      )}
+      <AnimatePresence>
+        {showIntro && (
+          <SplashScreen onComplete={handleIntroComplete} ready={dataReady} />
+        )}
+      </AnimatePresence>
 
       {/* Main App - only renders after splash is done */}
-      {appReady && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-        >
-          <AppContent />
-        </motion.div>
-      )}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: appVisible ? 1 : 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
+        <AppContent onDataReady={handleDataReady} />
+      </motion.div>
     </>
   );
 }
