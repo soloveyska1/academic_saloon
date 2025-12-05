@@ -3,11 +3,16 @@ FastAPI application for Mini App API
 """
 
 import os
+import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from .routes import router
+
+logger = logging.getLogger(__name__)
 from .websocket import router as ws_router
 
 
@@ -83,6 +88,22 @@ def create_app() -> FastAPI:
     @app.get("/api/health")
     async def health_check():
         return {"status": "ok", "service": "mini-app-api"}
+
+    # Validation error handler with logging
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        body = None
+        try:
+            body = await request.json()
+        except Exception:
+            pass
+        logger.error(f"[422 Validation Error] URL: {request.url}")
+        logger.error(f"[422 Validation Error] Body: {body}")
+        logger.error(f"[422 Validation Error] Errors: {exc.errors()}")
+        return JSONResponse(
+            status_code=422,
+            content={"detail": exc.errors(), "body": body}
+        )
 
     return app
 
