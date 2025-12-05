@@ -138,6 +138,11 @@ async def init_unified_hub(bot: Bot, session: AsyncSession) -> dict[str, int]:
                 # Топик удалён — создадим заново
                 logger.warning(f"🔧 Service topic '{topic_key}' was deleted, recreating...")
                 conv.topic_id = None
+            except Exception as e:
+                # Другие ошибки (сеть, таймаут и т.д.) - используем существующий топик
+                logger.warning(f"⚠️ Could not verify topic '{topic_key}' (error: {e}), using cached ID")
+                _service_topic_ids[topic_key] = conv.topic_id
+                continue
 
         # Создаём новый топик
         try:
