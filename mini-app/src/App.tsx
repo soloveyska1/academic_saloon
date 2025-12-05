@@ -366,8 +366,7 @@ function App() {
   }, [])
 
   return (
-    <>
-      {/* Splash Screen - blocks everything until complete */}
+    <ErrorBoundary>
       <AnimatePresence>
         {showIntro && (
           <SplashScreen onComplete={handleIntroComplete} />
@@ -384,7 +383,7 @@ function App() {
           <AppContent />
         </motion.div>
       )}
-    </>
+    </ErrorBoundary>
   );
 }
 
