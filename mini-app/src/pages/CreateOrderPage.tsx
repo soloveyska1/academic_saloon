@@ -1439,7 +1439,7 @@ export function CreateOrderPage() {
         transition={{ delay: 0.3, type: 'spring', stiffness: 300, damping: 30 }}
         style={{
           position: 'fixed',
-          bottom: 'calc(110px + env(safe-area-inset-bottom, 0px))',
+          bottom: 'calc(140px + env(safe-area-inset-bottom, 0px))',
           left: 24,
           right: 24,
           zIndex: 999,
