@@ -1671,40 +1671,7 @@ export function OrderDetailPage() {
         </motion.div>
       )}
 
-      {/* Universal Chat Button - Visible if payment UI is NOT shown (to ensure it's always accessible) */}
-      {!showPaymentUI && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: 20, padding: '0 20px' }}
-        >
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={handleOpenChat}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            <Headphones size={16} color="var(--text-secondary)" />
-            <span style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-            }}>
-              Написать менеджеру
-            </span>
-          </motion.button>
-        </motion.div>
-      )}
+      {/* Universal Chat Button REMOVED - Now handled by OrderChat collapsed state */}
 
       {/* Order Chat - Always available at the bottom */}
       <OrderChat ref={chatRef} orderId={order.id} />

@@ -13,6 +13,17 @@ import { createOrder } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 
+const DRAFT_KEY = 'order_draft_v1'
+
+interface DraftData {
+  workType: WorkType | null
+  topic: string
+  details: string
+  deadline: string
+  promoCode: string
+  step: number
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  UPDATED PRICE LIST (from bot)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1007,6 +1018,9 @@ export function CreateOrderPage() {
     try {
       const res = await createOrder(data)
       if (res.success) {
+        // Clear draft on success
+        localStorage.removeItem(DRAFT_KEY)
+
         hapticSuccess()
         setResult({ ok: true, msg: res.message, id: res.order_id })
       } else {

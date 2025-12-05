@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Home, ClipboardList, Target, User, LucideIcon } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePremiumGesture } from '../hooks/usePremiumGesture'
@@ -156,8 +157,8 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
           style={{
             filter: isActive
               ? (isDark
-                  ? 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.5))'
-                  : 'drop-shadow(0 0 8px rgba(180, 142, 38, 0.4))')
+                ? 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.5))'
+                : 'drop-shadow(0 0 8px rgba(180, 142, 38, 0.4))')
               : 'none',
             transition: 'filter 0.2s ease-out, color 0.2s ease-out',
           }}
@@ -178,8 +179,8 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
           transform: isActive ? 'translateY(0)' : 'translateY(2px)',
           textShadow: isActive
             ? (isDark
-                ? '0 0 12px rgba(212, 175, 55, 0.4)'
-                : '0 0 10px rgba(180, 142, 38, 0.3)')
+              ? '0 0 12px rgba(212, 175, 55, 0.4)'
+              : '0 0 10px rgba(180, 142, 38, 0.3)')
             : 'none',
           transition: 'all 0.2s ease-out',
         }}
@@ -248,84 +249,110 @@ export function Navigation() {
   const location = useLocation()
   const { isDark } = useTheme()
   const colors = useNavigationColors()
+  const [isVisible, setIsVisible] = useState(true)
+
+  // Keyboard detection logic
+  useEffect(() => {
+    const handleResize = () => {
+      if (!window.visualViewport) return
+      // If viewport height is significantly smaller than window height, keyboard is likely open
+      const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.8
+      setIsVisible(!isKeyboardOpen)
+    }
+
+    window.visualViewport?.addEventListener('resize', handleResize)
+    return () => window.visualViewport?.removeEventListener('resize', handleResize)
+  }, [])
 
   return (
-    <>
-      {/* ═══════════════════════════════════════════════════════════════════
-          FLOATING ISLAND NAVIGATION DOCK
-          position: fixed; bottom: 24px; left: 16px; right: 16px;
-          border-radius: 9999px (full capsule)
-          ═══════════════════════════════════════════════════════════════════ */}
-      <motion.nav
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{
-          type: 'spring',
-          stiffness: 300,
-          damping: 25,
-          delay: 0.3,
-        }}
-        style={{
-          position: 'fixed',
-          bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
-          left: 16,
-          right: 16,
-          zIndex: 1000,
-        }}
-      >
-        {/* The Floating Glass Capsule */}
-        <div
+    <AnimatePresence>
+      {isVisible && (
+        <motion.nav
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{
+            type: 'spring',
+            stiffness: 300,
+            damping: 25,
+            delay: 0.1,
+          }}
           style={{
-            position: 'relative',
-            display: 'flex',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            maxWidth: 380,
-            margin: '0 auto',
-            padding: '12px 8px',
-            // Full rounded capsule
-            borderRadius: 9999,
-            // Glass background
-            background: colors.dockBg,
-            // Heavy blur for glass effect
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            // Gradient border (simulating light on edges)
-            border: `1px solid ${colors.dockBorderOuter}`,
-            // Double border effect for glass thickness
-            boxShadow: `
-              inset 0 1px 0 ${colors.dockBorderInner},
-              ${colors.shadow}
-            `,
+            position: 'fixed',
+            bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            left: 16,
+            right: 16,
+            zIndex: 1000,
+            pointerEvents: 'none', // Allow clicks to pass through around the dock
           }}
         >
-          {/* Inner shine effect — top edge light */}
+          {/* The Floating Glass Capsule */}
           <div
             style={{
-              position: 'absolute',
-              top: 1,
-              left: 20,
-              right: 20,
-              height: 1,
-              background: isDark
-                ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
-                : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+              position: 'relative',
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              maxWidth: 320, // Reduced from 380
+              margin: '0 auto',
+              padding: '8px 6px', // Reduced padding
+              // Full rounded capsule
               borderRadius: 9999,
-              pointerEvents: 'none',
+              // Glass background
+              background: colors.dockBg,
+              // Heavy blur for glass effect
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              // Gradient border (simulating light on edges)
+              border: `1px solid ${colors.dockBorderOuter}`,
+              // Double border effect for glass thickness + Gold Glow
+              boxShadow: `
+                inset 0 1px 0 ${colors.dockBorderInner},
+                ${colors.shadow},
+                0 0 20px -5px rgba(212, 175, 55, 0.15)
+              `,
+              pointerEvents: 'auto', // Re-enable pointer events for the dock itself
             }}
-          />
-
-          {navItems.map((item) => (
-            <NavButton
-              key={item.path}
-              item={item}
-              isActive={location.pathname === item.path}
-              colors={colors}
-              isDark={isDark}
+          >
+            {/* Animated Gradient Border */}
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
+                zIndex: -1,
+                opacity: 0.5,
+                animation: 'shimmer 3s infinite linear',
+              }}
             />
-          ))}
-        </div>
-      </motion.nav>
-    </>
+
+            {/* Inner shine effect — top edge light */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 1,
+                left: 20,
+                right: 20,
+                height: 1,
+                background: isDark
+                  ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)'
+                  : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+                borderRadius: 9999,
+                pointerEvents: 'none',
+              }}
+            />
+
+            {navItems.map((item) => (
+              <NavButton
+                key={item.path}
+                item={item}
+                isActive={location.pathname === item.path}
+                colors={colors}
+                isDark={isDark}
+              />
+            ))}
+          </div>
+        </motion.nav>
+      )}
+    </AnimatePresence>
   )
 }

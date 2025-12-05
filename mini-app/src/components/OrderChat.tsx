@@ -554,6 +554,99 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
     return null
   }
 
+  if (!isExpanded) {
+    return (
+      <motion.div
+        ref={containerRef}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          marginTop: 16,
+          marginBottom: 80,
+          padding: '0 20px',
+        }}
+      >
+        <motion.button
+          onClick={() => {
+            haptic('medium')
+            setIsExpanded(true)
+            setTimeout(() => {
+              containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }, 100)
+          }}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            width: '100%',
+            padding: '16px 20px',
+            // Premium Gold Gradient Background
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.05) 100%)',
+            // Gold Border
+            border: '1px solid rgba(212,175,55,0.3)',
+            borderRadius: 16,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            // Gold Shadow
+            boxShadow: '0 4px 20px -5px rgba(212,175,55,0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, #d4af37 0%, #b8860b 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
+            }}>
+              <Headphones size={20} color="#050505" />
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: '#d4af37',
+                marginBottom: 2,
+                fontFamily: "var(--font-serif)",
+                letterSpacing: '0.01em',
+              }}>
+                Написать менеджеру
+              </div>
+              <div style={{
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                fontWeight: 500,
+              }}>
+                {unreadCount > 0 ? (
+                  <span style={{ color: '#22c55e' }}>{unreadCount} новых сообщений</span>
+                ) : (
+                  'Онлайн • Отвечаем быстро'
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <ChevronDown size={18} color="var(--text-muted)" style={{ transform: 'rotate(180deg)' }} />
+          </div>
+        </motion.button>
+      </motion.div>
+    )
+  }
+
   return (
     <motion.div
       ref={containerRef}
@@ -569,6 +662,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
         marginBottom: 80,
         position: 'relative',
         zIndex: 10,
+        boxShadow: '0 20px 50px -10px rgba(0,0,0,0.5)',
       }}
     >
       {/* Header */}
@@ -581,8 +675,9 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
           alignItems: 'center',
           gap: 12,
           padding: '16px 18px',
-          background: 'transparent',
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.03), transparent)',
           border: 'none',
+          borderBottom: '1px solid var(--border-default)',
           cursor: 'pointer',
         }}
       >
