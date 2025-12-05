@@ -2365,11 +2365,10 @@ export function OrderDetailPage() {
       )}
 
       {/* In-App Chat — Premium Feature */}
-      {!showPaymentUI && (
-        <div id="order-chat-section">
-          <OrderChat ref={chatRef} orderId={order.id} />
-        </div>
-      )}
+      {/* In-App Chat — Premium Feature */}
+      <div id="order-chat-section">
+        <OrderChat ref={chatRef} orderId={order.id} />
+      </div>
 
       {/* Fixed Action Bar (not during payment) */}
       {!showPaymentUI && (

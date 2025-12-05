@@ -10,6 +10,7 @@ from bot.handlers.start import router as start_router
 from bot.handlers.terms import router as terms_router
 from bot.handlers.menu import router as menu_router
 from bot.handlers.order_flow import order_router as orders_router
+from bot.handlers.admin_promo import router as admin_promo_router
 from bot.handlers.admin import router as admin_router
 from bot.handlers.log_actions import router as log_actions_router
 from bot.handlers.my_orders import router as my_orders_router
@@ -105,6 +106,7 @@ async def run_bot():
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
     dp.include_router(log_actions_router)  # Обработчики кнопок логов (первыми!)
     dp.include_router(channel_cards_router)  # Live-карточки в канале заказов
+    dp.include_router(admin_promo_router)   # Promo codes (admin)
     dp.include_router(admin_router)   # Админка (до start, чтобы /admin обрабатывался)
     dp.include_router(start_router)
     dp.include_router(terms_router)   # Оферта

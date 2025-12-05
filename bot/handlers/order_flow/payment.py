@@ -15,6 +15,7 @@ from bot.keyboards.orders import get_deadline_keyboard
 from bot.services.live_cards import update_card_status
 from core.config import settings
 from core.media_cache import send_cached_photo
+from bot.services.promo_service import PromoService
 
 from .router import order_router, logger, DEADLINE_IMAGE_PATH, CHECKING_PAYMENT_IMAGE_PATH
 
@@ -84,7 +85,7 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
 
 ⚠️ <i>После перевода нажми кнопку ниже.</i>""".replace(",", " ")
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+    buttons = [
         [InlineKeyboardButton(
             text="✅ Я оплатил",
             callback_data=f"confirm_payment:{order_id}"
@@ -97,7 +98,16 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
             text="🔙 Назад",
             callback_data=f"order_detail:{order_id}"
         )],
-    ])
+    ]
+
+    # Add Promocode button if no discount yet
+    if order.discount == 0:
+        buttons.append([InlineKeyboardButton(
+            text="🎟 Ввести промокод",
+            callback_data=f"enter_promo:{order_id}"
+        )])
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
     try:
         await callback.message.edit_text(text, reply_markup=keyboard)
@@ -567,3 +577,99 @@ async def waiting_for_receipt_invalid(message: Message, state: FSMContext, bot: 
         "📸 <b>Жду скриншот чека!</b>\n\n"
         "Пожалуйста, отправь фото или файл с чеком об оплате."
     )
+
+
+# ══════════════════════════════════════════════════════════════
+#               PROMO CODE HANDLERS
+# ══════════════════════════════════════════════════════════════
+
+@order_router.callback_query(F.data.startswith("enter_promo:"))
+async def enter_promo_callback(callback: CallbackQuery, state: FSMContext):
+    """User wants to enter promo code"""
+    try:
+        order_id = int(callback.data.split(":")[1])
+    except (IndexError, ValueError):
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    await state.update_data(promo_order_id=order_id)
+    await state.set_state(OrderState.waiting_for_promo)
+    
+    await callback.message.answer(
+        "🎟 **Введите промокод:**\n\n"
+        "Отправьте код в чат, и я пересчитаю стоимость заказа."
+    )
+    await callback.answer()
+
+@order_router.message(OrderState.waiting_for_promo)
+async def process_promo_code(message: Message, state: FSMContext, session: AsyncSession, bot: Bot):
+    """Process entered promo code"""
+    code = message.text.strip().upper() if message.text else ""
+    data = await state.get_data()
+    order_id = data.get("promo_order_id")
+    
+    if not order_id:
+        await message.answer("❌ Ошибка контекста. Попробуйте снова.")
+        await state.clear()
+        return
+
+    if not code:
+        await message.answer("⚠️ Введите текстовый код.")
+        return
+
+    # Try apply
+    success, result_msg = await PromoService.apply_promo_code(session, order_id, code, message.from_user.id)
+    
+    if not success:
+        await message.answer(
+            f"❌ **Не удалось применить промокод:**\n{result_msg}\n\n"
+            "Попробуйте другой или нажмите /cancel для отмены ввода."
+        )
+        return
+
+    # Success!
+    await state.clear()
+    
+    # Reload order to get new price
+    order_stmt = select(Order).where(Order.id == order_id)
+    result = await session.execute(order_stmt)
+    order = result.scalar_one_or_none()
+    
+    await message.answer(f"✅ **{result_msg}**")
+    
+    # Re-show payment info
+    price = int(order.price)
+    discounted_price = int(order.final_price)
+    advance = discounted_price // 2
+    
+    text = f'''💳 <b>ОПЛАТА ЗАКАЗА #{order.id}</b>
+
+💰 <b>Цена со скидкой: <s>{price:,}</s> → {discounted_price:,} ₽</b>
+<i>(Аванс 50%: {advance:,} ₽)</i>
+
+<b>Реквизиты (нажми, чтобы скопировать):</b>
+
+СБП: <code>{settings.PAYMENT_PHONE}</code>
+Карта: <code>{settings.PAYMENT_CARD}</code>
+Получатель: {settings.PAYMENT_NAME}
+
+⚠️ <i>После перевода нажми кнопку ниже.</i>'''.replace(",", " ")
+
+    buttons = [
+        [InlineKeyboardButton(
+            text="✅ Я оплатил",
+            callback_data=f"confirm_payment:{order_id}"
+        )],
+        [InlineKeyboardButton(
+            text="❓ Вопрос по оплате",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+        [InlineKeyboardButton(
+            text="🔙 Назад",
+            callback_data=f"order_detail:{order_id}"
+        )],
+    ]
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    
+    await message.answer(text, reply_markup=keyboard)

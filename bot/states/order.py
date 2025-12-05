@@ -31,6 +31,9 @@ class OrderState(StatesGroup):
     #   PAYMENT FLOW (P2P Manual Payment)
     # ═══════════════════════════════════════════════════════════════
 
+    # Ввод промокода перед оплатой
+    waiting_for_promo = State()
+
     # Ожидание скриншота чека после оплаты
     waiting_for_receipt = State()
 

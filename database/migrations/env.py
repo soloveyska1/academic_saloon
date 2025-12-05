@@ -11,6 +11,7 @@ from core.config import settings
 from database.db import Base
 from database.models.users import User
 from database.models.orders import Order, OrderMessage, Conversation
+from database.models.promocodes import PromoCode, PromoCodeUsage
 
 config = context.config
 
