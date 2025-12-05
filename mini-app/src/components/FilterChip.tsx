@@ -13,7 +13,7 @@ interface FilterChipProps {
 }
 
 export const FilterChip = React.memo(({ label, isActive, onClick }: FilterChipProps) => {
-  const { ref, handlers } = usePremiumGesture({
+  const { ref, handlers } = usePremiumGesture<HTMLButtonElement>({
     onTap: onClick,
     scale: 0.94,
     hapticType: 'light',

@@ -13,6 +13,7 @@ export interface UserData {
   bonus_expiry?: BonusExpiryInfo
   discount: number
   referral_code: string
+  referrals_count: number  // Number of referrals
   orders: Order[]
   daily_luck_available: boolean
   free_spins: number
@@ -188,6 +189,7 @@ export interface TelegramWebApp {
       first_name: string
       last_name?: string
       username?: string
+      photo_url?: string
     }
     start_param?: string
   }

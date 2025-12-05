@@ -31,6 +31,7 @@ interface StatusConfig {
 const STATUS_CONFIG: Record<string, StatusConfig> = {
   pending: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', icon: Clock, step: 1 },
   waiting_estimation: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)', icon: Clock, step: 1 },
+  confirmed: { label: 'Ожидает оплаты', color: '#d4af37', bgColor: 'rgba(212,175,55,0.15)', icon: CreditCard, step: 2 },
   waiting_payment: { label: 'Ожидает оплаты', color: '#d4af37', bgColor: 'rgba(212,175,55,0.15)', icon: CreditCard, step: 2 },
   verification_pending: { label: 'Проверка оплаты', color: '#06b6d4', bgColor: 'rgba(6,182,212,0.15)', icon: Loader, step: 2 },
   paid: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)', icon: Loader, step: 3 },
@@ -46,7 +47,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { haptic, hapticSuccess, hapticError } = useTelegram()
+  const { haptic, hapticSuccess } = useTelegram()
 
   const [order, setOrder] = useState<Order | null>(null)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
@@ -217,7 +218,7 @@ export function OrderDetailPage() {
   // Payment UI condition
   const showPaymentUI = order.final_price > 0 && (order.paid_amount || 0) < order.final_price && isActive && paymentInfo !== null
   const isCancelled = ['cancelled', 'rejected'].includes(order.status)
-  const isWaitingPayment = order.status === 'waiting_payment'
+  const isWaitingPayment = order.status === 'waiting_payment' || order.status === 'confirmed'
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', padding: 24, paddingBottom: showPaymentUI ? 40 : 180 }}>

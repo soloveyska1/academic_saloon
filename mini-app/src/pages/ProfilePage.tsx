@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import {
-  Shield, CreditCard, Crown, Award, Users, Plus, Send, Phone, MessageCircle, Clock, Zap, ChevronRight, Gift, Star, Check, Copy, QrCode
+  CreditCard, Crown, Users, MessageCircle, ChevronRight, Check, Copy, QrCode
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -44,9 +44,9 @@ function AnimatedCounter({ value, suffix = '', prefix = '' }: {
 }
 
 export function ProfilePage({ user }: Props) {
-  const { haptic, hapticSuccess, openSupport } = useTelegram()
+  const { haptic, hapticSuccess } = useTelegram()
   const navigate = useNavigate()
-  const { isDark } = useTheme()
+  useTheme() // Keep context subscription for theme changes
   const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
 

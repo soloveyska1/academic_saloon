@@ -14,14 +14,14 @@ interface GestureConfig {
   pressDelay?: number      // Delay before action to show release animation (default 50)
 }
 
-export const usePremiumGesture = ({
+export const usePremiumGesture = <T extends HTMLElement = HTMLDivElement>({
   onTap,
   scale = 0.88,
   hapticType = 'light',
   tolerance = 15,
   pressDelay = 40,
 }: GestureConfig) => {
-  const ref = useRef<HTMLButtonElement>(null)
+  const ref = useRef<T>(null)
   const startPos = useRef<{ x: number; y: number } | null>(null)
   const isPressed = useRef(false)
   const { haptic } = useTelegram()

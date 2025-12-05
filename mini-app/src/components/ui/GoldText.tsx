@@ -1,19 +1,19 @@
 import { motion, HTMLMotionProps } from 'framer-motion'
-import { ReactNode } from 'react'
+import { ReactNode, CSSProperties } from 'react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GOLD TEXT — LIQUID METALLIC GRADIENT TEXT EFFECT
 //  Premium "High-End Fintech" Typography Component
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface GoldTextProps extends Omit<HTMLMotionProps<'span'>, 'children'> {
+interface GoldTextProps {
   children: ReactNode
+  style?: CSSProperties
   variant?: 'liquid' | 'static' | 'shimmer'
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
   weight?: 300 | 400 | 500 | 600 | 700 | 800
   uppercase?: boolean
   tracking?: 'normal' | 'wide' | 'wider' | 'widest'
-  as?: 'span' | 'h1' | 'h2' | 'h3' | 'p' | 'div'
 }
 
 const sizeStyles: Record<string, { fontSize: number; lineHeight: number }> = {
@@ -52,9 +52,7 @@ export function GoldText({
   weight = 600,
   uppercase = false,
   tracking = 'normal',
-  as = 'span',
   style,
-  ...props
 }: GoldTextProps) {
   const { fontSize, lineHeight } = sizeStyles[size]
 
@@ -71,40 +69,19 @@ export function GoldText({
     textTransform: uppercase ? 'uppercase' : 'none',
     letterSpacing: trackingStyles[tracking],
     display: 'inline-block',
+    animation: variant === 'liquid' ? 'liquid-gold-shift 4s ease-in-out infinite' : undefined,
     ...style,
   }
-
-  const animationProps = variant === 'liquid' ? {
-    animate: {
-      backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-    },
-    transition: {
-      duration: 4,
-      ease: 'easeInOut',
-      repeat: Infinity,
-    },
-  } : {}
 
   // For shimmer variant, add an overlay effect
   if (variant === 'shimmer') {
     return (
       <span style={{ position: 'relative', display: 'inline-block' }}>
-        <motion.span
-          style={baseStyle}
-          {...props}
-        >
+        <span style={baseStyle}>
           {children}
-        </motion.span>
-        <motion.span
-          animate={{
-            x: ['-100%', '200%'],
-          }}
-          transition={{
-            duration: 2.5,
-            ease: 'easeInOut',
-            repeat: Infinity,
-            repeatDelay: 1,
-          }}
+        </span>
+        <span
+          className="gold-shimmer-overlay"
           style={{
             position: 'absolute',
             top: 0,
@@ -113,22 +90,18 @@ export function GoldText({
             height: '100%',
             background: 'linear-gradient(90deg, transparent 0%, rgba(251, 245, 183, 0.4) 50%, transparent 100%)',
             pointerEvents: 'none',
+            animation: 'shimmer-pass 2.5s ease-in-out infinite',
           }}
         />
       </span>
     )
   }
 
-  const Component = motion[as]
-
+  // Use regular span to avoid framer-motion type issues
   return (
-    <Component
-      style={baseStyle}
-      {...animationProps}
-      {...props}
-    >
+    <span style={baseStyle}>
       {children}
-    </Component>
+    </span>
   )
 }
 
