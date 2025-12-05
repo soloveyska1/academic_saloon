@@ -3,12 +3,11 @@ import { motion } from 'framer-motion'
 import { Home, ClipboardList, Target, User } from 'lucide-react'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
-import { useCallback } from 'react'
+import { useCallback, useState, useRef } from 'react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  FLOATING ISLAND NAVIGATION — Ultra-Premium Glass Dock
-//  Full rounded capsule, floating 24px from bottom
-//  Heavy blur, gold glow on active tab
+//  OPTIMIZED FOR MOBILE: Instant touch response, premium haptic feedback
 // ═══════════════════════════════════════════════════════════════════════════
 
 const navItems = [
@@ -24,15 +23,83 @@ export function Navigation() {
   const { haptic } = useTelegram()
   const { isDark } = useTheme()
 
-  // Simple navigation handler - just navigate and haptic
-  const handleNavigation = useCallback((path: string) => {
-    navigate(path)
+  // Track pressed state for instant visual feedback
+  const [pressedPath, setPressedPath] = useState<string | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  // Instant navigation handler - fires on pointer down for immediate response
+  const handlePointerDown = useCallback((path: string, e: React.PointerEvent) => {
+    // Prevent default to avoid delays
+    e.preventDefault()
+
+    // Immediate visual feedback
+    setPressedPath(path)
+
+    // Immediate haptic
     try {
       haptic('light')
     } catch {
-      // Ignore haptic errors
+      // Ignore
     }
-  }, [navigate, haptic])
+
+    // Navigate immediately for instant feel
+    if (location.pathname !== path) {
+      navigate(path)
+    }
+  }, [navigate, haptic, location.pathname])
+
+  // Touch start - track position for scroll detection
+  const handleTouchStart = useCallback((path: string, e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+    setPressedPath(path)
+
+    // Immediate haptic on touch
+    try {
+      haptic('light')
+    } catch {
+      // Ignore
+    }
+  }, [haptic])
+
+  // Touch end - navigate if not scrolled
+  const handleTouchEnd = useCallback((path: string, e: React.TouchEvent) => {
+    e.preventDefault()
+
+    const touch = e.changedTouches[0]
+    const start = touchStartRef.current
+
+    // Check if finger moved (scroll detection)
+    if (start) {
+      const dx = Math.abs(touch.clientX - start.x)
+      const dy = Math.abs(touch.clientY - start.y)
+
+      // If moved more than 10px, consider it a scroll, not a tap
+      if (dx > 10 || dy > 10) {
+        setPressedPath(null)
+        touchStartRef.current = null
+        return
+      }
+    }
+
+    // Navigate
+    if (location.pathname !== path) {
+      navigate(path)
+    }
+
+    setPressedPath(null)
+    touchStartRef.current = null
+  }, [navigate, location.pathname])
+
+  // Reset pressed state
+  const handlePointerUp = useCallback(() => {
+    setPressedPath(null)
+  }, [])
+
+  const handlePointerCancel = useCallback(() => {
+    setPressedPath(null)
+    touchStartRef.current = null
+  }, [])
 
   // Theme-aware colors — Obsidian Glass / Royal Porcelain
   const colors = {
@@ -133,12 +200,25 @@ export function Navigation() {
 
           {navItems.map((item) => {
             const isActive = location.pathname === item.path
+            const isPressed = pressedPath === item.path
             const Icon = item.icon
 
             return (
               <button
                 key={item.path}
-                onClick={() => handleNavigation(item.path)}
+                // Touch events for mobile - most reliable
+                onTouchStart={(e) => handleTouchStart(item.path, e)}
+                onTouchEnd={(e) => handleTouchEnd(item.path, e)}
+                onTouchCancel={handlePointerCancel}
+                // Pointer events as fallback for non-touch devices
+                onPointerDown={(e) => {
+                  // Only handle if not touch (avoid double handling)
+                  if (e.pointerType !== 'touch') {
+                    handlePointerDown(item.path, e)
+                  }
+                }}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerCancel}
                 style={{
                   position: 'relative',
                   display: 'flex',
@@ -150,8 +230,16 @@ export function Navigation() {
                   border: 'none',
                   cursor: 'pointer',
                   outline: 'none',
+                  // Critical for instant touch response
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none',
+                  // Instant press feedback - no transition delay
+                  transform: isPressed ? 'scale(0.92)' : 'scale(1)',
+                  opacity: isPressed ? 0.8 : 1,
+                  // Use will-change for GPU acceleration
+                  willChange: 'transform, opacity',
                 }}
               >
                 {/* Gold Spotlight Background for Active Tab */}
@@ -193,7 +281,7 @@ export function Navigation() {
                   />
                 )}
 
-                {/* Icon Container */}
+                {/* Icon Container - NO transitions for instant feedback */}
                 <div
                   style={{
                     position: 'relative',
@@ -202,7 +290,7 @@ export function Navigation() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     transform: isActive ? 'translateY(-2px) scale(1.15)' : 'translateY(0) scale(1)',
-                    transition: 'transform 0.2s ease-out',
+                    // Remove transition for instant response
                   }}
                 >
                   <Icon
@@ -215,12 +303,12 @@ export function Navigation() {
                             ? 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.5))'
                             : 'drop-shadow(0 0 8px rgba(180, 142, 38, 0.4))')
                         : 'none',
-                      transition: 'color 0.2s, filter 0.2s',
+                      // No transitions - instant color change
                     }}
                   />
                 </div>
 
-                {/* Label */}
+                {/* Label - NO transitions for instant feedback */}
                 <span
                   style={{
                     position: 'relative',
@@ -237,7 +325,7 @@ export function Navigation() {
                           ? '0 0 12px rgba(212, 175, 55, 0.4)'
                           : '0 0 10px rgba(180, 142, 38, 0.3)')
                       : 'none',
-                    transition: 'all 0.2s ease-out',
+                    // No transitions - instant visual change
                   }}
                 >
                   {item.label}
