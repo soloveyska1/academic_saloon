@@ -5,7 +5,7 @@ import {
   ArrowLeft, BookOpen, PenTool, Sparkles,
   Clock, Calendar, CreditCard, MessageCircle, XCircle, CheckCircle,
   Loader, Tag, Percent, Gift, Receipt, Copy, Check, Smartphone,
-  Building2, Timer, Shield, Zap, Download, ExternalLink, Star, RefreshCw, Headphones
+  Building2, Timer, Shield, Zap, Download, ExternalLink, Star, RefreshCw
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -58,10 +58,10 @@ interface GoldenInvoiceProps {
   onPaymentConfirmed: () => void
   paymentScheme: 'full' | 'half'
   setPaymentScheme: (scheme: 'full' | 'half') => void
-  onChatStart: () => void
+
 }
 
-function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, setPaymentScheme, onChatStart }: GoldenInvoiceProps) {
+function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, setPaymentScheme }: GoldenInvoiceProps) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
 
   // ... (rest of logic)
@@ -731,33 +731,7 @@ function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentScheme, 
           </motion.div>
         )}
 
-        {/* Chat with Manager Button */}
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={onChatStart}
-          style={{
-            width: '100%',
-            marginBottom: 16,
-            padding: '12px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 12,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-          }}
-        >
-          <Headphones size={16} color="var(--text-secondary)" />
-          <span style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'var(--text-secondary)',
-          }}>
-            Нужна помощь? Написать менеджеру
-          </span>
-        </motion.button>
+
 
         {/* Confirm Button */}
         <motion.button
@@ -1666,7 +1640,7 @@ export function OrderDetailPage() {
             onPaymentConfirmed={handlePaymentConfirmed}
             paymentScheme={paymentScheme}
             setPaymentScheme={setPaymentScheme}
-            onChatStart={handleOpenChat}
+
           />
         </motion.div>
       )}
