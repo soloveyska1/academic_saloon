@@ -13,7 +13,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'framer-motion': ['framer-motion'],
-          'ui-libs': ['lucide-react', 'clsx', 'tailwind-merge'],
+          // 'ui-libs': ['lucide-react', 'clsx', 'tailwind-merge'], // Removed to let Vite handle small libs automatically
         },
       },
     },
