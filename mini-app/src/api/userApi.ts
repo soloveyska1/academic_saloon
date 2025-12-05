@@ -586,6 +586,7 @@ function getMockUserData(): UserData {
     total_spent: 45000,
     discount: 10,
     referral_code: 'COWBOY123',
+    referrals_count: 5,
     daily_luck_available: true,
     free_spins: 1,
     roulette_onboarding_seen: true,

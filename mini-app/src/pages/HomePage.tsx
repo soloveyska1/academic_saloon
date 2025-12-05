@@ -197,7 +197,7 @@ const FloatingParticles = () => {
 
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
-  const { haptic, hapticSuccess, webApp } = useTelegram()
+  const { haptic, hapticSuccess, tg } = useTelegram()
   const admin = useAdmin()
   const [copied, setCopied] = useState(false)
   const [promoCode, setPromoCode] = useState('')
@@ -301,7 +301,7 @@ export function HomePage({ user }: Props) {
   ]
 
   // User's Telegram photo
-  const userPhoto = webApp?.initDataUnsafe?.user?.photo_url
+  const userPhoto = tg?.initDataUnsafe?.user?.photo_url
 
   return (
     <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: 'var(--bg-main)', position: 'relative' }}>

@@ -39,7 +39,7 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
   const location = useLocation()
   const Icon = item.icon
 
-  const { ref, handlers } = usePremiumGesture({
+  const { ref, handlers } = usePremiumGesture<HTMLButtonElement>({
     onTap: () => {
       if (location.pathname !== item.path) {
         navigate(item.path)

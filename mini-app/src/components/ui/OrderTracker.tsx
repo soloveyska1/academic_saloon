@@ -1,15 +1,12 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
-  Check, Clock, FileText, Search, CheckCircle, Package,
-  Loader2, AlertCircle, Sparkles, Truck
+  Check, FileText, Search, CheckCircle,
+  Loader2, AlertCircle
 } from 'lucide-react'
 
 interface Props {
   status: string
-  createdAt?: string
   variant?: 'vertical' | 'horizontal' | 'compact'
-  showTime?: boolean
 }
 
 // Step configuration with rich data
@@ -84,7 +81,7 @@ const STATUS_TO_STEPS: Record<string, string[]> = {
 const ALL_STEPS = ['pending', 'reviewing', 'confirmed', 'in_progress', 'on_review', 'completed']
 
 // Horizontal Timeline (Domino's/Uber style)
-function HorizontalTracker({ status, showTime }: { status: string; showTime?: boolean }) {
+function HorizontalTracker({ status }: { status: string }) {
   const activeSteps = STATUS_TO_STEPS[status] || ['pending']
   const currentStep = activeSteps[activeSteps.length - 1]
   const currentConfig = STEP_CONFIG[currentStep as keyof typeof STEP_CONFIG]
@@ -450,7 +447,7 @@ function CompactTracker({ status }: { status: string }) {
 }
 
 // Main export with variant support
-export function OrderTracker({ status, createdAt, variant = 'horizontal', showTime }: Props) {
+export function OrderTracker({ status, variant = 'horizontal' }: Props) {
   // Handle cancelled/rejected status
   if (status === 'cancelled' || status === 'rejected') {
     const config = STEP_CONFIG[status]

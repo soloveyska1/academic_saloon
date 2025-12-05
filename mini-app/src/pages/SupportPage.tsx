@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Headphones } from 'lucide-react'
 import { FloatingParticles } from '../components/ui/PremiumDesign'
 import { SupportChat } from '../components/support/SupportChat'
