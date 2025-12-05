@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Crown, Sparkles, Diamond, Star, Trophy,
-  Gem, Zap, Gift, Lock, ChevronRight,
+  Crown, GraduationCap, BookOpen, FileText, Lightbulb,
+  Gift, Zap, Lock, ChevronRight, Clock, X,
 } from 'lucide-react'
 import { UserData, RouletteResult } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -13,219 +13,107 @@ import { Confetti, useConfetti } from '../components/ui/Confetti'
 import { VaultLock } from '../components/VaultLock'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePremiumGesture } from '../hooks/usePremiumGesture'
+import { LiveWinnersTicker } from '../components/LiveWinnersTicker'
+import { PrizeTicker, PrizeTier } from '../components/PrizeTicker'
 import React from 'react'
+import '../styles/Roulette.css'
 
 interface Props {
   user: UserData | null
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ELITE CLUB PRIZE TIERS — Psychology-Driven Design
-//  Near-miss effect: Users see they "almost" won jackpot
+//  LEGACY EDITION — Sales Inception Prize System
+//  Services as prizes, not money. Psychology-driven near-miss mechanics.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PRIZE_TIERS = [
+const PRIZE_TIERS: PrizeTier[] = [
   {
-    id: 'jackpot',
-    name: 'ДЖЕКПОТ',
-    amount: 50000,
-    icon: Crown,
-    color: '#ffd700',
-    bgGradient: 'linear-gradient(135deg, #ffd700, #ff8c00)',
-    chance: '0.00001%',
-    glow: 'rgba(255, 215, 0, 0.6)',
-  },
-  {
-    id: 'mega',
-    name: 'МЕГА-ПРИЗ',
-    amount: 10000,
-    icon: Trophy,
-    color: '#e5e4e2',
-    bgGradient: 'linear-gradient(135deg, #e5e4e2, #8a8a8a)',
-    chance: '0.0001%',
-    glow: 'rgba(229, 228, 226, 0.4)',
-  },
-  {
-    id: 'super',
-    name: 'СУПЕР-ПРИЗ',
-    amount: 5000,
-    icon: Diamond,
-    color: '#b9f2ff',
-    bgGradient: 'linear-gradient(135deg, #b9f2ff, #00bfff)',
+    id: 'diploma',
+    name: 'DIPLOMA LIBERTY',
+    desc: 'Диплом "Под Ключ" | 100% Free',
+    val: '∞',
     chance: '0.001%',
-    glow: 'rgba(185, 242, 255, 0.4)',
+    icon: Crown,
   },
   {
-    id: 'big',
-    name: 'КРУПНЫЙ',
-    amount: 1000,
-    icon: Gem,
-    color: '#da70d6',
-    bgGradient: 'linear-gradient(135deg, #da70d6, #9932cc)',
-    chance: '0.01%',
-    glow: 'rgba(218, 112, 214, 0.3)',
+    id: 'coursework',
+    name: 'ACADEMIC RELIEF',
+    desc: 'Курсовая работа | Полный пакет',
+    val: '5 000₽',
+    chance: '0.05%',
+    icon: GraduationCap,
   },
   {
-    id: 'medium',
-    name: 'ХОРОШИЙ',
-    amount: 500,
-    icon: Star,
-    color: '#d4af37',
-    bgGradient: 'linear-gradient(135deg, #d4af37, #8b6914)',
-    chance: '0.1%',
-    glow: 'rgba(212, 175, 55, 0.3)',
+    id: 'essay',
+    name: 'THESIS START',
+    desc: 'Эссе или реферат | До 15 страниц',
+    val: '2 500₽',
+    chance: '0.5%',
+    icon: BookOpen,
   },
   {
-    id: 'small',
-    name: 'БОНУС',
-    amount: 100,
+    id: 'strategy',
+    name: 'STRATEGY PACK',
+    desc: 'Консультация + план работы',
+    val: '1 500₽',
+    chance: '2%',
+    icon: Lightbulb,
+  },
+  {
+    id: 'discount500',
+    name: 'SMART START -500₽',
+    desc: 'Скидка на любой заказ',
+    val: '500₽',
+    chance: '15%',
+    icon: FileText,
+  },
+  {
+    id: 'discount200',
+    name: 'LITE BONUS -200₽',
+    desc: 'Скидка на первый заказ',
+    val: '200₽',
+    chance: '30%',
     icon: Gift,
-    color: '#22c55e',
-    bgGradient: 'linear-gradient(135deg, #22c55e, #16a34a)',
-    chance: '1%',
-    glow: 'rgba(34, 197, 94, 0.3)',
   },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PRIZE TICKER — Scanning Animation with Near-Miss Psychology
-//  Shows "almost winning" jackpot before landing on actual prize
+//  GOD RAYS EFFECT — Premium Atmosphere
 // ═══════════════════════════════════════════════════════════════════════════
 
-function PrizeTicker({
-  isActive,
-  highlightedIndex,
-  isDark,
-}: {
-  isActive: boolean
-  highlightedIndex: number | null
-  isDark: boolean
-}) {
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8,
-      marginBottom: 24,
-    }}>
-      {PRIZE_TIERS.map((tier, index) => {
-        const Icon = tier.icon
-        const isHighlighted = highlightedIndex === index
-        const isPassed = highlightedIndex !== null && index < highlightedIndex
+const GodRays = React.memo(() => (
+  <div className="god-rays" />
+))
 
-        return (
-          <motion.div
-            key={tier.id}
-            animate={{
-              scale: isHighlighted ? 1.03 : 1,
-              opacity: isPassed ? 0.4 : 1,
-            }}
-            transition={{ duration: 0.1 }}
-            style={{
-              position: 'relative',
-              padding: '14px 16px',
-              borderRadius: 14,
-              background: isHighlighted
-                ? tier.bgGradient
-                : isDark
-                  ? 'var(--bg-card)'
-                  : 'rgba(255, 255, 255, 0.9)',
-              border: isHighlighted
-                ? `2px solid ${tier.color}`
-                : `1px solid ${isDark ? 'var(--border-default)' : 'rgba(120, 85, 40, 0.1)'}`,
-              boxShadow: isHighlighted
-                ? `0 0 30px ${tier.glow}, 0 8px 24px rgba(0,0,0,0.3)`
-                : isDark
-                  ? 'var(--card-shadow)'
-                  : '0 2px 8px rgba(120, 85, 40, 0.08)',
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            {/* Scanning line effect */}
-            {isHighlighted && (
-              <motion.div
-                initial={{ x: '-100%' }}
-                animate={{ x: '200%' }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '50%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                  transform: 'skewX(-20deg)',
-                }}
-              />
-            )}
-
-            {/* Icon */}
-            <div style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              background: isHighlighted
-                ? 'rgba(0,0,0,0.2)'
-                : isDark
-                  ? `${tier.color}15`
-                  : `${tier.color}12`,
-              border: `1px solid ${tier.color}30`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <Icon
-                size={22}
-                color={isHighlighted ? '#fff' : tier.color}
-              />
-            </div>
-
-            {/* Info */}
-            <div style={{ flex: 1 }}>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: isHighlighted ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)',
-                letterSpacing: '0.1em',
-                marginBottom: 2,
-              }}>
-                {tier.name}
-              </div>
-              <div style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: 20,
-                fontWeight: 800,
-                color: isHighlighted ? '#fff' : tier.color,
-              }}>
-                {tier.amount.toLocaleString('ru-RU')}₽
-              </div>
-            </div>
-
-            {/* Chance badge */}
-            <div style={{
-              padding: '4px 10px',
-              borderRadius: 8,
-              background: isDark ? 'var(--bg-glass)' : 'rgba(120, 85, 40, 0.06)',
-              fontSize: 9,
-              fontFamily: 'var(--font-mono)',
-              color: isHighlighted ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
-              fontWeight: 600,
-            }}>
-              {tier.chance}
-            </div>
-          </motion.div>
-        )
-      })}
-    </div>
-  )
-}
+GodRays.displayName = 'GodRays'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM SPIN BUTTON — Zero-Latency Touch
+//  GLITCH TEXT HEADER — Cyberpunk Distortion Effect
+// ═══════════════════════════════════════════════════════════════════════════
+
+const GlitchHeader = React.memo(({ active }: { active: boolean }) => (
+  <h1
+    className={`glitch-text ${active ? 'active' : ''}`}
+    data-text="ЭЛИТНЫЙ КЛУБ"
+    style={{
+      fontFamily: 'var(--font-serif)',
+      fontSize: 28,
+      fontWeight: 800,
+      background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      margin: 0,
+    }}
+  >
+    ЭЛИТНЫЙ КЛУБ
+  </h1>
+))
+
+GlitchHeader.displayName = 'GlitchHeader'
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PREMIUM SPIN BUTTON — Zero-Latency Touch with Scanner Line
 // ═══════════════════════════════════════════════════════════════════════════
 
 const SpinButton = React.memo(({
@@ -308,7 +196,11 @@ const SpinButton = React.memo(({
         justifyContent: 'center',
         gap: 14,
         opacity: disabled ? 0.4 : 1,
+        overflow: 'hidden',
       }}>
+        {/* Scanner line on button */}
+        {spinning && <div className="scanner-line" />}
+
         {spinning ? (
           <>
             <motion.div
@@ -324,7 +216,7 @@ const SpinButton = React.memo(({
               color: btn.textColor,
               letterSpacing: '0.05em',
             }}>
-              ОТКРЫВАЮ...
+              ВЗЛОМ...
             </span>
           </>
         ) : (
@@ -337,7 +229,7 @@ const SpinButton = React.memo(({
               color: btn.textColor,
               letterSpacing: '0.05em',
             }}>
-              ИСПЫТАТЬ УДАЧУ
+              ВЗЛОМАТЬ СИСТЕМУ
             </span>
           </>
         )}
@@ -362,36 +254,61 @@ const SpinButton = React.memo(({
 SpinButton.displayName = 'SpinButton'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  RESULT MODAL — Premium Victory/Loss Animation
+//  SALES MODAL — Urgency Timer & Psychological Pressure
 // ═══════════════════════════════════════════════════════════════════════════
 
-function ResultModal({
-  result,
-  onClose,
-  isJackpot,
-}: {
+interface SalesModalProps {
   result: RouletteResult
+  prize: PrizeTier | null
   onClose: () => void
-  isJackpot: boolean
-}) {
-  const isWin = result.type !== 'nothing'
-  const tier = PRIZE_TIERS.find(t => t.amount === result.value)
-  const { ref, handlers } = usePremiumGesture({
+  onClaim: () => void
+}
+
+const SalesModal = React.memo(({ result, prize, onClose, onClaim }: SalesModalProps) => {
+  const [timeLeft, setTimeLeft] = useState(180) // 3 minutes
+  const { isDark } = useTheme()
+  const { ref: claimRef, handlers: claimHandlers } = usePremiumGesture({
+    onTap: onClaim,
+    scale: 0.97,
+    hapticType: 'heavy',
+  })
+  const { ref: closeRef, handlers: closeHandlers } = usePremiumGesture({
     onTap: onClose,
     scale: 0.97,
-    hapticType: 'medium',
+    hapticType: 'light',
   })
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  const isWin = result.type !== 'nothing'
+  const Icon = prize?.icon || Gift
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'var(--overlay-bg)',
+        background: 'rgba(0, 0, 0, 0.9)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         display: 'flex',
@@ -402,181 +319,217 @@ function ResultModal({
       }}
     >
       <motion.div
-        initial={{ scale: 0.7, y: 60, rotateX: 30 }}
-        animate={{ scale: 1, y: 0, rotateX: 0 }}
+        initial={{ scale: 0.8, y: 60 }}
+        animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.8, y: 60, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-        onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: 340,
-          borderRadius: 32,
-          background: isWin ? 'var(--modal-bg)' : 'var(--bg-card-solid)',
-          border: isWin
-            ? '2px solid var(--border-gold-strong)'
-            : '1px solid var(--border-default)',
-          boxShadow: 'var(--modal-shadow)',
+          maxWidth: 360,
+          borderRadius: 24,
+          background: isDark ? '#0f0f12' : '#faf9f6',
+          border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.3)' : 'rgba(120, 85, 40, 0.2)'}`,
+          boxShadow: '0 25px 80px rgba(0, 0, 0, 0.6)',
           overflow: 'hidden',
-          position: 'relative',
         }}
       >
-        {/* Top glow bar */}
+        {/* Close button */}
+        <button
+          ref={closeRef}
+          {...closeHandlers}
+          style={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 10,
+          }}
+        >
+          <X size={16} color={isDark ? '#666' : '#999'} />
+        </button>
+
+        {/* Top Gold Bar */}
         <div style={{
           height: 4,
-          background: isWin
-            ? 'linear-gradient(90deg, #8b6914, #d4af37, #f5d061, #d4af37, #8b6914)'
-            : 'linear-gradient(90deg, #3a3a40, #5a5a65, #3a3a40)',
+          background: 'linear-gradient(90deg, #8b6914, #d4af37, #f5d061, #d4af37, #8b6914)',
         }} />
 
+        {/* Urgency Timer */}
+        <div style={{
+          padding: '16px 20px',
+          background: isDark ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 0, 0, 0.05)',
+          borderBottom: `1px solid ${isDark ? 'rgba(255, 0, 0, 0.2)' : 'rgba(255, 0, 0, 0.1)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+        }}>
+          <Clock size={16} color="#ff4444" />
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 14,
+            fontWeight: 700,
+            color: '#ff4444',
+            letterSpacing: '0.1em',
+          }}>
+            РЕЗЕРВ ИСТЕКАЕТ: {formatTime(timeLeft)}
+          </span>
+        </div>
+
         {/* Content */}
-        <div style={{ padding: '36px 28px 32px' }}>
-          {/* Icon */}
+        <div style={{ padding: '32px 24px' }}>
+          {/* Prize Icon */}
           <motion.div
-            animate={isWin ? {
-              rotate: [0, -8, 8, -4, 4, 0],
-              scale: [1, 1.15, 1],
-            } : {
-              y: [0, -4, 0],
+            animate={{
+              rotate: isWin ? [0, -5, 5, -3, 3, 0] : 0,
+              scale: isWin ? [1, 1.1, 1] : 1,
             }}
-            transition={{
-              duration: isWin ? 0.8 : 2,
-              repeat: isWin ? 0 : Infinity,
-              repeatType: 'reverse',
-            }}
+            transition={{ duration: 0.8, delay: 0.2 }}
             style={{
-              width: 100,
-              height: 100,
-              margin: '0 auto 28px',
-              borderRadius: 28,
+              width: 90,
+              height: 90,
+              margin: '0 auto 24px',
+              borderRadius: 22,
               background: isWin
-                ? tier?.bgGradient || 'linear-gradient(135deg, #d4af37, #8b6914)'
-                : 'linear-gradient(145deg, #35353a, #28282c)',
+                ? 'linear-gradient(135deg, #d4af37, #8b6914)'
+                : isDark ? '#1a1a1e' : '#e5e2dc',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: isWin
-                ? `0 0 60px ${tier?.glow || 'rgba(212, 175, 55, 0.5)'}, 0 20px 40px rgba(0,0,0,0.4)`
-                : '0 16px 32px rgba(0,0,0,0.4)',
+                ? '0 0 60px rgba(212, 175, 55, 0.4), 0 20px 40px rgba(0,0,0,0.3)'
+                : '0 16px 32px rgba(0,0,0,0.2)',
               border: isWin
                 ? '3px solid rgba(255,255,255,0.2)'
-                : '2px solid rgba(80, 80, 90, 0.3)',
+                : `2px solid ${isDark ? 'rgba(80, 80, 90, 0.3)' : 'rgba(120, 85, 40, 0.1)'}`,
             }}
           >
-            {isWin ? (
-              <motion.div
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-              >
-                <Sparkles size={48} color="#fff" strokeWidth={1.5} />
-              </motion.div>
-            ) : (
-              <Lock size={48} color="#6a6a70" strokeWidth={1.5} />
-            )}
+            <Icon size={42} color={isWin ? '#fff' : (isDark ? '#666' : '#999')} strokeWidth={1.5} />
           </motion.div>
 
           {/* Title */}
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            style={{
-              fontFamily: 'var(--font-serif)',
-              fontSize: isJackpot ? 36 : 32,
-              fontWeight: 800,
-              color: isWin ? 'var(--gold-300)' : 'var(--text-muted)',
-              marginBottom: 8,
+          <h2 style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: 26,
+            fontWeight: 800,
+            color: isWin ? '#D4AF37' : (isDark ? '#666' : '#999'),
+            marginBottom: 8,
+            textAlign: 'center',
+            letterSpacing: '0.05em',
+          }}>
+            {isWin ? 'ВЗЛОМ УСПЕШЕН!' : 'СИСТЕМА УСТОЯЛА'}
+          </h2>
+
+          {/* Prize Details */}
+          {isWin && prize && (
+            <div style={{
               textAlign: 'center',
-              letterSpacing: '0.05em',
-              textShadow: isWin
-                ? '0 2px 20px rgba(212, 175, 55, 0.4)'
-                : 'none',
-            }}
-          >
-            {isJackpot ? 'ДЖЕКПОТ!' : isWin ? 'ПОБЕДА!' : 'НЕ ПОВЕЗЛО'}
-          </motion.h2>
+              marginBottom: 24,
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: 18,
+                fontWeight: 700,
+                color: isDark ? '#fff' : '#1a1a1a',
+                marginBottom: 4,
+              }}>
+                {prize.name}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                color: isDark ? '#888' : '#666',
+              }}>
+                {prize.desc}
+              </div>
+            </div>
+          )}
 
           {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 15,
-              color: isWin ? 'var(--text-main)' : 'var(--text-muted)',
-              marginBottom: 28,
-              textAlign: 'center',
-            }}
-          >
+          <p style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 13,
+            color: isDark ? '#888' : '#666',
+            marginBottom: 24,
+            textAlign: 'center',
+            lineHeight: 1.5,
+          }}>
             {isWin
-              ? `+${result.value.toLocaleString('ru-RU')}₽ на баланс!`
-              : 'Попробуй ещё раз!'}
-          </motion.p>
+              ? 'Актив зарезервирован. Нажми "АКТИВИРОВАТЬ" чтобы перейти к оформлению заказа со скидкой.'
+              : 'Попробуй ещё раз — система уязвима!'}
+          </p>
 
-          {/* Close Button */}
+          {/* CTA Button */}
           <button
-            ref={ref}
-            {...handlers}
+            ref={claimRef}
+            {...claimHandlers}
             style={{
               width: '100%',
               padding: '18px 24px',
-              borderRadius: 16,
-              background: isWin ? 'var(--liquid-gold)' : 'var(--bg-glass)',
+              borderRadius: 14,
+              background: isWin
+                ? 'linear-gradient(180deg, #f5d061 0%, #d4af37 50%, #8b6914 100%)'
+                : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
               border: isWin
-                ? '2px solid rgba(255,255,255,0.2)'
-                : '1px solid var(--border-default)',
+                ? '2px solid #6b4f0f'
+                : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
               cursor: 'pointer',
               fontFamily: 'var(--font-serif)',
               fontSize: 16,
               fontWeight: 700,
-              color: isWin ? '#0a0a0c' : 'var(--text-secondary)',
+              color: isWin ? '#0a0a0c' : (isDark ? '#888' : '#666'),
               letterSpacing: '0.1em',
-              boxShadow: isWin ? 'var(--glow-gold-strong)' : 'none',
+              boxShadow: isWin
+                ? '0 0 40px rgba(212, 175, 55, 0.3), inset 0 2px 4px rgba(255,255,255,0.3)'
+                : 'none',
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
             }}
           >
-            {isWin ? 'ЗАБРАТЬ' : 'ЗАКРЫТЬ'}
+            {isWin ? (
+              <>
+                АКТИВИРОВАТЬ
+                <ChevronRight size={18} />
+              </>
+            ) : (
+              'ПОПРОБОВАТЬ СНОВА'
+            )}
           </button>
-        </div>
 
-        {/* Floating particles for win */}
-        {isWin && (
-          <>
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                animate={{
-                  y: [0, -60, 0],
-                  x: [0, Math.sin(i * 60) * 20, 0],
-                  opacity: [0.3, 0.8, 0.3],
-                }}
-                transition={{
-                  duration: 2 + i * 0.3,
-                  repeat: Infinity,
-                  delay: i * 0.2,
-                }}
-                style={{
-                  position: 'absolute',
-                  bottom: 60 + i * 40,
-                  left: 30 + i * 45,
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: '#d4af37',
-                  boxShadow: '0 0 12px rgba(212, 175, 55, 0.6)',
-                }}
-              />
-            ))}
-          </>
-        )}
+          {/* Security notice */}
+          <div style={{
+            marginTop: 16,
+            textAlign: 'center',
+            fontSize: 9,
+            fontFamily: 'var(--font-mono)',
+            color: isDark ? '#444' : '#aaa',
+            letterSpacing: '0.1em',
+          }}>
+            🔒 ЗАШИФРОВАННОЕ СОЕДИНЕНИЕ
+          </div>
+        </div>
       </motion.div>
     </motion.div>
   )
-}
+})
+
+SalesModal.displayName = 'SalesModal'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIN ELITE CLUB PAGE — Psychology-Driven Premium UX
+//  MAIN ELITE CLUB PAGE — Sales Inception Algorithm
+//  Psychology-driven mechanics with glitch triggers & near-miss effects
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function RoulettePage({ user }: Props) {
@@ -588,60 +541,97 @@ export function RoulettePage({ user }: Props) {
   const [spinning, setSpinning] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [result, setResult] = useState<RouletteResult | null>(null)
-  const [showResultModal, setShowResultModal] = useState(false)
-  const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null)
-  const [isJackpot, setIsJackpot] = useState(false)
+  const [showSalesModal, setShowSalesModal] = useState(false)
+  const [highlightedId, setHighlightedId] = useState<string | null>(null)
+  const [glitchActive, setGlitchActive] = useState(false)
+  const [wonPrize, setWonPrize] = useState<PrizeTier | null>(null)
 
   const confetti = useConfetti()
   const spinTimeoutRef = useRef<NodeJS.Timeout>()
 
-  // Theme-aware gold color
-  const goldColor = isDark ? '#d4af37' : '#9e7a1a'
+  // Get user photo URL from Telegram
+  const userPhotoUrl = user?.telegram_photo_url || undefined
 
-  // Near-miss animation: scan through prizes, always pass jackpot
-  const runNearMissAnimation = useCallback(async (finalResult: RouletteResult) => {
-    // Find final tier index based on result value
-    let finalIndex = PRIZE_TIERS.length - 1 // Default to smallest
-    if (finalResult.value > 0) {
-      const tierIndex = PRIZE_TIERS.findIndex(t => t.amount === finalResult.value)
-      if (tierIndex !== -1) finalIndex = tierIndex
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  SALES INCEPTION ALGORITHM — Psychology-Driven Animation
+  //  1. Start fast, build excitement
+  //  2. Pass expensive items slowly (near-miss)
+  //  3. Trigger glitch effect on premium items
+  //  4. Land on predetermined result with dramatic pause
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const runSalesInceptionAnimation = useCallback(async (finalResult: RouletteResult) => {
+    // Map result value to prize tier
+    let targetPrize = PRIZE_TIERS[PRIZE_TIERS.length - 1] // Default to smallest
+
+    if (finalResult.type !== 'nothing' && finalResult.value > 0) {
+      // Find matching prize by value
+      const matchedPrize = PRIZE_TIERS.find(t => {
+        const numVal = parseInt(t.val.replace(/[^0-9]/g, ''))
+        return numVal === finalResult.value || t.val === '∞'
+      })
+      if (matchedPrize) targetPrize = matchedPrize
     }
 
-    // Psychology: Always start from jackpot (index 0) and scan down
-    // This creates "near-miss" effect where user sees they almost won jackpot
-    let currentIndex = 0
-    const baseDelay = 150 // Starting speed
-    const totalSteps = finalIndex + Math.floor(Math.random() * 3) + 6 // Add extra passes
+    setWonPrize(targetPrize)
+    const targetIndex = PRIZE_TIERS.findIndex(t => t.id === targetPrize.id)
 
-    for (let step = 0; step < totalSteps; step++) {
-      // Progressive slowdown as we approach final
-      const slowdownFactor = Math.pow(step / totalSteps, 1.5)
-      const delay = baseDelay + slowdownFactor * 400
+    // Animation parameters
+    const totalDuration = 5000 // 5 seconds total
+    const tickCount = 25 + Math.floor(Math.random() * 10)
+    let elapsed = 0
+
+    sound.play('spin_start')
+
+    for (let i = 0; i < tickCount; i++) {
+      const progress = i / tickCount
+
+      // Easing: fast start, slow end (cubic ease-out)
+      const easedProgress = 1 - Math.pow(1 - progress, 3)
+
+      // Calculate delay: starts at 80ms, ends at 400ms
+      const delay = 80 + easedProgress * 320
 
       await new Promise(resolve => setTimeout(resolve, delay))
+      elapsed += delay
 
-      // Oscillate through prizes with decreasing amplitude
-      if (step < totalSteps - 5) {
-        // Fast scanning phase
-        currentIndex = step % PRIZE_TIERS.length
+      // Calculate current tier based on progress
+      // Near the end, oscillate around target
+      let currentIndex: number
+
+      if (progress < 0.7) {
+        // Fast scanning phase - cycle through all
+        currentIndex = i % PRIZE_TIERS.length
       } else {
-        // Settling phase - home in on final
-        const stepsRemaining = totalSteps - step
-        currentIndex = Math.max(0, Math.min(PRIZE_TIERS.length - 1,
-          finalIndex - stepsRemaining + Math.floor(Math.random() * 2)
-        ))
+        // Settling phase - home in on target with occasional overshoot
+        const settlingProgress = (progress - 0.7) / 0.3
+        const overshoot = Math.floor((1 - settlingProgress) * 2)
+        currentIndex = Math.max(0, Math.min(PRIZE_TIERS.length - 1, targetIndex + overshoot))
       }
 
-      setHighlightedIndex(currentIndex)
+      const currentTier = PRIZE_TIERS[currentIndex]
+      setHighlightedId(currentTier.id)
       sound.play('tick')
+      haptic('light')
+
+      // GLITCH TRIGGER: When passing expensive items late in animation
+      if (progress > 0.6 && (currentTier.id === 'diploma' || currentTier.id === 'coursework')) {
+        setGlitchActive(true)
+        haptic('heavy')
+        setTimeout(() => setGlitchActive(false), 200)
+      }
     }
 
-    // Final landing
-    setHighlightedIndex(finalIndex)
-    sound.play('latch')
+    // Final dramatic pause
+    await new Promise(resolve => setTimeout(resolve, 300))
 
-    return finalIndex
-  }, [sound])
+    // Land on target
+    setHighlightedId(targetPrize.id)
+    sound.play('latch')
+    haptic('heavy')
+
+    return targetPrize
+  }, [sound, haptic])
 
   const handleSpin = async () => {
     if (spinning) return
@@ -653,39 +643,34 @@ export function RoulettePage({ user }: Props) {
     setSpinning(true)
     setIsOpen(false)
     setResult(null)
-    setIsJackpot(false)
-    setHighlightedIndex(0) // Start from jackpot
+    setGlitchActive(false)
+    setHighlightedId(PRIZE_TIERS[0].id) // Start from most expensive
 
     try {
       // Start the spin API call
       const spinPromise = spinRoulette()
 
-      // Run near-miss animation (takes ~4-6 seconds)
-      // First, we need the result to know where to land
+      // Get result from API
       const spinResult = await spinPromise
       setResult(spinResult)
 
-      // Check for jackpot
-      const isJackpotWin = spinResult.type === 'jackpot' || spinResult.value >= 50000
-      setIsJackpot(isJackpotWin)
-
-      // Run the scanning animation
-      await runNearMissAnimation(spinResult)
+      // Run the Sales Inception animation
+      const prize = await runSalesInceptionAnimation(spinResult)
 
       // Short pause for dramatic effect
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Open vault
       setIsOpen(true)
       sound.play('open')
 
-      // Show result modal after vault opens
+      // Show sales modal after vault opens
       spinTimeoutRef.current = setTimeout(() => {
-        setShowResultModal(true)
+        setShowSalesModal(true)
 
         if (spinResult.type !== 'nothing') {
           hapticSuccess()
-          if (isJackpotWin) {
+          if (prize.id === 'diploma' || prize.id === 'coursework') {
             sound.play('jackpot')
             confetti.fire()
           } else {
@@ -700,7 +685,7 @@ export function RoulettePage({ user }: Props) {
     } catch {
       hapticError()
       setResult({ prize: 'Ошибка', type: 'nothing', value: 0 })
-      setShowResultModal(true)
+      setShowSalesModal(true)
     } finally {
       setSpinning(false)
     }
@@ -713,25 +698,38 @@ export function RoulettePage({ user }: Props) {
     }
   }, [])
 
-  // Reset highlighted index when modal closes
+  // Handle modal close
   const handleCloseModal = useCallback(() => {
-    setShowResultModal(false)
-    setHighlightedIndex(null)
+    setShowSalesModal(false)
+    setHighlightedId(null)
     setIsOpen(false)
   }, [])
 
+  // Handle claim action (redirect to order)
+  const handleClaim = useCallback(() => {
+    // TODO: Redirect to order page with prize
+    handleCloseModal()
+  }, [handleCloseModal])
+
   return (
     <div
-      className="app-content"
+      className="app-content roulette-page"
       style={{
         display: 'flex',
         flexDirection: 'column',
         paddingTop: 16,
         paddingBottom: 120,
         minHeight: '100vh',
+        position: 'relative',
       }}
     >
-      {/* Header */}
+      {/* God Rays Background Effect */}
+      <GodRays />
+
+      {/* Live Winners Ticker — Social Proof */}
+      <LiveWinnersTicker />
+
+      {/* Header with Glitch Effect */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -747,37 +745,27 @@ export function RoulettePage({ user }: Props) {
           gap: 12,
           marginBottom: 8,
         }}>
-          <Crown size={28} color={goldColor} />
-          <h1 style={{
-            fontFamily: 'var(--font-serif)',
-            fontSize: 28,
-            fontWeight: 800,
-            background: isDark
-              ? 'linear-gradient(135deg, #FCF6BA, #D4AF37, #B38728)'
-              : 'linear-gradient(135deg, #5c4510, #9e7a1a, #c9a02f)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>
-            ЭЛИТНЫЙ КЛУБ
-          </h1>
-          <Crown size={28} color={goldColor} />
+          <Crown size={28} color="#D4AF37" />
+          <GlitchHeader active={glitchActive} />
+          <Crown size={28} color="#D4AF37" />
         </div>
         <p style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          color: 'var(--text-muted)',
-          letterSpacing: '0.15em',
+          fontSize: 10,
+          color: isDark ? '#666' : '#999',
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
         }}>
-          ЭКСКЛЮЗИВНЫЕ ПРИЗЫ • КРУТИТЬ БЕЗ ЛИМИТА
+          LEGACY EDITION • ВЗЛОМАЙ СИСТЕМУ
         </p>
       </motion.header>
 
-      {/* Premium Vault Lock */}
+      {/* Premium Vault Lock with User Photo */}
       <VaultLock
         isSpinning={spinning}
         isOpen={isOpen}
-        prizeValue={result?.value}
-        isJackpot={isJackpot}
+        resultValue={wonPrize?.val}
+        userPhotoUrl={userPhotoUrl}
       />
 
       {/* Spin Button */}
@@ -790,11 +778,10 @@ export function RoulettePage({ user }: Props) {
         />
       </div>
 
-      {/* Prize Ticker with Near-Miss Animation */}
+      {/* Prize Ticker — Asset List with Scanning Animation */}
       <PrizeTicker
-        isActive={spinning}
-        highlightedIndex={highlightedIndex}
-        isDark={isDark}
+        tiers={PRIZE_TIERS}
+        highlightedId={highlightedId}
       />
 
       {/* Rules */}
@@ -803,13 +790,13 @@ export function RoulettePage({ user }: Props) {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
         style={{
+          margin: '0 20px',
           padding: '20px 24px',
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-default)',
+          background: isDark ? 'rgba(20, 20, 23, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+          border: `1px solid ${isDark ? 'rgba(212, 175, 55, 0.1)' : 'rgba(120, 85, 40, 0.1)'}`,
           borderRadius: 16,
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: 'var(--card-shadow)',
         }}
       >
         <div style={{
@@ -818,21 +805,22 @@ export function RoulettePage({ user }: Props) {
           gap: 8,
           marginBottom: 16,
         }}>
-          <Zap size={14} color="var(--gold-400)" />
+          <Zap size={14} color="#D4AF37" />
           <span style={{
-            fontFamily: 'var(--font-serif)',
-            fontSize: 12,
-            color: 'var(--gold-400)',
-            letterSpacing: '0.1em',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            color: '#D4AF37',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
           }}>
-            ПРАВИЛА КЛУБА
+            ПРОТОКОЛ ВЗЛОМА
           </span>
         </div>
         <ul style={{
           listStyle: 'none',
           fontFamily: 'var(--font-mono)',
           fontSize: 11,
-          color: 'var(--text-muted)',
+          color: isDark ? '#666' : '#888',
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
@@ -840,23 +828,21 @@ export function RoulettePage({ user }: Props) {
           padding: 0,
         }}>
           {[
-            'Без лимита — крути сколько хочешь',
-            'Призы зачисляются мгновенно',
-            'Чем крупнее приз — тем ниже шанс',
-            'Джекпот для избранных',
+            'Без лимита попыток — система уязвима',
+            'Активы резервируются на 3 минуты',
+            'Чем выше уровень — тем сложнее взлом',
+            'Диплом "Под Ключ" для избранных хакеров',
           ].map((rule, i) => (
             <li
               key={i}
               style={{ display: 'flex', alignItems: 'center', gap: 10 }}
             >
               <div style={{
-                width: 5,
-                height: 5,
+                width: 4,
+                height: 4,
                 borderRadius: '50%',
-                background: goldColor,
-                boxShadow: isDark
-                  ? '0 0 8px rgba(212, 175, 55, 0.4)'
-                  : '0 0 8px rgba(180, 142, 38, 0.35)',
+                background: '#D4AF37',
+                boxShadow: '0 0 8px rgba(212, 175, 55, 0.4)',
                 flexShrink: 0,
               }} />
               {rule}
@@ -872,13 +858,14 @@ export function RoulettePage({ user }: Props) {
         intensity="extreme"
       />
 
-      {/* Result Modal */}
+      {/* Sales Modal */}
       <AnimatePresence>
-        {showResultModal && result && (
-          <ResultModal
+        {showSalesModal && result && (
+          <SalesModal
             result={result}
+            prize={wonPrize}
             onClose={handleCloseModal}
-            isJackpot={isJackpot}
+            onClaim={handleClaim}
           />
         )}
       </AnimatePresence>
