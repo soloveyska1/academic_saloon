@@ -165,6 +165,41 @@ function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
 //  MAIN HOMEPAGE — HEAVY LUXURY PREMIUM
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Floating Gold Particles Component
+const FloatingParticles = () => {
+  const particles = Array.from({ length: 12 }, (_, i) => ({
+    id: i,
+    left: `${5 + (i * 8) % 90}%`,
+    top: `${10 + (i * 13) % 80}%`,
+    delay: `${i * 0.7}s`,
+    size: 2 + (i % 3),
+  }))
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className="gold-particle"
+          style={{
+            left: p.left,
+            top: p.top,
+            width: p.size,
+            height: p.size,
+            animationDelay: p.delay,
+            animationDuration: `${6 + p.id % 4}s`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Aurora Background Component
+const AuroraBackground = () => (
+  <div className="aurora-bg" />
+)
+
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
   const { haptic, hapticSuccess, webApp } = useTelegram()
@@ -274,7 +309,10 @@ export function HomePage({ user }: Props) {
   const userPhoto = webApp?.initDataUnsafe?.user?.photo_url
 
   return (
-    <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: 'var(--bg-main)' }}>
+    <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: 'var(--bg-main)', position: 'relative' }}>
+      {/* Living Background Effects */}
+      <AuroraBackground />
+      <FloatingParticles />
 
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER WITH AVATAR — Ultra-Premium
@@ -378,25 +416,29 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          className="breathing-card pulse-border-gold"
           style={{ ...glassGoldStyle, boxShadow: 'var(--card-shadow), 0 0 50px -15px rgba(212,175,55,0.25)' }}
         >
           {/* Inner Shine Effect */}
           <CardInnerShine />
           {/* Gold Radial Glow */}
-          <div style={{
-            position: 'absolute',
-            top: -30,
-            right: -30,
-            width: 100,
-            height: 100,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }} />
+          <div
+            className="radial-glow"
+            style={{
+              position: 'absolute',
+              top: -30,
+              right: -30,
+              width: 100,
+              height: 100,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <CreditCard size={14} color="var(--gold-400)" strokeWidth={1.5} />
-              <span style={{
+              <CreditCard size={14} color="var(--gold-400)" strokeWidth={1.5} className="glow-pulse" />
+              <span className="float-label" style={{
                 fontSize: 10,
                 letterSpacing: '0.15em',
                 fontWeight: 700,
@@ -447,6 +489,7 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
+          className="breathing-card shimmer-wave"
           style={glassStyle}
         >
           <CardInnerShine />
@@ -480,9 +523,9 @@ export function HomePage({ user }: Props) {
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.max(user.rank.progress, 5)}%` }}
                 transition={{ duration: 1, delay: 0.5 }}
+                className="progress-shimmer"
                 style={{
                   height: '100%',
-                  background: 'var(--gold-metallic)',
                   borderRadius: 100,
                   boxShadow: '0 0 10px rgba(212,175,55,0.4)',
                 }}
@@ -734,6 +777,7 @@ export function HomePage({ user }: Props) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.32 }}
+        className="breathing-card pulse-border-gold inner-shine-sweep"
         style={{ ...glassGoldStyle, marginBottom: 16 }}
       >
         <CardInnerShine />
@@ -841,6 +885,7 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
+          className="breathing-card shimmer-wave"
           style={{ ...glassStyle, marginBottom: 16 }}
         >
           <CardInnerShine />
@@ -892,9 +937,9 @@ export function HomePage({ user }: Props) {
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.max(user.rank.progress, 3)}%` }}
                 transition={{ duration: 1, delay: 0.5 }}
+                className="progress-shimmer"
                 style={{
                   height: '100%',
-                  background: 'var(--gold-metallic)',
                   borderRadius: 100,
                   boxShadow: '0 0 15px rgba(212,175,55,0.5)',
                 }}
