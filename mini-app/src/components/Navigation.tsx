@@ -132,12 +132,13 @@ export function Navigation() {
             return (
               <motion.button
                 key={item.path}
-                onClick={() => handleClick(item.path)}
-                whileTap={{ scale: 0.9 }}
+                onTap={() => handleClick(item.path)}
+                onPointerDown={(e) => e.stopPropagation()}
+                whileTap={{ scale: 0.95 }}
                 transition={{
                   type: 'spring',
-                  stiffness: 400,
-                  damping: 20,
+                  stiffness: 500,
+                  damping: 30,
                 }}
                 style={{
                   position: 'relative',
@@ -150,6 +151,9 @@ export function Navigation() {
                   border: 'none',
                   cursor: 'pointer',
                   outline: 'none',
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent',
+                  userSelect: 'none',
                 }}
               >
                 {/* Gold Spotlight Background for Active Tab */}
