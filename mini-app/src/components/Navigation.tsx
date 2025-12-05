@@ -1,14 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion'
 import { Home, ClipboardList, Target, User, LucideIcon } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePremiumGesture } from '../hooks/usePremiumGesture'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  FLOATING ISLAND NAVIGATION — Ultra-Premium Glass Dock
-//  ZERO-LATENCY TOUCH: Direct DOM manipulation, bypasses React render cycle
-//  Physics-based spring animations via CSS cubic-bezier
+//  LIQUID GOLD DOCK — Mac-Style Floating Navigation
+//  Features: Hide-on-scroll, Sliding Spotlight, Magnetic Scaling, Shimmer
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface NavItem {
@@ -25,8 +24,7 @@ const navItems: NavItem[] = [
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  NAV BUTTON — Isolated component for premium gesture handling
-//  Each button gets its own ref and direct DOM manipulation
+//  NAV BUTTON
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface NavButtonProps {
@@ -47,49 +45,44 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
         navigate(item.path)
       }
     },
-    scale: 0.88,
+    scale: 0.9,
     hapticType: 'light',
-    tolerance: 15,
-    pressDelay: 40,
   })
 
-  // Premium gold outline for inactive items
-  const inactiveGoldOutline = isDark
-    ? 'rgba(212, 175, 55, 0.15)'
-    : 'rgba(180, 142, 38, 0.2)'
-  const inactiveGoldColor = isDark
-    ? 'rgba(212, 175, 55, 0.45)'
-    : 'rgba(158, 122, 26, 0.6)'
+  // Inactive colors
+  const inactiveColor = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'
 
   return (
     <button
       ref={ref}
       {...handlers}
-      className="nav-button-premium"
       style={{
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 4,
-        padding: '10px 16px',
+        flex: 1,
+        height: '100%',
         background: 'transparent',
         border: 'none',
         cursor: 'pointer',
         outline: 'none',
-        // Critical for instant touch response
         touchAction: 'manipulation',
         WebkitTapHighlightColor: 'transparent',
-        WebkitUserSelect: 'none',
-        userSelect: 'none',
-        // GPU acceleration
-        willChange: 'transform, opacity',
-        transform: 'translateZ(0)',
+        zIndex: 2, // Above the sliding background
       }}
     >
-      {/* Gold Spotlight Background for Active Tab */}
+      {/* Sliding Gold Spotlight (The "Liquid" Background) */}
       {isActive && (
-        <div
+        <motion.div
+          layoutId="nav-spotlight"
+          transition={{
+            type: 'spring',
+            stiffness: 350,
+            damping: 25,
+          }}
           style={{
             position: 'absolute',
             inset: 0,
@@ -97,169 +90,152 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
             background: colors.spotlightBg,
             border: `1px solid ${colors.spotlightBorder}`,
             boxShadow: isDark
-              ? '0 0 25px -5px rgba(212, 175, 55, 0.35)'
-              : '0 0 20px -5px rgba(180, 142, 38, 0.25)',
-            pointerEvents: 'none',
+              ? '0 0 20px -5px rgba(212, 175, 55, 0.3)'
+              : '0 0 15px -5px rgba(180, 142, 38, 0.2)',
+            zIndex: -1,
           }}
-        />
-      )}
-
-      {/* Premium Gold Outline for Inactive Tabs */}
-      {!isActive && (
-        <div
-          style={{
+        >
+          {/* Inner Glow */}
+          <div style={{
             position: 'absolute',
-            inset: 2,
-            borderRadius: 14,
-            background: 'transparent',
-            border: `1px solid ${inactiveGoldOutline}`,
-            pointerEvents: 'none',
-          }}
-        />
+            inset: 0,
+            borderRadius: 16,
+            background: 'radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%)',
+          }} />
+        </motion.div>
       )}
 
-      {/* Gold Glow Line Under Active Tab */}
-      {isActive && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 4,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 24,
-            height: 3,
-            borderRadius: 3,
-            background: colors.glowLine,
-            boxShadow: isDark
-              ? '0 0 12px rgba(212, 175, 55, 0.6)'
-              : '0 0 10px rgba(180, 142, 38, 0.5)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
-      {/* Icon Container */}
-      <div
+      {/* Icon with Mac-style scaling on active */}
+      <motion.div
+        animate={{
+          scale: isActive ? 1.1 : 1,
+          y: isActive ? -2 : 0,
+        }}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         style={{
           position: 'relative',
-          zIndex: 2,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transform: isActive ? 'translateY(-2px) scale(1.15)' : 'translateY(0) scale(1)',
-          transition: 'transform 0.2s ease-out',
         }}
       >
         <Icon
-          size={22}
-          strokeWidth={isActive ? 2.5 : 1.8}
-          color={isActive ? colors.gold : inactiveGoldColor}
+          size={20}
+          strokeWidth={isActive ? 2.5 : 2}
+          color={isActive ? colors.gold : inactiveColor}
           style={{
             filter: isActive
-              ? (isDark
-                ? 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.5))'
-                : 'drop-shadow(0 0 8px rgba(180, 142, 38, 0.4))')
+              ? `drop-shadow(0 0 8px ${isDark ? 'rgba(212,175,55,0.5)' : 'rgba(180,142,38,0.4)'})`
               : 'none',
-            transition: 'filter 0.2s ease-out, color 0.2s ease-out',
+            transition: 'color 0.2s ease',
           }}
         />
-      </div>
+      </motion.div>
 
       {/* Label */}
-      <span
+      <motion.span
+        animate={{
+          opacity: isActive ? 1 : 0.7,
+          scale: isActive ? 1.05 : 1,
+          y: isActive ? 0 : 2,
+        }}
         style={{
-          position: 'relative',
-          zIndex: 2,
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: isActive ? 700 : 500,
           fontFamily: "'Manrope', sans-serif",
           letterSpacing: '0.02em',
-          color: isActive ? colors.gold : inactiveGoldColor,
-          opacity: isActive ? 1 : 0.8,
-          transform: isActive ? 'translateY(0)' : 'translateY(2px)',
-          textShadow: isActive
-            ? (isDark
-              ? '0 0 12px rgba(212, 175, 55, 0.4)'
-              : '0 0 10px rgba(180, 142, 38, 0.3)')
-            : 'none',
-          transition: 'all 0.2s ease-out',
+          color: isActive ? colors.gold : inactiveColor,
         }}
       >
         {item.label}
-      </span>
+      </motion.span>
 
-      {/* Expanded hitbox for fat fingers */}
-      <div
-        style={{
-          position: 'absolute',
-          top: -8,
-          bottom: -4,
-          left: -4,
-          right: -4,
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Active Indicator Dot (Optional, adds detail) */}
+      {isActive && (
+        <motion.div
+          layoutId="nav-indicator"
+          style={{
+            position: 'absolute',
+            bottom: 4,
+            width: 4,
+            height: 4,
+            borderRadius: '50%',
+            background: colors.gold,
+            boxShadow: `0 0 6px ${colors.gold}`,
+          }}
+        />
+      )}
     </button>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  THEME-AWARE COLORS
+//  THEME COLORS
 // ═══════════════════════════════════════════════════════════════════════════
 
 function useNavigationColors() {
   const { isDark } = useTheme()
 
   return {
-    // Gold gradients
-    goldGradient: isDark
-      ? 'linear-gradient(135deg, #8E6E27 0%, #D4AF37 25%, #FFF8D6 50%, #D4AF37 75%, #8E6E27 100%)'
-      : 'linear-gradient(135deg, #6b4f0f 0%, #9e7a1a 25%, #d4af37 50%, #9e7a1a 75%, #6b4f0f 100%)',
     gold: isDark ? '#d4af37' : '#9e7a1a',
-    goldLight: isDark ? '#FCF6BA' : '#d4af37',
-    inactive: isDark ? '#52525b' : '#a1a1aa',
-    // Floating dock background — heavy blur glass
+    // Ultra-premium glass background
     dockBg: isDark
-      ? 'rgba(12, 12, 16, 0.75)'   // Obsidian glass
-      : 'rgba(255, 255, 255, 0.8)', // Porcelain
-    // Gradient border (light hitting edges)
-    dockBorderOuter: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-    dockBorderInner: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.8)',
-    // Gold spotlight for active tab
+      ? 'rgba(10, 10, 12, 0.65)'
+      : 'rgba(255, 255, 255, 0.75)',
+    // Borders
+    dockBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    dockInnerBorder: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.5)',
+    // Spotlight (Active Tab Background)
     spotlightBg: isDark
-      ? 'linear-gradient(180deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%)'
-      : 'linear-gradient(180deg, rgba(180, 142, 38, 0.12) 0%, rgba(180, 142, 38, 0.04) 100%)',
-    spotlightBorder: isDark ? 'rgba(212, 175, 55, 0.25)' : 'rgba(180, 142, 38, 0.25)',
-    // The gold glow line under active tab
-    glowLine: isDark
-      ? 'linear-gradient(90deg, #8E6E27, #D4AF37, #FFF8D6, #D4AF37, #8E6E27)'
-      : 'linear-gradient(90deg, #6b4f0f, #9e7a1a, #d4af37, #9e7a1a, #6b4f0f)',
-    // Shadow colors (gold-tinted, never pure black)
+      ? 'linear-gradient(180deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.02) 100%)'
+      : 'linear-gradient(180deg, rgba(180, 142, 38, 0.1) 0%, rgba(180, 142, 38, 0.02) 100%)',
+    spotlightBorder: isDark ? 'rgba(212, 175, 55, 0.2)' : 'rgba(180, 142, 38, 0.15)',
+    // Shadows
     shadow: isDark
-      ? '0 20px 50px -12px rgba(0, 0, 0, 0.8), 0 0 60px -20px rgba(212, 175, 55, 0.15)'
-      : '0 10px 40px -12px rgba(166, 138, 58, 0.2), 0 4px 6px -1px rgba(166, 138, 58, 0.08)',
+      ? '0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 30px -10px rgba(212, 175, 55, 0.1)'
+      : '0 15px 30px -10px rgba(166, 138, 58, 0.15), 0 5px 10px -5px rgba(0,0,0,0.05)',
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIN NAVIGATION COMPONENT
+//  MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function Navigation() {
   const location = useLocation()
   const { isDark } = useTheme()
   const colors = useNavigationColors()
-  const [isVisible, setIsVisible] = useState(true)
 
-  // Keyboard detection logic
+  // Scroll Logic
+  const [isVisible, setIsVisible] = useState(true)
+  const { scrollY } = useScroll()
+  const lastScrollY = useRef(0)
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const currentScrollY = latest
+    const diff = currentScrollY - lastScrollY.current
+
+    // Hide when scrolling down > 10px, Show when scrolling up
+    // Always show if near top (< 50px)
+    if (currentScrollY < 50) {
+      setIsVisible(true)
+    } else if (diff > 10) {
+      setIsVisible(false)
+    } else if (diff < -10) {
+      setIsVisible(true)
+    }
+
+    lastScrollY.current = currentScrollY
+  })
+
+  // Keyboard detection (Virtual Viewport)
   useEffect(() => {
     const handleResize = () => {
       if (!window.visualViewport) return
-      // If viewport height is significantly smaller than window height, keyboard is likely open
       const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.8
-      setIsVisible(!isKeyboardOpen)
+      if (isKeyboardOpen) setIsVisible(false)
+      else setIsVisible(true) // Restore visibility when keyboard closes
     }
-
     window.visualViewport?.addEventListener('resize', handleResize)
     return () => window.visualViewport?.removeEventListener('resize', handleResize)
   }, [])
@@ -268,78 +244,69 @@ export function Navigation() {
     <AnimatePresence>
       {isVisible && (
         <motion.nav
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
+          initial={{ y: 100, opacity: 0, scale: 0.9 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: 100, opacity: 0, scale: 0.9 }}
           transition={{
             type: 'spring',
-            stiffness: 300,
-            damping: 25,
-            delay: 0.1,
+            stiffness: 250,
+            damping: 20,
+            mass: 0.8,
           }}
           style={{
             position: 'fixed',
-            bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-            left: 16,
-            right: 16,
+            bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+            left: 0,
+            right: 0,
             zIndex: 1000,
-            pointerEvents: 'none', // Allow clicks to pass through around the dock
+            display: 'flex',
+            justifyContent: 'center',
+            pointerEvents: 'none', // Allow clicks through the container area
           }}
         >
-          {/* The Floating Glass Capsule */}
+          {/* THE DOCK */}
           <div
             style={{
               position: 'relative',
               display: 'flex',
-              justifyContent: 'space-around',
               alignItems: 'center',
-              maxWidth: 320, // Reduced from 380
-              margin: '0 auto',
-              padding: '8px 6px', // Reduced padding
-              // Full rounded capsule
-              borderRadius: 9999,
-              // Glass background
+              justifyContent: 'space-between',
+              width: 'auto',
+              minWidth: 280,
+              maxWidth: 320,
+              padding: '6px',
+              borderRadius: 24,
               background: colors.dockBg,
-              // Heavy blur for glass effect
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              // Gradient border (simulating light on edges)
-              border: `1px solid ${colors.dockBorderOuter}`,
-              // Double border effect for glass thickness + Gold Glow
+              backdropFilter: 'blur(25px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(25px) saturate(180%)',
+              border: `1px solid ${colors.dockBorder}`,
               boxShadow: `
-                inset 0 1px 0 ${colors.dockBorderInner},
-                ${colors.shadow},
-                0 0 20px -5px rgba(212, 175, 55, 0.15)
+                inset 0 1px 0 ${colors.dockInnerBorder},
+                ${colors.shadow}
               `,
-              pointerEvents: 'auto', // Re-enable pointer events for the dock itself
+              pointerEvents: 'auto', // Re-enable clicks
             }}
           >
-            {/* Animated Gradient Border */}
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
-                zIndex: -1,
-                opacity: 0.5,
-                animation: 'shimmer 3s infinite linear',
-              }}
-            />
-
-            {/* Inner shine effect — top edge light */}
+            {/* Shimmer Effect (Animated Border Shine) */}
             <div
               style={{
                 position: 'absolute',
-                top: 1,
-                left: 20,
-                right: 20,
-                height: 1,
-                background: isDark
-                  ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)'
-                  : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
-                borderRadius: 9999,
+                inset: -1,
+                borderRadius: 24,
+                background: 'linear-gradient(45deg, transparent 40%, rgba(212,175,55,0.3) 50%, transparent 60%)',
+                backgroundSize: '200% 200%',
+                zIndex: -1,
+                animation: 'shimmer 4s infinite linear',
+                opacity: 0.5,
                 pointerEvents: 'none',
               }}
             />
+            <style>{`
+              @keyframes shimmer {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+              }
+            `}</style>
 
             {navItems.map((item) => (
               <NavButton

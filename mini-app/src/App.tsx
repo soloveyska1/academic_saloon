@@ -314,7 +314,7 @@ function AppContent() {
               onRefresh={handleRefresh}
             >
               <BrowserRouter>
-                <div className="app">
+                <div className="app" style={{ paddingBottom: 100 }}>
                   {/* Animated Gold Particles Background */}
                   <GoldParticles />
 
