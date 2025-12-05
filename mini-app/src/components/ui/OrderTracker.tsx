@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import {
   Check, FileText, Search, CheckCircle,
-  Loader2, AlertCircle
+  Loader2, AlertCircle, Sparkles, Truck
 } from 'lucide-react'
 
 interface Props {
@@ -494,7 +494,7 @@ export function OrderTracker({ status, variant = 'horizontal' }: Props) {
     case 'compact':
       return <CompactTracker status={status} />
     default:
-      return <HorizontalTracker status={status} showTime={showTime} />
+      return <HorizontalTracker status={status} />
   }
 }
 
