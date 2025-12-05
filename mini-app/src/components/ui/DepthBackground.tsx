@@ -43,45 +43,65 @@ export const DepthBackground = memo(function DepthBackground({
   useEffect(() => {
     if (!enableGyro) return
 
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      const gamma = (e.gamma || 0) / 45 // -1 to 1
-      const beta = ((e.beta || 0) - 45) / 45 // Normalize around 45 degrees
-      gyroX.set(gamma)
-      gyroY.set(beta)
-    }
+    let gyroEnabled = false
 
-    // Request permission on iOS
-    const requestPermission = async () => {
-      if (typeof DeviceOrientationEvent !== 'undefined' &&
-          typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-        try {
-          const permission = await (DeviceOrientationEvent as any).requestPermission()
-          if (permission === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation)
-          }
-        } catch {
-          // Permission denied or not supported
-        }
-      } else {
-        window.addEventListener('deviceorientation', handleOrientation)
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      try {
+        const gamma = (e.gamma || 0) / 45 // -1 to 1
+        const beta = ((e.beta || 0) - 45) / 45 // Normalize around 45 degrees
+        gyroX.set(gamma)
+        gyroY.set(beta)
+      } catch {
+        // Ignore orientation errors
       }
     }
 
-    requestPermission()
+    // Setup gyroscope - DON'T auto-request permission on iOS (causes crashes)
+    const setupGyroscope = () => {
+      try {
+        if (typeof DeviceOrientationEvent !== 'undefined') {
+          // Check if requestPermission exists (iOS 13+)
+          if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+            // On iOS, permission must be requested by user gesture
+            // Skip gyroscope on iOS - just use mouse fallback
+            gyroEnabled = false
+          } else {
+            // Non-iOS devices don't need permission
+            gyroEnabled = true
+            window.addEventListener('deviceorientation', handleOrientation)
+          }
+        }
+      } catch (err) {
+        console.warn('[DepthBackground] Gyroscope setup failed:', err)
+        gyroEnabled = false
+      }
+    }
 
-    // Mouse fallback for desktop
+    setupGyroscope()
+
+    // Mouse fallback for desktop (works everywhere)
     const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 2
-      const y = (e.clientY / window.innerHeight - 0.5) * 2
-      gyroX.set(x * 0.5)
-      gyroY.set(y * 0.5)
+      try {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2
+        const y = (e.clientY / window.innerHeight - 0.5) * 2
+        gyroX.set(x * 0.5)
+        gyroY.set(y * 0.5)
+      } catch {
+        // Ignore mouse errors
+      }
     }
 
     window.addEventListener('mousemove', handleMouseMove)
 
     return () => {
-      window.removeEventListener('deviceorientation', handleOrientation)
-      window.removeEventListener('mousemove', handleMouseMove)
+      try {
+        if (gyroEnabled) {
+          window.removeEventListener('deviceorientation', handleOrientation)
+        }
+        window.removeEventListener('mousemove', handleMouseMove)
+      } catch {
+        // Ignore cleanup errors
+      }
     }
   }, [enableGyro, gyroX, gyroY])
 

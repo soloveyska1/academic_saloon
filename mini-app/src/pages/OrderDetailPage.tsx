@@ -1043,6 +1043,7 @@ export function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [showPriceAlert, setShowPriceAlert] = useState(false)
   const [statusAlert, setStatusAlert] = useState<StatusAlert | null>(null)
 
@@ -1052,11 +1053,39 @@ export function OrderDetailPage() {
   // WebSocket context for real-time updates
   const { addMessageHandler } = useWebSocketContext()
 
+  // Safe haptic wrapper to prevent crashes on mobile
+  const safeHaptic = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
+    try {
+      haptic(type)
+    } catch (e) {
+      console.warn('[Haptic] Failed:', e)
+    }
+  }, [haptic])
+
+  const safeHapticSuccess = useCallback(() => {
+    try {
+      hapticSuccess()
+    } catch (e) {
+      console.warn('[Haptic] Failed:', e)
+    }
+  }, [hapticSuccess])
+
+  // Validate order ID early
+  const orderId = id ? parseInt(id, 10) : NaN
+  const isValidOrderId = !isNaN(orderId) && orderId > 0
+
   // Load order function
   const loadOrder = useCallback(async () => {
-    if (!id) return
+    if (!isValidOrderId) {
+      setLoadError('Некорректный ID заказа')
+      setLoading(false)
+      return
+    }
+
+    setLoadError(null)
+
     try {
-      const data = await fetchOrderDetail(parseInt(id))
+      const data = await fetchOrderDetail(orderId)
       setOrder(data)
 
       // Initialize payment scheme from order if available
@@ -1071,7 +1100,7 @@ export function OrderDetailPage() {
       // Show status alert for important statuses user hasn't seen
       if (lastSeenStatus !== data.status && STATUS_ALERTS[data.status]) {
         setStatusAlert(STATUS_ALERTS[data.status])
-        hapticSuccess()
+        safeHapticSuccess()
       }
 
       // Update last seen status
@@ -1094,7 +1123,7 @@ export function OrderDetailPage() {
           const alertKey = `price_alert_shown_${id}`
           if (!sessionStorage.getItem(alertKey) && !STATUS_ALERTS[data.status]) {
             setShowPriceAlert(true)
-            hapticSuccess()
+            safeHapticSuccess()
             sessionStorage.setItem(alertKey, 'true')
           }
         } catch (err) {
@@ -1102,11 +1131,12 @@ export function OrderDetailPage() {
         }
       }
     } catch (err) {
-      console.error(err)
+      console.error('[OrderDetail] Load error:', err)
+      setLoadError(err instanceof Error ? err.message : 'Ошибка загрузки заказа')
     } finally {
       setLoading(false)
     }
-  }, [id, hapticSuccess])
+  }, [id, orderId, isValidOrderId, safeHapticSuccess])
 
   // Initial load
   useEffect(() => {
@@ -1115,12 +1145,12 @@ export function OrderDetailPage() {
 
   // Subscribe to WebSocket updates for this order
   useEffect(() => {
-    if (!id) return
+    if (!isValidOrderId) return
 
     const unsubscribe = addMessageHandler((message) => {
       // Check if this message is about our order
       const msgOrderId = (message as any).order_id
-      if (msgOrderId && msgOrderId === parseInt(id)) {
+      if (msgOrderId && msgOrderId === orderId) {
         console.log('[OrderDetail] Received update for this order:', message)
 
         // Show status alert from WebSocket message
@@ -1141,7 +1171,7 @@ export function OrderDetailPage() {
               price: finalPrice,
               bonusUsed: bonusUsed,
             })
-            hapticSuccess()
+            safeHapticSuccess()
             // Update last seen status so we don't show it again on reload
             sessionStorage.setItem(`order_${id}_last_seen_status`, newStatus)
           }
@@ -1162,12 +1192,17 @@ export function OrderDetailPage() {
     })
 
     return unsubscribe
-  }, [id, addMessageHandler, loadOrder, hapticSuccess])
+  }, [id, orderId, isValidOrderId, addMessageHandler, loadOrder, safeHapticSuccess])
 
-  const handleBack = () => {
-    haptic('light')
+  const handleBack = useCallback(() => {
+    try {
+      safeHaptic('light')
+    } catch (e) {
+      // Ignore haptic errors
+    }
+    // Navigate regardless of haptic success
     navigate('/orders')
-  }
+  }, [safeHaptic, navigate])
 
   const chatRef = useRef<OrderChatHandle>(null)
 
@@ -1204,8 +1239,18 @@ export function OrderDetailPage() {
     )
   }
 
-  // Error state
-  if (!order) {
+  // Error state - Order not found or load error
+  if (!order || loadError) {
+    const handleRetry = () => {
+      safeHaptic('light')
+      setLoading(true)
+      setLoadError(null)
+      // Small delay to prevent rapid retries
+      setTimeout(() => {
+        loadOrder()
+      }, 100)
+    }
+
     return (
       <div style={{
         minHeight: '100vh',
@@ -1229,23 +1274,55 @@ export function OrderDetailPage() {
         }}>
           <XCircle size={40} color="#ef4444" />
         </div>
-        <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>Заказ не найден</p>
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={handleBack}
-          style={{
-            padding: '14px 28px',
-            fontSize: 15,
-            fontWeight: 600,
-            color: 'var(--text-main)',
-            background: 'var(--bg-card-solid)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: 12,
-            cursor: 'pointer',
-          }}
-        >
-          Назад к заказам
-        </motion.button>
+
+        <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)', textAlign: 'center' }}>
+          {loadError || 'Заказ не найден'}
+          <br />
+          <span style={{ fontSize: 12, opacity: 0.5, fontWeight: 400 }}>ID: {id}</span>
+        </p>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 280 }}>
+          Возможно заказ был удалён или у вас нет доступа
+        </p>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {/* Retry button - only show if we can retry */}
+          {isValidOrderId && (
+            <button
+              onClick={handleRetry}
+              style={{
+                padding: '14px 28px',
+                fontSize: 15,
+                fontWeight: 600,
+                color: '#d4af37',
+                background: 'rgba(212,175,55,0.1)',
+                border: '1px solid rgba(212,175,55,0.3)',
+                borderRadius: 12,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <RefreshCw size={16} />
+              Повторить
+            </button>
+          )}
+          {/* Back button - use regular button for mobile safety */}
+          <button
+            onClick={handleBack}
+            style={{
+              padding: '14px 28px',
+              fontSize: 15,
+              fontWeight: 600,
+              color: 'var(--text-main)',
+              background: 'var(--bg-card-solid)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 12,
+              cursor: 'pointer',
+            }}
+          >
+            Назад к заказам
+          </button>
+        </div>
       </div>
     )
   }

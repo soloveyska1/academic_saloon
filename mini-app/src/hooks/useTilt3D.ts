@@ -201,13 +201,38 @@ export function useTilt3D<T extends HTMLElement>(options: UseTilt3DOptions = {})
   useEffect(() => {
     if (!opts.gyroscope || opts.disabled) return
 
-    requestGyroPermission()
-    window.addEventListener('deviceorientation', handleDeviceOrientation)
+    // Don't auto-request permission on iOS - it must be triggered by user gesture
+    // Just check if we already have permission or if it's not iOS
+    const setupGyroscope = () => {
+      try {
+        if (typeof DeviceOrientationEvent !== 'undefined') {
+          // Check if requestPermission exists (iOS 13+)
+          if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+            // On iOS, we can't auto-request. User must tap something first.
+            // Just don't enable gyroscope by default on iOS
+            gyroPermissionRef.current = false
+          } else {
+            // Non-iOS devices don't need permission
+            gyroPermissionRef.current = true
+            window.addEventListener('deviceorientation', handleDeviceOrientation)
+          }
+        }
+      } catch (err) {
+        console.warn('[useTilt3D] Gyroscope setup failed:', err)
+        gyroPermissionRef.current = false
+      }
+    }
+
+    setupGyroscope()
 
     return () => {
-      window.removeEventListener('deviceorientation', handleDeviceOrientation)
+      try {
+        window.removeEventListener('deviceorientation', handleDeviceOrientation)
+      } catch {
+        // Ignore cleanup errors
+      }
     }
-  }, [opts.gyroscope, opts.disabled, requestGyroPermission, handleDeviceOrientation])
+  }, [opts.gyroscope, opts.disabled, handleDeviceOrientation])
 
   // CSS styles for the element
   const style: React.CSSProperties = {
