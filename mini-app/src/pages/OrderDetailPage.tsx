@@ -15,6 +15,7 @@ import { useWebSocketContext } from '../hooks/useWebSocket'
 import { ReviewSection } from '../components/order/ReviewSection'
 import { GoldenInvoice } from '../components/order/GoldenInvoice'
 import { OrderHeader } from '../components/order/OrderHeader'
+import { OrderInfoCard } from '../components/order/OrderInfoCard'
 import { OrderProgress } from '../components/order/OrderProgress'
 import { StatusAlertNotification, StatusAlert, STATUS_ALERTS } from '../components/order/StatusAlertNotification'
 
@@ -253,19 +254,8 @@ export function OrderDetailPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* Order Info Cards (Subject, Type, etc. - kept inline for now as they are simple) */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ background: 'var(--bg-card-solid)', borderRadius: 20, border: '1px solid var(--border-subtle)', padding: 20 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', marginBottom: 12, lineHeight: 1.4 }}>
-                  {order.subject}
-                </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Clock size={16} color="#71717a" />
-                    <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-                      Дедлайн: <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{new Date(order.deadline || Date.now()).toLocaleDateString()}</span>
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
+              {/* Order Info Cards */}
+              <OrderInfoCard order={order} />
 
               {/* File Download */}
               {order.files_url && (

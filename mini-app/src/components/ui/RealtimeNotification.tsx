@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell, Package, Wallet, CheckCircle, AlertTriangle,
@@ -44,7 +44,7 @@ interface Props {
 //  ICON MAPPING
 // ═══════════════════════════════════════════════════════════════════════════
 
-const iconMap: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
+const iconMap: Record<string, React.ComponentType<any>> = {
   'bell': Bell,
   'package': Package,
   'wallet': Wallet,
@@ -72,6 +72,10 @@ const iconMap: Record<string, React.ComponentType<{ size?: number; color?: strin
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MAIN SMART NOTIFICATION COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIN SMART NOTIFICATION COMPONENT (PREMIUM REDESIGN)
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function SmartNotification({ notification, onDismiss, onAction }: Props) {
@@ -110,29 +114,33 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
   if (!notification) return null
 
   const Icon = iconMap[notification.icon || 'bell'] || Bell
-  const color = notification.color || '#d4af37'
+  const color = notification.color || '#d4af37' // Default Gold
   const isHighPriority = notification.priority === 'high'
 
-  // Theme-aware colors
+  // Premium Theme Configuration
   const theme = {
-    bg: isDark ? 'rgba(20, 20, 23, 0.98)' : 'rgba(255, 255, 255, 0.98)',
-    title: isDark ? '#fff' : '#18181b',
-    message: isDark ? '#a1a1aa' : '#52525b',
-    hint: isDark ? '#71717a' : '#a1a1aa',
-    closeBg: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-    closeIcon: isDark ? '#71717a' : '#a1a1aa',
-    border: isDark ? `1px solid ${color}50` : `1px solid ${color}40`,
+    bg: isDark
+      ? 'rgba(20, 20, 23, 0.95)' // Dark: Deep luxury black
+      : 'rgba(255, 255, 252, 0.95)', // Light: Warm Cream White
+    backdrop: 'blur(25px)',
+    border: isDark
+      ? '1px solid rgba(255, 255, 255, 0.08)'
+      : '1px solid rgba(212, 175, 55, 0.15)', // Light gold border
     shadow: isDark
-      ? `0 10px 40px rgba(0,0,0,0.5), 0 0 40px ${color}30`
-      : `0 10px 40px rgba(0,0,0,0.15), 0 4px 16px ${color}20`,
-    progressBg: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-    actionBg: isDark ? `${color}15` : `${color}12`,
-    actionBorder: isDark ? `${color}30` : `${color}25`,
+      ? '0 12px 40px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.1)'
+      : '0 20px 60px -15px rgba(212, 175, 55, 0.25), 0 10px 25px -10px rgba(0,0,0,0.05)', // Luxurious golden shadow
+    titleColor: isDark ? '#fff' : '#1a1a1a',
+    textColor: isDark ? '#a1a1aa' : '#5c5c5c',
+    iconBg: isDark
+      ? `linear-gradient(135deg, ${color}20, ${color}10)`
+      : `linear-gradient(135deg, ${color}15, #fff 100%)`, // Subtle gradient for icon
+    iconBorder: isDark ? `${color}30` : `${color}20`,
+    closeBtn: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+    actionText: isDark ? '#71717a' : '#a1a1aa',
   }
 
   return (
     <>
-      {/* Confetti overlay */}
       <Confetti
         active={confetti.isActive}
         intensity="high"
@@ -142,289 +150,219 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
       <AnimatePresence>
         {isVisible && (
           <motion.div
-            initial={{ opacity: 0, y: -100, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -50, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            initial={{ opacity: 0, y: -20, scale: 0.92, rotateX: 10 }}
+            animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300, mass: 0.8 }}
             onClick={() => {
               if (notification.action && onAction) {
+                haptic('light')
                 onAction(notification.action, notification.data || {})
               }
             }}
             style={{
               position: 'fixed',
-              top: 16,
-              left: 16,
-              right: 16,
+              top: 12,
+              left: 12,
+              right: 12,
               zIndex: 10000,
               background: theme.bg,
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
+              backdropFilter: theme.backdrop,
+              WebkitBackdropFilter: theme.backdrop,
               border: theme.border,
-              borderRadius: 16,
-              padding: 16,
+              borderRadius: 20, // More rounded for modern feel
+              padding: '16px 18px',
               cursor: notification.action ? 'pointer' : 'default',
               boxShadow: theme.shadow,
+              overflow: 'hidden',
             }}
           >
-            {/* Celebration glow effect */}
-            {notification.celebration && (
-              <motion.div
-                animate={{
-                  opacity: [0.3, 0.6, 0.3],
-                  scale: [1, 1.02, 1],
-                }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                style={{
-                  position: 'absolute',
-                  inset: -2,
-                  borderRadius: 18,
-                  border: `2px solid ${color}`,
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
+            {/* Top decorative gradient sheen */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '60%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
+              pointerEvents: 'none',
+              borderRadius: '20px 20px 0 0',
+            }} />
 
-            {/* Top glow line */}
-            <motion.div
-              animate={notification.celebration ? {
-                background: [
-                  `linear-gradient(90deg, transparent, ${color}, transparent)`,
-                  `linear-gradient(90deg, ${color}, transparent, ${color})`,
-                  `linear-gradient(90deg, transparent, ${color}, transparent)`,
-                ]
-              } : {}}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 2,
-                background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-                borderRadius: '16px 16px 0 0',
-              }}
-            />
-
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              {/* Icon */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              {/* Premium Icon Container */}
               <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.1, type: 'spring' }}
                 style={{
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   borderRadius: 14,
-                  background: `${color}20`,
-                  border: `1px solid ${color}40`,
+                  background: theme.iconBg,
+                  border: `1px solid ${theme.iconBorder}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
                   position: 'relative',
+                  boxShadow: `0 4px 12px ${color}15`,
                 }}
               >
-                <Icon size={24} color={color} />
+                <Icon size={22} color={color} strokeWidth={2} />
 
-                {/* Pulse effect for high priority */}
+                {/* Ping animation for high priority */}
                 {isHighPriority && (
                   <motion.div
-                    animate={{
-                      scale: [1, 1.4, 1],
-                      opacity: [0.5, 0, 0.5],
-                    }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
+                    animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
                     style={{
                       position: 'absolute',
-                      inset: -4,
-                      borderRadius: 18,
-                      border: `2px solid ${color}`,
-                      pointerEvents: 'none',
+                      inset: 0,
+                      borderRadius: 14,
+                      border: `1px solid ${color}`,
                     }}
                   />
                 )}
               </motion.div>
 
-              {/* Content */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.15 }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}
-                >
-                  <span style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: theme.title,
-                  }}>
+              {/* Content Area */}
+              <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.15 }}
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: theme.titleColor,
+                      letterSpacing: '-0.01em',
+                      fontFamily: "'Inter', system-ui, sans-serif", // Ensure clean font
+                    }}
+                  >
                     {notification.title}
-                  </span>
+                  </motion.div>
+
                   {notification.order_id && (
                     <span style={{
                       fontSize: 11,
+                      fontWeight: 600,
                       color: color,
-                      background: `${color}20`,
-                      padding: '2px 8px',
+                      background: isDark ? `${color}15` : `${color}10`,
+                      padding: '2px 6px',
                       borderRadius: 6,
-                      fontFamily: "'JetBrains Mono', monospace",
+                      marginLeft: 8,
                     }}>
                       #{notification.order_id}
                     </span>
                   )}
-                </motion.div>
+                </div>
 
                 <motion.div
-                  initial={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, x: -5 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
                   style={{
-                    fontSize: 13,
-                    color: theme.message,
-                    lineHeight: 1.4,
+                    fontSize: 14,
+                    color: theme.textColor,
+                    lineHeight: 1.5,
+                    fontWeight: 400,
                   }}
                 >
                   {notification.message}
                 </motion.div>
 
-                {/* Progress bar for progress updates */}
+                {/* Progress Bar */}
                 {notification.type === 'progress_update' && notification.progress !== undefined && (
-                  <motion.div
-                    initial={{ opacity: 0, scaleX: 0 }}
-                    animate={{ opacity: 1, scaleX: 1 }}
-                    transition={{ delay: 0.3 }}
-                    style={{ marginTop: 8 }}
-                  >
-                    <div style={{
-                      height: 6,
-                      background: theme.progressBg,
-                      borderRadius: 3,
-                      overflow: 'hidden',
-                    }}>
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${notification.progress}%` }}
-                        transition={{ duration: 0.5, delay: 0.4 }}
-                        style={{
-                          height: '100%',
-                          background: `linear-gradient(90deg, ${color}, ${color}cc)`,
-                          borderRadius: 3,
-                        }}
-                      />
-                    </div>
-                    <div style={{
-                      fontSize: 11,
-                      color: color,
-                      marginTop: 4,
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>
-                      {notification.progress}% выполнено
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Balance change display */}
-                {notification.type === 'balance_update' && notification.change !== undefined && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.25, type: 'spring' }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      marginTop: 6,
-                      padding: '4px 10px',
-                      background: theme.actionBg,
-                      borderRadius: 8,
-                      border: `1px solid ${theme.actionBorder}`,
-                    }}
-                  >
-                    <span style={{
-                      fontSize: 16,
-                      fontWeight: 700,
-                      color: color,
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>
-                      {notification.change > 0 ? '+' : ''}{notification.change.toLocaleString('ru-RU')} ₽
-                    </span>
-                  </motion.div>
+                  <div style={{ marginTop: 10, height: 4, background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${notification.progress}%` }}
+                      style={{ height: '100%', background: color, borderRadius: 2 }}
+                    />
+                  </div>
                 )}
               </div>
 
-              {/* Close button */}
+              {/* Close Button */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
+                whileHover={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
                 onClick={(e) => {
                   e.stopPropagation()
                   setIsVisible(false)
                   setTimeout(onDismiss, 300)
                 }}
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 24,
+                  height: 24,
                   borderRadius: 8,
-                  background: theme.closeBg,
+                  background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                  transition: 'color 0.2s',
                 }}
               >
-                <X size={16} color={theme.closeIcon} />
+                <X size={16} />
               </motion.button>
             </div>
 
-            {/* Action hint */}
+            {/* Action Hint / Footer */}
             {notification.action && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
+                transition={{ delay: 0.4 }}
                 style={{
-                  marginTop: 10,
+                  marginTop: 12,
                   paddingTop: 10,
-                  borderTop: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.06)',
+                  borderTop: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.04)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
                 }}
               >
-                <span style={{ fontSize: 12, color: theme.hint }}>
-                  Нажмите чтобы посмотреть
+                <span style={{
+                  fontSize: 12,
+                  color: theme.actionText,
+                  fontWeight: 500
+                }}>
+                  Нармите чтобы посмотреть
                 </span>
                 <motion.div
-                  animate={{ x: [0, 4, 0] }}
-                  transition={{ duration: 1, repeat: Infinity }}
+                  animate={{ x: [0, 3, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{ display: 'flex' }}
                 >
-                  <TrendingUp size={12} color={theme.hint} />
+                  <TrendingUp size={12} color={theme.actionText} style={{ transform: 'rotate(45deg)' }} />
                 </motion.div>
               </motion.div>
             )}
 
-            {/* Progress bar for auto-dismiss */}
-            <motion.div
-              initial={{ scaleX: 1 }}
-              animate={{ scaleX: 0 }}
-              transition={{
-                duration: isHighPriority ? 8 : 5,
-                ease: 'linear'
-              }}
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 16,
-                right: 16,
-                height: 2,
-                background: color,
-                borderRadius: 1,
-                transformOrigin: 'left',
-              }}
-            />
+            {/* Auto-dismiss timer line */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 2,
+              background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+            }}>
+              <motion.div
+                initial={{ width: '100%' }}
+                animate={{ width: '0%' }}
+                transition={{ duration: isHighPriority ? 8 : 5, ease: 'linear' }}
+                style={{ height: '100%', background: color, borderRadius: 1 }}
+              />
+            </div>
+
           </motion.div>
         )}
       </AnimatePresence>
@@ -448,8 +386,7 @@ export interface RealtimeNotificationData {
 // Re-export for backwards compatibility
 export function RealtimeNotification({
   notification,
-  onDismiss,
-  autoDismiss = 5000
+  onDismiss
 }: {
   notification: RealtimeNotificationData | null
   onDismiss: () => void
@@ -463,15 +400,15 @@ export function RealtimeNotification({
     title: notification.title,
     message: notification.message,
     icon: notification.type === 'order' ? 'package' :
-          notification.type === 'balance' ? 'wallet' :
-          notification.type === 'success' ? 'check-circle' :
+      notification.type === 'balance' ? 'wallet' :
+        notification.type === 'success' ? 'check-circle' :
           notification.type === 'warning' ? 'alert-triangle' :
-          notification.type === 'error' ? 'x-circle' : 'info',
+            notification.type === 'error' ? 'x-circle' : 'info',
     color: notification.type === 'order' ? '#d4af37' :
-           notification.type === 'balance' ? '#22c55e' :
-           notification.type === 'success' ? '#22c55e' :
-           notification.type === 'warning' ? '#f59e0b' :
-           notification.type === 'error' ? '#ef4444' : '#3b82f6',
+      notification.type === 'balance' ? '#22c55e' :
+        notification.type === 'success' ? '#22c55e' :
+          notification.type === 'warning' ? '#f59e0b' :
+            notification.type === 'error' ? '#ef4444' : '#3b82f6',
     data: notification.data,
   }
 
