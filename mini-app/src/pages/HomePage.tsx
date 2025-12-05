@@ -13,11 +13,6 @@ import { Confetti } from '../components/ui/Confetti'
 import { DailyBonusModal } from '../components/ui/DailyBonus'
 import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
-// ULTRA-PREMIUM IMPORTS
-import { HolographicCard, GoldHolographicCard } from '../components/ui/HolographicCard'
-import { PremiumMagneticButton } from '../components/ui/MagneticButton'
-import { DepthBackground } from '../components/ui/DepthBackground'
-import { useTilt3D } from '../hooks/useTilt3D'
 
 interface Props {
   user: UserData | null
@@ -310,8 +305,7 @@ export function HomePage({ user }: Props) {
 
   return (
     <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: 'var(--bg-main)', position: 'relative' }}>
-      {/* ULTRA-PREMIUM: Depth Background with Parallax */}
-      <DepthBackground enableGyro intensity="medium" />
+      {/* Background particles */}
       <FloatingParticles />
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -411,16 +405,31 @@ export function HomePage({ user }: Props) {
           BENTO GRID: BALANCE & LEVEL — Ultra-Premium Glass Cards
           ═══════════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-        {/* BALANCE — ULTRA-PREMIUM Holographic Card */}
-        <GoldHolographicCard
-          style={{ padding: 20 }}
-          intensity="medium"
+        {/* BALANCE — Vault Style with Gold Gradient Text */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="breathing-card pulse-border-gold"
+          style={{ ...glassGoldStyle, boxShadow: 'var(--card-shadow), 0 0 50px -15px rgba(212,175,55,0.25)' }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          {/* Inner Shine Effect */}
+          <CardInnerShine />
+          {/* Gold Radial Glow */}
+          <div
+            className="radial-glow"
+            style={{
+              position: 'absolute',
+              top: -30,
+              right: -30,
+              width: 100,
+              height: 100,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
+          <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <CreditCard size={14} color="var(--gold-400)" strokeWidth={1.5} className="glow-pulse" />
               <span className="float-label" style={{
@@ -466,21 +475,19 @@ export function HomePage({ user }: Props) {
                 +{user.bonus_balance} бонусов
               </span>
             </div>
-          </motion.div>
-        </GoldHolographicCard>
+          </div>
+        </motion.div>
 
-        {/* LEVEL — ULTRA-PREMIUM Holographic Card */}
-        <HolographicCard
-          variant="silver"
-          intensity="medium"
-          style={{ padding: 20 }}
-          glowColor="rgba(192, 192, 192, 0.3)"
+        {/* LEVEL — Glass Card with Serif Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="breathing-card shimmer-wave"
+          style={glassStyle}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
+          <CardInnerShine />
+          <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: 'var(--text-muted)' }}>
               <Crown size={14} strokeWidth={1.5} />
               <span style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 700 }}>УРОВЕНЬ</span>
@@ -521,60 +528,86 @@ export function HomePage({ user }: Props) {
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontWeight: 500 }}>
               Уровень {user.rank.level}
             </div>
-          </motion.div>
-        </HolographicCard>
+          </div>
+        </motion.div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HERO BUTTON — ULTRA-PREMIUM Magnetic CTA
+          HERO BUTTON — Liquid Gold Premium CTA
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
+      <motion.button
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
-        style={{ marginBottom: 16 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleNewOrder}
+        className="shimmer-gold"
+        style={{
+          position: 'relative',
+          width: '100%',
+          padding: '22px 26px',
+          borderRadius: 18,
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          // Liquid Gold Metallic Gradient
+          background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #D4AF37 50%, #B38728 75%, #FBF5B7 100%)',
+          backgroundSize: '200% 200%',
+          // Gold glow + inset highlights
+          boxShadow: `
+            0 0 50px -10px rgba(212,175,55,0.6),
+            0 15px 35px -10px rgba(0,0,0,0.4),
+            inset 0 2px 4px rgba(255,255,255,0.5),
+            inset 0 -2px 4px rgba(0,0,0,0.1)
+          `,
+          marginBottom: 16,
+          overflow: 'hidden',
+          animation: 'liquid-gold-shift 4s ease-in-out infinite',
+        }}
       >
-        <PremiumMagneticButton
-          onClick={handleNewOrder}
-          style={{ width: '100%' }}
-        >
+        {/* Shimmer shine sweep effect */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: '-100%',
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+          animation: 'shimmer-pass 3s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
           <div style={{
-            width: '100%',
-            padding: '22px 26px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            fontSize: 16,
+            fontWeight: 800,
+            color: '#09090b',
+            fontFamily: "var(--font-serif)",
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
           }}>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{
-                fontSize: 16,
-                fontWeight: 800,
-                color: '#09090b',
-                fontFamily: "var(--font-serif)",
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-              }}>
-                Поручить задачу
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(9,9,11,0.65)', marginTop: 4, fontWeight: 500 }}>
-                Персональный менеджер
-              </div>
-            </div>
-            <div style={{
-              width: 50,
-              height: 50,
-              borderRadius: '50%',
-              background: 'rgba(9,9,11,0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backdropFilter: 'blur(4px)',
-            }}>
-              <Plus size={26} color="#09090b" strokeWidth={2.5} />
-            </div>
+            Поручить задачу
           </div>
-        </PremiumMagneticButton>
-      </motion.div>
+          <div style={{ fontSize: 11, color: 'rgba(9,9,11,0.65)', marginTop: 4, fontWeight: 500 }}>
+            Персональный менеджер
+          </div>
+        </div>
+        <div style={{
+          position: 'relative',
+          zIndex: 1,
+          width: 50,
+          height: 50,
+          borderRadius: '50%',
+          background: 'rgba(9,9,11,0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <Plus size={26} color="#09090b" strokeWidth={2.5} />
+        </div>
+      </motion.button>
 
       {/* ═══════════════════════════════════════════════════════════════════
           PANIC BUTTON — Error Glass Style
