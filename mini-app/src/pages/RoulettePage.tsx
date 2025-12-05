@@ -100,7 +100,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
 
       // 2. Determine prize ID based on result
       // Mapping backend types to frontend IDs
-      let prizeId = 'min'; // Default
+      let prizeId: string | null = 'min'; // Default
       if (result.type === 'jackpot') prizeId = 'dip';
       else if (result.value >= 5000) prizeId = 'dsc';
       else if (result.value >= 200) prizeId = 'bon';
