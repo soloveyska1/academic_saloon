@@ -2173,9 +2173,70 @@ async def send_support_message(
 
     except Exception as e:
         logger.error(f"[Support API] Failed to notify admins: {e}")
-    
+
     return SendMessageResponse(
         success=True,
         message_id=message.id,
         message="Сообщение отправлено"
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  QR CODE API — Premium Referral QR Generator
+# ═══════════════════════════════════════════════════════════════════════════
+
+from fastapi.responses import Response
+from bot.services.qr_generator import generate_premium_qr_card, generate_simple_qr
+
+
+@router.get("/qr/referral")
+async def get_referral_qr(
+    current_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    style: str = "card"  # "card" or "simple"
+):
+    """
+    Generate a premium QR code for user's referral link.
+
+    style: "card" - full branded card, "simple" - just the QR code
+    """
+    # Get user data
+    user = await session.get(User, current_user.id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Build referral link
+    referral_code = f"REF{user.telegram_id}"
+    bot_username = settings.BOT_USERNAME.lstrip("@")
+    referral_link = f"https://t.me/{bot_username}?start=ref_{user.telegram_id}"
+
+    # Get username
+    username = user.username or user.fullname or "друг"
+
+    if style == "simple":
+        # Simple QR code
+        qr_bytes = generate_simple_qr(referral_link, size=400)
+    else:
+        # Premium card
+        qr_bytes = generate_premium_qr_card(
+            referral_link=referral_link,
+            username=username,
+            referral_code=referral_code,
+            invited_count=user.referrals_count or 0,
+            earnings=user.referral_earnings or 0.0,
+        )
+
+    if not qr_bytes:
+        raise HTTPException(
+            status_code=500,
+            detail="QR generation failed. Please try again."
+        )
+
+    return Response(
+        content=qr_bytes,
+        media_type="image/png",
+        headers={
+            "Content-Disposition": f'inline; filename="academic-saloon-{referral_code}.png"',
+            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+        }
     )
