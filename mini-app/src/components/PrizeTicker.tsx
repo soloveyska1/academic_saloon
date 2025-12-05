@@ -1,203 +1,74 @@
-import React, { memo } from 'react'
-import { motion } from 'framer-motion'
-import { LucideIcon } from 'lucide-react'
-import { useTheme } from '../contexts/ThemeContext'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PRIZE TICKER — Asset List with Scanning Animation
-//  Hacker-style prize display with scanning effect
-// ═══════════════════════════════════════════════════════════════════════════
-
-export interface PrizeTier {
-  id: string
-  name: string
-  desc: string
-  val: string
-  chance: string
-  icon: LucideIcon
-}
+import { useEffect, useState } from 'react';
+import '../styles/Roulette.css';
 
 interface PrizeTickerProps {
-  tiers: PrizeTier[]
-  highlightedId: string | null
+  highlightId: string | null; // ID of the item to highlight/land on
+  state: 'idle' | 'spinning' | 'near-miss' | 'landed';
 }
 
-export const PrizeTicker = memo(({ tiers, highlightedId }: PrizeTickerProps) => {
-  const { isDark } = useTheme()
+const PRIZES = [
+  { id: 'dip', label: 'ДИПЛОМ ПОД КЛЮЧ', rarity: 'LEGENDARY', color: 'text-[#FFD700]' },
+  { id: 'crs', label: 'КУРСОВАЯ РАБОТА', rarity: 'EPIC', color: 'text-[#C0C0C0]' },
+  { id: 'dsc', label: 'СКИДКА -500₽', rarity: 'RARE', color: 'text-[#D4AF37]' },
+  { id: 'pre', label: 'PREMIUM ОТЧЕТ', rarity: 'EPIC', color: 'text-[#C0C0C0]' },
+  { id: 'vip', label: 'VIP СТАТУС', rarity: 'LEGENDARY', color: 'text-[#FFD700]' },
+  { id: 'bon', label: 'БОНУС 1000₽', rarity: 'RARE', color: 'text-[#D4AF37]' },
+];
+
+export const PrizeTicker = ({ highlightId, state }: PrizeTickerProps) => {
+  // We render a window of items.
+  // In a real slot machine, this matches the spin.
+  // Here we will simplistically glitch/highlight.
 
   return (
-    <div style={{ padding: '0 20px', paddingBottom: 100 }}>
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          padding: '0 4px',
-          marginBottom: 16,
-          opacity: 0.5,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 10,
-            fontFamily: 'var(--font-mono)',
-            color: '#D4AF37',
-            textTransform: 'uppercase',
-            letterSpacing: '0.2em',
-          }}
-        >
-          Available Assets
-        </span>
-        <span
-          style={{
-            fontSize: 10,
-            fontFamily: 'var(--font-mono)',
-            color: isDark ? '#666' : '#999',
-          }}
-        >
-          LIVE ENCRYPTION
-        </span>
-      </div>
+    <div className="relative w-full max-w-sm mx-auto mt-8 mb-4 h-32 overflow-hidden border-y border-[#D4AF37]/30 bg-black/50 backdrop-blur-md">
+      <div className="absolute top-2 left-2 text-[10px] text-[#D4AF37]/50">TARGET SELECTOR</div>
 
-      {/* Prize List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {tiers.map((tier) => {
-          const isActive = highlightedId === tier.id
-          const isPassed = highlightedId !== null &&
-            tiers.findIndex(t => t.id === highlightedId) > tiers.findIndex(t => t.id === tier.id)
+      <div className="flex flex-col items-center justify-center h-full space-y-2">
+        {/* Logic for the theatrical "Near Miss" would ideally involve animating this list.
+                     For the MVP React version without heavy GSAP, we will use a static "Selection" view 
+                     that updates based on state.
+                 */}
 
-          return (
-            <motion.div
-              key={tier.id}
-              animate={{
-                scale: isActive ? 1.02 : isPassed ? 0.98 : 1,
-                opacity: isPassed ? 0.4 : 1,
-              }}
-              transition={{ duration: 0.15 }}
-              className={`asset-card ${isActive ? 'highlighted' : ''} ${isPassed ? 'passed' : ''}`}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 16,
-                borderRadius: 12,
-                border: `1px solid ${isActive ? '#D4AF37' : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)'}`,
-                background: isActive
-                  ? 'rgba(212, 175, 55, 0.05)'
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.02)'
-                    : 'rgba(255, 255, 255, 0.8)',
-                overflow: 'hidden',
-                transition: 'all 0.3s ease',
-              }}
-            >
-              {/* Active Glow Line */}
-              {isActive && (
-                <motion.div
-                  layoutId="activeGlow"
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: 2,
-                    background: '#D4AF37',
-                    boxShadow: '0 0 10px #D4AF37',
-                  }}
-                />
-              )}
-
-              {/* Shimmer Effect */}
-              {isActive && (
-                <div
-                  className="shimmer-effect"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
-                    transform: 'skewX(-20deg)',
-                    animation: 'shimmer 1s infinite',
-                  }}
-                />
-              )}
-
-              {/* Left: Icon & Info */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, zIndex: 10 }}>
-                <div
-                  className="asset-icon"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: isActive ? '#D4AF37' : isDark ? '#141417' : '#f0ede8',
-                    color: isActive ? '#000' : isDark ? '#444' : '#999',
-                    boxShadow: isActive ? '0 0 20px rgba(212, 175, 55, 0.4)' : 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <tier.icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+        {state === 'spinning' ? (
+          <div className="flex flex-col gap-2 animate-pulse blur-sm opacity-50">
+            {PRIZES.map(p => (
+              <div key={p.id} className="text-center text-xs opacity-50">{p.label}</div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-1 w-full transition-all duration-300">
+            {state === 'near-miss' && (
+              <div className="scale-110 transition-transform duration-300">
+                <div className="text-[#FF3B30] text-sm font-bold tracking-widest glitched-text shaking">
+                  [ {PRIZES[0].label} ]
                 </div>
+                <div className="text-[10px] text-[#FF3B30] text-center">ERROR: ENCRYPTION TOO STRONG</div>
+              </div>
+            )}
 
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontFamily: 'var(--font-serif)',
-                      letterSpacing: '0.1em',
-                      color: isActive ? (isDark ? '#fff' : '#1a1a1a') : (isDark ? '#666' : '#888'),
-                    }}
-                  >
-                    {tier.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      marginTop: 2,
-                      color: isActive ? '#D4AF37' : (isDark ? '#444' : '#aaa'),
-                    }}
-                  >
-                    {tier.desc}
-                  </span>
+            {state === 'landed' && (
+              <div className="scale-125 transition-transform duration-500 ease-out">
+                <div className="text-[#D4AF37] text-lg font-bold tracking-widest metallic-text">
+                  {PRIZES.find(p => p.id === highlightId)?.label || 'УСПЕХ'}
+                </div>
+                <div className="text-[10px] text-[#0F0] text-center mt-1 tracking-widest border border-[#0F0] px-2 rounded">
+                  VULNERABILITY FOUND
                 </div>
               </div>
+            )}
 
-              {/* Right: Value */}
-              <div style={{ textAlign: 'right', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: isActive ? '#D4AF37' : (isDark ? '#444' : '#888'),
-                    textShadow: isActive ? '0 0 10px rgba(212, 175, 55, 0.5)' : 'none',
-                  }}
-                >
-                  {tier.val}
-                </span>
-                {isActive && (
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontFamily: 'var(--font-mono)',
-                      color: isDark ? '#666' : '#999',
-                      marginTop: 4,
-                    }}
-                  >
-                    CHANCE: {tier.chance}
-                  </span>
-                )}
+            {state === 'idle' && (
+              <div className="text-[#D4AF37]/40 text-sm tracking-widest">
+                WAITING FOR INPUT...
               </div>
-            </motion.div>
-          )
-        })}
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Scanline overlay specific to this component */}
+      <div className="absolute inset-0 pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiAvPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDAsIDAsIDAsIDAuNCkiIC8+Cjwvc3ZnPg==')] opacity-50"></div>
     </div>
-  )
-})
-
-PrizeTicker.displayName = 'PrizeTicker'
+  );
+};

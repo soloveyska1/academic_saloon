@@ -1,82 +1,55 @@
-import React, { useEffect, useState, memo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Zap } from 'lucide-react'
+import { useEffect, useState } from 'react';
+import '../styles/Roulette.css';
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  LIVE WINNERS TICKER — Fake Social Proof for Urgency
-//  Creates artificial excitement and FOMO
-// ═══════════════════════════════════════════════════════════════════════════
+const ACTIONS = ['ВЗЛОМАЛ СИСТЕМУ', 'ПОЛУЧИЛ ДОСТУП', 'АКТИВИРОВАЛ КОД', 'НАШЕЛ УЯЗВИМОСТЬ'];
+const ASSETS = ['ДИПЛОМ ПОД КЛЮЧ', 'СКИДКА -90%', 'PREMIUM АККАУНТ', 'ДОСТУП К БАЗЕ'];
+const NAMES = ['ALEX_M', 'DIMITRI_K', 'GHOST_01', 'CYBER_V', 'KATYA_R', 'SYSTEM_ADMIN'];
 
-interface Winner {
-  name: string
-  prize: string
-  action: string
-}
-
-const FAKE_WINNERS: Winner[] = [
-  { name: 'Alex M.', prize: 'DIPLOMA LIBERTY', action: 'ВЗЛОМАЛ' },
-  { name: 'Elena K.', prize: 'SMART START -500₽', action: 'ПОЛУЧИЛА' },
-  { name: 'Dmitry V.', prize: 'ACADEMIC RELIEF', action: 'ВЗЛОМАЛ' },
-  { name: 'Sarah J.', prize: 'STRATEGY PACK', action: 'ЗАБРАЛА' },
-  { name: 'Kirill R.', prize: 'SMART START -500₽', action: 'ПОЛУЧИЛ' },
-  { name: 'User_773', prize: 'THESIS START', action: 'АКТИВИРОВАЛ' },
-  { name: 'Maria P.', prize: 'SMART START -500₽', action: 'ПОЛУЧИЛА' },
-  { name: 'Anton S.', prize: 'STRATEGY PACK', action: 'ЗАБРАЛ' },
-]
-
-export const LiveWinnersTicker = memo(() => {
-  const [index, setIndex] = useState(0)
+export const LiveWinnersTicker = () => {
+  const [feed, setFeed] = useState<string[]>([]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % FAKE_WINNERS.length)
-    }, 3500)
-    return () => clearInterval(interval)
-  }, [])
+    // Hydrate initial mock data
+    const initial = Array.from({ length: 5 }).map(() => generateEntry());
+    setFeed(initial);
 
-  const winner = FAKE_WINNERS[index]
+    const interval = setInterval(() => {
+      setFeed(prev => [generateEntry(), ...prev.slice(0, 4)]);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const generateEntry = () => {
+    const name = NAMES[Math.floor(Math.random() * NAMES.length)];
+    const action = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
+    const asset = ASSETS[Math.floor(Math.random() * ASSETS.length)];
+    return `⚡ :: ${name} :: ${action} :: ${asset}`;
+  };
 
   return (
-    <div className="winners-ticker" style={{ padding: '6px 0' }}>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={index}
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -20, opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            fontSize: 9,
-            fontFamily: 'var(--font-mono)',
-            color: '#D4AF37',
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-          }}
-        >
-          <Zap
-            size={10}
-            fill="#D4AF37"
-            color="#D4AF37"
-            style={{ animation: 'pulse 1s ease-in-out infinite' }}
-          />
-          <span style={{ opacity: 0.7 }}>{winner.name}</span>
-          <span style={{ color: '#fff', fontWeight: 700 }}>{winner.action}:</span>
-          <span
-            style={{
-              color: '#fff',
-              textShadow: '0 0 5px rgba(212, 175, 55, 0.5)',
-            }}
-          >
-            {winner.prize}
-          </span>
-        </motion.div>
-      </AnimatePresence>
-    </div>
-  )
-})
+    <div className="absolute top-0 left-0 w-full bg-black/80 border-b border-[#D4AF37] z-50 overflow-hidden h-8 flex items-center">
+      {/* Gradient overlay for fade effect */}
+      <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#050505] to-transparent z-10"></div>
+      <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#050505] to-transparent z-10"></div>
 
-LiveWinnersTicker.displayName = 'LiveWinnersTicker'
+      <div className="flex whitespace-nowrap animate-slide text-xs font-mono tracking-widest text-[#D4AF37]">
+        {feed.map((entry, i) => (
+          <span key={i} className="mx-4 opacity-80 hover:opacity-100 hover:text-[#FBF5B7] transition-colors">
+            {entry}
+          </span>
+        ))}
+      </div>
+
+      <style>{`
+                @keyframes slide {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-20%); }
+                }
+                .animate-slide {
+                    animation: slide 10s linear infinite;
+                }
+            `}</style>
+    </div>
+  );
+};
