@@ -1432,17 +1432,17 @@ export function CreateOrderPage() {
         )}
       </AnimatePresence>
 
-      {/* Action Button */}
+      {/* Action Button — Premium Shimmer Effect */}
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, type: 'spring', stiffness: 300, damping: 30 }}
         style={{
           position: 'fixed',
-          bottom: 100,
+          bottom: 'calc(110px + env(safe-area-inset-bottom, 0px))',
           left: 24,
           right: 24,
-          zIndex: 1000,
+          zIndex: 999,
         }}
       >
         <motion.button
@@ -1450,6 +1450,7 @@ export function CreateOrderPage() {
           onClick={step === 3 ? handleSubmit : goNext}
           disabled={!canProceed || submitting}
           style={{
+            position: 'relative',
             width: '100%',
             padding: '20px 28px',
             fontSize: 18,
@@ -1458,39 +1459,70 @@ export function CreateOrderPage() {
             letterSpacing: '0.02em',
             color: canProceed ? '#050505' : 'var(--text-muted)',
             background: canProceed
-              ? 'var(--liquid-gold)'
+              ? 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #D4AF37 50%, #B38728 75%, #FBF5B7 100%)'
               : 'var(--bg-glass)',
+            backgroundSize: canProceed ? '200% 200%' : 'auto',
             border: 'none',
             borderRadius: 18,
             cursor: canProceed && !submitting ? 'pointer' : 'not-allowed',
             boxShadow: canProceed
-              ? 'var(--glow-gold-intense)'
+              ? '0 0 40px -5px rgba(212, 175, 55, 0.5), 0 10px 30px -10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
               : 'none',
             opacity: canProceed ? 1 : 0.5,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 12,
+            overflow: 'hidden',
+            animation: canProceed ? 'liquid-gold-shift 4s ease-in-out infinite' : 'none',
           }}
         >
-          {submitting ? (
-            <>
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-                <Clock size={22} />
-              </motion.div>
-              Отправка...
-            </>
-          ) : step === 3 ? (
-            <>
-              <Send size={20} />
-              Рассчитать стоимость
-            </>
-          ) : (
-            <>
-              {step === 2 ? 'Выбрать сроки' : 'Продолжить'}
-              <ChevronRight size={24} />
-            </>
+          {/* Premium Shimmer Sweep */}
+          {canProceed && !submitting && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '-100%',
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+              animation: 'shimmer-pass 2.5s ease-in-out infinite',
+              pointerEvents: 'none',
+            }} />
           )}
+          {/* Inner Highlight */}
+          {canProceed && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '50%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)',
+              borderRadius: '18px 18px 0 0',
+              pointerEvents: 'none',
+            }} />
+          )}
+          <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
+            {submitting ? (
+              <>
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                  <Clock size={22} />
+                </motion.div>
+                Отправка...
+              </>
+            ) : step === 3 ? (
+              <>
+                <Send size={20} />
+                Рассчитать стоимость
+              </>
+            ) : (
+              <>
+                {step === 2 ? 'Выбрать сроки' : 'Продолжить'}
+                <ChevronRight size={24} />
+              </>
+            )}
+          </span>
         </motion.button>
       </motion.div>
     </div>

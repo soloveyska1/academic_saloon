@@ -52,6 +52,14 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
     pressDelay: 40,
   })
 
+  // Premium gold outline for inactive items
+  const inactiveGoldOutline = isDark
+    ? 'rgba(212, 175, 55, 0.15)'
+    : 'rgba(180, 142, 38, 0.2)'
+  const inactiveGoldColor = isDark
+    ? 'rgba(212, 175, 55, 0.45)'
+    : 'rgba(158, 122, 26, 0.6)'
+
   return (
     <button
       ref={ref}
@@ -95,6 +103,20 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
         />
       )}
 
+      {/* Premium Gold Outline for Inactive Tabs */}
+      {!isActive && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 2,
+            borderRadius: 14,
+            background: 'transparent',
+            border: `1px solid ${inactiveGoldOutline}`,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
       {/* Gold Glow Line Under Active Tab */}
       {isActive && (
         <div
@@ -130,7 +152,7 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
         <Icon
           size={22}
           strokeWidth={isActive ? 2.5 : 1.8}
-          color={isActive ? colors.gold : colors.inactive}
+          color={isActive ? colors.gold : inactiveGoldColor}
           style={{
             filter: isActive
               ? (isDark
@@ -151,8 +173,8 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
           fontWeight: isActive ? 700 : 500,
           fontFamily: "'Manrope', sans-serif",
           letterSpacing: '0.02em',
-          color: isActive ? colors.gold : colors.inactive,
-          opacity: isActive ? 1 : 0.5,
+          color: isActive ? colors.gold : inactiveGoldColor,
+          opacity: isActive ? 1 : 0.8,
           transform: isActive ? 'translateY(0)' : 'translateY(2px)',
           textShadow: isActive
             ? (isDark
