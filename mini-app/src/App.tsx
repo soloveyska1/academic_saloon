@@ -357,20 +357,27 @@ function AppContent() {
 // Main App wrapper
 function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [appReady, setAppReady] = useState(false);
+
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+    // Small delay before showing app content for smooth transition
+    setTimeout(() => setAppReady(true), 100);
+  }, []);
 
   return (
     <>
-      <AnimatePresence>
-        {showSplash && (
-          <SplashScreen onComplete={() => setShowSplash(false)} />
-        )}
-      </AnimatePresence>
+      {/* Splash Screen - blocks everything until complete */}
+      {showSplash && (
+        <SplashScreen onComplete={handleSplashComplete} />
+      )}
 
-      {!showSplash && (
+      {/* Main App - only renders after splash is done */}
+      {appReady && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
         >
           <AppContent />
         </motion.div>
