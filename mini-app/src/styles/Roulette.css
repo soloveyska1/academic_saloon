@@ -1,734 +1,457 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   THE GILDED ACADEMIC VAULT — Digital Haute Horlogerie
-   Philosophy: Living, Breathing, Tactile
+   ACADÉMIE ROYALE — Элитный Клуб Фортуны
+   Monte Carlo Casino + Swiss Private Banking + Art Deco
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* --- THEME VARIABLES (Opulent Dark - Obsidian/Pulse) --- */
 :root {
-  /* Base Colors - Deep Obsidian */
-  --r-bg-base: #030303;
-  --r-bg-deep: #000000;
-  --r-bg-elevated: #0a0908;
+  /* Casino Elegance Palette */
+  --r-bg-base: #0a0f0d;
+  --r-bg-deep: #050807;
+  --r-bg-card: #0d1412;
+  --r-bg-elevated: #121a17;
 
-  /* Gold Spectrum - Refined Luxury */
-  --r-gold-50: #FFF8E1;
-  --r-gold-100: #FBF5B7;
-  --r-gold-200: #F0E68C;
-  --r-gold-300: #D4AF37;
-  --r-gold-400: #C5A028;
-  --r-gold-500: #AA872C;
-  --r-gold-600: #8B6914;
-  --r-gold-700: #5C4510;
-  --r-gold-800: #3D2E0A;
-  --r-gold-900: #1F1705;
+  /* Antique Gold */
+  --r-gold-50: #FFF9E6;
+  --r-gold-100: #F5E6B8;
+  --r-gold-200: #E6D090;
+  --r-gold-300: #D4B86A;
+  --r-gold-400: #C9A84C;
+  --r-gold-500: #B8952F;
+  --r-gold-600: #9A7B24;
+  --r-gold-700: #7A611C;
+  --r-gold-800: #5C4915;
+  --r-gold-900: #3D300E;
 
-  /* Glass - Thick Frosted */
-  --r-glass-bg: rgba(8, 8, 8, 0.75);
-  --r-glass-border: rgba(212, 175, 55, 0.25);
-  --r-glass-shine: rgba(255, 255, 255, 0.08);
-  --r-glass-highlight: rgba(212, 175, 55, 0.15);
+  /* Emerald Accent */
+  --r-emerald: #1B4D3E;
+  --r-emerald-light: #2D6A4F;
+  --r-emerald-dark: #0F2F25;
+
+  /* Burgundy Accent */
+  --r-burgundy: #722F37;
+  --r-burgundy-light: #8B3A44;
+  --r-burgundy-dark: #4A1F24;
+
+  /* Ivory & Cream */
+  --r-ivory: #FFFFF0;
+  --r-cream: #F5F5DC;
 
   /* Text */
-  --r-text-primary: #FBF5B7;
-  --r-text-secondary: rgba(212, 175, 55, 0.6);
-  --r-text-muted: rgba(212, 175, 55, 0.35);
+  --r-text-primary: #F5E6B8;
+  --r-text-secondary: rgba(212, 184, 106, 0.7);
+  --r-text-muted: rgba(212, 184, 106, 0.4);
 
-  /* Accent Colors */
-  --r-danger: #DC2626;
-  --r-success: #10B981;
-  --r-legendary: #FF6B35;
-
-  /* Living Texture Gradients */
-  --r-living-gradient: radial-gradient(ellipse 150% 100% at 50% 0%, #0d0b08 0%, #030303 50%, #000000 100%);
-  --r-obsidian-pulse: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.04) 0%, transparent 60%);
-
-  /* Swiss Watch Metallic */
-  --r-brushed-gold: linear-gradient(135deg, #5C4510 0%, #D4AF37 25%, #FBF5B7 50%, #D4AF37 75%, #5C4510 100%);
-  --r-brushed-steel: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
-  --r-polished-brass: linear-gradient(135deg, #8B6914 0%, #D4AF37 50%, #8B6914 100%);
+  /* Effects */
+  --r-glow-gold: rgba(212, 184, 106, 0.4);
+  --r-shadow-deep: rgba(0, 0, 0, 0.6);
 }
 
-/* --- LIGHT MODE (Cotton Paper / Caustics) --- */
 [data-theme="light"] {
-  /* Base Colors - Cream Cardstock */
-  --r-bg-base: #FAF8F5;
-  --r-bg-deep: #F5F2EB;
+  --r-bg-base: #F8F6F0;
+  --r-bg-deep: #EFEFEA;
+  --r-bg-card: #FFFFFF;
   --r-bg-elevated: #FFFFFF;
 
-  /* Gold Spectrum Inverted */
-  --r-gold-50: #1F1705;
-  --r-gold-100: #3D2E0A;
-  --r-gold-200: #5C4510;
-  --r-gold-300: #8B6914;
-  --r-gold-400: #AA872C;
-  --r-gold-500: #C5A028;
-  --r-gold-600: #D4AF37;
-  --r-gold-700: #F0E68C;
-  --r-gold-800: #FBF5B7;
-  --r-gold-900: #FFF8E1;
-
-  /* Glass - Porcelain Frost */
-  --r-glass-bg: rgba(255, 255, 255, 0.85);
-  --r-glass-border: rgba(139, 105, 20, 0.15);
-  --r-glass-shine: rgba(255, 255, 255, 0.7);
-  --r-glass-highlight: rgba(139, 105, 20, 0.08);
-
-  /* Text */
-  --r-text-primary: #2D2410;
-  --r-text-secondary: rgba(61, 46, 10, 0.6);
-  --r-text-muted: rgba(61, 46, 10, 0.35);
-
-  /* Living Texture */
-  --r-living-gradient: radial-gradient(ellipse 150% 100% at 50% 0%, #FFFFFF 0%, #FAF8F5 50%, #F5F2EB 100%);
-  --r-obsidian-pulse: radial-gradient(circle at 50% 50%, rgba(139, 105, 20, 0.06) 0%, transparent 60%);
-
-  /* Swiss Watch Metallic - Light */
-  --r-brushed-gold: linear-gradient(135deg, #8B6914 0%, #C5A028 25%, #F0E68C 50%, #C5A028 75%, #8B6914 100%);
-  --r-brushed-steel: linear-gradient(180deg, #e0e0e0 0%, #c0c0c0 50%, #a0a0a0 100%);
-  --r-polished-brass: linear-gradient(135deg, #AA872C 0%, #D4AF37 50%, #AA872C 100%);
+  --r-text-primary: #2D2A24;
+  --r-text-secondary: rgba(45, 42, 36, 0.7);
+  --r-text-muted: rgba(45, 42, 36, 0.4);
 }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   BASE STYLES
-   ═══════════════════════════════════════════════════════════════════════════ */
 
 * {
   box-sizing: border-box;
 }
 
 body {
-  background-color: var(--r-bg-base);
+  background: var(--r-bg-base);
   color: var(--r-text-primary);
+  font-family: 'Montserrat', sans-serif;
   min-height: 100dvh;
   margin: 0;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 400;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  overflow-y: auto;
-  scroll-behavior: smooth;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TYPOGRAPHY — Haute Horlogerie Style
+   TYPOGRAPHY
    ═══════════════════════════════════════════════════════════════════════════ */
 
-h1, h2, h3, .font-serif {
-  font-family: 'Cinzel Decorative', serif;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+h1, h2, h3, .font-display {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
-.font-sans {
-  font-family: 'Montserrat', sans-serif;
+.text-gold {
+  color: var(--r-gold-300);
 }
 
-/* Cinematic Gold Text */
-.metallic-text {
-  background: var(--r-brushed-gold);
-  background-size: 200% 100%;
+.text-gradient {
+  background: linear-gradient(135deg, var(--r-gold-200) 0%, var(--r-gold-400) 50%, var(--r-gold-200) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: metallic-shimmer 8s ease-in-out infinite;
-}
-
-@keyframes metallic-shimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-/* Laser-Etched Typography */
-.laser-etched {
-  color: var(--r-text-primary);
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.1),
-    0 -1px 2px rgba(0, 0, 0, 0.8),
-    0 0 10px rgba(212, 175, 55, 0.2);
-  letter-spacing: 0.15em;
-}
-
-/* Embossed Text */
-.embossed-text {
-  color: var(--r-gold-300);
-  text-shadow:
-    1px 1px 1px rgba(0, 0, 0, 0.5),
-    -1px -1px 1px rgba(255, 255, 255, 0.1),
-    0 0 20px rgba(212, 175, 55, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GLASSMORPHISM — Thick Frosted Glass
+   BACKGROUNDS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Standard Glass Panel */
-.glass-panel {
-  background: var(--r-glass-bg);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--r-glass-border);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 0 var(--r-glass-shine),
-    inset 0 -1px 0 0 rgba(0, 0, 0, 0.1);
+.casino-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, var(--r-emerald-dark) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, var(--r-burgundy-dark) 0%, transparent 50%),
+    var(--r-bg-base);
 }
 
-/* Thick Frosted Glass Slab */
-.glass-slab {
-  background: linear-gradient(
-    135deg,
-    var(--r-glass-bg) 0%,
-    rgba(20, 18, 15, 0.85) 50%,
-    var(--r-glass-bg) 100%
-  );
-  backdrop-filter: blur(30px) saturate(200%) brightness(0.95);
-  -webkit-backdrop-filter: blur(30px) saturate(200%) brightness(0.95);
-  border: 2px solid var(--r-glass-border);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 8px 20px rgba(0, 0, 0, 0.3),
-    inset 0 2px 0 0 var(--r-glass-shine),
-    inset 0 -2px 0 0 rgba(0, 0, 0, 0.2),
-    inset 2px 0 0 0 var(--r-glass-highlight),
-    inset -2px 0 0 0 rgba(0, 0, 0, 0.15);
+.velvet-overlay {
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+  pointer-events: none;
+  z-index: 1;
 }
 
-[data-theme="light"] .glass-slab {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(250, 248, 245, 0.95) 50%,
-    rgba(255, 255, 255, 0.9) 100%
-  );
+.gold-vignette {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+  z-index: 2;
 }
 
-/* Polished Gold Edge */
-.gold-edge {
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHEEL CONTAINER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.wheel-stage {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.gold-edge::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  padding: 2px;
-  background: var(--r-polished-brass);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   LIVING ATMOSPHERE — Background Effects
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Base Living Background */
-.living-bg {
-  position: fixed;
-  inset: 0;
-  background: var(--r-living-gradient);
-  z-index: -3;
-}
-
-/* Breathing Pulse (Dark Mode) */
-.atmosphere-pulse {
-  position: fixed;
-  inset: 0;
-  background: var(--r-obsidian-pulse);
-  animation: atmosphere-breathe 10s ease-in-out infinite;
-  z-index: -2;
-  pointer-events: none;
-}
-
-@keyframes atmosphere-breathe {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-}
-
-/* God Rays Effect */
-.god-rays {
-  position: fixed;
-  inset: 0;
-  background:
-    conic-gradient(
-      from 0deg at 50% -10%,
-      transparent 0deg,
-      rgba(212, 175, 55, 0.02) 15deg,
-      transparent 30deg,
-      rgba(212, 175, 55, 0.015) 45deg,
-      transparent 60deg,
-      rgba(212, 175, 55, 0.02) 75deg,
-      transparent 90deg,
-      rgba(212, 175, 55, 0.01) 105deg,
-      transparent 120deg,
-      rgba(212, 175, 55, 0.02) 135deg,
-      transparent 150deg,
-      rgba(212, 175, 55, 0.015) 165deg,
-      transparent 180deg,
-      rgba(212, 175, 55, 0.02) 195deg,
-      transparent 210deg,
-      rgba(212, 175, 55, 0.01) 225deg,
-      transparent 240deg,
-      rgba(212, 175, 55, 0.02) 255deg,
-      transparent 270deg,
-      rgba(212, 175, 55, 0.015) 285deg,
-      transparent 300deg,
-      rgba(212, 175, 55, 0.02) 315deg,
-      transparent 330deg,
-      rgba(212, 175, 55, 0.01) 345deg,
-      transparent 360deg
-    );
-  animation: god-rays-rotate 120s linear infinite;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.8;
-}
-
-@keyframes god-rays-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-[data-theme="light"] .god-rays {
-  background:
-    conic-gradient(
-      from 0deg at 50% -10%,
-      transparent 0deg,
-      rgba(139, 105, 20, 0.03) 15deg,
-      transparent 30deg,
-      rgba(139, 105, 20, 0.02) 45deg,
-      transparent 60deg,
-      rgba(139, 105, 20, 0.03) 75deg,
-      transparent 90deg,
-      rgba(139, 105, 20, 0.015) 105deg,
-      transparent 120deg,
-      rgba(139, 105, 20, 0.03) 135deg,
-      transparent 150deg,
-      rgba(139, 105, 20, 0.02) 165deg,
-      transparent 180deg,
-      rgba(139, 105, 20, 0.03) 195deg,
-      transparent 210deg,
-      rgba(139, 105, 20, 0.015) 225deg,
-      transparent 240deg,
-      rgba(139, 105, 20, 0.03) 255deg,
-      transparent 270deg,
-      rgba(139, 105, 20, 0.02) 285deg,
-      transparent 300deg,
-      rgba(139, 105, 20, 0.03) 315deg,
-      transparent 330deg,
-      rgba(139, 105, 20, 0.015) 345deg,
-      transparent 360deg
-    );
-}
-
-/* Dust Motes / Particle Field */
-.dust-motes {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.dust-mote {
-  position: absolute;
-  width: 2px;
-  height: 2px;
-  background: var(--r-gold-300);
+.wheel-frame {
+  position: relative;
+  padding: 12px;
   border-radius: 50%;
-  opacity: 0;
-  animation: dust-float 15s ease-in-out infinite;
+  background: linear-gradient(145deg, var(--r-gold-600) 0%, var(--r-gold-800) 50%, var(--r-gold-600) 100%);
+  box-shadow:
+    0 0 0 4px var(--r-gold-700),
+    0 0 0 8px var(--r-bg-deep),
+    0 0 60px var(--r-glow-gold),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2);
 }
 
-@keyframes dust-float {
-  0%, 100% {
-    opacity: 0;
-    transform: translateY(100vh) translateX(0);
-  }
-  10% {
-    opacity: 0.6;
-  }
-  90% {
-    opacity: 0.6;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-10vh) translateX(20px);
-  }
-}
-
-/* Caustics Animation (Light Mode) */
-[data-theme="light"] .caustics-overlay {
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 30% 20% at 30% 30%, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(ellipse 25% 25% at 70% 60%, rgba(255, 255, 255, 0.3), transparent),
-    radial-gradient(ellipse 35% 15% at 50% 80%, rgba(255, 255, 255, 0.25), transparent);
-  animation: caustics-move 20s ease-in-out infinite;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.5;
-}
-
-@keyframes caustics-move {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.5;
-  }
-  25% {
-    transform: translate(20px, -10px) scale(1.05);
-    opacity: 0.6;
-  }
-  50% {
-    transform: translate(-10px, 20px) scale(0.98);
-    opacity: 0.4;
-  }
-  75% {
-    transform: translate(-20px, -15px) scale(1.02);
-    opacity: 0.55;
-  }
+.wheel-inner-frame {
+  padding: 8px;
+  border-radius: 50%;
+  background: var(--r-bg-deep);
+  box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.8);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TILT-SHIFT BLUR — Viewport Depth
+   SPINNING WHEEL
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.tilt-shift-top {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  background: linear-gradient(
-    to bottom,
-    var(--r-bg-base) 0%,
-    rgba(3, 3, 3, 0.8) 40%,
-    transparent 100%
-  );
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  z-index: 20;
-  pointer-events: none;
-  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-}
-
-.tilt-shift-bottom {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 120px;
-  background: linear-gradient(
-    to top,
-    var(--r-bg-base) 0%,
-    rgba(3, 3, 3, 0.9) 50%,
-    transparent 100%
-  );
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  z-index: 20;
-  pointer-events: none;
-  mask-image: linear-gradient(to top, black 0%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to top, black 0%, transparent 100%);
-}
-
-[data-theme="light"] .tilt-shift-top {
-  background: linear-gradient(
-    to bottom,
-    var(--r-bg-base) 0%,
-    rgba(250, 248, 245, 0.8) 40%,
-    transparent 100%
-  );
-}
-
-[data-theme="light"] .tilt-shift-bottom {
-  background: linear-gradient(
-    to top,
-    var(--r-bg-base) 0%,
-    rgba(250, 248, 245, 0.9) 50%,
-    transparent 100%
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   3D VAULT — Swiss Watch Mechanism
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.vault-container {
-  perspective: 1200px;
-  transform-style: preserve-3d;
-}
-
-.vault-lock {
-  transform-style: preserve-3d;
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-
-/* Brushed Metal Ring */
-.brushed-metal-ring {
-  background: var(--r-brushed-gold);
-  background-size: 100% 200%;
-  animation: brushed-metal-shift 4s ease-in-out infinite;
-}
-
-@keyframes brushed-metal-shift {
-  0%, 100% { background-position: 0% 0%; }
-  50% { background-position: 0% 100%; }
-}
-
-/* Geneva Stripes (Watch decoration) */
-.geneva-stripes {
-  background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 2px,
-    rgba(255, 255, 255, 0.03) 2px,
-    rgba(255, 255, 255, 0.03) 4px
-  );
-}
-
-/* Idle Rotation (0.5 RPM = 120s per rotation) */
-.idle-rotate {
-  animation: idle-spin 120s linear infinite;
-}
-
-.idle-rotate-reverse {
-  animation: idle-spin-reverse 180s linear infinite;
-}
-
-@keyframes idle-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes idle-spin-reverse {
-  from { transform: rotate(360deg); }
-  to { transform: rotate(0deg); }
-}
-
-/* Jewel Refraction Effect */
-.jewel-refraction {
+.fortune-wheel {
   position: relative;
+  border-radius: 50%;
   overflow: hidden;
-}
-
-.jewel-refraction::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%),
-    linear-gradient(-135deg, transparent 40%, rgba(255, 255, 255, 0.2) 50%, transparent 60%);
-  animation: jewel-sparkle 3s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes jewel-sparkle {
-  0%, 100% {
-    opacity: 0.5;
-    transform: translateX(-100%) rotate(0deg);
-  }
-  50% {
-    opacity: 1;
-    transform: translateX(100%) rotate(10deg);
-  }
-}
-
-/* Scanning Line */
-@keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(200%); }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   MAHOGANY/MARBLE FOOTER BAR
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.footer-bar {
-  background: linear-gradient(
-    180deg,
-    rgba(20, 15, 10, 0.95) 0%,
-    rgba(10, 8, 5, 0.98) 100%
-  );
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border-top: 1px solid var(--r-glass-border);
   box-shadow:
-    0 -10px 60px rgba(0, 0, 0, 0.6),
-    0 -4px 20px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 0 var(--r-glass-shine);
+    inset 0 0 30px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme="light"] .footer-bar {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 248, 245, 0.98) 100%
-  );
-  box-shadow:
-    0 -10px 60px rgba(0, 0, 0, 0.1),
-    0 -4px 20px rgba(0, 0, 0, 0.05),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
-}
-
-/* Marble Texture Overlay */
-.marble-texture {
-  position: relative;
-}
-
-.marble-texture::before {
-  content: '';
+.wheel-sector {
   position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 30%, rgba(212, 175, 55, 0.02) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 80%, rgba(212, 175, 55, 0.02) 0%, transparent 45%);
-  pointer-events: none;
+  width: 50%;
+  height: 50%;
+  transform-origin: 100% 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 15%;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   CONCAVE JEWEL BUTTON
-   ═══════════════════════════════════════════════════════════════════════════ */
+.sector-content {
+  transform: rotate(30deg);
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
 
-.jewel-button {
-  background:
-    radial-gradient(ellipse 120% 80% at 50% 0%, var(--r-gold-200) 0%, transparent 50%),
-    radial-gradient(ellipse 120% 80% at 50% 100%, var(--r-gold-800) 0%, transparent 50%),
-    linear-gradient(180deg, var(--r-gold-400) 0%, var(--r-gold-600) 50%, var(--r-gold-700) 100%);
+/* Wheel Center */
+.wheel-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--r-gold-400) 0%, var(--r-gold-700) 100%);
   box-shadow:
     0 4px 15px rgba(0, 0, 0, 0.4),
-    0 2px 6px rgba(0, 0, 0, 0.3),
     inset 0 2px 4px rgba(255, 255, 255, 0.3),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.4),
-    inset 0 0 20px rgba(212, 175, 55, 0.2);
-  border: 1px solid var(--r-gold-500);
-  position: relative;
-  overflow: hidden;
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
 }
 
-.jewel-button::before {
+.wheel-center-inner {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--r-bg-deep) 0%, var(--r-bg-base) 100%);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wheel-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--r-gold-300);
+}
+
+/* Pointer / Arrow */
+.wheel-pointer {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+.pointer-shape {
+  width: 0;
+  height: 0;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-top: 35px solid var(--r-gold-400);
+  position: relative;
+}
+
+.pointer-shape::after {
+  content: '';
+  position: absolute;
+  top: -35px;
+  left: -18px;
+  width: 0;
+  height: 0;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-top: 35px solid var(--r-gold-600);
+  clip-path: polygon(50% 0%, 0% 100%, 50% 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SPIN BUTTON — Premium Elegant
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.spin-button {
+  position: relative;
+  padding: 18px 50px;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--r-bg-deep);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  background: linear-gradient(
+    145deg,
+    var(--r-gold-300) 0%,
+    var(--r-gold-500) 50%,
+    var(--r-gold-300) 100%
+  );
+
+  box-shadow:
+    0 4px 15px var(--r-glow-gold),
+    0 8px 30px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.spin-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 25px var(--r-glow-gold),
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.spin-button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    0 2px 10px var(--r-glow-gold),
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    inset 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.spin-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spin-button::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.25) 0%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.jewel-button:hover {
-  box-shadow:
-    0 6px 25px rgba(212, 175, 55, 0.4),
-    0 3px 10px rgba(0, 0, 0, 0.3),
-    inset 0 2px 4px rgba(255, 255, 255, 0.4),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.3),
-    inset 0 0 30px rgba(212, 175, 55, 0.4);
-}
-
-.jewel-button:active {
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.4),
-    0 1px 4px rgba(0, 0, 0, 0.3),
-    inset 0 4px 8px rgba(0, 0, 0, 0.4),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.2),
-    inset 0 0 40px rgba(212, 175, 55, 0.5);
-  transform: scale(0.98);
-}
-
-/* Inner Glow Animation */
-.jewel-inner-glow {
-  position: absolute;
-  inset: 4px;
-  border-radius: inherit;
-  background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.3), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.jewel-button:hover .jewel-inner-glow {
-  opacity: 1;
-}
-
-/* Shimmer Effect */
-@keyframes shimmer {
-  0% { transform: translateX(-100%) skewX(-15deg); }
-  100% { transform: translateX(200%) skewX(-15deg); }
-}
-
-.shimmer-overlay {
-  position: absolute;
-  inset: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
   );
-  transform: translateX(-100%) skewX(-15deg);
-  animation: shimmer 4s ease-in-out infinite;
-  pointer-events: none;
+  animation: button-shimmer 3s infinite;
+}
+
+@keyframes button-shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   UTILITY CLASSES
+   ATTEMPTS COUNTER
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.text-gold { color: var(--r-gold-300); }
-.text-gold-light { color: var(--r-gold-100); }
-.text-gold-dark { color: var(--r-gold-600); }
-.text-danger { color: var(--r-danger); }
-.text-success { color: var(--r-success); }
-.text-legendary { color: var(--r-legendary); }
-
-.bg-void { background: var(--r-living-gradient); }
-.bg-elevated { background: var(--r-bg-elevated); }
-
-/* Floating Animation */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+.attempts-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: var(--r-bg-card);
+  border: 1px solid var(--r-gold-800);
+  border-radius: 30px;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.floating { animation: float 6s ease-in-out infinite; }
-
-/* Pulse Glow */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(212, 175, 55, 0.6);
-  }
+.attempts-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--r-text-secondary);
 }
 
-.pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.attempts-count {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--r-gold-300);
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CUSTOM SCROLLBAR — Mercury Indicator
+   PRIZE RESULT MODAL
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.prize-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.prize-modal {
+  background: linear-gradient(145deg, var(--r-bg-elevated) 0%, var(--r-bg-deep) 100%);
+  border: 2px solid var(--r-gold-600);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  max-width: 340px;
+  box-shadow:
+    0 0 100px var(--r-glow-gold),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.prize-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.prize-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--r-gold-300);
+  margin-bottom: 8px;
+}
+
+.prize-subtitle {
+  font-size: 14px;
+  color: var(--r-text-secondary);
+  margin-bottom: 30px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DECORATIVE ELEMENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ornament-line {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.ornament-line::before,
+.ornament-line::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--r-gold-700), transparent);
+}
+
+.ornament-diamond {
+  width: 8px;
+  height: 8px;
+  background: var(--r-gold-500);
+  transform: rotate(45deg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE TICKER OVERRIDE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ticker-bar {
+  background: var(--r-bg-deep);
+  border-bottom: 1px solid var(--r-gold-900);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBAR
    ═══════════════════════════════════════════════════════════════════════════ */
 
 ::-webkit-scrollbar {
@@ -736,45 +459,44 @@ h1, h2, h3, .font-serif {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
+  background: var(--r-bg-deep);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--r-gold-400) 0%, var(--r-gold-600) 100%);
+  background: var(--r-gold-700);
   border-radius: 3px;
-  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.2);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, var(--r-gold-300) 0%, var(--r-gold-500) 100%);
-}
-
-/* Firefox Scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--r-gold-500) rgba(0, 0, 0, 0.2);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   RESPONSIVE ADJUSTMENTS
+   ANIMATIONS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@media (max-width: 640px) {
-  .tilt-shift-top { height: 60px; }
-  .tilt-shift-bottom { height: 100px; }
-
-  .glass-slab {
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
-  }
+@keyframes spin-wheel {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px var(--r-glow-gold); }
+  50% { box-shadow: 0 0 40px var(--r-glow-gold); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 380px) {
+  .spin-button {
+    padding: 16px 40px;
+    font-size: 18px;
   }
 }

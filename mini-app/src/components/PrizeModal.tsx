@@ -1,70 +1,117 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { RouletteResult } from '../types';
+import { motion } from 'framer-motion';
 
-interface PrizeModalProps {
-    isOpen: boolean;
-    result: RouletteResult | null;
-    onClose: () => void;
+interface Prize {
+  id: string;
+  label: string;
+  sublabel: string;
+  color: string;
+  textColor: string;
+  icon: string;
 }
 
-export const PrizeModal = ({ isOpen, result, onClose }: PrizeModalProps) => {
-    if (!result) return null;
+interface PrizeModalProps {
+  prize: Prize;
+  onClose: () => void;
+}
 
-    const isWin = result.type !== 'nothing';
+export const PrizeModal = ({ prize, onClose }: PrizeModalProps) => {
+  return (
+    <motion.div
+      className="prize-modal-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="prize-modal relative"
+        initial={{ scale: 0.8, opacity: 0, y: 50 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.8, opacity: 0, y: 50 }}
+        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Иконка приза */}
+        <motion.div
+          className="prize-icon"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 400 }}
+        >
+          {prize.icon}
+        </motion.div>
 
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-                    onClick={onClose}
-                >
-                    <motion.div
-                        initial={{ scale: 0.5, y: 50 }}
-                        animate={{ scale: 1, y: 0 }}
-                        exit={{ scale: 0.5, y: 50 }}
-                        className="relative w-full max-w-sm bg-[var(--bg-card-solid)] border border-[var(--gold-400)] rounded-2xl p-8 text-center overflow-hidden shadow-[var(--shadow-vault)]"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Background Effects */}
-                        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
-                        {isWin && (
-                            <div className="absolute inset-0 bg-gradient-to-b from-[var(--gold-400)]/20 to-transparent animate-pulse"></div>
-                        )}
+        {/* Заголовок */}
+        <motion.h2
+          className="prize-title"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          Поздравляем!
+        </motion.h2>
 
-                        {/* Icon / Image */}
-                        <div className="mb-6 relative">
-                            <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center text-4xl border-4 ${isWin ? 'border-[var(--gold-400)] bg-[var(--gold-400)]/10' : 'border-[var(--danger)] bg-[var(--danger)]/10'}`}>
-                                {isWin ? '🏆' : '💀'}
-                            </div>
-                            {isWin && (
-                                <div className="absolute inset-0 rounded-full shadow-[0_0_30px_var(--gold-400)] animate-pulse"></div>
-                            )}
-                        </div>
+        {/* Название приза */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-2"
+        >
+          <span
+            className="text-2xl font-display font-bold"
+            style={{ color: 'var(--r-gold-200)' }}
+          >
+            {prize.label}
+          </span>
+        </motion.div>
 
-                        {/* Text */}
-                        <h2 className={`text-2xl font-black mb-2 uppercase tracking-widest ${isWin ? 'text-[var(--gold-400)]' : 'text-[var(--danger)]'}`}>
-                            {isWin ? 'CONGRATULATIONS' : 'SYSTEM FAILURE'}
-                        </h2>
+        {/* Подзаголовок */}
+        <motion.p
+          className="prize-subtitle"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          {prize.sublabel}
+        </motion.p>
 
-                        <p className="text-[var(--text-secondary)] font-mono text-sm mb-8">
-                            {isWin ? `YOU RECEIVED: ${result.prize}` : 'ACCESS DENIED. TRY AGAIN.'}
-                        </p>
+        {/* Кнопка */}
+        <motion.button
+          className="spin-button"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          onClick={onClose}
+        >
+          Забрать
+        </motion.button>
 
-                        {/* Action Button */}
-                        <button
-                            onClick={onClose}
-                            className="w-full py-3 rounded-lg font-bold uppercase tracking-widest bg-[var(--bg-surface)] border border-[var(--border-default)] hover:bg-[var(--bg-elevated)] transition-colors text-[var(--text-primary)]"
-                        >
-                            {isWin ? 'CLAIM REWARD' : 'RETRY'}
-                        </button>
-
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-    );
+        {/* Декоративные частицы */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[20px]">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-[var(--r-gold-400)] rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -100],
+                opacity: [1, 0],
+                scale: [1, 0],
+              }}
+              transition={{
+                duration: 2,
+                delay: i * 0.1,
+                repeat: Infinity,
+                repeatDelay: 1,
+              }}
+            />
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 };
