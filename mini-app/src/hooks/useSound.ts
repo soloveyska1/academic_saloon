@@ -6,18 +6,7 @@ export const useSound = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    // Initialize AudioContext on first user interaction if needed, 
-    // but usually it's better to init it and suspend/resume.
-    // Ideally we init on a user gesture.
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContextClass) {
-        audioContextRef.current = new AudioContextClass();
-      }
-    } catch (e) {
-      console.error('AudioContext init failed (likely mobile policy):', e);
-    }
-
+    // Cleanup only
     return () => {
       try {
         audioContextRef.current?.close();
@@ -27,11 +16,34 @@ export const useSound = () => {
     };
   }, []);
 
+  const initAudio = useCallback(() => {
+    if (!audioContextRef.current) {
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          audioContextRef.current = new AudioContextClass();
+        }
+      } catch (e) {
+        console.error('AudioContext init failed:', e);
+      }
+    }
+
+    if (audioContextRef.current?.state === 'suspended') {
+      audioContextRef.current.resume().catch((e: unknown) => console.error('Audio resume failed:', e));
+    }
+  }, []);
+
   const playSound = useCallback((type: SoundType) => {
+    // Ensure initialized
+    if (!audioContextRef.current) {
+      initAudio();
+    }
+
     const ctx = audioContextRef.current;
     if (!ctx) return;
+
     if (ctx.state === 'suspended') {
-      ctx.resume();
+      ctx.resume().catch(() => { });
     }
 
     const osc = ctx.createOscillator();
@@ -110,5 +122,5 @@ export const useSound = () => {
     }
   }, []);
 
-  return { playSound };
+  return { playSound, initAudio };
 };
