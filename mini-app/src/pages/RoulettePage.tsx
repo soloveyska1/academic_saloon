@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { useState, useRef, useMemo } from 'react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { LiveWinnersTicker } from '../components/LiveWinnersTicker';
 import { VaultLock } from '../components/VaultLock';
 import { PrizeTicker } from '../components/PrizeTicker';
@@ -12,17 +12,48 @@ interface RoulettePageProps {
   user: UserData | null;
 }
 
+// Generate dust mote positions
+const generateDustMotes = (count: number) => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    delay: Math.random() * 15,
+    duration: 12 + Math.random() * 8,
+    size: 1 + Math.random() * 2,
+    opacity: 0.3 + Math.random() * 0.4,
+  }));
+};
+
 export const RoulettePage = ({ user }: RoulettePageProps) => {
   const [gameState, setGameState] = useState<'idle' | 'spinning' | 'near-miss' | 'landed' | 'failed'>('idle');
   const [progress, setProgress] = useState(0);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const { playSound, initAudio } = useSound();
 
-  // Parallax Scroll Hooks
+  // Memoize dust motes for performance
+  const dustMotes = useMemo(() => generateDustMotes(20), []);
+
+  // Advanced Parallax Scroll with Spring Physics
   const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 300], [0, 150]); // Move slower
-  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]); // Fade out
-  const heroBlur = useTransform(scrollY, [0, 300], ["0px", "10px"]); // Blur out
+
+  // Smooth spring configuration for liquid motion
+  const springConfig = { stiffness: 100, damping: 30, restDelta: 0.001 };
+
+  // Hero parallax (moves at 0.5x speed)
+  const heroYRaw = useTransform(scrollY, [0, 400], [0, 200]);
+  const heroY = useSpring(heroYRaw, springConfig);
+
+  // Opacity fades from 1 to 0 as you scroll
+  const heroOpacityRaw = useTransform(scrollY, [0, 300], [1, 0]);
+  const heroOpacity = useSpring(heroOpacityRaw, springConfig);
+
+  // Blur increases as you scroll
+  const heroBlurRaw = useTransform(scrollY, [0, 300], [0, 15]);
+  const heroBlur = useSpring(heroBlurRaw, springConfig);
+
+  // Scale effect for depth
+  const heroScaleRaw = useTransform(scrollY, [0, 400], [1, 0.95]);
+  const heroScale = useSpring(heroScaleRaw, springConfig);
 
   // Refs for hold logic
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -81,55 +112,129 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
   return (
     <div className="relative w-full min-h-[100dvh] bg-void overflow-x-hidden text-[var(--r-text-primary)]">
 
-      {/* --- LIVING ATMOSPHERE --- */}
-      <div className="living-bg"></div>
-      <div className="atmosphere-pulse"></div>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          LIVING ATMOSPHERE LAYERS
+          ═══════════════════════════════════════════════════════════════════════ */}
 
-      {/* Tilt-Shift Blur (Top/Bottom) */}
-      <div className="fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-[var(--r-bg-base)] to-transparent z-10 pointer-events-none backdrop-blur-[1px]"></div>
-      <div className="fixed bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[var(--r-bg-base)] to-transparent z-10 pointer-events-none backdrop-blur-[1px]"></div>
+      {/* Base Living Background */}
+      <div className="living-bg" />
 
-      {/* TOP TICKER */}
+      {/* Breathing Pulse Layer */}
+      <div className="atmosphere-pulse" />
+
+      {/* God Rays - Slow rotating light beams */}
+      <div className="god-rays" />
+
+      {/* Caustics Overlay (Active in Light Mode via CSS) */}
+      <div className="caustics-overlay" />
+
+      {/* Dust Motes - Floating particles */}
+      <div className="dust-motes">
+        {dustMotes.map((mote) => (
+          <div
+            key={mote.id}
+            className="dust-mote"
+            style={{
+              left: mote.left,
+              width: `${mote.size}px`,
+              height: `${mote.size}px`,
+              animationDelay: `${mote.delay}s`,
+              animationDuration: `${mote.duration}s`,
+              opacity: mote.opacity,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          TILT-SHIFT DEPTH BLUR
+          ═══════════════════════════════════════════════════════════════════════ */}
+
+      <div className="tilt-shift-top" />
+      <div className="tilt-shift-bottom" />
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          TOP TICKER
+          ═══════════════════════════════════════════════════════════════════════ */}
+
       <div className="fixed top-0 w-full z-50">
         <LiveWinnersTicker />
       </div>
 
-      {/* --- SCROLLABLE CONTENT --- */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SCROLLABLE CONTENT — Cinematic Scroll Container
+          ═══════════════════════════════════════════════════════════════════════ */}
+
       <main className="relative w-full pt-20 px-4 pb-48 flex flex-col items-center">
 
-        {/* HERO SECTION (Parallax) */}
+        {/* HERO SECTION — Parallax Physics */}
         <motion.div
-          style={{ y: heroY, opacity: heroOpacity, filter: `blur(${heroBlur})` }}
-          className="w-full flex flex-col items-center mb-12 z-0"
+          style={{
+            y: heroY,
+            opacity: heroOpacity,
+            scale: heroScale,
+            filter: useTransform(heroBlur, (v) => `blur(${v}px)`),
+          }}
+          className="w-full flex flex-col items-center mb-12 z-0 will-change-transform"
         >
-          {/* Header Plaque */}
-          <div className="mb-8 text-center">
-            <h1 className="text-2xl font-serif font-black tracking-[0.1em] metallic-text drop-shadow-2xl">
-              THE ACADEMIC VAULT
+          {/* ═══════════════════════════════════════════════════════════════════
+              HEADER PLAQUE — Engraved Title
+              ═══════════════════════════════════════════════════════════════════ */}
+
+          <div className="mb-10 text-center">
+            {/* Decorative Top Line */}
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="w-16 h-px bg-gradient-to-r from-transparent via-[var(--r-gold-500)] to-transparent" />
+              <div className="w-2 h-2 rotate-45 border border-[var(--r-gold-500)]" />
+              <div className="w-16 h-px bg-gradient-to-r from-transparent via-[var(--r-gold-500)] to-transparent" />
+            </div>
+
+            {/* Main Title */}
+            <h1 className="text-2xl md:text-3xl font-serif font-black tracking-[0.12em] metallic-text drop-shadow-2xl">
+              THE GILDED VAULT
             </h1>
-            <div className="flex items-center justify-center gap-2 mt-2 opacity-70">
-              <div className="w-1 h-1 rounded-full bg-[var(--r-gold-500)]"></div>
-              <span className="text-[10px] font-sans tracking-[0.3em] uppercase text-[var(--r-gold-300)]">
-                Secure Access V.9
+
+            {/* Subtitle Plaque */}
+            <div className="flex items-center justify-center gap-3 mt-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--r-gold-400)] shadow-[0_0_8px_rgba(212,175,55,0.5)]" />
+              <span className="text-[10px] font-sans font-medium tracking-[0.35em] uppercase text-[var(--r-text-secondary)]">
+                Digital Haute Horlogerie
               </span>
-              <div className="w-1 h-1 rounded-full bg-[var(--r-gold-500)]"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--r-gold-400)] shadow-[0_0_8px_rgba(212,175,55,0.5)]" />
+            </div>
+
+            {/* Version Tag */}
+            <div className="mt-2 text-[8px] font-mono tracking-[0.4em] text-[var(--r-text-muted)]">
+              SECURE ACCESS // V.IX
             </div>
           </div>
 
-          {/* The Mechanism */}
+          {/* ═══════════════════════════════════════════════════════════════════
+              THE MECHANISM — Swiss Watch Vault
+              ═══════════════════════════════════════════════════════════════════ */}
+
           <VaultLock
             state={gameState === 'landed' ? 'success' : gameState === 'spinning' ? 'spinning' : gameState === 'failed' ? 'failed' : 'idle'}
-            userPhotoUrl={user?.username ? undefined : undefined} // Placeholder logic
+            userPhotoUrl={user?.username ? undefined : undefined}
           />
         </motion.div>
 
-        {/* PRIZE LIST (Glass Boards) */}
+        {/* ═══════════════════════════════════════════════════════════════════════
+            PRIZE LIST — Glass Boards Section
+            ═══════════════════════════════════════════════════════════════════════ */}
+
         <div className="w-full max-w-md z-10 relative">
-          <div className="text-center mb-6 opacity-50">
-            <span className="text-[10px] font-serif italic text-[var(--r-gold-300)]">
-              Scroll to view potential assets
-            </span>
-            <div className="w-px h-8 bg-gradient-to-b from-[var(--r-gold-300)] to-transparent mx-auto mt-2"></div>
+          {/* Section Divider */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 opacity-60">
+              <div className="w-8 h-px bg-gradient-to-r from-transparent to-[var(--r-gold-500)]" />
+              <span className="text-[9px] font-serif italic tracking-[0.2em] text-[var(--r-gold-400)]">
+                Потенциальные Награды
+              </span>
+              <div className="w-8 h-px bg-gradient-to-l from-transparent to-[var(--r-gold-500)]" />
+            </div>
+            {/* Vertical Guide Line */}
+            <div className="w-px h-10 bg-gradient-to-b from-[var(--r-gold-500)] to-transparent mx-auto mt-3" />
           </div>
 
           <PrizeTicker highlightId={highlightId} />
@@ -137,22 +242,35 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
 
       </main>
 
-      {/* --- FIXED FOOTER (Mahogany/Marble Anchor) --- */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FIXED FOOTER — Mahogany/Marble Anchor Bar
+          ═══════════════════════════════════════════════════════════════════════ */}
+
       <div className="fixed bottom-0 left-0 w-full z-40">
-        {/* Glassmorphism Bar */}
-        <div className="absolute inset-0 bg-[var(--r-bg-deep)]/90 backdrop-blur-xl border-t border-[var(--r-glass-border)] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"></div>
+        {/* Mahogany/Marble Background */}
+        <div className="footer-bar marble-texture absolute inset-0" />
 
-        <div className="relative w-full max-w-md mx-auto px-6 py-6 flex items-center justify-between gap-4">
+        {/* Footer Content */}
+        <div className="relative w-full max-w-md mx-auto px-6 py-5 flex items-center justify-between gap-4">
 
-          {/* Status Text */}
-          <div className="hidden md:block text-[10px] font-sans text-[var(--r-text-secondary)] w-24">
-            ID: {user?.id || 'GUEST'}
-            <br />
-            <span className="text-[var(--r-hacker)]">CONNECTED</span>
+          {/* Left Status Panel */}
+          <div className="hidden md:flex flex-col items-start w-24">
+            <span className="text-[8px] font-mono tracking-wider text-[var(--r-text-muted)] uppercase">
+              Идентификатор
+            </span>
+            <span className="text-[10px] font-mono text-[var(--r-gold-300)] truncate max-w-full">
+              {user?.id || 'ГОСТЬ'}
+            </span>
+            <div className="flex items-center gap-1.5 mt-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--r-success)] shadow-[0_0_6px_rgba(16,185,129,0.6)] animate-pulse" />
+              <span className="text-[8px] font-mono text-[var(--r-success)] tracking-wider">
+                ПОДКЛЮЧЁН
+              </span>
+            </div>
           </div>
 
-          {/* SPIN BUTTON (The Jewel) */}
-          <div className="flex-1 max-w-[200px] mx-auto">
+          {/* CENTER — The Jewel Button */}
+          <div className="flex-1 max-w-[220px] mx-auto">
             <SpinButton
               onMouseDown={startHolding}
               onMouseUp={stopHolding}
@@ -161,14 +279,23 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
             />
           </div>
 
-          {/* Session Timer */}
-          <div className="hidden md:block text-[10px] font-mono text-[var(--r-danger)] w-24 text-right">
-            SESSION
-            <br />
-            <span className="font-bold">00:59</span>
+          {/* Right Status Panel */}
+          <div className="hidden md:flex flex-col items-end w-24">
+            <span className="text-[8px] font-mono tracking-wider text-[var(--r-text-muted)] uppercase">
+              Сессия
+            </span>
+            <span className="text-[10px] font-mono text-[var(--r-danger)] font-semibold">
+              00:59
+            </span>
+            <span className="text-[8px] font-mono text-[var(--r-text-muted)] mt-0.5 tracking-wider">
+              ОСТАЛОСЬ
+            </span>
           </div>
 
         </div>
+
+        {/* Bottom Safety Line */}
+        <div className="h-[env(safe-area-inset-bottom)] bg-[var(--r-bg-deep)]" />
       </div>
 
     </div>

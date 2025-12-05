@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 
 interface VaultLockProps {
   state: 'idle' | 'spinning' | 'success' | 'failed';
@@ -8,20 +9,20 @@ interface VaultLockProps {
 export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Parallax Effect (Gyroscope/Mouse)
+  // Parallax Effect (Gyroscope/Mouse) — Subtle 3D tilt
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || state === 'spinning') return;
       const { innerWidth, innerHeight } = window;
-      const x = (e.clientX - innerWidth / 2) / 25; // Subtle movement
-      const y = (e.clientY - innerHeight / 2) / 25;
+      const x = (e.clientX - innerWidth / 2) / 30;
+      const y = (e.clientY - innerHeight / 2) / 30;
       containerRef.current.style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
     };
 
     const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (!containerRef.current) return;
-      const x = (e.gamma || 0) / 3;
-      const y = (e.beta || 0) / 3;
+      if (!containerRef.current || state === 'spinning') return;
+      const x = (e.gamma || 0) / 4;
+      const y = (e.beta || 0) / 4;
       containerRef.current.style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
     };
 
@@ -32,58 +33,307 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('deviceorientation', handleOrientation);
     };
-  }, []);
+  }, [state]);
+
+  // Determine animation states
+  const isSpinning = state === 'spinning';
+  const isSuccess = state === 'success';
+  const isFailed = state === 'failed';
 
   return (
-    <div className="vault-container w-72 h-72 relative flex items-center justify-center">
-      <div ref={containerRef} className="vault-lock w-full h-full relative">
+    <div className="vault-container w-80 h-80 relative flex items-center justify-center">
+      <div
+        ref={containerRef}
+        className="vault-lock w-full h-full relative"
+        style={{ transformStyle: 'preserve-3d' }}
+      >
+        {/* ═══════════════════════════════════════════════════════════════════════
+            OUTER CASE — Watch Bezel
+            ═══════════════════════════════════════════════════════════════════════ */}
 
-        {/* Outer Gear Ring (Brushed Gold) */}
-        <div className={`absolute inset-0 rounded-full border-[12px] border-[var(--r-gold-700)] shadow-2xl ${state === 'spinning' ? 'animate-[spin_2s_linear_infinite]' : 'idle-rotate'}`}
-          style={{ background: 'conic-gradient(from 0deg, transparent 0%, var(--r-glass-shine) 50%, transparent 100%)' }}>
-          {/* Gear Teeth Simulation */}
-          <div className="absolute inset-[-4px] border-4 border-dashed border-[var(--r-gold-500)] rounded-full opacity-50"></div>
-        </div>
+        <div className="absolute inset-0 rounded-full">
+          {/* Outer Shadow Ring */}
+          <div className="absolute inset-[-4px] rounded-full bg-gradient-to-b from-[var(--r-gold-800)] via-[var(--r-gold-900)] to-black opacity-80" />
 
-        {/* Middle Ring (Polished Brass) */}
-        <div className={`absolute inset-6 rounded-full border-[2px] border-[var(--r-gold-300)] ${state === 'spinning' ? 'animate-[spin_3s_linear_infinite_reverse]' : ''} shadow-inner`}></div>
-
-        {/* Inner Mechanism (Obsidian/Glass) */}
-        <div className={`absolute inset-10 rounded-full bg-[var(--r-bg-deep)] border-4 border-[var(--r-gold-500)] shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-center overflow-hidden`}>
-
-          {/* Refraction Layer */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-[var(--r-glass-shine)] to-transparent opacity-30 pointer-events-none"></div>
-
-          {/* Center Hub / User Photo */}
-          <div className="w-32 h-32 rounded-full border-2 border-[var(--r-gold-100)] overflow-hidden relative shadow-2xl z-10">
-            {userPhotoUrl ? (
-              <img src={userPhotoUrl} alt="User" className="w-full h-full object-cover opacity-90 mix-blend-luminosity" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-black">
-                {/* Jewel Lock Icon */}
-                <div className="relative">
-                  <div className="absolute inset-0 blur-md bg-[var(--r-gold-300)] opacity-50"></div>
-                  <span className="relative text-4xl filter drop-shadow-[0_0_10px_rgba(212,175,55,0.8)]">💎</span>
-                </div>
+          {/* Main Bezel - Brushed Gold */}
+          <div
+            className={`absolute inset-0 rounded-full border-[14px] border-[var(--r-gold-600)] shadow-2xl brushed-metal-ring ${
+              isSpinning ? 'animate-[spin_1.5s_linear_infinite]' : 'idle-rotate'
+            }`}
+          >
+            {/* Bezel Markers (12 hour positions) */}
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-full h-full"
+                style={{ transform: `rotate(${i * 30}deg)` }}
+              >
+                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1 h-3 bg-[var(--r-gold-300)] rounded-full shadow-sm" />
               </div>
-            )}
-
-            {/* Scanning Line (Subtle) */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--r-gold-100)]/20 to-transparent h-1/2 w-full animate-[scan_3s_linear_infinite] opacity-30"></div>
+            ))}
           </div>
 
+          {/* Inner Bezel Ring - Polished */}
+          <div className="absolute inset-4 rounded-full border-2 border-[var(--r-gold-400)] shadow-inner" />
         </div>
 
-        {/* Status Indicators (Engraved Plaque) */}
-        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 glass-panel px-6 py-2 rounded-full text-[10px] font-serif tracking-[0.2em] text-[var(--r-gold-100)] whitespace-nowrap shadow-lg">
-          <span className={state === 'success' ? 'text-[var(--r-hacker)]' : state === 'failed' ? 'text-[var(--r-danger)]' : ''}>
-            {state === 'idle' && 'LOCKED'}
-            {state === 'spinning' && 'DECRYPTING...'}
-            {state === 'success' && 'ACCESS GRANTED'}
-            {state === 'failed' && 'ACCESS DENIED'}
-          </span>
+        {/* ═══════════════════════════════════════════════════════════════════════
+            MIDDLE MECHANISM — Rotating Gear Ring
+            ═══════════════════════════════════════════════════════════════════════ */}
+
+        <div className="absolute inset-8 rounded-full">
+          {/* Gear Teeth Ring */}
+          <motion.div
+            className="absolute inset-0 rounded-full border-[3px] border-dashed border-[var(--r-gold-500)] opacity-60"
+            animate={{
+              rotate: isSpinning ? 360 : 0,
+            }}
+            transition={{
+              duration: isSpinning ? 2 : 180,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          />
+
+          {/* Brass Middle Ring */}
+          <motion.div
+            className={`absolute inset-2 rounded-full bg-gradient-to-br from-[var(--r-gold-600)] via-[var(--r-gold-700)] to-[var(--r-gold-800)] shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),inset_0_-2px_4px_rgba(0,0,0,0.3)] ${
+              isSpinning ? '' : 'idle-rotate-reverse'
+            }`}
+            animate={{
+              rotate: isSpinning ? -720 : 0,
+            }}
+            transition={{
+              duration: isSpinning ? 2.5 : 180,
+              repeat: isSpinning ? Infinity : 0,
+              ease: 'linear',
+            }}
+          >
+            {/* Geneva Stripes Decoration */}
+            <div className="absolute inset-0 rounded-full geneva-stripes opacity-30" />
+
+            {/* Screw Decorations */}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-full h-full"
+                style={{ transform: `rotate(${i * 60}deg)` }}
+              >
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-gradient-to-br from-[var(--r-gold-400)] to-[var(--r-gold-700)] shadow-[inset_0_1px_2px_rgba(255,255,255,0.3)]">
+                  <div className="absolute inset-0.5 rounded-full border-t border-[var(--r-gold-300)]" />
+                </div>
+              </div>
+            ))}
+          </motion.div>
         </div>
 
+        {/* ═══════════════════════════════════════════════════════════════════════
+            INNER MECHANISM — Obsidian Chamber
+            ═══════════════════════════════════════════════════════════════════════ */}
+
+        <div className="absolute inset-14 rounded-full">
+          {/* Obsidian Background */}
+          <div className="absolute inset-0 rounded-full bg-[var(--r-bg-deep)] border-4 border-[var(--r-gold-600)] shadow-[inset_0_0_30px_rgba(0,0,0,0.9),inset_0_0_60px_rgba(0,0,0,0.5)]">
+            {/* Refraction Layer */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-[var(--r-glass-shine)] to-transparent opacity-40 pointer-events-none" />
+
+            {/* Subtle Inner Glow */}
+            <div
+              className={`absolute inset-0 rounded-full transition-opacity duration-500 ${
+                isSuccess ? 'opacity-100' : isFailed ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                background: isSuccess
+                  ? 'radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%)'
+                  : isFailed
+                  ? 'radial-gradient(circle, rgba(220,38,38,0.3) 0%, transparent 70%)'
+                  : 'none',
+              }}
+            />
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════════
+              CENTER HUB — The Jewel
+              ═══════════════════════════════════════════════════════════════════════ */}
+
+          <div className="absolute inset-4 flex items-center justify-center">
+            <motion.div
+              className="w-28 h-28 rounded-full overflow-hidden relative"
+              animate={{
+                scale: isSpinning ? [1, 1.05, 1] : 1,
+              }}
+              transition={{
+                duration: 0.5,
+                repeat: isSpinning ? Infinity : 0,
+              }}
+            >
+              {/* Hub Border Ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-[var(--r-gold-300)] shadow-2xl" />
+
+              {/* Hub Content */}
+              <div className="absolute inset-1 rounded-full overflow-hidden">
+                {userPhotoUrl ? (
+                  <img
+                    src={userPhotoUrl}
+                    alt="User"
+                    className="w-full h-full object-cover opacity-90 mix-blend-luminosity"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--r-bg-deep)] via-black to-[var(--r-bg-deep)]">
+                    {/* Jewel Lock Icon with Refraction */}
+                    <div className="relative jewel-refraction">
+                      {/* Base Glow */}
+                      <div className="absolute inset-0 blur-xl bg-[var(--r-gold-300)] opacity-40" />
+
+                      {/* The Jewel SVG */}
+                      <svg
+                        viewBox="0 0 64 64"
+                        className="relative w-14 h-14 drop-shadow-[0_0_15px_rgba(212,175,55,0.6)]"
+                      >
+                        {/* Diamond Shape */}
+                        <polygon
+                          points="32,4 58,28 32,60 6,28"
+                          fill="none"
+                          stroke="var(--r-gold-300)"
+                          strokeWidth="2"
+                          className="opacity-90"
+                        />
+                        {/* Top Facets */}
+                        <polygon
+                          points="32,4 58,28 32,32 6,28"
+                          fill="url(#jewelGradientTop)"
+                          className="opacity-80"
+                        />
+                        {/* Bottom Facets */}
+                        <polygon
+                          points="32,32 58,28 32,60 6,28"
+                          fill="url(#jewelGradientBottom)"
+                          className="opacity-60"
+                        />
+                        {/* Center Line */}
+                        <line
+                          x1="6"
+                          y1="28"
+                          x2="58"
+                          y2="28"
+                          stroke="var(--r-gold-200)"
+                          strokeWidth="1"
+                          className="opacity-50"
+                        />
+                        {/* Vertical Lines */}
+                        <line
+                          x1="32"
+                          y1="4"
+                          x2="32"
+                          y2="60"
+                          stroke="var(--r-gold-200)"
+                          strokeWidth="0.5"
+                          className="opacity-30"
+                        />
+                        {/* Gradients */}
+                        <defs>
+                          <linearGradient
+                            id="jewelGradientTop"
+                            x1="0%"
+                            y1="0%"
+                            x2="100%"
+                            y2="100%"
+                          >
+                            <stop offset="0%" stopColor="var(--r-gold-100)" />
+                            <stop offset="50%" stopColor="var(--r-gold-300)" />
+                            <stop offset="100%" stopColor="var(--r-gold-500)" />
+                          </linearGradient>
+                          <linearGradient
+                            id="jewelGradientBottom"
+                            x1="0%"
+                            y1="0%"
+                            x2="100%"
+                            y2="100%"
+                          >
+                            <stop offset="0%" stopColor="var(--r-gold-500)" />
+                            <stop offset="50%" stopColor="var(--r-gold-600)" />
+                            <stop offset="100%" stopColor="var(--r-gold-700)" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                  </div>
+                )}
+
+                {/* Scanning Line Effect */}
+                <div
+                  className={`absolute inset-0 pointer-events-none ${
+                    isSpinning ? 'opacity-50' : 'opacity-20'
+                  }`}
+                >
+                  <div
+                    className="absolute w-full h-1/3 bg-gradient-to-b from-transparent via-[var(--r-gold-100)] to-transparent animate-[scan_2s_linear_infinite]"
+                    style={{ top: '-33%' }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            STATUS PLAQUE — Engraved Indicator
+            ═══════════════════════════════════════════════════════════════════════ */}
+
+        <motion.div
+          className="absolute -bottom-20 left-1/2 -translate-x-1/2"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="glass-panel gold-edge px-8 py-3 rounded-full">
+            <span
+              className={`text-[10px] font-serif tracking-[0.25em] whitespace-nowrap laser-etched ${
+                isSuccess
+                  ? 'text-[var(--r-success)]'
+                  : isFailed
+                  ? 'text-[var(--r-danger)]'
+                  : ''
+              }`}
+            >
+              {state === 'idle' && 'ЗАЩИТА АКТИВНА'}
+              {state === 'spinning' && 'ДЕШИФРОВКА...'}
+              {state === 'success' && 'ДОСТУП РАЗРЕШЁН'}
+              {state === 'failed' && 'ДОСТУП ЗАПРЕЩЁН'}
+            </span>
+          </div>
+
+          {/* Decorative Dots */}
+          <div className="flex items-center justify-center gap-2 mt-3">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className={`w-1 h-1 rounded-full ${
+                  isSpinning
+                    ? 'bg-[var(--r-gold-300)]'
+                    : isSuccess
+                    ? 'bg-[var(--r-success)]'
+                    : isFailed
+                    ? 'bg-[var(--r-danger)]'
+                    : 'bg-[var(--r-gold-600)]'
+                }`}
+                animate={
+                  isSpinning
+                    ? {
+                        opacity: [0.3, 1, 0.3],
+                        scale: [0.8, 1.2, 0.8],
+                      }
+                    : {}
+                }
+                transition={{
+                  duration: 0.6,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                }}
+              />
+            ))}
+          </div>
+        </motion.div>
       </div>
     </div>
   );
