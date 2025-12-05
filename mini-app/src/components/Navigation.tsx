@@ -130,16 +130,9 @@ export function Navigation() {
             const Icon = item.icon
 
             return (
-              <motion.button
+              <button
                 key={item.path}
-                onTap={() => handleClick(item.path)}
-                onPointerDown={(e) => e.stopPropagation()}
-                whileTap={{ scale: 0.95 }}
-                transition={{
-                  type: 'spring',
-                  stiffness: 500,
-                  damping: 30,
-                }}
+                onClick={() => handleClick(item.path)}
                 style={{
                   position: 'relative',
                   display: 'flex',
@@ -158,36 +151,24 @@ export function Navigation() {
               >
                 {/* Gold Spotlight Background for Active Tab */}
                 {isActive && (
-                  <motion.div
-                    layoutId="navSpotlight"
-                    transition={{
-                      type: 'spring',
-                      stiffness: 350,
-                      damping: 30,
-                    }}
+                  <div
                     style={{
                       position: 'absolute',
                       inset: 0,
                       borderRadius: 16,
                       background: colors.spotlightBg,
                       border: `1px solid ${colors.spotlightBorder}`,
-                      // The subtle gold glow behind active tab
                       boxShadow: isDark
                         ? '0 0 25px -5px rgba(212, 175, 55, 0.35)'
                         : '0 0 20px -5px rgba(180, 142, 38, 0.25)',
+                      transition: 'all 0.2s ease-out',
                     }}
                   />
                 )}
 
                 {/* Gold Glow Line Under Active Tab */}
                 {isActive && (
-                  <motion.div
-                    layoutId="navGlowLine"
-                    transition={{
-                      type: 'spring',
-                      stiffness: 400,
-                      damping: 35,
-                    }}
+                  <div
                     style={{
                       position: 'absolute',
                       bottom: 4,
@@ -200,27 +181,21 @@ export function Navigation() {
                       boxShadow: isDark
                         ? '0 0 12px rgba(212, 175, 55, 0.6)'
                         : '0 0 10px rgba(180, 142, 38, 0.5)',
+                      transition: 'all 0.2s ease-out',
                     }}
                   />
                 )}
 
                 {/* Icon Container */}
-                <motion.div
-                  animate={{
-                    y: isActive ? -2 : 0,
-                    scale: isActive ? 1.15 : 1,
-                  }}
-                  transition={{
-                    type: 'spring',
-                    stiffness: 350,
-                    damping: 25,
-                  }}
+                <div
                   style={{
                     position: 'relative',
                     zIndex: 2,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    transform: isActive ? 'translateY(-2px) scale(1.15)' : 'translateY(0) scale(1)',
+                    transition: 'transform 0.2s ease-out',
                   }}
                 >
                   <Icon
@@ -236,17 +211,10 @@ export function Navigation() {
                       transition: 'color 0.2s, filter 0.2s',
                     }}
                   />
-                </motion.div>
+                </div>
 
                 {/* Label */}
-                <motion.span
-                  animate={{
-                    opacity: isActive ? 1 : 0.5,
-                    y: isActive ? 0 : 2,
-                  }}
-                  transition={{
-                    duration: 0.2,
-                  }}
+                <span
                   style={{
                     position: 'relative',
                     zIndex: 2,
@@ -255,17 +223,19 @@ export function Navigation() {
                     fontFamily: "'Manrope', sans-serif",
                     letterSpacing: '0.02em',
                     color: isActive ? colors.gold : colors.inactive,
+                    opacity: isActive ? 1 : 0.5,
+                    transform: isActive ? 'translateY(0)' : 'translateY(2px)',
                     textShadow: isActive
                       ? (isDark
                           ? '0 0 12px rgba(212, 175, 55, 0.4)'
                           : '0 0 10px rgba(180, 142, 38, 0.3)')
                       : 'none',
-                    transition: 'color 0.2s, text-shadow 0.2s',
+                    transition: 'all 0.2s ease-out',
                   }}
                 >
                   {item.label}
-                </motion.span>
-              </motion.button>
+                </span>
+              </button>
             )
           })}
         </div>
