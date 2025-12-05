@@ -2,6 +2,21 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { UserData } from '../types'
 import { fetchUserData, fetchConfig } from '../api/userApi'
 
+// Wait until Telegram injects initData.
+// On some mobile clients initData arrives a bit later than the first render,
+// which caused the app to throw "Open via Telegram" before WebApp was ready.
+async function waitForTelegramContext(timeoutMs = 2000, pollMs = 50) {
+  const started = Date.now()
+
+  while (Date.now() - started < timeoutMs) {
+    const tg = window.Telegram?.WebApp
+    if (tg?.initData && tg?.initData.length > 0) return true
+    await new Promise(resolve => setTimeout(resolve, pollMs))
+  }
+
+  return false
+}
+
 export function useUserData() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -11,6 +26,13 @@ export function useUserData() {
     async function loadUserData() {
       try {
         setLoading(true)
+
+        // Wait for Telegram to provide initData (mobile webviews may delay it)
+        const hasContext = await waitForTelegramContext()
+        if (!hasContext) {
+          throw new Error('Откройте приложение через Telegram (контекст не готов)')
+        }
+
         const data = await fetchUserData()
         setUserData(data)
         setError(null)
