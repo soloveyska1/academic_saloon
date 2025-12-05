@@ -1,15 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
-import { HomePage } from './pages/HomePage'
-import { OrdersPage } from './pages/OrdersPage'
-import { OrderDetailPage } from './pages/OrderDetailPage'
-import { RoulettePage } from './pages/RoulettePage'
-import { ProfilePage } from './pages/ProfilePage'
-import { CreateOrderPage } from './pages/CreateOrderPage'
-import { ReferralPage } from './pages/ReferralPage'
-import { AchievementsPage } from './pages/AchievementsPage'
-import { SupportPage } from './pages/SupportPage'
+import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
+import { SplashScreen } from './components/SplashScreen'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { GoldParticles } from './components/ui/GoldParticles'
@@ -18,6 +10,7 @@ import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
+import { LuxuryLoader } from './components/ui/LuxuryLoader'
 import {
   WebSocketProvider,
   OrderUpdateMessage,
@@ -33,6 +26,17 @@ import {
 } from './components/ui/RealtimeNotification'
 import { AlertTriangle, RefreshCw, Wifi, WifiOff } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+
+// Lazy Load Pages
+const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })))
+const OrdersPage = lazy(() => import('./pages/OrdersPage').then(module => ({ default: module.OrdersPage })))
+const OrderDetailPage = lazy(() => import('./pages/OrderDetailPage').then(module => ({ default: module.OrderDetailPage })))
+const RoulettePage = lazy(() => import('./pages/RoulettePage').then(module => ({ default: module.RoulettePage })))
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(module => ({ default: module.ProfilePage })))
+const CreateOrderPage = lazy(() => import('./pages/CreateOrderPage').then(module => ({ default: module.CreateOrderPage })))
+const ReferralPage = lazy(() => import('./pages/ReferralPage').then(module => ({ default: module.ReferralPage })))
+const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then(module => ({ default: module.AchievementsPage })))
+const SupportPage = lazy(() => import('./pages/SupportPage').then(module => ({ default: module.SupportPage })))
 
 // WebSocket connection status indicator (only shown in debug mode)
 function WSStatusIndicator({ showDebug }: { showDebug: boolean }) {
@@ -85,7 +89,7 @@ function AdminAwareWSIndicator() {
 }
 
 function AppContent() {
-  const { userData, loading, error, refetch } = useUserData()
+  const { userData, error, refetch } = useUserData()
   const [isReady, setIsReady] = useState(false)
 
   // Smart notification state - handles all notification types
@@ -227,69 +231,69 @@ function AppContent() {
               onDismiss={() => setNotification(null)}
               onAction={handleNotificationAction}
             />
-          <div style={{
-            minHeight: '100vh',
-            background: '#0a0a0c',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-            gap: 20,
-          }}>
             <div style={{
-              width: 70,
-              height: 70,
-              borderRadius: 18,
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
+              minHeight: '100vh',
+              background: '#0a0a0c',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
+              padding: 24,
+              gap: 20,
             }}>
-              <AlertTriangle size={36} color="#ef4444" />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <h2 style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 22,
-                fontWeight: 700,
-                color: '#f2f2f2',
-                margin: 0,
-                marginBottom: 10,
-              }}>
-                Ошибка загрузки
-              </h2>
-              <p style={{
-                fontSize: 14,
-                color: '#71717a',
-                margin: 0,
-                lineHeight: 1.5,
-                maxWidth: 280,
-              }}>
-                {error}
-              </p>
-            </div>
-            <button
-              onClick={() => window.location.reload()}
-              style={{
-                padding: '14px 28px',
-                fontSize: 15,
-                fontWeight: 600,
-                color: '#050505',
-                background: 'linear-gradient(180deg, #f5d061, #d4af37)',
-                border: 'none',
-                borderRadius: 12,
-                cursor: 'pointer',
+              <div style={{
+                width: 70,
+                height: 70,
+                borderRadius: 18,
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.3)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <RefreshCw size={18} />
-              Попробовать снова
-            </button>
-          </div>
+                justifyContent: 'center',
+              }}>
+                <AlertTriangle size={36} color="#ef4444" />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <h2 style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: '#f2f2f2',
+                  margin: 0,
+                  marginBottom: 10,
+                }}>
+                  Ошибка загрузки
+                </h2>
+                <p style={{
+                  fontSize: 14,
+                  color: '#71717a',
+                  margin: 0,
+                  lineHeight: 1.5,
+                  maxWidth: 280,
+                }}>
+                  {error}
+                </p>
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: '14px 28px',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: '#050505',
+                  background: 'linear-gradient(180deg, #f5d061, #d4af37)',
+                  border: 'none',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <RefreshCw size={18} />
+                Попробовать снова
+              </button>
+            </div>
           </WebSocketProvider>
         </ThemeProvider>
       </ErrorBoundary>
@@ -302,44 +306,47 @@ function AppContent() {
         <AdminProvider>
           <ToastProvider>
             <WebSocketProvider
-            telegramId={telegramId}
-            onOrderUpdate={handleOrderUpdate}
-            onBalanceUpdate={handleBalanceUpdate}
-            onProgressUpdate={handleProgressUpdate}
-            onNotification={handleNotification}
-            onRefresh={handleRefresh}
-          >
-            <BrowserRouter>
-              <div className="app">
-                {/* Animated Gold Particles Background */}
-                <GoldParticles />
+              telegramId={telegramId}
+              onOrderUpdate={handleOrderUpdate}
+              onBalanceUpdate={handleBalanceUpdate}
+              onProgressUpdate={handleProgressUpdate}
+              onNotification={handleNotification}
+              onRefresh={handleRefresh}
+            >
+              <BrowserRouter>
+                <div className="app">
+                  {/* Animated Gold Particles Background */}
+                  <GoldParticles />
 
-                {/* Smart Realtime Notifications */}
-                <SmartNotification
-                  notification={notification}
-                  onDismiss={() => setNotification(null)}
-                  onAction={handleNotificationAction}
-                />
+                  {/* Smart Realtime Notifications */}
+                  <SmartNotification
+                    notification={notification}
+                    onDismiss={() => setNotification(null)}
+                    onAction={handleNotificationAction}
+                  />
 
-                <Routes>
-                  <Route path="/" element={<HomePage user={userData} />} />
-                  <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
-                  <Route path="/order/:id" element={<OrderDetailPage />} />
-                  <Route path="/roulette" element={<RoulettePage user={userData} />} />
-                  <Route path="/profile" element={<ProfilePage user={userData} />} />
-                  <Route path="/create-order" element={<CreateOrderPage />} />
-                  <Route path="/referral" element={<ReferralPage user={userData} />} />
-                  <Route path="/achievements" element={<AchievementsPage user={userData} />} />
-                  <Route path="/support" element={<SupportPage />} />
-                </Routes>
-                <Navigation />
-                {/* Admin Debug Panel */}
-                <AdminPanel />
-                {/* WebSocket Status Indicator - only in debug mode */}
-                <AdminAwareWSIndicator />
-              </div>
-            </BrowserRouter>
-          </WebSocketProvider>
+                  <Suspense fallback={<LuxuryLoader />}>
+                    <Routes>
+                      <Route path="/" element={<HomePage user={userData} />} />
+                      <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
+                      <Route path="/order/:id" element={<OrderDetailPage />} />
+                      <Route path="/roulette" element={<RoulettePage user={userData} />} />
+                      <Route path="/profile" element={<ProfilePage user={userData} />} />
+                      <Route path="/create-order" element={<CreateOrderPage />} />
+                      <Route path="/referral" element={<ReferralPage user={userData} />} />
+                      <Route path="/achievements" element={<AchievementsPage user={userData} />} />
+                      <Route path="/support" element={<SupportPage />} />
+                    </Routes>
+                  </Suspense>
+
+                  <Navigation />
+                  {/* Admin Debug Panel */}
+                  <AdminPanel />
+                  {/* WebSocket Status Indicator - only in debug mode */}
+                  <AdminAwareWSIndicator />
+                </div>
+              </BrowserRouter>
+            </WebSocketProvider>
           </ToastProvider>
         </AdminProvider>
       </ThemeProvider>
@@ -349,7 +356,27 @@ function AppContent() {
 
 // Main App wrapper
 function App() {
-  return <AppContent />
+  const [showSplash, setShowSplash] = useState(true);
+
+  return (
+    <>
+      <AnimatePresence>
+        {showSplash && (
+          <SplashScreen onComplete={() => setShowSplash(false)} />
+        )}
+      </AnimatePresence>
+
+      {!showSplash && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <AppContent />
+        </motion.div>
+      )}
+    </>
+  );
 }
 
 export default App
