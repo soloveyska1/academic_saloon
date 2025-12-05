@@ -44,7 +44,7 @@ export const LuxuryLoader = () => {
                                 href="#circlePath"
                                 startOffset="0%"
                                 fill="url(#goldGradient)"
-                                textLength="470" // Adjusted for perfect circle fit
+                                textLength="470"
                             >
                                 ACADEMIC • SALOON • ACADEMIC • SALOON •
                             </textPath>
