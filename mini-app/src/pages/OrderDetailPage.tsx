@@ -1070,10 +1070,12 @@ export function OrderDetailPage() {
       // Update last seen status
       sessionStorage.setItem(lastSeenKey, data.status)
 
-      // Load payment info if order has price and is not fully paid
+      // Load payment info only for statuses where backend allows it
+      // Backend allowed: confirmed, waiting_payment, verification_pending, paid
+      const paymentAllowedStatuses = ['confirmed', 'waiting_payment', 'verification_pending', 'paid']
       const needsPayment = data.final_price > 0 &&
         (data.paid_amount || 0) < data.final_price &&
-        !['completed', 'cancelled', 'rejected'].includes(data.status)
+        paymentAllowedStatuses.includes(data.status)
 
       if (needsPayment) {
         try {

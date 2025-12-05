@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { UserData } from '../types'
 import { fetchUserData, fetchConfig } from '../api/userApi'
 
@@ -40,7 +40,8 @@ export function useUserData() {
 const BOT_USERNAME = 'Kladovaya_GIPSR_bot'
 
 export function useTelegram() {
-  const tg = window.Telegram?.WebApp
+  // Memoize tg reference - stable across renders
+  const tg = useMemo(() => window.Telegram?.WebApp, [])
   const [botUsername, setBotUsername] = useState(BOT_USERNAME)
 
   // Load config on mount
@@ -54,42 +55,43 @@ export function useTelegram() {
     })
   }, [])
 
-  const haptic = (type: 'light' | 'medium' | 'heavy' = 'light') => {
+  // Memoize all callbacks to prevent infinite re-render loops
+  const haptic = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
     tg?.HapticFeedback?.impactOccurred(type)
-  }
+  }, [tg])
 
-  const hapticSuccess = () => {
+  const hapticSuccess = useCallback(() => {
     tg?.HapticFeedback?.notificationOccurred('success')
-  }
+  }, [tg])
 
-  const hapticError = () => {
+  const hapticError = useCallback(() => {
     tg?.HapticFeedback?.notificationOccurred('error')
-  }
+  }, [tg])
 
-  const openBot = (startParam?: string) => {
+  const openBot = useCallback((startParam?: string) => {
     const url = startParam
       ? `https://t.me/${botUsername}?start=${startParam}`
       : `https://t.me/${botUsername}`
     tg?.openTelegramLink(url)
-  }
+  }, [tg, botUsername])
 
-  const openSupport = () => {
+  const openSupport = useCallback(() => {
     // Open bot with support command to create topic
     const url = `https://t.me/${botUsername}?start=support`
     tg?.openTelegramLink(url)
-  }
+  }, [tg, botUsername])
 
-  const showAlert = (message: string) => {
+  const showAlert = useCallback((message: string) => {
     tg?.showAlert(message)
-  }
+  }, [tg])
 
-  const showConfirm = (message: string, callback: (confirmed: boolean) => void) => {
+  const showConfirm = useCallback((message: string, callback: (confirmed: boolean) => void) => {
     tg?.showConfirm(message, callback)
-  }
+  }, [tg])
 
-  const close = () => {
+  const close = useCallback(() => {
     tg?.close()
-  }
+  }, [tg])
 
   return {
     tg,
