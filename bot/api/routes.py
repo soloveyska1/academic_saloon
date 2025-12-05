@@ -416,8 +416,19 @@ async def spin_roulette(
                 prize_type=selected["type"],
                 value=selected["value"],
             )
+
+            # Send real-time balance update
+            if selected["value"] > 0:
+                from bot.services.realtime_notifications import send_balance_notification
+                await send_balance_notification(
+                    telegram_id=user.telegram_id,
+                    change=float(selected["value"]),
+                    new_balance=float(user.balance),
+                    reason=f"Выигрыш в рулетке: {selected['prize']}",
+                    reason_key="roulette_win"
+                )
         except Exception as e:
-            logger.warning(f"[API /roulette/spin] Failed to log: {e}")
+            logger.warning(f"[API /roulette/spin] Failed to log/notify: {e}")
 
     if selected["type"] == "nothing":
         return RouletteResponse(
