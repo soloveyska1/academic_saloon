@@ -8,6 +8,7 @@ import { ToastProvider } from './components/ui/Toast'
 import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AdminPanel } from './components/AdminPanel'
+import { DynamicIslandProvider } from './components/ui/DynamicIsland'
 import { useUserData } from './hooks/useUserData'
 import {
   WebSocketProvider,
@@ -303,6 +304,7 @@ function AppContent() {
       <ThemeProvider>
         <AdminProvider>
           <ToastProvider>
+            <DynamicIslandProvider>
             <WebSocketProvider
               telegramId={telegramId}
               onOrderUpdate={handleOrderUpdate}
@@ -349,6 +351,7 @@ function AppContent() {
                 </div>
               </BrowserRouter>
             </WebSocketProvider>
+            </DynamicIslandProvider>
           </ToastProvider>
         </AdminProvider>
       </ThemeProvider>
