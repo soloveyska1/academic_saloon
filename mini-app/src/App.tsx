@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
+import { SplashScreen } from './components/SplashScreen'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { GoldParticles } from './components/ui/GoldParticles'
@@ -24,7 +25,7 @@ import {
   SmartNotificationData,
 } from './components/ui/RealtimeNotification'
 import { AlertTriangle, RefreshCw, Wifi, WifiOff } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 
 // Lazy Load Pages
 const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })))
@@ -355,7 +356,27 @@ function AppContent() {
 
 // Main App wrapper
 function App() {
-  return <AppContent />
+  const [showSplash, setShowSplash] = useState(true);
+
+  return (
+    <>
+      <AnimatePresence>
+        {showSplash && (
+          <SplashScreen onComplete={() => setShowSplash(false)} />
+        )}
+      </AnimatePresence>
+
+      {!showSplash && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <AppContent />
+        </motion.div>
+      )}
+    </>
+  );
 }
 
 export default App
