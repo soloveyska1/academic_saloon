@@ -95,6 +95,7 @@ export interface RouletteResult {
   prize: string
   type: 'bonus' | 'discount' | 'nothing' | 'jackpot'
   value: number
+  message: string
 }
 
 // Order Creation (Web App First)

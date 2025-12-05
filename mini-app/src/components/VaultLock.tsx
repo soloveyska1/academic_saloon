@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 interface VaultLockProps {
-  state: 'idle' | 'spinning' | 'success' | 'failed';
+  state: 'idle' | 'spinning' | 'near-miss' | 'landed' | 'success' | 'failed';
   userPhotoUrl?: string;
 }
 
@@ -36,8 +36,8 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
   }, [state]);
 
   // Determine animation states
-  const isSpinning = state === 'spinning';
-  const isSuccess = state === 'success';
+  const isSpinning = state === 'spinning' || state === 'near-miss';
+  const isSuccess = state === 'success' || state === 'landed';
   const isFailed = state === 'failed';
 
   return (
@@ -57,9 +57,8 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
 
           {/* Main Bezel - Brushed Gold */}
           <div
-            className={`absolute inset-0 rounded-full border-[14px] border-[var(--r-gold-600)] shadow-2xl brushed-metal-ring ${
-              isSpinning ? 'animate-[spin_1.5s_linear_infinite]' : 'idle-rotate'
-            }`}
+            className={`absolute inset-0 rounded-full border-[14px] border-[var(--r-gold-600)] shadow-2xl brushed-metal-ring ${isSpinning ? 'animate-[spin_1.5s_linear_infinite]' : 'idle-rotate'
+              }`}
           >
             {/* Bezel Markers (12 hour positions) */}
             {Array.from({ length: 12 }).map((_, i) => (
@@ -97,9 +96,8 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
 
           {/* Brass Middle Ring */}
           <motion.div
-            className={`absolute inset-2 rounded-full bg-gradient-to-br from-[var(--r-gold-600)] via-[var(--r-gold-700)] to-[var(--r-gold-800)] shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),inset_0_-2px_4px_rgba(0,0,0,0.3)] ${
-              isSpinning ? '' : 'idle-rotate-reverse'
-            }`}
+            className={`absolute inset-2 rounded-full bg-gradient-to-br from-[var(--r-gold-600)] via-[var(--r-gold-700)] to-[var(--r-gold-800)] shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),inset_0_-2px_4px_rgba(0,0,0,0.3)] ${isSpinning ? '' : 'idle-rotate-reverse'
+              }`}
             animate={{
               rotate: isSpinning ? -720 : 0,
             }}
@@ -139,15 +137,14 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
 
             {/* Subtle Inner Glow */}
             <div
-              className={`absolute inset-0 rounded-full transition-opacity duration-500 ${
-                isSuccess ? 'opacity-100' : isFailed ? 'opacity-100' : 'opacity-0'
-              }`}
+              className={`absolute inset-0 rounded-full transition-opacity duration-500 ${isSuccess ? 'opacity-100' : isFailed ? 'opacity-100' : 'opacity-0'
+                }`}
               style={{
                 background: isSuccess
                   ? 'radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%)'
                   : isFailed
-                  ? 'radial-gradient(circle, rgba(220,38,38,0.3) 0%, transparent 70%)'
-                  : 'none',
+                    ? 'radial-gradient(circle, rgba(220,38,38,0.3) 0%, transparent 70%)'
+                    : 'none',
               }}
             />
           </div>
@@ -262,9 +259,8 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
 
                 {/* Scanning Line Effect */}
                 <div
-                  className={`absolute inset-0 pointer-events-none ${
-                    isSpinning ? 'opacity-50' : 'opacity-20'
-                  }`}
+                  className={`absolute inset-0 pointer-events-none ${isSpinning ? 'opacity-50' : 'opacity-20'
+                    }`}
                 >
                   <div
                     className="absolute w-full h-1/3 bg-gradient-to-b from-transparent via-[var(--r-gold-100)] to-transparent animate-[scan_2s_linear_infinite]"
@@ -288,17 +284,16 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
         >
           <div className="glass-panel gold-edge px-8 py-3 rounded-full">
             <span
-              className={`text-[10px] font-serif tracking-[0.25em] whitespace-nowrap laser-etched ${
-                isSuccess
+              className={`text-[10px] font-serif tracking-[0.25em] whitespace-nowrap laser-etched ${isSuccess
                   ? 'text-[var(--r-success)]'
                   : isFailed
-                  ? 'text-[var(--r-danger)]'
-                  : ''
-              }`}
+                    ? 'text-[var(--r-danger)]'
+                    : ''
+                }`}
             >
               {state === 'idle' && 'ЗАЩИТА АКТИВНА'}
-              {state === 'spinning' && 'ДЕШИФРОВКА...'}
-              {state === 'success' && 'ДОСТУП РАЗРЕШЁН'}
+              {(state === 'spinning' || state === 'near-miss') && 'ДЕШИФРОВКА...'}
+              {(state === 'success' || state === 'landed') && 'ДОСТУП РАЗРЕШЁН'}
               {state === 'failed' && 'ДОСТУП ЗАПРЕЩЁН'}
             </span>
           </div>
@@ -308,21 +303,20 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
-                className={`w-1 h-1 rounded-full ${
-                  isSpinning
+                className={`w-1 h-1 rounded-full ${isSpinning
                     ? 'bg-[var(--r-gold-300)]'
                     : isSuccess
-                    ? 'bg-[var(--r-success)]'
-                    : isFailed
-                    ? 'bg-[var(--r-danger)]'
-                    : 'bg-[var(--r-gold-600)]'
-                }`}
+                      ? 'bg-[var(--r-success)]'
+                      : isFailed
+                        ? 'bg-[var(--r-danger)]'
+                        : 'bg-[var(--r-gold-600)]'
+                  }`}
                 animate={
                   isSpinning
                     ? {
-                        opacity: [0.3, 1, 0.3],
-                        scale: [0.8, 1.2, 0.8],
-                      }
+                      opacity: [0.3, 1, 0.3],
+                      scale: [0.8, 1.2, 0.8],
+                    }
                     : {}
                 }
                 transition={{

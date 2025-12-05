@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
 import { LiveWinnersTicker } from '../components/LiveWinnersTicker';
 import { VaultLock } from '../components/VaultLock';
@@ -10,7 +10,7 @@ import { spinRoulette } from '../api/userApi';
 import '../styles/Roulette.css';
 
 interface RoulettePageProps {
-  user: UserData | null;
+  user?: UserData | null;
 }
 
 // Generate dust mote positions
@@ -235,7 +235,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
         <div className="relative w-full max-w-[320px] aspect-square mb-12">
           <VaultLock
             state={gameState}
-            progress={progress}
+            userPhotoUrl={user?.username ? undefined : undefined}
           />
 
           {/* Result Message Overlay */}
