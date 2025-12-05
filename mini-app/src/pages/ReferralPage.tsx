@@ -96,8 +96,9 @@ export function ReferralPage({ user }: Props) {
   const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
 
-  const referralCode = user?.referral_code || 'ABCD1234'
-  const referralLink = `https://t.me/${botUsername}?start=ref_${referralCode}`
+  const referralCode = user?.referral_code || `REF${user?.telegram_id || ''}`
+  // Correct Mini App deep link format for referrals
+  const referralLink = `https://t.me/${botUsername}/app?startapp=ref_${user?.telegram_id || ''}`
 
   // Mock data - replace with real data
   const referralCount = 3

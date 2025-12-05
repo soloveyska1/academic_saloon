@@ -44,7 +44,7 @@ function AnimatedCounter({ value, suffix = '', prefix = '' }: {
 }
 
 export function ProfilePage({ user }: Props) {
-  const { haptic, hapticSuccess } = useTelegram()
+  const { haptic, hapticSuccess, botUsername } = useTelegram()
   const navigate = useNavigate()
   useTheme() // Keep context subscription for theme changes
   const [copied, setCopied] = useState(false)
@@ -58,7 +58,8 @@ export function ProfilePage({ user }: Props) {
     : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
 
   const copyInviteLink = () => {
-    const inviteLink = `https://t.me/AcademicSaloonBot?start=ref_${user.telegram_id}`
+    // Correct Mini App deep link format
+    const inviteLink = `https://t.me/${botUsername}/app?startapp=ref_${user.telegram_id}`
     navigator.clipboard.writeText(inviteLink)
     setCopied(true)
     hapticSuccess()
@@ -379,7 +380,7 @@ export function ProfilePage({ user }: Props) {
         {showQR && (
           <QRCodeModal
             onClose={() => setShowQR(false)}
-            value={`https://t.me/AcademicSaloonBot?start=ref_${user.telegram_id}`}
+            value={`https://t.me/${botUsername}/app?startapp=ref_${user.telegram_id}`}
             title="Ваша реферальная ссылка"
             subtitle="Дайте отсканировать этот код другу, чтобы он стал вашим рефералом"
           />
