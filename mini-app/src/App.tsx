@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
-import { SplashScreen } from './components/SplashScreen'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { GoldParticles } from './components/ui/GoldParticles'
@@ -10,7 +9,6 @@ import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
-import { LuxuryLoader } from './components/ui/LuxuryLoader'
 import {
   WebSocketProvider,
   OrderUpdateMessage,
@@ -89,7 +87,7 @@ function AdminAwareWSIndicator() {
 }
 
 function AppContent() {
-  const { userData, error, refetch } = useUserData()
+  const { userData, loading, error, refetch } = useUserData()
   const [isReady, setIsReady] = useState(false)
 
   // Smart notification state - handles all notification types
@@ -314,7 +312,7 @@ function AppContent() {
               onRefresh={handleRefresh}
             >
               <BrowserRouter>
-                <div className="app" style={{ paddingBottom: 100 }}>
+                <div className="app">
                   {/* Animated Gold Particles Background */}
                   <GoldParticles />
 
@@ -325,12 +323,16 @@ function AppContent() {
                     onAction={handleNotificationAction}
                   />
 
-                  <Suspense fallback={<LuxuryLoader />}>
+                  <Suspense fallback={<LoadingScreen />}>
                     <Routes>
                       <Route path="/" element={<HomePage user={userData} />} />
                       <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
                       <Route path="/order/:id" element={<OrderDetailPage />} />
-                      <Route path="/roulette" element={<RoulettePage user={userData} />} />
+                      <Route path="/roulette" element={
+                        <ErrorBoundary>
+                          <RoulettePage user={userData} />
+                        </ErrorBoundary>
+                      } />
                       <Route path="/profile" element={<ProfilePage user={userData} />} />
                       <Route path="/create-order" element={<CreateOrderPage />} />
                       <Route path="/referral" element={<ReferralPage user={userData} />} />
@@ -356,35 +358,7 @@ function AppContent() {
 
 // Main App wrapper
 function App() {
-  const [showIntro, setShowIntro] = useState(true)
-  const [appReady, setAppReady] = useState(false)
-
-  const handleIntroComplete = useCallback(() => {
-    setShowIntro(false)
-    // Small delay before showing app content for smooth transition
-    setTimeout(() => setAppReady(true), 100)
-  }, [])
-
-  return (
-    <ErrorBoundary>
-      <AnimatePresence>
-        {showIntro && (
-          <SplashScreen onComplete={handleIntroComplete} />
-        )}
-      </AnimatePresence>
-
-      {/* Main App - only renders after splash is done */}
-      {appReady && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-        >
-          <AppContent />
-        </motion.div>
-      )}
-    </ErrorBoundary>
-  );
+  return <AppContent />
 }
 
 export default App
