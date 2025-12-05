@@ -7,7 +7,7 @@ from pydantic import SecretStr
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
-    BOT_TOKEN: SecretStr
+    BOT_TOKEN: SecretStr = SecretStr("7387413773:AAEe9yLdcIcnNNtocXJBDA6raFu-hRJMHZk")
     BOT_USERNAME: str
     ADMIN_IDS: list[int]
 
