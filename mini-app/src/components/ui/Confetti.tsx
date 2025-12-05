@@ -44,11 +44,12 @@ const PARTY_COLORS = [
   '#06b6d4', // Cyan
 ]
 
+// Оптимизировано для мобильных устройств - уменьшено количество частиц
 const INTENSITY_CONFIG = {
-  low: { count: 50, gravity: 0.25, spread: 150 },
-  medium: { count: 100, gravity: 0.3, spread: 250 },
-  high: { count: 200, gravity: 0.35, spread: 350 },
-  extreme: { count: 400, gravity: 0.4, spread: 500 },
+  low: { count: 30, gravity: 0.25, spread: 150 },
+  medium: { count: 60, gravity: 0.3, spread: 250 },
+  high: { count: 100, gravity: 0.35, spread: 350 },
+  extreme: { count: 150, gravity: 0.4, spread: 500 },
 }
 
 export function Confetti({
@@ -57,7 +58,7 @@ export function Confetti({
   duration = 5000,
   particleCount,
   colors = PARTY_COLORS,
-  intensity = 'high',
+  intensity = 'medium', // Изменено с 'high' для оптимизации на мобильных
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()

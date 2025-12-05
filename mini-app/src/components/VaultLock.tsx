@@ -81,28 +81,27 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
             ═══════════════════════════════════════════════════════════════════════ */}
 
         <div className="absolute inset-8 rounded-full">
-          {/* Gear Teeth Ring */}
+          {/* Gear Teeth Ring - анимация только при spinning */}
           <motion.div
             className="absolute inset-0 rounded-full border-[3px] border-dashed border-[var(--r-gold-500)] opacity-60"
             animate={{
               rotate: isSpinning ? 360 : 0,
             }}
             transition={{
-              duration: isSpinning ? 2 : 180,
-              repeat: Infinity,
+              duration: isSpinning ? 2 : 0.5,
+              repeat: isSpinning ? Infinity : 0,
               ease: 'linear',
             }}
           />
 
-          {/* Brass Middle Ring */}
+          {/* Brass Middle Ring - убрана бесконечная анимация в idle состоянии */}
           <motion.div
-            className={`absolute inset-2 rounded-full bg-gradient-to-br from-[var(--r-gold-600)] via-[var(--r-gold-700)] to-[var(--r-gold-800)] shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),inset_0_-2px_4px_rgba(0,0,0,0.3)] ${isSpinning ? '' : 'idle-rotate-reverse'
-              }`}
+            className={`absolute inset-2 rounded-full bg-gradient-to-br from-[var(--r-gold-600)] via-[var(--r-gold-700)] to-[var(--r-gold-800)] shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),inset_0_-2px_4px_rgba(0,0,0,0.3)]`}
             animate={{
               rotate: isSpinning ? -720 : 0,
             }}
             transition={{
-              duration: isSpinning ? 2.5 : 180,
+              duration: isSpinning ? 2.5 : 0.5,
               repeat: isSpinning ? Infinity : 0,
               ease: 'linear',
             }}

@@ -14,14 +14,15 @@ export const JackpotCounter = ({
   const [amount, setAmount] = useState(baseAmount);
   const [isHot, setIsHot] = useState(false);
 
-  // Анимация роста джекпота
+  // Анимация роста джекпота (500ms для экономии батареи на мобильных)
   useEffect(() => {
     const interval = setInterval(() => {
       setAmount((prev) => {
-        const growth = growthRate + Math.random() * 0.3;
+        // Увеличиваем рост пропорционально интервалу (было 100ms, стало 500ms = x5)
+        const growth = (growthRate + Math.random() * 0.3) * 5;
         return prev + growth;
       });
-    }, 100);
+    }, 500);
 
     return () => clearInterval(interval);
   }, [growthRate]);
