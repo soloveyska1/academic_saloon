@@ -153,13 +153,25 @@ export function Navigation() {
             const Icon = item.icon
 
             return (
-              <button
+              <motion.button
                 key={item.path}
                 onClick={() => handleClick(item.path)}
                 onPointerDown={() => handlePressStart(item.path)}
                 onPointerUp={handlePressEnd}
                 onPointerLeave={handlePressEnd}
                 onPointerCancel={handlePressEnd}
+                // Premium spring animation for press feedback
+                animate={{
+                  scale: isPressed ? 0.88 : 1,
+                  opacity: isPressed ? 0.75 : 1,
+                }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 600,
+                  damping: 25,
+                  mass: 0.5,
+                }}
+                whileHover={{ scale: 1.02 }}
                 style={{
                   position: 'relative',
                   display: 'flex',
@@ -176,11 +188,26 @@ export function Navigation() {
                   WebkitTapHighlightColor: 'transparent',
                   WebkitUserSelect: 'none',
                   userSelect: 'none',
-                  // Instant press feedback - no transition delay
-                  transform: isPressed ? 'scale(0.92)' : 'scale(1)',
-                  opacity: isPressed ? 0.8 : 1,
                 }}
               >
+                {/* Press Glow Effect - Premium tactile feedback */}
+                {isPressed && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.2 }}
+                    style={{
+                      position: 'absolute',
+                      inset: -4,
+                      borderRadius: 20,
+                      background: isDark
+                        ? 'radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%)'
+                        : 'radial-gradient(circle, rgba(180, 142, 38, 0.12) 0%, transparent 70%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+
                 {/* Gold Spotlight Background for Active Tab */}
                 {isActive && (
                   <div
@@ -269,7 +296,7 @@ export function Navigation() {
                 >
                   {item.label}
                 </span>
-              </button>
+              </motion.button>
             )
           })}
         </div>
