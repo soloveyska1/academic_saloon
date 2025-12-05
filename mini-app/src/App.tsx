@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -23,7 +23,7 @@ import {
   SmartNotificationData,
 } from './components/ui/RealtimeNotification'
 import { AlertTriangle, RefreshCw, Wifi, WifiOff } from 'lucide-react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 // Lazy Load Pages
 const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })))
@@ -87,7 +87,7 @@ function AdminAwareWSIndicator() {
 }
 
 function AppContent() {
-  const { userData, loading, error, refetch } = useUserData()
+  const { userData, error, refetch } = useUserData()
   const [isReady, setIsReady] = useState(false)
 
   // Smart notification state - handles all notification types
