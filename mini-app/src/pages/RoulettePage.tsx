@@ -15,7 +15,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
   const [gameState, setGameState] = useState<'idle' | 'spinning' | 'near-miss' | 'landed' | 'failed'>('idle');
   const [progress, setProgress] = useState(0);
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  const { playSound } = useSound();
+  const { playSound, initAudio } = useSound();
 
   // Refs for hold logic
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -24,6 +24,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
   // --- "INCEPTION ALGORITHM" ---
   const startHolding = () => {
     if (gameState !== 'idle') return;
+    initAudio(); // Ensure audio is ready
     isHoldingRef.current = true;
     playSound('turbine');
 
@@ -75,9 +76,13 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
     if (progress > 0 && progress < 100) {
       if (Math.random() > 0.7) {
         // Try Telegram Haptics first (Best for mobile)
-        const tg = window.Telegram?.WebApp;
+        const tg = (window as any).Telegram?.WebApp;
         if (tg?.HapticFeedback) {
-          tg.HapticFeedback.impactOccurred('light');
+          try {
+            tg.HapticFeedback.impactOccurred('light');
+          } catch (e) {
+            // Ignore haptic errors
+          }
         }
         // Fallback to navigator.vibrate (Android Chrome)
         else if (navigator.vibrate) {
@@ -88,7 +93,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
   }, [progress]);
 
   return (
-    <div className="relative w-full h-[100dvh] bg-[#050505] overflow-hidden flex flex-col items-center font-sans text-[#D4AF37]">
+    <div className="relative w-full min-h-[100dvh] bg-[#050505] overflow-y-auto flex flex-col items-center font-sans text-[#D4AF37]">
       {/* AMBIENT EFFECTS */}
       <div className="god-rays opacity-30"></div>
       <div className="scanlines opacity-20"></div>
@@ -199,7 +204,7 @@ export const RoulettePage = ({ user }: RoulettePageProps) => {
                 >
                   {gameState === 'spinning' && (
                     <div className="text-[#D4AF37] tracking-widest text-xs font-mono animate-pulse bg-black/50 px-4 py-2 rounded border border-[#D4AF37]/30">
-                      > BRUTE_FORCE_ATTACK...
+                      &gt; BRUTE_FORCE_ATTACK...
                     </div>
                   )}
                   {gameState === 'near-miss' && (
