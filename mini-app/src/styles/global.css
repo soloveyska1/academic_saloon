@@ -1611,3 +1611,97 @@ h4 {
   stroke-linecap: round;
   transition: stroke-dashoffset 0.8s var(--ease-out);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM CARD ANIMATIONS — Zero-Latency Touch Optimized
+   Spring physics via CSS for 60fps in Telegram WebView
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Pружинящая анимация появления карточек */
+@keyframes cardSpringUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card-enter {
+  opacity: 0;
+  animation: cardSpringUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Premium Order Card — Base styles */
+.order-card-premium {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-default);
+  padding: 20px;
+  cursor: pointer;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--card-shadow);
+
+  /* Critical for instant touch response */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+
+  /* GPU acceleration for smooth transforms */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Premium Filter Chip — Base styles */
+.filter-chip-premium {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+
+  /* Critical for instant touch response */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+
+  /* GPU acceleration */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.filter-chip-premium.active {
+  color: var(--bg-void);
+  background: var(--gold-metallic);
+  box-shadow: var(--glow-gold);
+}
+
+.filter-chip-premium:not(.active) {
+  color: var(--text-muted);
+}
+
+/* Orders list container with smooth scroll */
+.orders-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  /* Enable smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+}
