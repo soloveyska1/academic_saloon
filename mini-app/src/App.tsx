@@ -387,7 +387,7 @@ function App() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: appVisible ? 1 : 0 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
       >
         <AppContent onDataReady={handleDataReady} />
       </motion.div>

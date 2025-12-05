@@ -11,7 +11,7 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) => {
-  const MIN_DWELL_MS = 2300
+  const MIN_DWELL_MS = 2800
   const [phase, setPhase] = useState<'intro' | 'line' | 'seal' | 'exit'>('intro')
   const [hasSeen, setHasSeen] = useState(false)
   const startRef = useRef(performance.now())
@@ -41,12 +41,13 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
 
     sessionStorage.setItem('as_intro_seen', 'true')
 
-    const lineTimer = window.setTimeout(() => setPhase('line'), 750)
-    const sealTimer = window.setTimeout(() => setPhase('seal'), 1400)
-    const exitTimer = window.setTimeout(() => setPhase('exit'), 2550)
-    const completeTimer = window.setTimeout(safeComplete, 3100)
+    const lineTimer = window.setTimeout(() => setPhase('line'), 900)
+    const sealTimer = window.setTimeout(() => setPhase('seal'), 1700)
+    const exitTimer = window.setTimeout(() => setPhase('exit'), 2800)
+    const fadeTimer = window.setTimeout(() => setPhase('exit'), 3200)
+    const completeTimer = window.setTimeout(safeComplete, 3500)
 
-    timersRef.current = [lineTimer, sealTimer, exitTimer, completeTimer]
+    timersRef.current = [lineTimer, sealTimer, exitTimer, fadeTimer, completeTimer]
 
     return () => clearTimers()
   }, [safeComplete])
@@ -72,7 +73,7 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
         className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#050505]"
         initial={{ opacity: 1 }}
         animate={{ opacity: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        transition={{ duration: 0.65, ease: 'easeOut' }}
       >
         <QuickMonogram />
       </motion.div>
@@ -92,8 +93,20 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+          transition={{ duration: 1, ease: [0.4, 0, 0.2, 1] }}
         >
+          <motion.div
+            className="pointer-events-none absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.35 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.6, ease: [0.33, 1, 0.68, 1] }}
+            style={{
+              background:
+                'radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 35%, rgba(0,0,0,0.78) 100%)',
+            }}
+          />
+
           {/* Vignette overlay */}
           <div
             className="pointer-events-none absolute inset-0"
@@ -116,10 +129,10 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
             initial={{ opacity: 0, scale: 0.94, y: 18 }}
             animate={
               phase === 'exit'
-                ? { scale: 16, opacity: 0, y: -12 }
+                ? { scale: 16, opacity: 0, y: -10 }
                 : { opacity: 1, scale: 1, y: 0 }
             }
-            transition={{ duration: 1.15, ease: [0.76, 0, 0.24, 1] }}
+            transition={{ duration: 1.35, ease: [0.76, 0, 0.24, 1] }}
           >
             <ShimmeringTitle active={phase !== 'exit'} />
 
@@ -130,7 +143,7 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
                 width: phase !== 'intro' ? '100%' : 0,
                 opacity: phase !== 'intro' ? 1 : 0,
               }}
-              transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
+              transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               <div
                 className="absolute inset-0"
@@ -142,7 +155,7 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
               <motion.div
                 className="absolute -left-full top-0 h-px w-1/3 bg-[#FCF6BA]"
                 animate={{ x: phase !== 'intro' ? ['0%', '180%'] : '0%' }}
-                transition={{ repeat: phase !== 'intro' ? Infinity : 0, duration: 1.85, ease: 'easeInOut' }}
+                transition={{ repeat: phase !== 'intro' ? Infinity : 0, duration: 2.05, ease: 'easeInOut' }}
               />
             </motion.div>
 
@@ -154,14 +167,14 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
                 y: phase === 'seal' || phase === 'exit' ? 0 : 10,
                 scale: phase === 'seal' || phase === 'exit' ? 1 : 0.96,
               }}
-              transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.05 }}
+              transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.1 }}
             >
               <LuxuryLoader size={156} />
               <motion.div
                 className="absolute inset-0"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: phase === 'seal' || phase === 'exit' ? 0.4 : 0 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
                 style={{
                   background:
                     'radial-gradient(ellipse at 50% 50%, rgba(252,246,186,0.14) 0%, rgba(252,246,186,0) 70%)',
@@ -177,7 +190,7 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
                 opacity: phase === 'seal' || phase === 'exit' ? 1 : 0,
                 letterSpacing: phase === 'seal' || phase === 'exit' ? '0.55em' : '0.32em',
               }}
-              transition={{ duration: 1, ease: 'easeOut', delay: 0.12 }}
+              transition={{ duration: 1.1, ease: 'easeOut', delay: 0.2 }}
             >
               premium entrance
             </motion.span>
