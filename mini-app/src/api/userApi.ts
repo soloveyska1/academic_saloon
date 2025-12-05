@@ -89,7 +89,18 @@ export async function fetchOrderDetail(orderId: number): Promise<Order> {
   if (!hasTelegramContext()) {
     if (IS_DEV) {
       const order = getMockUserData().orders.find(o => o.id === orderId)
-      if (!order) throw new Error('Заказ не найден')
+      // DEV FIX: If order not found in static list (e.g. it was just 'created' with a random ID), return a dummy one
+      if (!order) {
+        console.warn('[DEV] Order not found in static mock, returning dynamic mock for ID:', orderId)
+        return {
+          ...getMockUserData().orders[0],
+          id: orderId,
+          status: 'waiting_estimation',
+          work_type_label: 'Случайный заказ (Dev)',
+          price: 0,
+          final_price: 0
+        }
+      }
       return order
     }
     throw new Error('Откройте приложение через Telegram')
@@ -180,10 +191,10 @@ export async function spinRoulette(): Promise<RouletteResult> {
   if (!hasTelegramContext()) {
     if (IS_DEV) {
       const prizes = [
-        { prize: '50 бонусов', type: 'bonus' as const, value: 50 },
-        { prize: '5% скидка', type: 'discount' as const, value: 5 },
-        { prize: '100 бонусов', type: 'bonus' as const, value: 100 },
-        { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0 },
+        { prize: '50 бонусов', type: 'bonus' as const, value: 50, message: 'Вы выиграли 50 бонусов!' },
+        { prize: '5% скидка', type: 'discount' as const, value: 5, message: 'Скидка 5% на следующий заказ!' },
+        { prize: '100 бонусов', type: 'bonus' as const, value: 100, message: 'Крупный выигрыш: 100 бонусов!' },
+        { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0, message: 'Повезет в любви!' },
       ]
       return prizes[Math.floor(Math.random() * prizes.length)]
     }
@@ -575,6 +586,8 @@ function getMockUserData(): UserData {
     discount: 10,
     referral_code: 'COWBOY123',
     daily_luck_available: true,
+    free_spins: 1,
+    roulette_onboarding_seen: true,
     rank: {
       name: 'Головорез',
       emoji: '🔫',
@@ -606,6 +619,11 @@ function getMockUserData(): UserData {
         progress: 45,
         created_at: '2024-12-01T18:39:00',
         completed_at: null,
+        payment_scheme: 'full',
+        files_url: null,
+        review_submitted: false,
+        revision_count: 0,
+        delivered_at: null,
       },
       {
         id: 168,
@@ -622,6 +640,11 @@ function getMockUserData(): UserData {
         progress: 100,
         created_at: '2024-11-25T10:00:00',
         completed_at: '2024-11-30T15:30:00',
+        payment_scheme: 'full',
+        files_url: 'https://example.com/files',
+        review_submitted: true,
+        revision_count: 0,
+        delivered_at: '2024-11-30T15:30:00',
       },
       {
         id: 152,
@@ -638,6 +661,11 @@ function getMockUserData(): UserData {
         progress: 100,
         created_at: '2024-11-15T09:00:00',
         completed_at: '2024-11-19T18:00:00',
+        payment_scheme: 'full',
+        files_url: 'https://example.com/files2',
+        review_submitted: true,
+        revision_count: 0,
+        delivered_at: '2024-11-19T18:00:00',
       },
     ],
   }

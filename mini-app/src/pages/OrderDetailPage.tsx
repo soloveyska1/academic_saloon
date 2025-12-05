@@ -1275,51 +1275,54 @@ export function OrderDetailPage() {
           <XCircle size={40} color="#ef4444" />
         </div>
         <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)', textAlign: 'center' }}>
-          {loadError || 'Заказ не найден'}
-        </p>
-        <p style={{ fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 280 }}>
-          Возможно заказ был удалён или у вас нет доступа
-        </p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {/* Retry button - only show if we can retry */}
-          {isValidOrderId && (
+          <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)', textAlign: 'center' }}>
+            {loadError || 'Заказ не найден'}
+            <br />
+            <span style={{ fontSize: 12, opacity: 0.5, fontWeight: 400 }}>ID: {id}</span>
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 280 }}>
+            Возможно заказ был удалён или у вас нет доступа
+          </p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {/* Retry button - only show if we can retry */}
+            {isValidOrderId && (
+              <button
+                onClick={handleRetry}
+                style={{
+                  padding: '14px 28px',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: '#d4af37',
+                  background: 'rgba(212,175,55,0.1)',
+                  border: '1px solid rgba(212,175,55,0.3)',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <RefreshCw size={16} />
+                Повторить
+              </button>
+            )}
+            {/* Back button - use regular button for mobile safety */}
             <button
-              onClick={handleRetry}
+              onClick={handleBack}
               style={{
                 padding: '14px 28px',
                 fontSize: 15,
                 fontWeight: 600,
-                color: '#d4af37',
-                background: 'rgba(212,175,55,0.1)',
-                border: '1px solid rgba(212,175,55,0.3)',
+                color: 'var(--text-main)',
+                background: 'var(--bg-card-solid)',
+                border: '1px solid var(--border-strong)',
                 borderRadius: 12,
                 cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
               }}
             >
-              <RefreshCw size={16} />
-              Повторить
+              Назад к заказам
             </button>
-          )}
-          {/* Back button - use regular button for mobile safety */}
-          <button
-            onClick={handleBack}
-            style={{
-              padding: '14px 28px',
-              fontSize: 15,
-              fontWeight: 600,
-              color: 'var(--text-main)',
-              background: 'var(--bg-card-solid)',
-              border: '1px solid var(--border-strong)',
-              borderRadius: 12,
-              cursor: 'pointer',
-            }}
-          >
-            Назад к заказам
-          </button>
-        </div>
+          </div>
       </div>
     )
   }
