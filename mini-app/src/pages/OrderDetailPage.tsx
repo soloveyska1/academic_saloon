@@ -58,6 +58,10 @@ export function OrderDetailPage() {
   // Payment Scheme State
   const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
 
+  // Action States (prevent double-click and show loading)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isRequestingRevision, setIsRequestingRevision] = useState(false)
+
   // WebSocket
   const { addMessageHandler } = useWebSocketContext()
 
@@ -282,11 +286,68 @@ export function OrderDetailPage() {
               {/* Confirmation Actions (for review status) */}
               {order.status === 'review' && (
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={async () => { haptic('medium'); await confirmWorkCompletion(order.id); setOrder(prev => prev ? { ...prev, status: 'completed' } : null); hapticSuccess() }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 16px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', border: 'none', borderRadius: 14, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 20px rgba(34,197,94,0.3)' }}>
-                    <CheckCircle size={16} /> Всё отлично
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    disabled={isConfirming || isRequestingRevision}
+                    onClick={async () => {
+                      if (isConfirming) return
+                      setIsConfirming(true)
+                      haptic('medium')
+                      try {
+                        await confirmWorkCompletion(order.id)
+                        setOrder(prev => prev ? { ...prev, status: 'completed' } : null)
+                        hapticSuccess()
+                      } catch (err) {
+                        console.error('Failed to confirm:', err)
+                        haptic('error')
+                      } finally {
+                        setIsConfirming(false)
+                      }
+                    }}
+                    style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      padding: '14px 16px',
+                      background: isConfirming ? 'rgba(34,197,94,0.5)' : 'linear-gradient(135deg, #22c55e, #16a34a)',
+                      border: 'none', borderRadius: 14, color: '#fff', fontSize: 14, fontWeight: 600,
+                      cursor: isConfirming ? 'wait' : 'pointer',
+                      boxShadow: '0 4px 20px rgba(34,197,94,0.3)',
+                      opacity: isRequestingRevision ? 0.5 : 1
+                    }}
+                  >
+                    {isConfirming ? <Loader size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                    {isConfirming ? 'Подтверждаем...' : 'Всё отлично'}
                   </motion.button>
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={async () => { haptic('light'); await requestRevision(order.id, ''); setOrder(prev => prev ? { ...prev, status: 'revision' } : null); document.getElementById('order-chat-section')?.scrollIntoView({ behavior: 'smooth' }); hapticSuccess() }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 16px', background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 14, color: '#f59e0b', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                    <PenTool size={16} /> Нужны правки
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    disabled={isConfirming || isRequestingRevision}
+                    onClick={async () => {
+                      if (isRequestingRevision) return
+                      setIsRequestingRevision(true)
+                      haptic('light')
+                      try {
+                        await requestRevision(order.id, '')
+                        setOrder(prev => prev ? { ...prev, status: 'revision' } : null)
+                        document.getElementById('order-chat-section')?.scrollIntoView({ behavior: 'smooth' })
+                        hapticSuccess()
+                      } catch (err) {
+                        console.error('Failed to request revision:', err)
+                        haptic('error')
+                      } finally {
+                        setIsRequestingRevision(false)
+                      }
+                    }}
+                    style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      padding: '14px 16px',
+                      background: 'rgba(245,158,11,0.2)',
+                      border: '1px solid rgba(245,158,11,0.4)',
+                      borderRadius: 14, color: '#f59e0b', fontSize: 14, fontWeight: 600,
+                      cursor: isRequestingRevision ? 'wait' : 'pointer',
+                      opacity: isConfirming ? 0.5 : 1
+                    }}
+                  >
+                    {isRequestingRevision ? <Loader size={16} className="animate-spin" /> : <PenTool size={16} />}
+                    {isRequestingRevision ? 'Отправляем...' : 'Нужны правки'}
                   </motion.button>
                 </div>
               )}
