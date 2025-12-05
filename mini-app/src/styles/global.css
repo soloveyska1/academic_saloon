@@ -14,6 +14,37 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM TOUCH OPTIMIZATION — Instant Mobile Response
+   Critical for luxury feel on mobile devices
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Remove iOS 300ms tap delay on all interactive elements */
+button,
+a,
+[role="button"],
+input,
+select,
+textarea,
+[tabindex]:not([tabindex="-1"]) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Prevent text selection on buttons for cleaner tap experience */
+button,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* GPU-accelerated transforms for smooth press feedback */
+button,
+[role="button"] {
+  will-change: transform, opacity;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    THE ROYAL PALETTE — ULTRA-PREMIUM CSS VARIABLES
    Rule #1: NO FLAT COLORS — Gold must always be gradient or glow
    Rule #2: NO BLACK SHADOWS — Shadows must be colored (Gold/Bronze tint)
