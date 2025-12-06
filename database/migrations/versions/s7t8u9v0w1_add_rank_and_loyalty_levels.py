@@ -55,7 +55,6 @@ def upgrade() -> None:
     if rank_exists == 0:
         bind.execute(
             sa.insert(rank_table)
-            .prefix_with("OR IGNORE")
             .values(
                 [
                     {
@@ -103,7 +102,6 @@ def upgrade() -> None:
     if loyalty_exists == 0:
         bind.execute(
             sa.insert(loyalty_table)
-            .prefix_with("OR IGNORE")
             .values(
                 [
                     {"name": "Резидент", "emoji": "🌵", "min_orders": 0, "discount_percent": 0},
