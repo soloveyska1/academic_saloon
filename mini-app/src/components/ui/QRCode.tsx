@@ -183,6 +183,8 @@ export function QRCodeModal({
           textAlign: 'center',
           maxWidth: 380,
           width: '100%',
+          maxHeight: 'calc(100vh - 40px)',
+          overflowY: 'auto',
           position: 'relative',
           boxShadow: '0 0 60px -20px rgba(212,175,55,0.4)',
         }}
