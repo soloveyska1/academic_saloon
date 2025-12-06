@@ -126,11 +126,11 @@ def order_to_response(order: Order) -> OrderResponse:
         subject=order.subject,
         topic=order.topic,
         deadline=order.deadline,
-        price=float(order.price or 0),
-        final_price=float(order.final_price),
-        paid_amount=float(order.paid_amount or 0),
-        discount=float(order.discount or 0),
-        bonus_used=float(order.bonus_used or 0),
+        price=round(float(order.price or 0), 2),
+        final_price=round(float(order.final_price), 2),
+        paid_amount=round(float(order.paid_amount or 0), 2),
+        discount=round(float(order.discount or 0), 2),
+        bonus_used=round(float(order.bonus_used or 0), 2),
         progress=order.progress or 0,
         payment_scheme=order.payment_scheme,  # full / half
         files_url=getattr(order, 'files_url', None),  # Work files URL (Yandex.Disk)
@@ -246,8 +246,8 @@ async def get_user_profile(
         telegram_id=user.telegram_id,
         username=user.username,
         fullname=user.fullname or tg_user.first_name,
-        balance=float(user.balance or 0),
-        bonus_balance=float(user.balance or 0),
+        balance=round(float(user.balance or 0), 2),
+        bonus_balance=round(float(user.balance or 0), 2),
         orders_count=total_orders_count,  # Use actual count from orders table
         total_spent=actual_total_spent,   # Use actual sum from completed orders
         discount=loyalty_info.discount,
@@ -259,7 +259,7 @@ async def get_user_profile(
         transactions=[
             BalanceTransactionResponse(
                 id=tx.id,
-                amount=float(tx.amount),
+                amount=round(float(tx.amount), 2),
                 type=tx.type,
                 reason=tx.reason,
                 description=tx.description,
@@ -473,8 +473,8 @@ async def spin_roulette(
                 from bot.services.realtime_notifications import send_balance_notification
                 await send_balance_notification(
                     telegram_id=user.telegram_id,
-                    change=float(selected["value"]),
-                    new_balance=float(user.balance),
+                    change=round(float(selected["value"]), 2),
+                    new_balance=round(float(user.balance), 2),
                     reason=f"Выигрыш в рулетке: {selected['prize']}",
                     reason_key="roulette_win"
                 )
@@ -1221,12 +1221,12 @@ async def get_payment_info(
     return PaymentInfoResponse(
         order_id=order.id,
         status=order.status,
-        price=float(order.price),
-        final_price=float(order.final_price),
-        discount=float(order.discount),
-        bonus_used=float(order.bonus_used),
-        paid_amount=float(order.paid_amount or 0),
-        remaining=float(order.final_price - (order.paid_amount or 0)),
+        price=round(float(order.price), 2),
+        final_price=round(float(order.final_price), 2),
+        discount=round(float(order.discount), 2),
+        bonus_used=round(float(order.bonus_used), 2),
+        paid_amount=round(float(order.paid_amount or 0), 2),
+        remaining=round(float(order.final_price - (order.paid_amount or 0)), 2),
         # Payment requisites from settings
         card_number=card_formatted,
         card_holder=settings.PAYMENT_NAME.upper(),
