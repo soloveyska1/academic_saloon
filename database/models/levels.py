@@ -10,7 +10,7 @@ class RankLevel(Base):
     __tablename__ = "rank_levels"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     emoji: Mapped[str] = mapped_column(String(10), nullable=False)
     min_spent: Mapped[float] = mapped_column(Float, nullable=False)
     cashback_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
@@ -23,7 +23,7 @@ class LoyaltyLevel(Base):
     __tablename__ = "loyalty_levels"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     emoji: Mapped[str] = mapped_column(String(10), nullable=False)
     min_orders: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
