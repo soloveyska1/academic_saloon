@@ -601,6 +601,7 @@ function getMockUserData(): UserData {
     referral_code: 'COWBOY123',
     referrals_count: 5,
     daily_luck_available: true,
+    daily_bonus_streak: 5,
     free_spins: 1,
     roulette_onboarding_seen: true,
     rank: {
@@ -608,6 +609,7 @@ function getMockUserData(): UserData {
       emoji: '🔫',
       level: 3,
       cashback: 5,
+      bonus: 'Приоритетная поддержка',
       next_rank: 'Легенда Запада',
       progress: 90,
       spent_to_next: 5000,

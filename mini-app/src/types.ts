@@ -17,6 +17,7 @@ export interface UserData {
   referrals_count: number  // Number of referrals
   orders: Order[]
   daily_luck_available: boolean
+  daily_bonus_streak: number  // Days in a row claimed daily bonus
   free_spins: number
   roulette_onboarding_seen: boolean
 }
@@ -35,6 +36,7 @@ export interface RankInfo {
   emoji: string
   level: number
   cashback: number
+  bonus: string | null  // Bonus perk for this rank
   next_rank: string | null
   progress: number
   spent_to_next: number
