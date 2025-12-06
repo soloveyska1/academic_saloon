@@ -238,124 +238,41 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM HERO ICON — 3D Floating Badge with Glow
+//  PREMIUM HERO ICON — Minimalist Monochrome Style
 // ═══════════════════════════════════════════════════════════════════════════
 
 function HeroIcon({
   icon: Icon,
-  gradient,
-  glowColor,
-  size = 88
+  size = 72
 }: {
   icon: typeof Star
-  gradient: string
-  glowColor: string
+  gradient?: string
+  glowColor?: string
   size?: number
 }) {
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      {/* Outer glow ring */}
-      <motion.div
-        animate={{
-          scale: [1, 1.15, 1],
-          opacity: [0.3, 0.6, 0.3],
-        }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position: 'absolute',
-          inset: -12,
-          borderRadius: size * 0.35,
-          background: `radial-gradient(circle, ${glowColor}40 0%, transparent 70%)`,
-        }}
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 20 }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: size,
+        height: size,
+        borderRadius: size * 0.28,
+        background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+        border: '1px solid rgba(212,175,55,0.25)',
+        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.6)',
+      }}
+    >
+      <Icon
+        size={size * 0.4}
+        color="rgba(212,175,55,0.85)"
+        strokeWidth={1.5}
       />
-
-      {/* Main badge */}
-      <motion.div
-        initial={{ scale: 0, rotate: -180 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
-        style={{
-          position: 'relative',
-          width: size,
-          height: size,
-          borderRadius: size * 0.3,
-          background: gradient,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: `
-            0 12px 40px -8px ${glowColor}80,
-            0 4px 20px rgba(0,0,0,0.4),
-            inset 0 2px 0 rgba(255,255,255,0.25),
-            inset 0 -3px 0 rgba(0,0,0,0.15)
-          `,
-          overflow: 'hidden',
-        }}
-      >
-        {/* Glass shine overlay */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '55%',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.05) 100%)',
-          borderRadius: `${size * 0.3}px ${size * 0.3}px 50% 50%`,
-        }} />
-
-        {/* Shimmer pass effect */}
-        <motion.div
-          animate={{ x: ['-150%', '250%'] }}
-          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '50%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-            transform: 'skewX(-20deg)',
-          }}
-        />
-
-        <Icon
-          size={size * 0.45}
-          color="#fff"
-          strokeWidth={1.8}
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-          }}
-        />
-      </motion.div>
-
-      {/* Sparkle effects */}
-      {[0, 1, 2].map(i => (
-        <motion.div
-          key={i}
-          animate={{
-            scale: [0, 1, 0],
-            opacity: [0, 1, 0],
-          }}
-          transition={{
-            duration: 1.5,
-            delay: i * 0.5,
-            repeat: Infinity,
-            repeatDelay: 1,
-          }}
-          style={{
-            position: 'absolute',
-            top: i === 0 ? -8 : i === 1 ? '20%' : '70%',
-            right: i === 0 ? '20%' : i === 1 ? -10 : -6,
-            width: 8 - i * 2,
-            height: 8 - i * 2,
-          }}
-        >
-          <Sparkles size={8 - i * 2} color={glowColor} />
-        </motion.div>
-      ))}
-    </div>
+    </motion.div>
   )
 }
 
@@ -387,7 +304,7 @@ function AnimatedValue({ value, suffix = '' }: { value: number; suffix?: string 
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  LUXURY CARD — Reusable Premium Card Component
+//  MINIMAL CARD — Clean Monochrome Style
 // ═══════════════════════════════════════════════════════════════════════════
 
 function LuxuryCard({
@@ -400,8 +317,8 @@ function LuxuryCard({
   style = {},
 }: {
   children: React.ReactNode
-  gradient: string
-  borderColor: string
+  gradient?: string
+  borderColor?: string
   glowColor?: string
   isActive?: boolean
   onClick?: () => void
@@ -413,28 +330,23 @@ function LuxuryCard({
       onClick={onClick}
       style={{
         position: 'relative',
-        padding: 18,
-        borderRadius: 20,
-        background: gradient,
-        border: `1.5px solid ${borderColor}`,
-        boxShadow: isActive && glowColor
-          ? `0 8px 32px -8px ${glowColor}60, inset 0 1px 0 rgba(255,255,255,0.1)`
-          : 'inset 0 1px 0 rgba(255,255,255,0.05)',
+        padding: 16,
+        borderRadius: 16,
+        background: gradient || 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+        border: `1px solid ${borderColor || 'rgba(212,175,55,0.15)'}`,
+        boxShadow: '0 4px 20px -4px rgba(0,0,0,0.5)',
         cursor: onClick ? 'pointer' : 'default',
-        overflow: 'hidden',
         ...style,
       }}
     >
-      {/* Inner shine */}
+      {/* Subtle top highlight */}
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: '50%',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%)',
-        borderRadius: '20px 20px 50% 50%',
-        pointerEvents: 'none',
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
       }} />
 
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -445,7 +357,7 @@ function LuxuryCard({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  CASHBACK MODAL — Ultra-Premium Loyalty System
+//  CASHBACK MODAL — Monochrome Premium Style
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface CashbackModalProps {
@@ -455,10 +367,10 @@ interface CashbackModalProps {
 }
 
 const RANKS_DATA = [
-  { name: 'Резидент', cashback: 3, minSpent: 0, icon: Star, color: '#6b7280', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)' },
-  { name: 'Партнёр', cashback: 5, minSpent: 5000, icon: TrendingUp, color: '#3b82f6', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
-  { name: 'VIP-Клиент', cashback: 7, minSpent: 15000, icon: Crown, color: '#a855f7', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)' },
-  { name: 'Премиум', cashback: 10, minSpent: 50000, icon: Gem, color: '#D4AF37', gradient: 'linear-gradient(135deg, #D4AF37, #B38728)' },
+  { name: 'Резидент', cashback: 3, minSpent: 0, icon: Star },
+  { name: 'Партнёр', cashback: 5, minSpent: 5000, icon: TrendingUp },
+  { name: 'VIP-Клиент', cashback: 7, minSpent: 15000, icon: Crown },
+  { name: 'Премиум', cashback: 10, minSpent: 50000, icon: Gem },
 ]
 
 export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
@@ -466,31 +378,23 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
   const currentRank = RANKS_DATA[currentRankIndex] || RANKS_DATA[0]
 
   return (
-    <ModalWrapper isOpen={isOpen} onClose={onClose} accentColor="#22c55e">
+    <ModalWrapper isOpen={isOpen} onClose={onClose} accentColor="#D4AF37" showParticles={false}>
       <div style={{ padding: '8px 24px 40px' }}>
         {/* Hero Section */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <HeroIcon
-            icon={Percent}
-            gradient="linear-gradient(135deg, #22c55e 0%, #15803d 100%)"
-            glowColor="#22c55e"
-          />
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <HeroIcon icon={Percent} />
 
           <motion.h2
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.15 }}
             style={{
               fontFamily: "var(--font-serif)",
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: 700,
-              marginTop: 24,
-              marginBottom: 10,
-              background: 'linear-gradient(135deg, #22c55e 0%, #86efac 50%, #22c55e 100%)',
-              backgroundSize: '200% 100%',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              animation: 'shimmer-text 3s ease-in-out infinite',
+              marginTop: 20,
+              marginBottom: 8,
+              color: 'rgba(255,255,255,0.9)',
             }}
           >
             Система лояльности
@@ -498,121 +402,77 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}
+            transition={{ delay: 0.2 }}
+            style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}
           >
             Возврат с каждого заказа на ваш баланс
           </motion.p>
         </div>
 
-        {/* Current Cashback — Hero Display */}
+        {/* Current Cashback */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
         >
           <LuxuryCard
-            gradient="linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.05) 50%, rgba(212,175,55,0.1) 100%)"
-            borderColor="rgba(212,175,55,0.4)"
-            glowColor="#D4AF37"
-            isActive
-            style={{ marginBottom: 28, padding: 28, textAlign: 'center' }}
+            borderColor="rgba(212,175,55,0.3)"
+            style={{ marginBottom: 24, padding: 24, textAlign: 'center' }}
           >
-            {/* Shimmer overlay */}
-            <motion.div
-              animate={{ x: ['-100%', '200%'] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '40%',
-                height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-                transform: 'skewX(-20deg)',
-                zIndex: 0,
-              }}
-            />
-
             <div style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'rgba(255,255,255,0.5)',
-              letterSpacing: '0.2em',
-              marginBottom: 14,
+              fontSize: 10,
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.4)',
+              letterSpacing: '0.15em',
+              marginBottom: 12,
             }}>
               ВАШ ТЕКУЩИЙ КЕШБЭК
             </div>
 
-            <motion.div
-              animate={{
-                textShadow: [
-                  '0 0 30px rgba(212,175,55,0.3)',
-                  '0 0 60px rgba(212,175,55,0.5)',
-                  '0 0 30px rgba(212,175,55,0.3)',
-                ]
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{
-                fontSize: 64,
-                fontWeight: 800,
-                fontFamily: "var(--font-serif)",
-                background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 30%, #B38728 60%, #FCF6BA 100%)',
-                backgroundSize: '200% 100%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                animation: 'shimmer-text 4s ease-in-out infinite',
-                lineHeight: 1,
-              }}
-            >
+            <div style={{
+              fontSize: 48,
+              fontWeight: 700,
+              fontFamily: "var(--font-serif)",
+              color: 'rgba(212,175,55,0.9)',
+              lineHeight: 1,
+              marginBottom: 14,
+            }}>
               {user.rank.cashback}%
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.5, type: 'spring' }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                marginTop: 16,
-                padding: '8px 18px',
-                background: `linear-gradient(135deg, ${currentRank.color}30, ${currentRank.color}15)`,
-                borderRadius: 100,
-                border: `1px solid ${currentRank.color}50`,
-              }}
-            >
-              <currentRank.icon size={16} color={currentRank.color} />
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              background: 'rgba(212,175,55,0.1)',
+              borderRadius: 100,
+              border: '1px solid rgba(212,175,55,0.2)',
+            }}>
+              <currentRank.icon size={14} color="rgba(212,175,55,0.7)" strokeWidth={1.5} />
               <span style={{
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 600,
-                color: currentRank.color,
+                color: 'rgba(212,175,55,0.8)',
               }}>
                 {currentRank.name}
               </span>
-            </motion.div>
+            </div>
           </LuxuryCard>
         </motion.div>
 
-        {/* Ranks Ladder */}
-        <div style={{ marginBottom: 28 }}>
+        {/* Ranks List */}
+        <div style={{ marginBottom: 24 }}>
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            marginBottom: 18,
-          }}>
-            <Trophy size={14} color="#D4AF37" />
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'rgba(255,255,255,0.4)',
-              letterSpacing: '0.15em',
-            }}>УРОВНИ ПРОГРАММЫ</span>
-          </div>
+            fontSize: 10,
+            fontWeight: 600,
+            color: 'rgba(255,255,255,0.35)',
+            letterSpacing: '0.12em',
+            marginBottom: 14,
+            paddingLeft: 4,
+          }}>УРОВНИ ПРОГРАММЫ</div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {RANKS_DATA.map((rank, index) => {
               const isActive = index === currentRankIndex
               const isPassed = index < currentRankIndex
@@ -621,99 +481,58 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
               return (
                 <motion.div
                   key={rank.name}
-                  initial={{ opacity: 0, x: -30 }}
+                  initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.08 }}
+                  transition={{ delay: 0.3 + index * 0.06 }}
                 >
                   <LuxuryCard
-                    gradient={isActive
-                      ? `linear-gradient(135deg, ${rank.color}20 0%, ${rank.color}08 100%)`
-                      : 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)'
-                    }
-                    borderColor={isActive ? `${rank.color}50` : 'rgba(255,255,255,0.06)'}
-                    glowColor={isActive ? rank.color : undefined}
-                    isActive={isActive}
-                    style={{ padding: 16 }}
+                    borderColor={isActive ? 'rgba(212,175,55,0.35)' : 'rgba(255,255,255,0.06)'}
+                    style={{ padding: 14 }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      {/* Icon Badge */}
-                      <motion.div
-                        animate={isActive ? {
-                          boxShadow: [
-                            `0 0 15px ${rank.color}40`,
-                            `0 0 25px ${rank.color}60`,
-                            `0 0 15px ${rank.color}40`,
-                          ]
-                        } : {}}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        style={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: 14,
-                          background: isPassed || isActive
-                            ? rank.gradient
-                            : 'rgba(60,60,60,0.4)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          position: 'relative',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {/* Shine on active */}
-                        {isActive && (
-                          <div style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: '50%',
-                            background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
-                            borderRadius: '14px 14px 50% 50%',
-                          }} />
-                        )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {/* Icon */}
+                      <div style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        background: 'rgba(212,175,55,0.08)',
+                        border: `1px solid ${isActive ? 'rgba(212,175,55,0.3)' : 'rgba(212,175,55,0.1)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
                         {isPassed ? (
-                          <CheckCircle size={24} color="#fff" />
+                          <CheckCircle size={18} color="rgba(212,175,55,0.7)" strokeWidth={1.5} />
                         ) : (
-                          <Icon size={24} color={isActive ? '#fff' : 'rgba(255,255,255,0.3)'} />
+                          <Icon size={18} color={isActive ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.25)'} strokeWidth={1.5} />
                         )}
-                      </motion.div>
+                      </div>
 
                       {/* Info */}
                       <div style={{ flex: 1 }}>
                         <div style={{
-                          fontSize: 16,
-                          fontWeight: 700,
-                          fontFamily: "var(--font-serif)",
-                          color: isActive ? '#fff' : isPassed ? '#22c55e' : 'rgba(255,255,255,0.4)',
-                          marginBottom: 3,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: isActive ? 'rgba(255,255,255,0.9)' : isPassed ? 'rgba(212,175,55,0.7)' : 'rgba(255,255,255,0.4)',
+                          marginBottom: 2,
                         }}>{rank.name}</div>
                         <div style={{
-                          fontSize: 12,
-                          color: 'rgba(255,255,255,0.4)',
+                          fontSize: 11,
+                          color: 'rgba(255,255,255,0.35)',
                         }}>
                           от {rank.minSpent.toLocaleString('ru-RU')} ₽
                         </div>
                       </div>
 
-                      {/* Cashback Value */}
-                      <motion.div
-                        animate={isActive ? { scale: [1, 1.05, 1] } : {}}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        style={{
-                          fontSize: 22,
-                          fontWeight: 800,
-                          fontFamily: "var(--font-mono)",
-                          background: isActive
-                            ? `linear-gradient(135deg, ${rank.color}, #fff)`
-                            : isPassed ? 'linear-gradient(135deg, #22c55e, #86efac)' : 'none',
-                          WebkitBackgroundClip: isActive || isPassed ? 'text' : 'unset',
-                          WebkitTextFillColor: isActive || isPassed ? 'transparent' : 'rgba(255,255,255,0.3)',
-                          textShadow: isActive ? `0 0 20px ${rank.color}50` : 'none',
-                        }}
-                      >
+                      {/* Cashback */}
+                      <div style={{
+                        fontSize: 18,
+                        fontWeight: 700,
+                        fontFamily: "var(--font-mono)",
+                        color: isActive ? 'rgba(212,175,55,0.9)' : isPassed ? 'rgba(212,175,55,0.6)' : 'rgba(255,255,255,0.25)',
+                      }}>
                         {rank.cashback}%
-                      </motion.div>
+                      </div>
                     </div>
                   </LuxuryCard>
                 </motion.div>
@@ -724,34 +543,30 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
 
         {/* How It Works */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.6 }}
         >
-          <LuxuryCard
-            gradient="linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(34,197,94,0.03) 100%)"
-            borderColor="rgba(34,197,94,0.25)"
-            style={{ padding: 20 }}
-          >
+          <LuxuryCard style={{ padding: 16 }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
-              marginBottom: 14,
+              gap: 8,
+              marginBottom: 12,
             }}>
-              <Zap size={16} color="#22c55e" />
+              <Zap size={14} color="rgba(212,175,55,0.7)" strokeWidth={1.5} />
               <span style={{
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 600,
-                color: '#22c55e',
+                color: 'rgba(212,175,55,0.8)',
               }}>Как это работает</span>
             </div>
             <ul style={{
-              fontSize: 13,
-              color: 'rgba(255,255,255,0.6)',
-              lineHeight: 2,
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.5)',
+              lineHeight: 1.9,
               margin: 0,
-              paddingLeft: 20,
+              paddingLeft: 18,
             }}>
               <li>Кешбэк начисляется после завершения заказа</li>
               <li>Баланс можно использовать для оплаты</li>
@@ -765,7 +580,7 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  GUARANTEES MODAL — Premium Quality Assurance
+//  GUARANTEES MODAL — Monochrome Premium Style
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface GuaranteesModalProps {
@@ -778,73 +593,53 @@ const GUARANTEES = [
     icon: RefreshCw,
     title: '3 бесплатные правки',
     description: 'Доработаем по замечаниям без доплаты',
-    color: '#3b82f6',
-    gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
   },
   {
     icon: Shield,
     title: 'Оригинальность от 85%',
     description: 'Пишем с нуля, не сливаем в базы',
-    color: '#22c55e',
-    gradient: 'linear-gradient(135deg, #22c55e, #15803d)',
   },
   {
     icon: Lock,
     title: 'Конфиденциальность',
     description: 'Ваши данные защищены и не передаются',
-    color: '#a855f7',
-    gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)',
   },
   {
     icon: Clock,
     title: 'Компенсация задержки',
     description: 'Бонус 500₽ или скидка 15% при задержке',
-    color: '#f59e0b',
-    gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
   },
   {
     icon: Eye,
     title: 'Предпросмотр работы',
     description: 'Покажем часть перед финальной оплатой',
-    color: '#06b6d4',
-    gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)',
   },
   {
     icon: Zap,
     title: 'Возврат до старта',
     description: '100% возврат при отмене до начала',
-    color: '#ef4444',
-    gradient: 'linear-gradient(135deg, #ef4444, #dc2626)',
   },
 ]
 
 export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
   return (
-    <ModalWrapper isOpen={isOpen} onClose={onClose} accentColor="#a855f7">
+    <ModalWrapper isOpen={isOpen} onClose={onClose} accentColor="#D4AF37" showParticles={false}>
       <div style={{ padding: '8px 24px 40px' }}>
         {/* Hero Section */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <HeroIcon
-            icon={Shield}
-            gradient="linear-gradient(135deg, #a855f7 0%, #6d28d9 100%)"
-            glowColor="#a855f7"
-          />
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <HeroIcon icon={Shield} />
 
           <motion.h2
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.15 }}
             style={{
               fontFamily: "var(--font-serif)",
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: 700,
-              marginTop: 24,
-              marginBottom: 10,
-              background: 'linear-gradient(135deg, #a855f7 0%, #e9d5ff 50%, #a855f7 100%)',
-              backgroundSize: '200% 100%',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              animation: 'shimmer-text 3s ease-in-out infinite',
+              marginTop: 20,
+              marginBottom: 8,
+              color: 'rgba(255,255,255,0.9)',
             }}
           >
             Наши гарантии
@@ -852,72 +647,53 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}
+            transition={{ delay: 0.2 }}
+            style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}
           >
             Премиум-сервис с полной защитой
           </motion.p>
         </div>
 
-        {/* Guarantees Grid */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+        {/* Guarantees List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
           {GUARANTEES.map((item, index) => {
             const Icon = item.icon
             return (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, x: -30 }}
+                initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + index * 0.07 }}
+                transition={{ delay: 0.25 + index * 0.05 }}
               >
-                <LuxuryCard
-                  gradient={`linear-gradient(135deg, ${item.color}12 0%, ${item.color}04 100%)`}
-                  borderColor={`${item.color}30`}
-                  style={{ padding: 18 }}
-                >
-                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <LuxuryCard style={{ padding: 14 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     {/* Icon */}
-                    <motion.div
-                      whileHover={{ scale: 1.05, rotate: 5 }}
-                      style={{
-                        width: 52,
-                        height: 52,
-                        borderRadius: 16,
-                        background: item.gradient,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        boxShadow: `0 8px 24px -6px ${item.color}60`,
-                        position: 'relative',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {/* Shine */}
-                      <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: '50%',
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%)',
-                        borderRadius: '16px 16px 50% 50%',
-                      }} />
-                      <Icon size={24} color="#fff" strokeWidth={2} style={{ position: 'relative', zIndex: 1 }} />
-                    </motion.div>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      background: 'rgba(212,175,55,0.08)',
+                      border: '1px solid rgba(212,175,55,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Icon size={18} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
+                    </div>
 
                     {/* Content */}
                     <div style={{ flex: 1 }}>
                       <div style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: '#fff',
-                        marginBottom: 4,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: 'rgba(255,255,255,0.9)',
+                        marginBottom: 2,
                       }}>{item.title}</div>
                       <div style={{
-                        fontSize: 12,
-                        color: 'rgba(255,255,255,0.5)',
-                        lineHeight: 1.5,
+                        fontSize: 11,
+                        color: 'rgba(255,255,255,0.4)',
+                        lineHeight: 1.4,
                       }}>{item.description}</div>
                     </div>
                   </div>
@@ -927,39 +703,27 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
           })}
         </div>
 
-        {/* Premium Footer */}
+        {/* Footer */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.8 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
         >
           <LuxuryCard
-            gradient="linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)"
-            borderColor="rgba(212,175,55,0.3)"
-            glowColor="#D4AF37"
-            isActive
-            style={{ padding: 20, textAlign: 'center' }}
+            borderColor="rgba(212,175,55,0.25)"
+            style={{ padding: 16, textAlign: 'center' }}
           >
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 10,
+              gap: 8,
             }}>
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Gem size={18} color="#D4AF37" />
-              </motion.div>
+              <Gem size={14} color="rgba(212,175,55,0.7)" strokeWidth={1.5} />
               <span style={{
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 600,
-                background: 'linear-gradient(135deg, #D4AF37, #FCF6BA, #D4AF37)',
-                backgroundSize: '200% 100%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                animation: 'shimmer-text 3s ease-in-out infinite',
+                color: 'rgba(212,175,55,0.8)',
               }}>
                 Премиум качество гарантировано
               </span>
