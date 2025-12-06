@@ -71,10 +71,11 @@ def get_rank_info(total_spent: float, rank_levels: list[RankLevel]) -> RankInfo:
     )
 
     if current is None:
-        return RankInfo(name="", emoji="", level=0, next_rank=None, progress=0, spent_to_next=0)
+        return RankInfo(name="", emoji="", level=0, cashback=0, next_rank=None, progress=0, spent_to_next=0, is_max=False)
 
     progress = 100
     spent_to_next = 0
+    is_max = next_rank is None
     if next_rank:
         progress_range = (next_rank.min_spent or 0) - (current.min_spent or 0)
         progress_current = total_spent - (current.min_spent or 0)
@@ -85,9 +86,11 @@ def get_rank_info(total_spent: float, rank_levels: list[RankLevel]) -> RankInfo:
         name=current.name,
         emoji=current.emoji,
         level=current_level + 1,
+        cashback=int(current.cashback_percent or 0),
         next_rank=next_rank.name if next_rank else None,
         progress=progress,
-        spent_to_next=spent_to_next
+        spent_to_next=spent_to_next,
+        is_max=is_max
     )
 
 

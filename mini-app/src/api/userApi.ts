@@ -607,9 +607,11 @@ function getMockUserData(): UserData {
       name: 'Головорез',
       emoji: '🔫',
       level: 3,
+      cashback: 5,
       next_rank: 'Легенда Запада',
       progress: 90,
       spent_to_next: 5000,
+      is_max: false,
     },
     loyalty: {
       status: 'VIP-Клиент',

@@ -173,19 +173,24 @@ export function ProfilePage({ user }: Props) {
               <AnimatedCounter value={user.balance} />
               <span style={{ fontSize: 20, color: 'var(--gold-400)', marginLeft: 4 }}>₽</span>
             </div>
-            {/* Bonus Pill */}
+            {/* Cashback Badge */}
             <div style={{
               marginTop: 10,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
               padding: '4px 10px',
-              background: 'rgba(34, 197, 94, 0.1)',
-              border: '1px solid rgba(34, 197, 94, 0.2)',
+              background: user.rank.is_max ? 'var(--gold-gradient)' : 'rgba(34, 197, 94, 0.1)',
+              border: user.rank.is_max ? '1px solid var(--gold-border)' : '1px solid rgba(34, 197, 94, 0.2)',
               borderRadius: 100,
             }}>
-              <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 600 }}>
-                +{user.bonus_balance} бонусов
+              <span style={{
+                fontSize: 10,
+                color: user.rank.is_max ? 'var(--bg-main)' : '#22c55e',
+                fontWeight: 700,
+                letterSpacing: '0.05em'
+              }}>
+                {user.rank.is_max ? '👑 ' : ''}Кешбэк {user.rank.cashback}%
               </span>
             </div>
           </div>
