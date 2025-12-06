@@ -263,25 +263,42 @@ const LuxuryEmblem = ({ phase }: { phase: string }) => {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
             >
-                {/* Crown icon */}
+                {/* Crown icon - Real Crown SVG */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0 }}
+                    initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+                    transition={{ delay: 0.2, duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
                 >
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
                         <defs>
                             <linearGradient id="crownGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                                 <stop offset="0%" stopColor="#FCF6BA" />
                                 <stop offset="50%" stopColor="#D4AF37" />
                                 <stop offset="100%" stopColor="#B38728" />
                             </linearGradient>
+                            <filter id="crownGlow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="1" result="blur" />
+                                <feMerge>
+                                    <feMergeNode in="blur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
                         </defs>
+                        {/* Crown shape */}
                         <path
-                            d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                            d="M2 17L4 8L7.5 11L12 4L16.5 11L20 8L22 17H2Z"
                             fill="url(#crownGradient)"
-                            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+                            filter="url(#crownGlow)"
                         />
+                        {/* Crown base */}
+                        <path
+                            d="M3 18H21V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V18Z"
+                            fill="url(#crownGradient)"
+                        />
+                        {/* Crown jewels */}
+                        <circle cx="7" cy="14" r="1" fill="#030303" opacity="0.3" />
+                        <circle cx="12" cy="13" r="1.2" fill="#030303" opacity="0.3" />
+                        <circle cx="17" cy="14" r="1" fill="#030303" opacity="0.3" />
                     </svg>
                 </motion.div>
 
