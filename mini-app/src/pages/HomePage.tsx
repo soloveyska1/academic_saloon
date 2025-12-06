@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import {
   Plus, Copy, Check, ChevronRight, TrendingUp, Gift, QrCode,
-  Star, Zap, Crown, CreditCard, Briefcase, Award, Target, Sparkles, Flame
+  Star, Zap, Crown, CreditCard, Briefcase, Award, Target, Sparkles, Flame,
+  GraduationCap, Clock, Percent, FileText, ChevronDown, ArrowRight
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -178,6 +179,538 @@ function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
       }}>
         {label}
       </span>
+    </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PREMIUM TIPS CAROUSEL — Horizontal Scroll with Luxury Cards
+// ═══════════════════════════════════════════════════════════════════════════
+
+const tipsData = [
+  {
+    id: 1,
+    icon: GraduationCap,
+    title: 'Курсовые',
+    subtitle: 'от 2 500 ₽',
+    gradient: 'linear-gradient(135deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 100%)',
+    borderColor: 'rgba(212,175,55,0.5)',
+    iconColor: '#D4AF37',
+    glow: 'rgba(212,175,55,0.3)',
+  },
+  {
+    id: 2,
+    icon: Clock,
+    title: 'Срочные',
+    subtitle: 'за 24 часа',
+    gradient: 'linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(220,38,38,0.1) 100%)',
+    borderColor: 'rgba(239,68,68,0.4)',
+    iconColor: '#ef4444',
+    glow: 'rgba(239,68,68,0.25)',
+  },
+  {
+    id: 3,
+    icon: Percent,
+    title: 'Кешбэк',
+    subtitle: 'до 10%',
+    gradient: 'linear-gradient(135deg, rgba(34,197,94,0.2) 0%, rgba(22,163,74,0.1) 100%)',
+    borderColor: 'rgba(34,197,94,0.4)',
+    iconColor: '#22c55e',
+    glow: 'rgba(34,197,94,0.25)',
+  },
+  {
+    id: 4,
+    icon: Star,
+    title: 'Качество',
+    subtitle: '100% гарантия',
+    gradient: 'linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(139,92,246,0.1) 100%)',
+    borderColor: 'rgba(168,85,247,0.4)',
+    iconColor: '#a855f7',
+    glow: 'rgba(168,85,247,0.25)',
+  },
+]
+
+function TipsCarousel() {
+  return (
+    <div style={{
+      margin: '0 -20px 20px',
+      padding: '0 20px',
+      overflowX: 'auto',
+      overflowY: 'hidden',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+    }}>
+      <style>{`.tips-scroll::-webkit-scrollbar { display: none; }`}</style>
+      <motion.div
+        className="tips-scroll"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.15 }}
+        style={{
+          display: 'flex',
+          gap: 12,
+          paddingBottom: 4,
+        }}
+      >
+        {tipsData.map((tip, index) => (
+          <motion.div
+            key={tip.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 + index * 0.05 }}
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              flexShrink: 0,
+              width: 110,
+              padding: '16px 14px',
+              borderRadius: 18,
+              background: tip.gradient,
+              border: `1px solid ${tip.borderColor}`,
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              boxShadow: `0 8px 24px -8px ${tip.glow}, inset 0 1px 0 rgba(255,255,255,0.1)`,
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Subtle inner shine */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '50%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%)',
+              borderRadius: '18px 18px 0 0',
+              pointerEvents: 'none',
+            }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <tip.icon
+                size={26}
+                color={tip.iconColor}
+                strokeWidth={1.8}
+                style={{
+                  marginBottom: 10,
+                  filter: `drop-shadow(0 2px 8px ${tip.glow})`,
+                }}
+              />
+              <div style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: 'var(--text-main)',
+                marginBottom: 3,
+              }}>
+                {tip.title}
+              </div>
+              <div style={{
+                fontSize: 11,
+                color: 'var(--text-secondary)',
+                fontWeight: 500,
+              }}>
+                {tip.subtitle}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  LAST ORDER CARD — Premium Style
+// ═══════════════════════════════════════════════════════════════════════════
+
+const orderStatusMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  'draft': { label: 'Черновик', color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
+  'pending': { label: 'Ожидает', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
+  'waiting_estimation': { label: 'Оценка', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
+  'waiting_payment': { label: 'К оплате', color: '#D4AF37', bg: 'rgba(212,175,55,0.15)', border: 'rgba(212,175,55,0.4)' },
+  'verification_pending': { label: 'Проверка', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)' },
+  'confirmed': { label: 'Подтверждён', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
+  'paid': { label: 'Оплачен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
+  'paid_full': { label: 'Оплачен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
+  'in_progress': { label: 'В работе', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.3)' },
+  'review': { label: 'На проверке', color: '#06b6d4', bg: 'rgba(6,182,212,0.15)', border: 'rgba(6,182,212,0.3)' },
+  'revision': { label: 'Доработка', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.3)' },
+  'completed': { label: 'Выполнен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
+  'cancelled': { label: 'Отменён', color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
+  'rejected': { label: 'Отклонён', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)' },
+}
+
+function LastOrderCard({ order, onClick }: { order: { id: number; work_type_label: string; subject: string; status: string; created_at: string }; onClick: () => void }) {
+  const status = orderStatusMap[order.status] || { label: order.status, color: '#888', bg: 'rgba(136,136,136,0.15)', border: 'rgba(136,136,136,0.3)' }
+  const title = order.subject || order.work_type_label || `Заказ #${order.id}`
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.26 }}
+      onClick={onClick}
+      whileTap={{ scale: 0.98 }}
+      style={{
+        ...glassStyle,
+        marginBottom: 16,
+        cursor: 'pointer',
+        border: `1px solid ${status.border}`,
+        background: `linear-gradient(135deg, ${status.bg} 0%, var(--bg-card) 50%)`,
+      }}
+    >
+      <CardInnerShine />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
+        <motion.div
+          animate={['pending', 'in_progress', 'review', 'waiting_payment'].includes(order.status) ? {
+            boxShadow: [
+              `0 0 12px ${status.color}40`,
+              `0 0 20px ${status.color}60`,
+              `0 0 12px ${status.color}40`,
+            ]
+          } : {}}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            background: status.bg,
+            border: `1px solid ${status.border}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <FileText size={22} color={status.color} strokeWidth={1.5} />
+        </motion.div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--text-muted)',
+              letterSpacing: '0.1em',
+            }}>ПОСЛЕДНИЙ ЗАКАЗ</span>
+          </div>
+          <div style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--text-main)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {title}
+          </div>
+          <div style={{
+            marginTop: 6,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '3px 8px',
+            background: status.bg,
+            border: `1px solid ${status.border}`,
+            borderRadius: 100,
+          }}>
+            <motion.div
+              animate={['pending', 'in_progress'].includes(order.status) ? { scale: [1, 1.3, 1], opacity: [1, 0.7, 1] } : {}}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: status.color,
+                boxShadow: `0 0 8px ${status.color}`,
+              }}
+            />
+            <span style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: status.color,
+            }}>
+              {status.label}
+            </span>
+          </div>
+        </div>
+        <ArrowRight size={20} color="var(--text-muted)" strokeWidth={1.5} />
+      </div>
+    </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  COLLAPSIBLE PROMO CODE — Premium Accordion
+// ═══════════════════════════════════════════════════════════════════════════
+
+function CollapsiblePromoCode({
+  promoCode,
+  setPromoCode,
+  promoLoading,
+  promoMessage,
+  onSubmit,
+}: {
+  promoCode: string
+  setPromoCode: (v: string) => void
+  promoLoading: boolean
+  promoMessage: { type: 'success' | 'error'; text: string } | null
+  onSubmit: () => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.28 }}
+      style={{ ...glassStyle, marginBottom: 16, padding: 0, overflow: 'hidden' }}
+    >
+      <CardInnerShine />
+      {/* Collapsed Header */}
+      <motion.div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 18px',
+          cursor: 'pointer',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
+            border: '1px solid var(--border-gold)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Gift size={18} color="var(--gold-400)" strokeWidth={1.5} />
+          </div>
+          <div>
+            <div style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--text-main)',
+            }}>Есть промокод?</div>
+            <div style={{
+              fontSize: 10,
+              color: 'var(--text-muted)',
+              marginTop: 2,
+            }}>Активируйте скидку</div>
+          </div>
+        </div>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown size={20} color="var(--text-muted)" strokeWidth={1.5} />
+        </motion.div>
+      </motion.div>
+
+      {/* Expanded Content */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{
+              padding: '0 18px 18px',
+              borderTop: '1px solid var(--border-subtle)',
+              paddingTop: 16,
+            }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder="Введите код"
+                  style={{
+                    flex: 1,
+                    padding: '14px 16px',
+                    background: 'var(--bg-glass)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 12,
+                    color: 'var(--text-main)',
+                    fontSize: 14,
+                    fontFamily: 'var(--font-mono)',
+                    letterSpacing: '0.12em',
+                    outline: 'none',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'var(--border-gold)'
+                    e.target.style.boxShadow = '0 0 0 3px rgba(212,175,55,0.1), var(--glow-gold)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'var(--border-default)'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                />
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onSubmit}
+                  disabled={promoLoading}
+                  style={{
+                    padding: '14px 22px',
+                    background: promoLoading ? 'var(--text-muted)' : 'var(--gold-metallic)',
+                    border: 'none',
+                    borderRadius: 12,
+                    color: '#09090b',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    fontFamily: 'var(--font-sans)',
+                    cursor: promoLoading ? 'wait' : 'pointer',
+                    boxShadow: promoLoading ? 'none' : '0 0 20px -5px rgba(212,175,55,0.4)',
+                  }}
+                >
+                  {promoLoading ? '...' : 'OK'}
+                </motion.button>
+              </div>
+              {promoMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    marginTop: 12,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: promoMessage.type === 'success' ? 'var(--success-text)' : 'var(--error-text)',
+                  }}
+                >
+                  {promoMessage.text}
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  COMPACT ACHIEVEMENTS ROW — Single Line Premium
+// ═══════════════════════════════════════════════════════════════════════════
+
+function CompactAchievements({ achievements, onViewAll }: {
+  achievements: { icon: typeof Star; label: string; unlocked: boolean; glow?: boolean }[]
+  onViewAll: () => void
+}) {
+  const unlockedCount = achievements.filter(a => a.unlocked).length
+  const lastUnlocked = [...achievements].reverse().find(a => a.unlocked)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      onClick={onViewAll}
+      whileTap={{ scale: 0.98 }}
+      style={{
+        ...glassStyle,
+        marginBottom: 16,
+        cursor: 'pointer',
+        padding: '16px 18px',
+      }}
+    >
+      <CardInnerShine />
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Last unlocked achievement icon */}
+          <motion.div
+            animate={lastUnlocked?.glow ? {
+              boxShadow: [
+                '0 0 12px rgba(212,175,55,0.3)',
+                '0 0 20px rgba(212,175,55,0.5)',
+                '0 0 12px rgba(212,175,55,0.3)'
+              ]
+            } : {}}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: lastUnlocked
+                ? 'linear-gradient(145deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 100%)'
+                : 'rgba(40,40,40,0.5)',
+              border: lastUnlocked
+                ? '1.5px solid rgba(212,175,55,0.6)'
+                : '1px solid rgba(80,80,80,0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {lastUnlocked ? (
+              <lastUnlocked.icon
+                size={22}
+                color="#D4AF37"
+                strokeWidth={2}
+                fill="rgba(212,175,55,0.2)"
+              />
+            ) : (
+              <Award size={22} color="rgba(100,100,100,0.5)" strokeWidth={1.5} />
+            )}
+          </motion.div>
+          <div>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--text-muted)',
+              letterSpacing: '0.1em',
+              marginBottom: 4,
+            }}>ДОСТИЖЕНИЯ</div>
+            <div style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--text-main)',
+            }}>
+              {lastUnlocked ? lastUnlocked.label : 'Начните путь'}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Progress dots */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            {achievements.map((a, i) => (
+              <div
+                key={i}
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: a.unlocked
+                    ? 'var(--gold-metallic)'
+                    : 'rgba(80,80,80,0.4)',
+                  boxShadow: a.unlocked ? '0 0 8px rgba(212,175,55,0.5)' : 'none',
+                }}
+              />
+            ))}
+          </div>
+          <span style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--text-secondary)',
+          }}>{unlockedCount}/{achievements.length}</span>
+          <ChevronRight size={18} color="var(--text-muted)" strokeWidth={1.5} />
+        </div>
+      </div>
     </motion.div>
   )
 }
@@ -511,6 +1044,11 @@ export function HomePage({ user }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
+          TIPS CAROUSEL — Premium Horizontal Scroll
+          ═══════════════════════════════════════════════════════════════════ */}
+      <TipsCarousel />
+
+      {/* ═══════════════════════════════════════════════════════════════════
           BENTO GRID: BALANCE & LEVEL — Ultra-Premium Glass Cards
           ═══════════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
@@ -824,117 +1362,33 @@ export function HomePage({ user }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PROMO CODE INPUT — Glass Card Style
+          LAST ORDER CARD — Quick Access to Recent Order
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.28 }}
-        style={{ ...glassStyle, marginBottom: 16, padding: 18 }}
-      >
-        <CardInnerShine />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <Gift size={14} color="var(--gold-400)" strokeWidth={1.5} />
-            <span style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.15em',
-            }}>ПРОМОКОД</span>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <input
-              type="text"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-              placeholder="Введите код"
-              style={{
-                flex: 1,
-                padding: '14px 16px',
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 12,
-                color: 'var(--text-main)',
-                fontSize: 14,
-                fontFamily: 'var(--font-mono)',
-                letterSpacing: '0.12em',
-                outline: 'none',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--border-gold)'
-                e.target.style.boxShadow = '0 0 0 3px rgba(212,175,55,0.1), var(--glow-gold)'
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--border-default)'
-                e.target.style.boxShadow = 'none'
-              }}
-            />
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={handlePromoSubmit}
-              disabled={promoLoading}
-              style={{
-                padding: '14px 22px',
-                background: promoLoading ? 'var(--text-muted)' : 'var(--gold-metallic)',
-                border: 'none',
-                borderRadius: 12,
-                color: '#09090b',
-                fontWeight: 700,
-                fontSize: 13,
-                fontFamily: 'var(--font-sans)',
-                cursor: promoLoading ? 'wait' : 'pointer',
-                boxShadow: promoLoading ? 'none' : '0 0 20px -5px rgba(212,175,55,0.4)',
-              }}
-            >
-              {promoLoading ? '...' : 'OK'}
-            </motion.button>
-          </div>
-          {promoMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                marginTop: 12,
-                fontSize: 12,
-                fontWeight: 500,
-                color: promoMessage.type === 'success' ? 'var(--success-text)' : 'var(--error-text)',
-              }}
-            >
-              {promoMessage.text}
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
+      {user.orders.length > 0 && (
+        <LastOrderCard
+          order={user.orders[0]}
+          onClick={() => navigate(`/order/${user.orders[0].id}`)}
+        />
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ACHIEVEMENTS — Glass Card with Pills
+          PROMO CODE — Collapsible Premium Accordion
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        style={{ ...glassStyle, marginBottom: 16 }}
-      >
-        <CardInnerShine />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-            <Award size={14} color="var(--gold-400)" strokeWidth={1.5} />
-            <span style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.15em',
-            }}>ДОСТИЖЕНИЯ</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            {achievements.map((a, i) => (
-              <AchievementBadge key={i} icon={a.icon} label={a.label} unlocked={a.unlocked} glow={a.glow} />
-            ))}
-          </div>
-        </div>
-      </motion.div>
+      <CollapsiblePromoCode
+        promoCode={promoCode}
+        setPromoCode={setPromoCode}
+        promoLoading={promoLoading}
+        promoMessage={promoMessage}
+        onSubmit={handlePromoSubmit}
+      />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ACHIEVEMENTS — Compact Single Line Premium
+          ═══════════════════════════════════════════════════════════════════ */}
+      <CompactAchievements
+        achievements={achievements}
+        onViewAll={() => navigate('/achievements')}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
           REPUTATION (Referral) — Premium Gold Card
