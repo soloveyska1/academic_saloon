@@ -252,7 +252,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM HERO ICON — Minimalist Monochrome Style
+//  PREMIUM HERO ICON — With Breathing Animation
 // ═══════════════════════════════════════════════════════════════════════════
 
 function HeroIcon({
@@ -265,28 +265,53 @@ function HeroIcon({
   size?: number
 }) {
   return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 20 }}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: size,
-        height: size,
-        borderRadius: size * 0.28,
-        background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
-        border: '1px solid rgba(212,175,55,0.25)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.6)',
-      }}
-    >
-      <Icon
-        size={size * 0.4}
-        color="rgba(212,175,55,0.85)"
-        strokeWidth={1.5}
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Outer breathing ring */}
+      <motion.div
+        animate={{
+          scale: [1, 1.08, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'absolute',
+          inset: -6,
+          borderRadius: size * 0.32,
+          border: '1px solid rgba(212,175,55,0.2)',
+          pointerEvents: 'none',
+        }}
       />
-    </motion.div>
+
+      {/* Main icon container */}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 20 }}
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: size,
+          height: size,
+          borderRadius: size * 0.28,
+          background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+          border: '1px solid rgba(212,175,55,0.25)',
+          boxShadow: '0 8px 32px -8px rgba(0,0,0,0.6)',
+        }}
+      >
+        <motion.div
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <Icon
+            size={size * 0.4}
+            color="rgba(212,175,55,0.85)"
+            strokeWidth={1.5}
+          />
+        </motion.div>
+      </motion.div>
+    </div>
   )
 }
 
@@ -723,6 +748,8 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
           {GUARANTEES.map((item, index) => {
             const Icon = item.icon
+            const isTop = index < 2 // Первые 2 — топовые
+
             return (
               <motion.div
                 key={item.title}
@@ -730,51 +757,51 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.25 + index * 0.05 }}
               >
-                <LuxuryCard style={{ padding: 14 }}>
+                <LuxuryCard
+                  borderColor={isTop ? 'rgba(212,175,55,0.3)' : undefined}
+                  style={{ padding: 14 }}
+                >
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    {/* Number + Icon */}
+                    {/* Icon */}
                     <div style={{
                       width: 40,
                       height: 40,
                       borderRadius: 12,
-                      background: 'rgba(212,175,55,0.08)',
-                      border: '1px solid rgba(212,175,55,0.15)',
+                      background: isTop ? 'rgba(212,175,55,0.12)' : 'rgba(212,175,55,0.06)',
+                      border: `1px solid ${isTop ? 'rgba(212,175,55,0.25)' : 'rgba(212,175,55,0.1)'}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
-                      position: 'relative',
                     }}>
-                      <Icon size={18} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
-                      {/* Number badge */}
-                      <div style={{
-                        position: 'absolute',
-                        top: -4,
-                        right: -4,
-                        width: 16,
-                        height: 16,
-                        borderRadius: 8,
-                        background: 'rgba(212,175,55,0.15)',
-                        border: '1px solid rgba(212,175,55,0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 9,
-                        fontWeight: 700,
-                        color: 'rgba(212,175,55,0.9)',
-                      }}>
-                        {index + 1}
-                      </div>
+                      <Icon size={18} color={isTop ? 'rgba(212,175,55,0.9)' : 'rgba(212,175,55,0.7)'} strokeWidth={1.5} />
                     </div>
 
                     {/* Content */}
                     <div style={{ flex: 1 }}>
                       <div style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: 'rgba(255,255,255,0.9)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
                         marginBottom: 2,
-                      }}>{item.title}</div>
+                      }}>
+                        <span style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: isTop ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.85)',
+                        }}>{item.title}</span>
+                        {isTop && (
+                          <span style={{
+                            fontSize: 8,
+                            fontWeight: 700,
+                            color: 'rgba(212,175,55,0.9)',
+                            background: 'rgba(212,175,55,0.15)',
+                            padding: '2px 5px',
+                            borderRadius: 4,
+                            letterSpacing: '0.05em',
+                          }}>ТОП</span>
+                        )}
+                      </div>
                       <div style={{
                         fontSize: 11,
                         color: 'rgba(255,255,255,0.4)',
@@ -783,7 +810,7 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
                     </div>
 
                     {/* Checkmark */}
-                    <CheckCircle size={16} color="rgba(212,175,55,0.5)" strokeWidth={1.5} />
+                    <CheckCircle size={16} color={isTop ? 'rgba(212,175,55,0.7)' : 'rgba(212,175,55,0.4)'} strokeWidth={1.5} />
                   </div>
                 </LuxuryCard>
               </motion.div>
@@ -791,30 +818,54 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
           })}
         </div>
 
-        {/* Footer */}
+        {/* Social Proof Footer */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
           <LuxuryCard
-            borderColor="rgba(212,175,55,0.25)"
-            style={{ padding: 16, textAlign: 'center' }}
+            borderColor="rgba(212,175,55,0.2)"
+            style={{ padding: 16 }}
           >
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
+              justifyContent: 'space-between',
             }}>
-              <Gem size={14} color="rgba(212,175,55,0.7)" strokeWidth={1.5} />
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'rgba(212,175,55,0.8)',
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: 'rgba(212,175,55,0.1)',
+                  border: '1px solid rgba(212,175,55,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Award size={18} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.9)',
+                  }}>1 200+ заказов</div>
+                  <div style={{
+                    fontSize: 10,
+                    color: 'rgba(255,255,255,0.4)',
+                  }}>выполнено без нареканий</div>
+                </div>
+              </div>
+              <div style={{
+                display: 'flex',
+                gap: 2,
               }}>
-                Премиум качество гарантировано
-              </span>
+                {[1,2,3,4,5].map(i => (
+                  <Star key={i} size={12} color="rgba(212,175,55,0.8)" fill="rgba(212,175,55,0.8)" />
+                ))}
+              </div>
             </div>
           </LuxuryCard>
         </motion.div>
