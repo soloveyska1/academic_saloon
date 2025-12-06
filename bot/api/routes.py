@@ -201,11 +201,6 @@ async def get_user_profile(
     completed_result = await session.execute(completed_query)
     completed_orders = completed_result.scalar() or 0
 
-    rank_levels = await get_rank_levels(session)
-    loyalty_levels = await get_loyalty_levels(session)
-    rank_info = get_rank_info(actual_total_spent, rank_levels)
-    loyalty_info = get_loyalty_info(completed_orders, loyalty_levels)
-
     # Calculate total spent from DB (sum paid_amount for completed orders)
     spent_query = select(func.sum(Order.paid_amount)).where(
         Order.user_id == user.telegram_id,
@@ -213,6 +208,11 @@ async def get_user_profile(
     )
     spent_result = await session.execute(spent_query)
     actual_total_spent = float(spent_result.scalar() or 0)
+
+    rank_levels = await get_rank_levels(session)
+    loyalty_levels = await get_loyalty_levels(session)
+    rank_info = get_rank_info(actual_total_spent, rank_levels)
+    loyalty_info = get_loyalty_info(completed_orders, loyalty_levels)
 
     # Generate referral code from telegram_id
     referral_code = f"REF{user.telegram_id}"
