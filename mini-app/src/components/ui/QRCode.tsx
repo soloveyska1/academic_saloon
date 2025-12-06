@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Share2, X, Check, Loader2, Sparkles } from 'lucide-react'
+import { Download, Share2, X, Check, Loader2 } from 'lucide-react'
 import { API_BASE_URL, getAuthHeaders } from '../../api/userApi'
 
 interface Props {
@@ -159,14 +159,15 @@ export function QRCodeModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.9)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(0,0,0,0.92)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
         zIndex: 9999,
-        padding: 20,
+        padding: '20px 16px',
+        overflowY: 'auto',
       }}
     >
       <motion.div
@@ -176,103 +177,73 @@ export function QRCodeModal({
         transition={{ type: 'spring', damping: 25 }}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(180deg, rgba(212,175,55,0.15) 0%, rgba(20,20,23,0.98) 30%)',
-          border: '1px solid rgba(212,175,55,0.35)',
-          borderRadius: 28,
-          padding: 28,
+          background: 'rgba(12,12,14,0.98)',
+          borderRadius: 24,
+          padding: '24px 20px',
           textAlign: 'center',
-          maxWidth: 380,
+          maxWidth: 360,
           width: '100%',
-          maxHeight: 'calc(100vh - 40px)',
+          maxHeight: 'calc(100vh - 60px)',
           overflowY: 'auto',
           position: 'relative',
-          boxShadow: '0 0 60px -20px rgba(212,175,55,0.4)',
+          marginTop: 20,
         }}
       >
-        {/* Premium Badge */}
-        <div style={{
-          position: 'absolute',
-          top: -12,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'linear-gradient(135deg, #d4af37, #f5d061)',
-          padding: '6px 16px',
-          borderRadius: 100,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          boxShadow: '0 4px 15px rgba(212,175,55,0.4)',
-        }}>
-          <Sparkles size={14} color="#09090b" />
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#09090b', letterSpacing: '0.05em' }}>
-            PREMIUM
-          </span>
-        </div>
-
         {/* Close Button */}
         <motion.button
-          whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onClose}
           style={{
             position: 'absolute',
-            top: 16,
-            right: 16,
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            top: 12,
+            right: 12,
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background: 'rgba(255,255,255,0.06)',
+            border: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#71717a',
+            color: '#52525b',
           }}
         >
-          <X size={18} />
+          <X size={16} />
         </motion.button>
 
         <h3 style={{
-          fontSize: 22,
-          fontWeight: 700,
+          fontSize: 18,
+          fontWeight: 600,
           color: '#fff',
-          marginBottom: 6,
-          marginTop: 16,
-          fontFamily: "'Playfair Display', serif",
-          letterSpacing: '0.02em',
+          marginBottom: 4,
+          marginTop: 8,
         }}>
           {title}
         </h3>
-        <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24 }}>
+        <p style={{ fontSize: 12, color: '#71717a', marginBottom: 16 }}>
           {subtitle}
         </p>
 
-        {/* QR Code Container */}
+        {/* QR Card - Clean Display */}
         <motion.div
-          initial={{ scale: 0.8 }}
+          initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.1 }}
           style={{
-            background: '#09090b',
-            borderRadius: 20,
-            padding: 20,
-            marginBottom: 20,
-            border: '1px solid rgba(212,175,55,0.3)',
-            boxShadow: '0 0 50px -15px rgba(212,175,55,0.4), inset 0 0 30px rgba(212,175,55,0.05)',
-            minHeight: size + 40,
+            marginBottom: 16,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            minHeight: cardLoading ? 200 : 'auto',
           }}
         >
           {cardLoading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <Loader2 size={32} color="#d4af37" style={{ animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: 12, color: '#71717a' }}>Генерируем карточку...</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <Loader2 size={28} color="#d4af37" style={{ animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: 11, color: '#52525b' }}>Генерируем...</span>
             </div>
           ) : cardError ? (
-            // Fallback to simple QR
             <img
               src={fallbackQrUrl}
               alt="QR Code"
@@ -280,7 +251,6 @@ export function QRCodeModal({
                 width: size,
                 height: size,
                 borderRadius: 12,
-                display: 'block',
               }}
             />
           ) : premiumCardUrl ? (
@@ -288,10 +258,10 @@ export function QRCodeModal({
               src={premiumCardUrl}
               alt="Premium QR Card"
               style={{
-                maxWidth: '100%',
-                maxHeight: 350,
-                borderRadius: 12,
-                display: 'block',
+                width: '100%',
+                maxWidth: 320,
+                borderRadius: 16,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
               }}
             />
           ) : (
@@ -302,93 +272,88 @@ export function QRCodeModal({
                 width: size,
                 height: size,
                 borderRadius: 12,
-                display: 'block',
               }}
             />
           )}
         </motion.div>
 
-        {/* Referral Code Display */}
+        {/* Referral Code - Minimal */}
         <div style={{
-          background: 'rgba(0,0,0,0.6)',
-          borderRadius: 14,
-          padding: '14px 20px',
-          marginBottom: 20,
-          border: '1px solid rgba(212,175,55,0.25)',
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: 12,
+          padding: '12px 16px',
+          marginBottom: 16,
         }}>
-          <div style={{ fontSize: 10, color: '#71717a', marginBottom: 6, letterSpacing: '0.12em', fontWeight: 600 }}>
+          <div style={{ fontSize: 9, color: '#52525b', marginBottom: 4, letterSpacing: '0.1em', fontWeight: 500 }}>
             ВАШ РЕФЕРАЛЬНЫЙ КОД
           </div>
           <code style={{
             color: '#d4af37',
-            fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
-            fontSize: 20,
-            fontWeight: 700,
-            letterSpacing: '0.15em',
-            textShadow: '0 0 20px rgba(212,175,55,0.3)',
+            fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
+            fontSize: 16,
+            fontWeight: 600,
+            letterSpacing: '0.08em',
           }}>
             {value}
           </code>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
           <motion.button
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
             onClick={handleDownload}
             disabled={downloading}
             style={{
               flex: 1,
-              padding: '16px 18px',
+              padding: '14px 16px',
               background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 14,
-              color: downloaded ? '#22c55e' : '#fff',
-              fontSize: 14,
-              fontWeight: 600,
+              border: 'none',
+              borderRadius: 12,
+              color: downloaded ? '#22c55e' : '#a1a1aa',
+              fontSize: 13,
+              fontWeight: 500,
               cursor: downloading ? 'wait' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
-              transition: 'all 0.2s',
+              gap: 6,
             }}
           >
             {downloading ? (
-              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
             ) : downloaded ? (
-              <Check size={18} />
+              <Check size={16} />
             ) : (
-              <Download size={18} />
+              <Download size={16} />
             )}
-            {downloaded ? 'Готово!' : 'Скачать'}
+            {downloaded ? 'Готово' : 'Скачать'}
           </motion.button>
 
           <motion.button
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
             onClick={handleShare}
             disabled={sharing}
             style={{
-              flex: 1,
-              padding: '16px 18px',
-              background: 'linear-gradient(135deg, #d4af37, #b38728)',
+              flex: 1.2,
+              padding: '14px 16px',
+              background: '#d4af37',
               border: 'none',
-              borderRadius: 14,
+              borderRadius: 12,
               color: '#09090b',
-              fontSize: 14,
-              fontWeight: 700,
+              fontSize: 13,
+              fontWeight: 600,
               cursor: sharing ? 'wait' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
-              boxShadow: '0 4px 20px rgba(212,175,55,0.35)',
+              gap: 6,
             }}
           >
             {sharing ? (
-              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
             ) : (
-              <Share2 size={18} />
+              <Share2 size={16} />
             )}
             Поделиться
           </motion.button>
@@ -396,14 +361,12 @@ export function QRCodeModal({
 
         {/* Tip */}
         <p style={{
-          fontSize: 11,
-          color: '#52525b',
-          marginTop: 18,
-          lineHeight: 1.5,
+          fontSize: 10,
+          color: '#3f3f46',
+          marginTop: 14,
+          lineHeight: 1.6,
         }}>
-          💎 Друзья получат скидку 5% на первый заказ
-          <br />
-          💰 Вы — пожизненные 5% роялти с их оплат
+          Друзья получат скидку 5% · Вы — 5% роялти
         </p>
       </motion.div>
 
