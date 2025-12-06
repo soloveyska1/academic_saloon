@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
   X,
   UserPlus,
@@ -10,7 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   Shield,
-  RefreshCw
+  RefreshCw,
+  LayoutDashboard
 } from 'lucide-react'
 import { useAdmin } from '../contexts/AdminContext'
 
@@ -148,6 +150,7 @@ export { useSecretActivation }
 
 export function AdminPanel() {
   const admin = useAdmin()
+  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
 
   // Register this panel's opener globally
@@ -320,6 +323,34 @@ export function AdminPanel() {
                     onToggle={admin.toggleBypassPayments}
                     color="#f59e0b"
                   />
+
+                  {/* Admin Dashboard Button */}
+                  <motion.button
+                    onClick={() => {
+                      setIsOpen(false)
+                      navigate('/admin')
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      padding: '12px 14px',
+                      marginTop: 8,
+                      background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1))',
+                      border: '1px solid rgba(212, 175, 55, 0.3)',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                      color: '#d4af37',
+                      fontSize: 13,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <LayoutDashboard size={16} />
+                    Админ-панель
+                  </motion.button>
 
                   {/* Refresh Data Button */}
                   <motion.button

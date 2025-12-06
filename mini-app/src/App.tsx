@@ -35,6 +35,7 @@ const CreateOrderPage = lazy(() => import('./pages/CreateOrderPage').then(module
 const ReferralPage = lazy(() => import('./pages/ReferralPage').then(module => ({ default: module.ReferralPage })))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then(module => ({ default: module.AchievementsPage })))
 const SupportPage = lazy(() => import('./pages/SupportPage').then(module => ({ default: module.SupportPage })))
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then(module => ({ default: module.AdminDashboardPage })))
 
 // WebSocket connection status indicator (only shown in debug mode)
 function WSStatusIndicator({ showDebug }: { showDebug: boolean }) {
@@ -338,6 +339,7 @@ function AppContent() {
                       <Route path="/referral" element={<ReferralPage user={userData} />} />
                       <Route path="/achievements" element={<AchievementsPage user={userData} />} />
                       <Route path="/support" element={<SupportPage />} />
+                      <Route path="/admin" element={<AdminDashboardPage />} />
                     </Routes>
                   </Suspense>
 
