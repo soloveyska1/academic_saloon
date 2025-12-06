@@ -39,6 +39,20 @@ class BonusExpiryInfo(BaseModel):
     color: Optional[str] = None  # Цвет для UI
 
 
+class BalanceTransactionResponse(BaseModel):
+    """История операций по бонусному балансу"""
+
+    id: int
+    amount: float
+    type: str
+    reason: str
+    description: Optional[str] = None
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+
 class OrderResponse(BaseModel):
     """Order data for Mini App"""
     id: int
@@ -80,6 +94,7 @@ class UserResponse(BaseModel):
     rank: RankInfo
     loyalty: LoyaltyInfo
     bonus_expiry: Optional[BonusExpiryInfo] = None  # Информация о сгорании бонусов
+    transactions: List[BalanceTransactionResponse]
     orders: List[OrderResponse]
 
     class Config:

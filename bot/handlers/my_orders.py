@@ -30,6 +30,7 @@ from database.models.orders import (
     Order, OrderStatus,
     get_status_meta, get_active_statuses, get_history_statuses,
 )
+from bot.services.bonus import BonusService, BonusReason
 from bot.keyboards.profile import (
     get_profile_dashboard_keyboard,
     get_gamified_profile_keyboard,
@@ -1216,8 +1217,15 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
     min_amount, max_amount, flavor_text = reward_tier
     bonus_amount = random.randint(min_amount, max_amount)
 
-    # Update balance
-    user.balance += bonus_amount
+    await BonusService.add_bonus(
+        session=session,
+        user_id=tg_user.id,
+        amount=bonus_amount,
+        reason=BonusReason.DAILY_LUCK,
+        description=flavor_text,
+        bot=bot,
+        auto_commit=False,
+    )
 
     # Set cooldown only for regular users
     if not is_vip:
@@ -1566,8 +1574,14 @@ async def process_coupon_code(message: Message, session: AsyncSession, state: FS
         bonus_amount = coupon_data["amount"]
         description = coupon_data["description"]
 
-        user.balance += bonus_amount
-        await session.commit()
+        await BonusService.add_bonus(
+            session=session,
+            user_id=telegram_id,
+            amount=bonus_amount,
+            reason=BonusReason.COUPON,
+            description=description,
+            bot=bot,
+        )
 
         # Mark coupon as used
         await mark_coupon_used(telegram_id, code)

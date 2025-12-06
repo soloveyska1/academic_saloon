@@ -937,7 +937,15 @@ async def cancel_order(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         user_result = await session.execute(user_query)
         user = user_result.scalar_one_or_none()
         if user:
-            user.balance += order.bonus_used
+            await BonusService.add_bonus(
+                session=session,
+                user_id=order.user_id,
+                amount=order.bonus_used,
+                reason=BonusReason.ORDER_REFUND,
+                description="Возврат бонусов за отменённый заказ",
+                bot=bot,
+                auto_commit=False,
+            )
             bonus_returned = order.bonus_used
 
     # Отменяем заказ

@@ -344,7 +344,7 @@ export function ProfilePage({ user }: Props) {
         transition={{ delay: 0.35 }}
         style={{ marginBottom: 24 }}
       >
-        <TransactionHistory orders={user.orders} />
+        <TransactionHistory transactions={user.transactions} />
       </motion.div>
 
       {/* Support Button - Premium */}

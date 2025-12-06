@@ -15,8 +15,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models.users import User
 from database.models.orders import Order, Conversation, ConversationType, MessageSender
+from database.models.transactions import BalanceTransaction
+from database.models.levels import RankLevel, LoyaltyLevel
 from database.db import get_session
 from core.config import settings
+from bot.services.bonus import BonusService, BonusReason
 
 from .auth import TelegramUser, get_current_user
 from .rate_limit import rate_limit_default, rate_limit_create, rate_limit_roulette, rate_limit_payment
@@ -27,6 +30,7 @@ from .schemas import (
     RankInfo, LoyaltyInfo, BonusExpiryInfo,
     OrderCreateRequest, OrderCreateResponse,
     DailyBonusInfoResponse, DailyBonusClaimResponse,
+    BalanceTransactionResponse,
     ChatMessage, ChatMessagesResponse
 )
 from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
@@ -42,72 +46,72 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["Mini App"])
 
 
-# Rank thresholds (from User model)
-RANK_LEVELS = [
-    {"name": "Салага", "emoji": "🐣", "min_spent": 0, "cashback": 0},
-    {"name": "Ковбой", "emoji": "🤠", "min_spent": 5000, "cashback": 3},
-    {"name": "Головорез", "emoji": "🔫", "min_spent": 20000, "cashback": 5},
-    {"name": "Легенда Запада", "emoji": "👑", "min_spent": 50000, "cashback": 7},
-]
-
-# Loyalty thresholds (premium naming)
-LOYALTY_LEVELS = [
-    {"name": "Резидент", "emoji": "🌵", "min_orders": 0, "discount": 0},
-    {"name": "Партнёр", "emoji": "🤝", "min_orders": 3, "discount": 3},
-    {"name": "VIP-Клиент", "emoji": "⭐", "min_orders": 7, "discount": 5},
-    {"name": "Премиум", "emoji": "👑", "min_orders": 15, "discount": 10},
-]
+async def get_rank_levels(session: AsyncSession) -> list[RankLevel]:
+    result = await session.execute(select(RankLevel).order_by(RankLevel.min_spent))
+    return result.scalars().all()
 
 
-def get_rank_info(total_spent: float) -> RankInfo:
+async def get_loyalty_levels(session: AsyncSession) -> list[LoyaltyLevel]:
+    result = await session.execute(select(LoyaltyLevel).order_by(LoyaltyLevel.min_orders))
+    return result.scalars().all()
+
+
+def get_rank_info(total_spent: float, rank_levels: list[RankLevel]) -> RankInfo:
     """Calculate user rank based on total spent"""
     current_level = 0
-    for i, level in enumerate(RANK_LEVELS):
-        if total_spent >= level["min_spent"]:
+    for i, level in enumerate(rank_levels):
+        if total_spent >= (level.min_spent or 0):
             current_level = i
 
-    current = RANK_LEVELS[current_level]
-    next_rank = RANK_LEVELS[current_level + 1] if current_level < len(RANK_LEVELS) - 1 else None
+    current = rank_levels[current_level] if rank_levels else None
+    next_rank = (
+        rank_levels[current_level + 1]
+        if rank_levels and current_level < len(rank_levels) - 1
+        else None
+    )
 
+    if current is None:
+        return RankInfo(name="", emoji="", level=0, next_rank=None, progress=0, spent_to_next=0)
+
+    progress = 100
+    spent_to_next = 0
     if next_rank:
-        progress_range = next_rank["min_spent"] - current["min_spent"]
-        progress_current = total_spent - current["min_spent"]
-        progress = min(100, int((progress_current / progress_range) * 100))
-        spent_to_next = int(next_rank["min_spent"] - total_spent)
-    else:
-        progress = 100
-        spent_to_next = 0
+        progress_range = (next_rank.min_spent or 0) - (current.min_spent or 0)
+        progress_current = total_spent - (current.min_spent or 0)
+        progress = min(100, int((progress_current / progress_range) * 100)) if progress_range else 100
+        spent_to_next = int((next_rank.min_spent or 0) - total_spent)
 
     return RankInfo(
-        name=current["name"],
-        emoji=current["emoji"],
+        name=current.name,
+        emoji=current.emoji,
         level=current_level + 1,
-        next_rank=next_rank["name"] if next_rank else None,
+        next_rank=next_rank.name if next_rank else None,
         progress=progress,
         spent_to_next=spent_to_next
     )
 
 
-def get_loyalty_info(orders_count: int) -> LoyaltyInfo:
+def get_loyalty_info(orders_count: int, loyalty_levels: list[LoyaltyLevel]) -> LoyaltyInfo:
     """Calculate user loyalty based on orders count"""
     current_level = 0
-    for i, level in enumerate(LOYALTY_LEVELS):
-        if orders_count >= level["min_orders"]:
+    for i, level in enumerate(loyalty_levels):
+        if orders_count >= (level.min_orders or 0):
             current_level = i
 
-    current = LOYALTY_LEVELS[current_level]
-    next_level = LOYALTY_LEVELS[current_level + 1] if current_level < len(LOYALTY_LEVELS) - 1 else None
+    current = loyalty_levels[current_level] if loyalty_levels else None
+    next_level = (
+        loyalty_levels[current_level + 1]
+        if loyalty_levels and current_level < len(loyalty_levels) - 1
+        else None
+    )
 
-    if next_level:
-        orders_to_next = next_level["min_orders"] - orders_count
-    else:
-        orders_to_next = 0
+    orders_to_next = 0 if not next_level else max((next_level.min_orders or 0) - orders_count, 0)
 
     return LoyaltyInfo(
-        status=current["name"],
-        emoji=current["emoji"],
+        status=current.name if current else "",
+        emoji=current.emoji if current else "",
         level=current_level + 1,
-        discount=current["discount"],
+        discount=current.discount_percent if current else 0,
         orders_to_next=orders_to_next
     )
 
@@ -197,6 +201,11 @@ async def get_user_profile(
     completed_result = await session.execute(completed_query)
     completed_orders = completed_result.scalar() or 0
 
+    rank_levels = await get_rank_levels(session)
+    loyalty_levels = await get_loyalty_levels(session)
+    rank_info = get_rank_info(actual_total_spent, rank_levels)
+    loyalty_info = get_loyalty_info(completed_orders, loyalty_levels)
+
     # Calculate total spent from DB (sum paid_amount for completed orders)
     spent_query = select(func.sum(Order.paid_amount)).where(
         Order.user_id == user.telegram_id,
@@ -207,6 +216,15 @@ async def get_user_profile(
 
     # Generate referral code from telegram_id
     referral_code = f"REF{user.telegram_id}"
+
+    # Recent balance transactions
+    tx_result = await session.execute(
+        select(BalanceTransaction)
+        .where(BalanceTransaction.user_id == user.telegram_id)
+        .order_by(desc(BalanceTransaction.created_at))
+        .limit(20)
+    )
+    transactions = tx_result.scalars().all()
 
     # Check daily bonus availability (use timezone-aware datetime!)
     can_spin = True
@@ -229,15 +247,26 @@ async def get_user_profile(
         username=user.username,
         fullname=user.fullname or tg_user.first_name,
         balance=float(user.balance or 0),
-        bonus_balance=float(user.referral_earnings or 0),  # Using referral_earnings as bonus
+        bonus_balance=float(user.balance or 0),
         orders_count=total_orders_count,  # Use actual count from orders table
         total_spent=actual_total_spent,   # Use actual sum from completed orders
-        discount=get_loyalty_info(completed_orders).discount,
+        discount=loyalty_info.discount,
         referral_code=referral_code,
         daily_luck_available=can_spin,
-        rank=get_rank_info(actual_total_spent),  # Use actual total spent
-        loyalty=get_loyalty_info(completed_orders),
+        rank=rank_info,  # Use actual total spent
+        loyalty=loyalty_info,
         bonus_expiry=bonus_expiry,
+        transactions=[
+            BalanceTransactionResponse(
+                id=tx.id,
+                amount=float(tx.amount),
+                type=tx.type,
+                reason=tx.reason,
+                description=tx.description,
+                created_at=tx.created_at.isoformat() if tx.created_at else "",
+            )
+            for tx in transactions
+        ],
         orders=[order_to_response(o) for o in orders]
     )
 
@@ -604,12 +633,15 @@ async def claim_daily_bonus(
     user.last_daily_bonus_at = now
 
     if won:
-        # Начисляем бонус на баланс
-        user.balance = (user.balance or 0) + bonus_amount
-        # Обновляем дату последнего начисления для сгорания бонусов
-        from zoneinfo import ZoneInfo
-        user.last_bonus_at = datetime.now(ZoneInfo("Europe/Moscow"))
-        user.bonus_expiry_notified = False
+        await BonusService.add_bonus(
+            session=session,
+            user_id=tg_user.id,
+            amount=bonus_amount,
+            reason=BonusReason.DAILY_LUCK,
+            description="Ежедневный бонус",
+            bot=None,
+            auto_commit=False,
+        )
 
     await session.commit()
 
