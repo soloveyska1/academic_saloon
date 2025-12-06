@@ -200,30 +200,44 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             {/* Floating particles */}
             {showParticles && <FloatingParticles color={accentColor} />}
 
-            {/* Handle bar with glow */}
+            {/* Header with handle bar and close button */}
             <div style={{
               display: 'flex',
-              justifyContent: 'center',
-              padding: '16px 0 10px',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px 10px',
               position: 'relative',
               zIndex: 2,
             }}>
-              <motion.div
-                animate={{
-                  boxShadow: [
-                    `0 0 8px ${accentColor}30`,
-                    `0 0 16px ${accentColor}50`,
-                    `0 0 8px ${accentColor}30`,
-                  ]
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
+              {/* Spacer for centering */}
+              <div style={{ width: 32 }} />
+
+              {/* Handle bar */}
+              <div style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                background: 'rgba(255,255,255,0.15)',
+              }} />
+
+              {/* Close button */}
+              <motion.button
+                onClick={onClose}
+                whileTap={{ scale: 0.9 }}
                 style={{
-                  width: 48,
-                  height: 5,
-                  borderRadius: 3,
-                  background: `linear-gradient(90deg, ${accentColor}60, ${accentColor}90, ${accentColor}60)`,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
                 }}
-              />
+              >
+                <X size={16} color="rgba(255,255,255,0.5)" strokeWidth={2} />
+              </motion.button>
             </div>
 
             {/* Content */}
@@ -429,16 +443,20 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
               ВАШ ТЕКУЩИЙ КЕШБЭК
             </div>
 
-            <div style={{
-              fontSize: 48,
-              fontWeight: 700,
-              fontFamily: "var(--font-serif)",
-              color: 'rgba(212,175,55,0.9)',
-              lineHeight: 1,
-              marginBottom: 14,
-            }}>
+            <motion.div
+              animate={{ opacity: [0.85, 1, 0.85] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                fontSize: 48,
+                fontWeight: 700,
+                fontFamily: "var(--font-serif)",
+                color: 'rgba(212,175,55,0.9)',
+                lineHeight: 1,
+                marginBottom: 14,
+              }}
+            >
               {user.rank.cashback}%
-            </div>
+            </motion.div>
 
             <div style={{
               display: 'inline-flex',
@@ -541,11 +559,58 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
           </div>
         </div>
 
+        {/* Progress to Next Level */}
+        {!user.rank.is_max && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            style={{ marginBottom: 24 }}
+          >
+            <LuxuryCard borderColor="rgba(212,175,55,0.2)" style={{ padding: 16 }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 10,
+              }}>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                  До следующего уровня
+                </span>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'rgba(212,175,55,0.8)',
+                }}>
+                  {user.rank.spent_to_next.toLocaleString('ru-RU')} ₽
+                </span>
+              </div>
+              <div style={{
+                height: 6,
+                background: 'rgba(255,255,255,0.06)',
+                borderRadius: 3,
+                overflow: 'hidden',
+              }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(user.rank.progress, 3)}%` }}
+                  transition={{ delay: 0.7, duration: 0.8, ease: 'easeOut' }}
+                  style={{
+                    height: '100%',
+                    background: 'linear-gradient(90deg, rgba(212,175,55,0.6), rgba(212,175,55,0.9))',
+                    borderRadius: 3,
+                  }}
+                />
+              </div>
+            </LuxuryCard>
+          </motion.div>
+        )}
+
         {/* How It Works */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.65 }}
         >
           <LuxuryCard style={{ padding: 16 }}>
             <div style={{
@@ -667,7 +732,7 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
               >
                 <LuxuryCard style={{ padding: 14 }}>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    {/* Icon */}
+                    {/* Number + Icon */}
                     <div style={{
                       width: 40,
                       height: 40,
@@ -678,8 +743,28 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
+                      position: 'relative',
                     }}>
                       <Icon size={18} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
+                      {/* Number badge */}
+                      <div style={{
+                        position: 'absolute',
+                        top: -4,
+                        right: -4,
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        background: 'rgba(212,175,55,0.15)',
+                        border: '1px solid rgba(212,175,55,0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: 'rgba(212,175,55,0.9)',
+                      }}>
+                        {index + 1}
+                      </div>
                     </div>
 
                     {/* Content */}
@@ -696,6 +781,9 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
                         lineHeight: 1.4,
                       }}>{item.description}</div>
                     </div>
+
+                    {/* Checkmark */}
+                    <CheckCircle size={16} color="rgba(212,175,55,0.5)" strokeWidth={1.5} />
                   </div>
                 </LuxuryCard>
               </motion.div>
