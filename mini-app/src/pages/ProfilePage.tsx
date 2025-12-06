@@ -178,19 +178,27 @@ export function ProfilePage({ user }: Props) {
               marginTop: 10,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              background: user.rank.is_max ? 'var(--gold-gradient)' : 'rgba(34, 197, 94, 0.1)',
-              border: user.rank.is_max ? '1px solid var(--gold-border)' : '1px solid rgba(34, 197, 94, 0.2)',
+              gap: 4,
+              padding: '5px 12px',
+              background: user.rank.is_max
+                ? 'linear-gradient(135deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.25) 100%)'
+                : 'rgba(34, 197, 94, 0.1)',
+              border: user.rank.is_max
+                ? '1px solid rgba(212,175,55,0.5)'
+                : '1px solid rgba(34, 197, 94, 0.2)',
               borderRadius: 100,
             }}>
+              {user.rank.is_max && <span style={{ fontSize: 12 }}>👑</span>}
               <span style={{
-                fontSize: 10,
-                color: user.rank.is_max ? 'var(--bg-main)' : '#22c55e',
+                fontSize: 11,
                 fontWeight: 700,
-                letterSpacing: '0.05em'
+                letterSpacing: '0.03em',
+                background: user.rank.is_max ? 'var(--gold-metallic)' : 'none',
+                WebkitBackgroundClip: user.rank.is_max ? 'text' : 'unset',
+                WebkitTextFillColor: user.rank.is_max ? 'transparent' : '#22c55e',
+                color: user.rank.is_max ? 'transparent' : '#22c55e',
               }}>
-                {user.rank.is_max ? '👑 ' : ''}Кешбэк {user.rank.cashback}%
+                Кешбэк {user.rank.cashback}%
               </span>
             </div>
           </div>
