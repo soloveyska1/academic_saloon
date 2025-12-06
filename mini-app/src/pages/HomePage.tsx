@@ -185,7 +185,7 @@ function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ULTRA-PREMIUM TIPS CAROUSEL — Luxury 3D Cards with Glow Effects
+//  PREMIUM TIPS CAROUSEL — Monochrome Luxury Style
 // ═══════════════════════════════════════════════════════════════════════════
 
 const tipsData = [
@@ -194,12 +194,6 @@ const tipsData = [
     icon: GraduationCap,
     title: 'Курсовые',
     subtitle: 'от 14 000 ₽',
-    gradient: 'linear-gradient(145deg, rgba(212,175,55,0.35) 0%, rgba(180,140,40,0.2) 50%, rgba(212,175,55,0.25) 100%)',
-    borderGradient: 'linear-gradient(145deg, rgba(252,246,186,0.7), rgba(212,175,55,0.5), rgba(179,135,40,0.6))',
-    iconColor: '#FCF6BA',
-    iconBg: 'linear-gradient(135deg, #D4AF37 0%, #B38728 100%)',
-    glow: '#D4AF37',
-    shadowColor: 'rgba(212,175,55,0.5)',
     action: 'navigate' as const,
     route: '/create-order?type=coursework',
   },
@@ -208,12 +202,6 @@ const tipsData = [
     icon: Clock,
     title: 'Срочные',
     subtitle: 'за 24 часа',
-    gradient: 'linear-gradient(145deg, rgba(185,28,28,0.4) 0%, rgba(127,29,29,0.25) 50%, rgba(153,27,27,0.3) 100%)',
-    borderGradient: 'linear-gradient(145deg, rgba(252,165,165,0.6), rgba(239,68,68,0.5), rgba(185,28,28,0.6))',
-    iconColor: '#fecaca',
-    iconBg: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
-    glow: '#ef4444',
-    shadowColor: 'rgba(239,68,68,0.5)',
     action: 'navigate' as const,
     route: '/create-order?urgent=true',
   },
@@ -222,12 +210,6 @@ const tipsData = [
     icon: Percent,
     title: 'Кешбэк',
     subtitle: 'до 10%',
-    gradient: 'linear-gradient(145deg, rgba(22,101,52,0.4) 0%, rgba(20,83,45,0.25) 50%, rgba(21,128,61,0.3) 100%)',
-    borderGradient: 'linear-gradient(145deg, rgba(134,239,172,0.6), rgba(34,197,94,0.5), rgba(22,163,74,0.6))',
-    iconColor: '#bbf7d0',
-    iconBg: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
-    glow: '#22c55e',
-    shadowColor: 'rgba(34,197,94,0.5)',
     action: 'modal' as const,
     modal: 'cashback',
   },
@@ -236,12 +218,6 @@ const tipsData = [
     icon: Shield,
     title: 'Гарантии',
     subtitle: '100% качество',
-    gradient: 'linear-gradient(145deg, rgba(107,33,168,0.4) 0%, rgba(88,28,135,0.25) 50%, rgba(126,34,206,0.3) 100%)',
-    borderGradient: 'linear-gradient(145deg, rgba(233,213,255,0.6), rgba(168,85,247,0.5), rgba(139,92,246,0.6))',
-    iconColor: '#e9d5ff',
-    iconBg: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
-    glow: '#a855f7',
-    shadowColor: 'rgba(168,85,247,0.5)',
     action: 'modal' as const,
     modal: 'guarantees',
   },
@@ -279,7 +255,7 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
         transition={{ delay: 0.15 }}
         style={{
           display: 'flex',
-          gap: 14,
+          gap: 12,
           paddingBottom: 8,
         }}
       >
@@ -287,150 +263,70 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
           <motion.div
             key={tip.id}
             onClick={() => handleClick(tip)}
-            initial={{ opacity: 0, scale: 0.85, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.1 + index * 0.07, type: 'spring', stiffness: 300, damping: 20 }}
-            whileHover={{ scale: 1.05, y: -4 }}
-            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + index * 0.06 }}
+            whileTap={{ scale: 0.97 }}
             style={{
               flexShrink: 0,
-              width: 120,
-              padding: 0,
-              borderRadius: 22,
+              width: 110,
+              padding: '16px 14px',
+              borderRadius: 18,
               cursor: 'pointer',
               position: 'relative',
+              // Dark glass background
+              background: 'linear-gradient(145deg, rgba(25,25,28,0.95) 0%, rgba(18,18,20,0.98) 100%)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              // Subtle gold border
+              border: '1px solid rgba(212,175,55,0.2)',
+              // Minimal shadow
+              boxShadow: '0 4px 20px -4px rgba(0,0,0,0.5)',
+              overflow: 'hidden',
             }}
           >
-            {/* Outer glow */}
-            <motion.div
-              animate={{
-                boxShadow: [
-                  `0 8px 30px -8px ${tip.shadowColor}`,
-                  `0 12px 40px -6px ${tip.shadowColor}`,
-                  `0 8px 30px -8px ${tip.shadowColor}`,
-                ],
-              }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: index * 0.3 }}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                borderRadius: 22,
-                pointerEvents: 'none',
-              }}
-            />
-
-            {/* Gradient border wrapper */}
+            {/* Subtle top highlight */}
             <div style={{
-              position: 'relative',
-              padding: 1.5,
-              borderRadius: 22,
-              background: tip.borderGradient,
-            }}>
-              {/* Inner card */}
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
+            }} />
+
+            {/* Content */}
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              {/* Icon — thin outline, no background badge */}
+              <tip.icon
+                size={26}
+                color="rgba(212,175,55,0.85)"
+                strokeWidth={1.5}
+                style={{
+                  marginBottom: 12,
+                  opacity: 0.9,
+                }}
+              />
+
+              {/* Title */}
               <div style={{
-                position: 'relative',
-                padding: '18px 16px',
-                borderRadius: 20,
-                background: tip.gradient,
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                overflow: 'hidden',
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.9)',
+                marginBottom: 3,
+                letterSpacing: '0.01em',
               }}>
-                {/* Animated inner shine sweep */}
-                <motion.div
-                  animate={{ x: ['-150%', '250%'] }}
-                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 + index, ease: 'easeInOut' }}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '50%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
-                    transform: 'skewX(-20deg)',
-                    pointerEvents: 'none',
-                  }}
-                />
+                {tip.title}
+              </div>
 
-                {/* Top glass shine */}
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '45%',
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)',
-                  borderRadius: '20px 20px 50% 50%',
-                  pointerEvents: 'none',
-                }} />
-
-                {/* Content */}
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                  {/* Icon with glow badge */}
-                  <motion.div
-                    animate={{
-                      boxShadow: [
-                        `0 4px 15px ${tip.shadowColor}`,
-                        `0 6px 25px ${tip.shadowColor}`,
-                        `0 4px 15px ${tip.shadowColor}`,
-                      ],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 14,
-                      background: tip.iconBg,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 14,
-                      position: 'relative',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {/* Icon badge shine */}
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: '50%',
-                      background: 'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 100%)',
-                      borderRadius: '14px 14px 50% 50%',
-                    }} />
-                    <tip.icon
-                      size={22}
-                      color={tip.iconColor}
-                      strokeWidth={2}
-                      style={{
-                        position: 'relative',
-                        zIndex: 1,
-                        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-                      }}
-                    />
-                  </motion.div>
-
-                  {/* Title */}
-                  <div style={{
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: '#fff',
-                    marginBottom: 4,
-                    textShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                  }}>
-                    {tip.title}
-                  </div>
-
-                  {/* Subtitle */}
-                  <div style={{
-                    fontSize: 11,
-                    color: 'rgba(255,255,255,0.7)',
-                    fontWeight: 500,
-                  }}>
-                    {tip.subtitle}
-                  </div>
-                </div>
+              {/* Subtitle */}
+              <div style={{
+                fontSize: 10,
+                color: 'rgba(212,175,55,0.6)',
+                fontWeight: 500,
+                letterSpacing: '0.02em',
+              }}>
+                {tip.subtitle}
               </div>
             </div>
           </motion.div>
