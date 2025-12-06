@@ -193,7 +193,7 @@ const tipsData = [
     id: 1,
     icon: GraduationCap,
     title: 'Курсовые',
-    subtitle: 'от 2 500 ₽',
+    subtitle: 'от 14 000 ₽',
     gradient: 'linear-gradient(135deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 100%)',
     borderColor: 'rgba(212,175,55,0.5)',
     iconColor: '#D4AF37',

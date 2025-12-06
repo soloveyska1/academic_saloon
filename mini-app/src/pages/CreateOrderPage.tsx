@@ -896,9 +896,19 @@ export function CreateOrderPage() {
         hapticError()
         setResult({ ok: false, msg: res.message })
       }
-    } catch {
+    } catch (err) {
       hapticError()
-      setResult({ ok: false, msg: 'Ошибка соединения' })
+      // Show actual error message if available
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка соединения'
+      // Translate common API errors to Russian
+      const displayMessage = errorMessage.includes('Invalid or expired')
+        ? 'Сессия истекла. Перезапустите приложение.'
+        : errorMessage.includes('Missing X-Telegram')
+        ? 'Откройте приложение через Telegram'
+        : errorMessage.includes('network')
+        ? 'Ошибка сети. Проверьте подключение.'
+        : errorMessage
+      setResult({ ok: false, msg: displayMessage })
     } finally {
       setSubmitting(false)
       setStep(4) // Result screen
