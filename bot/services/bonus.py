@@ -10,6 +10,7 @@ from sqlalchemy import select
 from aiogram import Bot
 
 from database.models.users import User
+from database.models.transactions import BalanceTransaction
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -25,6 +26,9 @@ BONUS_REASON_DESCRIPTIONS = {
     "compensation": "Компенсация",
     "order_cashback": "Кешбэк за заказ",
     "bonus_expired": "Сгорание бонусов",
+    "daily_luck": "Ежедневный бонус",
+    "coupon": "Купон",
+    "order_refund": "Возврат бонусов",
 }
 
 
@@ -37,6 +41,9 @@ class BonusReason(str, Enum):
     COMPENSATION = "compensation"            # Компенсация
     ORDER_CASHBACK = "order_cashback"        # Кешбэк за выполненный заказ
     BONUS_EXPIRED = "bonus_expired"          # Сгорание бонусов
+    DAILY_LUCK = "daily_luck"                # Ежедневная удача / бонус
+    COUPON = "coupon"                        # Промокод
+    ORDER_REFUND = "order_refund"            # Возврат бонусов при отмене заказа
 
 
 # Настройки бонусов
@@ -57,6 +64,28 @@ class BonusService:
     """Сервис управления бонусами"""
 
     @staticmethod
+    def _build_reason_text(reason: BonusReason, description: str | None) -> str:
+        return BONUS_REASON_DESCRIPTIONS.get(reason.value, description or reason.value)
+
+    @staticmethod
+    def _log_transaction(
+        session: AsyncSession,
+        user_id: int,
+        amount: float,
+        reason: BonusReason,
+        description: str,
+        tx_type: str,
+    ) -> None:
+        transaction = BalanceTransaction(
+            user_id=user_id,
+            amount=float(amount),
+            type=tx_type,
+            reason=reason.value,
+            description=description,
+        )
+        session.add(transaction)
+
+    @staticmethod
     async def add_bonus(
         session: AsyncSession,
         user_id: int,
@@ -64,6 +93,7 @@ class BonusService:
         reason: BonusReason,
         description: str | None = None,
         bot: Bot | None = None,
+        auto_commit: bool = True,
     ) -> float:
         """
         Начисляет бонусы пользователю
@@ -73,8 +103,8 @@ class BonusService:
             user_id: Telegram ID пользователя
             amount: Сумма бонусов
             reason: Причина начисления
-            description: Описание для лога
-            bot: Бот для логирования
+        description: Описание для лога
+        bot: Бот для логирования
 
         Returns:
             Новый баланс пользователя
@@ -93,7 +123,18 @@ class BonusService:
         user.last_bonus_at = datetime.now(MSK_TZ)
         user.bonus_expiry_notified = False
 
-        await session.commit()
+        reason_text = BonusService._build_reason_text(reason, description)
+        BonusService._log_transaction(
+            session=session,
+            user_id=user_id,
+            amount=amount,
+            reason=reason,
+            description=reason_text,
+            tx_type="credit",
+        )
+
+        if auto_commit:
+            await session.commit()
 
         # Логируем в консоль
         logger.info(
@@ -104,7 +145,6 @@ class BonusService:
         # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ ═══
         try:
             from bot.services.realtime_notifications import send_balance_notification
-            reason_text = BONUS_REASON_DESCRIPTIONS.get(reason.value, description or reason.value)
             await send_balance_notification(
                 telegram_id=user_id,
                 change=float(amount),
@@ -126,6 +166,7 @@ class BonusService:
         description: str | None = None,
         bot: Bot | None = None,
         user: User | None = None,
+        auto_commit: bool = True,
     ) -> tuple[bool, float]:
         """
         Списывает бонусы с баланса
@@ -153,7 +194,19 @@ class BonusService:
 
         old_balance = user.balance
         user.balance -= amount
-        # НЕ делаем commit здесь - пусть вызывающий код сам решает когда коммитить
+        reason_text = BonusService._build_reason_text(reason, description)
+
+        BonusService._log_transaction(
+            session=session,
+            user_id=user_id,
+            amount=amount,
+            reason=reason,
+            description=reason_text,
+            tx_type="debit",
+        )
+
+        if auto_commit:
+            await session.commit()
 
         # Логируем в консоль
         logger.info(
@@ -164,7 +217,6 @@ class BonusService:
         # ═══ WEBSOCKET REAL-TIME УВЕДОМЛЕНИЕ О СПИСАНИИ ═══
         try:
             from bot.services.realtime_notifications import send_balance_notification
-            reason_text = BONUS_REASON_DESCRIPTIONS.get(reason.value, description or reason.value)
             await send_balance_notification(
                 telegram_id=user_id,
                 change=-float(amount),  # Отрицательное значение для списания
@@ -356,6 +408,16 @@ class BonusService:
         old_balance = user.balance
         user.balance -= expire_amount
 
+        reason_text = BonusService._build_reason_text(BonusReason.BONUS_EXPIRED, None)
+        BonusService._log_transaction(
+            session=session,
+            user_id=user.telegram_id,
+            amount=expire_amount,
+            reason=BonusReason.BONUS_EXPIRED,
+            description=reason_text,
+            tx_type="debit",
+        )
+
         # Сбрасываем таймер - следующее сгорание через 30 дней
         user.last_bonus_at = datetime.now(MSK_TZ)
         user.bonus_expiry_notified = False
@@ -374,7 +436,7 @@ class BonusService:
                 telegram_id=user.telegram_id,
                 change=-float(expire_amount),
                 new_balance=float(user.balance),
-                reason=f"Сгорело {expire_percent}% неиспользованных бонусов",
+                reason=reason_text,
                 reason_key=BonusReason.BONUS_EXPIRED.value,
             )
         except Exception as e:

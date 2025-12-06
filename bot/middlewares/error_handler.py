@@ -184,13 +184,21 @@ class ErrorHandlerMiddleware(BaseMiddleware):
     ) -> bool:
         """Начисляет бонус за ошибку"""
         try:
+            from bot.services.bonus import BonusService, BonusReason
+
             query = select(User).where(User.telegram_id == user_id)
             result = await session.execute(query)
             db_user = result.scalar_one_or_none()
 
             if db_user:
-                db_user.balance += ERROR_COMPENSATION_BONUS
-                await session.commit()
+                await BonusService.add_bonus(
+                    session=session,
+                    user_id=user_id,
+                    amount=ERROR_COMPENSATION_BONUS,
+                    reason=BonusReason.COMPENSATION,
+                    description="Компенсация за ошибку",
+                    bot=None,
+                )
                 logger.info(f"Error bonus +{ERROR_COMPENSATION_BONUS}₽ added to user {user_id}")
                 return True
         except Exception as e:

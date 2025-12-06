@@ -15,8 +15,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models.users import User
 from database.models.orders import Order, Conversation, ConversationType, MessageSender
+from database.models.transactions import BalanceTransaction
 from database.db import get_session
 from core.config import settings
+from bot.services.bonus import BonusService, BonusReason
 
 from .auth import TelegramUser, get_current_user
 from .rate_limit import rate_limit_default, rate_limit_create, rate_limit_roulette, rate_limit_payment
@@ -27,6 +29,7 @@ from .schemas import (
     RankInfo, LoyaltyInfo, BonusExpiryInfo,
     OrderCreateRequest, OrderCreateResponse,
     DailyBonusInfoResponse, DailyBonusClaimResponse,
+    BalanceTransactionResponse,
     ChatMessage, ChatMessagesResponse
 )
 from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
@@ -208,6 +211,15 @@ async def get_user_profile(
     # Generate referral code from telegram_id
     referral_code = f"REF{user.telegram_id}"
 
+    # Recent balance transactions
+    tx_result = await session.execute(
+        select(BalanceTransaction)
+        .where(BalanceTransaction.user_id == user.telegram_id)
+        .order_by(desc(BalanceTransaction.created_at))
+        .limit(20)
+    )
+    transactions = tx_result.scalars().all()
+
     # Check daily bonus availability (use timezone-aware datetime!)
     can_spin = True
     if user.last_daily_bonus_at:
@@ -229,7 +241,7 @@ async def get_user_profile(
         username=user.username,
         fullname=user.fullname or tg_user.first_name,
         balance=float(user.balance or 0),
-        bonus_balance=float(user.referral_earnings or 0),  # Using referral_earnings as bonus
+        bonus_balance=float(user.balance or 0),
         orders_count=total_orders_count,  # Use actual count from orders table
         total_spent=actual_total_spent,   # Use actual sum from completed orders
         discount=get_loyalty_info(completed_orders).discount,
@@ -238,6 +250,17 @@ async def get_user_profile(
         rank=get_rank_info(actual_total_spent),  # Use actual total spent
         loyalty=get_loyalty_info(completed_orders),
         bonus_expiry=bonus_expiry,
+        transactions=[
+            BalanceTransactionResponse(
+                id=tx.id,
+                amount=float(tx.amount),
+                type=tx.type,
+                reason=tx.reason,
+                description=tx.description,
+                created_at=tx.created_at.isoformat() if tx.created_at else "",
+            )
+            for tx in transactions
+        ],
         orders=[order_to_response(o) for o in orders]
     )
 
@@ -604,12 +627,15 @@ async def claim_daily_bonus(
     user.last_daily_bonus_at = now
 
     if won:
-        # Начисляем бонус на баланс
-        user.balance = (user.balance or 0) + bonus_amount
-        # Обновляем дату последнего начисления для сгорания бонусов
-        from zoneinfo import ZoneInfo
-        user.last_bonus_at = datetime.now(ZoneInfo("Europe/Moscow"))
-        user.bonus_expiry_notified = False
+        await BonusService.add_bonus(
+            session=session,
+            user_id=tg_user.id,
+            amount=bonus_amount,
+            reason=BonusReason.DAILY_LUCK,
+            description="Ежедневный бонус",
+            bot=None,
+            auto_commit=False,
+        )
 
     await session.commit()
 

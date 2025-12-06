@@ -12,6 +12,7 @@ from database.db import Base
 from database.models.users import User
 from database.models.orders import Order, OrderMessage, Conversation
 from database.models.promocodes import PromoCode, PromoCodeUsage
+from database.models.transactions import BalanceTransaction
 
 config = context.config
 
