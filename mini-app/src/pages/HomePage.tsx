@@ -396,7 +396,7 @@ export function HomePage({ user }: Props) {
             </div>
           </div>
 
-          {/* Greeting — Serif headline */}
+          {/* Greeting — Serif headline + Streak */}
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2, fontWeight: 500 }}>
               {getTimeGreeting()},
@@ -410,6 +410,29 @@ export function HomePage({ user }: Props) {
             }}>
               {user.fullname?.split(' ')[0] || 'Гость'}
             </div>
+            {/* Premium Streak Badge */}
+            {user.daily_bonus_streak > 0 && (
+              <div style={{
+                marginTop: 6,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '3px 8px',
+                background: 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.1) 100%)',
+                border: '1px solid rgba(249,115,22,0.3)',
+                borderRadius: 100,
+              }}>
+                <span style={{ fontSize: 10 }}>🔥</span>
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  color: '#fb923c',
+                  letterSpacing: '0.03em',
+                }}>
+                  {user.daily_bonus_streak} {user.daily_bonus_streak === 1 ? 'день' : user.daily_bonus_streak < 5 ? 'дня' : 'дней'} подряд
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -526,31 +549,6 @@ export function HomePage({ user }: Props) {
               }}>
                 Кешбэк {user.rank.cashback}%
               </span>
-            </div>
-            {/* Streak + Stats Row */}
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              {/* Streak Indicator */}
-              {user.daily_bonus_streak > 0 && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: 11,
-                  color: '#f97316',
-                  fontWeight: 600,
-                }}>
-                  <Flame size={12} />
-                  <span>{user.daily_bonus_streak} {user.daily_bonus_streak === 1 ? 'день' : user.daily_bonus_streak < 5 ? 'дня' : 'дней'}</span>
-                </div>
-              )}
-              {/* Total Accumulated */}
-              <div style={{
-                fontSize: 10,
-                color: 'var(--text-muted)',
-                fontWeight: 500,
-              }}>
-                Накоплено: {user.total_spent.toLocaleString('ru-RU')}₽
-              </div>
             </div>
           </div>
         </motion.div>
