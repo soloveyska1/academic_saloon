@@ -176,13 +176,12 @@ def generate_premium_qr_card(
     earnings: float = 0.0,
 ) -> Optional[bytes]:
     """
-    Генерирует премиальную QR-карточку методом "Сэндвич".
+    Генерирует минималистичную премиум QR-карточку.
 
-    Слои:
-    1. Фоновый шаблон или сгенерированный градиент
-    2. QR-код (золотой, прозрачный фон)
-    3. Логотип по центру QR
-    4. Текстовые элементы
+    Дизайн:
+    - Чистый тёмный фон с тонким золотым свечением
+    - Золотой QR-код с логотипом
+    - Минимум текста - только код и бренд
 
     Returns:
         PNG изображение в байтах
@@ -192,24 +191,23 @@ def generate_premium_qr_card(
         return None
 
     try:
-        # Размеры карточки (оптимально для шаринга в Telegram)
-        CARD_WIDTH = 1080
-        CARD_HEIGHT = 1350
-        QR_SIZE = 500
-        LOGO_SIZE = 120
+        # Компактные размеры для шаринга
+        CARD_WIDTH = 800
+        CARD_HEIGHT = 1000
+        QR_SIZE = 450
+        LOGO_SIZE = 100
 
-        # === СЛОЙ 1: Фон ===
-        if os.path.exists(CARD_TEMPLATE_PATH):
-            try:
-                background = Image.open(CARD_TEMPLATE_PATH).convert('RGBA')
-                background = background.resize((CARD_WIDTH, CARD_HEIGHT), Image.Resampling.LANCZOS)
-            except Exception as e:
-                logger.warning(f"Failed to load template: {e}")
-                background = create_gold_gradient_background(CARD_WIDTH, CARD_HEIGHT)
-        else:
-            background = create_gold_gradient_background(CARD_WIDTH, CARD_HEIGHT)
-
+        # === СЛОЙ 1: Минималистичный тёмный фон ===
+        background = Image.new('RGBA', (CARD_WIDTH, CARD_HEIGHT), BG_DARK)
         draw = ImageDraw.Draw(background)
+
+        # Тонкое золотое свечение сверху
+        for y in range(200):
+            alpha = int(255 * (1 - y / 200) * 0.08)
+            r = min(255, BG_DARK[0] + int((GOLD_PRIMARY[0] - BG_DARK[0]) * alpha / 255))
+            g = min(255, BG_DARK[1] + int((GOLD_PRIMARY[1] - BG_DARK[1]) * alpha / 255))
+            b = min(255, BG_DARK[2] + int((GOLD_PRIMARY[2] - BG_DARK[2]) * alpha / 255))
+            draw.line([(0, y), (CARD_WIDTH, y)], fill=(r, g, b, 255))
 
         # Загрузка шрифтов
         try:
@@ -217,131 +215,115 @@ def generate_premium_qr_card(
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
                 "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
             ]
-            font_title = font_regular = font_small = font_code = None
+            font_brand = font_code = font_small = None
             for path in font_paths:
                 try:
-                    font_title = ImageFont.truetype(path, 56)
-                    font_regular = ImageFont.truetype(path, 32)
-                    font_small = ImageFont.truetype(path, 24)
-                    font_code = ImageFont.truetype(path, 42)
+                    font_brand = ImageFont.truetype(path, 28)
+                    font_code = ImageFont.truetype(path, 36)
+                    font_small = ImageFont.truetype(path, 20)
                     break
                 except (OSError, IOError):
                     continue
-            if font_title is None:
-                font_title = font_regular = font_small = font_code = ImageFont.load_default()
+            if font_brand is None:
+                font_brand = font_code = font_small = ImageFont.load_default()
         except Exception:
-            font_title = font_regular = font_small = font_code = ImageFont.load_default()
+            font_brand = font_code = font_small = ImageFont.load_default()
 
-        # === РАЗМЕЩЕНИЕ ЭЛЕМЕНТОВ (Premium Design) ===
-        
-        # Размеры полотна: 1080 x 1350
-        # Центр QR кода должен попадать в визуальный центр золотой рамки.
-        # Обычно это геометрический центр картинки или чуть ниже.
-        # Попробуем разместить QR по центру.
-        
         center_x = CARD_WIDTH // 2
-        center_y = CARD_HEIGHT // 2 + 50  # Чуть смещаем вниз для баланса
-        
-        # === СЛОЙ 2: QR-код ===
+
+        # === Бренд-заголовок вверху ===
+        brand_text = "ACADEMIC SALOON"
+        brand_bbox = draw.textbbox((0, 0), brand_text, font=font_brand)
+        brand_w = brand_bbox[2] - brand_bbox[0]
+        draw.text(
+            ((CARD_WIDTH - brand_w) // 2, 60),
+            brand_text,
+            fill=GOLD_PRIMARY,
+            font=font_brand
+        )
+
+        # Тонкая линия под брендом
+        line_y = 110
+        line_width = 100
+        draw.line(
+            [(center_x - line_width, line_y), (center_x + line_width, line_y)],
+            fill=(*GOLD_DARK, 150),
+            width=1
+        )
+
+        # === СЛОЙ 2: QR-код с контейнером ===
         referral_link = get_referral_link(user_id)
         qr_img = create_qr_code(referral_link, QR_SIZE)
 
-        # QR-контейнер с рамкой (убираем сложную 'Сэндвич' рамку, делаем минималистично)
-        # На новом фоне уже есть рамка? Если да, то делаем прозрачный контейнер.
-        # Если "в черном квадрате", то просто QR.
-        # Добавим легкое свечение вокруг QR чтобы отделить от темного фона
-        
-        qr_container_size = QR_SIZE + 40
+        # QR-контейнер с тонкой рамкой
+        qr_container_size = QR_SIZE + 60
         qr_container = Image.new('RGBA', (qr_container_size, qr_container_size), (0, 0, 0, 0))
         qr_container_draw = ImageDraw.Draw(qr_container)
-        
-        # Легкое золотое свечение (shadow)
-        # for i in range(15):
-        #     alpha = int((15 - i) * 3)
-        #     qr_container_draw.rounded_rectangle(
-        #         [(i, i), (qr_container_size - i, qr_container_size - i)],
-        #         radius=20,
-        #         outline=(*GOLD_PRIMARY, alpha),
-        #         width=1
-        #     )
-            
+
+        # Тёмный фон для контейнера
+        qr_container_draw.rounded_rectangle(
+            [(0, 0), (qr_container_size - 1, qr_container_size - 1)],
+            radius=24,
+            fill=(15, 15, 18, 255),
+            outline=(*GOLD_DARK, 100),
+            width=1
+        )
+
         # Вставляем QR в контейнер
-        qr_container.paste(qr_img, (20, 20), qr_img)
+        qr_container.paste(qr_img, (30, 30), qr_img)
 
         # === СЛОЙ 3: Логотип в центре QR ===
         logo = create_logo_overlay(LOGO_SIZE)
-        logo_x = 20 + (QR_SIZE - LOGO_SIZE) // 2
-        logo_y = 20 + (QR_SIZE - LOGO_SIZE) // 2
+        logo_x = 30 + (QR_SIZE - LOGO_SIZE) // 2
+        logo_y = 30 + (QR_SIZE - LOGO_SIZE) // 2
         qr_container.paste(logo, (logo_x, logo_y), logo)
 
-        # Вставляем контейнер с QR на фон
+        # Вставляем контейнер с QR
+        qr_y = 150
         qr_x = center_x - (qr_container_size // 2)
-        qr_y = center_y - (qr_container_size // 2)
         background.paste(qr_container, (qr_x, qr_y), qr_container)
-        
-        # === ТЕКСТОВЫЕ БЛОКИ (Аккуратно вписываем) ===
-        
-        # Реферальный код (над QR или под ним)
-        # Разместим ПОД QR кодом, мелким шрифтом
+
+        # === Реферальный код под QR ===
         if not referral_code:
             referral_code = f"REF{user_id}"
 
-        y_text_start = qr_y + qr_container_size + 30
-        
+        y_text = qr_y + qr_container_size + 35
+
+        # Лейбл
+        label = "ВАШ КОД"
+        label_bbox = draw.textbbox((0, 0), label, font=font_small)
+        label_w = label_bbox[2] - label_bbox[0]
+        draw.text(
+            ((CARD_WIDTH - label_w) // 2, y_text),
+            label,
+            fill=TEXT_MUTED,
+            font=font_small
+        )
+
         # Код
+        y_text += 30
         code_bbox = draw.textbbox((0, 0), referral_code, font=font_code)
         code_w = code_bbox[2] - code_bbox[0]
         draw.text(
-            ((CARD_WIDTH - code_w) // 2, y_text_start),
+            ((CARD_WIDTH - code_w) // 2, y_text),
             referral_code,
             fill=GOLD_LIGHT,
             font=font_code
         )
-        
-        # Инвайт (чуть ниже)
-        y_text_start += 60
-        invite_text = f"@{username} приглашает тебя"
-        inv_bbox = draw.textbbox((0, 0), invite_text, font=font_regular)
-        inv_w = inv_bbox[2] - inv_bbox[0]
+
+        # === Бонусы внизу ===
+        y_text += 70
+        bonus_text = "Скидка 5% на первый заказ"
+        bonus_bbox = draw.textbbox((0, 0), bonus_text, font=font_small)
+        bonus_w = bonus_bbox[2] - bonus_bbox[0]
         draw.text(
-            ((CARD_WIDTH - inv_w) // 2, y_text_start),
-            invite_text,
+            ((CARD_WIDTH - bonus_w) // 2, y_text),
+            bonus_text,
             fill=TEXT_WHITE,
-            font=font_regular
+            font=font_small
         )
-        
-        # Бенефиты (еще ниже, если влезает, или вообще убрать для минимализма)
-        # Для премиума лучше меньше текста.
-        # Оставим только статистику, если она есть
-        
-        if invited_count > 0 or earnings > 0:
-            y_text_start += 70
-            stats = f"{invited_count} друзей • +{earnings:.0f}₽"
-            stats_bbox = draw.textbbox((0, 0), stats, font=font_small)
-            stats_w = stats_bbox[2] - stats_bbox[0]
-            
-            # Pill background for stats
-            pill_h = 44
-            pill_w = stats_w + 50
-            pill_x = (CARD_WIDTH - pill_w) // 2
-            
-            draw.rounded_rectangle(
-                [(pill_x, y_text_start - 8), (pill_x + pill_w, y_text_start - 8 + pill_h)],
-                radius=22,
-                fill=(20, 20, 25, 200),
-                outline=GOLD_DARK,
-                width=1
-            )
-            
-            draw.text(
-                ((CARD_WIDTH - stats_w) // 2, y_text_start),
-                stats,
-                fill=GOLD_PRIMARY,
-                font=font_small
-            )
 
         # === Конвертируем в PNG ===
-        # Конвертируем в RGB для PNG без прозрачности (меньше размер)
         final = background.convert('RGB')
         buffer = io.BytesIO()
         final.save(buffer, format='PNG', quality=95, optimize=True)

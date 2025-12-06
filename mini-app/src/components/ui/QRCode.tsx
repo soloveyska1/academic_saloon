@@ -86,7 +86,7 @@ export function QRCodeModal({
         await navigator.share({
           files: [file],
           title: 'Academic Saloon — Приглашение',
-          text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\nМой код: ${value}`,
+          text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\n👉 t.me/Kladovaya_GIPSR_bot?start=${value}`,
         })
         setSharing(false)
         return
@@ -99,7 +99,7 @@ export function QRCodeModal({
     try {
       await navigator.share({
         title: 'Academic Saloon — Приглашение',
-        text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\nМой код: ${value}`,
+        text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\n👉 t.me/Kladovaya_GIPSR_bot?start=${value}`,
       })
     } catch (e) {
       console.log('Share cancelled')
