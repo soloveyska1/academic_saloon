@@ -808,16 +808,21 @@ async def save_message_to_db(
     if file_id and yandex_disk_service.is_available:
         try:
             order = await session.get(Order, order_id)
-            user_query = select(User).where(User.telegram_id == (
-                message.from_user.id if sender_type == MessageSender.CLIENT.value else order.user_id
-            ))
-            user_result = await session.execute(user_query)
-            user = user_result.scalar_one_or_none()
-            client_name = user.fullname if user else "Client"
+            if not order:
+                logger.warning(f"Order {order_id} not found for YaDisk upload")
+            else:
+                # Determine telegram_id based on sender type
+                telegram_id = (
+                    message.from_user.id if sender_type == MessageSender.CLIENT.value else order.user_id
+                )
+                user_query = select(User).where(User.telegram_id == telegram_id)
+                user_result = await session.execute(user_query)
+                user = user_result.scalar_one_or_none()
+                client_name = user.fullname if user else "Client"
 
-            yadisk_url = await upload_chat_file_to_yadisk(
-                bot, file_id, file_name, order, client_name, order.user_id
-            )
+                yadisk_url = await upload_chat_file_to_yadisk(
+                    bot, file_id, file_name, order, client_name, order.user_id
+                )
         except Exception as e:
             logger.error(f"Failed to upload to YaDisk: {e}")
 

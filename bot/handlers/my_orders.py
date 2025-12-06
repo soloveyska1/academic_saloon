@@ -1235,6 +1235,8 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
             pass
 
     await session.commit()
+    # Refresh user to get updated balance after bonus was added
+    await session.refresh(user)
 
     # Log
     try:
