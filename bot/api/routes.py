@@ -755,7 +755,8 @@ async def create_order(
 
     # Calculate price
     try:
-        user_discount = get_loyalty_info(user.orders_count or 0).discount
+        loyalty_levels = await get_loyalty_levels(session)
+        user_discount = get_loyalty_info(user.orders_count or 0, loyalty_levels).discount
         price_calc = calculate_price(
             work_type=data.work_type,
             deadline_key=data.deadline,
