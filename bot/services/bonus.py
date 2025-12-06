@@ -291,8 +291,15 @@ class BonusService:
         query = select(User).where(User.telegram_id == referred_user_id)
         result = await session.execute(query)
         referred_user = result.scalar_one_or_none()
-        referred_name = referred_user.fullname or f"ID:{referred_user_id}" if referred_user else f"ID:{referred_user_id}"
+        # Fix operator precedence: check referred_user first, then access fullname
+        referred_name = (referred_user.fullname or f"ID:{referred_user_id}") if referred_user else f"ID:{referred_user_id}"
 
+        # Get referrer first to update earnings in same transaction
+        ref_query = select(User).where(User.telegram_id == referrer_id)
+        ref_result = await session.execute(ref_query)
+        referrer = ref_result.scalar_one_or_none()
+
+        # Add bonus without auto-commit to batch with referral_earnings update
         await BonusService.add_bonus(
             session=session,
             user_id=referrer_id,
@@ -300,15 +307,15 @@ class BonusService:
             reason=BonusReason.REFERRAL_BONUS,
             description=f"Реферал {referred_name} оплатил заказ ({REFERRAL_PERCENT}% от {order_amount:.0f}₽)",
             bot=bot,
+            auto_commit=False,  # Don't commit yet - we'll commit after updating referral_earnings
         )
 
         # Увеличиваем счётчик заработка с рефералов
-        ref_query = select(User).where(User.telegram_id == referrer_id)
-        ref_result = await session.execute(ref_query)
-        referrer = ref_result.scalar_one_or_none()
         if referrer:
             referrer.referral_earnings += bonus_amount
-            await session.commit()
+
+        # Single commit for both operations
+        await session.commit()
 
         return bonus_amount
 

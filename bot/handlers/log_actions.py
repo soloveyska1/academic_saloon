@@ -349,7 +349,6 @@ async def reply_to_log(message: Message, bot: Bot):
         await message.reply(f"✅ Отправлено пользователю {user_id}")
 
         # Логируем отправку
-        logger = BotLogger(bot)
         await bot.send_message(
             chat_id=settings.LOG_CHANNEL_ID,
             text=f"📤  <b>Сообщение отправлено</b>\n\n"

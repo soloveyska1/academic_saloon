@@ -172,7 +172,7 @@ async def get_user_profile(
             username=tg_user.username,
             fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
             role="user",
-            terms_accepted_at=datetime.utcnow(),  # Implicit consent via Mini App
+            terms_accepted_at=datetime.now(timezone.utc),  # Implicit consent via Mini App
         )
         session.add(user)
         await session.commit()
@@ -196,23 +196,23 @@ async def get_user_profile(
     # Calculate completed orders count
     completed_query = select(func.count(Order.id)).where(
         Order.user_id == user.telegram_id,
-        Order.status == 'completed'
+        Order.status == OrderStatus.COMPLETED.value
     )
     completed_result = await session.execute(completed_query)
     completed_orders = completed_result.scalar() or 0
+
+    # Calculate total spent from DB (sum paid_amount for completed orders)
+    spent_query = select(func.sum(Order.paid_amount)).where(
+        Order.user_id == user.telegram_id,
+        Order.status == OrderStatus.COMPLETED.value
+    )
+    spent_result = await session.execute(spent_query)
+    actual_total_spent = float(spent_result.scalar() or 0)
 
     rank_levels = await get_rank_levels(session)
     loyalty_levels = await get_loyalty_levels(session)
     rank_info = get_rank_info(actual_total_spent, rank_levels)
     loyalty_info = get_loyalty_info(completed_orders, loyalty_levels)
-
-    # Calculate total spent from DB (sum paid_amount for completed orders)
-    spent_query = select(func.sum(Order.paid_amount)).where(
-        Order.user_id == user.telegram_id,
-        Order.status == 'completed'
-    )
-    spent_result = await session.execute(spent_query)
-    actual_total_spent = float(spent_result.scalar() or 0)
 
     # Generate referral code from telegram_id
     referral_code = f"REF{user.telegram_id}"
@@ -297,9 +297,13 @@ async def get_orders(
     if status:
         # Filter by status
         if status == "active":
-            query = query.where(Order.status.notin_(['completed', 'cancelled', 'rejected']))
+            query = query.where(Order.status.notin_([
+                OrderStatus.COMPLETED.value,
+                OrderStatus.CANCELLED.value,
+                OrderStatus.REJECTED.value
+            ]))
         elif status == "completed":
-            query = query.where(Order.status == 'completed')
+            query = query.where(Order.status == OrderStatus.COMPLETED.value)
         else:
             query = query.where(Order.status == status)
 
@@ -706,7 +710,7 @@ async def create_order(
             username=tg_user.username,
             fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
             role="user",
-            terms_accepted_at=datetime.utcnow(),
+            terms_accepted_at=datetime.now(timezone.utc),
         )
         session.add(user)
         await session.commit()
@@ -1352,8 +1356,11 @@ async def send_order_message(
     if len(text) > 4000:
         raise HTTPException(status_code=400, detail="Message too long (max 4000 chars)")
 
-    # Get user
-    user = await session.get(User, tg_user.id)
+    # Get user by telegram_id (not by primary key!)
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
 
     # Create message record
     message = OrderMessage(
@@ -1440,8 +1447,11 @@ async def upload_chat_file(
     if order.user_id != tg_user.id:
         raise HTTPException(status_code=403, detail="Not your order")
 
-    # Get user
-    user = await session.get(User, tg_user.id)
+    # Get user by telegram_id (not by primary key!)
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
 
     # Validate file size (max 20MB)
     MAX_FILE_SIZE = 20 * 1024 * 1024
@@ -1574,8 +1584,11 @@ async def upload_voice_message(
     if order.user_id != tg_user.id:
         raise HTTPException(status_code=403, detail="Not your order")
 
-    # Get user
-    user = await session.get(User, tg_user.id)
+    # Get user by telegram_id (not by primary key!)
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
 
     # Validate file size (max 10MB for voice)
     MAX_VOICE_SIZE = 10 * 1024 * 1024
@@ -1816,8 +1829,11 @@ async def request_revision(
                 detail="Период бесплатных правок (30 дней) истёк"
             )
 
-    # Get user
-    user = await session.get(User, tg_user.id)
+    # Get user by telegram_id (not by primary key!)
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
 
     # Change status to revision and increment revision count
     old_status = order.status
@@ -1942,13 +1958,16 @@ async def confirm_work_completion(
             detail="Подтвердить можно только работу на проверке"
         )
 
-    # Get user
-    user = await session.get(User, tg_user.id)
+    # Get user by telegram_id (not by primary key!)
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = user_result.scalar_one_or_none()
 
     # Complete order
     old_status = order.status
     order.status = OrderStatus.COMPLETED.value
-    order.completed_at = datetime.utcnow()
+    order.completed_at = datetime.now(timezone.utc)
 
     # Increment user stats
     if user:
@@ -2030,7 +2049,6 @@ async def confirm_work_completion(
     except Exception as ws_err:
         logger.debug(f"WebSocket notification failed: {ws_err}")
 
-    cashback_text = f" +{cashback_amount:.0f}₽ кешбэк!" if cashback_amount > 0 else ""
     cashback_text = f" +{cashback_amount:.0f}₽ кешбэк!" if cashback_amount > 0 else ""
     return ConfirmWorkResponse(
         success=True,
@@ -2232,8 +2250,11 @@ async def get_referral_qr(
 
     style: "card" - full branded card, "simple" - just the QR code
     """
-    # Get user data
-    user = await session.get(User, current_user.id)
+    # Get user by telegram_id (not by primary key!)
+    user_result = await session.execute(
+        select(User).where(User.telegram_id == current_user.id)
+    )
+    user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
