@@ -162,12 +162,16 @@ async def main():
     logger.info("🤠 Academic Saloon - Starting services...")
     logger.info("=" * 50)
 
-    # Run both services concurrently
-    await asyncio.gather(
-        run_bot(),
-        run_api_server(),
-        return_exceptions=True
-    )
+    # Run both services concurrently and fail fast if any crashes
+    try:
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(run_bot())
+            tg.create_task(run_api_server())
+    except* Exception as exc_group:
+        for exc in exc_group.exceptions:
+            logger.error("Service crashed", exc_info=exc)
+        # Propagate the first exception to ensure a non-zero exit code
+        raise
 
 
 if __name__ == "__main__":

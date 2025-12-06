@@ -73,7 +73,7 @@ class YooKassaService:
 
         try:
             # Формируем return_url с параметрами
-            return_url = f"https://t.me/{settings.BOT_USERNAME}"
+            return_url = settings.formatted_yookassa_return_url
 
             payment = Payment.create({
                 "amount": {

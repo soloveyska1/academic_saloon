@@ -1,55 +1,31 @@
 import { motion } from 'framer-motion'
 import { ShoppingBag, Gift } from 'lucide-react'
-import { Order } from '../../types'
+import { Transaction } from '../../types'
 import { glassStyle } from '../ui/PremiumDesign'
 
 interface Props {
-    orders: Order[]
+    transactions: Transaction[]
 }
 
-export function TransactionHistory({ orders }: Props) {
-    // Derive transactions from orders
-    // We simulate "transactions" by treating each order as an expense
-    // and each bonus usage as a separate entry if applicable, or combined.
+export function TransactionHistory({ transactions }: Props) {
+    const reasonLabels: Record<string, string> = {
+        order_created: 'Бонус за заказ',
+        referral_bonus: 'Реферал',
+        admin_adjustment: 'Корректировка',
+        order_discount: 'Списание на заказ',
+        compensation: 'Компенсация',
+        order_cashback: 'Кешбэк',
+        bonus_expired: 'Сгорание бонусов',
+        daily_luck: 'Ежедневный бонус',
+        coupon: 'Купон',
+        order_refund: 'Возврат бонусов'
+    }
 
-    const transactions = orders.flatMap(order => {
-        const items = []
+    const history = [...transactions]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 10)
 
-        // Payment (Real Money)
-        if (order.paid_amount > 0) {
-            items.push({
-                id: `pay_${order.id}`,
-                type: 'expense',
-                amount: order.paid_amount,
-                currency: 'RUB',
-                title: `Оплата заказа #${order.id}`,
-                subtitle: order.work_type_label,
-                date: order.created_at, // Ideally payment date, but created_at is proxy
-                icon: ShoppingBag
-            })
-        }
-
-        // Bonus Usage
-        if (order.bonus_used > 0) {
-            items.push({
-                id: `bonus_${order.id}`,
-                type: 'bonus_expense',
-                amount: order.bonus_used,
-                currency: 'BONUS',
-                title: `Списание бонусов`,
-                subtitle: `Заказ #${order.id}`,
-                date: order.created_at,
-                icon: Gift
-            })
-        }
-
-        return items
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-    // Limit to recent 10 to clear clutter
-    const recentTransactions = transactions.slice(0, 10)
-
-    if (recentTransactions.length === 0) {
+    if (history.length === 0) {
         return (
             <div style={{ ...glassStyle, padding: 24, textAlign: 'center' }}>
                 <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
@@ -72,7 +48,7 @@ export function TransactionHistory({ orders }: Props) {
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {recentTransactions.map((tx, i) => (
+                {history.map((tx, i) => (
                     <motion.div
                         key={tx.id}
                         initial={{ opacity: 0, x: -10 }}
@@ -83,7 +59,7 @@ export function TransactionHistory({ orders }: Props) {
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             paddingBottom: 12,
-                            borderBottom: i === recentTransactions.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)'
+                            borderBottom: i === history.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)'
                         }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -91,22 +67,22 @@ export function TransactionHistory({ orders }: Props) {
                                 width: 40,
                                 height: 40,
                                 borderRadius: 12,
-                                background: tx.type === 'expense'
-                                    ? 'rgba(245, 158, 11, 0.1)' // Amber/Orange for expense (Joyful, not Red)
-                                    : 'rgba(212, 175, 55, 0.1)', // Gold for bonus
+                                background: tx.type === 'debit'
+                                    ? 'rgba(245, 158, 11, 0.1)' // Amber/Orange for списание
+                                    : 'rgba(212, 175, 55, 0.1)', // Gold for начисление
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: tx.type === 'expense' ? '#fbbf24' : '#d4af37'
+                                color: tx.type === 'debit' ? '#fbbf24' : '#d4af37'
                             }}>
-                                <tx.icon size={18} />
+                                {tx.type === 'debit' ? <ShoppingBag size={18} /> : <Gift size={18} />}
                             </div>
                             <div>
                                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>
-                                    {tx.title}
+                                    {tx.description || reasonLabels[tx.reason] || 'Операция'}
                                 </div>
                                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                    {new Date(tx.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} • {tx.subtitle}
+                                    {new Date(tx.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} • {reasonLabels[tx.reason] || tx.reason}
                                 </div>
                             </div>
                         </div>
@@ -115,9 +91,9 @@ export function TransactionHistory({ orders }: Props) {
                             <div style={{
                                 fontSize: 15,
                                 fontWeight: 700,
-                                color: tx.type === 'expense' ? '#fbbf24' : '#d4af37' // Amber for expense, Gold for bonus
+                                color: tx.type === 'debit' ? '#fbbf24' : '#d4af37' // Amber for списание, Gold for начисление
                             }}>
-                                -{Math.round(tx.amount).toLocaleString()} {tx.currency === 'rub' ? '₽' : (tx.currency === 'BONUS' ? 'B' : '₽')}
+                                {tx.type === 'debit' ? '-' : '+'}{Math.round(tx.amount).toLocaleString('ru-RU')} ₽
                             </div>
                         </div>
                     </motion.div>

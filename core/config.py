@@ -72,6 +72,21 @@ class Settings(BaseSettings):
     def REDIS_URL(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB_FSM}"
 
+    @property
+    def formatted_yookassa_return_url(self) -> str:
+        """Return a valid YooKassa return URL with the bot username injected.
+
+        The default configuration historically contained the ``{bot_username}``
+        placeholder, which produced broken redirects when left unsubstituted.
+        This helper ensures the placeholder is replaced with the configured bot
+        username while still allowing fully custom URLs to pass through.
+        """
+
+        placeholder = "{bot_username}"
+        if placeholder in self.YOOKASSA_RETURN_URL:
+            return self.YOOKASSA_RETURN_URL.format(bot_username=self.BOT_USERNAME)
+        return self.YOOKASSA_RETURN_URL
+
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
 settings = Settings()

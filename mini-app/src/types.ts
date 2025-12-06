@@ -6,6 +6,7 @@ export interface UserData {
   fullname: string
   balance: number
   bonus_balance: number
+  transactions: Transaction[]
   orders_count: number
   total_spent: number
   rank: RankInfo
@@ -18,6 +19,15 @@ export interface UserData {
   daily_luck_available: boolean
   free_spins: number
   roulette_onboarding_seen: boolean
+}
+
+export interface Transaction {
+  id: number
+  amount: number
+  type: 'credit' | 'debit'
+  reason: string
+  description?: string | null
+  created_at: string
 }
 
 export interface RankInfo {
