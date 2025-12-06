@@ -2,6 +2,7 @@
 Сервис для работы с ЮKassa.
 Онлайн-оплата картой прямо в Telegram.
 """
+import asyncio
 import logging
 from uuid import uuid4
 from typing import Optional
@@ -75,7 +76,8 @@ class YooKassaService:
             # Формируем return_url с параметрами
             return_url = settings.formatted_yookassa_return_url
 
-            payment = Payment.create({
+            # Run sync Payment.create() in thread pool to avoid blocking event loop
+            payment_data = {
                 "amount": {
                     "value": f"{amount:.2f}",
                     "currency": "RUB"
@@ -90,7 +92,9 @@ class YooKassaService:
                     "order_id": order_id,
                     "user_id": user_id,
                 }
-            }, uuid4().hex)
+            }
+            idempotence_key = uuid4().hex
+            payment = await asyncio.to_thread(Payment.create, payment_data, idempotence_key)
 
             logger.info(f"Payment created: {payment.id} for order #{order_id}")
 
@@ -121,7 +125,8 @@ class YooKassaService:
             return None
 
         try:
-            payment = Payment.find_one(payment_id)
+            # Run sync Payment.find_one() in thread pool to avoid blocking event loop
+            payment = await asyncio.to_thread(Payment.find_one, payment_id)
             return payment
         except Exception as e:
             logger.error(f"Failed to check payment {payment_id}: {e}")
