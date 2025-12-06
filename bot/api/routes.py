@@ -700,40 +700,76 @@ async def create_order(
     logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}")
 
     # Get shared bot instance
-    bot = get_bot()
+    try:
+        bot = get_bot()
+    except Exception as bot_error:
+        logger.error(f"[API /orders/create] Failed to get bot instance: {bot_error}")
+        return OrderCreateResponse(
+            success=False,
+            order_id=0,
+            message="Сервис временно недоступен. Попробуйте позже.",
+            price=None,
+            is_manual_required=False
+        )
 
     # Get or create user
-    result = await session.execute(
-        select(User).where(User.telegram_id == tg_user.id)
-    )
-    user = result.scalar_one_or_none()
-
-    if not user:
-        # Auto-register
-        user = User(
-            telegram_id=tg_user.id,
-            username=tg_user.username,
-            fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
-            role="user",
-            terms_accepted_at=datetime.now(timezone.utc),
+    try:
+        result = await session.execute(
+            select(User).where(User.telegram_id == tg_user.id)
         )
-        session.add(user)
-        await session.commit()
-        await session.refresh(user)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            # Auto-register
+            user = User(
+                telegram_id=tg_user.id,
+                username=tg_user.username,
+                fullname=f"{tg_user.first_name} {tg_user.last_name or ''}".strip(),
+                role="user",
+                terms_accepted_at=datetime.now(timezone.utc),
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+    except Exception as user_error:
+        logger.error(f"[API /orders/create] Failed to get/create user: {user_error}")
+        return OrderCreateResponse(
+            success=False,
+            order_id=0,
+            message="Ошибка регистрации. Попробуйте позже.",
+            price=None,
+            is_manual_required=False
+        )
 
     # Validate work_type
     try:
         work_type_enum = WorkType(data.work_type)
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid work_type: {data.work_type}")
+        return OrderCreateResponse(
+            success=False,
+            order_id=0,
+            message=f"Неизвестный тип работы: {data.work_type}",
+            price=None,
+            is_manual_required=False
+        )
 
     # Calculate price
-    user_discount = get_loyalty_info(user.orders_count or 0).discount
-    price_calc = calculate_price(
-        work_type=data.work_type,
-        deadline_key=data.deadline,
-        discount_percent=user_discount
-    )
+    try:
+        user_discount = get_loyalty_info(user.orders_count or 0).discount
+        price_calc = calculate_price(
+            work_type=data.work_type,
+            deadline_key=data.deadline,
+            discount_percent=user_discount
+        )
+    except Exception as price_error:
+        logger.error(f"[API /orders/create] Failed to calculate price: {price_error}")
+        return OrderCreateResponse(
+            success=False,
+            order_id=0,
+            message="Ошибка расчёта цены. Попробуйте позже.",
+            price=None,
+            is_manual_required=False
+        )
 
     # Determine initial status - Web orders always start as WAITING_ESTIMATION
     # to ensure admin review
