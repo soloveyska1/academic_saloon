@@ -14,6 +14,7 @@ class RankInfo(BaseModel):
     emoji: str
     level: int
     cashback: int  # Cashback percentage for current rank
+    bonus: Optional[str] = None  # Bonus perk for this rank (e.g., "Персональный менеджер")
     next_rank: Optional[str] = None
     progress: int  # 0-100
     spent_to_next: int  # Amount to spend for next rank
@@ -93,6 +94,7 @@ class UserResponse(BaseModel):
     discount: float
     referral_code: str
     daily_luck_available: bool
+    daily_bonus_streak: int = 0  # Days in a row claimed daily bonus
     rank: RankInfo
     loyalty: LoyaltyInfo
     bonus_expiry: Optional[BonusExpiryInfo] = None  # Информация о сгорании бонусов

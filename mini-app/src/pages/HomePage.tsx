@@ -337,8 +337,22 @@ export function HomePage({ user }: Props) {
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* User Avatar with Spinning Gold Ring */}
+          {/* User Avatar with Spinning Gold Ring + VIP Glow */}
           <div style={{ position: 'relative' }}>
+            {/* VIP Glow Effect for Max Rank */}
+            {user.rank.is_max && (
+              <motion.div
+                animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  inset: -8,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(212,175,55,0.4) 0%, transparent 70%)',
+                  filter: 'blur(4px)',
+                }}
+              />
+            )}
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
@@ -513,6 +527,31 @@ export function HomePage({ user }: Props) {
                 Кешбэк {user.rank.cashback}%
               </span>
             </div>
+            {/* Streak + Stats Row */}
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              {/* Streak Indicator */}
+              {user.daily_bonus_streak > 0 && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 11,
+                  color: '#f97316',
+                  fontWeight: 600,
+                }}>
+                  <Flame size={12} />
+                  <span>{user.daily_bonus_streak} {user.daily_bonus_streak === 1 ? 'день' : user.daily_bonus_streak < 5 ? 'дня' : 'дней'}</span>
+                </div>
+              )}
+              {/* Total Accumulated */}
+              <div style={{
+                fontSize: 10,
+                color: 'var(--text-muted)',
+                fontWeight: 500,
+              }}>
+                Накоплено: {user.total_spent.toLocaleString('ru-RU')}₽
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -543,28 +582,53 @@ export function HomePage({ user }: Props) {
             }}>
               {displayRankName}
             </div>
-            {/* Progress Bar */}
-            <div style={{
-              height: 5,
-              background: 'var(--bg-glass)',
-              borderRadius: 100,
-              overflow: 'hidden',
-              border: '1px solid var(--border-subtle)',
-            }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.max(user.rank.progress, 5)}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="progress-shimmer"
-                style={{
-                  height: '100%',
-                  borderRadius: 100,
-                  boxShadow: '0 0 10px rgba(212,175,55,0.4)',
-                }}
-              />
-            </div>
+            {/* Progress Bar or MAX indicator */}
+            {user.rank.is_max ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(180,140,40,0.2) 100%)',
+                borderRadius: 100,
+                border: '1px solid rgba(212,175,55,0.4)',
+                width: 'fit-content',
+              }}>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  background: 'var(--gold-metallic)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
+                  ★ MAX
+                </span>
+              </div>
+            ) : (
+              <div style={{
+                height: 5,
+                background: 'var(--bg-glass)',
+                borderRadius: 100,
+                overflow: 'hidden',
+                border: '1px solid var(--border-subtle)',
+              }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(user.rank.progress, 5)}%` }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                  className="progress-shimmer"
+                  style={{
+                    height: '100%',
+                    borderRadius: 100,
+                    boxShadow: '0 0 10px rgba(212,175,55,0.4)',
+                  }}
+                />
+              </div>
+            )}
+            {/* Bonus perk or Level info */}
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontWeight: 500 }}>
-              Уровень {user.rank.level}
+              {user.rank.bonus || `Уровень ${user.rank.level}`}
             </div>
           </div>
         </motion.div>

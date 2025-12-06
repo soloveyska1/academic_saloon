@@ -87,6 +87,7 @@ def get_rank_info(total_spent: float, rank_levels: list[RankLevel]) -> RankInfo:
         emoji=current.emoji,
         level=current_level + 1,
         cashback=int(current.cashback_percent or 0),
+        bonus=current.bonus,
         next_rank=next_rank.name if next_rank else None,
         progress=progress,
         spent_to_next=spent_to_next,
@@ -256,6 +257,7 @@ async def get_user_profile(
         discount=loyalty_info.discount,
         referral_code=referral_code,
         daily_luck_available=can_spin,
+        daily_bonus_streak=user.daily_bonus_streak or 0,
         rank=rank_info,  # Use actual total spent
         loyalty=loyalty_info,
         bonus_expiry=bonus_expiry,
