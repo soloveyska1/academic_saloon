@@ -13,9 +13,11 @@ class RankInfo(BaseModel):
     name: str
     emoji: str
     level: int
+    cashback: int  # Cashback percentage for current rank
     next_rank: Optional[str] = None
     progress: int  # 0-100
     spent_to_next: int  # Amount to spend for next rank
+    is_max: bool = False  # Whether user is at max rank
 
 
 class LoyaltyInfo(BaseModel):

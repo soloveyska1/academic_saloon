@@ -321,6 +321,7 @@ export function HomePage({ user }: Props) {
 
   // User's Telegram photo
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
+  const [avatarError, setAvatarError] = useState(false)
 
   return (
     <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: 'var(--bg-main)', position: 'relative' }}>
@@ -359,8 +360,13 @@ export function HomePage({ user }: Props) {
               justifyContent: 'center',
               overflow: 'hidden',
             }}>
-              {userPhoto ? (
-                <img src={userPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {userPhoto && !avatarError ? (
+                <img
+                  src={userPhoto}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={() => setAvatarError(true)}
+                />
               ) : (
                 <span style={{
                   fontFamily: "var(--font-serif)",
@@ -479,19 +485,24 @@ export function HomePage({ user }: Props) {
                 filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.4))',
               }}>₽</span>
             </div>
-            {/* Bonus Balance — Glass Pill */}
+            {/* Cashback Badge — Glass Pill */}
             <div style={{
               marginTop: 10,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
               padding: '4px 10px',
-              background: 'var(--success-glass)',
-              border: '1px solid var(--success-border)',
+              background: user.rank.is_max ? 'var(--gold-gradient)' : 'var(--success-glass)',
+              border: user.rank.is_max ? '1px solid var(--gold-border)' : '1px solid var(--success-border)',
               borderRadius: 100,
             }}>
-              <span style={{ fontSize: 10, color: 'var(--success-text)', fontWeight: 600 }}>
-                +{user.bonus_balance} бонусов
+              <span style={{
+                fontSize: 10,
+                color: user.rank.is_max ? 'var(--bg-main)' : 'var(--success-text)',
+                fontWeight: 700,
+                letterSpacing: '0.05em'
+              }}>
+                {user.rank.is_max ? '👑 ' : ''}Кешбэк {user.rank.cashback}%
               </span>
             </div>
           </div>

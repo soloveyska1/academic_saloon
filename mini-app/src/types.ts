@@ -34,9 +34,11 @@ export interface RankInfo {
   name: string
   emoji: string
   level: number
+  cashback: number
   next_rank: string | null
   progress: number
   spent_to_next: number
+  is_max: boolean
 }
 
 export interface LoyaltyInfo {
