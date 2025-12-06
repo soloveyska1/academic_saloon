@@ -106,51 +106,72 @@ function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
     <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
+      whileHover={unlocked ? { scale: 1.05 } : {}}
+      whileTap={unlocked ? { scale: 0.95 } : {}}
       style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 6,
-        opacity: unlocked ? 1 : 0.35,
+        gap: 8,
       }}
     >
-      {/* Glass Pill Badge */}
-      <div style={{
-        width: 48,
-        height: 48,
-        borderRadius: 14,
-        // Glass pill background
-        background: unlocked
-          ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))'
-          : 'var(--bg-glass)',
-        // Gradient border
-        border: unlocked
-          ? '1px solid rgba(212,175,55,0.35)'
-          : '1px solid var(--border-default)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        // Gold glow for special badges
-        boxShadow: unlocked && glow
-          ? '0 0 25px rgba(212,175,55,0.5), inset 0 1px 0 rgba(255,255,255,0.1)'
-          : unlocked
-          ? '0 0 15px rgba(212,175,55,0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
-          : 'inset 0 1px 0 rgba(255,255,255,0.03)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-      }}>
+      {/* Premium Badge */}
+      <motion.div
+        animate={unlocked && glow ? {
+          boxShadow: [
+            '0 0 15px rgba(212,175,55,0.4)',
+            '0 0 25px rgba(212,175,55,0.6)',
+            '0 0 15px rgba(212,175,55,0.4)'
+          ]
+        } : {}}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'relative',
+          width: 52,
+          height: 52,
+          borderRadius: 16,
+          background: unlocked
+            ? 'linear-gradient(145deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 50%, rgba(212,175,55,0.2) 100%)'
+            : 'rgba(40,40,40,0.5)',
+          border: unlocked
+            ? '1.5px solid rgba(212,175,55,0.6)'
+            : '1px solid rgba(80,80,80,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: unlocked
+            ? '0 4px 20px rgba(212,175,55,0.25), inset 0 1px 0 rgba(255,255,255,0.15)'
+            : 'none',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Inner shine for unlocked */}
+        {unlocked && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '50%',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
+            borderRadius: '16px 16px 0 0',
+          }} />
+        )}
         <Icon
-          size={22}
-          color={unlocked ? 'var(--gold-400)' : 'var(--text-muted)'}
+          size={24}
+          color={unlocked ? '#D4AF37' : 'rgba(100,100,100,0.5)'}
           strokeWidth={unlocked ? 2 : 1.5}
+          fill={unlocked ? 'rgba(212,175,55,0.2)' : 'none'}
           style={{
-            filter: unlocked && glow ? 'drop-shadow(0 0 6px rgba(212,175,55,0.5))' : 'none',
+            position: 'relative',
+            zIndex: 1,
+            filter: unlocked ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' : 'none',
           }}
         />
-      </div>
+      </motion.div>
       <span style={{
         fontSize: 9,
-        color: unlocked ? 'var(--text-secondary)' : 'var(--text-muted)',
+        color: unlocked ? 'var(--text-secondary)' : 'rgba(100,100,100,0.5)',
         textAlign: 'center',
         fontWeight: 600,
         letterSpacing: '0.02em',
@@ -324,7 +345,7 @@ export function HomePage({ user }: Props) {
   const [avatarError, setAvatarError] = useState(false)
 
   return (
-    <div style={{ minHeight: '100vh', padding: '24px 20px 120px', background: 'var(--bg-main)', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', padding: '24px 20px 100px', background: 'var(--bg-main)', position: 'relative' }}>
       {/* Background particles */}
       <FloatingParticles />
 
@@ -441,60 +462,47 @@ export function HomePage({ user }: Props) {
           </div>
         </div>
 
-        {/* Logo Badge — Premium Animated (5 taps opens admin panel) */}
+        {/* Logo Badge — Premium with Subtle Shimmer (5 taps opens admin panel) */}
         <motion.div
           onClick={handleSecretTap}
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.97 }}
+          animate={{
+            boxShadow: [
+              '0 0 15px rgba(212,175,55,0.2)',
+              '0 0 25px rgba(212,175,55,0.35)',
+              '0 0 15px rgba(212,175,55,0.2)'
+            ]
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           style={{
             position: 'relative',
-            padding: '10px 16px',
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-            borderRadius: 12,
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
+            padding: '10px 18px',
+            background: 'linear-gradient(135deg, rgba(30,28,20,0.95), rgba(20,18,12,0.95))',
+            borderRadius: 10,
+            border: '1px solid rgba(212,175,55,0.5)',
             cursor: 'default',
             userSelect: 'none',
             overflow: 'hidden',
           }}
         >
-          {/* Animated Gold Border */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-            style={{
-              position: 'absolute',
-              inset: -1,
-              borderRadius: 12,
-              background: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
-              zIndex: 0,
-            }}
-          />
-          {/* Inner Background */}
-          <div style={{
-            position: 'absolute',
-            inset: 1,
-            borderRadius: 11,
-            background: 'linear-gradient(135deg, rgba(20,20,20,0.95), rgba(30,30,30,0.9))',
-            zIndex: 1,
-          }} />
-          {/* Shimmer Effect */}
+          {/* Subtle Shimmer — passes through occasionally */}
           <motion.div
             animate={{ x: ['-100%', '200%'] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+            transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-              zIndex: 2,
+              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
+              zIndex: 1,
             }}
           />
           <span style={{
             position: 'relative',
-            zIndex: 3,
+            zIndex: 2,
             fontFamily: "var(--font-serif)",
             fontWeight: 700,
             fontSize: 11,
-            letterSpacing: '0.15em',
+            letterSpacing: '0.12em',
             background: 'var(--gold-text-shine)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -1218,6 +1226,27 @@ export function HomePage({ user }: Props) {
           </div>
         </motion.div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          SUBTLE FOOTER — Tagline
+          ═══════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        style={{
+          textAlign: 'center',
+          padding: '16px 0 8px',
+        }}
+      >
+        <span style={{
+          fontSize: 10,
+          color: 'rgba(100,100,100,0.5)',
+          letterSpacing: '0.05em',
+        }}>
+          ✨ Премиум сервис для студентов
+        </span>
+      </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           DAILY BONUS FLOATING BUTTON — Premium Gold
