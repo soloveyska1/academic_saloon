@@ -1,24 +1,23 @@
 """
 Premium QR Code Generator for Academic Saloon
 
-Использует подход "Сэндвич" для создания люксовых QR-карточек:
-1. Фоновый шаблон (card_template_bg.png)
-2. Золотой QR-код
-3. Логотип по центру QR
+Минималистичный дизайн:
+- Программно сгенерированный фон
+- Золотой QR-код с закруглёнными модулями
+- Логотип "AS" по центру
 
 Ссылка формата: https://t.me/{bot}/app?startapp=ref_{user_id}
 """
 
 import io
 import logging
-import os
 from typing import Optional
 
 try:
     import qrcode
     from qrcode.image.styledpil import StyledPilImage
     from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
-    from PIL import Image, ImageDraw, ImageFont, ImageFilter
+    from PIL import Image, ImageDraw, ImageFont
     HAS_QR_DEPS = True
 except ImportError:
     HAS_QR_DEPS = False
@@ -26,11 +25,6 @@ except ImportError:
 from core.config import settings
 
 logger = logging.getLogger(__name__)
-
-# Paths to assets
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), 'assets')
-CARD_TEMPLATE_PATH = os.path.join(ASSETS_DIR, 'card_template_bg.jpg')
-LOGO_PATH = os.path.join(ASSETS_DIR, 'shield_logo.jpg')
 
 # Brand Colors
 GOLD_PRIMARY = (212, 175, 55)      # #d4af37
@@ -49,44 +43,6 @@ def get_referral_link(user_id: int) -> str:
     """
     bot_username = settings.BOT_USERNAME.lstrip("@")
     return f"https://t.me/{bot_username}/app?startapp=ref_{user_id}"
-
-
-def create_gold_gradient_background(width: int, height: int) -> Image.Image:
-    """Создаёт премиальный градиентный фон с золотыми акцентами."""
-    img = Image.new('RGBA', (width, height), BG_DARK)
-    draw = ImageDraw.Draw(img)
-
-    # Градиент сверху (золотое свечение)
-    for y in range(min(300, height)):
-        alpha = int(255 * (1 - y / 300) * 0.12)
-        r = min(255, BG_DARK[0] + int((GOLD_PRIMARY[0] - BG_DARK[0]) * alpha / 255))
-        g = min(255, BG_DARK[1] + int((GOLD_PRIMARY[1] - BG_DARK[1]) * alpha / 255))
-        b = min(255, BG_DARK[2] + int((GOLD_PRIMARY[2] - BG_DARK[2]) * alpha / 255))
-        draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
-
-    # Градиент снизу
-    for y in range(max(0, height - 200), height):
-        progress = (y - (height - 200)) / 200
-        alpha = int(progress * 0.08 * 255)
-        r = min(255, BG_DARK[0] + int((GOLD_DARK[0] - BG_DARK[0]) * alpha / 255))
-        g = min(255, BG_DARK[1] + int((GOLD_DARK[1] - BG_DARK[1]) * alpha / 255))
-        b = min(255, BG_DARK[2] + int((GOLD_DARK[2] - BG_DARK[2]) * alpha / 255))
-        draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
-
-    # Декоративные уголки
-    corner_size = 100
-    for i in range(corner_size):
-        alpha = int((1 - i / corner_size) * 80)
-        # Верхний левый
-        draw.line([(0, i), (corner_size - i, 0)], fill=(*GOLD_PRIMARY, alpha), width=2)
-        # Верхний правый
-        draw.line([(width - corner_size + i, 0), (width, i)], fill=(*GOLD_PRIMARY, alpha), width=2)
-        # Нижний левый
-        draw.line([(0, height - i), (corner_size - i, height)], fill=(*GOLD_DARK, alpha), width=2)
-        # Нижний правый
-        draw.line([(width - corner_size + i, height), (width, height - i)], fill=(*GOLD_DARK, alpha), width=2)
-
-    return img
 
 
 def create_qr_code(data: str, size: int = 400) -> Image.Image:
@@ -124,47 +80,61 @@ def create_qr_code(data: str, size: int = 400) -> Image.Image:
 
 
 def create_logo_overlay(size: int = 100) -> Image.Image:
-    """Создаёт круглый логотип для центра QR."""
-    # Пробуем загрузить готовый лого
-    if os.path.exists(LOGO_PATH):
-        try:
-            logo = Image.open(LOGO_PATH).convert('RGBA')
-            
-            # Маскируем в круг (так как исходник JPG)
-            mask = Image.new('L', (size, size), 0)
-            draw_mask = ImageDraw.Draw(mask)
-            draw_mask.ellipse((0, 0, size, size), fill=255)
-            
-            # Ресайз и кроп
-            logo = logo.resize((size, size), Image.Resampling.LANCZOS)
-            
-            # Создаем финальный контейнер с маской
-            output = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-            output.paste(logo, (0, 0), mask=mask)
-            
-            # Добавляем золотую обводку
-            draw_outline = ImageDraw.Draw(output)
-            draw_outline.ellipse((0, 0, size-1, size-1), outline=GOLD_PRIMARY, width=2)
-            
-            return output
-        except Exception as e:
-            logger.warning(f"Failed to load logo: {e}")
+    """
+    Создаёт минималистичный круглый логотип для центра QR.
 
-    # Fallback: Генерируем программный логотип
+    Дизайн: тёмный круг с золотой обводкой и буквами "AS"
+    """
     logo = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    # ... (остальной код генерации можно оставить или упростить, но лучше вернуть валидный объект)
     draw = ImageDraw.Draw(logo)
-    draw.ellipse((0, 0, size-1, size-1), fill=BG_CARD, outline=GOLD_PRIMARY, width=2)
-    
-    # Текст "AS"
+
+    # Тёмный круг с золотой обводкой
+    border_width = 3
+    draw.ellipse(
+        (0, 0, size - 1, size - 1),
+        fill=BG_CARD,
+        outline=GOLD_PRIMARY,
+        width=border_width
+    )
+
+    # Внутренний акцент (тонкая линия)
+    inner_margin = border_width + 3
+    draw.ellipse(
+        (inner_margin, inner_margin, size - inner_margin - 1, size - inner_margin - 1),
+        outline=(*GOLD_DARK, 80),
+        width=1
+    )
+
+    # Текст "AS" по центру
     try:
-        font = ImageFont.load_default()
-    except Exception:
+        font_paths = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        ]
         font = None
-        
-    if font:
-        draw.text((size//2 - 10, size//2 - 10), "AS", fill=GOLD_PRIMARY, font=font)
-        
+        font_size = int(size * 0.4)  # 40% от размера логотипа
+        for path in font_paths:
+            try:
+                font = ImageFont.truetype(path, font_size)
+                break
+            except (OSError, IOError):
+                continue
+        if font is None:
+            font = ImageFont.load_default()
+    except Exception:
+        font = ImageFont.load_default()
+
+    text = "AS"
+    text_bbox = draw.textbbox((0, 0), text, font=font)
+    text_w = text_bbox[2] - text_bbox[0]
+    text_h = text_bbox[3] - text_bbox[1]
+
+    # Центрируем текст
+    text_x = (size - text_w) // 2
+    text_y = (size - text_h) // 2 - 2  # Небольшая коррекция вверх
+
+    draw.text((text_x, text_y), text, fill=GOLD_PRIMARY, font=font)
+
     return logo
 
 
