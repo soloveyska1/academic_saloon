@@ -396,17 +396,22 @@ export function HomePage({ user }: Props) {
             </div>
           </div>
 
-          {/* Greeting — Serif headline + Streak */}
+          {/* Greeting — Premium Serif + Gold Name */}
           <div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2, fontWeight: 500 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 500 }}>
               {getTimeGreeting()},
             </div>
             <div style={{
-              fontSize: 20,
-              fontWeight: 600,
-              color: 'var(--text-main)',
+              fontSize: 22,
+              fontWeight: 700,
               fontFamily: "var(--font-serif)",
               letterSpacing: '0.02em',
+              background: user.rank.is_max
+                ? 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #BF953F 100%)'
+                : 'var(--text-main)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: user.rank.is_max ? 'transparent' : 'var(--text-main)',
+              filter: user.rank.is_max ? 'drop-shadow(0 0 8px rgba(212,175,55,0.3))' : 'none',
             }}>
               {user.fullname?.split(' ')[0] || 'Гость'}
             </div>
@@ -436,22 +441,56 @@ export function HomePage({ user }: Props) {
           </div>
         </div>
 
-        {/* Logo Badge — Glass Pill (5 taps opens admin panel) */}
-        <div
+        {/* Logo Badge — Premium Animated (5 taps opens admin panel) */}
+        <motion.div
           onClick={handleSecretTap}
+          whileTap={{ scale: 0.95 }}
           style={{
+            position: 'relative',
             padding: '10px 16px',
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
-            border: '1px solid var(--border-gold)',
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
             borderRadius: 12,
             backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
-            boxShadow: '0 0 20px -5px rgba(212,175,55,0.2)',
             cursor: 'default',
             userSelect: 'none',
+            overflow: 'hidden',
           }}
         >
+          {/* Animated Gold Border */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+            style={{
+              position: 'absolute',
+              inset: -1,
+              borderRadius: 12,
+              background: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
+              zIndex: 0,
+            }}
+          />
+          {/* Inner Background */}
+          <div style={{
+            position: 'absolute',
+            inset: 1,
+            borderRadius: 11,
+            background: 'linear-gradient(135deg, rgba(20,20,20,0.95), rgba(30,30,30,0.9))',
+            zIndex: 1,
+          }} />
+          {/* Shimmer Effect */}
+          <motion.div
+            animate={{ x: ['-100%', '200%'] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+              zIndex: 2,
+            }}
+          />
           <span style={{
+            position: 'relative',
+            zIndex: 3,
             fontFamily: "var(--font-serif)",
             fontWeight: 700,
             fontSize: 11,
@@ -460,7 +499,7 @@ export function HomePage({ user }: Props) {
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>ЭЛИТНЫЙ КЛУБ</span>
-        </div>
+        </motion.div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -582,27 +621,52 @@ export function HomePage({ user }: Props) {
             </div>
             {/* Progress Bar or MAX indicator */}
             {user.rank.is_max ? (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 10px',
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(180,140,40,0.2) 100%)',
-                borderRadius: 100,
-                border: '1px solid rgba(212,175,55,0.4)',
-                width: 'fit-content',
-              }}>
+              <motion.div
+                animate={{
+                  boxShadow: [
+                    '0 0 10px rgba(212,175,55,0.3)',
+                    '0 0 20px rgba(212,175,55,0.5)',
+                    '0 0 10px rgba(212,175,55,0.3)'
+                  ]
+                }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 12px',
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 100%)',
+                  borderRadius: 100,
+                  border: '1px solid rgba(212,175,55,0.5)',
+                  width: 'fit-content',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Shimmer Effect */}
+                <motion.div
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                    zIndex: 1,
+                  }}
+                />
                 <span style={{
+                  position: 'relative',
+                  zIndex: 2,
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: '0.1em',
-                  background: 'var(--gold-metallic)',
+                  background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #BF953F)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}>
                   ★ MAX
                 </span>
-              </div>
+              </motion.div>
             ) : (
               <div style={{
                 height: 5,
