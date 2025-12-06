@@ -4,7 +4,7 @@ import { motion, useMotionValue, useTransform, animate, AnimatePresence } from '
 import {
   Plus, Copy, Check, ChevronRight, TrendingUp, Gift, QrCode,
   Star, Zap, Crown, CreditCard, Briefcase, Award, Target, Sparkles, Flame,
-  GraduationCap, Clock, Percent, FileText, ChevronDown, ArrowRight
+  GraduationCap, Clock, Percent, FileText, ChevronDown, ArrowRight, Medal, Gem, Shield
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -12,6 +12,7 @@ import { applyPromoCode, fetchDailyBonusInfo, claimDailyBonus, DailyBonusInfo } 
 import { QRCodeModal } from '../components/ui/QRCode'
 import { Confetti } from '../components/ui/Confetti'
 import { DailyBonusModal } from '../components/ui/DailyBonus'
+import { CashbackModal, GuaranteesModal, TransactionsModal, RanksModal } from '../components/ui/HomeModals'
 import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
 
@@ -197,6 +198,8 @@ const tipsData = [
     borderColor: 'rgba(212,175,55,0.5)',
     iconColor: '#D4AF37',
     glow: 'rgba(212,175,55,0.3)',
+    action: 'navigate' as const,
+    route: '/create-order?type=coursework',
   },
   {
     id: 2,
@@ -207,6 +210,8 @@ const tipsData = [
     borderColor: 'rgba(239,68,68,0.4)',
     iconColor: '#ef4444',
     glow: 'rgba(239,68,68,0.25)',
+    action: 'navigate' as const,
+    route: '/create-order?urgent=true',
   },
   {
     id: 3,
@@ -217,20 +222,37 @@ const tipsData = [
     borderColor: 'rgba(34,197,94,0.4)',
     iconColor: '#22c55e',
     glow: 'rgba(34,197,94,0.25)',
+    action: 'modal' as const,
+    modal: 'cashback',
   },
   {
     id: 4,
-    icon: Star,
-    title: 'Качество',
-    subtitle: '100% гарантия',
+    icon: Shield,
+    title: 'Гарантии',
+    subtitle: '100% качество',
     gradient: 'linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(139,92,246,0.1) 100%)',
     borderColor: 'rgba(168,85,247,0.4)',
     iconColor: '#a855f7',
     glow: 'rgba(168,85,247,0.25)',
+    action: 'modal' as const,
+    modal: 'guarantees',
   },
 ]
 
-function TipsCarousel() {
+function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
+  onNavigate: (route: string) => void
+  onOpenModal: (modal: 'cashback' | 'guarantees') => void
+  haptic: (style: 'light' | 'medium' | 'heavy') => void
+}) {
+  const handleClick = (tip: typeof tipsData[0]) => {
+    haptic('light')
+    if (tip.action === 'navigate' && tip.route) {
+      onNavigate(tip.route)
+    } else if (tip.action === 'modal' && tip.modal) {
+      onOpenModal(tip.modal as 'cashback' | 'guarantees')
+    }
+  }
+
   return (
     <div style={{
       margin: '0 -20px 20px',
@@ -256,11 +278,12 @@ function TipsCarousel() {
         {tipsData.map((tip, index) => (
           <motion.div
             key={tip.id}
+            onClick={() => handleClick(tip)}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 + index * 0.05 }}
             whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+            whileTap={{ scale: 0.95 }}
             style={{
               flexShrink: 0,
               width: 110,
@@ -762,6 +785,11 @@ export function HomePage({ user }: Props) {
   const [showDailyBonus, setShowDailyBonus] = useState(false)
   const [dailyBonusInfo, setDailyBonusInfo] = useState<DailyBonusInfo | null>(null)
   const [dailyBonusError, setDailyBonusError] = useState(false)
+  // New modals
+  const [showCashbackModal, setShowCashbackModal] = useState(false)
+  const [showGuaranteesModal, setShowGuaranteesModal] = useState(false)
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false)
+  const [showRanksModal, setShowRanksModal] = useState(false)
 
   // Fetch daily bonus info on mount with retry
   useEffect(() => {
@@ -866,12 +894,18 @@ export function HomePage({ user }: Props) {
   const displayNextRank = user.rank.next_rank ? (rankNameMap[user.rank.next_rank] || user.rank.next_rank) : null
 
   // Achievement badges based on user data
-  const achievements = [
-    { icon: Award, label: 'Первый заказ', unlocked: user.orders_count >= 1 },
-    { icon: Target, label: '5 заказов', unlocked: user.orders_count >= 5 },
-    { icon: Crown, label: 'VIP', unlocked: user.rank.level >= 3 },
-    { icon: Sparkles, label: 'Легенда', unlocked: user.rank.level >= 4, glow: true },
+  // Dynamic achievements based on real user data
+  const allAchievements = [
+    { icon: Star, label: 'Первый шаг', unlocked: user.orders_count >= 1, description: 'Первый заказ' },
+    { icon: Medal, label: 'Постоянный', unlocked: user.orders_count >= 5, description: '5 заказов' },
+    { icon: Crown, label: 'VIP статус', unlocked: user.rank.level >= 3, description: 'VIP уровень' },
+    { icon: Zap, label: 'Молниеносный', unlocked: user.orders_count >= 1, description: 'Быстрый заказ' }, // Assume true if has orders
+    { icon: Gem, label: 'Щедрая душа', unlocked: user.total_spent >= 10000, description: '10 000₽ потрачено' },
+    { icon: Target, label: 'Рефералы', unlocked: user.referrals_count >= 3, description: '3+ приглашённых' },
+    { icon: Flame, label: 'Джекпот', unlocked: false, description: 'Выигрыш в рулетке', glow: true },
+    { icon: Sparkles, label: 'Легенда', unlocked: user.rank.level >= 4, description: 'Макс. уровень', glow: true },
   ]
+  const achievements = allAchievements // Pass all for accurate count
 
   // User's Telegram photo
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
@@ -1046,7 +1080,14 @@ export function HomePage({ user }: Props) {
       {/* ═══════════════════════════════════════════════════════════════════
           TIPS CAROUSEL — Premium Horizontal Scroll
           ═══════════════════════════════════════════════════════════════════ */}
-      <TipsCarousel />
+      <TipsCarousel
+        onNavigate={navigate}
+        onOpenModal={(modal) => {
+          if (modal === 'cashback') setShowCashbackModal(true)
+          else if (modal === 'guarantees') setShowGuaranteesModal(true)
+        }}
+        haptic={haptic}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
           BENTO GRID: BALANCE & LEVEL — Ultra-Premium Glass Cards
@@ -1057,8 +1098,10 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => { haptic('light'); setShowTransactionsModal(true) }}
           className="breathing-card pulse-border-gold"
-          style={{ ...glassGoldStyle, boxShadow: 'var(--card-shadow), 0 0 50px -15px rgba(212,175,55,0.25)' }}
+          style={{ ...glassGoldStyle, boxShadow: 'var(--card-shadow), 0 0 50px -15px rgba(212,175,55,0.25)', cursor: 'pointer' }}
         >
           {/* Inner Shine Effect */}
           <CardInnerShine />
@@ -1143,8 +1186,10 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => { haptic('light'); setShowRanksModal(true) }}
           className="breathing-card shimmer-wave"
-          style={glassStyle}
+          style={{ ...glassStyle, cursor: 'pointer' }}
         >
           <CardInnerShine />
           <div style={{ position: 'relative', zIndex: 1 }}>
@@ -1579,107 +1624,148 @@ export function HomePage({ user }: Props) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          QUICK STATS — Ultra-Premium Glass Cards
+          QUICK STATS — Premium Dashboard Style
           ═══════════════════════════════════════════════════════════════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {/* Active Orders Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          onClick={() => navigate('/orders')}
-          style={{
-            ...glassStyle,
-            cursor: 'pointer',
-            border: activeOrders > 0 ? '1px solid var(--info-border)' : '1px solid var(--card-border)',
-            background: activeOrders > 0
-              ? 'linear-gradient(135deg, var(--info-glass) 0%, var(--bg-card) 50%)'
-              : 'var(--bg-card)',
-          }}
-        >
-          <CardInnerShine />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        onClick={() => navigate('/orders')}
+        whileTap={{ scale: 0.98 }}
+        style={{
+          ...glassStyle,
+          cursor: 'pointer',
+          padding: '20px 24px',
+          border: '1px solid var(--border-gold)',
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(59,130,246,0.04) 100%)',
+        }}
+      >
+        <CardInnerShine />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Header */}
           <div style={{
-            position: 'absolute',
-            bottom: -15,
-            right: -15,
-            width: 70,
-            height: 70,
-            borderRadius: '50%',
-            background: activeOrders > 0
-              ? 'radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <Briefcase size={16} color={activeOrders > 0 ? 'var(--info-text)' : 'var(--text-muted)'} strokeWidth={1.5} />
-              <span style={{
-                fontSize: 10,
-                letterSpacing: '0.15em',
-                fontWeight: 700,
-                color: activeOrders > 0 ? 'var(--info-text)' : 'var(--text-muted)',
-              }}>ЗАКАЗЫ</span>
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 20,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.1))',
+                border: '1px solid rgba(212,175,55,0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Briefcase size={20} color="#D4AF37" strokeWidth={1.5} />
+              </div>
+              <div>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  letterSpacing: '0.1em',
+                }}>МОИ ЗАКАЗЫ</div>
+                <div style={{
+                  fontSize: 13,
+                  color: 'var(--text-secondary)',
+                  marginTop: 2,
+                }}>Статистика выполнения</div>
+              </div>
             </div>
-            <div style={{
-              fontSize: 32,
-              fontWeight: 800,
-              fontFamily: 'var(--font-serif)',
-              color: activeOrders > 0 ? 'var(--info-text)' : 'var(--text-main)',
-              textShadow: activeOrders > 0 ? '0 0 20px rgba(59,130,246,0.3)' : 'none',
-            }}>{activeOrders}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>активных</div>
+            <ChevronRight size={20} color="var(--text-muted)" />
           </div>
-        </motion.div>
 
-        {/* Completed Orders Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-          onClick={() => navigate('/orders')}
-          style={{
-            ...glassStyle,
-            cursor: 'pointer',
-            border: '1px solid var(--border-gold)',
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, var(--bg-card) 50%)',
-          }}
-        >
-          <CardInnerShine />
-          <div style={{
-            position: 'absolute',
-            bottom: -15,
-            right: -15,
-            width: 70,
-            height: 70,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <Star size={16} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
-              <span style={{
-                fontSize: 10,
-                letterSpacing: '0.15em',
-                fontWeight: 700,
-                background: 'var(--gold-text-shine)',
+          {/* Stats Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {/* Active */}
+            <div style={{
+              padding: 16,
+              borderRadius: 14,
+              background: activeOrders > 0
+                ? 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))'
+                : 'rgba(255,255,255,0.02)',
+              border: `1px solid ${activeOrders > 0 ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.05)'}`,
+              textAlign: 'center',
+            }}>
+              <motion.div
+                animate={activeOrders > 0 ? { scale: [1, 1.05, 1] } : {}}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  fontSize: 36,
+                  fontWeight: 800,
+                  fontFamily: 'var(--font-serif)',
+                  color: activeOrders > 0 ? '#3b82f6' : 'var(--text-muted)',
+                  textShadow: activeOrders > 0 ? '0 0 20px rgba(59,130,246,0.4)' : 'none',
+                  marginBottom: 4,
+                }}
+              >
+                {activeOrders}
+              </motion.div>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: activeOrders > 0 ? '#3b82f6' : 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+              }}>
+                {activeOrders > 0 && (
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: '#3b82f6',
+                      boxShadow: '0 0 8px #3b82f6',
+                    }}
+                  />
+                )}
+                Активных
+              </div>
+            </div>
+
+            {/* Completed */}
+            <div style={{
+              padding: 16,
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04))',
+              border: '1px solid rgba(34,197,94,0.25)',
+              textAlign: 'center',
+            }}>
+              <div style={{
+                fontSize: 36,
+                fontWeight: 800,
+                fontFamily: 'var(--font-serif)',
+                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-              }}>ВЫПОЛНЕНО</span>
+                marginBottom: 4,
+              }}>
+                {user.orders_count}
+              </div>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#22c55e',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+              }}>
+                <Check size={12} />
+                Выполнено
+              </div>
             </div>
-            <div style={{
-              fontSize: 32,
-              fontWeight: 800,
-              fontFamily: 'var(--font-serif)',
-              background: 'var(--gold-metallic)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.3))',
-            }}>{user.orders_count}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>заказов</div>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           SUBTLE FOOTER — Tagline
@@ -1789,6 +1875,31 @@ export function HomePage({ user }: Props) {
 
       {/* Confetti Effect */}
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          NEW PREMIUM MODALS
+          ═══════════════════════════════════════════════════════════════════ */}
+      <CashbackModal
+        isOpen={showCashbackModal}
+        onClose={() => setShowCashbackModal(false)}
+        user={user}
+      />
+      <GuaranteesModal
+        isOpen={showGuaranteesModal}
+        onClose={() => setShowGuaranteesModal(false)}
+      />
+      <TransactionsModal
+        isOpen={showTransactionsModal}
+        onClose={() => setShowTransactionsModal(false)}
+        transactions={user.transactions}
+        balance={user.balance}
+        onViewAll={() => navigate('/profile')}
+      />
+      <RanksModal
+        isOpen={showRanksModal}
+        onClose={() => setShowRanksModal(false)}
+        user={user}
+      />
     </div>
   )
 }
