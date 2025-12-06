@@ -11,6 +11,7 @@ from aiogram import Bot
 
 from database.models.users import User
 from database.models.transactions import BalanceTransaction
+from database.models.levels import RankLevel
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -50,16 +51,6 @@ class BonusReason(str, Enum):
 BONUS_FOR_ORDER = 50  # Бонусы за создание заказа
 REFERRAL_PERCENT = 5  # Процент рефереру от оплаты
 
-# Кешбэк по рангам (% от суммы заказа)
-# Резидент -> Партнёр -> VIP-Клиент -> Премиум
-RANK_CASHBACK = {
-    0: 0,      # Резидент - 0%
-    1: 3,      # Партнёр - 3%
-    2: 5,      # VIP-Клиент - 5%
-    3: 7,      # Премиум - 7%
-}
-
-
 class BonusService:
     """Сервис управления бонусами"""
 
@@ -84,6 +75,20 @@ class BonusService:
             description=description,
         )
         session.add(transaction)
+
+    @staticmethod
+    async def _get_cashback_percent(session: AsyncSession, total_spent: float) -> float:
+        """Получает процент кешбэка на основе конфигурации рангов в БД."""
+        levels_result = await session.execute(
+            select(RankLevel).order_by(RankLevel.min_spent.desc())
+        )
+        levels = levels_result.scalars().all()
+
+        for level in levels:
+            if total_spent >= (level.min_spent or 0):
+                return float(level.cashback_percent or 0)
+
+        return 0.0
 
     @staticmethod
     async def add_bonus(
@@ -337,19 +342,8 @@ class BonusService:
             logger.warning(f"[Cashback] User {user_id} not found")
             return 0.0
 
-        # Определяем ранг по total_spent
-        # Используем orders_count как альтернативу для определения уровня
-        completed_orders = user.orders_count or 0
-
-        # Определяем процент кешбэка по количеству выполненных заказов
-        if completed_orders >= 15:
-            cashback_percent = 7   # Премиум
-        elif completed_orders >= 7:
-            cashback_percent = 5   # VIP-Клиент
-        elif completed_orders >= 3:
-            cashback_percent = 3   # Партнёр
-        else:
-            cashback_percent = 0   # Резидент
+        # Получаем конфигурацию рангов из БД
+        cashback_percent = await BonusService._get_cashback_percent(session, user.total_spent)
 
         if cashback_percent == 0:
             logger.info(f"[Cashback] User {user_id} has 0% cashback (Резидент level)")
