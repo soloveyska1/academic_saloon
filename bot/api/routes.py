@@ -755,8 +755,15 @@ async def create_order(
 
     # Calculate price
     try:
-        loyalty_levels = await get_loyalty_levels(session)
-        user_discount = get_loyalty_info(user.orders_count or 0, loyalty_levels).discount
+        # Get user discount from loyalty (fallback to 0 if error)
+        user_discount = 0
+        try:
+            loyalty_levels = await get_loyalty_levels(session)
+            if loyalty_levels:
+                user_discount = get_loyalty_info(user.orders_count or 0, loyalty_levels).discount
+        except Exception as loyalty_error:
+            logger.warning(f"[API /orders/create] Failed to get loyalty: {loyalty_error}, using 0 discount")
+
         price_calc = calculate_price(
             work_type=data.work_type,
             deadline_key=data.deadline,
@@ -767,7 +774,7 @@ async def create_order(
         return OrderCreateResponse(
             success=False,
             order_id=0,
-            message="Ошибка расчёта цены. Попробуйте позже.",
+            message=f"Ошибка расчёта цены: {str(price_error)[:100]}",
             price=None,
             is_manual_required=False
         )
