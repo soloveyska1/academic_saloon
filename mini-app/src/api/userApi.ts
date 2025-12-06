@@ -28,18 +28,41 @@ function hasTelegramContext(): boolean {
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const initData = getInitData()
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Telegram-Init-Data': initData,
-      ...options.headers,
-    },
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': initData,
+        ...options.headers,
+      },
+    })
+  } catch (networkError) {
+    // Network error (no internet, DNS, CORS, etc.)
+    throw new Error('Ошибка сети. Проверьте подключение.')
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
-    throw new Error(error.detail || `API Error: ${response.status}`)
+    let errorMessage = `Ошибка сервера (${response.status})`
+    try {
+      const error = await response.json()
+      if (error.detail) {
+        // Translate common API errors to Russian
+        if (error.detail.includes('Invalid or expired')) {
+          errorMessage = 'Сессия истекла. Перезапустите приложение.'
+        } else if (error.detail.includes('Missing X-Telegram')) {
+          errorMessage = 'Откройте приложение через Telegram'
+        } else if (error.detail.includes('Rate limit')) {
+          errorMessage = 'Слишком много запросов. Подождите минуту.'
+        } else {
+          errorMessage = error.detail
+        }
+      }
+    } catch {
+      // JSON parsing failed - use status code message
+    }
+    throw new Error(errorMessage)
   }
 
   return response.json()

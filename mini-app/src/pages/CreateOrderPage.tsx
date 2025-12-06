@@ -898,17 +898,9 @@ export function CreateOrderPage() {
       }
     } catch (err) {
       hapticError()
-      // Show actual error message if available
-      const errorMessage = err instanceof Error ? err.message : 'Ошибка соединения'
-      // Translate common API errors to Russian
-      const displayMessage = errorMessage.includes('Invalid or expired')
-        ? 'Сессия истекла. Перезапустите приложение.'
-        : errorMessage.includes('Missing X-Telegram')
-        ? 'Откройте приложение через Telegram'
-        : errorMessage.includes('network')
-        ? 'Ошибка сети. Проверьте подключение.'
-        : errorMessage
-      setResult({ ok: false, msg: displayMessage })
+      // Error message already translated in apiFetch
+      const errorMessage = err instanceof Error ? err.message : 'Произошла ошибка'
+      setResult({ ok: false, msg: errorMessage })
     } finally {
       setSubmitting(false)
       setStep(4) // Result screen
