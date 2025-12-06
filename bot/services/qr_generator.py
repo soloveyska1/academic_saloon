@@ -146,12 +146,13 @@ def generate_premium_qr_card(
     earnings: float = 0.0,
 ) -> Optional[bytes]:
     """
-    Генерирует минималистичную премиум QR-карточку.
+    Генерирует премиум QR-карточку.
 
     Дизайн:
-    - Чистый тёмный фон с тонким золотым свечением
+    - Элегантный тёмный фон с золотым свечением
+    - Декоративные уголки
     - Золотой QR-код с логотипом
-    - Минимум текста - только код и бренд
+    - Премиальная типографика
 
     Returns:
         PNG изображение в байтах
@@ -164,20 +165,45 @@ def generate_premium_qr_card(
         # Компактные размеры для шаринга
         CARD_WIDTH = 800
         CARD_HEIGHT = 1000
-        QR_SIZE = 450
-        LOGO_SIZE = 100
+        QR_SIZE = 420
+        LOGO_SIZE = 90
 
-        # === СЛОЙ 1: Минималистичный тёмный фон ===
+        # === СЛОЙ 1: Премиальный тёмный фон ===
         background = Image.new('RGBA', (CARD_WIDTH, CARD_HEIGHT), BG_DARK)
         draw = ImageDraw.Draw(background)
 
-        # Тонкое золотое свечение сверху
-        for y in range(200):
-            alpha = int(255 * (1 - y / 200) * 0.08)
+        # Золотое свечение сверху (более выраженное)
+        for y in range(250):
+            alpha = int(255 * (1 - y / 250) * 0.12)
             r = min(255, BG_DARK[0] + int((GOLD_PRIMARY[0] - BG_DARK[0]) * alpha / 255))
             g = min(255, BG_DARK[1] + int((GOLD_PRIMARY[1] - BG_DARK[1]) * alpha / 255))
             b = min(255, BG_DARK[2] + int((GOLD_PRIMARY[2] - BG_DARK[2]) * alpha / 255))
             draw.line([(0, y), (CARD_WIDTH, y)], fill=(r, g, b, 255))
+
+        # Золотое свечение снизу
+        for y in range(CARD_HEIGHT - 150, CARD_HEIGHT):
+            progress = (y - (CARD_HEIGHT - 150)) / 150
+            alpha = int(progress * 0.08 * 255)
+            r = min(255, BG_DARK[0] + int((GOLD_DARK[0] - BG_DARK[0]) * alpha / 255))
+            g = min(255, BG_DARK[1] + int((GOLD_DARK[1] - BG_DARK[1]) * alpha / 255))
+            b = min(255, BG_DARK[2] + int((GOLD_DARK[2] - BG_DARK[2]) * alpha / 255))
+            draw.line([(0, y), (CARD_WIDTH, y)], fill=(r, g, b, 255))
+
+        # === Декоративные уголки ===
+        corner_len = 60
+        corner_offset = 30
+        # Верхний левый
+        draw.line([(corner_offset, corner_offset), (corner_offset + corner_len, corner_offset)], fill=GOLD_PRIMARY, width=2)
+        draw.line([(corner_offset, corner_offset), (corner_offset, corner_offset + corner_len)], fill=GOLD_PRIMARY, width=2)
+        # Верхний правый
+        draw.line([(CARD_WIDTH - corner_offset - corner_len, corner_offset), (CARD_WIDTH - corner_offset, corner_offset)], fill=GOLD_PRIMARY, width=2)
+        draw.line([(CARD_WIDTH - corner_offset, corner_offset), (CARD_WIDTH - corner_offset, corner_offset + corner_len)], fill=GOLD_PRIMARY, width=2)
+        # Нижний левый
+        draw.line([(corner_offset, CARD_HEIGHT - corner_offset), (corner_offset + corner_len, CARD_HEIGHT - corner_offset)], fill=GOLD_DARK, width=2)
+        draw.line([(corner_offset, CARD_HEIGHT - corner_offset - corner_len), (corner_offset, CARD_HEIGHT - corner_offset)], fill=GOLD_DARK, width=2)
+        # Нижний правый
+        draw.line([(CARD_WIDTH - corner_offset - corner_len, CARD_HEIGHT - corner_offset), (CARD_WIDTH - corner_offset, CARD_HEIGHT - corner_offset)], fill=GOLD_DARK, width=2)
+        draw.line([(CARD_WIDTH - corner_offset, CARD_HEIGHT - corner_offset - corner_len), (CARD_WIDTH - corner_offset, CARD_HEIGHT - corner_offset)], fill=GOLD_DARK, width=2)
 
         # Загрузка шрифтов
         try:
@@ -185,19 +211,20 @@ def generate_premium_qr_card(
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
                 "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
             ]
-            font_brand = font_code = font_small = None
+            font_brand = font_code = font_small = font_tagline = None
             for path in font_paths:
                 try:
-                    font_brand = ImageFont.truetype(path, 28)
-                    font_code = ImageFont.truetype(path, 36)
-                    font_small = ImageFont.truetype(path, 20)
+                    font_brand = ImageFont.truetype(path, 32)
+                    font_code = ImageFont.truetype(path, 40)
+                    font_small = ImageFont.truetype(path, 18)
+                    font_tagline = ImageFont.truetype(path, 14)
                     break
                 except (OSError, IOError):
                     continue
             if font_brand is None:
-                font_brand = font_code = font_small = ImageFont.load_default()
+                font_brand = font_code = font_small = font_tagline = ImageFont.load_default()
         except Exception:
-            font_brand = font_code = font_small = ImageFont.load_default()
+            font_brand = font_code = font_small = font_tagline = ImageFont.load_default()
 
         center_x = CARD_WIDTH // 2
 
@@ -206,50 +233,59 @@ def generate_premium_qr_card(
         brand_bbox = draw.textbbox((0, 0), brand_text, font=font_brand)
         brand_w = brand_bbox[2] - brand_bbox[0]
         draw.text(
-            ((CARD_WIDTH - brand_w) // 2, 60),
+            ((CARD_WIDTH - brand_w) // 2, 70),
             brand_text,
             fill=GOLD_PRIMARY,
             font=font_brand
         )
 
-        # Тонкая линия под брендом
-        line_y = 110
-        line_width = 100
-        draw.line(
-            [(center_x - line_width, line_y), (center_x + line_width, line_y)],
-            fill=(*GOLD_DARK, 150),
-            width=1
-        )
+        # Декоративные линии вокруг бренда
+        line_y = 125
+        line_width = 80
+        # Левая линия с точкой
+        draw.line([(center_x - brand_w//2 - 50, line_y), (center_x - brand_w//2 - 15, line_y)], fill=GOLD_DARK, width=1)
+        draw.ellipse([(center_x - brand_w//2 - 12, line_y - 3), (center_x - brand_w//2 - 6, line_y + 3)], fill=GOLD_PRIMARY)
+        # Правая линия с точкой
+        draw.line([(center_x + brand_w//2 + 15, line_y), (center_x + brand_w//2 + 50, line_y)], fill=GOLD_DARK, width=1)
+        draw.ellipse([(center_x + brand_w//2 + 6, line_y - 3), (center_x + brand_w//2 + 12, line_y + 3)], fill=GOLD_PRIMARY)
 
         # === СЛОЙ 2: QR-код с контейнером ===
         referral_link = get_referral_link(user_id)
         qr_img = create_qr_code(referral_link, QR_SIZE)
 
-        # QR-контейнер с тонкой рамкой
-        qr_container_size = QR_SIZE + 60
+        # QR-контейнер с двойной рамкой
+        qr_container_size = QR_SIZE + 70
         qr_container = Image.new('RGBA', (qr_container_size, qr_container_size), (0, 0, 0, 0))
         qr_container_draw = ImageDraw.Draw(qr_container)
 
-        # Тёмный фон для контейнера
+        # Внешняя рамка
         qr_container_draw.rounded_rectangle(
             [(0, 0), (qr_container_size - 1, qr_container_size - 1)],
-            radius=24,
-            fill=(15, 15, 18, 255),
-            outline=(*GOLD_DARK, 100),
+            radius=20,
+            fill=None,
+            outline=(*GOLD_DARK, 60),
+            width=1
+        )
+        # Внутренний фон
+        qr_container_draw.rounded_rectangle(
+            [(8, 8), (qr_container_size - 9, qr_container_size - 9)],
+            radius=16,
+            fill=(12, 12, 15, 255),
+            outline=(*GOLD_PRIMARY, 40),
             width=1
         )
 
         # Вставляем QR в контейнер
-        qr_container.paste(qr_img, (30, 30), qr_img)
+        qr_container.paste(qr_img, (35, 35), qr_img)
 
         # === СЛОЙ 3: Логотип в центре QR ===
         logo = create_logo_overlay(LOGO_SIZE)
-        logo_x = 30 + (QR_SIZE - LOGO_SIZE) // 2
-        logo_y = 30 + (QR_SIZE - LOGO_SIZE) // 2
+        logo_x = 35 + (QR_SIZE - LOGO_SIZE) // 2
+        logo_y = 35 + (QR_SIZE - LOGO_SIZE) // 2
         qr_container.paste(logo, (logo_x, logo_y), logo)
 
         # Вставляем контейнер с QR
-        qr_y = 150
+        qr_y = 170
         qr_x = center_x - (qr_container_size // 2)
         background.paste(qr_container, (qr_x, qr_y), qr_container)
 
@@ -257,10 +293,10 @@ def generate_premium_qr_card(
         if not referral_code:
             referral_code = f"REF{user_id}"
 
-        y_text = qr_y + qr_container_size + 35
+        y_text = qr_y + qr_container_size + 40
 
-        # Лейбл
-        label = "ВАШ КОД"
+        # Лейбл с декоративными элементами
+        label = "— ВАШ КОД —"
         label_bbox = draw.textbbox((0, 0), label, font=font_small)
         label_w = label_bbox[2] - label_bbox[0]
         draw.text(
@@ -270,8 +306,8 @@ def generate_premium_qr_card(
             font=font_small
         )
 
-        # Код
-        y_text += 30
+        # Код (крупнее)
+        y_text += 35
         code_bbox = draw.textbbox((0, 0), referral_code, font=font_code)
         code_w = code_bbox[2] - code_bbox[0]
         draw.text(
@@ -282,8 +318,18 @@ def generate_premium_qr_card(
         )
 
         # === Бонусы внизу ===
-        y_text += 70
-        bonus_text = "Скидка 5% на первый заказ"
+        y_text += 60
+
+        # Разделитель
+        sep_width = 200
+        draw.line(
+            [(center_x - sep_width//2, y_text), (center_x + sep_width//2, y_text)],
+            fill=(*GOLD_DARK, 80),
+            width=1
+        )
+
+        y_text += 25
+        bonus_text = "💎 Скидка 5% на первый заказ"
         bonus_bbox = draw.textbbox((0, 0), bonus_text, font=font_small)
         bonus_w = bonus_bbox[2] - bonus_bbox[0]
         draw.text(
@@ -291,6 +337,18 @@ def generate_premium_qr_card(
             bonus_text,
             fill=TEXT_WHITE,
             font=font_small
+        )
+
+        # Тэглайн внизу
+        y_text += 50
+        tagline = "Премиум сервис для студентов"
+        tagline_bbox = draw.textbbox((0, 0), tagline, font=font_tagline)
+        tagline_w = tagline_bbox[2] - tagline_bbox[0]
+        draw.text(
+            ((CARD_WIDTH - tagline_w) // 2, y_text),
+            tagline,
+            fill=(*TEXT_MUTED, 180),
+            font=font_tagline
         )
 
         # === Конвертируем в PNG ===
