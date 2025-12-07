@@ -10,6 +10,7 @@ yookassa>=3.0.0
 httpx>=0.25.0
 # Mini App API
 fastapi>=0.109.0
+python-multipart>=0.0.6
 uvicorn>=0.27.0
 # QR Code Generation
 qrcode[pil]>=7.4.0

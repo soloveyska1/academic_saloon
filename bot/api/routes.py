@@ -24,7 +24,15 @@ from bot.services.bonus import BonusService, BonusReason
 from .auth import TelegramUser, get_current_user
 from .rate_limit import rate_limit_default, rate_limit_create, rate_limit_roulette, rate_limit_payment
 from .schemas import (
-    UserResponse, OrderResponse, OrdersListResponse
+    UserResponse, OrderResponse, OrdersListResponse,
+    RankInfo, LoyaltyInfo, BonusExpiryInfo, ConfigResponse,
+    PromoCodeRequest, PromoCodeResponse, RouletteResponse,
+    DailyBonusInfoResponse, DailyBonusClaimResponse,
+    OrderCreateRequest, OrderCreateResponse,
+    ChatMessagesResponse, SendMessageResponse,
+    AdminSqlResponse, AdminStatsResponse, AdminUserResponse,
+    AdminOrderUpdate, AdminPriceUpdate, AdminMessageRequest,
+    AdminProgressUpdate
 )
 from bot.services.mini_app_logger import (
     log_order_created, log_roulette_spin, log_mini_app_event, MiniAppEvent
