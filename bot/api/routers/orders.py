@@ -284,27 +284,42 @@ async def apply_promo_code(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Apply promo code"""
+    """Apply promo code - checks database first, then hardcoded fallbacks"""
+    from bot.services.promo_service import PromoService
+
     code = data.code.upper().strip()
 
-    # Hardcoded demo codes
-    promo_codes = {
+    # First, check database for promo codes created in admin panel
+    is_valid, message, discount = await PromoService.check_promo_code(
+        session, code, tg_user.id
+    )
+
+    if is_valid:
+        return PromoCodeResponse(
+            success=True,
+            message=f"Промокод {code} активирован! Скидка {int(discount)}%",
+            discount=int(discount)
+        )
+
+    # Fallback to hardcoded demo codes (legacy support)
+    hardcoded_promos = {
         "COWBOY20": {"discount": 20, "message": "Йи-ха! Скидка 20% применена!"},
         "SALOON10": {"discount": 10, "message": "Скидка 10% — добро пожаловать в салун!"},
         "WELCOME5": {"discount": 5, "message": "Скидка 5% для новичка!"},
     }
 
-    if code in promo_codes:
-        promo = promo_codes[code]
+    if code in hardcoded_promos:
+        promo = hardcoded_promos[code]
         return PromoCodeResponse(
             success=True,
             message=promo["message"],
             discount=promo["discount"]
         )
 
+    # If not found anywhere, return the message from PromoService
     return PromoCodeResponse(
         success=False,
-        message="Промокод не найден или истёк"
+        message=message  # This will be "Промокод не найден" or specific error
     )
 
 # ═══════════════════════════════════════════════════════════════════════════
