@@ -128,6 +128,7 @@ export interface OrderCreateRequest {
   topic?: string
   deadline: string
   description?: string
+  promo_code?: string  // Optional promo code for discount
 }
 
 export interface OrderCreateResponse {
