@@ -526,8 +526,6 @@ async def admin_message_from_topic(
     Обработчик сообщений админа из топика.
     Пересылает клиенту.
     """
-    logger.info(f"[ADMIN MSG] Received message in admin group! chat_id={message.chat.id}, thread_id={message.message_thread_id}, text={repr(message.text)}")
-
     # Игнорируем сообщения бота (кроме анонимного админа)
     if message.from_user.is_bot and message.from_user.id != 1087968824:
         return
@@ -554,14 +552,7 @@ async def admin_message_from_topic(
         return
 
     try:
-        # Пересылаем сообщение клиенту
-        await bot.copy_message(
-            chat_id=conv.user_id,
-            from_chat_id=message.chat.id,
-            message_id=message.message_id,
-        )
-
-        # Сохраняем в БД
+        # Сохраняем в БД (сообщение будет доступно в mini-app)
         await save_message_to_db(
             session=session,
             order_id=conv.order_id,
@@ -829,14 +820,11 @@ async def save_message_to_db(
             logger.error(f"Failed to upload to YaDisk: {e}")
 
     # Сохраняем сообщение
-    text_to_save = message.text or message.caption
-    logger.info(f"[CHAT DEBUG] Saving message: text={repr(message.text)}, caption={repr(message.caption)}, final={repr(text_to_save)}")
-
     order_message = OrderMessage(
         order_id=order_id,
         sender_type=sender_type,
         sender_id=sender_id,
-        message_text=text_to_save,
+        message_text=message.text or message.caption,
         file_type=file_type,
         file_id=file_id,
         file_name=file_name,
