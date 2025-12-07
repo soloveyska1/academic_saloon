@@ -526,8 +526,8 @@ async def admin_message_from_topic(
     Обработчик сообщений админа из топика.
     Пересылает клиенту.
     """
-    # Игнорируем сообщения бота
-    if message.from_user.is_bot:
+    # Игнорируем сообщения бота (кроме анонимного админа)
+    if message.from_user.is_bot and message.from_user.id != 1087968824:
         return
 
     # Игнорируем служебные сообщения (создание топика и т.д.)
