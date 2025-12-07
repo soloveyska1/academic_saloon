@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { API_WS_URL } from '../api/userApi'
 
 // WebSocket message types
 export type WSMessageType =
@@ -68,11 +69,11 @@ interface UseWebSocketOptions {
   reconnectInterval?: number
 }
 
-// Get WebSocket URL - using hardcoded base to avoid double /api issue
+// Get WebSocket URL based on configured API host
 function getWebSocketUrl(telegramId: number): string {
-  // Always use the base domain, not API_URL which may include /api
-  const baseUrl = 'wss://academic-saloon.duckdns.org'
-  return `${baseUrl}/api/ws?telegram_id=${telegramId}`
+  const url = new URL(API_WS_URL)
+  url.searchParams.set('telegram_id', String(telegramId))
+  return url.toString()
 }
 
 export function useWebSocket(telegramId: number | null, options: UseWebSocketOptions = {}) {

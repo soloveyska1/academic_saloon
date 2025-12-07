@@ -7,8 +7,33 @@ import {
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
 
-// API base URL
-export const API_BASE_URL = import.meta.env.VITE_API_URL || (IS_DEV ? 'http://localhost:8000/api' : 'https://academic-saloon.duckdns.org/api')
+// API base URL — normalized to ensure /api suffix is always present
+function normalizeApiBase(rawUrl?: string): string {
+  const fallback = IS_DEV ? 'http://localhost:8000/api' : 'https://academic-saloon.duckdns.org/api'
+  const candidate = (rawUrl || '').trim() || fallback
+
+  try {
+    const url = new URL(candidate)
+
+    // Ensure pathname ends with /api exactly once
+    const cleanPath = url.pathname.replace(/\/+$/, '')
+    url.pathname = cleanPath.endsWith('/api') ? '/api' : `${cleanPath}/api`
+    url.search = ''
+    url.hash = ''
+
+    // Remove trailing slash for consistency
+    const normalized = url.toString().replace(/\/$/, '')
+    return normalized
+  } catch (error) {
+    console.warn('[API] Invalid VITE_API_URL provided, falling back to default', error)
+    return fallback
+  }
+}
+
+export const API_BASE_URL = normalizeApiBase(import.meta.env.VITE_API_URL)
+
+// Derived WebSocket endpoint (ws/wss) that follows the configured API host
+export const API_WS_URL = API_BASE_URL.replace(/^http/, 'ws') + '/ws'
 
 // Helpers
 function getInitData(): string {
