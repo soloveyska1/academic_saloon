@@ -10,11 +10,11 @@ from aiogram.types import BufferedInputFile
 
 from database.db import get_session
 from database.models.users import User
-from database.models.orders import Order, OrderMessage, MessageSender, Conversation, ConversationType
+from database.models.orders import Order, OrderMessage, MessageSender, Conversation, ConversationType, OrderStatus
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
-    ChatMessagesListResponse, ChatMessageResponse, ChatMessagesResponse,
+    ChatMessagesListResponse, ChatMessagesResponse,
     SendMessageResponse, SendMessageRequest, ChatFileUploadResponse, ChatMessage
 )
 from bot.services.yandex_disk import yandex_disk_service
@@ -52,7 +52,7 @@ async def get_order_messages(
 
     formatted_messages = []
     for msg in messages:
-        formatted_messages.append(ChatMessageResponse(
+        formatted_messages.append(ChatMessage(
             id=msg.id,
             sender_type=msg.sender_type,
             sender_name="Менеджер" if msg.sender_type == 'admin' else "Вы",

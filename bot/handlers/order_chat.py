@@ -675,7 +675,7 @@ async def cmd_send_template(
             order_id=conv.order_id,
             sender_type=MessageSender.ADMIN.value,
             sender_id=message.from_user.id,
-            text=template["text"],
+            message_text=template["text"],
         )
         session.add(order_message)
 
