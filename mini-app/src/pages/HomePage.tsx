@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import {
@@ -34,12 +34,12 @@ function getTimeGreeting(): string {
 
 function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
   const count = useMotionValue(0)
-  const rounded = useTransform(count, (v) => `${Math.round(v).toLocaleString('ru-RU')}${suffix}`)
+  const rounded = useTransform(count, (v: number) => `${Math.round(v).toLocaleString('ru-RU')}${suffix}`)
   const [displayValue, setDisplayValue] = useState(`0${suffix}`)
 
   useEffect(() => {
     const controls = animate(count, value, { duration: 1.5, ease: [0.16, 1, 0.3, 1] })
-    const unsubscribe = rounded.on('change', (v) => setDisplayValue(v))
+    const unsubscribe = rounded.on('change', (v: string) => setDisplayValue(v))
     return () => { controls.stop(); unsubscribe() }
   }, [value, count, rounded, suffix])
 
@@ -94,95 +94,7 @@ const CardInnerShine = () => (
   }} />
 )
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  ACHIEVEMENT BADGE COMPONENT — Glass Pills Style
-// ═══════════════════════════════════════════════════════════════════════════
 
-function AchievementBadge({ icon: Icon, label, unlocked, glow }: {
-  icon: typeof Star
-  label: string
-  unlocked: boolean
-  glow?: boolean
-}) {
-  return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      whileHover={unlocked ? { scale: 1.05 } : {}}
-      whileTap={unlocked ? { scale: 0.95 } : {}}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 8,
-      }}
-    >
-      {/* Premium Badge */}
-      <motion.div
-        animate={unlocked && glow ? {
-          boxShadow: [
-            '0 0 15px rgba(212,175,55,0.4)',
-            '0 0 25px rgba(212,175,55,0.6)',
-            '0 0 15px rgba(212,175,55,0.4)'
-          ]
-        } : {}}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position: 'relative',
-          width: 52,
-          height: 52,
-          borderRadius: 16,
-          background: unlocked
-            ? 'linear-gradient(145deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 50%, rgba(212,175,55,0.2) 100%)'
-            : 'rgba(40,40,40,0.5)',
-          border: unlocked
-            ? '1.5px solid rgba(212,175,55,0.6)'
-            : '1px solid rgba(80,80,80,0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: unlocked
-            ? '0 4px 20px rgba(212,175,55,0.25), inset 0 1px 0 rgba(255,255,255,0.15)'
-            : 'none',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Inner shine for unlocked */}
-        {unlocked && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '50%',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
-            borderRadius: '16px 16px 0 0',
-          }} />
-        )}
-        <Icon
-          size={24}
-          color={unlocked ? '#D4AF37' : 'rgba(100,100,100,0.5)'}
-          strokeWidth={unlocked ? 2 : 1.5}
-          fill={unlocked ? 'rgba(212,175,55,0.2)' : 'none'}
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            filter: unlocked ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' : 'none',
-          }}
-        />
-      </motion.div>
-      <span style={{
-        fontSize: 9,
-        color: unlocked ? 'var(--text-secondary)' : 'rgba(100,100,100,0.5)',
-        textAlign: 'center',
-        fontWeight: 600,
-        letterSpacing: '0.02em',
-      }}>
-        {label}
-      </span>
-    </motion.div>
-  )
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  PREMIUM TIPS CAROUSEL — Monochrome Luxury Style

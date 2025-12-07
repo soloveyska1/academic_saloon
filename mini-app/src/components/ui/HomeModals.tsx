@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   X, Percent, Shield, CheckCircle, TrendingUp, Crown, Star,
   ArrowRight, Clock, RefreshCw, Lock, Eye, Zap, Award,
-  Sparkles, Gem, CreditCard, ArrowUpRight, ArrowDownRight,
-  Gift, Flame, Trophy
+  Gem, CreditCard, ArrowUpRight, ArrowDownRight,
+  Gift
 } from 'lucide-react'
 import { UserData, Transaction } from '../../types'
 
@@ -372,8 +372,12 @@ function LuxuryCard({
         padding: 16,
         borderRadius: 16,
         background: gradient || 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
-        border: `1px solid ${borderColor || 'rgba(212,175,55,0.15)'}`,
-        boxShadow: '0 4px 20px -4px rgba(0,0,0,0.5)',
+        border: `1px solid ${borderColor || (isActive ? 'rgba(212,175,55,0.4)' : 'rgba(212,175,55,0.15)')}`,
+        boxShadow: glowColor
+          ? `0 4px 30px -4px ${glowColor}60`
+          : isActive
+            ? '0 4px 30px -4px rgba(212,175,55,0.2)'
+            : '0 4px 20px -4px rgba(0,0,0,0.5)',
         cursor: onClick ? 'pointer' : 'default',
         ...style,
       }}
@@ -406,10 +410,38 @@ interface CashbackModalProps {
 }
 
 const RANKS_DATA = [
-  { name: 'Резидент', cashback: 3, minSpent: 0, icon: Star },
-  { name: 'Партнёр', cashback: 5, minSpent: 5000, icon: TrendingUp },
-  { name: 'VIP-Клиент', cashback: 7, minSpent: 15000, icon: Crown },
-  { name: 'Премиум', cashback: 10, minSpent: 50000, icon: Gem },
+  {
+    name: 'Резидент',
+    cashback: 3,
+    minSpent: 0,
+    icon: Star,
+    color: '#94a3b8',
+    gradient: 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)'
+  },
+  {
+    name: 'Партнёр',
+    cashback: 5,
+    minSpent: 5000,
+    icon: TrendingUp,
+    color: '#60a5fa',
+    gradient: 'linear-gradient(135deg, #bfdbfe 0%, #60a5fa 100%)'
+  },
+  {
+    name: 'VIP-Клиент',
+    cashback: 7,
+    minSpent: 15000,
+    icon: Crown,
+    color: '#c084fc',
+    gradient: 'linear-gradient(135deg, #e9d5ff 0%, #c084fc 100%)'
+  },
+  {
+    name: 'Премиум',
+    cashback: 10,
+    minSpent: 50000,
+    icon: Gem,
+    color: '#D4AF37',
+    gradient: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 100%)'
+  },
 ]
 
 export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
