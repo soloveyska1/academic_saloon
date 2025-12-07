@@ -827,11 +827,14 @@ async def save_message_to_db(
             logger.error(f"Failed to upload to YaDisk: {e}")
 
     # Сохраняем сообщение
+    text_to_save = message.text or message.caption
+    logger.info(f"[CHAT DEBUG] Saving message: text={repr(message.text)}, caption={repr(message.caption)}, final={repr(text_to_save)}")
+
     order_message = OrderMessage(
         order_id=order_id,
         sender_type=sender_type,
         sender_id=sender_id,
-        message_text=message.text or message.caption,
+        message_text=text_to_save,
         file_type=file_type,
         file_id=file_id,
         file_name=file_name,
