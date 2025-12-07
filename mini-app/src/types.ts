@@ -231,3 +231,26 @@ export interface TelegramWebApp {
     offClick: (callback: () => void) => void
   }
 }
+
+// --- ADMIN TYPES ---
+export interface AdminUser {
+  internal_id: number
+  telegram_id: number
+  fullname: string
+  username: string | null
+  is_admin: boolean
+  last_active: string | null
+}
+
+export interface AdminStats {
+  revenue: number
+  active_orders_count: number
+  total_users_count: number
+}
+
+export interface AdminSqlResponse {
+  columns: string[]
+  rows: string[][]
+  error?: string
+}
+

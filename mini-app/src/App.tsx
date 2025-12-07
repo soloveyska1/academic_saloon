@@ -35,7 +35,8 @@ const CreateOrderPage = lazy(() => import('./pages/CreateOrderPage').then(module
 const ReferralPage = lazy(() => import('./pages/ReferralPage').then(module => ({ default: module.ReferralPage })))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then(module => ({ default: module.AchievementsPage })))
 const SupportPage = lazy(() => import('./pages/SupportPage').then(module => ({ default: module.SupportPage })))
-const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then(module => ({ default: module.AdminDashboardPage })))
+// AdminDashboardPage removed as per instruction
+const AdminPage = lazy(() => import('./pages/AdminPage').then(module => ({ default: module.AdminPage })))
 
 // WebSocket connection status indicator (only shown in debug mode)
 function WSStatusIndicator({ showDebug }: { showDebug: boolean }) {
@@ -339,7 +340,7 @@ function AppContent() {
                       <Route path="/referral" element={<ReferralPage user={userData} />} />
                       <Route path="/achievements" element={<AchievementsPage user={userData} />} />
                       <Route path="/support" element={<SupportPage />} />
-                      <Route path="/admin" element={<AdminDashboardPage />} />
+                      <Route path="/admin" element={<AdminPage />} />
                     </Routes>
                   </Suspense>
 

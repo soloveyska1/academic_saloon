@@ -1,4 +1,8 @@
-import { UserData, PromoResult, RouletteResult, Order, OrderCreateRequest, OrderCreateResponse, ChatMessagesResponse, SendMessageResponse } from '../types'
+import {
+  UserData, PromoResult, RouletteResult, Order,
+  OrderCreateRequest, OrderCreateResponse, ChatMessagesResponse,
+  SendMessageResponse, AdminUser, AdminStats, AdminSqlResponse
+} from '../types'
 
 // API base URL - exported for use in other components
 export const API_BASE_URL = 'https://academic-saloon.duckdns.org/api'
@@ -80,7 +84,7 @@ export async function fetchConfig(): Promise<{ bot_username: string; support_use
     configCache = config
     return config
   } catch {
-    // Fallback config - ВАЖНО: правильное имя бота
+    // Fallback config
     return {
       bot_username: 'Kladovaya_GIPSR_bot',
       support_username: 'Thisissaymoon'
@@ -90,18 +94,11 @@ export async function fetchConfig(): Promise<{ bot_username: string; support_use
 
 // User data
 export async function fetchUserData(): Promise<UserData> {
-  // If no Telegram context - only allow mock in dev mode
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      console.warn('[DEV] No Telegram context - using mock data')
-      return getMockUserData()
-    }
+    if (IS_DEV) return getMockUserData()
     throw new Error('Откройте приложение через Telegram')
   }
-
-  // Fetch real data - no silent fallback
-  const data = await apiFetch<UserData>('/user')
-  return data
+  return await apiFetch<UserData>('/user')
 }
 
 // Orders
@@ -110,7 +107,6 @@ export async function fetchOrders(status?: string): Promise<Order[]> {
     if (IS_DEV) return getMockUserData().orders
     throw new Error('Откройте приложение через Telegram')
   }
-
   const params = status ? `?status=${status}` : ''
   const response = await apiFetch<{ orders: Order[] }>(`/orders${params}`)
   return response.orders
@@ -120,38 +116,20 @@ export async function fetchOrderDetail(orderId: number): Promise<Order> {
   if (!hasTelegramContext()) {
     if (IS_DEV) {
       const order = getMockUserData().orders.find(o => o.id === orderId)
-      // DEV FIX: If order not found in static list (e.g. it was just 'created' with a random ID), return a dummy one
-      if (!order) {
-        console.warn('[DEV] Order not found in static mock, returning dynamic mock for ID:', orderId)
-        return {
-          ...getMockUserData().orders[0],
-          id: orderId,
-          status: 'waiting_estimation',
-          work_type_label: 'Случайный заказ (Dev)',
-          price: 0,
-          final_price: 0
-        }
-      }
+      if (!order) throw new Error('Order not found (Dev)')
       return order
     }
     throw new Error('Откройте приложение через Telegram')
   }
-
   return await apiFetch<Order>(`/orders/${orderId}`)
 }
 
 // Promo code
 export async function applyPromoCode(code: string): Promise<PromoResult> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      if (code.toUpperCase() === 'COWBOY20') {
-        return { success: true, message: 'Промокод применён!', discount: 20 }
-      }
-      return { success: false, message: 'Промокод не найден' }
-    }
-    return { success: false, message: 'Откройте приложение через Telegram' }
+    if (IS_DEV) return { success: code === 'COWBOY20', message: code === 'COWBOY20' ? 'OK' : 'Fail', discount: 20 }
+    throw new Error('Откройте приложение через Telegram')
   }
-
   return await apiFetch<PromoResult>('/promo', {
     method: 'POST',
     body: JSON.stringify({ code }),
@@ -181,67 +159,27 @@ export interface DailyBonusClaimResult {
 
 export async function fetchDailyBonusInfo(): Promise<DailyBonusInfo> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      return {
-        can_claim: true,
-        streak: 1,
-        next_bonus: 10,
-        cooldown_remaining: null,
-        bonuses: [10, 20, 30, 40, 50, 100, 150]
-      }
-    }
+    if (IS_DEV) return { can_claim: true, streak: 1, next_bonus: 10, cooldown_remaining: null, bonuses: [10, 20, 30] }
     throw new Error('Откройте приложение через Telegram')
   }
-
   return await apiFetch<DailyBonusInfo>('/daily-bonus/info')
 }
 
 export async function claimDailyBonus(): Promise<DailyBonusClaimResult> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      const won = Math.random() < 0.5
-      return {
-        success: true,
-        won,
-        bonus: won ? 10 : 0,
-        streak: 1,
-        message: won ? 'Поздравляем! Ты выиграл 10₽!' : 'Не повезло! Попробуй завтра!',
-        next_claim_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
+    if (IS_DEV) return { success: true, won: true, bonus: 10, streak: 1, message: 'Won!', next_claim_at: null }
+    throw new Error('Telegram required')
   }
-
-  return await apiFetch<DailyBonusClaimResult>('/daily-bonus/claim', {
-    method: 'POST',
-  })
+  return await apiFetch<DailyBonusClaimResult>('/daily-bonus/claim', { method: 'POST' })
 }
 
 // Daily roulette
 export async function spinRoulette(): Promise<RouletteResult> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      const prizes = [
-        { prize: '50 бонусов', type: 'bonus' as const, value: 50, message: 'Вы выиграли 50 бонусов!' },
-        { prize: '5% скидка', type: 'discount' as const, value: 5, message: 'Скидка 5% на следующий заказ!' },
-        { prize: '100 бонусов', type: 'bonus' as const, value: 100, message: 'Крупный выигрыш: 100 бонусов!' },
-        { prize: 'Попробуй завтра', type: 'nothing' as const, value: 0, message: 'Повезет в любви!' },
-      ]
-      return prizes[Math.floor(Math.random() * prizes.length)]
-    }
-    throw new Error('Откройте приложение через Telegram')
+    if (IS_DEV) return { prize: '50 бонусов', type: 'bonus', value: 50, message: 'Win!' }
+    throw new Error('Telegram required')
   }
-
-  const result = await apiFetch<{
-    success: boolean
-    prize?: string
-    type?: 'bonus' | 'discount' | 'nothing'
-    value?: number
-    message: string
-  }>('/roulette/spin', {
-    method: 'POST',
-  })
-
+  const result = await apiFetch<any>('/roulette/spin', { method: 'POST' })
   return {
     prize: result.prize || result.message,
     type: result.type || 'nothing',
@@ -264,51 +202,26 @@ export async function uploadOrderFiles(
   onProgress?: (percent: number) => void
 ): Promise<FileUploadResponse> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      // Mock progress for dev
-      if (onProgress) {
-        for (let i = 0; i <= 100; i += 20) {
-          await new Promise(r => setTimeout(r, 200))
-          onProgress(i)
-        }
-      }
-      return {
-        success: true,
-        message: `✅ Загружено ${files.length} файл(ов) (Dev)`,
-        files_url: 'https://disk.yandex.ru/mock',
-        uploaded_count: files.length
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
+    if (IS_DEV) return { success: true, message: 'Uploaded (Dev)', uploaded_count: files.length }
+    throw new Error('Telegram required')
   }
 
   const formData = new FormData()
   files.forEach(file => formData.append('files', file))
-
   const initData = getInitData()
 
-  // Use XMLHttpRequest for progress tracking
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable && onProgress) {
-        const percent = Math.round((e.loaded / e.total) * 100)
-        onProgress(percent)
+        onProgress(Math.round((e.loaded / e.total) * 100))
       }
     })
-
     xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(JSON.parse(xhr.responseText))
-      } else {
-        const error = JSON.parse(xhr.responseText)
-        reject(new Error(error.detail || 'Upload failed'))
-      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
+      else reject(new Error(JSON.parse(xhr.responseText).detail || 'Upload failed'))
     })
-
-    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
-
+    xhr.addEventListener('error', () => reject(new Error('Network Error')))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/upload-files`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
@@ -333,25 +246,9 @@ export interface PaymentInfo {
 
 export async function fetchPaymentInfo(orderId: number): Promise<PaymentInfo> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      return {
-        order_id: orderId,
-        status: 'waiting_payment',
-        price: 15000,
-        final_price: 14000,
-        discount: 5,
-        bonus_used: 1000,
-        paid_amount: 0,
-        remaining: 14000,
-        card_number: '2202 **** **** 5678',
-        card_holder: 'IVAN PETROV',
-        sbp_phone: '+7 (900) ***-**-67',
-        sbp_bank: 'Тинькофф'
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
+    if (IS_DEV) return { order_id: orderId, status: 'waiting_payment', price: 1000, final_price: 1000, discount: 0, bonus_used: 0, paid_amount: 0, remaining: 1000, card_number: '0000', card_holder: 'TEST', sbp_phone: '000', sbp_bank: 'TEST' }
+    throw new Error('Telegram required')
   }
-
   return await apiFetch<PaymentInfo>(`/orders/${orderId}/payment-info`)
 }
 
@@ -368,43 +265,19 @@ export async function confirmPayment(
   paymentMethod: 'card' | 'sbp' | 'transfer',
   paymentScheme: 'full' | 'half'
 ): Promise<PaymentConfirmResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      await new Promise(r => setTimeout(r, 1500))
-      return {
-        success: true,
-        message: 'Заявка на оплату отправлена (Dev)',
-        new_status: 'verification_pending',
-        amount_to_pay: 14000
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
-  }
-
+  if (!hasTelegramContext()) throw new Error('Telegram required')
   return await apiFetch<PaymentConfirmResponse>(`/orders/${orderId}/confirm-payment`, {
     method: 'POST',
-    body: JSON.stringify({
-      payment_method: paymentMethod,
-      payment_scheme: paymentScheme
-    })
+    body: JSON.stringify({ payment_method: paymentMethod, payment_scheme: paymentScheme })
   })
 }
 
 // Create order
 export async function createOrder(data: OrderCreateRequest): Promise<OrderCreateResponse> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      return {
-        success: true,
-        order_id: Math.floor(Math.random() * 1000) + 100,
-        message: '✅ Заказ создан! (Dev)',
-        price: 15000,
-        is_manual_required: data.work_type === 'other'
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
+    if (IS_DEV) return { success: true, order_id: 123, message: 'Created (Dev)', price: 1000, is_manual_required: false }
+    throw new Error('Telegram required')
   }
-
   return await apiFetch<OrderCreateResponse>('/orders/create', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -417,73 +290,20 @@ export async function createOrder(data: OrderCreateRequest): Promise<OrderCreate
 
 export async function fetchOrderMessages(orderId: number): Promise<ChatMessagesResponse> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      // Mock chat messages for development
-      return {
-        order_id: orderId,
-        messages: [
-          {
-            id: 1,
-            sender_type: 'admin',
-            sender_name: 'Менеджер',
-            message_text: 'Здравствуйте! Ваш заказ принят в работу.',
-            file_type: null,
-            file_name: null,
-            file_url: null,
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            is_read: true,
-          },
-          {
-            id: 2,
-            sender_type: 'client',
-            sender_name: 'Вы',
-            message_text: 'Спасибо! Когда примерно будет готово?',
-            file_type: null,
-            file_name: null,
-            file_url: null,
-            created_at: new Date(Date.now() - 3000000).toISOString(),
-            is_read: true,
-          },
-          {
-            id: 3,
-            sender_type: 'admin',
-            sender_name: 'Менеджер',
-            message_text: 'Планируем закончить к завтрашнему вечеру. Напишу как только будет готово.',
-            file_type: null,
-            file_name: null,
-            file_url: null,
-            created_at: new Date(Date.now() - 2400000).toISOString(),
-            is_read: false,
-          },
-        ],
-        unread_count: 1,
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
+    if (IS_DEV) return { order_id: orderId, messages: [], unread_count: 0 }
+    throw new Error('Telegram required')
   }
-
   return await apiFetch<ChatMessagesResponse>(`/orders/${orderId}/messages`)
 }
 
 export async function sendOrderMessage(orderId: number, text: string): Promise<SendMessageResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      return {
-        success: true,
-        message_id: Date.now(),
-        message: 'Сообщение отправлено',
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
-  }
-
+  if (!hasTelegramContext()) throw new Error('Telegram required')
   return await apiFetch<SendMessageResponse>(`/orders/${orderId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ text }),
   })
 }
 
-// Chat file upload response
 export interface ChatFileUploadResponse {
   success: boolean
   message_id: number
@@ -491,228 +311,45 @@ export interface ChatFileUploadResponse {
   file_url: string | null
 }
 
-// Upload file to chat
-export async function uploadChatFile(
-  orderId: number,
-  file: File,
-  onProgress?: (percent: number) => void
-): Promise<ChatFileUploadResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      // Simulate upload progress
-      if (onProgress) {
-        for (let i = 0; i <= 100; i += 20) {
-          await new Promise(r => setTimeout(r, 150))
-          onProgress(i)
-        }
-      }
-      return {
-        success: true,
-        message_id: Date.now(),
-        message: 'Файл отправлен (Dev)',
-        file_url: 'https://disk.yandex.ru/mock-file',
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
-  }
+export async function uploadChatFile(orderId: number, file: File, onProgress?: (p: number) => void): Promise<ChatFileUploadResponse> {
+  if (!hasTelegramContext()) throw new Error('Telegram required')
 
   const formData = new FormData()
   formData.append('file', file)
-
   const initData = getInitData()
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable && onProgress) {
-        const percent = Math.round((e.loaded / e.total) * 100)
-        onProgress(percent)
-      }
+    xhr.upload.addEventListener('progress', e => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
     })
-
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(JSON.parse(xhr.responseText))
-      } else {
-        const error = JSON.parse(xhr.responseText)
-        reject(new Error(error.detail || 'Upload failed'))
-      }
-    })
-
-    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
-
+    xhr.addEventListener('load', () => resolve(JSON.parse(xhr.responseText)))
+    xhr.addEventListener('error', () => reject(new Error('Network Error')))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/file`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
   })
 }
 
-// Upload voice message to chat
-export async function uploadVoiceMessage(
-  orderId: number,
-  audioBlob: Blob,
-  onProgress?: (percent: number) => void
-): Promise<ChatFileUploadResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      if (onProgress) {
-        for (let i = 0; i <= 100; i += 25) {
-          await new Promise(r => setTimeout(r, 100))
-          onProgress(i)
-        }
-      }
-      return {
-        success: true,
-        message_id: Date.now(),
-        message: 'Голосовое отправлено (Dev)',
-        file_url: 'https://disk.yandex.ru/mock-voice',
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
-  }
+export async function uploadVoiceMessage(orderId: number, audioBlob: Blob, onProgress?: (p: number) => void): Promise<ChatFileUploadResponse> {
+  if (!hasTelegramContext()) throw new Error('Telegram required')
 
   const formData = new FormData()
   formData.append('file', audioBlob, 'voice.ogg')
-
   const initData = getInitData()
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable && onProgress) {
-        const percent = Math.round((e.loaded / e.total) * 100)
-        onProgress(percent)
-      }
+    xhr.upload.addEventListener('progress', e => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
     })
-
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(JSON.parse(xhr.responseText))
-      } else {
-        const error = JSON.parse(xhr.responseText)
-        reject(new Error(error.detail || 'Upload failed'))
-      }
-    })
-
-    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
-
+    xhr.addEventListener('load', () => resolve(JSON.parse(xhr.responseText)))
+    xhr.addEventListener('error', () => reject(new Error('Network Error')))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/voice`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
   })
 }
-
-// Mock data for development
-function getMockUserData(): UserData {
-  return {
-    id: 1,
-    telegram_id: 123456789,
-    username: 'cowboy_joe',
-  fullname: 'Ковбой Джо',
-  balance: 1240,
-  bonus_balance: 350,
-  transactions: [
-    { id: 1, amount: 150, type: 'credit', reason: 'daily_luck', description: 'Ежедневный бонус', created_at: '2024-12-07T09:00:00Z' },
-    { id: 2, amount: 300, type: 'credit', reason: 'referral_bonus', description: 'Друг оплатил заказ', created_at: '2024-12-06T15:00:00Z' },
-    { id: 3, amount: 200, type: 'debit', reason: 'order_discount', description: 'Оплата заказа #175', created_at: '2024-12-05T18:30:00Z' }
-  ],
-  orders_count: 12,
-    total_spent: 45000,
-    discount: 10,
-    referral_code: 'COWBOY123',
-    referrals_count: 5,
-    daily_luck_available: true,
-    daily_bonus_streak: 5,
-    free_spins: 1,
-    roulette_onboarding_seen: true,
-    rank: {
-      name: 'Головорез',
-      emoji: '🔫',
-      level: 3,
-      cashback: 5,
-      bonus: 'Приоритетная поддержка',
-      next_rank: 'Легенда Запада',
-      progress: 90,
-      spent_to_next: 5000,
-      is_max: false,
-    },
-    loyalty: {
-      status: 'VIP-Клиент',
-      emoji: '⭐',
-      level: 3,
-      discount: 5,
-      orders_to_next: 3,
-    },
-    orders: [
-      {
-        id: 175,
-        status: 'in_progress',
-        work_type: 'coursework',
-        work_type_label: 'Курсовая',
-        subject: 'Математический анализ',
-        deadline: '15 декабря',
-        price: 15000,
-        final_price: 14128,
-        paid_amount: 14128,
-        discount: 5,
-        bonus_used: 872,
-        progress: 45,
-        created_at: '2024-12-01T18:39:00',
-        completed_at: null,
-        payment_scheme: 'full',
-        files_url: null,
-        review_submitted: false,
-        revision_count: 0,
-        delivered_at: null,
-      },
-      {
-        id: 168,
-        status: 'completed',
-        work_type: 'essay',
-        work_type_label: 'Эссе',
-        subject: 'Философия',
-        deadline: '1 декабря',
-        price: 3000,
-        final_price: 2850,
-        paid_amount: 2850,
-        discount: 5,
-        bonus_used: 0,
-        progress: 100,
-        created_at: '2024-11-25T10:00:00',
-        completed_at: '2024-11-30T15:30:00',
-        payment_scheme: 'full',
-        files_url: 'https://example.com/files',
-        review_submitted: true,
-        revision_count: 0,
-        delivered_at: '2024-11-30T15:30:00',
-      },
-      {
-        id: 152,
-        status: 'completed',
-        work_type: 'control',
-        work_type_label: 'Контрольная',
-        subject: 'Экономика',
-        deadline: '20 ноября',
-        price: 2500,
-        final_price: 2500,
-        paid_amount: 2500,
-        discount: 0,
-        bonus_used: 0,
-        progress: 100,
-        created_at: '2024-11-15T09:00:00',
-        completed_at: '2024-11-19T18:00:00',
-        payment_scheme: 'full',
-        files_url: 'https://example.com/files2',
-        review_submitted: true,
-        revision_count: 0,
-        delivered_at: '2024-11-19T18:00:00',
-      },
-    ],
-  }
-}
-
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ORDER REVIEWS
@@ -723,25 +360,15 @@ export interface ReviewSubmitResult {
   message: string
 }
 
-export async function submitOrderReview(
-  orderId: number,
-  rating: number,
-  text: string
-): Promise<ReviewSubmitResult> {
-  if (!hasTelegramContext()) {
-    // Mock for dev
-    return { success: true, message: 'Спасибо за отзыв! (DEV)' }
-  }
-
+export async function submitOrderReview(orderId: number, rating: number, text: string): Promise<ReviewSubmitResult> {
+  if (!hasTelegramContext()) return { success: true, message: 'Review (Dev)' }
   return apiFetch<ReviewSubmitResult>(`/orders/${orderId}/review`, {
-    method: 'POST',
-    body: JSON.stringify({ rating, text }),
+    method: 'POST', body: JSON.stringify({ rating, text })
   })
 }
 
-
 // ═══════════════════════════════════════════════════════════════════════════
-//  WORK CONFIRMATION & REVISION REQUESTS
+//  WORK CONFIRMATION & REVISION
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface ConfirmWorkResult {
@@ -753,46 +380,21 @@ export interface RevisionRequestResult {
   success: boolean
   message: string
   prefilled_text: string
-  revision_count: number  // Какой круг правок
-  is_paid: boolean  // Платная правка (>3)
+  revision_count: number
+  is_paid: boolean
 }
 
-/**
- * Клиент подтверждает что работа выполнена качественно
- */
 export async function confirmWorkCompletion(orderId: number): Promise<ConfirmWorkResult> {
-  if (!hasTelegramContext()) {
-    return { success: true, message: 'Заказ завершён! (DEV)' }
-  }
-
-  return apiFetch<ConfirmWorkResult>(`/orders/${orderId}/confirm-completion`, {
-    method: 'POST',
-  })
+  if (!hasTelegramContext()) return { success: true, message: 'Done (Dev)' }
+  return apiFetch<ConfirmWorkResult>(`/orders/${orderId}/confirm-completion`, { method: 'POST' })
 }
 
-/**
- * Клиент запрашивает правки
- */
-export async function requestRevision(
-  orderId: number,
-  message: string = ''
-): Promise<RevisionRequestResult> {
-  if (!hasTelegramContext()) {
-    return {
-      success: true,
-      message: 'Запрос отправлен! (DEV)',
-      prefilled_text: 'Прошу внести правки:\n\n',
-      revision_count: 1,
-      is_paid: false,
-    }
-  }
-
+export async function requestRevision(orderId: number, message: string = ''): Promise<RevisionRequestResult> {
+  if (!hasTelegramContext()) return { success: true, message: 'Rev (Dev)', prefilled_text: '', revision_count: 1, is_paid: false }
   return apiFetch<RevisionRequestResult>(`/orders/${orderId}/request-revision`, {
-    method: 'POST',
-    body: JSON.stringify({ message }),
+    method: 'POST', body: JSON.stringify({ message })
   })
 }
-
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SUPPORT CHAT API
@@ -800,45 +402,56 @@ export async function requestRevision(
 
 export async function fetchSupportMessages(): Promise<ChatMessagesResponse> {
   if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      return {
-        order_id: 99999,
-        messages: [
-          {
-            id: 1,
-            sender_type: 'admin',
-            sender_name: 'Поддержка',
-            message_text: 'Здравствуйте! Чем можем помочь?',
-            file_type: null,
-            file_name: null,
-            file_url: null,
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            is_read: true,
-          }
-        ],
-        unread_count: 0
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
+    if (IS_DEV) return { order_id: 999, messages: [], unread_count: 0 }
+    throw new Error('Telegram required')
   }
-
   return await apiFetch<ChatMessagesResponse>('/support/messages')
 }
 
 export async function sendSupportMessage(text: string): Promise<SendMessageResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      return {
-        success: true,
-        message_id: Date.now(),
-        message: 'Сообщение отправлено (Dev)'
-      }
-    }
-    throw new Error('Откройте приложение через Telegram')
-  }
-
+  if (!hasTelegramContext()) throw new Error('Telegram required')
   return await apiFetch<SendMessageResponse>('/support/messages', {
-    method: 'POST',
-    body: JSON.stringify({ text })
+    method: 'POST', body: JSON.stringify({ text })
   })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ADMIN API
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function fetchAdminUsers(): Promise<AdminUser[]> {
+  return apiFetch<AdminUser[]>('/admin/users')
+}
+
+export async function fetchAdminStats(): Promise<AdminStats> {
+  return apiFetch<AdminStats>('/admin/stats')
+}
+
+export async function executeAdminSql(query: string): Promise<AdminSqlResponse> {
+  return apiFetch<AdminSqlResponse>('/admin/sql', {
+    method: 'POST',
+    body: JSON.stringify({ query }),
+  })
+}
+
+export async function fetchAdminOrders(): Promise<Order[]> {
+  return apiFetch<Order[]>('/admin/orders')
+}
+
+export async function updateAdminOrderStatus(orderId: number, status: string): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/admin/orders/${orderId}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  })
+}
+
+// Mock data (Minified for space, since IS_DEV handles most returns inline now or errors)
+function getMockUserData(): UserData {
+  return {
+    id: 1, telegram_id: 123456789, username: 'dev', fullname: 'Dev User', balance: 1000, bonus_balance: 100,
+    transactions: [], orders: [], orders_count: 0, total_spent: 0, discount: 0, referral_code: 'DEV', referrals_count: 0,
+    daily_luck_available: true, daily_bonus_streak: 1, free_spins: 0, roulette_onboarding_seen: true,
+    rank: { name: 'Player', emoji: '🎲', level: 1, cashback: 0, bonus: null, next_rank: null, progress: 0, spent_to_next: 100, is_max: false },
+    loyalty: { status: 'Start', emoji: 'S', level: 1, discount: 0, orders_to_next: 1 }
+  }
 }

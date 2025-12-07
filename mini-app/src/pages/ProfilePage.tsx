@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
 import {
-  CreditCard, Crown, Users, MessageCircle, ChevronRight, Check, Copy, QrCode
+  CreditCard, Crown, Users, MessageCircle, ChevronRight, Check, Copy, QrCode, Terminal
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -387,6 +387,39 @@ export function ProfilePage({ user }: Props) {
         </span>
         <ChevronRight size={16} color="var(--text-muted)" style={{ marginLeft: 'auto' }} />
       </motion.button>
+
+      {/* Admin Panel Button - Only for 872379852 */}
+      {user.telegram_id === 872379852 && (
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            hapticSuccess()
+            navigate('/admin')
+          }}
+          style={{
+            width: '100%',
+            marginTop: 12,
+            padding: '18px',
+            borderRadius: 18,
+            background: 'rgba(0, 255, 0, 0.05)',
+            border: '1px solid rgba(0, 255, 0, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            cursor: 'pointer'
+          }}
+        >
+          <Terminal size={20} color="#0f0" />
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#0f0', fontFamily: 'monospace', letterSpacing: 1 }}>
+            GOD_MODE // ADMIN
+          </span>
+          <ChevronRight size={16} color="rgba(0, 255, 0, 0.5)" style={{ marginLeft: 'auto' }} />
+        </motion.button>
+      )}
 
       {/* QR Modal */}
       <AnimatePresence>

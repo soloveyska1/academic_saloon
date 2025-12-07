@@ -4,7 +4,7 @@ Pydantic schemas for Mini App API responses
 
 import re
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Any
 from pydantic import BaseModel, field_validator, Field
 
 
@@ -188,7 +188,7 @@ class OrderCreateRequest(BaseModel):
             return None
         # Strip whitespace and limit consecutive newlines
         v = v.strip()
-        v = re.sub(r'\n{3,}', '\n\n', v)
+        v = re.sub(r'\\n{3,}', '\\n\\n', v)
         # Remove potential script tags (basic XSS prevention)
         v = re.sub(r'<script[^>]*>.*?</script>', '', v, flags=re.IGNORECASE | re.DOTALL)
         v = re.sub(r'<[^>]+>', '', v)  # Remove all HTML tags
@@ -213,7 +213,7 @@ class OrderCreateRequest(BaseModel):
         ]
         # Allow valid keys or custom dates in format DD.MM.YYYY
         if v not in valid_deadlines:
-            if not re.match(r'^\d{1,2}\.\d{1,2}\.\d{4}$', v):
+            if not re.match(r'^\\d{1,2}\\.\\d{1,2}\\.\\d{4}$', v):
                 raise ValueError('Некорректный срок выполнения')
         return v
 
@@ -252,3 +252,31 @@ class SendMessageResponse(BaseModel):
     success: bool
     message_id: int
     message: str
+
+
+# --- ADMIN SCHEMAS ---
+
+class AdminSqlRequest(BaseModel):
+    query: str
+
+class AdminSqlResponse(BaseModel):
+    columns: List[str]
+    rows: List[List[Any]]
+    error: Optional[str] = None
+
+class AdminStatsResponse(BaseModel):
+    revenue: float
+    active_orders_count: int
+    total_users_count: int
+
+class AdminUserResponse(BaseModel):
+    internal_id: int
+    telegram_id: int
+    fullname: str
+    username: Optional[str] = None
+    is_admin: bool
+    last_active: Optional[str] = None
+
+class AdminOrderUpdate(BaseModel):
+    status: str
+

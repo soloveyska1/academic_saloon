@@ -10,7 +10,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models.users import User
@@ -25,18 +25,6 @@ from .auth import TelegramUser, get_current_user
 from .rate_limit import rate_limit_default, rate_limit_create, rate_limit_roulette, rate_limit_payment
 from .schemas import (
     UserResponse, OrderResponse, OrdersListResponse,
-    PromoCodeRequest, PromoCodeResponse,
-    RouletteResponse, ConfigResponse,
-    RankInfo, LoyaltyInfo, BonusExpiryInfo,
-    OrderCreateRequest, OrderCreateResponse,
-    DailyBonusInfoResponse, DailyBonusClaimResponse,
-    BalanceTransactionResponse,
-    ChatMessage, ChatMessagesResponse
-)
-from database.models.orders import WorkType, OrderStatus, WORK_TYPE_LABELS
-from bot.services.pricing import calculate_price, DEADLINE_LABELS
-from bot.bot_instance import get_bot
-from bot.services.mini_app_logger import (
     log_order_created, log_roulette_spin, log_mini_app_event, MiniAppEvent
 )
 from aiogram.types import BufferedInputFile
@@ -2340,3 +2328,131 @@ async def get_referral_qr(
             "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
         }
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ADMIN PANEL ROUTES
+# ═══════════════════════════════════════════════════════════════════════════
+ADMIN_ID = 872379852
+
+@router.post("/admin/sql", response_model=AdminSqlResponse)
+async def execute_sql(
+    data: AdminSqlRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Execute raw SQL (Admin only)"""
+    if tg_user.id != ADMIN_ID:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        result = await session.execute(text(data.query))
+        
+        # Determine if it's a SELECT query
+        if data.query.strip().upper().startswith("SELECT"):
+            rows = result.fetchall()
+            columns = list(result.keys())
+            # Convert rows to serializable format (strings)
+            serializable_rows = []
+            for row in rows:
+                serializable_rows.append([str(item) for item in row])
+            
+            return AdminSqlResponse(columns=columns, rows=serializable_rows)
+        else:
+            await session.commit()
+            return AdminSqlResponse(columns=["Result"], rows=[[f"Query executed successfully"]])
+            
+    except Exception as e:
+        return AdminSqlResponse(columns=[], rows=[], error=str(e))
+
+@router.get("/admin/users", response_model=List[AdminUserResponse])
+async def get_all_users(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if tg_user.id != ADMIN_ID:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    result = await session.execute(select(User).order_by(desc(User.created_at)).limit(100))
+    users = result.scalars().all()
+    
+    response = []
+    for user in users:
+        response.append(AdminUserResponse(
+            internal_id=user.id,
+            telegram_id=user.telegram_id,
+            fullname=user.fullname or "Unknown",
+            username=user.username,
+            is_admin=user.telegram_id == ADMIN_ID,
+            last_active=user.updated_at.isoformat() if user.updated_at else None
+        ))
+    return response
+
+@router.get("/admin/stats", response_model=AdminStatsResponse)
+async def get_admin_stats(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if tg_user.id != ADMIN_ID:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    # Revenue (total paid_amount)
+    revenue_query = select(func.sum(Order.paid_amount)).where(
+        Order.status == OrderStatus.COMPLETED.value
+    )
+    revenue_res = await session.execute(revenue_query)
+    revenue = revenue_res.scalar() or 0.0
+
+    # Active Orders
+    active_query = select(func.count(Order.id)).where(
+        Order.status.notin_([
+            OrderStatus.COMPLETED.value, 
+            OrderStatus.CANCELLED.value, 
+            OrderStatus.REJECTED.value
+        ])
+    )
+    active_res = await session.execute(active_query)
+    active_count = active_res.scalar() or 0
+    
+    # Total Users
+    users_query = select(func.count(User.id))
+    users_res = await session.execute(users_query)
+    users_count = users_res.scalar() or 0
+    
+    return AdminStatsResponse(
+        revenue=float(revenue),
+        active_orders_count=active_count,
+        total_users_count=users_count
+    )
+
+@router.get('/admin/orders', response_model=List[OrderResponse])
+async def get_all_orders_admin(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if tg_user.id != ADMIN_ID:
+        raise HTTPException(status_code=403, detail='Access denied')
+        
+    result = await session.execute(select(Order).order_by(desc(Order.created_at)).limit(100))
+    orders = result.scalars().all()
+    return orders
+
+
+@router.post('/admin/orders/{order_id}/status')
+async def update_order_status_admin(
+    order_id: int,
+    data: AdminOrderUpdate,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if tg_user.id != ADMIN_ID:
+        raise HTTPException(status_code=403, detail='Access denied')
+        
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail='Order not found')
+        
+    order.status = data.status
+    await session.commit()
+    return {'success': True}
+
