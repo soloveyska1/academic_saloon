@@ -79,12 +79,18 @@ export interface Order {
   status: OrderStatus
   price: number
   paid_amount: number
+  discount?: number
+  promo_code?: string | null  // Applied promo code
+  promo_discount?: number  // Promo discount percentage
   created_at: string
   files_url: string | null
   description: string | null
   work_type: string
   work_type_label?: string
   final_price?: number
+  progress?: number
+  bonus_used?: number
+  payment_scheme?: 'full' | 'half' | null
   // Admin-specific fields
   fullname?: string
   username?: string | null

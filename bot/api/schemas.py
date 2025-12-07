@@ -69,6 +69,8 @@ class OrderResponse(BaseModel):
     final_price: float
     paid_amount: float
     discount: float
+    promo_code: Optional[str] = None  # Applied promo code
+    promo_discount: float = 0.0  # Promo discount percentage
     bonus_used: float
     progress: int
     payment_scheme: Optional[str] = None  # full / half

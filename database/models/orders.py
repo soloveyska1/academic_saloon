@@ -279,6 +279,8 @@ class Order(Base):
     # Финансы
     price: Mapped[float] = mapped_column(Float, default=0.0)
     discount: Mapped[float] = mapped_column(Float, default=0.0)
+    promo_code: Mapped[str | None] = mapped_column(String(50), nullable=True)  # Примененный промокод
+    promo_discount: Mapped[float] = mapped_column(Float, default=0.0)  # Скидка от промокода (%)
     bonus_used: Mapped[float] = mapped_column(Float, default=0.0)  # Списанные бонусы
     paid_amount: Mapped[float] = mapped_column(Float, default=0.0)
 
