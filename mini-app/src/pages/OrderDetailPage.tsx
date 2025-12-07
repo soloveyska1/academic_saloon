@@ -5,7 +5,6 @@ import { Loader, XCircle, CheckCircle, PenTool } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { fetchOrderDetail, fetchPaymentInfo, confirmWorkCompletion, requestRevision, PaymentInfo } from '../api/userApi'
-import { OrderChat, OrderChatHandle } from '../components/OrderChat'
 import { useWebSocketContext } from '../hooks/useWebSocket'
 
 // New Premium Components
@@ -15,6 +14,7 @@ import { PremiumBentoGrid } from '../components/order/PremiumBentoGrid'
 import { OrderTimeline } from '../components/order/OrderTimeline'
 import { PremiumFilesSection } from '../components/order/PremiumFilesSection'
 import { FloatingActionBar } from '../components/order/FloatingActionBar'
+import { PremiumChat, PremiumChatHandle } from '../components/order/PremiumChat'
 
 // Legacy components (still needed)
 import { ReviewSection } from '../components/order/ReviewSection'
@@ -36,7 +36,7 @@ export function OrderDetailPage() {
   const [isRequestingRevision, setIsRequestingRevision] = useState(false)
   const [showTimeline, setShowTimeline] = useState(false)
   const { addMessageHandler } = useWebSocketContext()
-  const chatRef = useRef<OrderChatHandle>(null)
+  const chatRef = useRef<PremiumChatHandle>(null)
 
   const safeHaptic = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
     try { haptic(type) } catch (e) { console.warn('[Haptic] Failed:', e) }
@@ -100,9 +100,9 @@ export function OrderDetailPage() {
     navigate('/orders')
   }, [safeHaptic, navigate])
 
-  const scrollToChat = useCallback(() => {
+  const openChat = useCallback(() => {
     safeHaptic('light')
-    document.getElementById('order-chat-section')?.scrollIntoView({ behavior: 'smooth' })
+    chatRef.current?.open()
   }, [safeHaptic])
 
   const scrollToPayment = useCallback(() => {
@@ -137,7 +137,7 @@ export function OrderDetailPage() {
     try {
       await requestRevision(order.id, '')
       setOrder(prev => prev ? { ...prev, status: 'revision' } : null)
-      scrollToChat()
+      openChat()
     } catch (err) {
       console.error(err)
     } finally {
@@ -166,7 +166,7 @@ export function OrderDetailPage() {
         scrollToPayment()
         break
       case 'chat':
-        scrollToChat()
+        openChat()
         break
       case 'files':
         if (order?.files_url) {
@@ -177,7 +177,7 @@ export function OrderDetailPage() {
         scrollToReview()
         break
     }
-  }, [order, safeHaptic, scrollToPayment, scrollToChat, scrollToReview])
+  }, [order, safeHaptic, scrollToPayment, openChat, scrollToReview])
 
   // Loading state
   if (loading) {
@@ -293,7 +293,7 @@ export function OrderDetailPage() {
                 onPaymentConfirmed={loadOrder}
                 paymentScheme={paymentScheme}
                 setPaymentScheme={setPaymentScheme}
-                onChatStart={scrollToChat}
+                onChatStart={openChat}
               />
             </div>
           )}
@@ -489,9 +489,7 @@ export function OrderDetailPage() {
           </motion.div>
 
           {/* 9. Chat Section */}
-          <div id="order-chat-section">
-            <OrderChat ref={chatRef} orderId={order.id} />
-          </div>
+          <PremiumChat ref={chatRef} orderId={order.id} />
         </motion.div>
       </div>
 
@@ -499,7 +497,7 @@ export function OrderDetailPage() {
       <FloatingActionBar
         order={order}
         unreadMessages={0}
-        onChatClick={scrollToChat}
+        onChatClick={openChat}
         onFilesClick={() => order.files_url && window.open(order.files_url, '_blank')}
         onReviewClick={scrollToReview}
         onConfirmClick={handleConfirmCompletion}
