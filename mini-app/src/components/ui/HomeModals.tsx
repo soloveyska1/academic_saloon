@@ -862,7 +862,7 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
                 display: 'flex',
                 gap: 2,
               }}>
-                {[1,2,3,4,5].map(i => (
+                {[1, 2, 3, 4, 5].map(i => (
                   <Star key={i} size={12} color="rgba(212,175,55,0.8)" fill="rgba(212,175,55,0.8)" />
                 ))}
               </div>
@@ -1342,17 +1342,22 @@ export function RanksModal({ isOpen, onClose, user }: RanksModalProps) {
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.5, type: 'spring' }}
                         style={{
-                          padding: '6px 14px',
+                          padding: '6px 12px',
                           background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.15))',
                           borderRadius: 100,
                           border: '1px solid rgba(212,175,55,0.4)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         <span style={{
                           fontSize: 10,
                           fontWeight: 700,
                           color: '#D4AF37',
-                          letterSpacing: '0.1em',
+                          letterSpacing: '0.05em',
+                          lineHeight: 1,
                         }}>ВЫ ЗДЕСЬ</span>
                       </motion.div>
                     )}
