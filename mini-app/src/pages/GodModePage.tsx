@@ -129,7 +129,6 @@ const secondaryButtonStyle: React.CSSProperties = {
 export function GodModePage() {
   const { isAdmin, telegramId } = useAdmin()
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
-  const [loading, setLoading] = useState(true)
 
   // Notification state
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
@@ -485,8 +484,8 @@ export function GodModePage() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: 16 }}>
-        <AnimatePresence mode="wait">
+      <div style={{ padding: 16, minHeight: 200 }}>
+        <AnimatePresence mode="sync">
           {activeTab === 'dashboard' && <DashboardTab key="dashboard" />}
           {activeTab === 'orders' && <OrdersTab key="orders" />}
           {activeTab === 'users' && <UsersTab key="users" />}
@@ -575,7 +574,8 @@ function DashboardTab() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       {/* QUICK ACTIONS - Pending Payments */}
@@ -837,9 +837,10 @@ function OrdersTab() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       {/* Search & Filter */}
@@ -1304,9 +1305,10 @@ function UsersTab() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       {/* Search & Filter */}
@@ -1681,9 +1683,10 @@ function PromosTab() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       {/* Create button */}
@@ -1814,9 +1817,10 @@ function LiveTab() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       {/* Online count */}
@@ -1911,9 +1915,10 @@ function LogsTab() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
     >
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
@@ -1975,9 +1980,10 @@ function SqlTab() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       {/* Warning */}
@@ -2081,9 +2087,10 @@ function BroadcastTab() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.15 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       {/* Warning */}

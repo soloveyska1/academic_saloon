@@ -392,7 +392,8 @@ async def create_order(
         logger.error(f"Price calc error: {price_error}")
         return OrderCreateResponse(success=False, order_id=0, message=f"Ошибка расчёта цены", price=None, is_manual_required=False)
 
-    # Handle promo code if provided
+    # Pre-check promo code if provided (for UI feedback and rate limiting)
+    promo_precheck_valid = False
     promo_discount = 0
     promo_code_used = None
     if data.promo_code:
@@ -400,26 +401,20 @@ async def create_order(
             session, data.promo_code, tg_user.id
         )
         if is_valid:
+            promo_precheck_valid = True
             promo_discount = discount
-            promo_code_used = data.promo_code
-            logger.info(f"[API /orders/create] Promo code {data.promo_code} applied: {discount}% discount")
+            promo_code_used = data.promo_code.upper()
+            logger.info(f"[API /orders/create] Promo precheck passed: {data.promo_code} ({discount}%)")
         else:
-            # Also check hardcoded promos (legacy)
-            hardcoded_promos = {
-                "COWBOY20": 20, "SALOON10": 10, "WELCOME5": 5,
-            }
-            if data.promo_code in hardcoded_promos:
-                promo_discount = hardcoded_promos[data.promo_code]
-                promo_code_used = data.promo_code
-                logger.info(f"[API /orders/create] Hardcoded promo {data.promo_code} applied: {promo_discount}% discount")
+            # Log failed promo attempt for security monitoring
+            logger.warning(f"[API /orders/create] Invalid promo attempt: {data.promo_code} by user {tg_user.id}: {message}")
 
-    # Calculate final price with promo discount
+    # Calculate base price
     base_price = float(price_calc.final_price) if not price_calc.is_manual_required else 0.0
-    total_discount = min(user_discount + promo_discount, 50)  # Max 50% total discount
-    final_order_price = base_price * (1 - promo_discount / 100) if promo_discount > 0 else base_price
 
     initial_status = OrderStatus.WAITING_ESTIMATION.value
 
+    # Create order WITHOUT promo first
     order = Order(
         user_id=user.telegram_id,
         work_type=data.work_type,
@@ -428,14 +423,33 @@ async def create_order(
         description=data.description,
         deadline=data.deadline,
         price=base_price,
-        discount=float(total_discount),
-        promo_code=promo_code_used,
-        promo_discount=float(promo_discount) if promo_discount else 0.0,
+        discount=float(user_discount),  # Only loyalty discount initially
+        promo_code=None,
+        promo_discount=0.0,
         status=initial_status,
     )
 
     try:
         session.add(order)
+        await session.flush()  # Get order.id without committing
+
+        # If promo passed precheck, atomically reserve it with SELECT FOR UPDATE
+        if promo_precheck_valid and promo_code_used:
+            reserve_ok, reserve_msg, final_discount = await PromoService.reserve_and_record_promo(
+                session, promo_code_used, tg_user.id, order.id, base_price
+            )
+            if reserve_ok:
+                order.promo_code = promo_code_used
+                order.promo_discount = final_discount
+                order.discount = min(user_discount + final_discount, 50)  # Max 50% total
+                promo_discount = final_discount
+                logger.info(f"[API /orders/create] Promo atomically reserved: {promo_code_used}")
+            else:
+                # Promo failed atomic check (race condition caught), continue without promo
+                logger.warning(f"[API /orders/create] Promo atomic reserve failed: {reserve_msg}")
+                promo_code_used = None
+                promo_discount = 0
+
         await session.commit()
         await session.refresh(order)
     except Exception as db_error:
