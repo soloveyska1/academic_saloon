@@ -178,7 +178,8 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + index * 0.06 }}
-            whileTap={{ scale: 0.97 }}
+            whileTap={{ scale: 0.95 }}
+            className="group"
             style={{
               flexShrink: 0,
               width: 110,
@@ -186,17 +187,45 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
               borderRadius: 18,
               cursor: 'pointer',
               position: 'relative',
-              // Dark glass background
-              background: 'linear-gradient(145deg, rgba(25,25,28,0.95) 0%, rgba(18,18,20,0.98) 100%)',
+              // Dark glass background with subtle gradient
+              background: 'linear-gradient(145deg, rgba(28,28,32,0.95) 0%, rgba(18,18,20,0.98) 100%)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
               // Subtle gold border
-              border: '1px solid rgba(212,175,55,0.2)',
+              border: '1px solid rgba(212,175,55,0.15)',
               // Minimal shadow
               boxShadow: '0 4px 20px -4px rgba(0,0,0,0.5)',
               overflow: 'hidden',
             }}
           >
+            {/* Active Highlight Gradient (on touch/hover) */}
+            <motion.div
+              whileHover={{ opacity: 1 }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(212,175,55,0.02) 100%)',
+                opacity: 0,
+                transition: 'opacity 0.2s ease',
+              }}
+            />
+
+            {/* Shimmer Sweep Animation */}
+            <motion.div
+              animate={{ x: ['-150%', '150%'] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 3 + index, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+                transform: 'skewX(-20deg)',
+                pointerEvents: 'none',
+              }}
+            />
+
             {/* Subtle top highlight */}
             <div style={{
               position: 'absolute',
@@ -209,23 +238,28 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
 
             {/* Content */}
             <div style={{ position: 'relative', zIndex: 1 }}>
-              {/* Icon — thin outline, no background badge */}
-              <tip.icon
-                size={26}
-                color="rgba(212,175,55,0.85)"
-                strokeWidth={1.5}
-                style={{
-                  marginBottom: 12,
-                  opacity: 0.9,
-                }}
-              />
+              {/* Icon — floating effect */}
+              <motion.div
+                whileHover={{ y: -2, scale: 1.1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+                style={{ marginBottom: 12, display: 'inline-block' }}
+              >
+                <tip.icon
+                  size={26}
+                  color="#D4AF37"
+                  strokeWidth={1.5}
+                  style={{
+                    filter: 'drop-shadow(0 2px 8px rgba(212,175,55,0.3))'
+                  }}
+                />
+              </motion.div>
 
               {/* Title */}
               <div style={{
                 fontSize: 13,
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: 3,
+                fontWeight: 700,
+                color: '#fff',
+                marginBottom: 4,
                 letterSpacing: '0.01em',
               }}>
                 {tip.title}
@@ -234,8 +268,8 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
               {/* Subtitle */}
               <div style={{
                 fontSize: 10,
-                color: 'rgba(212,175,55,0.6)',
-                fontWeight: 500,
+                color: 'rgba(212,175,55,0.7)',
+                fontWeight: 600,
                 letterSpacing: '0.02em',
               }}>
                 {tip.subtitle}
