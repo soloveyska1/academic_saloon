@@ -143,7 +143,7 @@ export function OrderDetailPage() {
     } finally {
       setIsRequestingRevision(false)
     }
-  }, [order, isRequestingRevision, safeHaptic, scrollToChat])
+  }, [order, isRequestingRevision, safeHaptic, openChat])
 
   const handleReorder = useCallback(() => {
     if (!order) return
