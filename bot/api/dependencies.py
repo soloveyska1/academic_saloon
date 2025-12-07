@@ -88,6 +88,8 @@ def order_to_response(order: Order) -> OrderResponse:
         final_price=round(float(order.final_price), 2),
         paid_amount=round(float(order.paid_amount or 0), 2),
         discount=round(float(order.discount or 0), 2),
+        promo_code=getattr(order, 'promo_code', None),
+        promo_discount=round(float(getattr(order, 'promo_discount', 0) or 0), 2),
         bonus_used=round(float(order.bonus_used or 0), 2),
         progress=order.progress or 0,
         payment_scheme=order.payment_scheme,  # full / half

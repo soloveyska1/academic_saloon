@@ -429,13 +429,10 @@ async def create_order(
         deadline=data.deadline,
         price=base_price,
         discount=float(total_discount),
+        promo_code=promo_code_used,
+        promo_discount=float(promo_discount) if promo_discount else 0.0,
         status=initial_status,
     )
-
-    # Add promo info to description if used
-    if promo_code_used:
-        promo_note = f"\n\n🏷️ Промокод: {promo_code_used} (-{promo_discount}%)"
-        order.description = (order.description or '') + promo_note
 
     try:
         session.add(order)

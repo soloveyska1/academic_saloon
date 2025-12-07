@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import {
   Coins, Shield, RefreshCw, Sparkles, Gift,
-  FileText, CheckCircle2, AlertCircle, Clock, Percent
+  FileText, CheckCircle2, AlertCircle, Clock, Percent, Tag
 } from 'lucide-react'
 import { Order } from '../../types'
 
@@ -50,6 +50,11 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
   const paymentProgress = finalPrice > 0 ? (paidAmount / finalPrice) * 100 : 0
   const revisionCount = (order as any).revision_count || 0
   const maxFreeRevisions = 3
+
+  // Promo code info
+  const promoCode = order.promo_code
+  const promoDiscount = order.promo_discount || 0
+  const basePrice = promoDiscount > 0 ? Math.round(finalPrice / (1 - promoDiscount / 100)) : order.price || 0
 
   // Calculate cashback
   const cashbackAmount = Math.floor(finalPrice * (cashbackPercent / 100))
@@ -142,17 +147,56 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
           <div>
             {finalPrice > 0 ? (
               <>
+                {/* Show original price crossed out if promo applied */}
+                {promoCode && promoDiscount > 0 && (
+                  <div style={{
+                    fontSize: 13,
+                    color: 'var(--text-muted)',
+                    textDecoration: 'line-through',
+                    marginBottom: 2,
+                    fontFamily: 'var(--font-mono)',
+                  }}>
+                    {basePrice.toLocaleString('ru-RU')} ₽
+                  </div>
+                )}
                 <div style={{
                   fontSize: 24,
                   fontWeight: 800,
                   fontFamily: 'var(--font-mono)',
-                  background: 'linear-gradient(135deg, #d4af37, #f5d061)',
+                  background: promoCode
+                    ? 'linear-gradient(135deg, #22c55e, #4ade80)'
+                    : 'linear-gradient(135deg, #d4af37, #f5d061)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  marginBottom: 8,
+                  marginBottom: promoCode ? 4 : 8,
                 }}>
                   {finalPrice.toLocaleString('ru-RU')} ₽
                 </div>
+
+                {/* Promo code badge */}
+                {promoCode && (
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 10px',
+                    background: 'rgba(34, 197, 94, 0.15)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    borderRadius: 8,
+                    marginBottom: 8,
+                  }}>
+                    <Tag size={12} color="#22c55e" />
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)',
+                      color: '#22c55e',
+                      letterSpacing: '0.03em',
+                    }}>
+                      {promoCode} −{promoDiscount}%
+                    </span>
+                  </div>
+                )}
 
                 {/* Payment progress */}
                 {(isPartiallyPaid || isFullyPaid) && (
