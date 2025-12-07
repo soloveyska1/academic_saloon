@@ -26,23 +26,38 @@ function useCountdown(deadline: string | null) {
       return
     }
 
-    const parseDeadline = (d: string): Date => {
-      if (d.toLowerCase() === 'today') {
+    const parseDeadline = (d: string): Date | null => {
+      const lower = d.toLowerCase().trim()
+
+      // Handle Russian and English variants
+      if (lower === 'today' || lower === 'сегодня') {
         const today = new Date()
         today.setHours(23, 59, 59, 999)
         return today
       }
-      if (d.toLowerCase() === 'tomorrow') {
+      if (lower === 'tomorrow' || lower === 'завтра') {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
         tomorrow.setHours(23, 59, 59, 999)
         return tomorrow
       }
-      return new Date(d)
+
+      // Try to parse as date
+      const parsed = new Date(d)
+      if (isNaN(parsed.getTime())) {
+        return null // Invalid date
+      }
+      return parsed
     }
 
     const calculate = () => {
       const target = parseDeadline(deadline)
+
+      // If deadline couldn't be parsed, return null
+      if (!target) {
+        return null
+      }
+
       const diff = target.getTime() - Date.now()
 
       if (diff <= 0) {
