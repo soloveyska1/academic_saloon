@@ -81,13 +81,14 @@ def create_app() -> FastAPI:
     )
 
     # Include routers
-    from .routers import auth, orders, daily, chat, admin
-    
+    from .routers import auth, orders, daily, chat, admin, god_mode
+
     app.include_router(auth.router, prefix="/api")
     app.include_router(orders.router, prefix="/api")
     app.include_router(daily.router, prefix="/api")
     app.include_router(chat.router, prefix="/api")
     app.include_router(admin.router, prefix="/api")
+    app.include_router(god_mode.router, prefix="/api")  # God Mode admin panel
     app.include_router(ws_router)  # WebSocket for real-time updates
 
     # Health check
