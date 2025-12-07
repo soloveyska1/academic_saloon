@@ -109,18 +109,19 @@ const urgencyConfig = {
   }
 }
 
-// Work type icons
-const workTypeIcons: Record<string, string> = {
-  masters: '🎓',
-  diploma: '📜',
-  coursework: '📚',
-  essay: '✍️',
-  report: '📋',
-  control: '📝',
-  presentation: '🎯',
-  practice: '💼',
-  other: '📄',
-  photo_task: '📸'
+// Work type icons with better styling
+const workTypeConfig: Record<string, { emoji: string; color: string; bgColor: string }> = {
+  masters: { emoji: '🎓', color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.15)' },
+  diploma: { emoji: '📜', color: '#d4af37', bgColor: 'rgba(212, 175, 55, 0.15)' },
+  coursework: { emoji: '📚', color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.15)' },
+  essay: { emoji: '✍️', color: '#22c55e', bgColor: 'rgba(34, 197, 94, 0.15)' },
+  report: { emoji: '📋', color: '#06b6d4', bgColor: 'rgba(6, 182, 212, 0.15)' },
+  control: { emoji: '📝', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.15)' },
+  presentation: { emoji: '🎯', color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.15)' },
+  practice: { emoji: '💼', color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.15)' },
+  independent: { emoji: '📖', color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.15)' },
+  other: { emoji: '📄', color: '#6b7280', bgColor: 'rgba(107, 114, 128, 0.15)' },
+  photo_task: { emoji: '📸', color: '#ec4899', bgColor: 'rgba(236, 72, 153, 0.15)' }
 }
 
 export function OrderHeroHeader({ order, onBack }: OrderHeroHeaderProps) {
@@ -128,6 +129,7 @@ export function OrderHeroHeader({ order, onBack }: OrderHeroHeaderProps) {
   const countdown = useCountdown(order.deadline)
   const isCompleted = order.status === 'completed'
   const isCancelled = ['cancelled', 'rejected'].includes(order.status)
+  const isInProgress = ['paid', 'paid_full', 'in_progress', 'revision'].includes(order.status)
 
   // Parallax effect on scroll
   const { scrollY } = useScroll()
@@ -138,7 +140,7 @@ export function OrderHeroHeader({ order, onBack }: OrderHeroHeaderProps) {
   const config = urgencyConfig[urgency]
   const UrgencyIcon = config.icon
 
-  const workTypeIcon = workTypeIcons[order.work_type] || '📄'
+  const typeConfig = workTypeConfig[order.work_type] || workTypeConfig.other
 
   // Format countdown display
   const formatCountdown = () => {
@@ -244,53 +246,94 @@ export function OrderHeroHeader({ order, onBack }: OrderHeroHeaderProps) {
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10"
       >
-        {/* Work type with icon */}
-        <div className="flex items-center gap-3 mb-3">
-          <span style={{ fontSize: 28 }}>{workTypeIcon}</span>
-          <h1 style={{
-            fontSize: 28,
-            fontWeight: 800,
-            fontFamily: 'var(--font-serif)',
-            background: isCompleted
-              ? 'linear-gradient(135deg, #22c55e 0%, #4ade80 50%, #22c55e 100%)'
-              : 'linear-gradient(135deg, #fff 0%, #d4d4d4 50%, #fff 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.02em',
-            lineHeight: 1.1,
-            margin: 0,
-          }}>
-            {order.work_type_label || 'Заказ'}
-          </h1>
-          {isCompleted && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', delay: 0.2 }}
-            >
-              <CheckCircle2 size={24} color="#22c55e" />
-            </motion.div>
-          )}
+        {/* Work type with large icon */}
+        <div className="flex items-center gap-4 mb-4">
+          {/* Large emoji box */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', delay: 0.1 }}
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: typeConfig.bgColor,
+              border: `1px solid ${typeConfig.color}30`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 32,
+              boxShadow: `0 8px 25px -5px ${typeConfig.color}30`,
+            }}
+          >
+            {typeConfig.emoji}
+          </motion.div>
+
+          <div style={{ flex: 1 }}>
+            <h1 style={{
+              fontSize: 26,
+              fontWeight: 800,
+              fontFamily: 'var(--font-serif)',
+              background: isCompleted
+                ? 'linear-gradient(135deg, #22c55e 0%, #4ade80 50%, #22c55e 100%)'
+                : 'linear-gradient(135deg, #fff 0%, #e5e5e5 50%, #fff 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}>
+              {order.work_type_label || 'Заказ'}
+              {isCompleted && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', delay: 0.2 }}
+                >
+                  <CheckCircle2 size={22} color="#22c55e" />
+                </motion.div>
+              )}
+            </h1>
+          </div>
         </div>
 
-        {/* Subject/Topic */}
+        {/* Subject/Topic - more prominent */}
         {order.subject && (
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
             style={{
-              fontSize: 15,
-              color: 'var(--text-secondary)',
-              fontFamily: 'var(--font-serif)',
-              fontStyle: 'italic',
-              lineHeight: 1.5,
+              padding: '14px 18px',
+              borderRadius: 16,
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
               marginBottom: 20,
-              maxWidth: '100%',
             }}
           >
-            "{order.subject}"
-          </motion.p>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginBottom: 6,
+            }}>
+              Тема работы
+            </div>
+            <p style={{
+              fontSize: 15,
+              color: 'var(--text-main)',
+              fontFamily: 'var(--font-serif)',
+              lineHeight: 1.5,
+              margin: 0,
+            }}>
+              {order.subject}
+            </p>
+          </motion.div>
         )}
       </motion.div>
 
