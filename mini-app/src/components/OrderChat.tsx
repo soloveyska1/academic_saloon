@@ -574,43 +574,72 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
               containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
             }, 100)
           }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.96 }}
+          className="shimmer-gold"
           style={{
             width: '100%',
-            padding: '16px 20px',
-            // Premium Gold Gradient Background
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.05) 100%)',
-            // Gold Border
+            padding: '20px 24px',
+            // Deep Luxury Gold Gradient (Hero Button Style)
+            background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
             border: '1px solid rgba(212,175,55,0.3)',
-            borderRadius: 16,
+            borderRadius: 18,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            // Gold Shadow
-            boxShadow: '0 4px 20px -5px rgba(212,175,55,0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
+            // Glow
+            boxShadow: `
+              0 10px 30px -10px rgba(0,0,0,0.5),
+              inset 0 1px 0 rgba(255,255,255,0.1),
+              inset 0 -1px 0 rgba(0,0,0,0.3)
+            `,
+            overflow: 'hidden',
+            position: 'relative'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Active Liquid Gold Background on Hover/Active */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(252,246,186,0.05) 50%, rgba(212,175,55,0.1) 100%)',
+            opacity: 0.8,
+          }} />
+
+          {/* Shimmer Burst Animation */}
+          <motion.div
+            animate={{ x: ['-100%', '200%'] }}
+            transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '60%',
+              height: '100%',
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+              transform: 'skewX(-20deg)',
+              pointerEvents: 'none',
+              filter: 'blur(5px)',
+            }}
+          />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
             <div style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
+              width: 44,
+              height: 44,
+              borderRadius: 14,
               background: 'linear-gradient(135deg, #d4af37 0%, #b8860b 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
+              boxShadow: '0 4px 15px rgba(212,175,55,0.4)',
             }}>
-              <Headphones size={20} color="#050505" />
+              <Headphones size={22} color="#050505" />
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: 700,
-                color: '#d4af37',
+                color: '#fff', // White text for better contrast on dark bg
                 marginBottom: 2,
                 fontFamily: "var(--font-serif)",
                 letterSpacing: '0.01em',
@@ -619,11 +648,11 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
               </div>
               <div style={{
                 fontSize: 12,
-                color: 'var(--text-secondary)',
+                color: 'rgba(212,175,55,0.8)',
                 fontWeight: 500,
               }}>
                 {unreadCount > 0 ? (
-                  <span style={{ color: '#22c55e' }}>{unreadCount} новых сообщений</span>
+                  <span style={{ color: '#22c55e', fontWeight: 700 }}>{unreadCount} новых сообщений</span>
                 ) : (
                   'Онлайн • Отвечаем быстро'
                 )}
@@ -632,15 +661,17 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
           </div>
 
           <div style={{
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             borderRadius: '50%',
-            background: 'rgba(255,255,255,0.05)',
+            background: 'rgba(255,255,255,0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            position: 'relative',
+            zIndex: 1
           }}>
-            <ChevronDown size={18} color="var(--text-muted)" style={{ transform: 'rotate(180deg)' }} />
+            <ChevronDown size={20} color="rgba(255,255,255,0.8)" style={{ transform: 'rotate(180deg)' }} />
           </div>
         </motion.button>
       </motion.div>
