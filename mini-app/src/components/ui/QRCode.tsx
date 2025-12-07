@@ -290,9 +290,13 @@ export function QRCodeModal({
           <code style={{
             color: '#d4af37',
             fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
-            fontSize: 16,
+            fontSize: 13,
             fontWeight: 600,
-            letterSpacing: '0.08em',
+            letterSpacing: '0.04em',
+            display: 'block',
+            wordBreak: 'break-all',
+            whiteSpace: 'pre-wrap',
+            lineHeight: '1.4',
           }}>
             {value}
           </code>
