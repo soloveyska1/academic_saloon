@@ -929,7 +929,22 @@ function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void })
           {cfg.emoji} {cfg.label}
         </span>
         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>#{order.id}</span>
-        <span style={{ marginLeft: 'auto', color: '#D4AF37', fontWeight: 700 }}>{order.price.toLocaleString()}₽</span>
+        {order.promo_code && (
+          <span style={{
+            padding: '2px 6px',
+            background: 'rgba(34, 197, 94, 0.15)',
+            color: '#22c55e',
+            borderRadius: 4,
+            fontSize: 10,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 3,
+          }}>
+            <Tag size={10} /> {order.promo_code}
+          </span>
+        )}
+        <span style={{ marginLeft: 'auto', color: '#D4AF37', fontWeight: 700 }}>{order.final_price.toLocaleString()}₽</span>
       </div>
       <div style={{ color: '#fff', fontWeight: 500 }}>{order.work_type_label}</div>
       <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
@@ -1100,6 +1115,37 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
           </div>
         </div>
 
+        {/* Promo Code Info */}
+        {order.promo_code && order.promo_discount > 0 && (
+          <div style={{
+            marginBottom: 20,
+            padding: 14,
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            borderRadius: 12,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Tag size={16} color="#22c55e" />
+              <span style={{ color: '#22c55e', fontWeight: 700, fontSize: 14 }}>
+                Промокод: {order.promo_code}
+              </span>
+              <span style={{
+                padding: '2px 8px',
+                background: 'rgba(34, 197, 94, 0.2)',
+                borderRadius: 6,
+                color: '#22c55e',
+                fontSize: 12,
+                fontWeight: 600,
+              }}>
+                −{order.promo_discount}%
+              </span>
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+              Базовая цена: {Math.round(order.final_price / (1 - order.promo_discount / 100)).toLocaleString()}₽ → Со скидкой: {order.final_price.toLocaleString()}₽
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions for Verification Pending */}
         {order.status === 'verification_pending' && (
           <div style={{
@@ -1155,7 +1201,11 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
         {/* Price */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, display: 'block' }}>
-            Цена (текущая: {order.price.toLocaleString()}₽, оплачено: {order.paid_amount.toLocaleString()}₽)
+            Цена{order.promo_code && order.promo_discount > 0 ? (
+              <> (до скидки: {Math.round(order.final_price / (1 - order.promo_discount / 100)).toLocaleString()}₽, со скидкой −{order.promo_discount}%: {order.final_price.toLocaleString()}₽)</>
+            ) : (
+              <> (текущая: {order.final_price.toLocaleString()}₽)</>
+            )}, оплачено: {order.paid_amount.toLocaleString()}₽
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
@@ -1163,6 +1213,7 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               style={{ ...inputStyle, flex: 1 }}
+              placeholder={order.final_price.toString()}
             />
             <button
               onClick={handlePriceChange}

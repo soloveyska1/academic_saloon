@@ -317,6 +317,8 @@ export interface GodOrder {
   final_price: number
   paid_amount: number
   discount: number
+  promo_code: string | null  // Applied promo code
+  promo_discount: number  // Promo discount percentage
   bonus_used: number
   progress: number
   payment_scheme: string | null
