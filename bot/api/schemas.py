@@ -252,3 +252,38 @@ class SendMessageResponse(BaseModel):
     success: bool
     message_id: int
     message: str
+
+
+class SendMessageRequest(BaseModel):
+    """Request to send a chat message"""
+    message: str = Field(..., min_length=1, max_length=4000)
+
+    @field_validator('message')
+    @classmethod
+    def sanitize_message(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError('Сообщение не может быть пустым')
+        return v
+
+
+class ChatMessageResponse(BaseModel):
+    """Single chat message response"""
+    success: bool
+    message: ChatMessage
+
+
+class ChatMessagesListResponse(BaseModel):
+    """List of chat messages for an order"""
+    order_id: int
+    messages: List[ChatMessage]
+    total: int
+    has_more: bool
+
+
+class ChatFileUploadResponse(BaseModel):
+    """Response after uploading a file to chat"""
+    success: bool
+    message_id: int
+    file_url: str
+    message: str
