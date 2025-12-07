@@ -250,24 +250,63 @@ export function GodModePage() {
 
 function DashboardTab() {
   const [data, setData] = useState<GodDashboard | null>(null)
+  const [pendingOrders, setPendingOrders] = useState<GodOrder[]>([])
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await fetchGodDashboard()
-      setData(result)
+      const [dashboardResult, ordersResult] = await Promise.all([
+        fetchGodDashboard(),
+        fetchGodOrders({ status: 'verification_pending', limit: 10 })
+      ])
+      setData(dashboardResult)
+      setPendingOrders(ordersResult.orders)
+
+      // Play sound if new pending orders
+      if (ordersResult.orders.length > 0 && pendingOrders.length < ordersResult.orders.length) {
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp2ckIB0aGRqeIyeo52SgHBjYGd3jJ+pqJuKd2hkaHqOnqmomox4aGVofI+gqqmai3doZWl9kKGrq5qKeGhlanySoaurmop4aGVqfZKhq6yainhoZWp9kqGrrJqKeGhlbH6SoausmYp4aGZsfpOiq6yZinhpZm1/k6KsrJmJeGlmbYCToqysmon/');
+          audio.volume = 0.3
+          audio.play().catch(() => {})
+        } catch {}
+      }
     } catch (e) {
       console.error('Dashboard load error:', e)
     }
     setLoading(false)
-  }, [])
+  }, [pendingOrders.length])
 
   useEffect(() => {
     load()
-    const interval = setInterval(load, 30000) // Auto-refresh every 30s
+    const interval = setInterval(load, 15000) // Auto-refresh every 15s
     return () => clearInterval(interval)
-  }, [load])
+  }, [])
+
+  const handleQuickConfirm = async (orderId: number) => {
+    setActionLoading(orderId)
+    try {
+      await confirmGodPayment(orderId)
+      setPendingOrders(prev => prev.filter(o => o.id !== orderId))
+      // Vibrate on success
+      if (navigator.vibrate) navigator.vibrate(100)
+    } catch (e) {
+      console.error(e)
+    }
+    setActionLoading(null)
+  }
+
+  const handleQuickReject = async (orderId: number) => {
+    setActionLoading(orderId)
+    try {
+      await rejectGodPayment(orderId, 'Платёж не найден')
+      setPendingOrders(prev => prev.filter(o => o.id !== orderId))
+    } catch (e) {
+      console.error(e)
+    }
+    setActionLoading(null)
+  }
 
   if (loading && !data) {
     return <LoadingSpinner />
@@ -282,6 +321,107 @@ function DashboardTab() {
       exit={{ opacity: 0 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
+      {/* QUICK ACTIONS - Pending Payments */}
+      {pendingOrders.length > 0 && (
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{
+            ...cardStyle,
+            background: 'linear-gradient(135deg, rgba(236,72,153,0.15), rgba(236,72,153,0.05))',
+            border: '2px solid rgba(236,72,153,0.4)',
+            padding: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{
+            padding: '12px 16px',
+            background: 'rgba(236,72,153,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}>
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              <Bell size={20} color="#ec4899" />
+            </motion.div>
+            <span style={{ color: '#ec4899', fontWeight: 700, fontSize: 14 }}>
+              Проверка оплаты ({pendingOrders.length})
+            </span>
+          </div>
+          <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {pendingOrders.slice(0, 5).map(order => (
+              <motion.div
+                key={order.id}
+                layout
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                style={{
+                  padding: 12,
+                  background: 'rgba(0,0,0,0.3)',
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>
+                    #{order.id} • {order.final_price.toLocaleString()}₽
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                    {order.user_fullname} • {order.work_type_label}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleQuickConfirm(order.id)}
+                    disabled={actionLoading === order.id}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      border: 'none',
+                      background: 'linear-gradient(180deg, #22c55e, #16a34a)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      opacity: actionLoading === order.id ? 0.5 : 1,
+                    }}
+                  >
+                    <Check size={20} color="#fff" />
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleQuickReject(order.id)}
+                    disabled={actionLoading === order.id}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      border: 'none',
+                      background: 'linear-gradient(180deg, #ef4444, #dc2626)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      opacity: actionLoading === order.id ? 0.5 : 1,
+                    }}
+                  >
+                    <X size={20} color="#fff" />
+                  </motion.button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Attention Alert */}
       {data.orders.needing_attention > 0 && (
         <motion.div
