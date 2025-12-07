@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MessageCircle, Send, X, ChevronDown, User, Headphones,
-  Paperclip, Mic, MicOff, FileText, Image, Video, Play, Pause,
-  Download, Loader, StopCircle, Check, CheckCheck, ArrowDown,
-  AlertCircle, RefreshCw, Smile
+  Send, X, ChevronDown, Headphones,
+  Paperclip, Mic, FileText, Image, Video, Play, Pause,
+  Download, Loader, Check, CheckCheck, ArrowDown,
+  AlertCircle, RefreshCw, Smile, Square
 } from 'lucide-react'
 import { ChatMessage } from '../../types'
 import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessage } from '../../api/userApi'
 import { useTelegram } from '../../hooks/useUserData'
 import { useWebSocketContext } from '../../hooks/useWebSocket'
+
+// Notification sound (base64 encoded short beep)
+const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+dnJaUmKOfpaamkXdrbXqFioyMjYeHhIOFiI2MiIuKiYeHiIiIiYuNjY6Ojo6NjIuKiIaDgH57eHZ0cnBua2lnZGJgXltYVVJPTEpIRkRAOzY0Mi8tKyknJSMhIB8eHRwbGhoZGBcWFhUUExIREBAP'
 
 export interface PremiumChatHandle {
   open: () => void
@@ -484,28 +487,42 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
     }
   }))
 
+  // Play notification sound
+  const playNotificationSound = useCallback(() => {
+    try {
+      const audio = new Audio(NOTIFICATION_SOUND)
+      audio.volume = 0.5
+      audio.play().catch(() => {})
+    } catch {}
+  }, [])
+
   // Load messages
-  const loadMessages = useCallback(async () => {
-    setLoading(true)
+  const loadMessages = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     setError(null)
     try {
       const response = await fetchOrderMessages(orderId)
-      setMessages(response.messages)
-      setUnreadCount(response.unread_count)
+      // Handle response - messages might be empty array which is fine
+      const msgs = response?.messages || []
+      setMessages(msgs)
+      setUnreadCount(response?.unread_count || 0)
     } catch (err) {
-      setError('Не удалось загрузить сообщения')
-      console.error(err)
+      // Only show error if we have no messages at all
+      if (messages.length === 0) {
+        setError('Не удалось загрузить сообщения')
+      }
+      console.error('Chat load error:', err)
     } finally {
       setLoading(false)
     }
-  }, [orderId])
+  }, [orderId, messages.length])
 
   // Load on open
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen) {
       loadMessages()
     }
-  }, [isOpen, loadMessages, messages.length])
+  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -516,23 +533,49 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
     }
   }, [messages.length, isOpen])
 
-  // WebSocket handler
+  // WebSocket handler for real-time updates
   useEffect(() => {
     const unsubscribe = addMessageHandler((message) => {
-      if (message.type === 'chat_message' && (message as any).order_id === orderId) {
+      const msgData = message as any
+
+      // Handle new chat messages
+      if (message.type === 'chat_message' && msgData.order_id === orderId) {
         setIsTyping(false)
-        loadMessages()
+
+        // If message data is included, add it directly
+        if (msgData.message) {
+          setMessages(prev => {
+            // Avoid duplicates
+            if (prev.some(m => m.id === msgData.message.id)) return prev
+            return [...prev, msgData.message]
+          })
+        } else {
+          // Otherwise reload messages
+          loadMessages(true)
+        }
+
+        // Sound + haptic notification
+        playNotificationSound()
         hapticSuccess()
       }
-      if (message.type === 'typing_indicator' && (message as any).order_id === orderId) {
-        setIsTyping((message as any).is_typing)
-        if ((message as any).is_typing) {
+
+      // Handle typing indicator
+      if (message.type === 'typing_indicator' && msgData.order_id === orderId) {
+        setIsTyping(msgData.is_typing)
+        if (msgData.is_typing) {
           setTimeout(() => setIsTyping(false), 5000)
         }
       }
+
+      // Handle admin message specifically (legacy format)
+      if (message.type === 'new_message' && msgData.order_id === orderId) {
+        loadMessages(true)
+        playNotificationSound()
+        hapticSuccess()
+      }
     })
     return unsubscribe
-  }, [orderId, addMessageHandler, hapticSuccess, loadMessages])
+  }, [orderId, addMessageHandler, hapticSuccess, loadMessages, playNotificationSound])
 
   // Scroll detection
   const handleScroll = useCallback(() => {
@@ -607,56 +650,61 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
     }
   }
 
-  // Voice recording
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus' : 'audio/webm'
-      })
-
-      mediaRecorderRef.current = mediaRecorder
-      audioChunksRef.current = []
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+  // Voice recording - toggle mode (click to start, click to stop)
+  const toggleRecording = async () => {
+    if (isRecording) {
+      // Stop and send
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop()
       }
-
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop())
-        if (audioChunksRef.current.length > 0) {
-          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-          await sendVoice(blob)
-        }
-      }
-
-      mediaRecorder.start(100)
-      setIsRecording(true)
-      setRecordingDuration(0)
-      haptic('medium')
-
-      recordingTimerRef.current = window.setInterval(() => {
-        setRecordingDuration(prev => prev + 1)
-      }, 1000)
-    } catch {
-      setError('Разрешите доступ к микрофону')
-      hapticError()
-    }
-  }
-
-  const stopRecording = () => {
-    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
       setIsRecording(false)
+      haptic('medium')
+    } else {
+      // Start recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? 'audio/webm;codecs=opus' : 'audio/webm'
+        })
+
+        mediaRecorderRef.current = mediaRecorder
+        audioChunksRef.current = []
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data)
+        }
+
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(track => track.stop())
+          if (audioChunksRef.current.length > 0 && recordingDuration >= 1) {
+            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+            await sendVoice(blob)
+          }
+          audioChunksRef.current = []
+          setRecordingDuration(0)
+        }
+
+        mediaRecorder.start(100)
+        setIsRecording(true)
+        setRecordingDuration(0)
+        haptic('medium')
+
+        recordingTimerRef.current = window.setInterval(() => {
+          setRecordingDuration(prev => prev + 1)
+        }, 1000)
+      } catch {
+        setError('Разрешите доступ к микрофону')
+        hapticError()
+      }
     }
   }
 
   const cancelRecording = () => {
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+      mediaRecorderRef.current.stream?.getTracks().forEach(track => track.stop())
     }
     audioChunksRef.current = []
     setIsRecording(false)
@@ -1003,56 +1051,44 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
         )}
       </AnimatePresence>
 
-      {/* Recording indicator */}
+      {/* Recording indicator - inline in input area */}
       <AnimatePresence>
         {isRecording && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
             style={{
-              padding: '12px 16px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              borderTop: '1px solid rgba(239, 68, 68, 0.2)',
+              padding: '10px 16px',
+              background: 'rgba(239, 68, 68, 0.08)',
+              borderTop: '1px solid rgba(239, 68, 68, 0.15)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              gap: 12,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <motion.div
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-                style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }}
-              />
-              <span style={{ fontSize: 14, color: '#ef4444', fontWeight: 500 }}>
-                Запись {formatDuration(recordingDuration)}
-              </span>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={cancelRecording}
-                style={{
-                  width: 36, height: 36, borderRadius: 18,
-                  background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <X size={18} color="#ef4444" />
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={stopRecording}
-                style={{
-                  width: 36, height: 36, borderRadius: 18,
-                  background: '#ef4444', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <StopCircle size={18} color="#fff" />
-              </motion.button>
-            </div>
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [1, 0.5, 1] }}
+              transition={{ repeat: Infinity, duration: 1 }}
+              style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }}
+            />
+            <span style={{ fontSize: 14, color: '#ef4444', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+              {formatDuration(recordingDuration)}
+            </span>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>
+              Запись голосового...
+            </span>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={cancelRecording}
+              style={{
+                padding: '6px 12px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)',
+              }}
+            >
+              Отмена
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1155,24 +1191,37 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               <Send size={20} color="#050505" />
             )}
           </motion.button>
-        ) : (
+        ) : isRecording ? (
+          /* Recording in progress - show send button */
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onMouseDown={startRecording}
+            onClick={toggleRecording}
+            style={{
+              width: 44, height: 44, borderRadius: 14,
+              background: '#ef4444',
+              border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
+            }}
+          >
+            <Square size={18} color="#fff" fill="#fff" />
+          </motion.button>
+        ) : (
+          /* Mic button to start recording */
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleRecording}
             disabled={uploading}
             style={{
               width: 44, height: 44, borderRadius: 14,
-              background: isRecording ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-              border: isRecording ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', opacity: uploading ? 0.5 : 1,
             }}
           >
-            {isRecording ? (
-              <MicOff size={20} color="#ef4444" />
-            ) : (
-              <Mic size={20} color="var(--text-muted)" />
-            )}
+            <Mic size={20} color="var(--text-muted)" />
           </motion.button>
         )}
       </div>
