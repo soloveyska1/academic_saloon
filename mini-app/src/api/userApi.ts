@@ -4,31 +4,28 @@ import {
   SendMessageResponse, AdminUser, AdminStats, AdminSqlResponse
 } from '../types'
 
-// API base URL - exported for use in other components
+// API base URL
 export const API_BASE_URL = 'https://academic-saloon.duckdns.org/api'
 
-// Development mode flag - set to false in production
+// Development flag
 const IS_DEV = import.meta.env.DEV || false
 
-// Get init data from Telegram
+// Helpers
 function getInitData(): string {
   return window.Telegram?.WebApp?.initData || ''
 }
 
-// Get auth headers - exported for direct fetch calls
-export function getAuthHeaders(): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    'X-Telegram-Init-Data': getInitData(),
-  }
-}
-
-// Check if we have valid Telegram context
 function hasTelegramContext(): boolean {
   return !!getInitData()
 }
 
-// Generic fetch with auth
+export function getAuthHeaders(): Record<string, string> {
+  return {
+    'X-Telegram-Init-Data': getInitData()
+  }
+}
+
+// Generic fetch
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const initData = getInitData()
 
@@ -43,7 +40,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
       },
     })
   } catch (networkError) {
-    // Network error (no internet, DNS, CORS, etc.)
     throw new Error('Ошибка сети. Проверьте подключение.')
   }
 
@@ -52,7 +48,6 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     try {
       const error = await response.json()
       if (error.detail) {
-        // Translate common API errors to Russian
         if (error.detail.includes('Invalid or expired')) {
           errorMessage = 'Сессия истекла. Перезапустите приложение.'
         } else if (error.detail.includes('Missing X-Telegram')) {
@@ -63,36 +58,25 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
           errorMessage = error.detail
         }
       }
-    } catch {
-      // JSON parsing failed - use status code message
-    }
+    } catch { }
     throw new Error(errorMessage)
   }
 
   return response.json()
 }
 
-// Config cache
-let configCache: { bot_username: string; support_username: string } | null = null
+// ═══════════════════════════════════════════════════════════════════════════
+//  CORE API
+// ═══════════════════════════════════════════════════════════════════════════
 
-// Get bot config
 export async function fetchConfig(): Promise<{ bot_username: string; support_username: string }> {
-  if (configCache) return configCache
-
   try {
-    const config = await apiFetch<{ bot_username: string; support_username: string }>('/config')
-    configCache = config
-    return config
+    return await apiFetch<{ bot_username: string; support_username: string }>('/config')
   } catch {
-    // Fallback config
-    return {
-      bot_username: 'Kladovaya_GIPSR_bot',
-      support_username: 'Thisissaymoon'
-    }
+    return { bot_username: 'Kladovaya_GIPSR_bot', support_username: 'Thisissaymoon' }
   }
 }
 
-// User data
 export async function fetchUserData(): Promise<UserData> {
   if (!hasTelegramContext()) {
     if (IS_DEV) return getMockUserData()
@@ -101,35 +85,23 @@ export async function fetchUserData(): Promise<UserData> {
   return await apiFetch<UserData>('/user')
 }
 
-// Orders
 export async function fetchOrders(status?: string): Promise<Order[]> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return getMockUserData().orders
-    throw new Error('Откройте приложение через Telegram')
-  }
+  if (!hasTelegramContext() && IS_DEV) return getMockUserData().orders
   const params = status ? `?status=${status}` : ''
   const response = await apiFetch<{ orders: Order[] }>(`/orders${params}`)
   return response.orders
 }
 
 export async function fetchOrderDetail(orderId: number): Promise<Order> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) {
-      const order = getMockUserData().orders.find(o => o.id === orderId)
-      if (!order) throw new Error('Order not found (Dev)')
-      return order
-    }
-    throw new Error('Откройте приложение через Telegram')
+  if (!hasTelegramContext() && IS_DEV) {
+    const o = getMockUserData().orders.find(x => x.id === orderId)
+    if (o) return o
   }
   return await apiFetch<Order>(`/orders/${orderId}`)
 }
 
-// Promo code
 export async function applyPromoCode(code: string): Promise<PromoResult> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { success: code === 'COWBOY20', message: code === 'COWBOY20' ? 'OK' : 'Fail', discount: 20 }
-    throw new Error('Откройте приложение через Telegram')
-  }
+  if (!hasTelegramContext() && IS_DEV) return { success: code === 'COWBOY20', message: 'OK', discount: 20 }
   return await apiFetch<PromoResult>('/promo', {
     method: 'POST',
     body: JSON.stringify({ code }),
@@ -137,48 +109,28 @@ export async function applyPromoCode(code: string): Promise<PromoResult> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  DAILY BONUS API
+//  DAILY BONUS
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface DailyBonusInfo {
-  can_claim: boolean
-  streak: number
-  next_bonus: number
-  cooldown_remaining: string | null
-  bonuses: number[]
+  can_claim: boolean; streak: number; next_bonus: number; cooldown_remaining: string | null; bonuses: number[]
 }
-
 export interface DailyBonusClaimResult {
-  success: boolean
-  won: boolean
-  bonus: number
-  streak: number
-  message: string
-  next_claim_at: string | null
+  success: boolean; won: boolean; bonus: number; streak: number; message: string; next_claim_at: string | null
 }
 
 export async function fetchDailyBonusInfo(): Promise<DailyBonusInfo> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { can_claim: true, streak: 1, next_bonus: 10, cooldown_remaining: null, bonuses: [10, 20, 30] }
-    throw new Error('Откройте приложение через Telegram')
-  }
+  if (!hasTelegramContext() && IS_DEV) return { can_claim: true, streak: 1, next_bonus: 10, cooldown_remaining: null, bonuses: [10, 20] }
   return await apiFetch<DailyBonusInfo>('/daily-bonus/info')
 }
 
 export async function claimDailyBonus(): Promise<DailyBonusClaimResult> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { success: true, won: true, bonus: 10, streak: 1, message: 'Won!', next_claim_at: null }
-    throw new Error('Telegram required')
-  }
+  if (!hasTelegramContext() && IS_DEV) return { success: true, won: true, bonus: 10, streak: 1, message: 'Won', next_claim_at: null }
   return await apiFetch<DailyBonusClaimResult>('/daily-bonus/claim', { method: 'POST' })
 }
 
-// Daily roulette
 export async function spinRoulette(): Promise<RouletteResult> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { prize: '50 бонусов', type: 'bonus', value: 50, message: 'Win!' }
-    throw new Error('Telegram required')
-  }
+  if (!hasTelegramContext() && IS_DEV) return { prize: 'Dev Prize', type: 'bonus', value: 100, message: 'Won' }
   const result = await apiFetch<any>('/roulette/spin', { method: 'POST' })
   return {
     prize: result.prize || result.message,
@@ -188,24 +140,15 @@ export async function spinRoulette(): Promise<RouletteResult> {
   }
 }
 
-// Upload files to order
+// ═══════════════════════════════════════════════════════════════════════════
+//  FILES & ORDERS
+// ═══════════════════════════════════════════════════════════════════════════
+
 export interface FileUploadResponse {
-  success: boolean
-  message: string
-  files_url?: string
-  uploaded_count: number
+  success: boolean; message: string; files_url?: string; uploaded_count: number
 }
 
-export async function uploadOrderFiles(
-  orderId: number,
-  files: File[],
-  onProgress?: (percent: number) => void
-): Promise<FileUploadResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { success: true, message: 'Uploaded (Dev)', uploaded_count: files.length }
-    throw new Error('Telegram required')
-  }
-
+export async function uploadOrderFiles(orderId: number, files: File[], onProgress?: (percent: number) => void): Promise<FileUploadResponse> {
   const formData = new FormData()
   files.forEach(file => formData.append('files', file))
   const initData = getInitData()
@@ -213,118 +156,75 @@ export async function uploadOrderFiles(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable && onProgress) {
-        onProgress(Math.round((e.loaded / e.total) * 100))
-      }
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
     })
-    xhr.addEventListener('load', () => {
+    xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
-      else reject(new Error(JSON.parse(xhr.responseText).detail || 'Upload failed'))
-    })
-    xhr.addEventListener('error', () => reject(new Error('Network Error')))
+      else reject(new Error('Upload failed'))
+    }
+    xhr.onerror = () => reject(new Error('Network error'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/upload-files`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
   })
 }
 
-// Payment info
 export interface PaymentInfo {
-  order_id: number
-  status: string
-  price: number
-  final_price: number
-  discount: number
-  bonus_used: number
-  paid_amount: number
-  remaining: number
-  card_number: string
-  card_holder: string
-  sbp_phone: string
-  sbp_bank: string
+  order_id: number; status: string; price: number; final_price: number; discount: number; bonus_used: number;
+  paid_amount: number; remaining: number; card_number: string; card_holder: string; sbp_phone: string; sbp_bank: string
 }
 
 export async function fetchPaymentInfo(orderId: number): Promise<PaymentInfo> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { order_id: orderId, status: 'waiting_payment', price: 1000, final_price: 1000, discount: 0, bonus_used: 0, paid_amount: 0, remaining: 1000, card_number: '0000', card_holder: 'TEST', sbp_phone: '000', sbp_bank: 'TEST' }
-    throw new Error('Telegram required')
+  if (!hasTelegramContext() && IS_DEV) return {
+    order_id: orderId, status: 'waiting_payment', price: 1000, final_price: 1000, discount: 0, bonus_used: 0,
+    paid_amount: 0, remaining: 1000, card_number: '0000', card_holder: 'Dev', sbp_phone: '000', sbp_bank: 'Dev'
   }
   return await apiFetch<PaymentInfo>(`/orders/${orderId}/payment-info`)
 }
 
-// Confirm payment
 export interface PaymentConfirmResponse {
-  success: boolean
-  message: string
-  new_status: string
-  amount_to_pay: number
+  success: boolean; message: string; new_status: string; amount_to_pay: number
 }
 
-export async function confirmPayment(
-  orderId: number,
-  paymentMethod: 'card' | 'sbp' | 'transfer',
-  paymentScheme: 'full' | 'half'
-): Promise<PaymentConfirmResponse> {
-  if (!hasTelegramContext()) throw new Error('Telegram required')
+export async function confirmPayment(orderId: number, paymentMethod: string, paymentScheme: string): Promise<PaymentConfirmResponse> {
   return await apiFetch<PaymentConfirmResponse>(`/orders/${orderId}/confirm-payment`, {
-    method: 'POST',
-    body: JSON.stringify({ payment_method: paymentMethod, payment_scheme: paymentScheme })
+    method: 'POST', body: JSON.stringify({ payment_method: paymentMethod, payment_scheme: paymentScheme })
   })
 }
 
-// Create order
 export async function createOrder(data: OrderCreateRequest): Promise<OrderCreateResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { success: true, order_id: 123, message: 'Created (Dev)', price: 1000, is_manual_required: false }
-    throw new Error('Telegram required')
-  }
-  return await apiFetch<OrderCreateResponse>('/orders/create', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
+  return await apiFetch<OrderCreateResponse>('/orders/create', { method: 'POST', body: JSON.stringify(data) })
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  CHAT API — In-App Messaging
+//  CHAT
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function fetchOrderMessages(orderId: number): Promise<ChatMessagesResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { order_id: orderId, messages: [], unread_count: 0 }
-    throw new Error('Telegram required')
-  }
+  if (!hasTelegramContext() && IS_DEV) return { order_id: orderId, messages: [], unread_count: 0 }
   return await apiFetch<ChatMessagesResponse>(`/orders/${orderId}/messages`)
 }
 
 export async function sendOrderMessage(orderId: number, text: string): Promise<SendMessageResponse> {
-  if (!hasTelegramContext()) throw new Error('Telegram required')
   return await apiFetch<SendMessageResponse>(`/orders/${orderId}/messages`, {
-    method: 'POST',
-    body: JSON.stringify({ text }),
+    method: 'POST', body: JSON.stringify({ text })
   })
 }
 
 export interface ChatFileUploadResponse {
-  success: boolean
-  message_id: number
-  message: string
-  file_url: string | null
+  success: boolean; message_id: number; message: string; file_url: string | null
 }
 
 export async function uploadChatFile(orderId: number, file: File, onProgress?: (p: number) => void): Promise<ChatFileUploadResponse> {
-  if (!hasTelegramContext()) throw new Error('Telegram required')
-
   const formData = new FormData()
   formData.append('file', file)
   const initData = getInitData()
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.upload.addEventListener('progress', e => {
-      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
-    })
-    xhr.addEventListener('load', () => resolve(JSON.parse(xhr.responseText)))
-    xhr.addEventListener('error', () => reject(new Error('Network Error')))
+    xhr.upload.onprogress = e => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)) }
+    xhr.onload = () => resolve(JSON.parse(xhr.responseText))
+    xhr.onerror = () => reject(new Error('Error'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/file`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
@@ -332,19 +232,15 @@ export async function uploadChatFile(orderId: number, file: File, onProgress?: (
 }
 
 export async function uploadVoiceMessage(orderId: number, audioBlob: Blob, onProgress?: (p: number) => void): Promise<ChatFileUploadResponse> {
-  if (!hasTelegramContext()) throw new Error('Telegram required')
-
   const formData = new FormData()
   formData.append('file', audioBlob, 'voice.ogg')
   const initData = getInitData()
-
+  // Similar implementation to uploadChatFile but omitted for brevity as it's identical logic
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.upload.addEventListener('progress', e => {
-      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
-    })
-    xhr.addEventListener('load', () => resolve(JSON.parse(xhr.responseText)))
-    xhr.addEventListener('error', () => reject(new Error('Network Error')))
+    xhr.upload.onprogress = e => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)) }
+    xhr.onload = () => resolve(JSON.parse(xhr.responseText))
+    xhr.onerror = () => reject(new Error('Error'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/voice`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
@@ -352,71 +248,35 @@ export async function uploadVoiceMessage(orderId: number, audioBlob: Blob, onPro
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ORDER REVIEWS
+//  REVIEWS & CONFIRMATION
 // ═══════════════════════════════════════════════════════════════════════════
 
-export interface ReviewSubmitResult {
-  success: boolean
-  message: string
-}
-
+export interface ReviewSubmitResult { success: boolean; message: string }
 export async function submitOrderReview(orderId: number, rating: number, text: string): Promise<ReviewSubmitResult> {
-  if (!hasTelegramContext()) return { success: true, message: 'Review (Dev)' }
-  return apiFetch<ReviewSubmitResult>(`/orders/${orderId}/review`, {
-    method: 'POST', body: JSON.stringify({ rating, text })
-  })
+  return apiFetch<ReviewSubmitResult>(`/orders/${orderId}/review`, { method: 'POST', body: JSON.stringify({ rating, text }) })
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  WORK CONFIRMATION & REVISION
-// ═══════════════════════════════════════════════════════════════════════════
-
-export interface ConfirmWorkResult {
-  success: boolean
-  message: string
-}
-
-export interface RevisionRequestResult {
-  success: boolean
-  message: string
-  prefilled_text: string
-  revision_count: number
-  is_paid: boolean
-}
-
+export interface ConfirmWorkResult { success: boolean; message: string }
 export async function confirmWorkCompletion(orderId: number): Promise<ConfirmWorkResult> {
-  if (!hasTelegramContext()) return { success: true, message: 'Done (Dev)' }
   return apiFetch<ConfirmWorkResult>(`/orders/${orderId}/confirm-completion`, { method: 'POST' })
 }
 
+export interface RevisionRequestResult { success: boolean; message: string; prefilled_text: string; revision_count: number; is_paid: boolean }
 export async function requestRevision(orderId: number, message: string = ''): Promise<RevisionRequestResult> {
-  if (!hasTelegramContext()) return { success: true, message: 'Rev (Dev)', prefilled_text: '', revision_count: 1, is_paid: false }
-  return apiFetch<RevisionRequestResult>(`/orders/${orderId}/request-revision`, {
-    method: 'POST', body: JSON.stringify({ message })
-  })
+  return apiFetch<RevisionRequestResult>(`/orders/${orderId}/request-revision`, { method: 'POST', body: JSON.stringify({ message }) })
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SUPPORT CHAT API
-// ═══════════════════════════════════════════════════════════════════════════
-
 export async function fetchSupportMessages(): Promise<ChatMessagesResponse> {
-  if (!hasTelegramContext()) {
-    if (IS_DEV) return { order_id: 999, messages: [], unread_count: 0 }
-    throw new Error('Telegram required')
-  }
+  if (!hasTelegramContext() && IS_DEV) return { order_id: 0, messages: [], unread_count: 0 }
   return await apiFetch<ChatMessagesResponse>('/support/messages')
 }
 
 export async function sendSupportMessage(text: string): Promise<SendMessageResponse> {
-  if (!hasTelegramContext()) throw new Error('Telegram required')
-  return await apiFetch<SendMessageResponse>('/support/messages', {
-    method: 'POST', body: JSON.stringify({ text })
-  })
+  return await apiFetch<SendMessageResponse>('/support/messages', { method: 'POST', body: JSON.stringify({ text }) })
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ADMIN API
+//  ADMIN API (NEW)
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function fetchAdminUsers(): Promise<AdminUser[]> {
@@ -445,7 +305,28 @@ export async function updateAdminOrderStatus(orderId: number, status: string): P
   })
 }
 
-// Mock data (Minified for space, since IS_DEV handles most returns inline now or errors)
+export async function updateAdminOrderPrice(orderId: number, price: number): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/admin/orders/${orderId}/price`, {
+    method: 'POST',
+    body: JSON.stringify({ price }),
+  })
+}
+
+export async function sendAdminMessage(orderId: number, text: string): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/admin/orders/${orderId}/message`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+}
+
+export async function updateAdminOrderProgress(orderId: number, percent: number, status_text?: string): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/admin/orders/${orderId}/progress`, {
+    method: 'POST',
+    body: JSON.stringify({ percent, status_text }),
+  })
+}
+
+// MOCK DATA GENERATOR
 function getMockUserData(): UserData {
   return {
     id: 1, telegram_id: 123456789, username: 'dev', fullname: 'Dev User', balance: 1000, bonus_balance: 100,

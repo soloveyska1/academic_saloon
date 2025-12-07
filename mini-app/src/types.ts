@@ -56,20 +56,6 @@ export interface BonusExpiryInfo {
   balance: number
   days_left?: number
   expiry_date?: string
-  burn_amount?: number
-  status?: 'ok' | 'warning' | 'expired'
-  status_text?: string
-  color?: string
-}
-
-export interface Order {
-  id: number
-  status: OrderStatus
-  work_type: string
-  work_type_label: string
-  subject: string
-  deadline: string | null
-  price: number
   final_price: number
   paid_amount: number
   discount: number
@@ -82,6 +68,27 @@ export interface Order {
   created_at: string
   completed_at: string | null
   delivered_at: string | null  // When work was delivered (30-day revision period starts)
+}
+
+export interface Order {
+  id: number
+  user_id: number
+  subject: string | null
+  topic: string | null
+  deadline: string | null
+  status: OrderStatus
+  price: number
+  paid_amount: number
+  created_at: string
+  files_url: string | null
+  description: string | null
+  work_type: string
+  work_type_label?: string
+  final_price?: number
+  // Admin-specific fields
+  fullname?: string
+  username?: string | null
+  telegram_id?: number
 }
 
 export type OrderStatus =
@@ -249,8 +256,8 @@ export interface AdminStats {
 }
 
 export interface AdminSqlResponse {
-  columns: string[]
-  rows: string[][]
+  columns?: string[]
+  rows?: string[][]
   error?: string
 }
 

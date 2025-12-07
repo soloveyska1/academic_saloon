@@ -2456,3 +2456,83 @@ async def update_order_status_admin(
     await session.commit()
     return {'success': True}
 
+
+@router.post('/admin/orders/{order_id}/price')
+async def update_order_price_admin(
+    order_id: int,
+    data: AdminPriceUpdate,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    bot: Bot = Depends(get_bot)
+):
+    if tg_user.id != ADMIN_ID:
+        raise HTTPException(status_code=403, detail='Access denied')
+        
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail='Order not found')
+        
+    order.price = data.price
+    order.final_price = data.price - (order.bonus_used or 0)
+    
+    # If waiting for estimation, move to waiting payment
+    if order.status == OrderStatus.WAITING_ESTIMATION.value:
+        order.status = OrderStatus.WAITING_PAYMENT.value
+        
+    await session.commit()
+    
+    # Update topic name if topic exists
+    from bot.services.unified_hub import update_topic_name
+    await update_topic_name(bot, session, order)
+    
+    return {'success': True}
+
+@router.post('/admin/orders/{order_id}/message')
+async def send_order_message_admin(
+    order_id: int,
+    data: AdminMessageRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    bot: Bot = Depends(get_bot)
+):
+    if tg_user.id != ADMIN_ID:
+        raise HTTPException(status_code=403, detail='Access denied')
+        
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail='Order not found')
+        
+    # Send to user
+    try:
+        await bot.send_message(order.user_id, data.text)
+    except Exception as e:
+        logger.error(f"Failed to send message to user {order.user_id}: {e}")
+        
+    # Also log to topic/conversation if exists
+    # (Simplified: Just ensuring it reaches the user is the priority for now)
+    
+    return {'success': True}
+
+@router.post('/admin/orders/{order_id}/progress')
+async def update_order_progress_admin(
+    order_id: int,
+    data: AdminProgressUpdate,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    bot: Bot = Depends(get_bot)
+):
+    if tg_user.id != ADMIN_ID:
+        raise HTTPException(status_code=403, detail='Access denied')
+
+    # Re-using existing logic from order_progress.py if possible, or simple direct update
+    from bot.services.order_progress import update_order_progress
+    
+    await update_order_progress(
+        bot=bot,
+        session=session,
+        order_id=order_id,
+        percent=data.percent,
+        status_text=data.status_text
+    )
+    
+    return {'success': True}

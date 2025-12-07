@@ -280,3 +280,13 @@ class AdminUserResponse(BaseModel):
 class AdminOrderUpdate(BaseModel):
     status: str
 
+class AdminPriceUpdate(BaseModel):
+    price: float
+
+class AdminMessageRequest(BaseModel):
+    text: string
+
+class AdminProgressUpdate(BaseModel):
+    percent: int
+    status_text: Optional[str] = None
+
