@@ -1911,7 +1911,7 @@ export function HomePage({ user }: Props) {
                 WebkitTextFillColor: 'transparent',
                 marginBottom: 4,
               }}>
-                {user.orders_count}
+                {user.orders.filter(o => o.status === 'completed').length}
               </div>
               <div style={{
                 fontSize: 11,
