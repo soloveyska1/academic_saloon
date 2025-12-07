@@ -217,7 +217,10 @@ export function Navigation() {
 
     // Hide when scrolling down > 10px, Show when scrolling up
     // Always show if near top (< 50px)
-    if (currentScrollY < 50) {
+    // Also hide if on order page (chat mode)
+    if (location.pathname.startsWith('/order/')) {
+      setIsVisible(false)
+    } else if (currentScrollY < 50) {
       setIsVisible(true)
     } else if (diff > 10) {
       setIsVisible(false)

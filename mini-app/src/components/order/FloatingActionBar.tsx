@@ -38,6 +38,8 @@ function getActionsForStatus(
   const actions: ActionButton[] = []
 
   // Chat is always available
+  // REMOVED at user request: Chat button is redundant as there is an inline chat interface
+  /*
   actions.push({
     id: 'chat',
     icon: MessageCircle,
@@ -48,6 +50,7 @@ function getActionsForStatus(
     onClick: props.onChatClick,
     badge: props.unreadMessages,
   })
+  */
 
   // Status-specific actions
   switch (status) {

@@ -227,7 +227,8 @@ export async function createOrder(data: OrderCreateRequest): Promise<OrderCreate
 
 export async function fetchOrderMessages(orderId: number): Promise<ChatMessagesResponse> {
   if (!hasTelegramContext() && IS_DEV) return { order_id: orderId, messages: [], unread_count: 0 }
-  return await apiFetch<ChatMessagesResponse>(`/orders/${orderId}/messages`)
+  // Add timestamp to prevent caching
+  return await apiFetch<ChatMessagesResponse>(`/orders/${orderId}/messages?t=${Date.now()}`)
 }
 
 export async function sendOrderMessage(orderId: number, text: string): Promise<SendMessageResponse> {

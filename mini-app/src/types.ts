@@ -89,6 +89,7 @@ export interface Order {
   fullname?: string
   username?: string | null
   telegram_id?: number
+  review_submitted?: boolean
 }
 
 export type OrderStatus =
