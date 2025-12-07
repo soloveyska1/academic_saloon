@@ -1,7 +1,7 @@
 """add admin action logs and user activities tables
 
 Revision ID: g0d_m0d3_admin
-Revises: a6dac9be43c2
+Revises: s7t8u9v0w1
 Create Date: 2025-12-07 12:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'g0d_m0d3_admin'
-down_revision: Union[str, None] = 'a6dac9be43c2'
+down_revision: Union[str, None] = 's7t8u9v0w1'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
