@@ -364,3 +364,48 @@ class ChatFileUploadResponse(BaseModel):
     message_id: int
     message: str
     file_url: Optional[str] = None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  BATCH PAYMENT SCHEMAS
+# ═══════════════════════════════════════════════════════════════════════════
+
+class BatchOrderItem(BaseModel):
+    """Single order info for batch payment"""
+    id: int
+    work_type_label: str
+    subject: Optional[str] = None
+    final_price: float
+    remaining: float
+
+
+class BatchPaymentInfoRequest(BaseModel):
+    """Request for batch payment info"""
+    order_ids: List[int] = Field(..., min_length=1)
+
+
+class BatchPaymentInfoResponse(BaseModel):
+    """Batch payment info response"""
+    orders: List[BatchOrderItem]
+    total_amount: float
+    orders_count: int
+    card_number: str
+    card_holder: str
+    sbp_phone: str
+    sbp_bank: str
+
+
+class BatchPaymentConfirmRequest(BaseModel):
+    """Batch payment confirmation request"""
+    order_ids: List[int] = Field(..., min_length=1)
+    payment_method: str  # card / sbp
+    payment_scheme: str  # full / half
+
+
+class BatchPaymentConfirmResponse(BaseModel):
+    """Batch payment confirmation response"""
+    success: bool
+    message: str
+    processed_count: int
+    total_amount: float
+    failed_orders: List[int] = []

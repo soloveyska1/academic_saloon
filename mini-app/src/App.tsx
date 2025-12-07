@@ -35,6 +35,7 @@ const CreateOrderPage = lazy(() => import('./pages/CreateOrderPage').then(module
 const ReferralPage = lazy(() => import('./pages/ReferralPage').then(module => ({ default: module.ReferralPage })))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then(module => ({ default: module.AchievementsPage })))
 const SupportPage = lazy(() => import('./pages/SupportPage').then(module => ({ default: module.SupportPage })))
+const BatchPaymentPage = lazy(() => import('./pages/BatchPaymentPage').then(module => ({ default: module.BatchPaymentPage })))
 // AdminDashboardPage removed as per instruction
 const AdminPage = lazy(() => import('./pages/AdminPage').then(module => ({ default: module.AdminPage })))
 
@@ -435,6 +436,7 @@ function AppContent() {
                       <Route path="/referral" element={<ReferralPage user={userData} />} />
                       <Route path="/achievements" element={<AchievementsPage user={userData} />} />
                       <Route path="/support" element={<SupportPage />} />
+                      <Route path="/batch-payment" element={<BatchPaymentPage />} />
                       <Route path="/admin" element={<AdminPage />} />
                     </Routes>
                   </Suspense>
