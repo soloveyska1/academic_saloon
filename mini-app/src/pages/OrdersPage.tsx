@@ -191,18 +191,21 @@ function ProgressRing({ progress, size = 44, strokeWidth = 3, color = '#d4af37' 
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MINI TIMELINE
+//  MINI TIMELINE — Gold themed, compact
 // ═══════════════════════════════════════════════════════════════════════════
 
-function MiniTimeline({ currentStep, color }: { currentStep: number; color: string }) {
+function MiniTimeline({ currentStep }: { currentStep: number }) {
   if (currentStep < 0) return null // Cancelled/rejected orders
+
+  const goldColor = '#d4af37'
+  const goldDim = 'rgba(212, 175, 55, 0.3)'
 
   return (
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 4,
-      padding: '8px 0',
+      gap: 2,
+      padding: '6px 0',
     }}>
       {TIMELINE_STEPS.map((_, index) => (
         <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
@@ -210,26 +213,24 @@ function MiniTimeline({ currentStep, color }: { currentStep: number; color: stri
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: index * 0.1 }}
+            transition={{ delay: index * 0.05 }}
             style={{
               width: index <= currentStep ? 8 : 6,
               height: index <= currentStep ? 8 : 6,
               borderRadius: '50%',
-              background: index <= currentStep ? color : 'rgba(255,255,255,0.15)',
-              boxShadow: index <= currentStep ? `0 0 8px ${color}` : 'none',
+              background: index <= currentStep ? goldColor : goldDim,
+              boxShadow: index === currentStep ? `0 0 8px ${goldColor}` : 'none',
               transition: 'all 0.3s ease',
             }}
           />
           {/* Line */}
           {index < TIMELINE_STEPS.length - 1 && (
             <div style={{
-              width: 16,
+              width: 12,
               height: 2,
-              background: index < currentStep
-                ? `linear-gradient(90deg, ${color}, ${color}80)`
-                : 'rgba(255,255,255,0.1)',
+              background: index < currentStep ? goldColor : goldDim,
               borderRadius: 1,
-              marginLeft: 4,
+              marginLeft: 2,
             }} />
           )}
         </div>
@@ -788,8 +789,8 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
 
         {/* Mini Timeline */}
         {showTimeline && statusConfig.step >= 0 && (
-          <div style={{ paddingLeft: 10, marginBottom: 8 }}>
-            <MiniTimeline currentStep={statusConfig.step} color={statusConfig.color} />
+          <div style={{ paddingLeft: 10, marginBottom: 6 }}>
+            <MiniTimeline currentStep={statusConfig.step} />
           </div>
         )}
 
@@ -1109,10 +1110,10 @@ export function OrdersPage({ orders }: Props) {
   }
 
   const handleQuickPay = () => {
-    // Navigate to first unpaid order or show payment modal
-    const firstUnpaid = stats.needsPayment[0]
-    if (firstUnpaid) {
-      navigate(`/order/${firstUnpaid.id}?action=pay`)
+    // Navigate to batch payment page with all unpaid order IDs
+    if (stats.needsPayment.length > 0) {
+      const orderIds = stats.needsPayment.map(o => o.id).join(',')
+      navigate(`/batch-payment?orders=${orderIds}`)
     }
   }
 

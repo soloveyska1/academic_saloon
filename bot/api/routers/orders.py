@@ -18,7 +18,9 @@ from bot.api.schemas import (
     PromoCodeRequest, PromoCodeResponse, FileUploadResponse,
     PaymentConfirmRequest, PaymentConfirmResponse, PaymentInfoResponse,
     SubmitReviewRequest, SubmitReviewResponse, RevisionRequestData, RevisionRequestResponse,
-    ConfirmWorkResponse
+    ConfirmWorkResponse,
+    BatchPaymentInfoRequest, BatchPaymentInfoResponse, BatchOrderItem,
+    BatchPaymentConfirmRequest, BatchPaymentConfirmResponse
 )
 from bot.api.dependencies import (
     get_loyalty_levels, get_loyalty_info, order_to_response
@@ -467,6 +469,186 @@ async def get_payment_info(
         remaining=round(float(order.final_price - (order.paid_amount or 0)), 2),
         card_number=card_formatted, card_holder=settings.PAYMENT_NAME.upper(),
         sbp_phone=phone_formatted, sbp_bank=settings.PAYMENT_BANKS,
+    )
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  BATCH PAYMENT (Pay All)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.post("/orders/batch-payment-info", response_model=BatchPaymentInfoResponse)
+async def get_batch_payment_info(
+    data: BatchPaymentInfoRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get payment info for multiple orders at once"""
+    # Get all orders belonging to user that are eligible for payment
+    result = await session.execute(
+        select(Order).where(
+            Order.id.in_(data.order_ids),
+            Order.user_id == tg_user.id,
+            Order.status.in_(['confirmed', 'waiting_payment'])
+        )
+    )
+    orders = result.scalars().all()
+
+    if not orders:
+        raise HTTPException(status_code=404, detail="Не найдено заказов для оплаты")
+
+    # Build order items
+    order_items = []
+    total_amount = 0.0
+
+    for order in orders:
+        if not order.final_price or order.final_price <= 0:
+            continue  # Skip orders without price
+
+        remaining = float(order.final_price - (order.paid_amount or 0))
+        if remaining <= 0:
+            continue  # Already paid
+
+        work_label = WORK_TYPE_LABELS.get(order.work_type, order.work_type)
+        order_items.append(BatchOrderItem(
+            id=order.id,
+            work_type_label=work_label,
+            subject=order.subject,
+            final_price=round(float(order.final_price), 2),
+            remaining=round(remaining, 2)
+        ))
+        total_amount += remaining
+
+    if not order_items:
+        raise HTTPException(status_code=400, detail="Все заказы уже оплачены")
+
+    # Format payment details
+    card_raw = settings.PAYMENT_CARD.replace(" ", "").replace("-", "")
+    card_formatted = " ".join([card_raw[i:i+4] for i in range(0, len(card_raw), 4)])
+
+    phone_raw = settings.PAYMENT_PHONE.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    if phone_raw.startswith("8"):
+        phone_raw = "+7" + phone_raw[1:]
+    elif not phone_raw.startswith("+"):
+        phone_raw = "+7" + phone_raw
+
+    phone_formatted = f"{phone_raw[:2]} ({phone_raw[2:5]}) {phone_raw[5:8]}-{phone_raw[8:10]}-{phone_raw[10:12]}" if len(phone_raw) >= 12 else phone_raw
+
+    return BatchPaymentInfoResponse(
+        orders=order_items,
+        total_amount=round(total_amount, 2),
+        orders_count=len(order_items),
+        card_number=card_formatted,
+        card_holder=settings.PAYMENT_NAME.upper(),
+        sbp_phone=phone_formatted,
+        sbp_bank=settings.PAYMENT_BANKS
+    )
+
+
+@router.post("/orders/batch-payment-confirm", response_model=BatchPaymentConfirmResponse)
+async def confirm_batch_payment(
+    request: Request,
+    data: BatchPaymentConfirmRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Confirm payment for multiple orders at once"""
+    await rate_limit_payment.check(request)
+
+    user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get eligible orders
+    result = await session.execute(
+        select(Order).where(
+            Order.id.in_(data.order_ids),
+            Order.user_id == tg_user.id,
+            Order.status.in_(['confirmed', 'waiting_payment'])
+        )
+    )
+    orders = result.scalars().all()
+
+    if not orders:
+        raise HTTPException(status_code=404, detail="Не найдено заказов для оплаты")
+
+    processed_orders = []
+    failed_orders = []
+    total_amount = 0.0
+
+    for order in orders:
+        if not order.final_price or order.final_price <= 0:
+            failed_orders.append(order.id)
+            continue
+
+        remaining = float(order.final_price - (order.paid_amount or 0))
+        if remaining <= 0:
+            failed_orders.append(order.id)
+            continue
+
+        # Calculate amount to pay based on scheme
+        amount_to_pay = remaining / 2 if data.payment_scheme == 'half' else remaining
+
+        # Update order status
+        order.status = OrderStatus.VERIFICATION_PENDING.value
+        order.payment_method = data.payment_method
+        order.payment_scheme = data.payment_scheme
+
+        processed_orders.append(order)
+        total_amount += amount_to_pay
+
+    await session.commit()
+
+    # Send notifications for all processed orders
+    for order in processed_orders:
+        try:
+            from bot.services.realtime_notifications import send_order_status_notification
+            await send_order_status_notification(
+                telegram_id=tg_user.id, order_id=order.id, new_status=order.status,
+                extra_data={"payment_method": data.payment_method, "payment_scheme": data.payment_scheme, "is_batch": True}
+            )
+        except Exception:
+            pass
+
+    # Send consolidated admin notification
+    if processed_orders:
+        try:
+            bot = get_bot()
+            from bot.services.live_cards import send_or_update_card
+
+            scheme_text = "100%" if data.payment_scheme == 'full' else "50% аванс"
+            method_text = {"card": "Карта", "sbp": "СБП", "transfer": "Перевод"}.get(data.payment_method, data.payment_method)
+            order_ids_str = ", ".join([f"#{o.id}" for o in processed_orders])
+
+            # Update live cards for each order
+            for order in processed_orders:
+                await send_or_update_card(
+                    bot=bot, order=order, session=session, client_username=user.username, client_name=user.fullname,
+                    extra_text=f"💳 Batch-оплата: {scheme_text} ({method_text})\n🔗 Заказы: {order_ids_str}"
+                )
+
+            # Send user notification about batch payment
+            await bot.send_message(
+                chat_id=user.telegram_id,
+                text=f"✅ <b>Заявка на оплату принята!</b>\n\nЗаказы: <code>{order_ids_str}</code>\nСумма: <b>{total_amount:,.0f}₽</b>\nСпособ: {method_text}\n\nМенеджер проверит поступление и подтвердит все заказы.".replace(",", " ")
+            )
+        except Exception as e:
+            logger.error(f"Batch payment notification error: {e}")
+
+    if not processed_orders:
+        return BatchPaymentConfirmResponse(
+            success=False,
+            message="Не удалось обработать ни один заказ",
+            processed_count=0,
+            total_amount=0,
+            failed_orders=[o.id for o in orders]
+        )
+
+    return BatchPaymentConfirmResponse(
+        success=True,
+        message=f"Заявка на оплату {len(processed_orders)} заказов отправлена на проверку",
+        processed_count=len(processed_orders),
+        total_amount=round(total_amount, 2),
+        failed_orders=failed_orders
     )
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -352,6 +352,75 @@ export async function updateAdminOrderProgress(orderId: number, percent: number,
   })
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  BATCH PAYMENT API
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface BatchOrderItem {
+  id: number
+  work_type_label: string
+  subject: string | null
+  final_price: number
+  remaining: number
+}
+
+export interface BatchPaymentInfo {
+  orders: BatchOrderItem[]
+  total_amount: number
+  orders_count: number
+  card_number: string
+  card_holder: string
+  sbp_phone: string
+  sbp_bank: string
+}
+
+export async function fetchBatchPaymentInfo(orderIds: number[]): Promise<BatchPaymentInfo> {
+  if (!hasTelegramContext() && IS_DEV) {
+    return {
+      orders: orderIds.map(id => ({
+        id,
+        work_type_label: 'Курсовая работа',
+        subject: 'Предмет',
+        final_price: 1000,
+        remaining: 1000,
+      })),
+      total_amount: orderIds.length * 1000,
+      orders_count: orderIds.length,
+      card_number: '0000 0000 0000 0000',
+      card_holder: 'DEV USER',
+      sbp_phone: '+7 (000) 000-00-00',
+      sbp_bank: 'Банк',
+    }
+  }
+  return await apiFetch<BatchPaymentInfo>('/orders/batch-payment-info', {
+    method: 'POST',
+    body: JSON.stringify({ order_ids: orderIds }),
+  })
+}
+
+export interface BatchPaymentConfirmResponse {
+  success: boolean
+  message: string
+  processed_count: number
+  total_amount: number
+  failed_orders: number[]
+}
+
+export async function confirmBatchPayment(
+  orderIds: number[],
+  paymentMethod: string,
+  paymentScheme: string
+): Promise<BatchPaymentConfirmResponse> {
+  return await apiFetch<BatchPaymentConfirmResponse>('/orders/batch-payment-confirm', {
+    method: 'POST',
+    body: JSON.stringify({
+      order_ids: orderIds,
+      payment_method: paymentMethod,
+      payment_scheme: paymentScheme,
+    }),
+  })
+}
+
 // MOCK DATA GENERATOR
 function getMockUserData(): UserData {
   return {
