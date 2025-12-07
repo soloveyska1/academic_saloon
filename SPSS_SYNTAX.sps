@@ -1,9 +1,19 @@
-* SPSS SYNTAX для анализа данных исследования.
-* Идентификация эмоций у младших школьников с ЗПР.
+* ============================================================================.
+* ПОЛНЫЙ СИНТАКСИС SPSS ДЛЯ АНАЛИЗА ДАННЫХ ИССЛЕДОВАНИЯ.
+* Идентификация эмоций у младших школьников с ЗПР церебрально-органического генеза.
+* ============================================================================.
+* Выборка: n=50 (25 норма + 25 ЗПР), возраст 9-10 лет.
+* Методики: Анкета педагогу, Эмоц. пиктограмма, Незаконч. предложения,.
+*           КРС, Социометрия, Эмоциональные лица.
+* ============================================================================.
 
-* =============================================================================.
-* ВВОД ДАННЫХ.
-* =============================================================================.
+* Настройки вывода.
+SET PRINTBACK=LISTING.
+OUTPUT NEW.
+
+* ============================================================================.
+* БЛОК 1: ВВОД ДАННЫХ (50 испытуемых).
+* ============================================================================.
 
 DATA LIST FREE / ID Group Express UnderstandSelf UnderstandOthers Friends
   RE V UOZ EO FEN
@@ -65,34 +75,40 @@ BEGIN DATA
 50 2 2 1 2 1 10 7 10 10 8 0 0 0 1 0 1 -1 -1 -2 1 -0.5 0 2 2 1 1 3 4 2 1 -1 1 0.0 10
 END DATA.
 
+EXECUTE.
+
+* ============================================================================.
+* БЛОК 2: МЕТКИ ПЕРЕМЕННЫХ.
+* ============================================================================.
+
 VARIABLE LABELS
   ID 'Номер испытуемого'
   Group 'Группа (1=Норма, 2=ЗПР)'
-  Express 'Умение выражать эмоции'
-  UnderstandSelf 'Понимание себя'
-  UnderstandOthers 'Понимание других'
-  Friends 'Наличие друзей'
-  RE 'Представления об эмоциях'
-  V 'Вербализация эмоций'
-  UOZ 'Уровень опосред. запоминания'
-  EO 'Эмоциональный опыт'
-  FEN 'Фактор эмоц. напряженности'
-  Mama 'Отношение к маме'
-  Father 'Отношение к отцу'
-  Siblings 'Отношение к сиблингам'
-  Family 'Отношение к семье'
-  Peers 'Отношение к ровесникам'
-  School 'Отношение к школе'
-  People 'Отношение к людям'
-  Abilities 'Отношение к способностям'
-  Negative 'Негативные переживания'
-  Dreams 'Мечты и планы'
-  Illness 'Отношение к болезни'
-  BSS 'Благоприятная сем. ситуация'
-  Anxiety 'Тревожность'
-  Conflict 'Конфликтность'
-  Inferiority 'Чувство неполноценности'
-  Hostility 'Враждебность'
+  Express 'Умение выражать эмоции (0-2)'
+  UnderstandSelf 'Понимание себя (0-2)'
+  UnderstandOthers 'Понимание других (0-2)'
+  Friends 'Наличие друзей (0-2)'
+  RE 'Представления об эмоциях (0-12)'
+  V 'Вербализация эмоций (0-12)'
+  UOZ 'Уровень опосред. запоминания (0-12)'
+  EO 'Эмоциональный опыт (0-12)'
+  FEN 'Фактор эмоц. напряженности (0-12)'
+  Mama 'Отношение к маме (-2 до +2)'
+  Father 'Отношение к отцу (-2 до +2)'
+  Siblings 'Отношение к сиблингам (-2 до +2)'
+  Family 'Отношение к семье (-2 до +2)'
+  Peers 'Отношение к ровесникам (-2 до +2)'
+  School 'Отношение к школе (-2 до +2)'
+  People 'Отношение к людям (-2 до +2)'
+  Abilities 'Отношение к способностям (-2 до +2)'
+  Negative 'Негативные переживания (-2 до +2)'
+  Dreams 'Мечты и планы (-2 до +2)'
+  Illness 'Отношение к болезни (-2 до +2)'
+  BSS 'Благоприятная сем. ситуация (0-3)'
+  Anxiety 'Тревожность (0-3)'
+  Conflict 'Конфликтность (0-3)'
+  Inferiority 'Чувство неполноценности (0-3)'
+  Hostility 'Враждебность (0-3)'
   LichPlus 'Личностные выборы (+)'
   LichMinus 'Личностные выборы (-)'
   PoznPlus 'Познавательные выборы (+)'
@@ -104,106 +120,143 @@ VARIABLE LABELS
 
 VALUE LABELS Group 1 'Норма' 2 'ЗПР'.
 
-* =============================================================================.
-* ОПИСАТЕЛЬНАЯ СТАТИСТИКА.
-* =============================================================================.
+EXECUTE.
+
+* ============================================================================.
+* БЛОК 3: ОПИСАТЕЛЬНАЯ СТАТИСТИКА ПО ГРУППАМ.
+* ============================================================================.
+
+TITLE 'ОПИСАТЕЛЬНАЯ СТАТИСТИКА ПО ГРУППАМ'.
 
 SORT CASES BY Group.
 SPLIT FILE BY Group.
 
 DESCRIPTIVES VARIABLES=Express UnderstandSelf UnderstandOthers Friends
-  RE V UOZ EO FEN
-  Mama Father Siblings Family Peers School People Abilities Negative Dreams Illness
-  BSS Anxiety Conflict Inferiority Hostility
-  LichPlus LichMinus PoznPlus PoznMinus LichStatus PoznStatus TotalStatus
-  EmoLica
+  /STATISTICS=MEAN STDDEV MIN MAX.
+
+DESCRIPTIVES VARIABLES=RE V UOZ EO FEN
+  /STATISTICS=MEAN STDDEV MIN MAX.
+
+DESCRIPTIVES VARIABLES=Mama Father Siblings Family Peers School People Abilities Negative Dreams Illness
+  /STATISTICS=MEAN STDDEV MIN MAX.
+
+DESCRIPTIVES VARIABLES=BSS Anxiety Conflict Inferiority Hostility
+  /STATISTICS=MEAN STDDEV MIN MAX.
+
+DESCRIPTIVES VARIABLES=LichPlus LichMinus PoznPlus PoznMinus LichStatus PoznStatus TotalStatus
+  /STATISTICS=MEAN STDDEV MIN MAX.
+
+DESCRIPTIVES VARIABLES=EmoLica
   /STATISTICS=MEAN STDDEV MIN MAX.
 
 SPLIT FILE OFF.
 
-* =============================================================================.
-* КРИТЕРИЙ МАННА-УИТНИ (непараметрический).
-* =============================================================================.
+* ============================================================================.
+* БЛОК 4: КРИТЕРИЙ МАННА-УИТНИ (все методики).
+* ============================================================================.
 
-* Анкета педагогу.
+TITLE 'КРИТЕРИЙ МАННА-УИТНИ: АНКЕТА ПЕДАГОГУ'.
 NPAR TESTS
   /M-W= Express UnderstandSelf UnderstandOthers Friends BY Group(1 2)
   /STATISTICS=DESCRIPTIVES
   /MISSING ANALYSIS.
 
-* Эмоциональная пиктограмма.
+TITLE 'КРИТЕРИЙ МАННА-УИТНИ: ЭМОЦИОНАЛЬНАЯ ПИКТОГРАММА'.
 NPAR TESTS
   /M-W= RE V UOZ EO FEN BY Group(1 2)
   /STATISTICS=DESCRIPTIVES
   /MISSING ANALYSIS.
 
-* Незаконченные предложения.
+TITLE 'КРИТЕРИЙ МАННА-УИТНИ: НЕЗАКОНЧЕННЫЕ ПРЕДЛОЖЕНИЯ'.
 NPAR TESTS
   /M-W= Mama Father Siblings Family Peers School People Abilities Negative Dreams Illness BY Group(1 2)
   /STATISTICS=DESCRIPTIVES
   /MISSING ANALYSIS.
 
-* КРС.
+TITLE 'КРИТЕРИЙ МАННА-УИТНИ: КРС (КИНЕТИЧЕСКИЙ РИСУНОК СЕМЬИ)'.
 NPAR TESTS
   /M-W= BSS Anxiety Conflict Inferiority Hostility BY Group(1 2)
   /STATISTICS=DESCRIPTIVES
   /MISSING ANALYSIS.
 
-* Социометрия.
+TITLE 'КРИТЕРИЙ МАННА-УИТНИ: СОЦИОМЕТРИЯ'.
 NPAR TESTS
   /M-W= LichPlus LichMinus PoznPlus PoznMinus LichStatus PoznStatus TotalStatus BY Group(1 2)
   /STATISTICS=DESCRIPTIVES
   /MISSING ANALYSIS.
 
-* Эмоциональные лица.
+TITLE 'КРИТЕРИЙ МАННА-УИТНИ: ЭМОЦИОНАЛЬНЫЕ ЛИЦА'.
 NPAR TESTS
   /M-W= EmoLica BY Group(1 2)
   /STATISTICS=DESCRIPTIVES
   /MISSING ANALYSIS.
 
-* =============================================================================.
-* КОРРЕЛЯЦИОННЫЙ АНАЛИЗ СПИРМЕНА.
-* =============================================================================.
+* ============================================================================.
+* БЛОК 5: КОРРЕЛЯЦИОННЫЙ АНАЛИЗ СПИРМЕНА.
+* ============================================================================.
 
-* Корреляции для группы ЗПР.
+TITLE 'КОРРЕЛЯЦИИ СПИРМЕНА: ГРУППА ЗПР (n=25)'.
 USE ALL.
 COMPUTE filter_$=(Group=2).
 FILTER BY filter_$.
 NONPAR CORR
-  /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus Peers
+  /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus TotalStatus Peers Father Family
   /PRINT=SPEARMAN TWOTAIL NOSIG FULL
   /MISSING=PAIRWISE.
 FILTER OFF.
 
-* Корреляции для группы Нормы.
+TITLE 'КОРРЕЛЯЦИИ СПИРМЕНА: ГРУППА НОРМЫ (n=25)'.
 USE ALL.
 COMPUTE filter_$=(Group=1).
 FILTER BY filter_$.
 NONPAR CORR
-  /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus Peers
+  /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus TotalStatus Peers Father Family
   /PRINT=SPEARMAN TWOTAIL NOSIG FULL
   /MISSING=PAIRWISE.
 FILTER OFF.
 
-* Общие корреляции (N=50).
+TITLE 'КОРРЕЛЯЦИИ СПИРМЕНА: ВСЯ ВЫБОРКА (N=50)'.
 USE ALL.
 NONPAR CORR
-  /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus Peers
+  /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus TotalStatus Peers Father Family
   /PRINT=SPEARMAN TWOTAIL NOSIG FULL
   /MISSING=PAIRWISE.
 
-* =============================================================================.
-* ДОПОЛНИТЕЛЬНО: ПРОВЕРКА НОРМАЛЬНОСТИ РАСПРЕДЕЛЕНИЯ.
-* =============================================================================.
+* ============================================================================.
+* БЛОК 6: ПРОВЕРКА НОРМАЛЬНОСТИ (ШАПИРО-УИЛКА).
+* ============================================================================.
 
-EXAMINE VARIABLES=Express UnderstandSelf UnderstandOthers Friends
-  RE V UOZ EO FEN
-  BSS Anxiety Conflict Inferiority Hostility
-  LichStatus PoznStatus TotalStatus
-  EmoLica BY Group
-  /PLOT BOXPLOT STEMLEAF NPPLOT
+TITLE 'ПРОВЕРКА НОРМАЛЬНОСТИ РАСПРЕДЕЛЕНИЯ'.
+EXAMINE VARIABLES=V EmoLica Anxiety BSS LichStatus TotalStatus BY Group
+  /PLOT BOXPLOT NPPLOT
   /COMPARE GROUPS
   /STATISTICS DESCRIPTIVES
   /CINTERVAL 95
   /MISSING LISTWISE
   /NOTOTAL.
+
+* ============================================================================.
+* БЛОК 7: ДОПОЛНИТЕЛЬНЫЕ РАСЧЁТЫ.
+* ============================================================================.
+
+* Создание переменной "Процент правильных опознаний".
+COMPUTE EmoLica_Pct = EmoLica / 17 * 100.
+VARIABLE LABELS EmoLica_Pct 'Процент правильных опознаний эмоций'.
+EXECUTE.
+
+* Расчёт размера эффекта (r = Z / sqrt(N)).
+* Примечание: Z-значение берётся из результатов Mann-Whitney.
+
+TITLE 'ОПИСАТЕЛЬНАЯ СТАТИСТИКА: ПРОЦЕНТ ОПОЗНАНИЙ'.
+SORT CASES BY Group.
+SPLIT FILE BY Group.
+DESCRIPTIVES VARIABLES=EmoLica_Pct
+  /STATISTICS=MEAN STDDEV MIN MAX.
+SPLIT FILE OFF.
+
+* ============================================================================.
+* КОНЕЦ СИНТАКСИСА.
+* ============================================================================.
+* Для выполнения: Выделите весь текст и нажмите Ctrl+R (Run).
+* Или: Run -> All.
+* ============================================================================.
