@@ -180,6 +180,7 @@ class OrderCreateRequest(BaseModel):
     topic: Optional[str] = Field(None, max_length=500)
     deadline: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=5000)
+    promo_code: Optional[str] = Field(None, max_length=50)  # Optional promo code
 
     @field_validator('subject', 'topic', 'description')
     @classmethod
@@ -216,6 +217,14 @@ class OrderCreateRequest(BaseModel):
             if not re.match(r'^\\d{1,2}\\.\\d{1,2}\\.\\d{4}$', v):
                 raise ValueError('Некорректный срок выполнения')
         return v
+
+    @field_validator('promo_code')
+    @classmethod
+    def validate_promo_code(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v.strip() == '':
+            return None
+        # Clean and uppercase
+        return re.sub(r'[^A-Za-z0-9]', '', v).upper()
 
 
 class OrderCreateResponse(BaseModel):

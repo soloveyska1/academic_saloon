@@ -239,3 +239,74 @@ async def notify_data_refresh(telegram_id: int, refresh_type: str = "all"):
 def get_manager() -> ConnectionManager:
     """Get the connection manager instance"""
     return manager
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ADMIN/GOD MODE NOTIFICATIONS
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Set of admin telegram IDs that should receive admin notifications
+_admin_ids: Set[int] = set()
+
+def register_admin_id(admin_id: int):
+    """Register an admin ID to receive admin notifications"""
+    _admin_ids.add(admin_id)
+    logger.info(f"[WS Admin] Registered admin {admin_id} for notifications")
+
+def unregister_admin_id(admin_id: int):
+    """Unregister an admin ID from admin notifications"""
+    _admin_ids.discard(admin_id)
+
+async def notify_admin_new_order(order_data: dict):
+    """
+    Notify all connected admins about a new order.
+    order_data should include: id, work_type, subject, user info, etc.
+    """
+    message = {
+        "type": "admin_new_order",
+        "order": order_data,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    sent_to = []
+    for admin_id in _admin_ids:
+        if await manager.send_to_user(admin_id, message):
+            sent_to.append(admin_id)
+    if sent_to:
+        logger.info(f"[WS Admin] Notified admins {sent_to} about new order #{order_data.get('id')}")
+    return len(sent_to) > 0
+
+async def notify_admin_payment_pending(order_id: int, user_fullname: str, amount: float, payment_method: str):
+    """
+    Notify admins when a payment is pending verification.
+    """
+    message = {
+        "type": "admin_payment_pending",
+        "order_id": order_id,
+        "user_fullname": user_fullname,
+        "amount": amount,
+        "payment_method": payment_method,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    sent_to = []
+    for admin_id in _admin_ids:
+        if await manager.send_to_user(admin_id, message):
+            sent_to.append(admin_id)
+    if sent_to:
+        logger.info(f"[WS Admin] Notified admins about payment pending for order #{order_id}")
+    return len(sent_to) > 0
+
+async def notify_admin_event(event_type: str, data: dict):
+    """
+    Generic admin notification for various events.
+    event_type: 'new_order', 'payment_pending', 'new_message', 'user_online', etc.
+    """
+    message = {
+        "type": f"admin_{event_type}",
+        "data": data,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    sent_to = []
+    for admin_id in _admin_ids:
+        if await manager.send_to_user(admin_id, message):
+            sent_to.append(admin_id)
+    return len(sent_to) > 0

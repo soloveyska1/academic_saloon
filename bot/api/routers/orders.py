@@ -339,6 +339,7 @@ async def create_order(
     await rate_limit_create.check(request)
     from bot.handlers.order_chat import get_or_create_topic
     from bot.services.live_cards import send_or_update_card
+    from bot.services.promo_service import PromoService
 
     logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}")
 
@@ -375,7 +376,7 @@ async def create_order(
     except ValueError:
         return OrderCreateResponse(success=False, order_id=0, message=f"Неизвестный тип работы: {data.work_type}", price=None, is_manual_required=False)
 
-    # Calculate price
+    # Calculate base price with loyalty discount
     try:
         user_discount = 0
         loyalty_levels = await get_loyalty_levels(session)
@@ -391,6 +392,32 @@ async def create_order(
         logger.error(f"Price calc error: {price_error}")
         return OrderCreateResponse(success=False, order_id=0, message=f"Ошибка расчёта цены", price=None, is_manual_required=False)
 
+    # Handle promo code if provided
+    promo_discount = 0
+    promo_code_used = None
+    if data.promo_code:
+        is_valid, message, discount = await PromoService.check_promo_code(
+            session, data.promo_code, tg_user.id
+        )
+        if is_valid:
+            promo_discount = discount
+            promo_code_used = data.promo_code
+            logger.info(f"[API /orders/create] Promo code {data.promo_code} applied: {discount}% discount")
+        else:
+            # Also check hardcoded promos (legacy)
+            hardcoded_promos = {
+                "COWBOY20": 20, "SALOON10": 10, "WELCOME5": 5,
+            }
+            if data.promo_code in hardcoded_promos:
+                promo_discount = hardcoded_promos[data.promo_code]
+                promo_code_used = data.promo_code
+                logger.info(f"[API /orders/create] Hardcoded promo {data.promo_code} applied: {promo_discount}% discount")
+
+    # Calculate final price with promo discount
+    base_price = float(price_calc.final_price) if not price_calc.is_manual_required else 0.0
+    total_discount = min(user_discount + promo_discount, 50)  # Max 50% total discount
+    final_order_price = base_price * (1 - promo_discount / 100) if promo_discount > 0 else base_price
+
     initial_status = OrderStatus.WAITING_ESTIMATION.value
 
     order = Order(
@@ -400,10 +427,15 @@ async def create_order(
         topic=data.topic,
         description=data.description,
         deadline=data.deadline,
-        price=float(price_calc.final_price) if not price_calc.is_manual_required else 0.0,
-        discount=float(user_discount),
+        price=base_price,
+        discount=float(total_discount),
         status=initial_status,
     )
+
+    # Add promo info to description if used
+    if promo_code_used:
+        promo_note = f"\n\n🏷️ Промокод: {promo_code_used} (-{promo_discount}%)"
+        order.description = (order.description or '') + promo_note
 
     try:
         session.add(order)
@@ -428,6 +460,23 @@ async def create_order(
     except Exception as e:
         logger.warning(f"[WS] Failed: {e}")
 
+    # Notify admins via WebSocket
+    try:
+        from bot.api.websocket import notify_admin_new_order
+        work_label = WORK_TYPE_LABELS.get(work_type_enum, data.work_type)
+        await notify_admin_new_order({
+            "id": order.id,
+            "work_type": data.work_type,
+            "work_type_label": work_label,
+            "subject": data.subject,
+            "user_fullname": user.fullname,
+            "user_username": user.username,
+            "promo_code": promo_code_used,
+            "promo_discount": promo_discount if promo_code_used else None,
+        })
+    except Exception as e:
+        logger.warning(f"[WS Admin] Failed to notify admins: {e}")
+
     # Admin notification
     try:
         conv, topic_id = await get_or_create_topic(
@@ -437,13 +486,16 @@ async def create_order(
             order_id=order.id,
             conv_type=ConversationType.ORDER_CHAT.value,
         )
+        admin_extra_text = "📱 Заказ из Mini App"
+        if promo_code_used:
+            admin_extra_text += f"\n🏷️ Промокод: {promo_code_used} (-{promo_discount}%)"
         await send_or_update_card(
             bot=bot,
             order=order,
             session=session,
             client_username=user.username,
             client_name=user.fullname,
-            extra_text="📱 Заказ из Mini App",
+            extra_text=admin_extra_text,
         )
     except Exception as e:
         logger.error(f"Admin Notify Failed: {e}")
@@ -451,7 +503,8 @@ async def create_order(
     # User notification
     try:
         work_label = WORK_TYPE_LABELS.get(work_type_enum, data.work_type)
-        user_message = f"✅ <b>Заказ #{order.id} принят!</b>\n\n📋 <b>{work_label}</b>\n📚 {data.subject}\n⏰ Срок: {data.deadline}\n\nМенеджер оценит заказ и вернётся с точной ценой."
+        promo_text = f"\n🏷️ Промокод: <code>{promo_code_used}</code> (-{promo_discount}%)" if promo_code_used else ""
+        user_message = f"✅ <b>Заказ #{order.id} принят!</b>\n\n📋 <b>{work_label}</b>\n📚 {data.subject}\n⏰ Срок: {data.deadline}{promo_text}\n\nМенеджер оценит заказ и вернётся с точной ценой."
         from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📱 Открыть Мини-апп", web_app={"url": f"{settings.WEBAPP_URL}/orders"})],
@@ -590,6 +643,18 @@ async def confirm_payment(
         await send_order_status_notification(
             telegram_id=tg_user.id, order_id=order_id, new_status=order.status,
             extra_data={"payment_method": data.payment_method, "payment_scheme": data.payment_scheme}
+        )
+    except Exception:
+        pass
+
+    # Notify admins about pending payment
+    try:
+        from bot.api.websocket import notify_admin_payment_pending
+        await notify_admin_payment_pending(
+            order_id=order.id,
+            user_fullname=user.fullname if user else "Unknown",
+            amount=amount_to_pay,
+            payment_method=data.payment_method
         )
     except Exception:
         pass

@@ -1519,3 +1519,41 @@ async def get_system_info(
         "orders_channel_id": settings.ORDERS_CHANNEL_ID,
         "admin_group_id": settings.ADMIN_GROUP_ID,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                          WEBSOCKET ADMIN REGISTRATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/subscribe")
+async def subscribe_admin_notifications(
+    tg_user: TelegramUser = Depends(get_current_user),
+):
+    """
+    Register this admin to receive real-time WebSocket notifications.
+    Call this when opening God Mode page to enable push notifications.
+    """
+    require_god_mode(tg_user)
+
+    from bot.api.websocket import register_admin_id
+    register_admin_id(tg_user.id)
+
+    logger.info(f"[GOD MODE] Admin {tg_user.id} subscribed to notifications")
+    return {"success": True, "message": "Subscribed to admin notifications"}
+
+
+@router.post("/unsubscribe")
+async def unsubscribe_admin_notifications(
+    tg_user: TelegramUser = Depends(get_current_user),
+):
+    """
+    Unregister this admin from real-time notifications.
+    Call this when leaving God Mode page.
+    """
+    require_god_mode(tg_user)
+
+    from bot.api.websocket import unregister_admin_id
+    unregister_admin_id(tg_user.id)
+
+    logger.info(f"[GOD MODE] Admin {tg_user.id} unsubscribed from notifications")
+    return {"success": True, "message": "Unsubscribed from admin notifications"}
