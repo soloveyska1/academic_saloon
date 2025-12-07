@@ -526,6 +526,8 @@ async def admin_message_from_topic(
     Обработчик сообщений админа из топика.
     Пересылает клиенту.
     """
+    logger.info(f"[ADMIN MSG] Received message in admin group! chat_id={message.chat.id}, thread_id={message.message_thread_id}, text={repr(message.text)}")
+
     # Игнорируем сообщения бота (кроме анонимного админа)
     if message.from_user.is_bot and message.from_user.id != 1087968824:
         return
