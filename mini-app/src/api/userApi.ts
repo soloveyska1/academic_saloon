@@ -421,6 +421,239 @@ export async function confirmBatchPayment(
   })
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  GOD MODE API
+// ═══════════════════════════════════════════════════════════════════════════
+
+import type { GodDashboard, GodOrder, GodUser, GodPromo, GodLog, GodLiveUser } from '../types'
+
+// Dashboard
+export async function fetchGodDashboard(): Promise<GodDashboard> {
+  return apiFetch<GodDashboard>('/god/dashboard')
+}
+
+// Orders
+export async function fetchGodOrders(params?: {
+  status?: string
+  search?: string
+  limit?: number
+  offset?: number
+}): Promise<{ orders: GodOrder[]; total: number; has_more: boolean }> {
+  const queryParams = new URLSearchParams()
+  if (params?.status && params.status !== 'all') queryParams.append('status', params.status)
+  if (params?.search) queryParams.append('search', params.search)
+  if (params?.limit) queryParams.append('limit', params.limit.toString())
+  if (params?.offset) queryParams.append('offset', params.offset.toString())
+  const query = queryParams.toString()
+  return apiFetch(`/god/orders${query ? `?${query}` : ''}`)
+}
+
+export async function fetchGodOrderDetails(orderId: number): Promise<{
+  order: GodOrder
+  user: GodUser | null
+  messages: Array<{ id: number; sender_type: string; message_text: string | null; created_at: string | null }>
+}> {
+  return apiFetch(`/god/orders/${orderId}`)
+}
+
+export async function updateGodOrderStatus(orderId: number, status: string): Promise<{ success: boolean }> {
+  return apiFetch(`/god/orders/${orderId}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  })
+}
+
+export async function updateGodOrderPrice(orderId: number, price: number): Promise<{ success: boolean }> {
+  return apiFetch(`/god/orders/${orderId}/price`, {
+    method: 'POST',
+    body: JSON.stringify({ price }),
+  })
+}
+
+export async function updateGodOrderProgress(orderId: number, progress: number, statusText?: string): Promise<{ success: boolean }> {
+  return apiFetch(`/god/orders/${orderId}/progress`, {
+    method: 'POST',
+    body: JSON.stringify({ progress, status_text: statusText }),
+  })
+}
+
+export async function confirmGodPayment(orderId: number, amount?: number, isFull?: boolean): Promise<{ success: boolean }> {
+  return apiFetch(`/god/orders/${orderId}/confirm-payment`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, is_full: isFull }),
+  })
+}
+
+export async function rejectGodPayment(orderId: number, reason?: string): Promise<{ success: boolean }> {
+  return apiFetch(`/god/orders/${orderId}/reject-payment`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export async function sendGodOrderMessage(orderId: number, text: string): Promise<{ success: boolean }> {
+  return apiFetch(`/god/orders/${orderId}/message`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+}
+
+// Users
+export async function fetchGodUsers(params?: {
+  search?: string
+  filter_type?: string
+  limit?: number
+  offset?: number
+}): Promise<{ users: GodUser[]; total: number; has_more: boolean }> {
+  const queryParams = new URLSearchParams()
+  if (params?.search) queryParams.append('search', params.search)
+  if (params?.filter_type) queryParams.append('filter_type', params.filter_type)
+  if (params?.limit) queryParams.append('limit', params.limit.toString())
+  if (params?.offset) queryParams.append('offset', params.offset.toString())
+  const query = queryParams.toString()
+  return apiFetch(`/god/users${query ? `?${query}` : ''}`)
+}
+
+export async function fetchGodUserDetails(userId: number): Promise<{
+  user: GodUser
+  orders: GodOrder[]
+  transactions: Array<{ id: number; amount: number; type: string; reason: string; description: string | null; created_at: string | null }>
+}> {
+  return apiFetch(`/god/users/${userId}`)
+}
+
+export async function modifyGodUserBalance(userId: number, amount: number, reason: string, notify?: boolean): Promise<{ success: boolean }> {
+  return apiFetch(`/god/users/${userId}/balance`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, reason, notify }),
+  })
+}
+
+export async function toggleGodUserBan(userId: number, ban: boolean, reason?: string): Promise<{ success: boolean }> {
+  return apiFetch(`/god/users/${userId}/ban`, {
+    method: 'POST',
+    body: JSON.stringify({ ban, reason }),
+  })
+}
+
+export async function toggleGodUserWatch(userId: number, watch: boolean): Promise<{ success: boolean }> {
+  return apiFetch(`/god/users/${userId}/watch`, {
+    method: 'POST',
+    body: JSON.stringify({ watch }),
+  })
+}
+
+export async function updateGodUserNotes(userId: number, notes: string): Promise<{ success: boolean }> {
+  return apiFetch(`/god/users/${userId}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  })
+}
+
+// Promos
+export async function fetchGodPromos(): Promise<{ promos: GodPromo[] }> {
+  return apiFetch('/god/promos')
+}
+
+export async function createGodPromo(data: {
+  code: string
+  discount_percent: number
+  max_uses?: number
+  valid_until?: string
+}): Promise<{ success: boolean; promo_id: number }> {
+  return apiFetch('/god/promos', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function toggleGodPromo(promoId: number): Promise<{ success: boolean; is_active: boolean }> {
+  return apiFetch(`/god/promos/${promoId}/toggle`, { method: 'POST' })
+}
+
+export async function deleteGodPromo(promoId: number): Promise<{ success: boolean }> {
+  return apiFetch(`/god/promos/${promoId}`, { method: 'DELETE' })
+}
+
+// Live monitoring
+export async function fetchGodLiveActivity(): Promise<{ online_count: number; users: GodLiveUser[] }> {
+  return apiFetch('/god/live')
+}
+
+// Report user activity (for tracking)
+export async function reportUserActivity(page: string, action?: string, orderId?: number): Promise<void> {
+  try {
+    await apiFetch('/god/activity', {
+      method: 'POST',
+      body: JSON.stringify({
+        page,
+        action,
+        order_id: orderId,
+        platform: /iPhone|iPad|iPod/.test(navigator.userAgent) ? 'iOS' :
+          /Android/.test(navigator.userAgent) ? 'Android' : 'Web',
+      }),
+    })
+  } catch {
+    // Silent fail - activity tracking is not critical
+  }
+}
+
+// Logs
+export async function fetchGodLogs(params?: {
+  action_type?: string
+  target_type?: string
+  limit?: number
+  offset?: number
+}): Promise<{ logs: GodLog[] }> {
+  const queryParams = new URLSearchParams()
+  if (params?.action_type) queryParams.append('action_type', params.action_type)
+  if (params?.target_type) queryParams.append('target_type', params.target_type)
+  if (params?.limit) queryParams.append('limit', params.limit.toString())
+  if (params?.offset) queryParams.append('offset', params.offset.toString())
+  const query = queryParams.toString()
+  return apiFetch(`/god/logs${query ? `?${query}` : ''}`)
+}
+
+// SQL Console
+export async function executeGodSql(query: string): Promise<{
+  success: boolean
+  columns: string[]
+  rows: string[][]
+  error?: string
+  total_rows?: number
+}> {
+  return apiFetch('/god/sql', {
+    method: 'POST',
+    body: JSON.stringify({ query }),
+  })
+}
+
+// Broadcast
+export async function sendGodBroadcast(text: string, target: 'all' | 'active' | 'with_orders'): Promise<{
+  success: boolean
+  sent: number
+  failed: number
+  total: number
+}> {
+  return apiFetch('/god/broadcast', {
+    method: 'POST',
+    body: JSON.stringify({ text, target }),
+  })
+}
+
+// System info
+export async function fetchGodSystemInfo(): Promise<{
+  bot_username: string
+  admin_ids: number[]
+  support_username: string
+  webapp_url: string
+  payment_phone: string
+  payment_card: string
+  payment_banks: string
+}> {
+  return apiFetch('/god/system')
+}
+
 // MOCK DATA GENERATOR
 function getMockUserData(): UserData {
   return {

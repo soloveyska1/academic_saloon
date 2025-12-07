@@ -262,3 +262,136 @@ export interface AdminSqlResponse {
   error?: string
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//                          GOD MODE TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface GodDashboard {
+  timestamp: string
+  orders: {
+    total: number
+    active: number
+    needing_attention: number
+    today: number
+    completed_today: number
+    by_status: Record<string, number>
+  }
+  revenue: {
+    total: number
+    today: number
+    week: number
+    month: number
+    average_order: number
+  }
+  users: {
+    total: number
+    today: number
+    week: number
+    banned: number
+    watched: number
+    online: number
+    total_bonus_balance: number
+  }
+  promos: {
+    active: number
+    total_uses: number
+  }
+}
+
+export interface GodOrder {
+  id: number
+  status: string
+  work_type: string
+  work_type_label: string
+  subject: string | null
+  topic: string | null
+  deadline: string | null
+  price: number
+  final_price: number
+  paid_amount: number
+  discount: number
+  bonus_used: number
+  progress: number
+  payment_scheme: string | null
+  files_url: string | null
+  created_at: string
+  user_telegram_id: number
+  user_fullname: string
+  user_username: string | null
+  admin_notes: string | null
+  revision_count: number
+  description: string | null
+}
+
+export interface GodUser {
+  id: number
+  telegram_id: number
+  username: string | null
+  fullname: string | null
+  balance: number
+  orders_count: number
+  total_spent: number
+  is_banned: boolean
+  is_watched: boolean
+  admin_notes: string | null
+  ban_reason?: string | null
+  rank_name: string
+  rank_emoji: string
+  rank_cashback?: number
+  loyalty_status: string
+  loyalty_discount: number
+  referrer_id?: number | null
+  referrals_count: number
+  referral_earnings: number
+  daily_bonus_streak?: number
+  created_at: string | null
+  updated_at?: string | null
+}
+
+export interface GodPromo {
+  id: number
+  code: string
+  discount_percent: number
+  max_uses: number
+  current_uses: number
+  is_active: boolean
+  valid_from: string | null
+  valid_until: string | null
+  created_at: string | null
+}
+
+export interface GodLog {
+  id: number
+  admin_id: number
+  admin_username: string | null
+  action_type: string
+  action_emoji: string
+  target_type: string | null
+  target_id: number | null
+  details: string | null
+  old_value: Record<string, unknown> | null
+  new_value: Record<string, unknown> | null
+  created_at: string | null
+}
+
+export interface GodLiveUser {
+  telegram_id: number
+  username: string | null
+  fullname: string | null
+  current_page: string | null
+  current_action: string | null
+  current_order_id: number | null
+  session_duration_min: number
+  last_activity: string | null
+  platform: string | null
+}
+
+export interface GodOrderMessage {
+  id: number
+  sender_type: string
+  message_text: string | null
+  file_type: string | null
+  file_name: string | null
+  created_at: string | null
+}
+
