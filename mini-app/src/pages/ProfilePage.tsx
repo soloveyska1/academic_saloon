@@ -397,7 +397,7 @@ export function ProfilePage({ user }: Props) {
           whileTap={{ scale: 0.98 }}
           onClick={() => {
             hapticSuccess()
-            navigate('/admin')
+            navigate('/god')
           }}
           style={{
             width: '100%',
