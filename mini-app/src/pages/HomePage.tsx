@@ -1787,8 +1787,9 @@ export function HomePage({ user }: Props) {
           ...glassStyle,
           cursor: 'pointer',
           padding: '20px 24px',
-          border: '1px solid var(--border-gold)',
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(59,130,246,0.04) 100%)',
+          border: '1px solid rgba(212,175,55,0.2)',
+          background: 'linear-gradient(145deg, rgba(25,25,28,0.95) 0%, rgba(18,18,20,0.98) 100%)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.05)',
         }}
       >
         <CardInnerShine />
@@ -1800,117 +1801,159 @@ export function HomePage({ user }: Props) {
             justifyContent: 'space-between',
             marginBottom: 20,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.1))',
-                border: '1px solid rgba(212,175,55,0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Briefcase size={20} color="#D4AF37" strokeWidth={1.5} />
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <motion.div
+                animate={{
+                  boxShadow: ['0 0 0 rgba(212,175,55,0)', '0 0 15px rgba(212,175,55,0.3)', '0 0 0 rgba(212,175,55,0)'],
+                }}
+                transition={{ duration: 3, repeat: Infinity }}
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
+                  background: 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
+                  border: '1px solid rgba(212,175,55,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Briefcase size={20} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
+              </motion.div>
               <div>
                 <div style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: 'var(--text-muted)',
+                  color: 'rgba(212,175,55,0.7)',
                   letterSpacing: '0.1em',
                 }}>МОИ ЗАКАЗЫ</div>
                 <div style={{
-                  fontSize: 13,
-                  color: 'var(--text-secondary)',
-                  marginTop: 2,
-                }}>Статистика выполнения</div>
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.4)',
+                  marginTop: 3,
+                  fontStyle: 'italic',
+                }}>Статус выполнения</div>
               </div>
             </div>
-            <ChevronRight size={20} color="var(--text-muted)" />
+            <ChevronRight size={18} color="rgba(212,175,55,0.4)" strokeWidth={1.5} />
           </div>
 
-          {/* Stats Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {/* Active */}
-            <div style={{
-              padding: 16,
-              borderRadius: 14,
-              background: activeOrders > 0
-                ? 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))'
-                : 'rgba(255,255,255,0.02)',
-              border: `1px solid ${activeOrders > 0 ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.05)'}`,
-              textAlign: 'center',
-            }}>
+          {/* Stats Grid — Premium Monochrome Style */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {/* Active — Gold/Amber for "work in progress" */}
+            <motion.div
+              style={{
+                padding: 16,
+                borderRadius: 14,
+                background: activeOrders > 0
+                  ? 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
+                  : 'linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+                border: `1px solid ${activeOrders > 0 ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Shimmer for active orders */}
+              {activeOrders > 0 && (
+                <motion.div
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '40%',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
               <motion.div
-                animate={activeOrders > 0 ? { scale: [1, 1.05, 1] } : {}}
+                animate={activeOrders > 0 ? {
+                  textShadow: ['0 0 15px rgba(212,175,55,0.4)', '0 0 30px rgba(212,175,55,0.7)', '0 0 15px rgba(212,175,55,0.4)'],
+                } : {}}
                 transition={{ duration: 2, repeat: Infinity }}
                 style={{
-                  fontSize: 36,
+                  fontSize: 38,
                   fontWeight: 800,
                   fontFamily: 'var(--font-serif)',
-                  color: activeOrders > 0 ? '#3b82f6' : 'var(--text-muted)',
-                  textShadow: activeOrders > 0 ? '0 0 20px rgba(59,130,246,0.4)' : 'none',
-                  marginBottom: 4,
+                  background: activeOrders > 0
+                    ? 'linear-gradient(180deg, #f5d485, #D4AF37)'
+                    : 'linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginBottom: 6,
+                  position: 'relative',
+                  zIndex: 1,
                 }}
               >
                 {activeOrders}
               </motion.div>
               <div style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: activeOrders > 0 ? '#3b82f6' : 'var(--text-muted)',
+                fontSize: 10,
+                fontWeight: 700,
+                color: activeOrders > 0 ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 4,
+                gap: 5,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                position: 'relative',
+                zIndex: 1,
               }}>
                 {activeOrders > 0 && (
                   <motion.div
-                    animate={{ scale: [1, 1.3, 1] }}
+                    animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                     style={{
                       width: 6,
                       height: 6,
                       borderRadius: '50%',
-                      background: '#3b82f6',
-                      boxShadow: '0 0 8px #3b82f6',
+                      background: '#D4AF37',
+                      boxShadow: '0 0 10px rgba(212,175,55,0.8)',
                     }}
                   />
                 )}
                 Активных
               </div>
-            </div>
+            </motion.div>
 
-            {/* Completed */}
+            {/* Completed — Muted green, success state */}
             <div style={{
               padding: 16,
               borderRadius: 14,
-              background: 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04))',
-              border: '1px solid rgba(34,197,94,0.25)',
+              background: 'linear-gradient(145deg, rgba(34,197,94,0.1), rgba(34,197,94,0.03))',
+              border: '1px solid rgba(34,197,94,0.2)',
               textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden',
             }}>
               <div style={{
-                fontSize: 36,
+                fontSize: 38,
                 fontWeight: 800,
                 fontFamily: 'var(--font-serif)',
-                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                background: 'linear-gradient(180deg, rgba(74,222,128,0.9), rgba(34,197,94,0.8))',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                marginBottom: 4,
+                marginBottom: 6,
               }}>
                 {user.orders.filter(o => o.status === 'completed').length}
               </div>
               <div style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: '#22c55e',
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'rgba(34,197,94,0.7)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 4,
+                gap: 5,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
               }}>
-                <Check size={12} />
+                <Check size={12} strokeWidth={2.5} />
                 Выполнено
               </div>
             </div>
@@ -1919,7 +1962,7 @@ export function HomePage({ user }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          SUBTLE FOOTER — Tagline
+          ELEGANT FOOTER — Premium Tagline
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -1927,16 +1970,45 @@ export function HomePage({ user }: Props) {
         transition={{ delay: 0.5 }}
         style={{
           textAlign: 'center',
-          padding: '16px 0 8px',
+          padding: '20px 0 12px',
         }}
       >
-        <span style={{
-          fontSize: 10,
-          color: 'rgba(100,100,100,0.5)',
-          letterSpacing: '0.05em',
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
         }}>
-          ✨ Премиум сервис для студентов
-        </span>
+          <div style={{
+            width: 24,
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3))',
+          }} />
+          <span style={{
+            fontSize: 10,
+            fontFamily: "var(--font-serif, 'Playfair Display', serif)",
+            color: 'rgba(212,175,55,0.5)',
+            letterSpacing: '0.15em',
+            fontWeight: 500,
+          }}>
+            САЛУН
+          </span>
+          <span style={{
+            fontSize: 8,
+            color: 'rgba(212,175,55,0.4)',
+          }}>✦</span>
+          <span style={{
+            fontSize: 9,
+            color: 'rgba(255,255,255,0.3)',
+            letterSpacing: '0.08em',
+          }}>
+            EST. 2024
+          </span>
+          <div style={{
+            width: 24,
+            height: 1,
+            background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)',
+          }} />
+        </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
