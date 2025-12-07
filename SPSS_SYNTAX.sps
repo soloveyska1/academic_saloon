@@ -197,7 +197,7 @@ COMPUTE filter_$=(Group=2).
 FILTER BY filter_$.
 NONPAR CORR
   /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus TotalStatus Peers Father Family
-  /PRINT=SPEARMAN TWOTAIL NOSIG FULL
+  /PRINT=SPEARMAN TWOTAIL NOSIG
   /MISSING=PAIRWISE.
 FILTER OFF.
 
@@ -207,7 +207,7 @@ COMPUTE filter_$=(Group=1).
 FILTER BY filter_$.
 NONPAR CORR
   /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus TotalStatus Peers Father Family
-  /PRINT=SPEARMAN TWOTAIL NOSIG FULL
+  /PRINT=SPEARMAN TWOTAIL NOSIG
   /MISSING=PAIRWISE.
 FILTER OFF.
 
@@ -215,7 +215,7 @@ FILTER OFF.
 USE ALL.
 NONPAR CORR
   /VARIABLES=EmoLica V UOZ Anxiety BSS LichStatus TotalStatus Peers Father Family
-  /PRINT=SPEARMAN TWOTAIL NOSIG FULL
+  /PRINT=SPEARMAN TWOTAIL NOSIG
   /MISSING=PAIRWISE.
 
 * ============================================================================.
