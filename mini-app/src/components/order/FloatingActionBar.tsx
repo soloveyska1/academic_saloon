@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageCircle, Download, Star, CheckCircle, PenTool,
-  CreditCard, RefreshCw, HelpCircle
+  CreditCard, RefreshCw
 } from 'lucide-react'
 import { Order, OrderStatus } from '../../types'
 
@@ -148,17 +148,7 @@ function getActionsForStatus(
     case 'paid':
     case 'paid_full':
     case 'in_progress':
-    case 'revision':
-      // Just chat and maybe help
-      actions.push({
-        id: 'help',
-        icon: HelpCircle,
-        label: 'Помощь',
-        color: '#6b7280',
-        bgColor: 'rgba(107, 114, 128, 0.15)',
-        borderColor: 'rgba(107, 114, 128, 0.3)',
-        onClick: props.onChatClick,
-      })
+      // Just chat - no extra buttons needed
       break
   }
 
