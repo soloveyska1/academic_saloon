@@ -427,15 +427,28 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
 }
 
 // Group messages by date
+function normalizeMessageDates(messages: ChatMessage[]): ChatMessage[] {
+  return messages
+    .map((msg) => {
+      const parsed = new Date(msg.created_at)
+      if (Number.isNaN(parsed.getTime())) {
+        return { ...msg, created_at: new Date().toISOString() }
+      }
+      return msg
+    })
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+}
+
 function groupMessagesByDate(messages: ChatMessage[]): { date: string; messages: ChatMessage[] }[] {
   const groups: { date: string; messages: ChatMessage[] }[] = []
   let currentDate = ''
 
   messages.forEach((msg) => {
-    const msgDate = new Date(msg.created_at).toDateString()
+    const safeDate = new Date(msg.created_at)
+    const msgDate = safeDate.toDateString()
     if (msgDate !== currentDate) {
       currentDate = msgDate
-      groups.push({ date: msg.created_at, messages: [msg] })
+      groups.push({ date: safeDate.toISOString(), messages: [msg] })
     } else {
       groups[groups.length - 1].messages.push(msg)
     }
@@ -503,7 +516,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
     try {
       const response = await fetchOrderMessages(orderId)
       // Handle response - messages might be empty array which is fine
-      const msgs = response?.messages || []
+      const msgs = normalizeMessageDates(response?.messages || [])
       setMessages(msgs)
       setUnreadCount(response?.unread_count || 0)
     } catch (err) {
@@ -539,7 +552,9 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       const msgData = message as any
 
       // Handle new chat messages
-      if (message.type === 'chat_message' && msgData.order_id === orderId) {
+      const targetOrderId = Number(msgData.order_id)
+
+      if (message.type === 'chat_message' && targetOrderId === orderId) {
         setIsTyping(false)
 
         // If message data is included, add it directly
@@ -547,7 +562,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           setMessages(prev => {
             // Avoid duplicates
             if (prev.some(m => m.id === msgData.message.id)) return prev
-            return [...prev, msgData.message]
+            return normalizeMessageDates([...prev, msgData.message])
           })
         } else {
           // Otherwise reload messages
@@ -560,7 +575,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       }
 
       // Handle typing indicator
-      if (message.type === 'typing_indicator' && msgData.order_id === orderId) {
+      if (message.type === 'typing_indicator' && targetOrderId === orderId) {
         setIsTyping(msgData.is_typing)
         if (msgData.is_typing) {
           setTimeout(() => setIsTyping(false), 5000)
@@ -568,7 +583,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       }
 
       // Handle admin message specifically (legacy format)
-      if (message.type === 'new_message' && msgData.order_id === orderId) {
+      if (message.type === 'new_message' && targetOrderId === orderId) {
         loadMessages(true)
         playNotificationSound()
         hapticSuccess()
@@ -609,7 +624,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           created_at: new Date().toISOString(),
           is_read: false,
         }
-        setMessages(prev => [...prev, newMsg])
+        setMessages(prev => normalizeMessageDates([...prev, newMsg]))
         setNewMessage('')
         inputRef.current?.focus()
       } else {
@@ -651,65 +666,66 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
   }
 
   // Voice recording - toggle mode (click to start, click to stop)
-  const toggleRecording = async () => {
-    if (isRecording) {
-      // Stop and send
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop()
-      }
-      setIsRecording(false)
-      haptic('medium')
-    } else {
-      // Start recording
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-            ? 'audio/webm;codecs=opus' : 'audio/webm'
-        })
+  const shouldSendRecordingRef = useRef(false)
 
-        mediaRecorderRef.current = mediaRecorder
+  const startRecording = async () => {
+    if (isRecording || uploading) return
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus' : 'audio/webm'
+      })
+
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+      shouldSendRecordingRef.current = false
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop())
+        const shouldSend = shouldSendRecordingRef.current
+        shouldSendRecordingRef.current = false
+
+        if (audioChunksRef.current.length > 0 && recordingDuration >= 1 && shouldSend) {
+          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+          await sendVoice(blob)
+        }
         audioChunksRef.current = []
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) audioChunksRef.current.push(e.data)
-        }
-
-        mediaRecorder.onstop = async () => {
-          stream.getTracks().forEach(track => track.stop())
-          if (audioChunksRef.current.length > 0 && recordingDuration >= 1) {
-            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-            await sendVoice(blob)
-          }
-          audioChunksRef.current = []
-          setRecordingDuration(0)
-        }
-
-        mediaRecorder.start(100)
-        setIsRecording(true)
         setRecordingDuration(0)
-        haptic('medium')
-
-        recordingTimerRef.current = window.setInterval(() => {
-          setRecordingDuration(prev => prev + 1)
-        }, 1000)
-      } catch {
-        setError('Разрешите доступ к микрофону')
-        hapticError()
       }
+
+      mediaRecorder.start(100)
+      setIsRecording(true)
+      setRecordingDuration(0)
+      haptic('medium')
+
+      recordingTimerRef.current = window.setInterval(() => {
+        setRecordingDuration(prev => prev + 1)
+      }, 1000)
+    } catch {
+      setError('Разрешите доступ к микрофону')
+      hapticError()
     }
   }
 
-  const cancelRecording = () => {
+  const stopRecording = (shouldSend: boolean) => {
+    if (!isRecording) return
+    shouldSendRecordingRef.current = shouldSend
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stream?.getTracks().forEach(track => track.stop())
+      mediaRecorderRef.current.stop()
     }
-    audioChunksRef.current = []
     setIsRecording(false)
-    setRecordingDuration(0)
-    haptic('light')
+    haptic(shouldSend ? 'medium' : 'light')
+  }
+
+  const cancelRecording = () => {
+    stopRecording(false)
   }
 
   const sendVoice = async (blob: Blob) => {
@@ -1078,17 +1094,6 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>
               Запись голосового...
             </span>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={cancelRecording}
-              style={{
-                padding: '6px 12px', borderRadius: 8,
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)',
-              }}
-            >
-              Отмена
-            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1142,7 +1147,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             width: 44, height: 44, borderRadius: 14,
             background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: isRecording ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', opacity: uploading || isRecording ? 0.5 : 1,
           }}
         >
@@ -1192,26 +1197,42 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             )}
           </motion.button>
         ) : isRecording ? (
-          /* Recording in progress - show send button */
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleRecording}
-            style={{
-              width: 44, height: 44, borderRadius: 14,
-              background: '#ef4444',
-              border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
-            }}
-          >
-            <Square size={18} color="#fff" fill="#fff" />
-          </motion.button>
+          /* Recording in progress - show cancel + send buttons */
+          <div style={{ display: 'flex', gap: 8 }}>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={cancelRecording}
+              style={{
+                width: 44, height: 44, borderRadius: 14,
+                background: '#ef4444',
+                border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
+              }}
+            >
+              <Square size={18} color="#fff" fill="#fff" />
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => stopRecording(true)}
+              style={{
+                width: 44, height: 44, borderRadius: 14,
+                background: 'linear-gradient(135deg, #d4af37, #b8860b)',
+                border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
+              }}
+            >
+              <Send size={20} color="#050505" />
+            </motion.button>
+          </div>
         ) : (
           /* Mic button to start recording */
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={toggleRecording}
+            onClick={startRecording}
             disabled={uploading}
             style={{
               width: 44, height: 44, borderRadius: 14,
