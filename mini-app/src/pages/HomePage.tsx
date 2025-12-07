@@ -4,7 +4,7 @@ import { motion, useMotionValue, useTransform, animate, AnimatePresence } from '
 import {
   Plus, Copy, Check, ChevronRight, TrendingUp, Gift, QrCode,
   Star, Zap, Crown, CreditCard, Briefcase, Award, Target, Sparkles, Flame,
-  GraduationCap, Clock, Percent, FileText, ChevronDown, ArrowRight, Medal, Gem, Shield
+  GraduationCap, Clock, Percent, FileText, ChevronDown, ArrowRight, Medal, Gem, Shield, ArrowUpRight
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -1326,7 +1326,7 @@ export function HomePage({ user }: Props) {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.96 }}
         onClick={handleNewOrder}
         className="shimmer-gold"
         style={{
@@ -1334,66 +1334,87 @@ export function HomePage({ user }: Props) {
           width: '100%',
           padding: '22px 26px',
           borderRadius: 18,
-          border: 'none',
+          border: '1px solid rgba(212,175,55,0.3)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          // Liquid Gold Metallic Gradient
-          background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #D4AF37 50%, #B38728 75%, #FBF5B7 100%)',
-          backgroundSize: '200% 200%',
+          // Deep Luxury Gold Gradient
+          background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
           // Gold glow + inset highlights
           boxShadow: `
-            0 0 50px -10px rgba(212,175,55,0.6),
-            0 15px 35px -10px rgba(0,0,0,0.4),
-            inset 0 2px 4px rgba(255,255,255,0.5),
-            inset 0 -2px 4px rgba(0,0,0,0.1)
+            0 10px 30px -10px rgba(0,0,0,0.5),
+            inset 0 1px 0 rgba(255,255,255,0.1),
+            inset 0 -1px 0 rgba(0,0,0,0.3)
           `,
           marginBottom: 16,
           overflow: 'hidden',
-          animation: 'liquid-gold-shift 4s ease-in-out infinite',
         }}
       >
-        {/* Shimmer shine sweep effect */}
+        {/* Active Liquid Gold Background on Hover/Active */}
         <div style={{
           position: 'absolute',
-          top: 0,
-          left: '-100%',
-          width: '100%',
-          height: '100%',
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-          animation: 'shimmer-pass 3s ease-in-out infinite',
-          pointerEvents: 'none',
+          inset: 0,
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(252,246,186,0.05) 50%, rgba(212,175,55,0.1) 100%)',
+          opacity: 0.8,
         }} />
+
+        {/* Shimmer Burst Animation */}
+        <motion.div
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '60%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+            transform: 'skewX(-20deg)',
+            pointerEvents: 'none',
+            filter: 'blur(5px)',
+          }}
+        />
+
         <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
           <div style={{
             fontSize: 16,
             fontWeight: 800,
-            color: '#09090b',
+            color: '#fff',
             fontFamily: "var(--font-serif)",
-            letterSpacing: '0.1em',
+            letterSpacing: '0.12em',
             textTransform: 'uppercase',
+            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
           }}>
             Поручить задачу
+            <ArrowUpRight size={16} color="rgba(212,175,55,0.8)" strokeWidth={2.5} />
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(9,9,11,0.65)', marginTop: 4, fontWeight: 500 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4, fontWeight: 500 }}>
             Персональный менеджер
           </div>
         </div>
-        <div style={{
-          position: 'relative',
-          zIndex: 1,
-          width: 50,
-          height: 50,
-          borderRadius: '50%',
-          background: 'rgba(9,9,11,0.12)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backdropFilter: 'blur(4px)',
-        }}>
+
+        <motion.div
+          whileHover={{ rotate: 90, scale: 1.1 }}
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            width: 50,
+            height: 50,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #D4AF37 0%, #FBF5B7 50%, #B38728 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 15px rgba(212,175,55,0.4)',
+            border: '1px solid rgba(255,255,255,0.4)',
+          }}
+        >
           <Plus size={26} color="#09090b" strokeWidth={2.5} />
-        </div>
+        </motion.div>
       </motion.button>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -1409,71 +1430,92 @@ export function HomePage({ user }: Props) {
           ...glassStyle,
           marginBottom: 16,
           cursor: 'pointer',
-          border: '1px solid rgba(239,115,68,0.35)',
-          background: 'linear-gradient(135deg, rgba(239,115,68,0.12) 0%, rgba(212,175,55,0.06) 50%, var(--bg-card) 100%)',
+          border: '1px solid rgba(239, 68, 68, 0.4)',
+          background: 'linear-gradient(135deg, rgba(20,9,9,0.95) 0%, rgba(35,12,12,0.95) 100%)',
           position: 'relative',
           overflow: 'hidden',
+          boxShadow: '0 8px 30px -10px rgba(220, 38, 38, 0.25)',
         }}
       >
-        {/* Animated gradient sweep */}
+        {/* Animated gradient sweep - Urgent Red/Gold */}
         <motion.div
           animate={{ x: ['-100%', '200%'] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 1, ease: 'easeInOut' }}
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
-            width: '40%',
+            width: '50%',
             height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(239,115,68,0.1), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent)',
             transform: 'skewX(-20deg)',
             pointerEvents: 'none',
           }}
         />
+
+        {/* Pulsing Alert Glow */}
+        <motion.div
+          animate={{ opacity: [0, 0.3, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            boxShadow: 'inset 0 0 30px rgba(239, 68, 68, 0.2)',
+            borderRadius: 'inherit',
+          }}
+        />
+
         <CardInnerShine />
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
           <motion.div
             animate={{
               boxShadow: [
-                '0 0 20px rgba(239,115,68,0.3)',
-                '0 0 35px rgba(239,115,68,0.5)',
-                '0 0 20px rgba(239,115,68,0.3)',
+                '0 0 0px rgba(239, 68, 68, 0.0)',
+                '0 0 15px rgba(239, 68, 68, 0.4)',
+                '0 0 0px rgba(239, 68, 68, 0.0)',
               ]
             }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               width: 48,
               height: 48,
               borderRadius: 14,
-              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #D4AF37 100%)',
+              background: 'linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '1px solid rgba(255,255,255,0.15)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
             }}
           >
-            <Zap size={22} color="#fff" strokeWidth={2} fill="rgba(255,255,255,0.2)" />
+            <Zap size={22} color="#fff" strokeWidth={2} fill="rgba(255,255,255,0.3)" />
           </motion.div>
           <div style={{ flex: 1 }}>
             <div style={{
               fontSize: 15,
               fontWeight: 700,
-              background: 'linear-gradient(90deg, #fb923c, #f97316)',
+              background: 'linear-gradient(90deg, #f87171, #ef4444)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-            }}>Срочно?</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>Скинь фото — оценим за 5 минут</div>
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}>
+              Срочно?
+              <ChevronRight size={14} color="#ef4444" strokeWidth={3} />
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>Скинь фото — оценим за 5 минут</div>
           </div>
           <div style={{
             padding: '6px 12px',
-            background: 'rgba(249,115,22,0.15)',
-            border: '1px solid rgba(249,115,22,0.3)',
+            background: 'rgba(220, 38, 38, 0.1)',
+            border: '1px solid rgba(220, 38, 38, 0.3)',
             borderRadius: 8,
           }}>
             <span style={{
               fontSize: 10,
               fontWeight: 700,
-              color: '#fb923c',
+              color: '#f87171',
               letterSpacing: '0.05em',
             }}>24ч</span>
           </div>
