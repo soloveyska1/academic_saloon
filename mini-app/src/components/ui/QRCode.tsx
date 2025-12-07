@@ -284,19 +284,21 @@ export function QRCodeModal({
           padding: '12px 16px',
           marginBottom: 16,
         }}>
-          <div style={{ fontSize: 9, color: '#52525b', marginBottom: 4, letterSpacing: '0.1em', fontWeight: 500 }}>
+          <div style={{ fontSize: 9, color: '#52525b', marginBottom: 4, letterSpacing: '0.1em', fontWeight: 500, textAlign: 'center' }}>
             ВАШ РЕФЕРАЛЬНЫЙ КОД
           </div>
           <code style={{
             color: '#d4af37',
             fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: 600,
-            letterSpacing: '0.04em',
+            letterSpacing: '0.02em',
             display: 'block',
-            wordBreak: 'break-all',
-            whiteSpace: 'pre-wrap',
-            lineHeight: '1.4',
+            overflowWrap: 'anywhere',
+            wordBreak: 'normal',
+            lineHeight: '1.5',
+            textAlign: 'center',
+            maxWidth: '100%',
           }}>
             {value}
           </code>
