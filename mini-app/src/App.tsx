@@ -229,68 +229,163 @@ function AppContent() {
               onDismiss={() => setNotification(null)}
               onAction={handleNotificationAction}
             />
+            {/* ═══════════════════════════════════════════════════════════════════
+                PREMIUM ERROR SCREEN — Elegant, not alarming
+                ═══════════════════════════════════════════════════════════════════ */}
             <div style={{
               minHeight: '100vh',
-              background: '#0a0a0c',
+              background: 'linear-gradient(180deg, #0a0a0c 0%, #0d0d10 50%, #0a0a0c 100%)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               padding: 24,
-              gap: 20,
+              gap: 24,
+              position: 'relative',
+              overflow: 'hidden',
             }}>
+              {/* Subtle background glow */}
               <div style={{
-                width: 70,
-                height: 70,
-                borderRadius: 18,
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <AlertTriangle size={36} color="#ef4444" />
-              </div>
-              <div style={{ textAlign: 'center' }}>
+                position: 'absolute',
+                top: '30%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 300,
+                height: 300,
+                background: 'radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%)',
+                borderRadius: '50%',
+                pointerEvents: 'none',
+              }} />
+
+              {/* Icon container — gold themed, not red */}
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 200 }}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 24,
+                  background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+                  border: '1px solid rgba(212,175,55,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(212,175,55,0.1)',
+                  position: 'relative',
+                }}
+              >
+                {/* Top gold accent */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent)',
+                  borderRadius: '24px 24px 0 0',
+                }} />
+                <AlertTriangle size={36} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
+              </motion.div>
+
+              {/* Text content */}
+              <motion.div
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
+              >
                 <h2 style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 22,
+                  fontFamily: "var(--font-serif, 'Playfair Display', serif)",
+                  fontSize: 24,
                   fontWeight: 700,
-                  color: '#f2f2f2',
+                  color: 'rgba(255,255,255,0.9)',
                   margin: 0,
-                  marginBottom: 10,
+                  marginBottom: 12,
+                  letterSpacing: '0.02em',
                 }}>
-                  Ошибка загрузки
+                  Что-то пошло не так
                 </h2>
                 <p style={{
-                  fontSize: 14,
-                  color: '#71717a',
+                  fontSize: 13,
+                  color: 'rgba(255,255,255,0.4)',
                   margin: 0,
-                  lineHeight: 1.5,
+                  lineHeight: 1.6,
                   maxWidth: 280,
                 }}>
                   {error}
                 </p>
-              </div>
-              <button
+              </motion.div>
+
+              {/* Retry button — premium gold */}
+              <motion.button
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => window.location.reload()}
                 style={{
-                  padding: '14px 28px',
-                  fontSize: 15,
+                  padding: '14px 32px',
+                  fontSize: 14,
                   fontWeight: 600,
-                  color: '#050505',
-                  background: 'linear-gradient(180deg, #f5d061, #d4af37)',
+                  color: '#0a0a0c',
+                  background: 'linear-gradient(180deg, #f5d485, #D4AF37)',
                   border: 'none',
-                  borderRadius: 12,
+                  borderRadius: 14,
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  boxShadow: '0 4px 20px rgba(212,175,55,0.3)',
+                  letterSpacing: '0.02em',
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
+                <RefreshCw size={16} strokeWidth={2} />
+                Попробовать снова
+              </motion.button>
+
+              {/* Elegant footer */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                style={{
+                  position: 'absolute',
+                  bottom: 40,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
                 }}
               >
-                <RefreshCw size={18} />
-                Попробовать снова
-              </button>
+                <div style={{
+                  width: 20,
+                  height: 1,
+                  background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3))',
+                }} />
+                <span style={{
+                  fontSize: 9,
+                  color: 'rgba(212,175,55,0.4)',
+                  letterSpacing: '0.15em',
+                  fontFamily: "var(--font-serif, 'Playfair Display', serif)",
+                }}>
+                  САЛУН
+                </span>
+                <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.3)' }}>✦</span>
+                <span style={{
+                  fontSize: 8,
+                  color: 'rgba(255,255,255,0.25)',
+                  letterSpacing: '0.1em',
+                }}>
+                  EST. 2024
+                </span>
+                <div style={{
+                  width: 20,
+                  height: 1,
+                  background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)',
+                }} />
+              </motion.div>
             </div>
           </WebSocketProvider>
         </ThemeProvider>
