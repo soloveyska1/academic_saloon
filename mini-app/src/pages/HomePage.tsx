@@ -198,42 +198,14 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
               overflow: 'hidden',
             }}
           >
-            {/* Active Highlight Gradient (on touch/hover) */}
-            <motion.div
-              whileHover={{ opacity: 1 }}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(212,175,55,0.02) 100%)',
-                opacity: 0,
-                transition: 'opacity 0.2s ease',
-              }}
-            />
-
-            {/* Shimmer Sweep Animation */}
-            <motion.div
-              animate={{ x: ['-150%', '150%'] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 3 + index, ease: 'easeInOut' }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
-                transform: 'skewX(-20deg)',
-                pointerEvents: 'none',
-              }}
-            />
-
-            {/* Subtle top highlight */}
+            {/* Subtle top highlight — static, premium feel */}
             <div style={{
               position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
               height: '1px',
-              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
+              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.25), transparent)',
             }} />
 
             {/* Content */}
@@ -1095,48 +1067,39 @@ export function HomePage({ user }: Props) {
           </div>
         </div>
 
-        {/* Logo Badge — Premium with Subtle Shimmer (5 taps opens admin panel) */}
+        {/* Logo Badge — Premium Pulsing Gold Border (5 taps opens admin panel) */}
         <motion.div
           onClick={handleSecretTap}
           whileTap={{ scale: 0.97 }}
           animate={{
+            borderColor: [
+              'rgba(212,175,55,0.4)',
+              'rgba(212,175,55,0.7)',
+              'rgba(212,175,55,0.4)'
+            ],
             boxShadow: [
-              '0 0 15px rgba(212,175,55,0.2)',
-              '0 0 25px rgba(212,175,55,0.35)',
-              '0 0 15px rgba(212,175,55,0.2)'
+              '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)',
+              '0 0 20px rgba(212,175,55,0.3), inset 0 0 30px rgba(212,175,55,0.06)',
+              '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)'
             ]
           }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
           style={{
             position: 'relative',
             padding: '10px 18px',
-            background: 'linear-gradient(135deg, rgba(30,28,20,0.95), rgba(20,18,12,0.95))',
+            background: 'linear-gradient(145deg, rgba(20,18,14,0.98), rgba(12,11,8,0.98))',
             borderRadius: 10,
             border: '1px solid rgba(212,175,55,0.5)',
             cursor: 'default',
             userSelect: 'none',
-            overflow: 'hidden',
           }}
         >
-          {/* Subtle Shimmer — passes through occasionally */}
-          <motion.div
-            animate={{ x: ['-100%', '200%'] }}
-            transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
-              zIndex: 1,
-            }}
-          />
           <span style={{
-            position: 'relative',
-            zIndex: 2,
             fontFamily: "var(--font-serif)",
             fontWeight: 700,
             fontSize: 11,
             letterSpacing: '0.12em',
-            background: 'var(--gold-text-shine)',
+            background: 'linear-gradient(135deg, #f5d485 0%, #D4AF37 50%, #b48e26 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>ЭЛИТНЫЙ КЛУБ</span>
@@ -1159,36 +1122,22 @@ export function HomePage({ user }: Props) {
           BENTO GRID: BALANCE & LEVEL — Ultra-Premium Glass Cards
           ═══════════════════════════════════════════════════════════════════ */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-        {/* BALANCE — Vault Style with Gold Gradient Text */}
+        {/* BALANCE — Clean Gold Style */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => { haptic('light'); setShowTransactionsModal(true) }}
-          className="breathing-card pulse-border-gold"
-          style={{ ...glassGoldStyle, boxShadow: 'var(--card-shadow), 0 0 50px -15px rgba(212,175,55,0.25)', cursor: 'pointer' }}
+          style={{
+            ...glassGoldStyle,
+            cursor: 'pointer',
+          }}
         >
-          {/* Inner Shine Effect */}
-          <CardInnerShine />
-          {/* Gold Radial Glow */}
-          <div
-            className="radial-glow"
-            style={{
-              position: 'absolute',
-              top: -30,
-              right: -30,
-              width: 100,
-              height: 100,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <CreditCard size={14} color="var(--gold-400)" strokeWidth={1.5} className="glow-pulse" />
-              <span className="float-label" style={{
+              <CreditCard size={14} color="var(--gold-400)" strokeWidth={1.5} />
+              <span style={{
                 fontSize: 10,
                 letterSpacing: '0.15em',
                 fontWeight: 700,
@@ -1247,17 +1196,15 @@ export function HomePage({ user }: Props) {
           </div>
         </motion.div>
 
-        {/* LEVEL — Glass Card with Serif Header */}
+        {/* LEVEL — Clean Glass Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => { haptic('light'); setShowRanksModal(true) }}
-          className="breathing-card shimmer-wave"
           style={{ ...glassStyle, cursor: 'pointer' }}
         >
-          <CardInnerShine />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: 'var(--text-muted)' }}>
               <Crown size={14} strokeWidth={1.5} />
@@ -1278,42 +1225,17 @@ export function HomePage({ user }: Props) {
             </div>
             {/* Progress Bar or MAX indicator */}
             {user.rank.is_max ? (
-              <motion.div
-                animate={{
-                  boxShadow: [
-                    '0 0 10px rgba(212,175,55,0.3)',
-                    '0 0 20px rgba(212,175,55,0.5)',
-                    '0 0 10px rgba(212,175,55,0.3)'
-                  ]
-                }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '5px 12px',
-                  background: 'linear-gradient(135deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 100%)',
-                  borderRadius: 100,
-                  border: '1px solid rgba(212,175,55,0.5)',
-                  width: 'fit-content',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Shimmer Effect */}
-                <motion.div
-                  animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-                    zIndex: 1,
-                  }}
-                />
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(180,140,40,0.1) 100%)',
+                borderRadius: 100,
+                border: '1px solid rgba(212,175,55,0.4)',
+                width: 'fit-content',
+              }}>
                 <span style={{
-                  position: 'relative',
-                  zIndex: 2,
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: '0.1em',
@@ -1323,7 +1245,7 @@ export function HomePage({ user }: Props) {
                 }}>
                   ★ MAX
                 </span>
-              </motion.div>
+              </div>
             ) : (
               <div style={{
                 height: 5,
@@ -1354,105 +1276,75 @@ export function HomePage({ user }: Props) {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HERO BUTTON — Liquid Gold Premium CTA
+          HERO BUTTON — Minimalist Premium CTA
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.button
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
-        whileTap={{ scale: 0.96 }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleNewOrder}
-        className="shimmer-gold"
         style={{
           position: 'relative',
           width: '100%',
-          padding: '22px 26px',
-          borderRadius: 18,
-          border: '1px solid rgba(212,175,55,0.3)',
+          padding: '20px 24px',
+          borderRadius: 16,
+          border: '1px solid rgba(212,175,55,0.25)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          // Deep Luxury Gold Gradient
-          background: 'linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)',
-          // Gold glow + inset highlights
-          boxShadow: `
-            0 10px 30px -10px rgba(0,0,0,0.5),
-            inset 0 1px 0 rgba(255,255,255,0.1),
-            inset 0 -1px 0 rgba(0,0,0,0.3)
-          `,
+          background: 'linear-gradient(145deg, rgba(22,22,25,0.98), rgba(16,16,18,0.98))',
+          boxShadow: '0 8px 24px -8px rgba(0,0,0,0.4)',
           marginBottom: 16,
-          overflow: 'hidden',
         }}
       >
-        {/* Active Liquid Gold Background on Hover/Active */}
+        {/* Subtle gold accent line at top */}
         <div style={{
           position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(252,246,186,0.05) 50%, rgba(212,175,55,0.1) 100%)',
-          opacity: 0.8,
+          top: 0,
+          left: 20,
+          right: 20,
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
         }} />
 
-        {/* Shimmer Burst Animation */}
-        <motion.div
-          animate={{ x: ['-100%', '200%'] }}
-          transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '60%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
-            transform: 'skewX(-20deg)',
-            pointerEvents: 'none',
-            filter: 'blur(5px)',
-          }}
-        />
-
-        <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
+        <div style={{ textAlign: 'left' }}>
           <div style={{
-            fontSize: 16,
-            fontWeight: 800,
+            fontSize: 15,
+            fontWeight: 700,
             color: '#fff',
             fontFamily: "var(--font-serif)",
-            letterSpacing: '0.12em',
+            letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
           }}>
             Поручить задачу
-            <ArrowUpRight size={16} color="rgba(212,175,55,0.8)" strokeWidth={2.5} />
+            <ArrowUpRight size={14} color="rgba(212,175,55,0.6)" strokeWidth={2} />
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4, fontWeight: 500 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
             Персональный менеджер
           </div>
         </div>
 
-        <motion.div
-          whileHover={{ rotate: 90, scale: 1.1 }}
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            width: 50,
-            height: 50,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #D4AF37 0%, #FBF5B7 50%, #B38728 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 15px rgba(212,175,55,0.4)',
-            border: '1px solid rgba(255,255,255,0.4)',
-          }}
-        >
-          <Plus size={26} color="#09090b" strokeWidth={2.5} />
-        </motion.div>
+        <div style={{
+          width: 46,
+          height: 46,
+          borderRadius: '50%',
+          background: 'linear-gradient(145deg, #D4AF37, #b48e26)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
+        }}>
+          <Plus size={24} color="#0a0a0a" strokeWidth={2.5} />
+        </div>
       </motion.button>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PANIC BUTTON — Premium Urgent Style (Gold-Red Elegance)
+          PANIC BUTTON — Clean Urgent Style
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1461,96 +1353,53 @@ export function HomePage({ user }: Props) {
         onClick={handlePanicOrder}
         whileTap={{ scale: 0.98 }}
         style={{
-          ...glassStyle,
+          padding: '16px 20px',
           marginBottom: 16,
           cursor: 'pointer',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
-          background: 'linear-gradient(135deg, rgba(20,9,9,0.95) 0%, rgba(35,12,12,0.95) 100%)',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 8px 30px -10px rgba(220, 38, 38, 0.25)',
+          borderRadius: 16,
+          border: '1px solid rgba(239, 68, 68, 0.25)',
+          background: 'linear-gradient(145deg, rgba(25,12,12,0.98), rgba(18,10,10,0.98))',
+          boxShadow: '0 4px 20px -8px rgba(220, 38, 38, 0.2)',
         }}
       >
-        {/* Animated gradient sweep - Urgent Red/Gold */}
-        <motion.div
-          animate={{ x: ['-100%', '200%'] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 1, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '50%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent)',
-            transform: 'skewX(-20deg)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* Pulsing Alert Glow */}
-        <motion.div
-          animate={{ opacity: [0, 0.3, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            boxShadow: 'inset 0 0 30px rgba(239, 68, 68, 0.2)',
-            borderRadius: 'inherit',
-          }}
-        />
-
-        <CardInnerShine />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
-          <motion.div
-            animate={{
-              boxShadow: [
-                '0 0 0px rgba(239, 68, 68, 0.0)',
-                '0 0 15px rgba(239, 68, 68, 0.4)',
-                '0 0 0px rgba(239, 68, 68, 0.0)',
-              ]
-            }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              background: 'linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
-            }}
-          >
-            <Zap size={22} color="#fff" strokeWidth={2} fill="rgba(255,255,255,0.3)" />
-          </motion.div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            background: 'linear-gradient(145deg, #991b1b, #7f1d1d)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Zap size={20} color="#fca5a5" strokeWidth={2} />
+          </div>
           <div style={{ flex: 1 }}>
             <div style={{
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: 700,
-              background: 'linear-gradient(90deg, #f87171, #ef4444)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: '#f87171',
               display: 'flex',
               alignItems: 'center',
-              gap: 6
+              gap: 4
             }}>
               Срочно?
-              <ChevronRight size={14} color="#ef4444" strokeWidth={3} />
+              <ChevronRight size={14} color="#f87171" strokeWidth={2} />
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>Скинь фото — оценим за 5 минут</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+              Скинь фото — оценим за 5 минут
+            </div>
           </div>
           <div style={{
-            padding: '6px 12px',
-            background: 'rgba(220, 38, 38, 0.1)',
-            border: '1px solid rgba(220, 38, 38, 0.3)',
-            borderRadius: 8,
+            padding: '5px 10px',
+            background: 'rgba(185, 28, 28, 0.15)',
+            border: '1px solid rgba(185, 28, 28, 0.3)',
+            borderRadius: 6,
           }}>
             <span style={{
               fontSize: 10,
-              fontWeight: 700,
+              fontWeight: 600,
               color: '#f87171',
-              letterSpacing: '0.05em',
             }}>24ч</span>
           </div>
         </div>
@@ -1593,10 +1442,8 @@ export function HomePage({ user }: Props) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.32 }}
-        className="breathing-card pulse-border-gold inner-shine-sweep"
         style={{ ...glassGoldStyle, marginBottom: 16 }}
       >
-        <CardInnerShine />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <Star size={14} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
@@ -1701,10 +1548,8 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="breathing-card shimmer-wave"
           style={{ ...glassStyle, marginBottom: 16 }}
         >
-          <CardInnerShine />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
               <div style={{

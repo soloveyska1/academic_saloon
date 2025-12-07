@@ -254,6 +254,19 @@ class SendMessageResponse(BaseModel):
     message: str
 
 
+class ChatMessageResponse(BaseModel):
+    """Single chat message response"""
+    success: bool
+    message_id: int
+    message: str
+
+
+class ChatMessagesResponse(BaseModel):
+    """Chat messages response for support"""
+    messages: List[ChatMessage]
+    unread_count: int = 0
+
+
 # --- ADMIN SCHEMAS ---
 
 class AdminSqlRequest(BaseModel):

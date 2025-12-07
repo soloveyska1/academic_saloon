@@ -14,8 +14,8 @@ from database.models.orders import Order, OrderMessage, MessageSender, Conversat
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
-    ChatMessagesListResponse, ChatMessageResponse, SendMessageResponse, SendMessageRequest,
-    ChatFileUploadResponse, ChatMessage
+    ChatMessagesListResponse, ChatMessageResponse, ChatMessagesResponse,
+    SendMessageResponse, SendMessageRequest, ChatFileUploadResponse, ChatMessage
 )
 from bot.services.yandex_disk import yandex_disk_service
 from bot.bot_instance import get_bot
