@@ -84,17 +84,17 @@ const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
 }
 
 const WORK_TYPE_COLORS: Record<string, string> = {
-  masters: '#8b5cf6',
-  diploma: '#8b5cf6',
-  coursework: '#f59e0b',
-  practice: '#06b6d4',
-  essay: '#ec4899',
-  presentation: '#10b981',
-  control: '#3b82f6',
-  independent: '#6366f1',
-  report: '#64748b',
-  photo_task: '#f97316',
-  other: '#d4af37',
+  masters: '#d4af37',      // Gold
+  diploma: '#c9a227',      // Deep gold
+  coursework: '#e6c453',   // Light gold
+  practice: '#b8972b',     // Bronze gold
+  essay: '#d4af37',        // Gold
+  presentation: '#e6c453', // Light gold
+  control: '#c9a227',      // Deep gold
+  independent: '#b8972b',  // Bronze gold
+  report: '#a08020',       // Muted gold
+  photo_task: '#e6c453',   // Light gold
+  other: '#d4af37',        // Gold
 }
 
 interface StatusConfig {
@@ -108,19 +108,19 @@ interface StatusConfig {
 }
 
 const STATUS_CONFIG: Record<string, StatusConfig> = {
-  pending: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
-  waiting_estimation: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
-  confirmed: { label: 'К оплате', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.12)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
-  waiting_payment: { label: 'К оплате', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.12)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
-  verification_pending: { label: 'Проверка оплаты', color: '#06b6d4', bgColor: 'rgba(6,182,212,0.12)', icon: Loader, priority: 3, needsAttention: false, step: 2 },
-  paid: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
-  paid_full: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
-  in_progress: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  pending: { label: 'На оценке', color: '#d4af37', bgColor: 'rgba(212,175,55,0.12)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
+  waiting_estimation: { label: 'На оценке', color: '#d4af37', bgColor: 'rgba(212,175,55,0.12)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
+  confirmed: { label: 'К оплате', color: '#e6c453', bgColor: 'rgba(230,196,83,0.12)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
+  waiting_payment: { label: 'К оплате', color: '#e6c453', bgColor: 'rgba(230,196,83,0.12)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
+  verification_pending: { label: 'Проверка оплаты', color: '#c9a227', bgColor: 'rgba(201,162,39,0.12)', icon: Loader, priority: 3, needsAttention: false, step: 2 },
+  paid: { label: 'В работе', color: '#b8972b', bgColor: 'rgba(184,151,43,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  paid_full: { label: 'В работе', color: '#b8972b', bgColor: 'rgba(184,151,43,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  in_progress: { label: 'В работе', color: '#b8972b', bgColor: 'rgba(184,151,43,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
   review: { label: 'Готов', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)', icon: CheckCircle, priority: 5, needsAttention: true, step: 3 },
-  revision: { label: 'На правках', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: AlertCircle, priority: 3, needsAttention: true, step: 2 },
+  revision: { label: 'На правках', color: '#d4af37', bgColor: 'rgba(212,175,55,0.12)', icon: AlertCircle, priority: 3, needsAttention: true, step: 2 },
   completed: { label: 'Завершён', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)', icon: CheckCircle, priority: 6, needsAttention: false, step: 4 },
-  cancelled: { label: 'Отменён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.12)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
-  rejected: { label: 'Отклонён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.12)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
+  cancelled: { label: 'Отменён', color: '#71717a', bgColor: 'rgba(113,113,122,0.12)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
+  rejected: { label: 'Отклонён', color: '#71717a', bgColor: 'rgba(113,113,122,0.12)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
 }
 
 // Timeline steps
