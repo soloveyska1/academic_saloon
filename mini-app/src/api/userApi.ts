@@ -654,6 +654,15 @@ export async function fetchGodSystemInfo(): Promise<{
   return apiFetch('/god/system')
 }
 
+// Admin WebSocket subscription
+export async function subscribeGodNotifications(): Promise<{ success: boolean }> {
+  return apiFetch('/god/subscribe', { method: 'POST' })
+}
+
+export async function unsubscribeGodNotifications(): Promise<{ success: boolean }> {
+  return apiFetch('/god/unsubscribe', { method: 'POST' })
+}
+
 // MOCK DATA GENERATOR
 function getMockUserData(): UserData {
   return {

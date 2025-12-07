@@ -460,6 +460,23 @@ async def create_order(
     except Exception as e:
         logger.warning(f"[WS] Failed: {e}")
 
+    # Notify admins via WebSocket
+    try:
+        from bot.api.websocket import notify_admin_new_order
+        work_label = WORK_TYPE_LABELS.get(work_type_enum, data.work_type)
+        await notify_admin_new_order({
+            "id": order.id,
+            "work_type": data.work_type,
+            "work_type_label": work_label,
+            "subject": data.subject,
+            "user_fullname": user.fullname,
+            "user_username": user.username,
+            "promo_code": promo_code_used,
+            "promo_discount": promo_discount if promo_code_used else None,
+        })
+    except Exception as e:
+        logger.warning(f"[WS Admin] Failed to notify admins: {e}")
+
     # Admin notification
     try:
         conv, topic_id = await get_or_create_topic(
@@ -626,6 +643,18 @@ async def confirm_payment(
         await send_order_status_notification(
             telegram_id=tg_user.id, order_id=order_id, new_status=order.status,
             extra_data={"payment_method": data.payment_method, "payment_scheme": data.payment_scheme}
+        )
+    except Exception:
+        pass
+
+    # Notify admins about pending payment
+    try:
+        from bot.api.websocket import notify_admin_payment_pending
+        await notify_admin_payment_pending(
+            order_id=order.id,
+            user_fullname=user.fullname if user else "Unknown",
+            amount=amount_to_pay,
+            payment_method=data.payment_method
         )
     except Exception:
         pass

@@ -7,6 +7,7 @@ const ADMIN_IDS = [
 
 interface AdminSettings {
   isAdmin: boolean
+  telegramId: number | null
   debugMode: boolean
   simulateNewUser: boolean
   unlimitedRoulette: boolean
@@ -25,6 +26,7 @@ interface AdminContextType extends AdminSettings {
 
 const defaultSettings: AdminSettings = {
   isAdmin: false,
+  telegramId: null,
   debugMode: false,
   simulateNewUser: false,
   unlimitedRoulette: false,
@@ -76,13 +78,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
       if (userId) {
         const isAdmin = ADMIN_IDS.includes(userId)
-        setSettings(prev => ({ ...prev, isAdmin }))
+        setSettings(prev => ({ ...prev, isAdmin, telegramId: userId }))
         return true
       }
 
       // Fallback for dev mode
       if (import.meta.env.DEV || !window.Telegram?.WebApp) {
-        setSettings(prev => ({ ...prev, isAdmin: true })) // Default to admin in dev
+        setSettings(prev => ({ ...prev, isAdmin: true, telegramId: 872379852 })) // Default to admin in dev
         return true
       }
 

@@ -5,14 +5,14 @@
  * No passwords - pure Telegram authentication
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Crown, Activity, Users, Package, Tag, ScrollText, Terminal, Radio,
   TrendingUp, TrendingDown, DollarSign, Clock, Eye, EyeOff, Ban,
   MessageSquare, Check, X, RefreshCw, Search, Filter, ChevronRight,
   AlertTriangle, Send, Plus, Trash2, ToggleLeft, ToggleRight,
-  Zap, Settings, Home, Shield, Bell, CreditCard, Percent
+  Zap, Settings, Home, Shield, Bell, CreditCard, Percent, Volume2, VolumeX
 } from 'lucide-react'
 import { useAdmin } from '../contexts/AdminContext'
 import {
@@ -37,8 +37,24 @@ import {
   deleteGodPromo,
   executeGodSql,
   sendGodBroadcast,
+  subscribeGodNotifications,
+  unsubscribeGodNotifications,
+  API_WS_URL,
 } from '../api/userApi'
 import type { GodDashboard, GodOrder, GodUser, GodPromo, GodLog, GodLiveUser } from '../types'
+
+// Notification sound (base64 encoded simple beep)
+const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YVoGAACBhYaJioiGg4B9enh3dnd5fICDhYaHiImJiomJiIeGhYOBf3x6d3V0dHV2eXx/goWHiYqLjIyMi4qIhoSBfnx5dnRyc3N1d3p9gIOGiImLjI2NjYyLiYeFgn98eXd0cnFyc3Z4e36BhIeLjI6Pj4+OjYuJhoN/fHl2c3FwcXJ0d3p+gYSHi46Qk5KRkI6Liod/e3ZycG9vb3Byd3p+goeLj5KVlpWUko+Mh4B7dXFubmxsbW90eH2Dh4yQlJeYmJiWk4+LhX51cG1ramprbnJ3fYOJjZGVmJqampiVko6IgHpzbWppaGhqbnN5f4WKjpSXmZqbmZaUkYuEfnhxbGloZ2hqb3R7gYeMkZWYmpubmJaTjoiAeXJsaGdmZ2ptc3qAhoyRlpmbnJ2bmJaTjYaAeXJsaGZlZmhtc3mAh4ySlpmcnp6bmJaTjYaAeXJsamdmZ2htc3qAhoySlpmbnJ2bmJaUj4iFfnlybWppaWltc3mAhoqPlJibnJ2bmJaTj4iFgHlzbWppZ2hrb3V7gYeMkZWYmpubmJaSjoiCe3VuaGdmZ2hscnl/hYqPlJeampyamJaTj4mDfXZwbGhnZmdqb3V7gYeNkZWYmZqZl5WSkI2KhYB6dXBsaGZlZWdrcHZ8goeMkJOWl5iXlZKPjImFgXx3c29raWhmZmdqbXF3fIGGioqKi4uLioqJh4aCfXl1cnBtbWxsbW1vcHJ1d3p9f4GCg4OEhISDg4KAfn18e3p6enp7fH5/gIGCgoKCgoKCgYGAfn18e3t7fH1+f4GCgoKCgoKBgYCAfn18e3t7e3x+gIGCg4ODg4OCgYCAfn18fHx8fH1/gIGCg4ODgoKBgH9+fXx8fHx9fn+AgYKDg4OCgYGAf359fHx8fX1+f4CCgoODg4KBgH9+fXx8fH19foCAgoKDg4OCgYB/fn18fHx9fX6AgIKCg4OCgoGAf359fHx8fX1+gICCgoODg4KCAX9/fn1+fn5+foCAgoKCgoKBgIB/fn19fX19fX+AgIGCgoKCgoGAgH9+fX19fX5/gICBgoKCgoKBgH9/fn19fX5+f4CAgYKCgoKBgYCAf35+fn5+fn+AgIGBgoKCgoGAgIB/fn5+fn5/gICBgoKCgoGBgIB/f35+fn5/gICBgoKCgoGBgIB/f39+fn5/f4CAgYGCgoKBgYCAf39/fn5/f4CAgYGCgoKBgYCAf39/f39/f4CAgYGBgoKBgYCAgH9/f39/f4CAgYGBgYGBgYCAgIB/f39/f4CAgIGBgYGBgYGAgICAf39/f3+AgICBgYGBgYGBgICAgH9/f3+AgICBgYGBgYGBgICAgH9/f3+AgICBgYGBgYGBgICAf39/f4CAgICBgYGBgYCAgICAgH9/f4CAgICBgYGBgYCAf39/f39/f4CAgICBgYGBgYB/f39/f39/gICAgYGBgYGAgH9/f39/f4CAgIGBgYGBgIB/f39/f39/gICAgYGBgYGAf39/f39/f4CAgIGBgYGBgH9/f39/f3+AgICBgYGBgYB/f39/f39/gICAgYGBgYGAf39/f39/gICAgIGBgYGBgH9/f39/f4CAgICBgYGBgYB/f39/f3+AgICAgYGBgYGAf39/f39/gICAgIGBgYGBgH9/f39/f4CAgICBgYGBgYB/f39/f3+AgICAgYGBgYGAf39/f39/gICAgYGBgYGAgH9/f39/f4CAgICBgYGBgIB/f39/f39/gICAgYGBgYCAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgICAgICAf39/f39/f3+AgICAgICAf39/f39/f3+AgICAgICAf39/f39/f3+AgICAgICAf39/f39/f4CAgICAgIB/f39/f39/f4CAgICAgH9/f39/f39/gICAgICAgH9/f39/f39/gICAgICAgA=='
+
+// Admin notification types
+interface AdminNotification {
+  id: string
+  type: 'new_order' | 'payment_pending' | 'new_message'
+  title: string
+  message: string
+  timestamp: Date
+  data?: unknown
+}
 
 // Status colors and labels
 const STATUS_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
@@ -111,9 +127,117 @@ const secondaryButtonStyle: React.CSSProperties = {
 }
 
 export function GodModePage() {
-  const { isAdmin } = useAdmin()
+  const { isAdmin, telegramId } = useAdmin()
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
   const [loading, setLoading] = useState(true)
+
+  // Notification state
+  const [notifications, setNotifications] = useState<AdminNotification[]>([])
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const wsRef = useRef<WebSocket | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Play notification sound
+  const playSound = useCallback(() => {
+    if (!soundEnabled) return
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(NOTIFICATION_SOUND)
+        audioRef.current.volume = 0.5
+      }
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(() => {})
+    } catch {}
+  }, [soundEnabled])
+
+  // Add notification
+  const addNotification = useCallback((notif: Omit<AdminNotification, 'id' | 'timestamp'>) => {
+    const newNotif: AdminNotification = {
+      ...notif,
+      id: Math.random().toString(36).slice(2),
+      timestamp: new Date(),
+    }
+    setNotifications(prev => [newNotif, ...prev.slice(0, 19)]) // Keep last 20
+    setUnreadCount(prev => prev + 1)
+    playSound()
+
+    // Vibrate if supported
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 50, 100])
+    }
+  }, [playSound])
+
+  // Connect to WebSocket for real-time admin notifications
+  useEffect(() => {
+    if (!isAdmin || !telegramId) return
+
+    // Subscribe to admin notifications
+    subscribeGodNotifications().catch(() => {})
+
+    // Connect WebSocket
+    const connectWs = () => {
+      const ws = new WebSocket(`${API_WS_URL}?telegram_id=${telegramId}`)
+
+      ws.onopen = () => {
+        console.log('[GOD WS] Connected')
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          console.log('[GOD WS] Message:', data)
+
+          // Handle admin-specific messages
+          if (data.type === 'admin_new_order') {
+            const order = data.order
+            addNotification({
+              type: 'new_order',
+              title: '🆕 Новый заказ',
+              message: `#${order.id} - ${order.work_type_label}\n${order.subject}\nОт: ${order.user_fullname}`,
+              data: order,
+            })
+          } else if (data.type === 'admin_payment_pending') {
+            addNotification({
+              type: 'payment_pending',
+              title: '💳 Ожидает оплаты',
+              message: `Заказ #${data.order_id}\nСумма: ${data.amount}₽\nОт: ${data.user_fullname}`,
+              data,
+            })
+          }
+        } catch {}
+      }
+
+      ws.onclose = () => {
+        console.log('[GOD WS] Disconnected, reconnecting...')
+        setTimeout(connectWs, 3000) // Reconnect after 3s
+      }
+
+      ws.onerror = () => {
+        ws.close()
+      }
+
+      wsRef.current = ws
+    }
+
+    connectWs()
+
+    // Cleanup
+    return () => {
+      unsubscribeGodNotifications().catch(() => {})
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+    }
+  }, [isAdmin, telegramId, addNotification])
+
+  // Clear unread count when viewing dashboard
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      setUnreadCount(0)
+    }
+  }, [activeTab])
 
   // Access denied screen
   if (!isAdmin) {
@@ -180,7 +304,7 @@ export function GodModePage() {
           }}>
             <Crown size={24} color="#0a0a0c" />
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <h1 style={{ color: '#D4AF37', fontSize: 18, fontWeight: 700, margin: 0 }}>
               GOD MODE
             </h1>
@@ -188,7 +312,140 @@ export function GodModePage() {
               Full Control Panel
             </p>
           </div>
+
+          {/* Sound toggle */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: soundEnabled ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {soundEnabled ? (
+              <Volume2 size={18} color="#22c55e" />
+            ) : (
+              <VolumeX size={18} color="#ef4444" />
+            )}
+          </motion.button>
+
+          {/* Notification badge */}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: 'rgba(212,175,55,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Bell size={18} color="#D4AF37" />
+            </div>
+            {unreadCount > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  right: -6,
+                  minWidth: 18,
+                  height: 18,
+                  borderRadius: 9,
+                  background: '#ef4444',
+                  color: '#fff',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                }}
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </motion.div>
+            )}
+          </div>
         </div>
+
+        {/* Notification toast */}
+        <AnimatePresence>
+          {notifications.length > 0 && notifications[0].timestamp > new Date(Date.now() - 5000) && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -20, height: 0 }}
+              style={{
+                marginTop: 12,
+                padding: '12px 16px',
+                background: notifications[0].type === 'new_order'
+                  ? 'rgba(34,197,94,0.15)'
+                  : 'rgba(236,72,153,0.15)',
+                border: `1px solid ${notifications[0].type === 'new_order' ? 'rgba(34,197,94,0.3)' : 'rgba(236,72,153,0.3)'}`,
+                borderRadius: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: notifications[0].type === 'new_order'
+                    ? 'rgba(34,197,94,0.2)'
+                    : 'rgba(236,72,153,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  {notifications[0].type === 'new_order' ? (
+                    <Package size={16} color="#22c55e" />
+                  ) : (
+                    <CreditCard size={16} color="#ec4899" />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: notifications[0].type === 'new_order' ? '#22c55e' : '#ec4899',
+                    marginBottom: 4,
+                  }}>
+                    {notifications[0].title}
+                  </div>
+                  <div style={{
+                    fontSize: 12,
+                    color: 'rgba(255,255,255,0.7)',
+                    whiteSpace: 'pre-line',
+                    lineHeight: 1.4,
+                  }}>
+                    {notifications[0].message}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setNotifications(prev => prev.slice(1))}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 4,
+                    color: 'rgba(255,255,255,0.4)',
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Tabs */}
