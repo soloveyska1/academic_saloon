@@ -532,9 +532,17 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       }
     }
 
-    if (messages.length === 0) {
-      setError('Не удалось загрузить сообщения')
+    const lastErrorMsg = lastError instanceof Error ? lastError.message : ''
+
+    // Treat missing history as an empty chat instead of a blocking error
+    if (/404/.test(lastErrorMsg) || /messages/i.test(lastErrorMsg)) {
+      setMessages([])
+      setUnreadCount(0)
+      setError(null)
+    } else if (messages.length === 0) {
+      setError(lastErrorMsg || 'Не удалось загрузить сообщения')
     }
+
     console.error('Chat load error:', lastError)
     setLoading(false)
   }, [orderId, messages.length])
@@ -567,42 +575,44 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
     const unsubscribe = addMessageHandler((message) => {
       const msgData = message as any
 
-      // Handle new chat messages
-      const targetOrderId = Number(msgData.order_id)
+      // Handle new chat messages (support multiple legacy shapes)
+      const targetOrderId = Number(
+        msgData.order_id
+        ?? msgData.orderId
+        ?? msgData.order?.id
+        ?? msgData.message?.order_id
+        ?? msgData.data?.order_id
+      )
 
-      if (message.type === 'chat_message' && targetOrderId === orderId) {
+      const incomingMessage: ChatMessage | null = msgData.message
+        || msgData.data?.message
+        || null
+
+      const shouldHandleMessage = Number.isFinite(targetOrderId) && targetOrderId === orderId
+      const isChatMessageType = ['chat_message', 'new_message', 'topic_message', 'message'].includes(message.type)
+
+      if (shouldHandleMessage && (isChatMessageType || incomingMessage)) {
         setIsTyping(false)
 
-        // If message data is included, add it directly
-        if (msgData.message) {
+        if (incomingMessage) {
           setMessages(prev => {
-            // Avoid duplicates
-            if (prev.some(m => m.id === msgData.message.id)) return prev
-            return normalizeMessageDates([...prev, msgData.message])
+            if (prev.some(m => m.id === incomingMessage.id)) return prev
+            return normalizeMessageDates([...prev, incomingMessage])
           })
         } else {
-          // Otherwise reload messages
           loadMessages(true)
         }
 
-        // Sound + haptic notification
         playNotificationSound()
         hapticSuccess()
       }
 
       // Handle typing indicator
-      if (message.type === 'typing_indicator' && targetOrderId === orderId) {
+      if (message.type === 'typing_indicator' && shouldHandleMessage) {
         setIsTyping(msgData.is_typing)
         if (msgData.is_typing) {
           setTimeout(() => setIsTyping(false), 5000)
         }
-      }
-
-      // Handle admin message specifically (legacy format)
-      if (message.type === 'new_message' && targetOrderId === orderId) {
-        loadMessages(true)
-        playNotificationSound()
-        hapticSuccess()
       }
     })
     return unsubscribe
@@ -745,30 +755,45 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
   }
 
   const sendVoice = async (blob: Blob) => {
+    const optimisticId = -Date.now()
+    const localUrl = URL.createObjectURL(blob)
+
+    setMessages(prev => normalizeMessageDates([...prev, {
+      id: optimisticId,
+      sender_type: 'client',
+      sender_name: 'Вы',
+      message_text: null,
+      file_type: 'audio',
+      file_name: 'Голосовое сообщение',
+      file_url: localUrl,
+      created_at: new Date().toISOString(),
+      is_read: false,
+    }]))
+
     setUploading(true)
     try {
       const response = await uploadVoiceMessage(orderId, blob)
       if (response.success) {
         hapticSuccess()
-        setMessages(prev => normalizeMessageDates([...prev, {
-          id: response.message_id,
-          sender_type: 'client',
-          sender_name: 'Вы',
-          message_text: null,
-          file_type: 'audio',
-          file_name: 'Голосовое сообщение',
-          file_url: response.file_url,
-          created_at: new Date().toISOString(),
-          is_read: false,
-        }]))
+        setMessages(prev => normalizeMessageDates(prev.map(m =>
+          m.id === optimisticId
+            ? { ...m, id: response.message_id, file_url: response.file_url }
+            : m
+        )))
         loadMessages(true)
+      } else {
+        setMessages(prev => prev.filter(m => m.id !== optimisticId))
+        hapticError()
+        setError('Не удалось отправить голосовое')
       }
     } catch {
+      setMessages(prev => prev.filter(m => m.id !== optimisticId))
       hapticError()
       setError('Ошибка отправки голосового')
     } finally {
       setUploading(false)
       setRecordingDuration(0)
+      URL.revokeObjectURL(localUrl)
     }
   }
 
