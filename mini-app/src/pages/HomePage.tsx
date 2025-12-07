@@ -337,8 +337,24 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  LAST ORDER CARD — Premium Style
+//  LAST ORDER CARD — Premium Style with Work Type Icons
 // ═══════════════════════════════════════════════════════════════════════════
+
+// Work type to icon mapping for visual distinction
+const workTypeIconMap: Record<string, typeof GraduationCap> = {
+  'Курсовая работа': GraduationCap,
+  'Дипломная работа': Award,
+  'Реферат': FileText,
+  'Контрольная работа': Target,
+  'Эссе': FileText,
+  'Отчёт по практике': Briefcase,
+  'Диссертация': Crown,
+  'Презентация': Sparkles,
+  'Задача': Zap,
+  'Лабораторная работа': Flame,
+  'Чертёж': Target,
+  'Фото задания': Zap,
+}
 
 const orderStatusMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
   'draft': { label: 'Черновик', color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
@@ -360,6 +376,8 @@ const orderStatusMap: Record<string, { label: string; color: string; bg: string;
 function LastOrderCard({ order, onClick }: { order: { id: number; work_type_label: string; subject: string; status: string; created_at: string }; onClick: () => void }) {
   const status = orderStatusMap[order.status] || { label: order.status, color: '#888', bg: 'rgba(136,136,136,0.15)', border: 'rgba(136,136,136,0.3)' }
   const title = order.subject || order.work_type_label || `Заказ #${order.id}`
+  // Get work type icon or fallback to FileText
+  const WorkTypeIcon = workTypeIconMap[order.work_type_label] || FileText
 
   return (
     <motion.div
@@ -398,7 +416,7 @@ function LastOrderCard({ order, onClick }: { order: { id: number; work_type_labe
             justifyContent: 'center',
           }}
         >
-          <FileText size={22} color={status.color} strokeWidth={1.5} />
+          <WorkTypeIcon size={22} color={status.color} strokeWidth={1.5} />
         </motion.div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -456,7 +474,7 @@ function LastOrderCard({ order, onClick }: { order: { id: number; work_type_labe
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  COLLAPSIBLE PROMO CODE — Premium Accordion
+//  COLLAPSIBLE PROMO CODE — Premium Accordion with Active Badge
 // ═══════════════════════════════════════════════════════════════════════════
 
 function CollapsiblePromoCode({
@@ -465,12 +483,14 @@ function CollapsiblePromoCode({
   promoLoading,
   promoMessage,
   onSubmit,
+  activePromo,
 }: {
   promoCode: string
   setPromoCode: (v: string) => void
   promoLoading: boolean
   promoMessage: { type: 'success' | 'error'; text: string } | null
   onSubmit: () => void
+  activePromo?: { code: string; discount: number } | null
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -479,7 +499,16 @@ function CollapsiblePromoCode({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.28 }}
-      style={{ ...glassStyle, marginBottom: 16, padding: 0, overflow: 'hidden' }}
+      style={{
+        ...glassStyle,
+        marginBottom: 16,
+        padding: 0,
+        overflow: 'hidden',
+        border: activePromo ? '1px solid rgba(34,197,94,0.35)' : '1px solid var(--card-border)',
+        background: activePromo
+          ? 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, var(--bg-card) 50%)'
+          : 'var(--bg-card)',
+      }}
     >
       <CardInnerShine />
       {/* Collapsed Header */}
@@ -496,29 +525,76 @@ function CollapsiblePromoCode({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
-            border: '1px solid var(--border-gold)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <Gift size={18} color="var(--gold-400)" strokeWidth={1.5} />
-          </div>
+          <motion.div
+            animate={activePromo ? {
+              boxShadow: [
+                '0 0 12px rgba(34,197,94,0.3)',
+                '0 0 20px rgba(34,197,94,0.5)',
+                '0 0 12px rgba(34,197,94,0.3)',
+              ]
+            } : {}}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: activePromo
+                ? 'linear-gradient(135deg, rgba(34,197,94,0.25), rgba(34,197,94,0.1))'
+                : 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
+              border: activePromo
+                ? '1px solid rgba(34,197,94,0.5)'
+                : '1px solid var(--border-gold)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Gift size={18} color={activePromo ? '#22c55e' : 'var(--gold-400)'} strokeWidth={1.5} />
+          </motion.div>
           <div>
-            <div style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: 'var(--text-main)',
-            }}>Есть промокод?</div>
-            <div style={{
-              fontSize: 10,
-              color: 'var(--text-muted)',
-              marginTop: 2,
-            }}>Активируйте скидку</div>
+            {activePromo ? (
+              <>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                    color: '#22c55e',
+                    letterSpacing: '0.05em',
+                  }}>{activePromo.code}</span>
+                  <span style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: '#22c55e',
+                    background: 'rgba(34,197,94,0.15)',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                  }}>−{activePromo.discount}%</span>
+                </div>
+                <div style={{
+                  fontSize: 10,
+                  color: 'rgba(34,197,94,0.7)',
+                  marginTop: 2,
+                }}>Промокод активен</div>
+              </>
+            ) : (
+              <>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--text-main)',
+                }}>Есть промокод?</div>
+                <div style={{
+                  fontSize: 10,
+                  color: 'var(--text-muted)',
+                  marginTop: 2,
+                }}>Активируйте скидку</div>
+              </>
+            )}
           </div>
         </div>
         <motion.div
@@ -615,15 +691,16 @@ function CollapsiblePromoCode({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  COMPACT ACHIEVEMENTS ROW — Single Line Premium
+//  COMPACT ACHIEVEMENTS ROW — Single Line Premium with Next Preview
 // ═══════════════════════════════════════════════════════════════════════════
 
 function CompactAchievements({ achievements, onViewAll }: {
-  achievements: { icon: typeof Star; label: string; unlocked: boolean; glow?: boolean }[]
+  achievements: { icon: typeof Star; label: string; unlocked: boolean; glow?: boolean; description?: string }[]
   onViewAll: () => void
 }) {
   const unlockedCount = achievements.filter(a => a.unlocked).length
   const lastUnlocked = [...achievements].reverse().find(a => a.unlocked)
+  const nextToUnlock = achievements.find(a => !a.unlocked)
 
   return (
     <motion.div
@@ -648,42 +725,76 @@ function CompactAchievements({ achievements, onViewAll }: {
         zIndex: 1,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Last unlocked achievement icon */}
-          <motion.div
-            animate={lastUnlocked?.glow ? {
-              boxShadow: [
-                '0 0 12px rgba(212,175,55,0.3)',
-                '0 0 20px rgba(212,175,55,0.5)',
-                '0 0 12px rgba(212,175,55,0.3)'
-              ]
-            } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: lastUnlocked
-                ? 'linear-gradient(145deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 100%)'
-                : 'rgba(40,40,40,0.5)',
-              border: lastUnlocked
-                ? '1.5px solid rgba(212,175,55,0.6)'
-                : '1px solid rgba(80,80,80,0.4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {lastUnlocked ? (
-              <lastUnlocked.icon
-                size={22}
-                color="#D4AF37"
-                strokeWidth={2}
-                fill="rgba(212,175,55,0.2)"
-              />
-            ) : (
-              <Award size={22} color="rgba(100,100,100,0.5)" strokeWidth={1.5} />
+          {/* Achievement icons stack - last unlocked + next to unlock */}
+          <div style={{ position: 'relative', width: 52, height: 44 }}>
+            {/* Last unlocked (main) */}
+            <motion.div
+              animate={lastUnlocked?.glow ? {
+                boxShadow: [
+                  '0 0 12px rgba(212,175,55,0.3)',
+                  '0 0 20px rgba(212,175,55,0.5)',
+                  '0 0 12px rgba(212,175,55,0.3)'
+                ]
+              } : {}}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: lastUnlocked
+                  ? 'linear-gradient(145deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 100%)'
+                  : 'rgba(40,40,40,0.5)',
+                border: lastUnlocked
+                  ? '1.5px solid rgba(212,175,55,0.6)'
+                  : '1px solid rgba(80,80,80,0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2,
+              }}
+            >
+              {lastUnlocked ? (
+                <lastUnlocked.icon
+                  size={22}
+                  color="#D4AF37"
+                  strokeWidth={2}
+                  fill="rgba(212,175,55,0.2)"
+                />
+              ) : (
+                <Award size={22} color="rgba(100,100,100,0.5)" strokeWidth={1.5} />
+              )}
+            </motion.div>
+            {/* Next to unlock (preview - smaller, offset) */}
+            {nextToUnlock && (
+              <motion.div
+                animate={{ opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  bottom: 0,
+                  width: 24,
+                  height: 24,
+                  borderRadius: 8,
+                  background: 'rgba(40,40,40,0.8)',
+                  border: '1px dashed rgba(212,175,55,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 3,
+                }}
+              >
+                <nextToUnlock.icon
+                  size={12}
+                  color="rgba(212,175,55,0.5)"
+                  strokeWidth={1.5}
+                />
+              </motion.div>
             )}
-          </motion.div>
+          </div>
           <div>
             <div style={{
               fontSize: 10,
@@ -699,14 +810,29 @@ function CompactAchievements({ achievements, onViewAll }: {
             }}>
               {lastUnlocked ? lastUnlocked.label : 'Начните путь'}
             </div>
+            {/* Next to unlock hint */}
+            {nextToUnlock && (
+              <div style={{
+                fontSize: 10,
+                color: 'rgba(212,175,55,0.6)',
+                marginTop: 2,
+              }}>
+                Далее: {nextToUnlock.label}
+              </div>
+            )}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Progress dots */}
           <div style={{ display: 'flex', gap: 4 }}>
             {achievements.map((a, i) => (
-              <div
+              <motion.div
                 key={i}
+                animate={!a.unlocked && i === unlockedCount ? {
+                  scale: [1, 1.2, 1],
+                  opacity: [0.4, 0.8, 0.4],
+                } : {}}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
                   width: 8,
                   height: 8,
@@ -715,6 +841,7 @@ function CompactAchievements({ achievements, onViewAll }: {
                     ? 'var(--gold-metallic)'
                     : 'rgba(80,80,80,0.4)',
                   boxShadow: a.unlocked ? '0 0 8px rgba(212,175,55,0.5)' : 'none',
+                  border: !a.unlocked && i === unlockedCount ? '1px solid rgba(212,175,55,0.4)' : 'none',
                 }}
               />
             ))}
@@ -1358,44 +1485,86 @@ export function HomePage({ user }: Props) {
       </motion.button>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PANIC BUTTON — Error Glass Style
+          PANIC BUTTON — Premium Urgent Style (Gold-Red Elegance)
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
         onClick={handlePanicOrder}
+        whileTap={{ scale: 0.98 }}
         style={{
           ...glassStyle,
           marginBottom: 16,
           cursor: 'pointer',
-          border: '1px solid var(--error-border)',
-          background: 'linear-gradient(135deg, var(--error-glass) 0%, var(--bg-card) 50%)',
+          border: '1px solid rgba(239,115,68,0.35)',
+          background: 'linear-gradient(135deg, rgba(239,115,68,0.12) 0%, rgba(212,175,55,0.06) 50%, var(--bg-card) 100%)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        {/* Animated gradient sweep */}
+        <motion.div
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '40%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(239,115,68,0.1), transparent)',
+            transform: 'skewX(-20deg)',
+            pointerEvents: 'none',
+          }}
+        />
         <CardInnerShine />
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
           <motion.div
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+            animate={{
+              boxShadow: [
+                '0 0 20px rgba(239,115,68,0.3)',
+                '0 0 35px rgba(239,115,68,0.5)',
+                '0 0 20px rgba(239,115,68,0.3)',
+              ]
+            }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             style={{
-              width: 50,
-              height: 50,
+              width: 48,
+              height: 48,
               borderRadius: 14,
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #D4AF37 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 30px rgba(239,68,68,0.5)',
+              border: '1px solid rgba(255,255,255,0.15)',
             }}
           >
-            <Zap size={24} color="#fff" strokeWidth={2} />
+            <Zap size={22} color="#fff" strokeWidth={2} fill="rgba(255,255,255,0.2)" />
           </motion.div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--error-text)' }}>Срочно?</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Скинь фото — оценим за 5 минут</div>
+            <div style={{
+              fontSize: 15,
+              fontWeight: 700,
+              background: 'linear-gradient(90deg, #fb923c, #f97316)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>Срочно?</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>Скинь фото — оценим за 5 минут</div>
           </div>
-          <ChevronRight size={22} color="var(--error-text)" strokeWidth={1.5} />
+          <div style={{
+            padding: '6px 12px',
+            background: 'rgba(249,115,22,0.15)',
+            border: '1px solid rgba(249,115,22,0.3)',
+            borderRadius: 8,
+          }}>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#fb923c',
+              letterSpacing: '0.05em',
+            }}>24ч</span>
+          </div>
         </div>
       </motion.div>
 
@@ -1418,6 +1587,7 @@ export function HomePage({ user }: Props) {
         promoLoading={promoLoading}
         promoMessage={promoMessage}
         onSubmit={handlePromoSubmit}
+        activePromo={user.discount > 0 ? { code: 'АКТИВЕН', discount: user.discount } : null}
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
