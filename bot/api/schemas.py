@@ -240,7 +240,7 @@ class ChatMessage(BaseModel):
     is_read: bool
 
 
-class ChatMessagesResponse(BaseModel):
+class ChatMessagesListResponse(BaseModel):
     """List of chat messages"""
     order_id: int
     messages: List[ChatMessage]
@@ -290,3 +290,64 @@ class AdminProgressUpdate(BaseModel):
     percent: int
     status_text: Optional[str] = None
 
+
+class FileUploadResponse(BaseModel):
+    success: bool
+    message: str
+    files_url: Optional[str] = None
+    uploaded_count: int = 0
+
+class PaymentConfirmRequest(BaseModel):
+    payment_method: str
+    payment_scheme: str
+
+class PaymentConfirmResponse(BaseModel):
+    success: bool
+    message: str
+    new_status: str
+    amount_to_pay: float
+
+class PaymentInfoResponse(BaseModel):
+    order_id: int
+    status: str
+    price: float
+    final_price: float
+    discount: float
+    bonus_used: float
+    paid_amount: float
+    remaining: float
+    card_number: str
+    card_holder: str
+    sbp_phone: str
+    sbp_bank: str
+
+class SubmitReviewRequest(BaseModel):
+    rating: int
+    text: str
+
+class SubmitReviewResponse(BaseModel):
+    success: bool
+    message: str
+
+class RevisionRequestData(BaseModel):
+    message: str
+
+class RevisionRequestResponse(BaseModel):
+    success: bool
+    message: str
+    prefilled_text: str
+    revision_count: int
+    is_paid: bool
+
+class ConfirmWorkResponse(BaseModel):
+    success: bool
+    message: str
+
+class SendMessageRequest(BaseModel):
+    text: str
+
+class ChatFileUploadResponse(BaseModel):
+    success: bool
+    message_id: int
+    message: str
+    file_url: Optional[str] = None

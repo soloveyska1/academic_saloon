@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from .routes import router
+
 
 logger = logging.getLogger(__name__)
 from .websocket import router as ws_router
@@ -80,8 +80,14 @@ def create_app() -> FastAPI:
         expose_headers=["*"],
     )
 
-    # Include routes
-    app.include_router(router)
+    # Include routers
+    from .routers import auth, orders, daily, chat, admin
+    
+    app.include_router(auth.router, prefix="/api")
+    app.include_router(orders.router, prefix="/api")
+    app.include_router(daily.router, prefix="/api")
+    app.include_router(chat.router, prefix="/api")
+    app.include_router(admin.router, prefix="/api")
     app.include_router(ws_router)  # WebSocket for real-time updates
 
     # Health check

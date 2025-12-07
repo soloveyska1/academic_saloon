@@ -45,7 +45,9 @@ def get_referral_link(user_id: int) -> str:
     return f"https://t.me/{bot_username}/app?startapp=ref_{user_id}"
 
 
-def create_qr_code(data: str, size: int = 400) -> Image.Image:
+from typing import Optional, Any
+
+def create_qr_code(data: str, size: int = 400) -> Any:
     """Генерирует золотой QR-код с прозрачным фоном."""
     qr = qrcode.QRCode(
         version=1,
@@ -79,7 +81,7 @@ def create_qr_code(data: str, size: int = 400) -> Image.Image:
     return qr_img
 
 
-def create_logo_overlay(size: int = 100) -> Image.Image:
+def create_logo_overlay(size: int = 100) -> Any:
     """
     Создаёт минималистичный круглый логотип для центра QR.
 
