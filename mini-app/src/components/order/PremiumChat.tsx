@@ -4,7 +4,7 @@ import {
   Send, X, ChevronDown, Headphones,
   Paperclip, Mic, FileText, Image, Video, Play, Pause,
   Download, Loader, Check, CheckCheck, ArrowDown,
-  AlertCircle, RefreshCw, Smile, Square
+  AlertCircle, RefreshCw, Smile
 } from 'lucide-react'
 import { ChatMessage } from '../../types'
 import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessage } from '../../api/userApi'
@@ -523,6 +523,17 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       loadMessages()
     }
   }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Polling for new messages every 5 seconds when chat is open (fallback for WebSocket)
+  useEffect(() => {
+    if (!isOpen) return
+
+    const pollInterval = setInterval(() => {
+      loadMessages(true) // silent reload
+    }, 5000)
+
+    return () => clearInterval(pollInterval)
+  }, [isOpen, loadMessages])
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -1075,19 +1086,33 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             <span style={{ fontSize: 14, color: '#ef4444', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
               {formatDuration(recordingDuration)}
             </span>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>
-              Запись голосового...
-            </span>
+            <div style={{ flex: 1 }} />
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={cancelRecording}
               style={{
-                padding: '6px 12px', borderRadius: 8,
+                padding: '8px 14px', borderRadius: 10,
                 background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)',
+                cursor: 'pointer', fontSize: 13, fontWeight: 500, color: 'var(--text-muted)',
               }}
             >
               Отмена
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleRecording}
+              disabled={recordingDuration < 1}
+              style={{
+                padding: '8px 16px', borderRadius: 10,
+                background: recordingDuration >= 1 ? '#22c55e' : 'rgba(34, 197, 94, 0.3)',
+                border: 'none',
+                cursor: recordingDuration >= 1 ? 'pointer' : 'not-allowed',
+                fontSize: 13, fontWeight: 600, color: '#fff',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Send size={14} />
+              Отправить
             </motion.button>
           </motion.div>
         )}
@@ -1191,37 +1216,22 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               <Send size={20} color="#050505" />
             )}
           </motion.button>
-        ) : isRecording ? (
-          /* Recording in progress - show send button */
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleRecording}
-            style={{
-              width: 44, height: 44, borderRadius: 14,
-              background: '#ef4444',
-              border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
-            }}
-          >
-            <Square size={18} color="#fff" fill="#fff" />
-          </motion.button>
         ) : (
-          /* Mic button to start recording */
+          /* Mic button - recording controls are in the bar above when active */
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={toggleRecording}
-            disabled={uploading}
+            disabled={uploading || isRecording}
             style={{
               width: 44, height: 44, borderRadius: 14,
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: isRecording ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+              border: isRecording ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', opacity: uploading ? 0.5 : 1,
+              cursor: uploading || isRecording ? 'not-allowed' : 'pointer',
+              opacity: uploading ? 0.5 : 1,
             }}
           >
-            <Mic size={20} color="var(--text-muted)" />
+            <Mic size={20} color={isRecording ? '#ef4444' : 'var(--text-muted)'} />
           </motion.button>
         )}
       </div>
