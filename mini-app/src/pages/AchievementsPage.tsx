@@ -344,7 +344,7 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
     : 0
 
   // ═══════════════════════════════════════════════════════════════════════════
-  //  SECRET ACHIEVEMENT CARD — Mysterious, enticing, creates FOMO
+  //  SECRET ACHIEVEMENT CARD — Mysterious, subtle, creates FOMO
   // ═══════════════════════════════════════════════════════════════════════════
   if (isHiddenSecret) {
     return (
@@ -363,22 +363,7 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
           backdropFilter: 'blur(20px)',
         }}
       >
-        {/* Mysterious shimmer effect */}
-        <motion.div
-          animate={{ x: ['-100%', '200%'] }}
-          transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '30%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* Top highlight */}
+        {/* Top highlight — static */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -389,17 +374,10 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
         }} />
 
         <div style={{ display: 'flex', gap: 14, position: 'relative', zIndex: 1 }}>
-          {/* Mystery icon */}
+          {/* Mystery icon — subtle opacity pulse only */}
           <motion.div
-            animate={{
-              opacity: [0.4, 0.7, 0.4],
-              boxShadow: [
-                '0 0 10px rgba(212,175,55,0.1)',
-                '0 0 20px rgba(212,175,55,0.2)',
-                '0 0 10px rgba(212,175,55,0.1)',
-              ]
-            }}
-            transition={{ duration: 3, repeat: Infinity }}
+            animate={{ opacity: [0.6, 0.9, 0.6] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               width: 52,
               height: 52,
@@ -425,18 +403,14 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
           {/* Mystery content */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <motion.span
-                animate={{ opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 2.5, repeat: Infinity }}
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: 'rgba(212,175,55,0.7)',
-                  letterSpacing: '0.15em',
-                }}
-              >
+              <span style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'rgba(212,175,55,0.6)',
+                letterSpacing: '0.15em',
+              }}>
                 ???
-              </motion.span>
+              </span>
               <span style={{
                 fontSize: 8,
                 fontWeight: 700,
@@ -461,7 +435,7 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
               Секретное достижение. Выполни условие, чтобы раскрыть...
             </p>
 
-            {/* Mystery reward teaser */}
+            {/* Mystery reward teaser — static */}
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -471,12 +445,7 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
               border: '1px solid rgba(212,175,55,0.15)',
               borderRadius: 6,
             }}>
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-              >
-                <Sparkles size={11} color="rgba(212,175,55,0.7)" />
-              </motion.div>
+              <Sparkles size={11} color="rgba(212,175,55,0.7)" />
               <span style={{
                 fontSize: 10,
                 fontWeight: 600,
@@ -981,8 +950,9 @@ export function AchievementsPage({ user }: Props) {
           </motion.div>
         </div>
 
-        {/* Stats row — Premium styled numbers */}
+        {/* Stats row — Clean premium style, no excess animations */}
         <div style={{ display: 'flex', gap: 10 }}>
+          {/* Получено — static green */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -994,51 +964,25 @@ export function AchievementsPage({ user }: Props) {
               borderRadius: 14,
               padding: '14px 8px',
               border: '1px solid rgba(34, 197, 94, 0.2)',
-              position: 'relative',
-              overflow: 'hidden',
             }}
           >
-            {/* Shine effect */}
-            <motion.div
-              animate={{ x: ['-100%', '200%'] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '40%',
-                height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(34,197,94,0.15), transparent)',
-                pointerEvents: 'none',
-              }}
-            />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              >
-                <Check size={16} color="#22c55e" strokeWidth={2.5} />
-              </motion.div>
-              <motion.span
-                animate={{
-                  textShadow: ['0 0 10px rgba(34,197,94,0.4)', '0 0 25px rgba(34,197,94,0.7)', '0 0 10px rgba(34,197,94,0.4)'],
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-                style={{
-                  fontSize: 28,
-                  fontWeight: 800,
-                  background: 'linear-gradient(180deg, #4ade80, #22c55e)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '-0.02em',
-                }}
-              >
+              <Check size={16} color="#22c55e" strokeWidth={2.5} />
+              <span style={{
+                fontSize: 28,
+                fontWeight: 800,
+                background: 'linear-gradient(180deg, #4ade80, #22c55e)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.02em',
+              }}>
                 <AnimatedCounter value={unlockedCount} />
-              </motion.span>
+              </span>
             </div>
             <div style={{ fontSize: 10, color: 'rgba(34,197,94,0.7)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Получено</div>
           </motion.div>
 
+          {/* Осталось — muted static */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1050,7 +994,6 @@ export function AchievementsPage({ user }: Props) {
               borderRadius: 14,
               padding: '14px 8px',
               border: '1px solid rgba(255,255,255,0.08)',
-              position: 'relative',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
@@ -1067,6 +1010,7 @@ export function AchievementsPage({ user }: Props) {
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Осталось</div>
           </motion.div>
 
+          {/* Прогресс — gold static */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1078,41 +1022,19 @@ export function AchievementsPage({ user }: Props) {
               borderRadius: 14,
               padding: '14px 8px',
               border: '1px solid rgba(212, 175, 55, 0.25)',
-              position: 'relative',
-              overflow: 'hidden',
             }}
           >
-            {/* Shine effect */}
-            <motion.div
-              animate={{ x: ['-100%', '200%'] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, delay: 1 }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '40%',
-                height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
-                pointerEvents: 'none',
-              }}
-            />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 4 }}>
-              <motion.span
-                animate={{
-                  textShadow: ['0 0 10px rgba(212,175,55,0.3)', '0 0 25px rgba(212,175,55,0.6)', '0 0 10px rgba(212,175,55,0.3)'],
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-                style={{
-                  fontSize: 28,
-                  fontWeight: 800,
-                  background: 'linear-gradient(180deg, #f5d485, #D4AF37)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '-0.02em',
-                }}
-              >
+              <span style={{
+                fontSize: 28,
+                fontWeight: 800,
+                background: 'linear-gradient(180deg, #f5d485, #D4AF37)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.02em',
+              }}>
                 <AnimatedCounter value={Math.round(progress)} suffix="%" />
-              </motion.span>
+              </span>
             </div>
             <div style={{ fontSize: 10, color: 'rgba(212,175,55,0.8)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Прогресс</div>
           </motion.div>

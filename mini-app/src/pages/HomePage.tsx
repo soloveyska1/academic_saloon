@@ -1814,24 +1814,18 @@ export function HomePage({ user }: Props) {
             marginBottom: 20,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <motion.div
-                animate={{
-                  boxShadow: ['0 0 0 rgba(212,175,55,0)', '0 0 15px rgba(212,175,55,0.3)', '0 0 0 rgba(212,175,55,0)'],
-                }}
-                transition={{ duration: 3, repeat: Infinity }}
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 12,
-                  background: 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
-                  border: '1px solid rgba(212,175,55,0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
+              <div style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
+                border: '1px solid rgba(212,175,55,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
                 <Briefcase size={20} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
-              </motion.div>
+              </div>
               <div>
                 <div style={{
                   fontSize: 11,
@@ -1850,59 +1844,31 @@ export function HomePage({ user }: Props) {
             <ChevronRight size={18} color="rgba(212,175,55,0.4)" strokeWidth={1.5} />
           </div>
 
-          {/* Stats Grid — Premium Monochrome Style */}
+          {/* Stats Grid — Clean premium style */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            {/* Active — Gold/Amber for "work in progress" */}
-            <motion.div
-              style={{
-                padding: 16,
-                borderRadius: 14,
+            {/* Active — Gold, only pulsing dot for attention */}
+            <div style={{
+              padding: 16,
+              borderRadius: 14,
+              background: activeOrders > 0
+                ? 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
+                : 'linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+              border: `1px solid ${activeOrders > 0 ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`,
+              textAlign: 'center',
+            }}>
+              <div style={{
+                fontSize: 38,
+                fontWeight: 800,
+                fontFamily: 'var(--font-serif)',
                 background: activeOrders > 0
-                  ? 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
-                  : 'linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
-                border: `1px solid ${activeOrders > 0 ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                textAlign: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Shimmer for active orders */}
-              {activeOrders > 0 && (
-                <motion.div
-                  animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '40%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
-                    pointerEvents: 'none',
-                  }}
-                />
-              )}
-              <motion.div
-                animate={activeOrders > 0 ? {
-                  textShadow: ['0 0 15px rgba(212,175,55,0.4)', '0 0 30px rgba(212,175,55,0.7)', '0 0 15px rgba(212,175,55,0.4)'],
-                } : {}}
-                transition={{ duration: 2, repeat: Infinity }}
-                style={{
-                  fontSize: 38,
-                  fontWeight: 800,
-                  fontFamily: 'var(--font-serif)',
-                  background: activeOrders > 0
-                    ? 'linear-gradient(180deg, #f5d485, #D4AF37)'
-                    : 'linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2))',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  marginBottom: 6,
-                  position: 'relative',
-                  zIndex: 1,
-                }}
-              >
+                  ? 'linear-gradient(180deg, #f5d485, #D4AF37)'
+                  : 'linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2))',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: 6,
+              }}>
                 {activeOrders}
-              </motion.div>
+              </div>
               <div style={{
                 fontSize: 10,
                 fontWeight: 700,
@@ -1913,35 +1879,31 @@ export function HomePage({ user }: Props) {
                 gap: 5,
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase',
-                position: 'relative',
-                zIndex: 1,
               }}>
                 {activeOrders > 0 && (
                   <motion.div
-                    animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                     style={{
                       width: 6,
                       height: 6,
                       borderRadius: '50%',
                       background: '#D4AF37',
-                      boxShadow: '0 0 10px rgba(212,175,55,0.8)',
+                      boxShadow: '0 0 8px rgba(212,175,55,0.6)',
                     }}
                   />
                 )}
                 Активных
               </div>
-            </motion.div>
+            </div>
 
-            {/* Completed — Muted green, success state */}
+            {/* Completed — Static green, no animation needed */}
             <div style={{
               padding: 16,
               borderRadius: 14,
               background: 'linear-gradient(145deg, rgba(34,197,94,0.1), rgba(34,197,94,0.03))',
               border: '1px solid rgba(34,197,94,0.2)',
               textAlign: 'center',
-              position: 'relative',
-              overflow: 'hidden',
             }}>
               <div style={{
                 fontSize: 38,
