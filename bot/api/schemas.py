@@ -284,7 +284,7 @@ class AdminPriceUpdate(BaseModel):
     price: float
 
 class AdminMessageRequest(BaseModel):
-    text: string
+    text: str
 
 class AdminProgressUpdate(BaseModel):
     percent: int

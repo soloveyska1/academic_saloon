@@ -4,11 +4,11 @@ import {
   SendMessageResponse, AdminUser, AdminStats, AdminSqlResponse
 } from '../types'
 
-// API base URL
-export const API_BASE_URL = 'https://academic-saloon.duckdns.org/api'
-
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
+
+// API base URL
+export const API_BASE_URL = import.meta.env.VITE_API_URL || (IS_DEV ? 'http://localhost:8000/api' : 'https://academic-saloon.duckdns.org/api')
 
 // Helpers
 function getInitData(): string {
