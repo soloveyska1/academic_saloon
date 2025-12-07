@@ -1,29 +1,69 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion'
 import {
   FileStack, Search, SlidersHorizontal, Plus, ChevronRight,
   Clock, CheckCircle, XCircle, CreditCard, Loader, AlertCircle,
   TrendingUp, Calendar, MessageCircle, Sparkles, Filter,
-  ArrowUpDown, X, Bell,
+  ArrowUpDown, X, Bell, Zap, RefreshCw, Copy, Trash2,
   GraduationCap, FileText, BookOpen, Briefcase, PenTool,
-  ClipboardCheck, Presentation, Scroll, Camera,
+  ClipboardCheck, Presentation, Scroll, Camera, ChevronDown,
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { usePremiumGesture } from '../hooks/usePremiumGesture'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ORDERS PAGE V2 — Premium Redesign
-//  Features: Hero Stats, Attention Section, Enhanced Cards, Search, Sort
+//  ORDERS PAGE V3 — Ultimate Premium Redesign
+//  Features: Swipe Actions, Timeline, Quick Pay, Grouping, Enhanced Cards
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface Props {
   orders: Order[]
 }
 
-type Filter = 'all' | 'active' | 'completed' | 'attention'
+type FilterType = 'all' | 'active' | 'completed' | 'attention'
 type SortOption = 'date' | 'price' | 'status'
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Safe date parser - fixes NaN bug
+function parseDateSafe(dateString: string | null | undefined): Date | null {
+  if (!dateString || dateString.trim() === '') return null
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return null
+  return date
+}
+
+// Calculate days until deadline safely
+function getDaysUntilDeadline(deadline: string | null | undefined): number | null {
+  const date = parseDateSafe(deadline)
+  if (!date) return null
+  const now = new Date()
+  const diff = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return diff
+}
+
+// Format month for grouping
+function getMonthKey(dateString: string): string {
+  const date = parseDateSafe(dateString)
+  if (!date) return 'unknown'
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+function getMonthLabel(monthKey: string): string {
+  if (monthKey === 'unknown') return 'Без даты'
+  const [year, month] = monthKey.split('-').map(Number)
+  const months = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ]
+  const now = new Date()
+  const isCurrentYear = year === now.getFullYear()
+  return isCurrentYear ? months[month - 1] : `${months[month - 1]} ${year}`
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  CONSTANTS
@@ -64,23 +104,27 @@ interface StatusConfig {
   icon: typeof Clock
   priority: number
   needsAttention: boolean
+  step: number // For timeline: 0-4
 }
 
 const STATUS_CONFIG: Record<string, StatusConfig> = {
-  pending: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: Clock, priority: 2, needsAttention: false },
-  waiting_estimation: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: Clock, priority: 2, needsAttention: false },
-  confirmed: { label: 'К оплате', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.12)', icon: CreditCard, priority: 1, needsAttention: true },
-  waiting_payment: { label: 'К оплате', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.12)', icon: CreditCard, priority: 1, needsAttention: true },
-  verification_pending: { label: 'Проверка оплаты', color: '#06b6d4', bgColor: 'rgba(6,182,212,0.12)', icon: Loader, priority: 3, needsAttention: false },
-  paid: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false },
-  paid_full: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false },
-  in_progress: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false },
-  review: { label: 'Готов', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)', icon: CheckCircle, priority: 5, needsAttention: true },
-  revision: { label: 'На правках', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: AlertCircle, priority: 3, needsAttention: true },
-  completed: { label: 'Завершён', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)', icon: CheckCircle, priority: 6, needsAttention: false },
-  cancelled: { label: 'Отменён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.12)', icon: XCircle, priority: 7, needsAttention: false },
-  rejected: { label: 'Отклонён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.12)', icon: XCircle, priority: 7, needsAttention: false },
+  pending: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
+  waiting_estimation: { label: 'На оценке', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
+  confirmed: { label: 'К оплате', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.12)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
+  waiting_payment: { label: 'К оплате', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.12)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
+  verification_pending: { label: 'Проверка оплаты', color: '#06b6d4', bgColor: 'rgba(6,182,212,0.12)', icon: Loader, priority: 3, needsAttention: false, step: 2 },
+  paid: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  paid_full: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  in_progress: { label: 'В работе', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  review: { label: 'Готов', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)', icon: CheckCircle, priority: 5, needsAttention: true, step: 3 },
+  revision: { label: 'На правках', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.12)', icon: AlertCircle, priority: 3, needsAttention: true, step: 2 },
+  completed: { label: 'Завершён', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)', icon: CheckCircle, priority: 6, needsAttention: false, step: 4 },
+  cancelled: { label: 'Отменён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.12)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
+  rejected: { label: 'Отклонён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.12)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
 }
+
+// Timeline steps
+const TIMELINE_STEPS = ['Создан', 'Оценён', 'В работе', 'Готов', 'Завершён']
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ANIMATED COUNTER
@@ -143,6 +187,192 @@ function ProgressRing({ progress, size = 44, strokeWidth = 3, color = '#d4af37' 
         }}
       />
     </svg>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MINI TIMELINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+function MiniTimeline({ currentStep, color }: { currentStep: number; color: string }) {
+  if (currentStep < 0) return null // Cancelled/rejected orders
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 4,
+      padding: '8px 0',
+    }}>
+      {TIMELINE_STEPS.map((_, index) => (
+        <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Dot */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: index * 0.1 }}
+            style={{
+              width: index <= currentStep ? 8 : 6,
+              height: index <= currentStep ? 8 : 6,
+              borderRadius: '50%',
+              background: index <= currentStep ? color : 'rgba(255,255,255,0.15)',
+              boxShadow: index <= currentStep ? `0 0 8px ${color}` : 'none',
+              transition: 'all 0.3s ease',
+            }}
+          />
+          {/* Line */}
+          {index < TIMELINE_STEPS.length - 1 && (
+            <div style={{
+              width: 16,
+              height: 2,
+              background: index < currentStep
+                ? `linear-gradient(90deg, ${color}, ${color}80)`
+                : 'rgba(255,255,255,0.1)',
+              borderRadius: 1,
+              marginLeft: 4,
+            }} />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  QUICK PAY BUTTON
+// ═══════════════════════════════════════════════════════════════════════════
+
+function QuickPayButton({
+  orders,
+  onPay
+}: {
+  orders: Order[]
+  onPay: () => void
+}) {
+  const { haptic } = useTelegram()
+  const totalAmount = orders.reduce((sum, o) => sum + (o.final_price || o.price || 0), 0)
+
+  if (orders.length === 0) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{ padding: '0 20px', marginBottom: 20 }}
+    >
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        onClick={() => {
+          haptic('medium')
+          onPay()
+        }}
+        style={{
+          width: '100%',
+          padding: '16px 20px',
+          borderRadius: 16,
+          border: 'none',
+          background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Shine effect */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '50%',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.15), transparent)',
+          borderRadius: '16px 16px 0 0',
+        }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, zIndex: 1 }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Zap size={20} color="#fff" fill="#fff" />
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: '#fff',
+            }}>
+              Оплатить всё
+            </div>
+            <div style={{
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.7)',
+            }}>
+              {orders.length} {orders.length === 1 ? 'заказ' : orders.length < 5 ? 'заказа' : 'заказов'}
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          fontSize: 20,
+          fontWeight: 700,
+          color: '#fff',
+          fontFamily: 'var(--font-mono)',
+          zIndex: 1,
+        }}>
+          {totalAmount.toLocaleString('ru-RU')} ₽
+        </div>
+      </motion.button>
+    </motion.div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MONTH HEADER
+// ═══════════════════════════════════════════════════════════════════════════
+
+function MonthHeader({ monthKey, count }: { monthKey: string; count: number }) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      padding: '16px 0 12px',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}>
+        <Calendar size={14} color="var(--gold-400)" />
+        <span style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: 'var(--text-main)',
+        }}>
+          {getMonthLabel(monthKey)}
+        </span>
+      </div>
+      <div style={{
+        flex: 1,
+        height: 1,
+        background: 'var(--border-subtle)',
+      }} />
+      <span style={{
+        fontSize: 12,
+        color: 'var(--text-muted)',
+        fontFamily: 'var(--font-mono)',
+      }}>
+        {count}
+      </span>
+    </div>
   )
 }
 
@@ -293,282 +523,332 @@ function AttentionCard({ order, onClick }: { order: Order; onClick: () => void }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM ORDER CARD
+//  SWIPEABLE ORDER CARD
 // ═══════════════════════════════════════════════════════════════════════════
 
-function PremiumOrderCard({ order, index }: { order: Order; index: number }) {
+function SwipeableOrderCard({ order, index, showTimeline = true }: {
+  order: Order
+  index: number
+  showTimeline?: boolean
+}) {
   const navigate = useNavigate()
+  const { haptic } = useTelegram()
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const [isRevealed, setIsRevealed] = useState(false)
+
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const WorkIcon = WORK_TYPE_ICONS[order.work_type] || FileText
   const workTypeColor = WORK_TYPE_COLORS[order.work_type] || '#d4af37'
-  const StatusIcon = statusConfig.icon
 
-  const { ref, handlers } = usePremiumGesture<HTMLDivElement>({
-    onTap: () => navigate(`/order/${order.id}`),
-    scale: 0.98,
-    hapticType: 'light',
-    tolerance: 15,
-    pressDelay: 40,
-  })
-
-  // Calculate days until deadline
-  const daysUntilDeadline = useMemo(() => {
-    if (!order.deadline) return null
-    const deadline = new Date(order.deadline)
-    const now = new Date()
-    const diff = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    return diff
-  }, [order.deadline])
+  // Use safe date parsing - fixes NaN bug
+  const daysUntilDeadline = getDaysUntilDeadline(order.deadline)
 
   const progress = (order as any).progress || 0
   const isInProgress = ['paid', 'paid_full', 'in_progress'].includes(order.status)
   const isCompleted = order.status === 'completed'
   const needsPayment = ['confirmed', 'waiting_payment'].includes(order.status)
 
+  const SWIPE_THRESHOLD = 80
+
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (Math.abs(info.offset.x) > SWIPE_THRESHOLD) {
+      setIsRevealed(true)
+      setSwipeOffset(info.offset.x > 0 ? SWIPE_THRESHOLD : -SWIPE_THRESHOLD)
+      haptic('light')
+    } else {
+      setIsRevealed(false)
+      setSwipeOffset(0)
+    }
+  }
+
+  const handleAction = (action: 'pay' | 'chat' | 'copy') => {
+    haptic('medium')
+    setIsRevealed(false)
+    setSwipeOffset(0)
+
+    if (action === 'pay') {
+      navigate(`/order/${order.id}?action=pay`)
+    } else if (action === 'chat') {
+      navigate(`/order/${order.id}?tab=chat`)
+    } else if (action === 'copy') {
+      // Copy order ID
+      navigator.clipboard?.writeText(`#${order.id}`)
+    }
+  }
+
+  const handleCardClick = () => {
+    if (!isRevealed) {
+      navigate(`/order/${order.id}`)
+    } else {
+      setIsRevealed(false)
+      setSwipeOffset(0)
+    }
+  }
+
   return (
     <motion.div
-      ref={ref}
-      {...handlers}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: index * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       style={{
         position: 'relative',
-        padding: 18,
-        borderRadius: 20,
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-default)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
         overflow: 'hidden',
-        cursor: 'pointer',
+        borderRadius: 20,
       }}
     >
-      {/* Left accent bar */}
+      {/* Swipe Actions Background - Left (Chat) */}
       <div style={{
         position: 'absolute',
         left: 0,
-        top: 16,
-        bottom: 16,
-        width: 3,
-        borderRadius: '0 3px 3px 0',
-        background: `linear-gradient(180deg, ${workTypeColor}, ${workTypeColor}80)`,
-        boxShadow: `0 0 12px ${workTypeColor}50`,
-      }} />
-
-      {/* Top shine */}
-      <div style={{
-        position: 'absolute',
         top: 0,
-        left: 0,
-        right: 0,
-        height: 1,
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-      }} />
-
-      {/* Header Row */}
-      <div style={{
+        bottom: 0,
+        width: SWIPE_THRESHOLD,
+        background: 'linear-gradient(90deg, #3b82f6, #2563eb)',
         display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        marginBottom: 14,
-        paddingLeft: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '20px 0 0 20px',
       }}>
-        {/* Left: Icon + Info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-          {/* Work Type Icon with Progress Ring */}
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            {isInProgress && progress > 0 ? (
-              <div style={{ position: 'relative' }}>
-                <ProgressRing progress={progress} size={48} strokeWidth={3} color={workTypeColor} />
+        <motion.div
+          animate={{ scale: isRevealed && swipeOffset > 0 ? 1.1 : 1 }}
+          onClick={() => handleAction('chat')}
+          style={{ cursor: 'pointer' }}
+        >
+          <MessageCircle size={24} color="#fff" />
+        </motion.div>
+      </div>
+
+      {/* Swipe Actions Background - Right (Pay/Copy) */}
+      <div style={{
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: SWIPE_THRESHOLD,
+        background: needsPayment
+          ? 'linear-gradient(270deg, #8b5cf6, #7c3aed)'
+          : 'linear-gradient(270deg, #6366f1, #4f46e5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '0 20px 20px 0',
+      }}>
+        <motion.div
+          animate={{ scale: isRevealed && swipeOffset < 0 ? 1.1 : 1 }}
+          onClick={() => handleAction(needsPayment ? 'pay' : 'copy')}
+          style={{ cursor: 'pointer' }}
+        >
+          {needsPayment ? (
+            <CreditCard size={24} color="#fff" />
+          ) : (
+            <Copy size={24} color="#fff" />
+          )}
+        </motion.div>
+      </div>
+
+      {/* Main Card - Draggable */}
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: -SWIPE_THRESHOLD, right: SWIPE_THRESHOLD }}
+        dragElastic={0.2}
+        onDragEnd={handleDragEnd}
+        animate={{ x: swipeOffset }}
+        onClick={handleCardClick}
+        style={{
+          position: 'relative',
+          padding: 16,
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRadius: 20,
+          cursor: 'pointer',
+          touchAction: 'pan-y',
+        }}
+      >
+        {/* Left accent bar */}
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          top: 14,
+          bottom: 14,
+          width: 3,
+          borderRadius: '0 3px 3px 0',
+          background: `linear-gradient(180deg, ${workTypeColor}, ${workTypeColor}80)`,
+          boxShadow: `0 0 12px ${workTypeColor}50`,
+        }} />
+
+        {/* Header Row */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: 10,
+          paddingLeft: 10,
+        }}>
+          {/* Left: Icon + Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+            {/* Work Type Icon with Progress Ring */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              {isInProgress && progress > 0 ? (
+                <div style={{ position: 'relative' }}>
+                  <ProgressRing progress={progress} size={44} strokeWidth={3} color={workTypeColor} />
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <WorkIcon size={18} color={workTypeColor} strokeWidth={1.5} />
+                  </div>
+                </div>
+              ) : (
                 <div style={{
-                  position: 'absolute',
-                  inset: 0,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: `linear-gradient(135deg, ${workTypeColor}20, ${workTypeColor}08)`,
+                  border: `1px solid ${workTypeColor}30`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
                   <WorkIcon size={20} color={workTypeColor} strokeWidth={1.5} />
                 </div>
-              </div>
-            ) : (
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
-                background: `linear-gradient(135deg, ${workTypeColor}20, ${workTypeColor}08)`,
-                border: `1px solid ${workTypeColor}30`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <WorkIcon size={22} color={workTypeColor} strokeWidth={1.5} />
-              </div>
-            )}
-            {/* Progress percentage badge */}
-            {isInProgress && progress > 0 && (
-              <div style={{
-                position: 'absolute',
-                bottom: -4,
-                right: -4,
-                background: workTypeColor,
-                color: '#000',
-                fontSize: 9,
-                fontWeight: 700,
-                padding: '2px 5px',
-                borderRadius: 6,
-                fontFamily: 'var(--font-mono)',
-              }}>
-                {progress}%
-              </div>
-            )}
-          </div>
+              )}
+              {isInProgress && progress > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: -3,
+                  right: -3,
+                  background: workTypeColor,
+                  color: '#000',
+                  fontSize: 8,
+                  fontWeight: 700,
+                  padding: '1px 4px',
+                  borderRadius: 4,
+                  fontFamily: 'var(--font-mono)',
+                }}>
+                  {progress}%
+                </div>
+              )}
+            </div>
 
-          {/* Title + Subject */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: 4,
-            }}>
+            {/* Title + Subject */}
+            <div style={{ flex: 1, minWidth: 0 }}>
               <h3 style={{
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: 700,
                 color: 'var(--text-main)',
                 margin: 0,
+                marginBottom: 2,
               }}>
                 {order.work_type_label}
               </h3>
+              <p style={{
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                margin: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {order.subject || order.topic || 'Без темы'}
+              </p>
             </div>
-            <p style={{
-              fontSize: 13,
-              color: 'var(--text-muted)',
-              margin: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+          </div>
+
+          {/* Status Badge */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            background: statusConfig.bgColor,
+            borderRadius: 16,
+            flexShrink: 0,
+          }}>
+            <div style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: statusConfig.color,
+              boxShadow: `0 0 6px ${statusConfig.color}`,
+            }} />
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: statusConfig.color,
             }}>
-              {order.subject || order.topic || 'Без темы'}
-            </p>
+              {statusConfig.label}
+            </span>
           </div>
         </div>
 
-        {/* Status Badge */}
+        {/* Mini Timeline */}
+        {showTimeline && statusConfig.step >= 0 && (
+          <div style={{ paddingLeft: 10, marginBottom: 8 }}>
+            <MiniTimeline currentStep={statusConfig.step} color={statusConfig.color} />
+          </div>
+        )}
+
+        {/* Footer Row */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          padding: '6px 12px',
-          background: statusConfig.bgColor,
-          borderRadius: 20,
-          flexShrink: 0,
+          justifyContent: 'space-between',
+          paddingTop: 10,
+          paddingLeft: 10,
+          borderTop: '1px solid var(--border-subtle)',
         }}>
-          <div style={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: statusConfig.color,
-            boxShadow: `0 0 8px ${statusConfig.color}`,
-            animation: needsPayment ? 'pulse 2s infinite' : 'none',
-          }} />
-          <span style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: statusConfig.color,
-          }}>
-            {statusConfig.label}
-          </span>
-        </div>
-      </div>
+          {/* Left: ID + Deadline */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              fontFamily: 'var(--font-mono)',
+            }}>
+              #{order.id}
+            </span>
 
-      {/* Progress Bar (for in-progress orders) */}
-      {isInProgress && progress > 0 && progress < 100 && (
-        <div style={{ marginBottom: 14, paddingLeft: 8 }}>
-          <div style={{
-            height: 4,
-            background: 'rgba(255,255,255,0.06)',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                height: '100%',
-                background: `linear-gradient(90deg, ${workTypeColor}, ${workTypeColor}cc)`,
-                borderRadius: 2,
-                boxShadow: `0 0 10px ${workTypeColor}60`,
-              }}
-            />
+            {daysUntilDeadline !== null && !isCompleted && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+                padding: '3px 7px',
+                background: daysUntilDeadline <= 3
+                  ? 'rgba(239,68,68,0.12)'
+                  : 'rgba(255,255,255,0.04)',
+                borderRadius: 6,
+              }}>
+                <Calendar size={10} color={daysUntilDeadline <= 3 ? '#ef4444' : 'var(--text-muted)'} />
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: daysUntilDeadline <= 3 ? '#ef4444' : 'var(--text-muted)',
+                }}>
+                  {daysUntilDeadline <= 0 ? 'Сегодня' : `${daysUntilDeadline} дн.`}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Price + Arrow */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: needsPayment ? '#8b5cf6' : 'var(--gold-200)',
+              fontFamily: 'var(--font-mono)',
+            }}>
+              {(order.final_price || order.price || 0).toLocaleString('ru-RU')} ₽
+            </span>
+            <ChevronRight size={16} color="var(--text-muted)" />
           </div>
         </div>
-      )}
-
-      {/* Footer Row */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: 14,
-        paddingLeft: 8,
-        borderTop: '1px solid var(--border-subtle)',
-      }}>
-        {/* Left: ID + Deadline */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{
-            fontSize: 12,
-            color: 'var(--text-muted)',
-            fontFamily: 'var(--font-mono)',
-          }}>
-            #{order.id}
-          </span>
-
-          {daysUntilDeadline !== null && !isCompleted && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 8px',
-              background: daysUntilDeadline <= 3
-                ? 'rgba(239,68,68,0.12)'
-                : 'rgba(255,255,255,0.04)',
-              borderRadius: 6,
-            }}>
-              <Calendar size={12} color={daysUntilDeadline <= 3 ? '#ef4444' : 'var(--text-muted)'} />
-              <span style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: daysUntilDeadline <= 3 ? '#ef4444' : 'var(--text-muted)',
-              }}>
-                {daysUntilDeadline <= 0 ? 'Сегодня' : `${daysUntilDeadline} дн.`}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Price + Arrow */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: needsPayment ? '#8b5cf6' : 'var(--gold-200)',
-            fontFamily: 'var(--font-mono)',
-          }}>
-            {(order.final_price || order.price || 0).toLocaleString('ru-RU')} ₽
-          </span>
-          <ChevronRight size={18} color="var(--text-muted)" />
-        </div>
-      </div>
-
-      {/* Pulse animation for attention-needed cards */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.2); }
-        }
-      `}</style>
+      </motion.div>
     </motion.div>
   )
 }
@@ -685,8 +965,8 @@ function FABButton({ onClick }: { onClick: () => void }) {
 //  EMPTY STATE
 // ═══════════════════════════════════════════════════════════════════════════
 
-function EmptyState({ filter }: { filter: Filter }) {
-  const messages: Record<Filter, { title: string; subtitle: string }> = {
+function EmptyState({ filter }: { filter: FilterType }) {
+  const messages: Record<FilterType, { title: string; subtitle: string }> = {
     all: { title: 'Нет заказов', subtitle: 'Создайте первый заказ, нажав +' },
     active: { title: 'Нет активных', subtitle: 'Все заказы завершены' },
     completed: { title: 'Нет завершённых', subtitle: 'Завершённые заказы появятся здесь' },
@@ -746,11 +1026,12 @@ export function OrdersPage({ orders }: Props) {
   const navigate = useNavigate()
   const { haptic } = useTelegram()
 
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useState<FilterType>('all')
   const [sortBy, setSortBy] = useState<SortOption>('date')
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const [showSort, setShowSort] = useState(false)
+  const [groupByMonth, setGroupByMonth] = useState(true)
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -807,9 +1088,32 @@ export function OrdersPage({ orders }: Props) {
     return result
   }, [orders, filter, searchQuery, sortBy])
 
-  const handleFilterChange = (newFilter: Filter) => {
+  // Group orders by month
+  const groupedOrders = useMemo(() => {
+    if (!groupByMonth || filter !== 'all') return null
+
+    const groups: Record<string, Order[]> = {}
+    filteredOrders.forEach(order => {
+      const key = getMonthKey(order.created_at)
+      if (!groups[key]) groups[key] = []
+      groups[key].push(order)
+    })
+
+    // Sort months descending (newest first)
+    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]))
+  }, [filteredOrders, groupByMonth, filter])
+
+  const handleFilterChange = (newFilter: FilterType) => {
     haptic('light')
     setFilter(newFilter)
+  }
+
+  const handleQuickPay = () => {
+    // Navigate to first unpaid order or show payment modal
+    const firstUnpaid = stats.needsPayment[0]
+    if (firstUnpaid) {
+      navigate(`/order/${firstUnpaid.id}?action=pay`)
+    }
   }
 
   return (
@@ -1215,18 +1519,46 @@ export function OrdersPage({ orders }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════════
+          QUICK PAY BUTTON
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {stats.needsPayment.length > 1 && filter === 'all' && (
+        <QuickPayButton orders={stats.needsPayment} onPay={handleQuickPay} />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
           ORDERS LIST
           ═══════════════════════════════════════════════════════════════════════ */}
       <div style={{ padding: '0 20px' }}>
         {filteredOrders.length === 0 ? (
           <EmptyState filter={filter} />
+        ) : groupedOrders ? (
+          // Grouped by month view
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {groupedOrders.map(([monthKey, monthOrders]) => (
+              <div key={monthKey}>
+                <MonthHeader monthKey={monthKey} count={monthOrders.length} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {monthOrders.map((order, index) => (
+                    <SwipeableOrderCard
+                      key={order.id}
+                      order={order}
+                      index={index}
+                      showTimeline={true}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          // Flat list view
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filteredOrders.map((order, index) => (
-              <PremiumOrderCard
+              <SwipeableOrderCard
                 key={order.id}
                 order={order}
                 index={index}
+                showTimeline={true}
               />
             ))}
           </div>
