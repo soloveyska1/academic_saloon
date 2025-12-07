@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useMemo, useEffect } from 'react'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import {
   Trophy,
   Star,
@@ -39,11 +39,85 @@ interface Achievement {
   secret?: boolean
 }
 
-// Generate achievements based on real user data
+// ═══════════════════════════════════════════════════════════════════════════
+//  FLOATING GOLD PARTICLES — Premium Background Effect
+// ═══════════════════════════════════════════════════════════════════════════
+
+function FloatingParticles() {
+  const particles = Array.from({ length: 10 }, (_, i) => ({
+    id: i,
+    left: `${8 + (i * 10) % 84}%`,
+    top: `${12 + (i * 14) % 76}%`,
+    size: 2 + (i % 2),
+    delay: i * 0.5,
+    duration: 7 + (i % 4),
+  }))
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+      {particles.map(p => (
+        <motion.div
+          key={p.id}
+          animate={{
+            opacity: [0, 0.5, 0.3, 0.5, 0],
+            y: [0, -40, -20, -60, -80],
+            x: [0, 12, -8, 18, 0],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          style={{
+            position: 'absolute',
+            left: p.left,
+            top: p.top,
+            width: p.size,
+            height: p.size,
+            borderRadius: '50%',
+            background: '#D4AF37',
+            boxShadow: `0 0 ${p.size * 4}px rgba(212,175,55,0.6)`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ANIMATED COUNTER — Smooth Number Animation
+// ═══════════════════════════════════════════════════════════════════════════
+
+function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const count = useMotionValue(0)
+  const rounded = useTransform(count, (v) => `${Math.round(v)}${suffix}`)
+  const [displayValue, setDisplayValue] = useState(`0${suffix}`)
+
+  useEffect(() => {
+    const controls = animate(count, value, { duration: 1.2, ease: [0.16, 1, 0.3, 1] })
+    const unsubscribe = rounded.on('change', (v) => setDisplayValue(v))
+    return () => { controls.stop(); unsubscribe() }
+  }, [value, count, rounded, suffix])
+
+  return <span>{displayValue}</span>
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STRATEGIC REWARDS SYSTEM — Real value for client, 100x profit for owner
+//
+//  Philosophy:
+//  - Each reward FEELS valuable and creates desire
+//  - Actual cost is minimal compared to revenue generated
+//  - Rewards incentivize more spending/engagement (not just freebies)
+//  - Secret achievements create FOMO and mystery
+// ═══════════════════════════════════════════════════════════════════════════
+
 function generateAchievements(user: UserData | null): Achievement[] {
   if (!user) return []
 
   return [
+    // ── ONBOARDING: Get them hooked ──
     {
       id: 'first_order',
       title: 'Первый шаг',
@@ -53,9 +127,12 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.orders_count >= 1,
       progress: Math.min(user.orders_count, 1),
       maxProgress: 1,
-      reward: '+50₽ на баланс',
+      // 5% off NEXT order = ensures repeat purchase, costs ~150₽ on avg order
+      reward: '-5% на следующий заказ',
       rarity: 'common',
     },
+
+    // ── RETENTION: Keep them coming back ──
     {
       id: 'loyal_customer',
       title: 'Постоянный клиент',
@@ -65,7 +142,8 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.orders_count >= 5,
       progress: Math.min(user.orders_count, 5),
       maxProgress: 5,
-      reward: '+200₽ на баланс',
+      // 150₽ bonus after 5 orders (~15,000₽ spent) = 1% cost, feels big
+      reward: '+150₽ бонус',
       rarity: 'rare',
     },
     {
@@ -77,9 +155,12 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.orders_count >= 15,
       progress: Math.min(user.orders_count, 15),
       maxProgress: 15,
-      reward: '+500₽ на баланс',
+      // Free revision = costs nothing if work is good, feels VERY valuable
+      reward: 'Бесплатная доп. правка',
       rarity: 'epic',
     },
+
+    // ── STATUS: Psychological rewards ──
     {
       id: 'vip_status',
       title: 'VIP статус',
@@ -89,7 +170,8 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.rank.level >= 3,
       progress: user.rank.level,
       maxProgress: 3,
-      reward: '+15% кешбэк навсегда',
+      // Priority queue = costs nothing, feels premium, speeds up workflow
+      reward: 'Приоритетная очередь',
       rarity: 'epic',
     },
     {
@@ -101,9 +183,12 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.rank.is_max,
       progress: user.rank.level,
       maxProgress: 4,
-      reward: 'Эксклюзивные привилегии',
+      // Exclusive room access + early discounts = pure status, no cost
+      reward: 'VIP-комната + ранний доступ',
       rarity: 'legendary',
     },
+
+    // ── BIG SPENDERS: Whale rewards that don't hurt ──
     {
       id: 'big_spender',
       title: 'Щедрая душа',
@@ -113,7 +198,8 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.total_spent >= 10000,
       progress: Math.min(user.total_spent, 10000),
       maxProgress: 10000,
-      reward: '+1000₽ на баланс',
+      // 300₽ on 10k spent = 3%, but they're already committed
+      reward: '+300₽ на баланс',
       rarity: 'legendary',
     },
     {
@@ -125,9 +211,12 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.total_spent >= 50000,
       progress: Math.min(user.total_spent, 50000),
       maxProgress: 50000,
-      reward: 'Персональный менеджер',
+      // Personal manager = premium feel, actually saves YOUR time
+      reward: 'Личный менеджер 24/7',
       rarity: 'legendary',
     },
+
+    // ── REFERRALS: Each friend = new customer ──
     {
       id: 'first_referral',
       title: 'Первый друг',
@@ -137,7 +226,8 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.referrals_count >= 1,
       progress: Math.min(user.referrals_count, 1),
       maxProgress: 1,
-      reward: '+100₽ за друга',
+      // 100₽ for bringing customer worth 3000₽+ lifetime = 3% CAC
+      reward: '+100₽ тебе и другу',
       rarity: 'common',
     },
     {
@@ -149,17 +239,21 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.referrals_count >= 10,
       progress: Math.min(user.referrals_count, 10),
       maxProgress: 10,
-      reward: '+1000₽ на баланс',
+      // 5% permanent = on already-paying customer, they'll spend more
+      reward: '+5% кешбэк навсегда',
       rarity: 'epic',
     },
+
+    // ── SECRET: Hidden until unlocked, creates mystery/FOMO ──
     {
       id: 'lucky_spinner',
       title: 'Испытатель удачи',
-      description: 'Покрути рулетку 5 раз',
+      description: 'Особые условия для везунчиков',
       icon: Flame,
       color: '#ef4444',
       unlocked: user.free_spins === 0 && user.orders_count >= 5,
-      reward: 'Бонусный спин',
+      // Extra spin = gamification, keeps them engaged
+      reward: '+2 бесплатных спина',
       rarity: 'rare',
       secret: true,
     },
@@ -172,47 +266,53 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.daily_bonus_streak >= 7,
       progress: Math.min(user.daily_bonus_streak, 7),
       maxProgress: 7,
-      reward: '+300₽ бонус',
+      // x2 daily bonus for a week = keeps them opening app daily
+      reward: 'x2 дневной бонус на неделю',
       rarity: 'rare',
     },
     {
       id: 'early_bird',
       title: 'Ранняя пташка',
-      description: 'Будь с нами с самого начала',
+      description: 'Для тех, кто был с нами с начала',
       icon: Clock,
       color: '#8b5cf6',
       unlocked: user.orders_count >= 1,
-      reward: 'Статус первопроходца',
+      // Exclusive badge = pure status, zero cost, creates envy
+      reward: 'Эксклюзивный значок OG',
       rarity: 'common',
       secret: true,
     },
   ]
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  MONOCHROME RARITY SYSTEM — All gold-based with subtle variations
+// ═══════════════════════════════════════════════════════════════════════════
+
 const RARITY_COLORS = {
   common: {
-    bg: 'rgba(113, 113, 122, 0.08)',
-    border: 'rgba(113, 113, 122, 0.15)',
-    text: '#a1a1aa',
-    glow: 'rgba(113, 113, 122, 0.2)'
+    bg: 'rgba(212, 175, 55, 0.04)',
+    border: 'rgba(212, 175, 55, 0.12)',
+    text: 'rgba(212, 175, 55, 0.5)',
+    glow: 'rgba(212, 175, 55, 0.15)'
   },
   rare: {
-    bg: 'rgba(59, 130, 246, 0.08)',
-    border: 'rgba(59, 130, 246, 0.2)',
-    text: '#3b82f6',
-    glow: 'rgba(59, 130, 246, 0.3)'
+    bg: 'rgba(212, 175, 55, 0.06)',
+    border: 'rgba(212, 175, 55, 0.18)',
+    text: 'rgba(212, 175, 55, 0.65)',
+    glow: 'rgba(212, 175, 55, 0.25)'
   },
   epic: {
-    bg: 'rgba(168, 85, 247, 0.08)',
-    border: 'rgba(168, 85, 247, 0.2)',
-    text: '#a855f7',
-    glow: 'rgba(168, 85, 247, 0.3)'
+    bg: 'rgba(212, 175, 55, 0.08)',
+    border: 'rgba(212, 175, 55, 0.25)',
+    text: 'rgba(212, 175, 55, 0.8)',
+    glow: 'rgba(212, 175, 55, 0.35)'
   },
   legendary: {
-    bg: 'rgba(212, 175, 55, 0.1)',
-    border: 'rgba(212, 175, 55, 0.25)',
-    text: '#d4af37',
-    glow: 'rgba(212, 175, 55, 0.4)'
+    bg: 'rgba(212, 175, 55, 0.12)',
+    border: 'rgba(212, 175, 55, 0.4)',
+    text: '#D4AF37',
+    glow: 'rgba(212, 175, 55, 0.5)'
   },
 }
 
@@ -223,177 +323,288 @@ const RARITY_LABELS = {
   legendary: 'Легендарное',
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  PREMIUM ACHIEVEMENT CARD — Monochrome Gold Style
+// ═══════════════════════════════════════════════════════════════════════════
+
 function AchievementCard({ achievement, index }: { achievement: Achievement; index: number }) {
-  const [isExpanded, setIsExpanded] = useState(false)
   const { haptic } = useTelegram()
   const Icon = achievement.icon
   const rarityStyle = RARITY_COLORS[achievement.rarity]
 
+  // Secret achievements show as ??? until unlocked
+  const isHiddenSecret = achievement.secret && !achievement.unlocked
+
   const handleClick = () => {
     haptic('light')
-    setIsExpanded(!isExpanded)
   }
 
   const progressPercent = achievement.maxProgress
     ? ((achievement.progress || 0) / achievement.maxProgress) * 100
     : 0
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  SECRET ACHIEVEMENT CARD — Mysterious, enticing, creates FOMO
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (isHiddenSecret) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
+        onClick={handleClick}
+        style={{
+          padding: 16,
+          background: 'linear-gradient(145deg, rgba(20,20,22,0.98) 0%, rgba(15,15,17,0.99) 100%)',
+          border: '1px solid rgba(212,175,55,0.15)',
+          borderRadius: 18,
+          position: 'relative',
+          overflow: 'hidden',
+          backdropFilter: 'blur(20px)',
+        }}
+      >
+        {/* Mysterious shimmer effect */}
+        <motion.div
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '30%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Top highlight */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
+        }} />
+
+        <div style={{ display: 'flex', gap: 14, position: 'relative', zIndex: 1 }}>
+          {/* Mystery icon */}
+          <motion.div
+            animate={{
+              opacity: [0.4, 0.7, 0.4],
+              boxShadow: [
+                '0 0 10px rgba(212,175,55,0.1)',
+                '0 0 20px rgba(212,175,55,0.2)',
+                '0 0 10px rgba(212,175,55,0.1)',
+              ]
+            }}
+            transition={{ duration: 3, repeat: Infinity }}
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 14,
+              background: 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
+              border: '1px solid rgba(212,175,55,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <span style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: 'rgba(212,175,55,0.5)',
+              fontFamily: 'var(--font-mono)',
+            }}>
+              ?
+            </span>
+          </motion.div>
+
+          {/* Mystery content */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <motion.span
+                animate={{ opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 2.5, repeat: Infinity }}
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: 'rgba(212,175,55,0.7)',
+                  letterSpacing: '0.15em',
+                }}
+              >
+                ???
+              </motion.span>
+              <span style={{
+                fontSize: 8,
+                fontWeight: 700,
+                color: 'rgba(212,175,55,0.9)',
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
+                padding: '3px 8px',
+                borderRadius: 4,
+                letterSpacing: '0.1em',
+                border: '1px solid rgba(212,175,55,0.2)',
+              }}>
+                СЕКРЕТ
+              </span>
+            </div>
+
+            <p style={{
+              fontSize: 11,
+              color: 'rgba(255,255,255,0.35)',
+              marginBottom: 8,
+              lineHeight: 1.4,
+              fontStyle: 'italic',
+            }}>
+              Секретное достижение. Выполни условие, чтобы раскрыть...
+            </p>
+
+            {/* Mystery reward teaser */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 12px',
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05))',
+              border: '1px solid rgba(212,175,55,0.15)',
+              borderRadius: 6,
+            }}>
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+              >
+                <Sparkles size={11} color="rgba(212,175,55,0.7)" />
+              </motion.div>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: 'rgba(212,175,55,0.6)',
+                letterSpacing: '0.05em',
+              }}>
+                Особая награда
+              </span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  REGULAR ACHIEVEMENT CARD — Normal display for non-secret or unlocked
+  // ═══════════════════════════════════════════════════════════════════════════
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 25 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
       onClick={handleClick}
       style={{
-        padding: 18,
-        background: achievement.unlocked
-          ? `linear-gradient(145deg, ${achievement.color}12 0%, rgba(18, 18, 22, 0.95) 50%, rgba(12, 12, 15, 0.98) 100%)`
-          : 'linear-gradient(145deg, rgba(28, 28, 32, 0.6) 0%, rgba(18, 18, 22, 0.9) 100%)',
-        border: `1px solid ${achievement.unlocked ? `${achievement.color}35` : 'rgba(255, 255, 255, 0.04)'}`,
-        borderRadius: 20,
-        cursor: 'pointer',
+        padding: 16,
+        background: 'linear-gradient(145deg, rgba(25,25,28,0.95) 0%, rgba(18,18,20,0.98) 100%)',
+        border: `1px solid ${achievement.unlocked ? rarityStyle.border : 'rgba(255,255,255,0.04)'}`,
+        borderRadius: 18,
         position: 'relative',
         overflow: 'hidden',
         backdropFilter: 'blur(20px)',
         boxShadow: achievement.unlocked
-          ? `0 4px 24px ${rarityStyle.glow}, inset 0 1px 0 rgba(255, 255, 255, 0.05)`
-          : 'inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+          ? `0 4px 24px ${rarityStyle.glow}`
+          : 'none',
       }}
     >
-      {/* Animated background glow for unlocked */}
-      {achievement.unlocked && (
-        <motion.div
-          animate={{
-            opacity: [0.3, 0.5, 0.3],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            top: -50,
-            right: -50,
-            width: 150,
-            height: 150,
-            background: `radial-gradient(circle, ${achievement.color}20 0%, transparent 70%)`,
-            borderRadius: '50%',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
+      {/* Top highlight line */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 1,
+        background: achievement.unlocked
+          ? `linear-gradient(90deg, transparent, ${rarityStyle.text}, transparent)`
+          : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+      }} />
 
-      {/* Secret achievement sparkle */}
-      {achievement.secret && achievement.unlocked && (
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-          style={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            opacity: 0.6,
-          }}
-        >
-          <Sparkles size={14} color={achievement.color} />
-        </motion.div>
-      )}
-
-      {/* Locked overlay with blur */}
+      {/* Locked indicator — positioned in corner, not blocking content */}
       {!achievement.unlocked && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: [0.5, 0.8, 0.5] }}
+          transition={{ duration: 2.5, repeat: Infinity }}
           style={{
             position: 'absolute',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(3px)',
+            top: 12,
+            right: 12,
+            width: 28,
+            height: 28,
+            borderRadius: 8,
+            background: 'linear-gradient(145deg, rgba(30,30,35,0.95), rgba(20,20,24,0.98))',
+            border: '1px solid rgba(212,175,55,0.2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 5,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
           }}
         >
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.5, 0.7, 0.5]
-            }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Lock size={26} color="#52525b" />
-          </motion.div>
+          <Lock size={14} color="rgba(212,175,55,0.6)" strokeWidth={1.5} />
         </motion.div>
       )}
 
-      <div style={{ display: 'flex', gap: 16, position: 'relative', zIndex: 1 }}>
-        {/* Icon with premium styling */}
+      <div style={{ display: 'flex', gap: 14, position: 'relative', zIndex: 1 }}>
+        {/* Icon — Dark glass with gold border */}
         <motion.div
-          animate={achievement.unlocked ? {
+          animate={achievement.unlocked && achievement.rarity === 'legendary' ? {
             boxShadow: [
-              `0 0 15px ${achievement.color}25`,
-              `0 0 25px ${achievement.color}40`,
-              `0 0 15px ${achievement.color}25`,
+              '0 0 15px rgba(212,175,55,0.3)',
+              '0 0 25px rgba(212,175,55,0.5)',
+              '0 0 15px rgba(212,175,55,0.3)',
             ],
           } : {}}
           transition={{ duration: 2.5, repeat: Infinity }}
           style={{
-            width: 60,
-            height: 60,
-            borderRadius: 18,
-            background: achievement.unlocked
-              ? `linear-gradient(145deg, ${achievement.color} 0%, ${achievement.color}cc 100%)`
-              : 'linear-gradient(145deg, rgba(40, 40, 48, 0.9) 0%, rgba(30, 30, 35, 0.9) 100%)',
+            width: 52,
+            height: 52,
+            borderRadius: 14,
+            background: 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
+            border: `1px solid ${achievement.unlocked ? rarityStyle.border : 'rgba(255,255,255,0.06)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            border: achievement.unlocked
-              ? `1px solid ${achievement.color}60`
-              : '1px solid rgba(255, 255, 255, 0.05)',
             position: 'relative',
             overflow: 'hidden',
           }}
         >
-          {/* Icon shine effect */}
+          {/* Icon shimmer for unlocked */}
           {achievement.unlocked && (
             <motion.div
               animate={{ x: [-60, 60] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
               style={{
                 position: 'absolute',
-                width: 30,
+                width: 20,
                 height: '150%',
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
                 transform: 'skewX(-20deg)',
               }}
             />
           )}
           <Icon
-            size={28}
-            color={achievement.unlocked ? '#0a0a0c' : '#4a4a52'}
-            strokeWidth={achievement.unlocked ? 2.2 : 1.8}
+            size={24}
+            color={achievement.unlocked ? rarityStyle.text : 'rgba(100,100,100,0.4)'}
+            strokeWidth={1.5}
           />
         </motion.div>
 
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: 5,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 15,
-                fontWeight: 700,
-                color: achievement.unlocked ? '#f5f5f5' : '#71717a',
-                fontFamily: "'Inter', sans-serif",
-                letterSpacing: '-0.01em',
-              }}
-            >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: achievement.unlocked ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
+            }}>
               {achievement.title}
             </span>
             {achievement.unlocked && (
@@ -402,154 +613,136 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 500, delay: 0.2 }}
                 style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 7,
+                  width: 18,
+                  height: 18,
+                  borderRadius: 6,
                   background: 'linear-gradient(145deg, #22c55e, #16a34a)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(34, 197, 94, 0.4)',
                 }}
               >
-                <Check size={12} color="#fff" strokeWidth={3} />
+                <Check size={10} color="#fff" strokeWidth={3} />
               </motion.div>
             )}
-            {achievement.secret && (
-              <span
-                style={{
-                  fontSize: 9,
-                  fontWeight: 600,
-                  color: '#a855f7',
-                  background: 'rgba(168, 85, 247, 0.15)',
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  letterSpacing: '0.05em',
-                }}
-              >
-                SECRET
+            {/* Show SECRET badge only for unlocked secrets (revealed) */}
+            {achievement.secret && achievement.unlocked && (
+              <span style={{
+                fontSize: 8,
+                fontWeight: 700,
+                color: 'rgba(212,175,55,0.9)',
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
+                padding: '2px 6px',
+                borderRadius: 4,
+                letterSpacing: '0.05em',
+                border: '1px solid rgba(212,175,55,0.2)',
+              }}>
+                СЕКРЕТ ✓
               </span>
             )}
           </div>
 
-          <p
-            style={{
-              fontSize: 12,
-              color: '#8a8a8f',
-              marginBottom: 10,
-              lineHeight: 1.5,
-            }}
-          >
+          <p style={{
+            fontSize: 11,
+            color: 'rgba(255,255,255,0.4)',
+            marginBottom: 8,
+            lineHeight: 1.4,
+          }}>
             {achievement.description}
           </p>
 
-          {/* Rarity badge */}
-          <div
-            style={{
+          {/* Rarity badge and reward row */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: 2,
+          }}>
+            {/* Rarity badge — minimal style */}
+            <div style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 5,
-              padding: '5px 12px',
+              gap: 4,
+              padding: '4px 10px',
               background: rarityStyle.bg,
               border: `1px solid ${rarityStyle.border}`,
-              borderRadius: 8,
-              fontSize: 10,
+              borderRadius: 6,
+              fontSize: 9,
               fontWeight: 700,
               color: rarityStyle.text,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-            }}
-          >
-            {achievement.rarity === 'legendary' && <Sparkles size={10} />}
-            {RARITY_LABELS[achievement.rarity]}
-          </div>
+            }}>
+              {achievement.rarity === 'legendary' && <Sparkles size={9} />}
+              {RARITY_LABELS[achievement.rarity]}
+            </div>
 
-          {/* Progress bar with premium styling */}
-          {achievement.maxProgress && !achievement.unlocked && (
-            <div style={{ marginTop: 12 }}>
-              <div
+            {/* Reward — now inline with badge */}
+            {achievement.reward && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: 6,
-                  fontSize: 11,
-                  fontFamily: "'JetBrains Mono', monospace",
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 10,
+                  color: achievement.unlocked ? '#22c55e' : 'rgba(212,175,55,0.6)',
+                  fontWeight: 600,
+                  background: achievement.unlocked
+                    ? 'rgba(34, 197, 94, 0.1)'
+                    : 'rgba(212,175,55,0.06)',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  border: achievement.unlocked
+                    ? '1px solid rgba(34, 197, 94, 0.2)'
+                    : '1px solid rgba(212,175,55,0.12)',
                 }}
               >
-                <span style={{ color: '#71717a' }}>Прогресс</span>
-                <span style={{ color: achievement.color, fontWeight: 600 }}>
+                <Award size={11} />
+                <span>{achievement.reward}</span>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Progress bar for locked achievements */}
+          {achievement.maxProgress && !achievement.unlocked && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 5,
+                fontSize: 10,
+              }}>
+                <span style={{ color: 'rgba(255,255,255,0.35)' }}>Прогресс</span>
+                <span style={{ color: 'rgba(212,175,55,0.6)', fontWeight: 600 }}>
                   {achievement.maxProgress >= 1000
                     ? `${(achievement.progress || 0).toLocaleString()}/${achievement.maxProgress.toLocaleString()}`
                     : `${achievement.progress || 0}/${achievement.maxProgress}`
                   }
                 </span>
               </div>
-              <div
-                style={{
-                  height: 8,
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  borderRadius: 4,
-                  overflow: 'hidden',
-                  border: '1px solid rgba(255, 255, 255, 0.03)',
-                }}
-              >
+              <div style={{
+                height: 6,
+                background: 'rgba(255,255,255,0.04)',
+                borderRadius: 3,
+                overflow: 'hidden',
+                border: '1px solid rgba(255,255,255,0.03)',
+              }}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercent}%` }}
-                  transition={{ delay: 0.4, duration: 1, ease: 'easeOut' }}
+                  transition={{ delay: 0.3, duration: 0.8, ease: 'easeOut' }}
                   style={{
                     height: '100%',
-                    background: `linear-gradient(90deg, ${achievement.color}cc, ${achievement.color})`,
-                    borderRadius: 4,
-                    boxShadow: `0 0 10px ${achievement.color}40`,
-                    position: 'relative',
+                    background: 'linear-gradient(90deg, rgba(212,175,55,0.6), rgba(212,175,55,0.9))',
+                    borderRadius: 3,
                   }}
-                >
-                  {/* Progress bar shine */}
-                  <motion.div
-                    animate={{ x: ['-100%', '200%'] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '50%',
-                      height: '100%',
-                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-                    }}
-                  />
-                </motion.div>
+                />
               </div>
             </div>
-          )}
-
-          {/* Reward with premium styling */}
-          {achievement.reward && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              style={{
-                marginTop: 12,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 12,
-                color: achievement.unlocked ? '#22c55e' : '#5a5a5f',
-                fontWeight: 600,
-                background: achievement.unlocked
-                  ? 'rgba(34, 197, 94, 0.08)'
-                  : 'rgba(255, 255, 255, 0.02)',
-                padding: '6px 12px',
-                borderRadius: 8,
-                border: achievement.unlocked
-                  ? '1px solid rgba(34, 197, 94, 0.15)'
-                  : '1px solid rgba(255, 255, 255, 0.03)',
-              }}
-            >
-              <Award size={14} />
-              <span>{achievement.reward}</span>
-            </motion.div>
           )}
         </div>
       </div>
@@ -589,91 +782,100 @@ export function AchievementsPage({ user }: Props) {
         position: 'relative',
       }}
     >
-      {/* Background decorative elements */}
-      <div
-        style={{
-          position: 'fixed',
-          top: -100,
-          left: -100,
-          width: 300,
-          height: 300,
-          background: 'radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%)',
-          borderRadius: '50%',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      />
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 100,
-          right: -100,
-          width: 250,
-          height: 250,
-          background: 'radial-gradient(circle, rgba(168, 85, 247, 0.06) 0%, transparent 70%)',
-          borderRadius: '50%',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      />
+      {/* Floating gold particles */}
+      <FloatingParticles />
+
+      {/* Background decorative glow */}
+      <div style={{
+        position: 'fixed',
+        top: -100,
+        left: -100,
+        width: 300,
+        height: 300,
+        background: 'radial-gradient(circle, rgba(212, 175, 55, 0.06) 0%, transparent 70%)',
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
 
       {/* Header */}
       <motion.header
-        initial={{ opacity: 0, y: -30 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 200 }}
         style={{
           textAlign: 'center',
-          marginBottom: 28,
+          marginBottom: 24,
           position: 'relative',
           zIndex: 1,
         }}
       >
-        <motion.div
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
-          style={{
-            width: 88,
-            height: 88,
-            margin: '0 auto 18px',
-            borderRadius: 26,
-            background: 'linear-gradient(145deg, #d4af37 0%, #f5d061 40%, #b38728 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 12px 40px rgba(212, 175, 55, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.2)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Shine effect */}
+        {/* Hero Icon with Breathing Animation */}
+        <div style={{ position: 'relative', display: 'inline-block', marginBottom: 16 }}>
+          {/* Outer breathing ring */}
           <motion.div
-            animate={{ x: [-100, 100] }}
-            transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 4 }}
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.2, 0.4, 0.2],
+            }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               position: 'absolute',
-              width: 40,
-              height: '150%',
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-              transform: 'skewX(-20deg)',
+              inset: -8,
+              borderRadius: 30,
+              border: '1px solid rgba(212,175,55,0.3)',
+              pointerEvents: 'none',
             }}
           />
-          <Trophy size={44} color="#0a0a0c" strokeWidth={1.5} />
-        </motion.div>
+
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 24,
+              background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+              border: '1px solid rgba(212,175,55,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(212,175,55,0.15)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Top gold accent */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent)',
+            }} />
+
+            {/* Inner breathing glow */}
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Trophy size={36} color="rgba(212,175,55,0.85)" strokeWidth={1.5} />
+            </motion.div>
+          </motion.div>
+        </div>
 
         <motion.h1
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: 0.2 }}
           style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 32,
-            fontWeight: 800,
-            marginBottom: 10,
-            background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            fontFamily: "var(--font-serif, 'Playfair Display', serif)",
+            fontSize: 28,
+            fontWeight: 700,
+            marginBottom: 8,
+            color: 'rgba(255,255,255,0.9)',
             letterSpacing: '0.02em',
           }}
         >
@@ -682,11 +884,10 @@ export function AchievementsPage({ user }: Props) {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.35 }}
+          transition={{ delay: 0.3 }}
           style={{
-            fontSize: 14,
-            color: '#8a8a8f',
-            letterSpacing: '0.02em',
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.4)',
           }}
         >
           Выполняй задания и получай награды
@@ -697,113 +898,147 @@ export function AchievementsPage({ user }: Props) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.15 }}
         style={{
-          padding: 22,
-          background: 'linear-gradient(145deg, rgba(212, 175, 55, 0.08) 0%, rgba(18, 18, 22, 0.95) 50%, rgba(12, 12, 15, 0.98) 100%)',
-          border: '1px solid rgba(212, 175, 55, 0.15)',
-          borderRadius: 24,
-          marginBottom: 24,
+          padding: 20,
+          background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+          border: '1px solid rgba(212, 175, 55, 0.2)',
+          borderRadius: 20,
+          marginBottom: 20,
           position: 'relative',
           overflow: 'hidden',
-          backdropFilter: 'blur(20px)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
         }}
       >
-        {/* Decorative corner glow */}
-        <div
-          style={{
-            position: 'absolute',
-            top: -40,
-            right: -40,
-            width: 120,
-            height: 120,
-            background: 'radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%)',
-            borderRadius: '50%',
-          }}
-        />
+        {/* Top accent line */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent)',
+        }} />
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 16,
-            position: 'relative',
-          }}
-        >
-          <span
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 17,
-              fontWeight: 700,
-              color: '#f5f5f5',
-              letterSpacing: '0.01em',
-            }}
-          >
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 14,
+        }}>
+          <span style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: 'rgba(255,255,255,0.9)',
+          }}>
             Общий прогресс
           </span>
-          <motion.span
-            key={unlockedCount}
-            initial={{ scale: 1.3, color: '#f5d061' }}
-            animate={{ scale: 1, color: '#d4af37' }}
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 15,
-              fontWeight: 700,
-            }}
-          >
+          <span style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: 'rgba(212,175,55,0.9)',
+            fontFamily: 'var(--font-mono)',
+          }}>
             {unlockedCount}/{totalCount}
-          </motion.span>
+          </span>
         </div>
 
-        {/* Progress bar with premium styling */}
-        <div
-          style={{
-            height: 12,
-            background: 'rgba(255, 255, 255, 0.04)',
-            borderRadius: 6,
-            overflow: 'hidden',
-            border: '1px solid rgba(255, 255, 255, 0.03)',
-            position: 'relative',
-          }}
-        >
+        {/* Progress bar with shimmer */}
+        <div style={{
+          height: 10,
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: 5,
+          overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.03)',
+          position: 'relative',
+          marginBottom: 16,
+        }}>
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ delay: 0.4, duration: 1.2, ease: 'easeOut' }}
+            transition={{ delay: 0.3, duration: 1, ease: 'easeOut' }}
             style={{
               height: '100%',
-              background: 'linear-gradient(90deg, #b38728, #d4af37, #f5d061, #d4af37)',
-              backgroundSize: '200% 100%',
-              borderRadius: 6,
-              boxShadow: '0 0 20px rgba(212, 175, 55, 0.5)',
+              background: 'linear-gradient(90deg, rgba(212,175,55,0.7), rgba(212,175,55,0.95))',
+              borderRadius: 5,
+              boxShadow: '0 0 16px rgba(212, 175, 55, 0.4)',
               position: 'relative',
+              overflow: 'hidden',
             }}
           >
-            {/* Animated gradient */}
+            {/* Shimmer effect */}
             <motion.div
-              animate={{ backgroundPosition: ['0% 0%', '200% 0%'] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+              animate={{ x: ['-100%', '200%'] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
               style={{
                 position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                backgroundSize: '50% 100%',
+                top: 0,
+                left: 0,
+                width: '40%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
               }}
             />
           </motion.div>
         </div>
 
-        {/* Stats row */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginTop: 18,
-            gap: 12,
-          }}
-        >
+        {/* Stats row — Premium styled numbers */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            style={{
+              flex: 1,
+              textAlign: 'center',
+              background: 'linear-gradient(145deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04))',
+              borderRadius: 14,
+              padding: '14px 8px',
+              border: '1px solid rgba(34, 197, 94, 0.2)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Shine effect */}
+            <motion.div
+              animate={{ x: ['-100%', '200%'] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '40%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(34,197,94,0.15), transparent)',
+                pointerEvents: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+              >
+                <Check size={16} color="#22c55e" strokeWidth={2.5} />
+              </motion.div>
+              <motion.span
+                animate={{
+                  textShadow: ['0 0 10px rgba(34,197,94,0.4)', '0 0 25px rgba(34,197,94,0.7)', '0 0 10px rgba(34,197,94,0.4)'],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  fontSize: 28,
+                  fontWeight: 800,
+                  background: 'linear-gradient(180deg, #4ade80, #22c55e)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                <AnimatedCounter value={unlockedCount} />
+              </motion.span>
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(34,197,94,0.7)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Получено</div>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -811,25 +1046,27 @@ export function AchievementsPage({ user }: Props) {
             style={{
               flex: 1,
               textAlign: 'center',
-              background: 'rgba(34, 197, 94, 0.08)',
+              background: 'linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
               borderRadius: 14,
               padding: '14px 8px',
-              border: '1px solid rgba(34, 197, 94, 0.12)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              position: 'relative',
             }}
           >
-            <div
-              style={{
-                fontSize: 26,
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
+              <Lock size={14} color="rgba(255,255,255,0.35)" strokeWidth={2} />
+              <span style={{
+                fontSize: 28,
                 fontWeight: 800,
-                color: '#22c55e',
-                fontFamily: "'Playfair Display', serif",
-                marginBottom: 2,
-              }}
-            >
-              {unlockedCount}
+                color: 'rgba(255,255,255,0.5)',
+                letterSpacing: '-0.02em',
+              }}>
+                <AnimatedCounter value={totalCount - unlockedCount} />
+              </span>
             </div>
-            <div style={{ fontSize: 11, color: '#6a6a6f', fontWeight: 500 }}>Получено</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Осталось</div>
           </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -837,50 +1074,47 @@ export function AchievementsPage({ user }: Props) {
             style={{
               flex: 1,
               textAlign: 'center',
-              background: 'rgba(113, 113, 122, 0.08)',
+              background: 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.04))',
               borderRadius: 14,
               padding: '14px 8px',
-              border: '1px solid rgba(113, 113, 122, 0.1)',
+              border: '1px solid rgba(212, 175, 55, 0.25)',
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
-            <div
+            {/* Shine effect */}
+            <motion.div
+              animate={{ x: ['-100%', '200%'] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, delay: 1 }}
               style={{
-                fontSize: 26,
-                fontWeight: 800,
-                color: '#71717a',
-                fontFamily: "'Playfair Display', serif",
-                marginBottom: 2,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '40%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
+                pointerEvents: 'none',
               }}
-            >
-              {totalCount - unlockedCount}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 4 }}>
+              <motion.span
+                animate={{
+                  textShadow: ['0 0 10px rgba(212,175,55,0.3)', '0 0 25px rgba(212,175,55,0.6)', '0 0 10px rgba(212,175,55,0.3)'],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  fontSize: 28,
+                  fontWeight: 800,
+                  background: 'linear-gradient(180deg, #f5d485, #D4AF37)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                <AnimatedCounter value={Math.round(progress)} suffix="%" />
+              </motion.span>
             </div>
-            <div style={{ fontSize: 11, color: '#6a6a6f', fontWeight: 500 }}>Осталось</div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            style={{
-              flex: 1,
-              textAlign: 'center',
-              background: 'rgba(212, 175, 55, 0.08)',
-              borderRadius: 14,
-              padding: '14px 8px',
-              border: '1px solid rgba(212, 175, 55, 0.12)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 26,
-                fontWeight: 800,
-                color: '#d4af37',
-                fontFamily: "'Playfair Display', serif",
-                marginBottom: 2,
-              }}
-            >
-              {Math.round(progress)}%
-            </div>
-            <div style={{ fontSize: 11, color: '#6a6a6f', fontWeight: 500 }}>Прогресс</div>
+            <div style={{ fontSize: 10, color: 'rgba(212,175,55,0.8)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Прогресс</div>
           </motion.div>
         </div>
       </motion.div>
