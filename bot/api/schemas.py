@@ -236,6 +236,9 @@ class OrderCreateResponse(BaseModel):
     message: str
     price: Optional[float] = None
     is_manual_required: bool = False  # True for 'other' type - needs admin estimation
+    promo_applied: bool = False  # True if promo code was successfully applied
+    promo_failed: bool = False  # True if promo code was provided but failed
+    promo_failure_reason: Optional[str] = None  # Reason why promo failed (if promo_failed=True)
 
 
 class ChatMessage(BaseModel):

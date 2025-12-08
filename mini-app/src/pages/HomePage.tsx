@@ -180,6 +180,7 @@ function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + index * 0.06 }}
+            whileHover={{ scale: 1.05, y: -3 }}
             whileTap={{ scale: 0.95 }}
             className="group"
             style={{
@@ -304,8 +305,9 @@ function LastOrderCard({ order, onClick }: { order: { id: number; work_type_labe
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.26 }}
-      onClick={onClick}
+      whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
+      onClick={onClick}
       style={{
         ...glassStyle,
         marginBottom: 16,
@@ -411,8 +413,9 @@ function CompactAchievements({ achievements, onViewAll }: {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      onClick={onViewAll}
+      whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
+      onClick={onViewAll}
       style={{
         ...glassStyle,
         marginBottom: 16,
@@ -897,11 +900,13 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          whileHover={{ scale: 1.03, y: -3 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => { haptic('light'); setShowTransactionsModal(true) }}
           style={{
             ...glassGoldStyle,
             cursor: 'pointer',
+            transition: 'transform 0.2s ease-out',
           }}
         >
           <div style={{ position: 'relative', zIndex: 1 }}>
@@ -971,9 +976,10 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
+          whileHover={{ scale: 1.03, y: -3 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => { haptic('light'); setShowRanksModal(true) }}
-          style={{ ...glassStyle, cursor: 'pointer' }}
+          style={{ ...glassStyle, cursor: 'pointer', transition: 'transform 0.2s ease-out' }}
         >
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: 'var(--text-muted)' }}>
@@ -1052,8 +1058,9 @@ export function HomePage({ user }: Props) {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
+        whileHover={{ scale: 1.01, y: -1 }}
         whileTap={{ scale: 0.97 }}
-        onClick={handleNewOrder}
+        onClick={() => { haptic('medium'); handleNewOrder() }}
         style={{
           position: 'relative',
           width: '100%',
@@ -1120,8 +1127,9 @@ export function HomePage({ user }: Props) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        onClick={handlePanicOrder}
+        whileHover={{ scale: 1.01, y: -1 }}
         whileTap={{ scale: 0.98 }}
+        onClick={() => { haptic('medium'); handlePanicOrder() }}
         style={{
           padding: '16px 20px',
           marginBottom: 16,
@@ -1216,7 +1224,8 @@ export function HomePage({ user }: Props) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.32 }}
-        style={{ ...glassGoldStyle, marginBottom: 16 }}
+        whileHover={{ scale: 1.005 }}
+        style={{ ...glassGoldStyle, marginBottom: 16, transition: 'transform 0.2s ease-out' }}
       >
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -1400,8 +1409,9 @@ export function HomePage({ user }: Props) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        onClick={() => navigate('/orders')}
+        whileHover={{ scale: 1.01, y: -1 }}
         whileTap={{ scale: 0.98 }}
+        onClick={() => { haptic('light'); navigate('/orders') }}
         style={{
           ...glassStyle,
           cursor: 'pointer',

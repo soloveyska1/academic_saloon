@@ -14,6 +14,7 @@ import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePromo } from '../contexts/PromoContext'
 import { PromoCodeSection, PromoPriceDisplay } from '../components/ui/PromoCodeSection'
+import { Confetti } from '../components/ui/Confetti'
 
 const DRAFT_KEY = 'order_draft_v1'
 
@@ -100,12 +101,13 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      whileTap={{ scale: disabled ? 1 : 0.995 }}
       style={{
         background: 'var(--bg-card-solid)',
         borderRadius: 16,
         border: focused ? '2px solid var(--border-gold-strong)' : '2px solid var(--border-default)',
         padding: '16px 18px',
-        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+        transition: 'border-color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease',
         boxShadow: focused ? 'var(--glow-gold)' : 'none',
         opacity: disabled ? 0.6 : 1,
         cursor: disabled ? 'not-allowed' : 'default',
@@ -372,6 +374,7 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.97 }}
       onClick={onSelect}
       style={{
@@ -397,6 +400,7 @@ function WorkTypeCard({ config, selected, onSelect, index }: WorkTypeCardProps) 
           ? 'var(--glow-gold-strong)'
           : 'var(--card-shadow)',
         WebkitTapHighlightColor: 'transparent',
+        transition: 'all 0.2s ease-out',
       }}
     >
       {/* Glow */}
@@ -841,6 +845,7 @@ export function CreateOrderPage() {
 
   // UI
   const [submitting, setSubmitting] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
   const [result, setResult] = useState<{
     ok: boolean;
     msg: string;
@@ -932,6 +937,17 @@ export function CreateOrderPage() {
     }
   }
 
+  // Add haptic feedback when user selects work type or deadline
+  const handleWorkTypeSelect = (value: WorkType) => {
+    haptic('light')
+    setWorkType(value)
+  }
+
+  const handleDeadlineSelect = (value: string) => {
+    haptic('light')
+    setDeadline(value)
+  }
+
   // Files
   const addFiles = (fileList: FileList) => {
     haptic('light')
@@ -994,6 +1010,8 @@ export function CreateOrderPage() {
         }
 
         hapticSuccess()
+        // Trigger confetti celebration
+        setShowConfetti(true)
         setResult({
           ok: true,
           msg: typeof res.message === 'string' ? res.message : JSON.stringify(res.message),
@@ -1447,7 +1465,7 @@ export function CreateOrderPage() {
                   key={wt.value}
                   config={wt}
                   selected={workType === wt.value}
-                  onSelect={() => { haptic('light'); setWorkType(wt.value) }}
+                  onSelect={() => handleWorkTypeSelect(wt.value)}
                   index={i}
                 />
               ))}
@@ -1516,7 +1534,7 @@ export function CreateOrderPage() {
                   key={dl.value}
                   config={dl}
                   selected={deadline === dl.value}
-                  onSelect={() => { haptic('light'); setDeadline(dl.value) }}
+                  onSelect={() => handleDeadlineSelect(dl.value)}
                   index={i}
                   isDark={isDark}
                 />
@@ -2001,6 +2019,9 @@ export function CreateOrderPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Confetti Effect for successful order */}
+      <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>
   )
 }

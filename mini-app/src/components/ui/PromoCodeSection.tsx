@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Tag, CheckCircle2, X, Loader, Sparkles, Gift, Percent, ChevronDown, ChevronUp, Calendar, Clock } from 'lucide-react'
 import { usePromo } from '../../contexts/PromoContext'
+import { useTelegram } from '../../hooks/useUserData'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  PREMIUM PROMO CODE SECTION
@@ -48,6 +49,7 @@ export function PromoCodeSection({
   defaultExpanded = false,
 }: PromoCodeSectionProps) {
   const { activePromo, isValidating, validationError, validateAndSetPromo, clearPromo } = usePromo()
+  const { haptic, hapticSuccess, hapticError } = useTelegram()
   const [inputCode, setInputCode] = useState('')
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -87,11 +89,15 @@ export function PromoCodeSection({
     // Optimistic UI - show loading immediately
     const success = await validateAndSetPromo(inputCode)
     if (success) {
+      // Success haptic feedback
+      hapticSuccess()
       setInputCode('')
       if (collapsible) {
         // Don't collapse - keep it open to show the active promo
       }
     } else {
+      // Error haptic feedback
+      hapticError()
       // Shake animation on error
       if (inputRef.current) {
         inputRef.current.style.animation = 'shake 0.4s'
@@ -109,6 +115,7 @@ export function PromoCodeSection({
   }
 
   const handleClear = () => {
+    haptic('light')
     clearPromo()
     setInputCode('')
     if (inputRef.current) {
@@ -239,7 +246,12 @@ export function PromoCodeSection({
                     flexShrink: 0,
                   }}
                 >
-                  <CheckCircle2 size={18} color="#22c55e" strokeWidth={2.5} />
+                  <motion.div
+                    animate={showSuccess ? { scale: [1, 1.2, 1], rotate: [0, 360] } : {}}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <CheckCircle2 size={18} color="#22c55e" strokeWidth={2.5} />
+                  </motion.div>
                 </motion.div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
@@ -791,7 +803,7 @@ export function PromoCodeSection({
       <div className={className}>
         <motion.button
           whileTap={{ scale: 0.98 }}
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => { haptic('light'); setIsExpanded(!isExpanded) }}
           style={{
             width: '100%',
             display: 'flex',
