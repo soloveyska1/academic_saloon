@@ -5,7 +5,7 @@
  * No passwords - pure Telegram authentication
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Crown, Activity, Users, Package, Tag, ScrollText, Terminal, Radio,
@@ -626,8 +626,21 @@ function DashboardTab() {
                 }}
               >
                 <div style={{ flex: 1 }}>
-                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>
-                    #{order.id} • {order.final_price.toLocaleString()}₽
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span>#{order.id} • {order.final_price.toLocaleString()}₽</span>
+                    {order.promo_code && (
+                      <span style={{
+                        padding: '3px 6px',
+                        background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(34, 197, 94, 0.15))',
+                        border: '1px solid #D4AF37',
+                        color: '#D4AF37',
+                        borderRadius: 4,
+                        fontSize: 10,
+                        fontWeight: 700,
+                      }}>
+                        🎫 {order.promo_code} {order.promo_discount > 0 && `−${order.promo_discount}%`}
+                      </span>
+                    )}
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
                     {order.user_fullname} • {order.work_type_label}
@@ -951,48 +964,124 @@ function OrdersTab() {
 
 function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void }) {
   const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+  const [isHovered, setIsHovered] = React.useState(false)
 
   return (
     <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{
+        scale: 1.01,
+        boxShadow: '0 15px 40px -10px rgba(212, 175, 55, 0.25), 0 0 0 1px rgba(212, 175, 55, 0.3)',
+      }}
       whileTap={{ scale: 0.98 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
       onClick={onClick}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       style={{
         ...cardStyle,
         cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
+        boxShadow: '0 8px 25px -8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+        position: 'relative',
       }}
     >
+      {/* Quick Action Buttons (appear on hover) */}
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            style={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              display: 'flex',
+              gap: 6,
+              zIndex: 10,
+            }}
+          >
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.stopPropagation()
+                onClick()
+              }}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: 'rgba(212, 175, 55, 0.15)',
+                border: '1px solid rgba(212, 175, 55, 0.3)',
+                color: '#D4AF37',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(212, 175, 55, 0.2)',
+              }}
+              title="Открыть детали"
+            >
+              <ChevronRight size={16} />
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{
-          padding: '4px 10px',
-          background: cfg.bg,
-          color: cfg.color,
-          borderRadius: 6,
-          fontSize: 11,
-          fontWeight: 600,
-        }}>
+        <motion.span
+          whileHover={{ scale: 1.05 }}
+          style={{
+            padding: '5px 12px',
+            background: cfg.bg,
+            color: cfg.color,
+            borderRadius: 8,
+            fontSize: 11,
+            fontWeight: 700,
+            border: `1px solid ${cfg.color}20`,
+            boxShadow: `0 2px 8px ${cfg.color}15`,
+            letterSpacing: '0.02em',
+          }}
+        >
           {cfg.emoji} {cfg.label}
-        </span>
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>#{order.id}</span>
+        </motion.span>
+        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600 }}>#{order.id}</span>
         {order.promo_code && (
           <>
             <span style={{
-              padding: '2px 6px',
-              background: order.promo_returned ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-              color: order.promo_returned ? '#ef4444' : '#22c55e',
-              borderRadius: 4,
-              fontSize: 10,
-              fontWeight: 600,
+              padding: '4px 8px',
+              background: order.promo_returned
+                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15))'
+                : 'linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(34, 197, 94, 0.15))',
+              border: `1px solid ${order.promo_returned ? '#ef4444' : '#D4AF37'}`,
+              color: order.promo_returned ? '#ef4444' : '#D4AF37',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
-              gap: 3,
+              gap: 4,
+              boxShadow: order.promo_returned ? '0 2px 6px rgba(239, 68, 68, 0.2)' : '0 2px 6px rgba(212, 175, 55, 0.2)',
             }}>
-              <Percent size={10} /> {order.promo_code} {order.promo_discount > 0 && `−${order.promo_discount}%`}
+              🎫 {order.promo_code} {order.promo_discount > 0 && (
+                <span style={{
+                  color: order.promo_returned ? '#fff' : '#22c55e',
+                  background: order.promo_returned ? '#ef4444' : '#22c55e',
+                  padding: '1px 4px',
+                  borderRadius: 3,
+                  fontSize: 10,
+                }}>
+                  −{order.promo_discount}%
+                </span>
+              )}
             </span>
             {(order.promo_discount_amount || 0) > 0 && (
-              <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 600 }}>
+              <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 700 }}>
                 −{(order.promo_discount_amount || 0).toFixed(0)}₽
               </span>
             )}
@@ -1009,21 +1098,51 @@ function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void })
           {order.user_fullname} {order.user_username ? `@${order.user_username}` : ''}
         </span>
         {order.progress > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
             <div style={{
-              width: 60,
-              height: 4,
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: 2,
+              width: 70,
+              height: 5,
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: 3,
               overflow: 'hidden',
+              position: 'relative',
             }}>
-              <div style={{
-                width: `${order.progress}%`,
-                height: '100%',
-                background: '#D4AF37',
-              }} />
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${order.progress}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                style={{
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+                  borderRadius: 3,
+                  boxShadow: '0 0 8px rgba(212, 175, 55, 0.5)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Shimmer effect */}
+                <motion.div
+                  animate={{
+                    x: ['-100%', '200%'],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    repeatDelay: 1,
+                    ease: 'easeInOut',
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '40%',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)',
+                  }}
+                />
+              </motion.div>
             </div>
-            <span style={{ color: '#D4AF37', fontSize: 11 }}>{order.progress}%</span>
+            <span style={{ color: '#D4AF37', fontSize: 11, fontWeight: 700 }}>{order.progress}%</span>
           </div>
         )}
       </div>
@@ -1156,6 +1275,86 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
           </button>
         </div>
 
+        {/* 🎫 PROMO CODE BADGE - VERY VISIBLE AT TOP */}
+        {order.promo_code && (
+          <div style={{
+            marginBottom: 20,
+            padding: '18px 20px',
+            background: order.promo_returned
+              ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15))'
+              : 'linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(34, 197, 94, 0.15))',
+            border: `2px solid ${order.promo_returned ? '#ef4444' : '#D4AF37'}`,
+            borderRadius: 16,
+            boxShadow: order.promo_returned ? '0 4px 20px rgba(239, 68, 68, 0.3)' : '0 4px 20px rgba(212, 175, 55, 0.3)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 24 }}>🎫</span>
+              <span style={{
+                color: order.promo_returned ? '#ef4444' : '#D4AF37',
+                fontWeight: 800,
+                fontSize: 18,
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase'
+              }}>
+                ПРОМОКОД: {order.promo_code}
+              </span>
+              {order.promo_discount > 0 && (
+                <span style={{
+                  padding: '6px 14px',
+                  background: order.promo_returned ? '#ef4444' : '#22c55e',
+                  borderRadius: 8,
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                }}>
+                  −{order.promo_discount}%
+                </span>
+              )}
+              {order.promo_returned && (
+                <span style={{
+                  padding: '6px 12px',
+                  background: '#ef4444',
+                  borderRadius: 8,
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}>
+                  ❌ ВОЗВРАЩЁН
+                </span>
+              )}
+            </div>
+            <div style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+              {(order.promo_discount_amount || 0) > 0 && (
+                <div style={{ marginBottom: 6 }}>
+                  💰 Сэкономлено: <span style={{ color: '#22c55e', fontSize: 16 }}>{(order.promo_discount_amount || 0).toFixed(0)}₽</span>
+                </div>
+              )}
+              {order.promo_discount > 0 ? (
+                <div style={{ color: 'rgba(255,255,255,0.8)' }}>
+                  Цена без промо: <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>{order.price.toLocaleString()}₽</span> →
+                  <span style={{ color: '#22c55e', fontSize: 16, marginLeft: 6 }}>{order.final_price.toLocaleString()}₽</span>
+                </div>
+              ) : (
+                <div style={{ color: 'rgba(255,255,255,0.7)' }}>Промокод применён, но скидка не активна</div>
+              )}
+            </div>
+            {order.promo_returned && (
+              <div style={{
+                marginTop: 12,
+                padding: '8px 12px',
+                background: 'rgba(239, 68, 68, 0.2)',
+                borderRadius: 8,
+                color: '#ef4444',
+                fontSize: 12,
+                fontWeight: 600,
+              }}>
+                ⚠️ Промокод был возвращён из-за отмены заказа
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Order Info */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ color: '#fff', fontWeight: 600, fontSize: 16, marginBottom: 8 }}>
@@ -1168,66 +1367,6 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
             Клиент: {order.user_fullname} (ID: {order.user_telegram_id})
           </div>
         </div>
-
-        {/* Promo Code Info */}
-        {order.promo_code && (
-          <div style={{
-            marginBottom: 20,
-            padding: 14,
-            background: order.promo_returned ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-            border: `1px solid ${order.promo_returned ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`,
-            borderRadius: 12,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <Tag size={16} color={order.promo_returned ? "#ef4444" : "#22c55e"} />
-              <span style={{ color: order.promo_returned ? '#ef4444' : '#22c55e', fontWeight: 700, fontSize: 14 }}>
-                Промокод: {order.promo_code}
-              </span>
-              {order.promo_discount > 0 && (
-                <span style={{
-                  padding: '2px 8px',
-                  background: order.promo_returned ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
-                  borderRadius: 6,
-                  color: order.promo_returned ? '#ef4444' : '#22c55e',
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}>
-                  −{order.promo_discount}%
-                </span>
-              )}
-              {order.promo_returned && (
-                <span style={{
-                  padding: '2px 8px',
-                  background: 'rgba(239, 68, 68, 0.2)',
-                  borderRadius: 6,
-                  color: '#ef4444',
-                  fontSize: 11,
-                  fontWeight: 600,
-                }}>
-                  Возвращён
-                </span>
-              )}
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-              {(order.promo_discount_amount || 0) > 0 && (
-                <>
-                  Сэкономлено: <span style={{ color: '#22c55e', fontWeight: 600 }}>{(order.promo_discount_amount || 0).toFixed(0)}₽</span>
-                  <br />
-                </>
-              )}
-              {order.promo_discount > 0 ? (
-                <>Цена без промо: {order.price.toLocaleString()}₽ → Со скидкой: {order.final_price.toLocaleString()}₽</>
-              ) : (
-                <>Промокод применён, но скидка не активна</>
-              )}
-            </div>
-            {order.promo_returned && (
-              <div style={{ marginTop: 8, color: '#ef4444', fontSize: 11 }}>
-                ⚠️ Промокод был возвращён из-за отмены заказа
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Quick Actions for Verification Pending */}
         {order.status === 'verification_pending' && (

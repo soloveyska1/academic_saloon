@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, CheckCircle2, X, Loader, Sparkles, Gift, Percent, ChevronDown, ChevronUp, Calendar, Clock } from 'lucide-react'
+import { Tag, CheckCircle2, X, Loader, Sparkles, Gift, Percent, ChevronDown, ChevronUp, Calendar, Clock, Star } from 'lucide-react'
 import { usePromo } from '../../contexts/PromoContext'
 import { useTelegram } from '../../hooks/useUserData'
+
+// Premium success sound (simple beep)
+const SUCCESS_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YVoGAAD//v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  PREMIUM PROMO CODE SECTION
@@ -53,7 +56,34 @@ export function PromoCodeSection({
   const [inputCode, setInputCode] = useState('')
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [confettiParticles, setConfettiParticles] = useState<Array<{ id: number; x: number; y: number; rotation: number; color: string }>>([])
   const inputRef = useRef<HTMLInputElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Play premium success sound
+  const playSuccessSound = () => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(SUCCESS_SOUND)
+        audioRef.current.volume = 0.3
+      }
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(() => {})
+    } catch {}
+  }
+
+  // Generate confetti particles
+  const triggerConfetti = () => {
+    const particles = Array.from({ length: 12 }, (_, i) => ({
+      id: Math.random(),
+      x: Math.random() * 100 - 50,
+      y: Math.random() * 100 - 50,
+      rotation: Math.random() * 360,
+      color: ['#22c55e', '#4ade80', '#d4af37', '#f5d061'][Math.floor(Math.random() * 4)],
+    }))
+    setConfettiParticles(particles)
+    setTimeout(() => setConfettiParticles([]), 1500)
+  }
 
   // Use ref to avoid onPriceChange dependency issue
   const onPriceChangeRef = useRef(onPriceChange)
@@ -89,8 +119,16 @@ export function PromoCodeSection({
     // Optimistic UI - show loading immediately
     const success = await validateAndSetPromo(inputCode)
     if (success) {
-      // Success haptic feedback
+      // Premium success feedback!
       hapticSuccess()
+      playSuccessSound()
+      triggerConfetti()
+
+      // Enhanced haptic pattern
+      if (navigator.vibrate) {
+        navigator.vibrate([50, 30, 50, 30, 100])
+      }
+
       setInputCode('')
       if (collapsible) {
         // Don't collapse - keep it open to show the active promo
@@ -228,6 +266,36 @@ export function PromoCodeSection({
                   }}
                 />
               )}
+
+              {/* Confetti particles */}
+              <AnimatePresence>
+                {confettiParticles.map((particle) => (
+                  <motion.div
+                    key={particle.id}
+                    initial={{ opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }}
+                    animate={{
+                      opacity: 0,
+                      x: particle.x,
+                      y: particle.y,
+                      scale: 0,
+                      rotate: particle.rotation,
+                    }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                    style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      width: 8,
+                      height: 8,
+                      borderRadius: 2,
+                      background: particle.color,
+                      boxShadow: `0 0 6px ${particle.color}`,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                ))}
+              </AnimatePresence>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
                 <motion.div
@@ -484,6 +552,36 @@ export function PromoCodeSection({
                   }}
                 />
               )}
+            </AnimatePresence>
+
+            {/* Confetti particles */}
+            <AnimatePresence>
+              {confettiParticles.map((particle) => (
+                <motion.div
+                  key={particle.id}
+                  initial={{ opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }}
+                  animate={{
+                    opacity: 0,
+                    x: particle.x,
+                    y: particle.y,
+                    scale: 0,
+                    rotate: particle.rotation,
+                  }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '30%',
+                    width: 10,
+                    height: 10,
+                    borderRadius: 2,
+                    background: particle.color,
+                    boxShadow: `0 0 8px ${particle.color}`,
+                    pointerEvents: 'none',
+                  }}
+                />
+              ))}
             </AnimatePresence>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
