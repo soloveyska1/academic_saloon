@@ -312,10 +312,12 @@ export function PromoCodeSection({
                 alignItems: 'center',
                 gap: 10,
                 marginBottom: 12,
+                width: '100%',
               }}
             >
               <div style={{
                 flex: 1,
+                minWidth: 0,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
@@ -334,6 +336,8 @@ export function PromoCodeSection({
                   placeholder="Промокод"
                   style={{
                     flex: 1,
+                    minWidth: 0,
+                    width: '100%',
                     background: 'transparent',
                     border: 'none',
                     outline: 'none',
@@ -359,7 +363,9 @@ export function PromoCodeSection({
                     : '1px solid rgba(255, 255, 255, 0.08)',
                   cursor: inputCode.trim() && !isValidating ? 'pointer' : 'default',
                   opacity: isValidating ? 0.7 : (inputCode.trim() ? 1 : 0.5),
+                  flexShrink: 0,
                   transition: 'opacity 0.2s',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {isValidating ? (
@@ -612,6 +618,7 @@ export function PromoCodeSection({
             }}>
               <div style={{
                 flex: 1,
+                minWidth: 0,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
@@ -633,6 +640,8 @@ export function PromoCodeSection({
                   placeholder="ПРОМОКОД"
                   style={{
                     flex: 1,
+                    minWidth: 0,
+                    width: '100%',
                     background: 'transparent',
                     border: 'none',
                     outline: 'none',
@@ -650,7 +659,7 @@ export function PromoCodeSection({
                 disabled={isValidating || !inputCode.trim()}
                 style={{
                   height: 48,
-                  padding: '0 24px',
+                  padding: '0 20px',
                   borderRadius: 14,
                   background: inputCode.trim()
                     ? 'linear-gradient(135deg, #d4af37, #b8962e)'
@@ -662,8 +671,10 @@ export function PromoCodeSection({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
+                  flexShrink: 0,
                   boxShadow: inputCode.trim() ? '0 4px 20px rgba(212, 175, 55, 0.35)' : 'none',
                   transition: 'opacity 0.2s, box-shadow 0.3s',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <AnimatePresence mode="wait">

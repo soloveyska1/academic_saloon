@@ -977,24 +977,26 @@ function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void })
         </span>
         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>#{order.id}</span>
         {order.promo_code && (
-          <span style={{
-            padding: '2px 6px',
-            background: 'rgba(34, 197, 94, 0.15)',
-            color: '#22c55e',
-            borderRadius: 4,
-            fontSize: 10,
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 3,
-          }}>
-            <Percent size={10} /> {order.promo_code} -{order.promo_discount}%
-          </span>
-        )}
-        {order.promo_code && order.promo_discount_amount > 0 && (
-          <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 600 }}>
-            -{order.promo_discount_amount.toFixed(0)}₽
-          </span>
+          <>
+            <span style={{
+              padding: '2px 6px',
+              background: order.promo_returned ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+              color: order.promo_returned ? '#ef4444' : '#22c55e',
+              borderRadius: 4,
+              fontSize: 10,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+            }}>
+              <Percent size={10} /> {order.promo_code} {order.promo_discount > 0 && `−${order.promo_discount}%`}
+            </span>
+            {(order.promo_discount_amount || 0) > 0 && (
+              <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 600 }}>
+                −{(order.promo_discount_amount || 0).toFixed(0)}₽
+              </span>
+            )}
+          </>
         )}
         <span style={{ marginLeft: 'auto', color: '#D4AF37', fontWeight: 700 }}>{order.final_price.toLocaleString()}₽</span>
       </div>
@@ -1168,7 +1170,7 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
         </div>
 
         {/* Promo Code Info */}
-        {order.promo_code && order.promo_discount > 0 && (
+        {order.promo_code && (
           <div style={{
             marginBottom: 20,
             padding: 14,
@@ -1181,16 +1183,18 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
               <span style={{ color: order.promo_returned ? '#ef4444' : '#22c55e', fontWeight: 700, fontSize: 14 }}>
                 Промокод: {order.promo_code}
               </span>
-              <span style={{
-                padding: '2px 8px',
-                background: order.promo_returned ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
-                borderRadius: 6,
-                color: order.promo_returned ? '#ef4444' : '#22c55e',
-                fontSize: 12,
-                fontWeight: 600,
-              }}>
-                −{order.promo_discount}%
-              </span>
+              {order.promo_discount > 0 && (
+                <span style={{
+                  padding: '2px 8px',
+                  background: order.promo_returned ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                  borderRadius: 6,
+                  color: order.promo_returned ? '#ef4444' : '#22c55e',
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}>
+                  −{order.promo_discount}%
+                </span>
+              )}
               {order.promo_returned && (
                 <span style={{
                   padding: '2px 8px',
@@ -1205,13 +1209,17 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
               )}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-              {order.promo_discount_amount > 0 && (
+              {(order.promo_discount_amount || 0) > 0 && (
                 <>
-                  Сэкономлено: <span style={{ color: '#22c55e', fontWeight: 600 }}>{order.promo_discount_amount.toFixed(0)}₽</span>
+                  Сэкономлено: <span style={{ color: '#22c55e', fontWeight: 600 }}>{(order.promo_discount_amount || 0).toFixed(0)}₽</span>
                   <br />
                 </>
               )}
-              Цена без промо: {order.price.toLocaleString()}₽ → Со скидкой: {order.final_price.toLocaleString()}₽
+              {order.promo_discount > 0 ? (
+                <>Цена без промо: {order.price.toLocaleString()}₽ → Со скидкой: {order.final_price.toLocaleString()}₽</>
+              ) : (
+                <>Промокод применён, но скидка не активна</>
+              )}
             </div>
             {order.promo_returned && (
               <div style={{ marginTop: 8, color: '#ef4444', fontSize: 11 }}>
@@ -1277,7 +1285,7 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
         <div style={{ marginBottom: 16 }}>
           <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, display: 'block' }}>
             Цена{order.promo_code && order.promo_discount > 0 ? (
-              <> (до скидки: {Math.round(order.final_price / (1 - order.promo_discount / 100)).toLocaleString()}₽, со скидкой −{order.promo_discount}%: {order.final_price.toLocaleString()}₽)</>
+              <> (базовая: {order.price.toLocaleString()}₽, со скидкой −{order.promo_discount}%: {order.final_price.toLocaleString()}₽)</>
             ) : (
               <> (текущая: {order.final_price.toLocaleString()}₽)</>
             )}, оплачено: {order.paid_amount.toLocaleString()}₽

@@ -396,6 +396,7 @@ async def send_custom_notification(
     icon: str = "bell",
     color: str = "#d4af37",
     action: str = None,
+    celebration: bool = False,
     data: Dict[str, Any] = None
 ) -> bool:
     """
@@ -412,6 +413,7 @@ async def send_custom_notification(
             "icon": icon,
             "color": color,
             "action": action,
+            "celebration": celebration,
             "data": data or {},
         }
 
