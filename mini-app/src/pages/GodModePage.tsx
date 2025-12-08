@@ -622,18 +622,31 @@ function DashboardTab() {
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ color: '#fff', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span>#{order.id} • {order.final_price.toLocaleString()}₽</span>
+                    <span>
+                      #{order.id} •{' '}
+                      {order.promo_code && order.price !== order.final_price && (
+                        <span style={{ textDecoration: 'line-through', color: 'rgba(255,255,255,0.4)', marginRight: 4 }}>
+                          {order.price.toLocaleString()}
+                        </span>
+                      )}
+                      <span style={{ color: order.promo_code ? '#22c55e' : '#fff' }}>
+                        {order.final_price.toLocaleString()}₽
+                      </span>
+                    </span>
                     {order.promo_code && (
                       <span style={{
-                        padding: '3px 6px',
-                        background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(34, 197, 94, 0.15))',
-                        border: '1px solid #D4AF37',
-                        color: '#D4AF37',
-                        borderRadius: 4,
+                        padding: '3px 8px',
+                        background: 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(34,197,94,0.2))',
+                        border: '1px solid rgba(139,92,246,0.5)',
+                        color: '#a78bfa',
+                        borderRadius: 6,
                         fontSize: 10,
                         fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
                       }}>
-                        🎫 {order.promo_code} {order.promo_discount > 0 && `−${order.promo_discount}%`}
+                        🎟️ {order.promo_code} −{order.promo_discount}%
                       </span>
                     )}
                   </div>

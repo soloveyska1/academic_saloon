@@ -252,6 +252,13 @@ function QuickPayButton({
 }) {
   const { haptic } = useTelegram()
   const totalAmount = orders.reduce((sum, o) => sum + (o.final_price || o.price || 0), 0)
+  const ordersWithPromo = orders.filter(o => o.promo_code && o.promo_discount && o.promo_discount > 0)
+  const totalSavings = orders.reduce((sum, o) => {
+    if (o.promo_code && o.promo_discount && o.price) {
+      return sum + (o.price - (o.final_price || o.price))
+    }
+    return sum
+  }, 0)
 
   if (orders.length === 0) return null
 
@@ -309,14 +316,34 @@ function QuickPayButton({
               fontSize: 15,
               fontWeight: 700,
               color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
             }}>
               Оплатить всё
+              {ordersWithPromo.length > 0 && (
+                <span style={{
+                  fontSize: 10,
+                  padding: '2px 6px',
+                  background: 'rgba(34,197,94,0.3)',
+                  border: '1px solid rgba(34,197,94,0.5)',
+                  borderRadius: 4,
+                  color: '#86efac',
+                }}>
+                  🎟️ {ordersWithPromo.length}
+                </span>
+              )}
             </div>
             <div style={{
               fontSize: 12,
               color: 'rgba(255,255,255,0.7)',
             }}>
               {orders.length} {orders.length === 1 ? 'заказ' : orders.length < 5 ? 'заказа' : 'заказов'}
+              {totalSavings > 0 && (
+                <span style={{ color: '#86efac', marginLeft: 6 }}>
+                  (экономия {totalSavings.toLocaleString('ru-RU')} ₽)
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -324,7 +351,7 @@ function QuickPayButton({
         <div style={{
           fontSize: 20,
           fontWeight: 700,
-          color: '#fff',
+          color: totalSavings > 0 ? '#86efac' : '#fff',
           fontFamily: 'var(--font-mono)',
           zIndex: 1,
         }}>
@@ -838,10 +865,46 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
 
           {/* Right: Price + Arrow */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Promo indicator */}
+            {order.promo_code && order.promo_discount && order.promo_discount > 0 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+                padding: '3px 6px',
+                background: 'rgba(34,197,94,0.15)',
+                border: '1px solid rgba(34,197,94,0.3)',
+                borderRadius: 6,
+              }}>
+                <span style={{ fontSize: 10 }}>🎟️</span>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: '#22c55e',
+                  fontFamily: 'var(--font-mono)',
+                }}>
+                  −{order.promo_discount}%
+                </span>
+              </div>
+            )}
+            {/* Original price crossed out */}
+            {order.promo_code && order.price && order.price !== order.final_price && (
+              <span style={{
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                textDecoration: 'line-through',
+                fontFamily: 'var(--font-mono)',
+              }}>
+                {order.price.toLocaleString('ru-RU')}
+              </span>
+            )}
+            {/* Final price - green if promo applied */}
             <span style={{
               fontSize: 16,
               fontWeight: 700,
-              color: needsPayment ? '#8b5cf6' : 'var(--gold-200)',
+              color: order.promo_code && order.promo_discount
+                ? '#22c55e'
+                : needsPayment ? '#8b5cf6' : 'var(--gold-200)',
               fontFamily: 'var(--font-mono)',
             }}>
               {(order.final_price || order.price || 0).toLocaleString('ru-RU')} ₽
