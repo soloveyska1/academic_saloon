@@ -211,12 +211,13 @@ class OrderCreateRequest(BaseModel):
     @field_validator('deadline')
     @classmethod
     def validate_deadline(cls, v: str) -> str:
+        # Принимаем оба формата: с underscore (от бота) и без (от mini app)
         valid_deadlines = [
-            'today', 'tomorrow', '3days', 'week', '2weeks', 'month', 'flexible'
+            'today', 'tomorrow', '3days', '3_days', 'week', '2weeks', '2_weeks', 'month', 'flexible'
         ]
         # Allow valid keys or custom dates in format DD.MM.YYYY
         if v not in valid_deadlines:
-            if not re.match(r'^\\d{1,2}\\.\\d{1,2}\\.\\d{4}$', v):
+            if not re.match(r'^\d{1,2}\.\d{1,2}\.\d{4}$', v):
                 raise ValueError('Некорректный срок выполнения')
         return v
 
