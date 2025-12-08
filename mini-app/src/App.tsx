@@ -3,11 +3,12 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { GoldParticles } from './components/ui/GoldParticles'
 import { ToastProvider } from './components/ui/Toast'
 import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { PromoProvider } from './contexts/PromoContext'
+import { DeviceCapabilityProvider } from './contexts/DeviceCapabilityContext'
+import { AdaptiveParticles } from './components/ui/AdaptiveParticles'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
 import {
@@ -401,6 +402,8 @@ function AppContent() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
+        {/* DeviceCapabilityProvider - adaptive effects based on device performance */}
+        <DeviceCapabilityProvider>
         {/* PromoProvider stays mounted even during loading to preserve state */}
         <PromoProvider>
           <AdminProvider>
@@ -415,8 +418,13 @@ function AppContent() {
             >
               <BrowserRouter>
                 <div className="app">
-                  {/* Animated Gold Particles Background */}
-                  <GoldParticles />
+                  {/* Adaptive Gold Particles - adjusts to device capability */}
+                  <AdaptiveParticles
+                    color="rgba(212, 175, 55, 0.8)"
+                    secondaryColor="rgba(251, 245, 183, 0.6)"
+                    count={30}
+                    glow={true}
+                  />
 
                   {/* Smart Realtime Notifications */}
                   <SmartNotification
@@ -457,6 +465,7 @@ function AppContent() {
           </ToastProvider>
         </AdminProvider>
         </PromoProvider>
+        </DeviceCapabilityProvider>
       </ThemeProvider>
     </ErrorBoundary>
   )
