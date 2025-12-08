@@ -284,13 +284,17 @@ async def apply_promo_code(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Apply promo code - checks database first, then hardcoded fallbacks"""
+    """
+    Validate promo code - checks database only.
+    Returns validation result without "applying" the promo.
+    Actual application happens at order creation time.
+    """
     from bot.services.promo_service import PromoService
 
     code = data.code.upper().strip()
 
-    # First, check database for promo codes created in admin panel
-    is_valid, message, discount = await PromoService.check_promo_code(
+    # Check database for promo codes (atomic check with row locking)
+    is_valid, message, discount, expires_at = await PromoService.validate_promo_code(
         session, code, tg_user.id
     )
 
@@ -301,25 +305,10 @@ async def apply_promo_code(
             discount=int(discount)
         )
 
-    # Fallback to hardcoded demo codes (legacy support)
-    hardcoded_promos = {
-        "COWBOY20": {"discount": 20, "message": "Йи-ха! Скидка 20% применена!"},
-        "SALOON10": {"discount": 10, "message": "Скидка 10% — добро пожаловать в салун!"},
-        "WELCOME5": {"discount": 5, "message": "Скидка 5% для новичка!"},
-    }
-
-    if code in hardcoded_promos:
-        promo = hardcoded_promos[code]
-        return PromoCodeResponse(
-            success=True,
-            message=promo["message"],
-            discount=promo["discount"]
-        )
-
-    # If not found anywhere, return the message from PromoService
+    # Return specific error message from PromoService
     return PromoCodeResponse(
         success=False,
-        message=message  # This will be "Промокод не найден" or specific error
+        message=message
     )
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -392,31 +381,36 @@ async def create_order(
         logger.error(f"Price calc error: {price_error}")
         return OrderCreateResponse(success=False, order_id=0, message=f"Ошибка расчёта цены", price=None, is_manual_required=False)
 
-    # Handle promo code if provided
-    promo_discount = 0
+    # Handle promo code if provided (atomic check and reserve)
+    promo_discount = 0.0
     promo_code_used = None
+    promo_validation_failed = False
+    promo_failure_reason = None
+
     if data.promo_code:
-        is_valid, message, discount = await PromoService.check_promo_code(
-            session, data.promo_code, tg_user.id
+        code = data.promo_code.upper().strip()
+        # Atomic validation with row locking to prevent race conditions
+        is_valid, message, discount, _ = await PromoService.validate_promo_code(
+            session, code, tg_user.id
         )
         if is_valid:
-            promo_discount = discount
-            promo_code_used = data.promo_code
-            logger.info(f"[API /orders/create] Promo code {data.promo_code} applied: {discount}% discount")
+            promo_discount = float(discount)
+            promo_code_used = code
+            logger.info(f"[API /orders/create] Promo code {code} validated: {discount}% discount")
         else:
-            # Also check hardcoded promos (legacy)
-            hardcoded_promos = {
-                "COWBOY20": 20, "SALOON10": 10, "WELCOME5": 5,
-            }
-            if data.promo_code in hardcoded_promos:
-                promo_discount = hardcoded_promos[data.promo_code]
-                promo_code_used = data.promo_code
-                logger.info(f"[API /orders/create] Hardcoded promo {data.promo_code} applied: {promo_discount}% discount")
+            # Promo code was invalid - log but continue without it
+            promo_validation_failed = True
+            promo_failure_reason = message
+            logger.warning(f"[API /orders/create] Promo code {code} invalid: {message}")
 
-    # Calculate final price with promo discount
+    # Calculate final price with BOTH loyalty and promo discounts
     base_price = float(price_calc.final_price) if not price_calc.is_manual_required else 0.0
-    total_discount = min(user_discount + promo_discount, 50)  # Max 50% total discount
-    final_order_price = base_price * (1 - promo_discount / 100) if promo_discount > 0 else base_price
+
+    # Total discount is sum of loyalty + promo, capped at 50%
+    total_discount = min(user_discount + promo_discount, 50.0)
+
+    # Apply total discount to base price (FIXED: was only applying promo_discount!)
+    final_order_price = base_price * (1 - total_discount / 100) if total_discount > 0 else base_price
 
     initial_status = OrderStatus.WAITING_ESTIMATION.value
 
@@ -436,6 +430,29 @@ async def create_order(
 
     try:
         session.add(order)
+        await session.flush()  # Get order.id without committing
+
+        # Apply promo code atomically (records usage and increments counter)
+        if promo_code_used:
+            apply_success, apply_msg, _ = await PromoService.apply_promo_to_order(
+                session=session,
+                order_id=order.id,
+                code=promo_code_used,
+                user_id=tg_user.id,
+                base_price=base_price
+            )
+            if not apply_success:
+                # Promo became invalid between validation and order creation
+                # Continue without promo discount
+                logger.warning(f"[API /orders/create] Promo application failed: {apply_msg}")
+                order.promo_code = None
+                order.promo_discount = 0.0
+                order.discount = float(user_discount)  # Only loyalty discount
+                promo_code_used = None
+                promo_discount = 0.0
+                promo_validation_failed = True
+                promo_failure_reason = apply_msg
+
         await session.commit()
         await session.refresh(order)
     except Exception as db_error:

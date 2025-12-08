@@ -26,17 +26,27 @@ class PromoCode(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 class PromoCodeUsage(Base):
+    """
+    Tracks promo code usage by users.
+
+    When an order is cancelled, the usage is marked as inactive (soft delete)
+    rather than being deleted. This allows the user to use the promo again.
+    """
     __tablename__ = "promocode_usages"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    
+
     promocode_id: Mapped[int] = mapped_column(Integer, ForeignKey("promocodes.id"))
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
     order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"))
-    
-    discount_amount: Mapped[float] = mapped_column(Float)  # Сколько сэкономил
-    
+
+    discount_amount: Mapped[float] = mapped_column(Float)  # How much was saved
+
+    # Soft delete support for promo return on order cancellation
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    returned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    
-    # Связи
+
+    # Relationships
     promocode: Mapped["PromoCode"] = relationship("PromoCode", backref="usages")
