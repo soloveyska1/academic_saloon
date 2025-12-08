@@ -128,7 +128,7 @@ const secondaryButtonStyle: React.CSSProperties = {
 }
 
 export function GodModePage() {
-  const { isAdmin, telegramId } = useAdmin()
+  const { isAdmin, telegramId, simulateNewUser, setSimulateNewUser } = useAdmin()
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
   const [loading, setLoading] = useState(true)
 
@@ -307,6 +307,26 @@ export function GodModePage() {
               Full Control Panel
             </p>
           </div>
+
+          {/* New user simulation toggle */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setSimulateNewUser(!simulateNewUser)}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: simulateNewUser ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)',
+              border: simulateNewUser ? '1px solid rgba(168,85,247,0.5)' : '1px solid transparent',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title={simulateNewUser ? 'Выключить режим новичка' : 'Включить режим новичка'}
+          >
+            <span style={{ fontSize: 16 }}>{simulateNewUser ? '👶' : '🎭'}</span>
+          </motion.button>
 
           {/* Sound toggle */}
           <motion.button
