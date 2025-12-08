@@ -565,6 +565,7 @@ export async function createGodPromo(data: {
   discount_percent: number
   max_uses?: number
   valid_until?: string
+  new_users_only?: boolean
 }): Promise<{ success: boolean; promo_id: number }> {
   return apiFetch('/god/promos', {
     method: 'POST',

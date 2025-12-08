@@ -1860,6 +1860,7 @@ function PromosTab() {
   const [newCode, setNewCode] = useState('')
   const [newDiscount, setNewDiscount] = useState('10')
   const [newMaxUses, setNewMaxUses] = useState('0')
+  const [newUsersOnly, setNewUsersOnly] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1884,15 +1885,17 @@ function PromosTab() {
         code: newCode,
         discount_percent: parseFloat(newDiscount),
         max_uses: parseInt(newMaxUses),
+        new_users_only: newUsersOnly,
       })
       showToast({
         type: 'success',
         title: '✓ Промокод создан',
-        message: `${newCode} — скидка ${newDiscount}%`
+        message: `${newCode} — скидка ${newDiscount}%${newUsersOnly ? ' (новые пользователи)' : ''}`
       })
       setNewCode('')
       setNewDiscount('10')
       setNewMaxUses('0')
+      setNewUsersOnly(false)
       setShowCreate(false)
       load()
     } catch (e) {
@@ -1999,6 +2002,40 @@ function PromosTab() {
                   enterKeyHint="done"
                 />
               </div>
+              {/* New users only toggle */}
+              <div
+                onClick={() => setNewUsersOnly(!newUsersOnly)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px 14px',
+                  background: newUsersOnly ? 'rgba(212,175,55,0.15)' : 'rgba(0,0,0,0.2)',
+                  border: `1px solid ${newUsersOnly ? 'rgba(212,175,55,0.4)' : 'rgba(212,175,55,0.15)'}`,
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 6,
+                  border: `2px solid ${newUsersOnly ? '#D4AF37' : 'rgba(255,255,255,0.3)'}`,
+                  background: newUsersOnly ? '#D4AF37' : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                }}>
+                  {newUsersOnly && <Check size={14} color="#0a0a0c" strokeWidth={3} />}
+                </div>
+                <span style={{
+                  color: newUsersOnly ? '#D4AF37' : 'rgba(255,255,255,0.6)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                }}>Только для новых пользователей</span>
+              </div>
               <button
                 onClick={handleCreate}
                 disabled={!newCode.trim() || creating}
@@ -2072,6 +2109,17 @@ function PromosTab() {
                           fontSize: 11,
                         }}>
                           Скоро
+                        </span>
+                      )}
+                      {promo.new_users_only && (
+                        <span style={{
+                          padding: '2px 8px',
+                          background: 'rgba(59,130,246,0.2)',
+                          color: '#3b82f6',
+                          borderRadius: 4,
+                          fontSize: 11,
+                        }}>
+                          Новые
                         </span>
                       )}
                     </div>

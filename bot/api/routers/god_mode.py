@@ -1485,6 +1485,12 @@ async def get_promos(
                     "fullname": creator_data["fullname"],
                 }
 
+        # Handle new_users_only with fallback if column doesn't exist
+        try:
+            new_users_only_value = p.new_users_only
+        except AttributeError:
+            new_users_only_value = False
+
         promo_data.append({
             "id": p.id,
             "code": p.code,
@@ -1494,6 +1500,7 @@ async def get_promos(
             "active_usages": active_count,
             "total_savings": float(total_savings),
             "is_active": p.is_active,
+            "new_users_only": new_users_only_value,
             "valid_from": p.valid_from.isoformat() if p.valid_from else None,
             "valid_until": p.valid_until.isoformat() if p.valid_until else None,
             "created_by": creator,
@@ -1557,12 +1564,18 @@ async def create_promo(
         except (ValueError, TypeError):
             raise HTTPException(status_code=400, detail="Invalid datetime format for valid_until")
 
+    # New users only flag
+    new_users_only = data.get("new_users_only", False)
+    if not isinstance(new_users_only, bool):
+        new_users_only = str(new_users_only).lower() in ("true", "1", "yes")
+
     promo = PromoCode(
         code=code,
         discount_percent=discount,
         max_uses=max_uses,
         valid_until=valid_until_dt,
         is_active=True,
+        new_users_only=new_users_only,
         created_by=tg_user.id,
     )
     session.add(promo)

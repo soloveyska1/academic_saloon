@@ -406,23 +406,23 @@ async def create_order(
 
     if data.promo_code:
         code = data.promo_code.upper().strip()
-        logger.info(f"[API /orders/create] Validating promo code: '{code}' for user {tg_user.id}")
+        logger.info(f"[API /orders/create] 🎟️ Received promo_code: '{code}' from user {tg_user.id}")
         # Atomic validation with row locking to prevent race conditions
         is_valid, message, discount, _ = await PromoService.validate_promo_code(
             session, code, tg_user.id
         )
-        logger.info(f"[API /orders/create] Promo validation result: is_valid={is_valid}, message='{message}', discount={discount}")
+        logger.info(f"[API /orders/create] 🎟️ Promo validation result: is_valid={is_valid}, message='{message}', discount={discount}")
         if is_valid:
             promo_discount = float(discount)
             promo_code_used = code
-            logger.info(f"[API /orders/create] Promo code {code} validated: {discount}% discount")
+            logger.info(f"[API /orders/create] ✅ Promo code {code} validated: {discount}% discount")
         else:
             # Promo code was invalid - log but continue without it
             promo_validation_failed = True
             promo_failure_reason = message
-            logger.warning(f"[API /orders/create] Promo code {code} invalid: {message}")
+            logger.warning(f"[API /orders/create] ❌ Promo code {code} invalid: {message}")
     else:
-        logger.info(f"[API /orders/create] No promo code provided in request")
+        logger.info(f"[API /orders/create] 🎟️ No promo_code received in request")
 
     # Calculate final price with BOTH loyalty and promo discounts
     base_price = float(price_calc.final_price) if not price_calc.is_manual_required else 0.0
@@ -435,6 +435,8 @@ async def create_order(
     # So we store them separately.
 
     initial_status = OrderStatus.WAITING_ESTIMATION.value
+
+    logger.info(f"[API /orders/create] 🎟️ Creating order with promo_code={promo_code_used}, promo_discount={promo_discount}, base_price={base_price}")
 
     order = Order(
         user_id=user.telegram_id,
@@ -449,6 +451,7 @@ async def create_order(
         promo_discount=float(promo_discount) if promo_discount else 0.0,
         status=initial_status,
     )
+    logger.info(f"[API /orders/create] 🎟️ Order object created: promo_code={order.promo_code}, promo_discount={order.promo_discount}")
 
     try:
         session.add(order)
@@ -491,12 +494,13 @@ async def create_order(
 
         await session.commit()
         await session.refresh(order)
+        logger.info(f"[API /orders/create] 🎟️ After commit - Order #{order.id}: promo_code={order.promo_code}, promo_discount={order.promo_discount}")
     except Exception as db_error:
         logger.error(f"DB Error: {db_error}")
         await session.rollback()
         return OrderCreateResponse(success=False, order_id=0, message="Ошибка создания заказа", price=None, is_manual_required=False)
 
-    logger.info(f"[API /orders/create] Order #{order.id} created")
+    logger.info(f"[API /orders/create] ✅ Order #{order.id} created successfully with promo_code={order.promo_code}")
 
     # Notify via WS
     try:

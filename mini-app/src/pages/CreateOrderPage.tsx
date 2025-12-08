@@ -962,12 +962,18 @@ export function CreateOrderPage() {
   const handleSubmit = async (forceWithoutPromo: boolean = false) => {
     if (!workType || !deadline || !subject.trim()) return
 
+    // DEBUG: Log promo state at submit time
+    console.log('[CreateOrderPage] 🎟️ handleSubmit called')
+    console.log('[CreateOrderPage] 🎟️ activePromo at submit:', activePromo)
+    console.log('[CreateOrderPage] 🎟️ forceWithoutPromo:', forceWithoutPromo)
+
     haptic('heavy')
     setSubmitting(true)
 
     try {
       // Re-validate promo before submitting (unless forced to proceed without it)
       let promoToUse = activePromo?.code
+      console.log('[CreateOrderPage] 🎟️ promoToUse initial:', promoToUse)
       if (activePromo && !forceWithoutPromo) {
         const promoStillValid = await revalidatePromo()
         if (!promoStillValid) {
@@ -980,10 +986,11 @@ export function CreateOrderPage() {
         }
       }
 
-      // If forced without promo, don't send promo code
-      if (forceWithoutPromo) {
-        promoToUse = undefined
-      }
+    // If forced without promo, don't send promo code
+    // NOTE: Check for boolean true explicitly because React may pass event object
+    if (forceWithoutPromo === true) {
+      promoToUse = undefined
+    }
 
       const data: OrderCreateRequest = {
         work_type: workType,
@@ -994,8 +1001,8 @@ export function CreateOrderPage() {
         promo_code: promoToUse,
       }
 
-      // Debug: log what we're sending
-      console.log('[CreateOrder] Sending order with promo_code:', promoToUse, 'activePromo:', activePromo)
+      console.log('[CreateOrderPage] 🎟️ Sending order with data:', JSON.stringify(data))
+      console.log('[CreateOrderPage] 🎟️ promo_code in request:', data.promo_code)
 
       const res = await createOrder(data)
       if (res.success) {
