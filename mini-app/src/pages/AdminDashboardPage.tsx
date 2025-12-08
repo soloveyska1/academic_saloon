@@ -741,7 +741,17 @@ export function AdminDashboardPage() {
                           </span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <DollarSign size={12} />
-                            {order.final_price.toLocaleString()}₽
+                            {order.promo_code && order.price !== order.final_price && (
+                              <span style={{ textDecoration: 'line-through', color: '#6b7280', marginRight: 4 }}>
+                                {order.price.toLocaleString()}
+                              </span>
+                            )}
+                            <span style={{ color: order.promo_code ? '#22c55e' : 'inherit', fontWeight: order.promo_code ? 600 : 400 }}>
+                              {order.final_price.toLocaleString()}₽
+                            </span>
+                            {order.promo_code && (
+                              <span style={{ color: '#a78bfa', fontSize: 10 }}>🎟️</span>
+                            )}
                           </span>
                           {order.deadline && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -815,12 +825,23 @@ export function AdminDashboardPage() {
                                 </div>
                                 <div style={{
                                   padding: 10,
-                                  background: 'rgba(255,255,255,0.03)',
+                                  background: order.promo_code ? 'rgba(139,92,246,0.1)' : 'rgba(255,255,255,0.03)',
                                   borderRadius: 8,
+                                  border: order.promo_code ? '1px solid rgba(139,92,246,0.3)' : 'none',
                                 }}>
-                                  <div style={{ color: '#71717a', marginBottom: 4 }}>Оплачено</div>
+                                  <div style={{ color: '#71717a', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    Оплачено
+                                    {order.promo_code && (
+                                      <span style={{ color: '#a78bfa', fontSize: 10 }}>🎟️ {order.promo_code} −{order.promo_discount}%</span>
+                                    )}
+                                  </div>
                                   <div style={{ color: '#22c55e', fontWeight: 600 }}>
                                     {order.paid_amount.toLocaleString()}₽ / {order.final_price.toLocaleString()}₽
+                                    {order.promo_code && order.price !== order.final_price && (
+                                      <span style={{ color: '#6b7280', textDecoration: 'line-through', marginLeft: 6, fontSize: 12, fontWeight: 400 }}>
+                                        (было {order.price.toLocaleString()}₽)
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                                 <div style={{

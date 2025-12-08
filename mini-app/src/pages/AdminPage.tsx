@@ -296,7 +296,17 @@ export const AdminPage: React.FC = () => {
                                 <div className="text-sm text-gray-400 mb-1">{order.subject || 'Без предмета'}</div>
                                 <div className="flex justify-between items-center text-xs text-green-500/60 font-mono">
                                     <span>{new Date(order.created_at || Date.now()).toLocaleDateString()}</span>
-                                    {order.price > 0 && <span>{order.price} ₽</span>}
+                                    <span className="flex items-center gap-2">
+                                        {order.promo_code && (
+                                            <span className="text-purple-400 text-[10px]">🎟️ {order.promo_code}</span>
+                                        )}
+                                        {order.promo_code && order.price !== order.final_price && (
+                                            <span className="line-through text-gray-500">{order.price}</span>
+                                        )}
+                                        <span className={order.promo_code ? 'text-green-400 font-bold' : ''}>
+                                            {(order.final_price || order.price || 0).toLocaleString('ru-RU')} ₽
+                                        </span>
+                                    </span>
                                 </div>
                             </div>
                         ))}

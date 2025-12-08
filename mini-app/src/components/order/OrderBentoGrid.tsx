@@ -111,8 +111,53 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                 </div>
 
                 {order.final_price > 0 ? (
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#d4af37', letterSpacing: '-0.01em' }}>
-                        {order.final_price.toLocaleString()} ₽
+                    <div>
+                        {/* Promo badge */}
+                        {order.promo_code && order.promo_discount && order.promo_discount > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                marginBottom: 6,
+                                padding: '3px 8px',
+                                background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1))',
+                                border: '1px solid rgba(34,197,94,0.3)',
+                                borderRadius: 6,
+                                width: 'fit-content',
+                            }}>
+                                <span style={{ fontSize: 10 }}>🎟️</span>
+                                <span style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    color: '#22c55e',
+                                    fontFamily: 'var(--font-mono)',
+                                }}>
+                                    {order.promo_code} −{order.promo_discount}%
+                                </span>
+                            </div>
+                        )}
+                        {/* Original price crossed out */}
+                        {order.promo_code && order.price && order.price !== order.final_price && (
+                            <div style={{
+                                fontSize: 12,
+                                color: 'rgba(212,175,55,0.5)',
+                                textDecoration: 'line-through',
+                                fontFamily: 'var(--font-mono)',
+                                marginBottom: 2,
+                            }}>
+                                {order.price.toLocaleString()} ₽
+                            </div>
+                        )}
+                        {/* Final price */}
+                        <div style={{
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: order.promo_code && order.promo_discount ? '#22c55e' : '#d4af37',
+                            letterSpacing: '-0.01em',
+                            fontFamily: 'var(--font-mono)',
+                        }}>
+                            {order.final_price.toLocaleString()} ₽
+                        </div>
                     </div>
                 ) : (
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>
