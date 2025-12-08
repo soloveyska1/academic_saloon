@@ -426,6 +426,7 @@ class PromoService:
 
         except Exception as e:
             logger.error(f"[PromoService] Error returning promo for order #{order_id}: {e}")
+            await session.rollback()
             return False, f"Ошибка возврата промокода: {str(e)}"
 
     @staticmethod

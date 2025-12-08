@@ -347,6 +347,16 @@ export function PromoProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval)
   }, [activePromo])
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
+    }
+  }, [])
+
   return (
     <PromoContext.Provider
       value={{

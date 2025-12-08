@@ -53,18 +53,24 @@ export function PromoCodeSection({
   const [showSuccess, setShowSuccess] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Use ref to avoid onPriceChange dependency issue
+  const onPriceChangeRef = useRef(onPriceChange)
+  useEffect(() => {
+    onPriceChangeRef.current = onPriceChange
+  }, [onPriceChange])
+
   // Calculate discounted price when promo changes
   useEffect(() => {
-    if (basePrice && onPriceChange) {
+    if (basePrice && onPriceChangeRef.current) {
       if (activePromo) {
         const discount = activePromo.discount
         const finalPrice = Math.round(basePrice * (1 - discount / 100))
-        onPriceChange(finalPrice, discount)
+        onPriceChangeRef.current(finalPrice, discount)
       } else {
-        onPriceChange(basePrice, 0)
+        onPriceChangeRef.current(basePrice, 0)
       }
     }
-  }, [activePromo, basePrice, onPriceChange])
+  }, [activePromo, basePrice])
 
   // Show success animation when promo is applied
   useEffect(() => {

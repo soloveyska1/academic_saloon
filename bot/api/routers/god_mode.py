@@ -499,8 +499,6 @@ async def update_order_status(
         if order.promo_code:
             try:
                 from bot.services.promo_service import PromoService
-                from bot.bot_instance import get_bot
-                bot = await get_bot()
                 success, msg = await PromoService.return_promo_usage(session, order_id, bot=bot)
                 if success:
                     logger.info(f"[God Mode] Promo returned for cancelled order #{order_id}")
@@ -565,11 +563,19 @@ async def update_order_price(
         raise HTTPException(status_code=404, detail="Order not found")
 
     new_price = data.get("price")
-    if new_price is None or new_price < 0:
-        raise HTTPException(status_code=400, detail="Valid price required")
+    if new_price is None:
+        raise HTTPException(status_code=400, detail="Price is required")
+
+    try:
+        new_price = float(new_price)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Price must be a valid number")
+
+    if new_price < 0:
+        raise HTTPException(status_code=400, detail="Price cannot be negative")
 
     old_price = order.price
-    order.price = float(new_price)
+    order.price = new_price
 
     # Auto-transition status if needed
     old_status = order.status
@@ -647,8 +653,15 @@ async def update_order_progress(
         raise HTTPException(status_code=404, detail="Order not found")
 
     new_progress = data.get("progress", 0)
-    new_progress = max(0, min(100, int(new_progress)))
+    try:
+        new_progress = int(new_progress)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Progress must be a valid integer")
+
+    new_progress = max(0, min(100, new_progress))
     status_text = data.get("status_text")
+    if status_text and not isinstance(status_text, str):
+        raise HTTPException(status_code=400, detail="Status text must be a string")
 
     old_progress = order.progress
     order.progress = new_progress
@@ -697,12 +710,20 @@ async def confirm_order_payment(
         raise HTTPException(status_code=404, detail="Order not found")
 
     amount = data.get("amount", order.final_price)
+    try:
+        amount = float(amount)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Amount must be a valid number")
+
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+
     is_full = data.get("is_full", True)
 
     old_status = order.status
-    old_paid = order.paid_amount
+    old_paid = order.paid_amount or 0.0
 
-    order.paid_amount += float(amount)
+    order.paid_amount = (order.paid_amount or 0.0) + amount
 
     if is_full or order.paid_amount >= order.final_price:
         order.status = OrderStatus.PAID_FULL.value
@@ -714,7 +735,7 @@ async def confirm_order_payment(
         select(User).where(User.telegram_id == order.user_id)
     )
     if user:
-        user.total_spent += float(amount)
+        user.total_spent = (user.total_spent or 0.0) + amount
 
     await log_admin_action(
         session, tg_user, AdminActionType.ORDER_PAYMENT_CONFIRM,
@@ -783,6 +804,8 @@ async def reject_order_payment(
         raise HTTPException(status_code=404, detail="Order not found")
 
     reason = data.get("reason", "Платёж не найден")
+    if not isinstance(reason, str):
+        raise HTTPException(status_code=400, detail="Reason must be a string")
 
     old_status = order.status
     order.status = OrderStatus.WAITING_PAYMENT.value
@@ -845,7 +868,11 @@ async def send_order_message(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    text = data.get("text", "").strip()
+    text = data.get("text", "")
+    if not isinstance(text, str):
+        raise HTTPException(status_code=400, detail="Message text must be a string")
+
+    text = text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Message text required")
 
@@ -906,7 +933,11 @@ async def update_order_notes(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    order.admin_notes = data.get("notes", "")
+    notes = data.get("notes", "")
+    if notes and not isinstance(notes, str):
+        raise HTTPException(status_code=400, detail="Notes must be a string")
+
+    order.admin_notes = notes
     await session.commit()
 
     return {"success": True}
@@ -1088,12 +1119,20 @@ async def modify_user_balance(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    amount = data.get("amount", 0)
-    reason = data.get("reason", "Admin adjustment")
-    notify = data.get("notify", True)
+    amount = data.get("amount")
+    if amount is None:
+        raise HTTPException(status_code=400, detail="Amount is required")
+
+    try:
+        amount = float(amount)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Amount must be a valid number")
 
     if amount == 0:
         raise HTTPException(status_code=400, detail="Amount cannot be zero")
+
+    reason = data.get("reason", "Admin adjustment")
+    notify = data.get("notify", True)
 
     old_balance = user.balance
 
@@ -1164,6 +1203,8 @@ async def ban_user(
 
     ban = data.get("ban", True)
     reason = data.get("reason", "")
+    if reason and not isinstance(reason, str):
+        raise HTTPException(status_code=400, detail="Reason must be a string")
 
     old_banned = user.is_banned
     user.is_banned = ban
@@ -1257,8 +1298,12 @@ async def update_user_notes(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    notes = data.get("notes", "")
+    if notes and not isinstance(notes, str):
+        raise HTTPException(status_code=400, detail="Notes must be a string")
+
     old_notes = user.admin_notes
-    user.admin_notes = data.get("notes", "")
+    user.admin_notes = notes
 
     await log_admin_action(
         session, tg_user, AdminActionType.USER_NOTE_UPDATE,
@@ -1378,8 +1423,15 @@ async def create_promo(
     """Create new promo code"""
     require_god_mode(tg_user)
 
-    code = data.get("code", "").strip().upper()
-    if not code or len(code) < 3:
+    code = data.get("code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Code is required")
+
+    if not isinstance(code, str):
+        raise HTTPException(status_code=400, detail="Code must be a string")
+
+    code = code.strip().upper()
+    if len(code) < 3:
         raise HTTPException(status_code=400, detail="Code must be at least 3 characters")
 
     # Check if exists
@@ -1390,14 +1442,36 @@ async def create_promo(
         raise HTTPException(status_code=400, detail="Promo code already exists")
 
     discount = data.get("discount_percent", 10)
+    try:
+        discount = float(discount)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Discount must be a valid number")
+
+    if discount <= 0 or discount > 100:
+        raise HTTPException(status_code=400, detail="Discount must be between 0 and 100")
+
     max_uses = data.get("max_uses", 0)
+    try:
+        max_uses = int(max_uses)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Max uses must be a valid integer")
+
+    if max_uses < 0:
+        raise HTTPException(status_code=400, detail="Max uses cannot be negative")
+
     valid_until = data.get("valid_until")
+    valid_until_dt = None
+    if valid_until:
+        try:
+            valid_until_dt = datetime.fromisoformat(valid_until)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid datetime format for valid_until")
 
     promo = PromoCode(
         code=code,
-        discount_percent=float(discount),
-        max_uses=int(max_uses),
-        valid_until=datetime.fromisoformat(valid_until) if valid_until else None,
+        discount_percent=discount,
+        max_uses=max_uses,
+        valid_until=valid_until_dt,
         is_active=True,
         created_by=tg_user.id,
     )
@@ -1541,11 +1615,30 @@ async def update_user_activity(
         )
         session.add(activity)
 
-    activity.current_page = data.get("page")
-    activity.current_action = data.get("action")
-    activity.current_order_id = data.get("order_id")
+    page = data.get("page")
+    if page and not isinstance(page, str):
+        page = None
+
+    action = data.get("action")
+    if action and not isinstance(action, str):
+        action = None
+
+    order_id = data.get("order_id")
+    if order_id is not None:
+        try:
+            order_id = int(order_id)
+        except (ValueError, TypeError):
+            order_id = None
+
+    platform = data.get("platform")
+    if platform and not isinstance(platform, str):
+        platform = None
+
+    activity.current_page = page
+    activity.current_action = action
+    activity.current_order_id = order_id
     activity.is_online = True
-    activity.platform = data.get("platform")
+    activity.platform = platform
     activity.last_activity_at = now
 
     await session.commit()
@@ -1614,8 +1707,11 @@ async def execute_safe_sql(
     """Execute SQL query (SELECT only for safety)"""
     require_god_mode(tg_user)
 
-    query = data.get("query", "").strip()
+    query = data.get("query", "")
+    if not isinstance(query, str):
+        raise HTTPException(status_code=400, detail="Query must be a string")
 
+    query = query.strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query required")
 
@@ -1681,11 +1777,15 @@ async def send_broadcast(
     """Send broadcast message to users"""
     require_god_mode(tg_user)
 
-    text = data.get("text", "").strip()
-    target = data.get("target", "all")  # all, active, with_orders
+    text = data.get("text", "")
+    if not isinstance(text, str):
+        raise HTTPException(status_code=400, detail="Message text must be a string")
 
+    text = text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Message text required")
+
+    target = data.get("target", "all")  # all, active, with_orders
 
     # Get target users
     query = select(User.telegram_id).where(User.is_banned == False)
@@ -1738,7 +1838,7 @@ async def get_system_info(
         "support_username": settings.SUPPORT_USERNAME,
         "webapp_url": settings.WEBAPP_URL,
         "payment_phone": settings.PAYMENT_PHONE,
-        "payment_card": settings.PAYMENT_CARD[-4:],  # Only last 4 digits
+        "payment_card": settings.PAYMENT_CARD[-4:] if settings.PAYMENT_CARD and len(settings.PAYMENT_CARD) >= 4 else settings.PAYMENT_CARD,
         "payment_banks": settings.PAYMENT_BANKS,
         "orders_channel_id": settings.ORDERS_CHANNEL_ID,
         "admin_group_id": settings.ADMIN_GROUP_ID,

@@ -1170,7 +1170,8 @@ async def cmd_price_in_topic(message: Message, session: AsyncSession, bot: Bot, 
             await session.commit()
 
             # Обновляем карточки (Dual Sync)
-            final_price = price - bonus_used
+            # Use order.final_price property which includes discount (loyalty + promo)
+            final_price = order.final_price
             if bonus_used > 0:
                 extra_text = (
                     f"💵 Тариф: {price:,}₽\n"
@@ -1299,7 +1300,8 @@ async def topic_set_price_callback(callback: CallbackQuery, session: AsyncSessio
     await session.commit()
 
     # Обновляем карточки
-    final_price = price - bonus_used
+    # Use order.final_price property which includes discount (loyalty + promo)
+    final_price = order.final_price
     if bonus_used > 0:
         extra_text = (
             f"💵 Тариф: {price:,}₽\n"

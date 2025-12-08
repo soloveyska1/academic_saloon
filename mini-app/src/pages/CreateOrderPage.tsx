@@ -841,7 +841,13 @@ export function CreateOrderPage() {
 
   // UI
   const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState<{ ok: boolean; msg: string; id?: number } | null>(null)
+  const [result, setResult] = useState<{
+    ok: boolean;
+    msg: string;
+    id?: number;
+    promoUsed?: { code: string; discount: number } | null;
+    basePrice?: number;
+  } | null>(null)
 
   // Auto-advance to step 2 if type is pre-selected (urgent mode)
   useEffect(() => {
@@ -919,6 +925,13 @@ export function CreateOrderPage() {
     try {
       const res = await createOrder(data)
       if (res.success) {
+        // Store promo info and base price BEFORE clearing promo
+        const promoUsed = activePromo ? {
+          code: activePromo.code,
+          discount: activePromo.discount
+        } : null
+        const basePrice = getBaseEstimate()
+
         // Clear draft and used promo code on success
         localStorage.removeItem(DRAFT_KEY)
         if (activePromo) {
@@ -926,7 +939,13 @@ export function CreateOrderPage() {
         }
 
         hapticSuccess()
-        setResult({ ok: true, msg: res.message, id: res.order_id })
+        setResult({
+          ok: true,
+          msg: res.message,
+          id: res.order_id,
+          promoUsed,
+          basePrice: basePrice || undefined
+        })
       } else {
         hapticError()
         setResult({ ok: false, msg: res.message })
@@ -981,11 +1000,11 @@ export function CreateOrderPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   if (step === 4 && result) {
-    // Calculate savings if promo was applied
-    const baseEstimate = getBaseEstimate()
-    const finalEstimate = getEstimate()
-    const savings = baseEstimate && finalEstimate && activePromo
-      ? baseEstimate - finalEstimate
+    // Calculate savings if promo was applied (using stored promo info from result)
+    const promoUsed = result.promoUsed
+    const basePrice = result.basePrice
+    const savings = basePrice && promoUsed
+      ? Math.round(basePrice * (promoUsed.discount / 100))
       : 0
 
     return (
@@ -1038,12 +1057,12 @@ export function CreateOrderPage() {
             {result.ok ? 'Заказ создан!' : 'Ошибка'}
           </h2>
 
-          <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: result.ok && activePromo ? 20 : 40, maxWidth: 300, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: result.ok && promoUsed ? 20 : 40, maxWidth: 300, lineHeight: 1.6 }}>
             {result.msg}
           </p>
 
           {/* Promo savings card */}
-          {result.ok && activePromo && savings > 0 && (
+          {result.ok && promoUsed && savings > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1095,7 +1114,7 @@ export function CreateOrderPage() {
                   color: '#22c55e',
                   letterSpacing: '0.05em',
                 }}>
-                  {activePromo.code}
+                  {promoUsed.code}
                 </span>
                 <span style={{
                   padding: '3px 8px',
@@ -1105,7 +1124,7 @@ export function CreateOrderPage() {
                   fontWeight: 700,
                   color: '#22c55e',
                 }}>
-                  -{activePromo.discount}%
+                  -{promoUsed.discount}%
                 </span>
               </div>
 
@@ -1142,7 +1161,7 @@ export function CreateOrderPage() {
               <motion.button
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: activePromo ? 0.6 : 0.3 }}
+                transition={{ delay: promoUsed ? 0.6 : 0.3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => navigate(`/order/${result.id}`)}
                 style={{
@@ -1164,7 +1183,7 @@ export function CreateOrderPage() {
             <motion.button
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: activePromo ? 0.7 : 0.4 }}
+              transition={{ delay: promoUsed ? 0.7 : 0.4 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate('/')}
               style={{
@@ -1473,13 +1492,32 @@ export function CreateOrderPage() {
                     }}>
                       <Thermometer size={22} color={isDark ? '#d4af37' : '#9e7a1a'} />
                     </div>
-                    <span style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: isDark ? '#a1a1aa' : '#52525b',
-                    }}>
-                      Ориентировочно:
-                    </span>
+                    <div>
+                      <span style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: isDark ? '#a1a1aa' : '#52525b',
+                      }}>
+                        Ориентировочно
+                      </span>
+                      {activePromo && (
+                        <span style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#22c55e',
+                          marginLeft: 6,
+                        }}>
+                          (с учётом скидки {activePromo.discount}%)
+                        </span>
+                      )}
+                      <span style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: isDark ? '#a1a1aa' : '#52525b',
+                      }}>
+                        :
+                      </span>
+                    </div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
