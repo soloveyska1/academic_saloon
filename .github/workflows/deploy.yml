@@ -17,29 +17,38 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /root/academic_saloon
+            # Use a safer relative path (home directory)
+            cd ~/academic_saloon || git clone https://github.com/soloveyska1/academic_saloon.git ~/academic_saloon
+            cd ~/academic_saloon
+
             echo "=== Starting deploy ==="
             echo "Current commit: $(git rev-parse --short HEAD)"
 
-            # Подтянуть изменения
+            # Update code
             git fetch --all --prune
-            git checkout main 2>/dev/null || true
+            git checkout main
             git reset --hard origin/main
 
             echo "After reset commit: $(git rev-parse --short HEAD)"
 
-            # Обновить зависимости (если изменились)
-            source venv/bin/activate
-            pip install -r requirements.txt --quiet
+            # Create .env file from secrets if needed, or assume it's there. 
+            # Ideally, we should inject secrets here, but for now we rely on the file existing.
+            # If you want to inject secrets:
+            # echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" > .env
+            # echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+            # ... and so on.
 
-            # Применить миграции
-            alembic upgrade head
+            # Stop legacy systemd service if it exists to free up port 8000
+            if systemctl is-active --quiet saloon-bot; then
+                echo "Stopping legacy systemd service..."
+                systemctl stop saloon-bot || true
+                systemctl disable saloon-bot || true
+            fi
 
-            # Перезапустить бота
-            systemctl restart saloon-bot
+            # Start Docker containers
+            docker compose up -d --build
 
-            # Проверить статус
-            sleep 3
-            systemctl is-active saloon-bot
+            # Prune unused images to save space
+            docker image prune -f
 
             echo "=== Deploy completed at $(date) ==="
