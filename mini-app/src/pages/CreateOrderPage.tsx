@@ -9,9 +9,11 @@ import {
   Timer, Rocket, Hourglass, Tag, Percent, Loader2
 } from 'lucide-react'
 import { WorkType, OrderCreateRequest } from '../types'
-import { createOrder, applyPromoCode } from '../api/userApi'
+import { createOrder } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
+import { usePromo } from '../contexts/PromoContext'
+import { PromoCodeSection, PromoPriceDisplay } from '../components/ui/PromoCodeSection'
 
 const DRAFT_KEY = 'order_draft_v1'
 
@@ -804,6 +806,7 @@ export function CreateOrderPage() {
   const [searchParams] = useSearchParams()
   const { haptic, hapticSuccess, hapticError } = useTelegram()
   const { isDark } = useTheme()
+  const { activePromo, clearPromo } = usePromo()
 
   // Check for prefill data from navigation state (Quick Reorder)
   const prefillData = (location.state as { prefill?: PrefillData })?.prefill
@@ -826,13 +829,6 @@ export function CreateOrderPage() {
   const [description, setDescription] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
   const [files, setFiles] = useState<File[]>([])
   const [deadline, setDeadline] = useState<string | null>(isUrgentMode ? 'today' : null)
-
-  // Promo code state
-  const [promoCode, setPromoCode] = useState('')
-  const [promoDiscount, setPromoDiscount] = useState<number | null>(null)
-  const [promoMessage, setPromoMessage] = useState<string | null>(null)
-  const [promoLoading, setPromoLoading] = useState(false)
-  const [promoValid, setPromoValid] = useState<boolean | null>(null)
 
   // UI
   const [submitting, setSubmitting] = useState(false)
@@ -876,49 +872,6 @@ export function CreateOrderPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  // Promo code validation
-  const validatePromoCode = async () => {
-    if (!promoCode.trim()) {
-      setPromoMessage('Введите промокод')
-      setPromoValid(false)
-      return
-    }
-
-    setPromoLoading(true)
-    setPromoMessage(null)
-    setPromoValid(null)
-
-    try {
-      const result = await applyPromoCode(promoCode.trim())
-      if (result.success && result.discount) {
-        hapticSuccess()
-        setPromoDiscount(result.discount)
-        setPromoMessage(result.message)
-        setPromoValid(true)
-      } else {
-        hapticError()
-        setPromoDiscount(null)
-        setPromoMessage(result.message)
-        setPromoValid(false)
-      }
-    } catch (err) {
-      hapticError()
-      setPromoDiscount(null)
-      setPromoMessage('Ошибка проверки промокода')
-      setPromoValid(false)
-    } finally {
-      setPromoLoading(false)
-    }
-  }
-
-  // Clear promo code
-  const clearPromoCode = () => {
-    setPromoCode('')
-    setPromoDiscount(null)
-    setPromoMessage(null)
-    setPromoValid(null)
-  }
-
   // Submit
   const handleSubmit = async () => {
     if (!workType || !deadline || !subject.trim()) return
@@ -932,14 +885,17 @@ export function CreateOrderPage() {
       topic: topic.trim() || undefined,
       deadline,
       description: description.trim() || undefined,
-      promo_code: promoValid && promoCode.trim() ? promoCode.trim() : undefined,
+      promo_code: activePromo?.code || undefined,
     }
 
     try {
       const res = await createOrder(data)
       if (res.success) {
-        // Clear draft on success
+        // Clear draft and used promo code on success
         localStorage.removeItem(DRAFT_KEY)
+        if (activePromo) {
+          clearPromo() // Clear promo code after successful order
+        }
 
         hapticSuccess()
         setResult({ ok: true, msg: res.message, id: res.order_id })
@@ -965,8 +921,8 @@ export function CreateOrderPage() {
     const dl = DEADLINES.find((d) => d.value === deadline)
     if (!wt || !dl || wt.priceNum === 0) return null
     const basePrice = Math.round(wt.priceNum * dl.multiplierNum)
-    if (promoValid && promoDiscount) {
-      return Math.round(basePrice * (1 - promoDiscount / 100))
+    if (activePromo) {
+      return Math.round(basePrice * (1 - activePromo.discount / 100))
     }
     return basePrice
   }
@@ -1294,190 +1250,17 @@ export function CreateOrderPage() {
               ))}
             </div>
 
-            {/* Promo Code Section */}
+            {/* Promo Code Section - Using Global PromoContext */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              style={{
-                marginTop: 20,
-                padding: '18px 20px',
-                background: 'var(--bg-card-solid)',
-                border: promoValid === true
-                  ? '2px solid rgba(34, 197, 94, 0.5)'
-                  : promoValid === false
-                    ? '2px solid rgba(239, 68, 68, 0.3)'
-                    : '2px solid var(--border-default)',
-                borderRadius: 16,
-                transition: 'border-color 0.3s ease',
-              }}
+              style={{ marginTop: 20 }}
             >
-              {/* Label */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 12,
-              }}>
-                <Tag size={14} color="var(--gold-400)" strokeWidth={2} />
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'var(--gold-400)',
-                }}>
-                  Промокод
-                </span>
-                <span style={{
-                  fontSize: 10,
-                  color: 'var(--text-muted)',
-                  marginLeft: 'auto',
-                }}>
-                  Необязательно
-                </span>
-              </div>
-
-              {/* Input Row */}
-              <div style={{ display: 'flex', gap: 10 }}>
-                <div style={{
-                  flex: 1,
-                  position: 'relative',
-                }}>
-                  <input
-                    type="text"
-                    value={promoCode}
-                    onChange={(e) => {
-                      setPromoCode(e.target.value.toUpperCase())
-                      if (promoValid !== null) {
-                        setPromoValid(null)
-                        setPromoMessage(null)
-                        setPromoDiscount(null)
-                      }
-                    }}
-                    placeholder="Введите промокод"
-                    disabled={promoLoading}
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      paddingRight: promoValid ? 44 : 16,
-                      fontSize: 16,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      color: 'var(--text-main)',
-                      background: 'var(--bg-glass)',
-                      border: 'none',
-                      borderRadius: 12,
-                      outline: 'none',
-                      letterSpacing: '0.05em',
-                    }}
-                  />
-                  {promoValid === true && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      style={{
-                        position: 'absolute',
-                        right: 12,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        background: 'linear-gradient(145deg, #22c55e, #16a34a)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Check size={14} color="#050505" strokeWidth={3} />
-                    </motion.div>
-                  )}
-                </div>
-
-                {promoValid === true ? (
-                  <motion.button
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={clearPromoCode}
-                    style={{
-                      padding: '14px 16px',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: '#ef4444',
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      borderRadius: 12,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <X size={18} />
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={validatePromoCode}
-                    disabled={promoLoading || !promoCode.trim()}
-                    style={{
-                      padding: '14px 20px',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: !promoCode.trim() ? 'var(--text-muted)' : '#050505',
-                      background: !promoCode.trim() ? 'var(--bg-glass)' : 'var(--gold-metallic)',
-                      border: 'none',
-                      borderRadius: 12,
-                      cursor: !promoCode.trim() ? 'not-allowed' : 'pointer',
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      opacity: !promoCode.trim() ? 0.5 : 1,
-                    }}
-                  >
-                    {promoLoading ? (
-                      <Loader2 size={18} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                    ) : (
-                      'Применить'
-                    )}
-                  </motion.button>
-                )}
-              </div>
-
-              {/* Status Message */}
-              <AnimatePresence>
-                {promoMessage && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, height: 0 }}
-                    animate={{ opacity: 1, y: 0, height: 'auto' }}
-                    exit={{ opacity: 0, y: -10, height: 0 }}
-                    style={{
-                      marginTop: 12,
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      background: promoValid
-                        ? 'rgba(34, 197, 94, 0.1)'
-                        : 'rgba(239, 68, 68, 0.1)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                    }}
-                  >
-                    {promoValid ? (
-                      <Percent size={16} color="#22c55e" />
-                    ) : (
-                      <AlertCircle size={16} color="#ef4444" />
-                    )}
-                    <span style={{
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: promoValid ? '#22c55e' : '#ef4444',
-                    }}>
-                      {promoMessage}
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <PromoCodeSection
+                variant="inline"
+                basePrice={getBaseEstimate() || undefined}
+              />
             </motion.div>
 
             {/* Premium Estimate Card */}
@@ -1550,7 +1333,7 @@ export function CreateOrderPage() {
 
                   <div style={{ textAlign: 'right' }}>
                     {/* Show original price crossed out if discount applied */}
-                    {promoValid && promoDiscount && getBaseEstimate() && (
+                    {activePromo && getBaseEstimate() && (
                       <div style={{
                         fontSize: 14,
                         color: 'var(--text-muted)',
@@ -1568,10 +1351,10 @@ export function CreateOrderPage() {
                       style={{
                         fontSize: 24,
                         fontWeight: 800,
-                        color: promoValid ? '#22c55e' : (isDark ? '#d4af37' : '#9e7a1a'),
+                        color: activePromo ? '#22c55e' : (isDark ? '#d4af37' : '#9e7a1a'),
                         fontFamily: "'JetBrains Mono', monospace",
                         letterSpacing: '-0.02em',
-                        textShadow: promoValid
+                        textShadow: activePromo
                           ? '0 0 20px rgba(34, 197, 94, 0.4)'
                           : (isDark
                             ? '0 0 20px rgba(212, 175, 55, 0.4)'
@@ -1581,7 +1364,7 @@ export function CreateOrderPage() {
                     >
                       {estimate.toLocaleString('ru-RU')} ₽
                     </motion.span>
-                    {promoValid && promoDiscount && (
+                    {activePromo && (
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -1590,9 +1373,14 @@ export function CreateOrderPage() {
                           fontWeight: 600,
                           color: '#22c55e',
                           marginTop: 4,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          gap: 6,
                         }}
                       >
-                        Скидка {promoDiscount}% по промокоду
+                        <Tag size={12} />
+                        {activePromo.code} −{activePromo.discount}%
                       </motion.div>
                     )}
                   </div>

@@ -7,6 +7,7 @@ import { GoldParticles } from './components/ui/GoldParticles'
 import { ToastProvider } from './components/ui/Toast'
 import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { PromoProvider } from './contexts/PromoContext'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
 import {
@@ -400,9 +401,10 @@ function AppContent() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <AdminProvider>
-          <ToastProvider>
-            <WebSocketProvider
+        <PromoProvider>
+          <AdminProvider>
+            <ToastProvider>
+              <WebSocketProvider
               telegramId={telegramId}
               onOrderUpdate={handleOrderUpdate}
               onBalanceUpdate={handleBalanceUpdate}
@@ -453,6 +455,7 @@ function AppContent() {
             </WebSocketProvider>
           </ToastProvider>
         </AdminProvider>
+        </PromoProvider>
       </ThemeProvider>
     </ErrorBoundary>
   )
