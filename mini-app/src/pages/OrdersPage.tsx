@@ -8,6 +8,7 @@ import {
   ArrowUpDown, X, Bell, Zap, RefreshCw, Copy, Trash2,
   GraduationCap, FileText, BookOpen, Briefcase, PenTool,
   ClipboardCheck, Presentation, Scroll, Camera, ChevronDown,
+  Star, Crown, Gem, Award, Wallet,
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -125,6 +126,169 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
 
 // Timeline steps
 const TIMELINE_STEPS = ['Создан', 'Оценён', 'В работе', 'Готов', 'Завершён']
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PREMIUM VISUAL COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Orbiting sparkles for premium icons
+function OrbitingSparkles({ color = '#D4AF37', count = 6, size = 100 }: { color?: string; count?: number; size?: number }) {
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{ rotate: 360 }}
+          transition={{
+            duration: 10 + i * 0.8,
+            repeat: Infinity,
+            ease: 'linear',
+            delay: i * 0.4,
+          }}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: size,
+            height: size,
+            marginTop: -size / 2,
+            marginLeft: -size / 2,
+          }}
+        >
+          <motion.div
+            animate={{
+              opacity: [0.2, 0.7, 0.2],
+              scale: [0.6, 1.1, 0.6],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              delay: i * 0.3,
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              width: 3 + (i % 2),
+              height: 3 + (i % 2),
+              marginLeft: -1.5,
+              borderRadius: '50%',
+              background: color,
+              boxShadow: `0 0 ${6 + i * 2}px ${color}`,
+            }}
+          />
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+// Premium floating particles
+function FloatingParticles({ color = '#D4AF37', count = 8 }: { color?: string; count?: number }) {
+  const particles = Array.from({ length: count }, (_, i) => ({
+    id: i,
+    left: `${10 + (i * 12) % 80}%`,
+    top: `${15 + (i * 17) % 70}%`,
+    size: 2 + (i % 3),
+    delay: i * 0.5,
+    duration: 5 + (i % 3),
+  }))
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      {particles.map(p => (
+        <motion.div
+          key={p.id}
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: [0, 0.5, 0.3, 0.5, 0],
+            y: [0, -20, -10, -30, -50],
+            x: [0, 8, -4, 12, 0],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          style={{
+            position: 'absolute',
+            left: p.left,
+            top: p.top,
+            width: p.size,
+            height: p.size,
+            borderRadius: '50%',
+            background: color,
+            boxShadow: `0 0 ${p.size * 3}px ${color}`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Premium decorative corner
+function DecorativeCorner({ position, color = '#D4AF37' }: { position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'; color?: string }) {
+  const posStyles: Record<string, React.CSSProperties> = {
+    'top-left': { top: 6, left: 6, borderTop: `2px solid ${color}`, borderLeft: `2px solid ${color}` },
+    'top-right': { top: 6, right: 6, borderTop: `2px solid ${color}`, borderRight: `2px solid ${color}` },
+    'bottom-left': { bottom: 6, left: 6, borderBottom: `2px solid ${color}`, borderLeft: `2px solid ${color}` },
+    'bottom-right': { bottom: 6, right: 6, borderBottom: `2px solid ${color}`, borderRight: `2px solid ${color}` },
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 0.5, scale: 1 }}
+      transition={{ delay: 0.4, duration: 0.4 }}
+      style={{
+        position: 'absolute',
+        width: 16,
+        height: 16,
+        pointerEvents: 'none',
+        ...posStyles[position],
+      }}
+    />
+  )
+}
+
+// Premium Hero Icon with glow and animation
+function PremiumHeroIcon({ icon: Icon, size = 64 }: { icon: typeof Star; size?: number }) {
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Outer glow ring */}
+      <motion.div
+        animate={{
+          boxShadow: [
+            '0 0 30px rgba(212,175,55,0.2), inset 0 0 20px rgba(212,175,55,0.1)',
+            '0 0 50px rgba(212,175,55,0.4), inset 0 0 30px rgba(212,175,55,0.15)',
+            '0 0 30px rgba(212,175,55,0.2), inset 0 0 20px rgba(212,175,55,0.1)',
+          ],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size * 0.28,
+          background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+          border: '2px solid rgba(212,175,55,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+        }}
+      >
+        <motion.div
+          animate={{ scale: [1, 1.08, 1], rotate: [0, 3, -3, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <Icon size={size * 0.45} color="#D4AF37" strokeWidth={1.5} />
+        </motion.div>
+      </motion.div>
+      <OrbitingSparkles size={size + 30} count={6} />
+    </div>
+  )
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ANIMATED COUNTER
@@ -405,7 +569,7 @@ function MonthHeader({ monthKey, count }: { monthKey: string; count: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  STAT CARD
+//  PREMIUM STAT CARD
 // ═══════════════════════════════════════════════════════════════════════════
 
 function StatCard({
@@ -433,55 +597,128 @@ function StatCard({
     <motion.div
       ref={ref}
       {...handlers}
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -3, scale: 1.02 }}
+      animate={isActive ? {
+        boxShadow: [
+          `0 4px 20px ${color}20, 0 0 0 1px ${color}30`,
+          `0 8px 30px ${color}35, 0 0 0 1px ${color}50`,
+          `0 4px 20px ${color}20, 0 0 0 1px ${color}30`,
+        ],
+      } : {}}
+      transition={isActive ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
       style={{
         flex: 1,
-        padding: '14px 12px',
-        borderRadius: 16,
+        padding: '16px 14px',
+        borderRadius: 18,
         background: isActive
-          ? `linear-gradient(135deg, ${color}20, ${color}08)`
-          : 'var(--bg-card)',
-        border: `1px solid ${isActive ? color + '40' : 'var(--border-default)'}`,
+          ? `linear-gradient(145deg, ${color}18, ${color}08, ${color}12)`
+          : 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
+        border: `1px solid ${isActive ? color + '50' : 'rgba(255,255,255,0.08)'}`,
         cursor: onClick ? 'pointer' : 'default',
         position: 'relative',
         overflow: 'hidden',
+        backdropFilter: 'blur(20px)',
       }}
     >
+      {/* Holographic overlay */}
+      {isActive && (
+        <motion.div
+          animate={{
+            background: [
+              `linear-gradient(45deg, ${color}10 0%, transparent 50%, ${color}08 100%)`,
+              `linear-gradient(135deg, ${color}15 0%, transparent 50%, ${color}10 100%)`,
+              `linear-gradient(225deg, ${color}08 0%, transparent 50%, ${color}12 100%)`,
+              `linear-gradient(315deg, ${color}10 0%, transparent 50%, ${color}08 100%)`,
+            ],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+          style={{ position: 'absolute', inset: 0 }}
+        />
+      )}
+
+      {/* Radial glow */}
       {isActive && (
         <div style={{
           position: 'absolute',
-          inset: 0,
-          background: `radial-gradient(circle at 50% 0%, ${color}15, transparent 70%)`,
+          top: -20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '120%',
+          height: 60,
+          background: `radial-gradient(ellipse at center, ${color}25, transparent 70%)`,
+          pointerEvents: 'none',
         }} />
       )}
+
+      {/* Shimmer effect */}
+      <motion.div
+        animate={{ x: ['-150%', '250%'] }}
+        transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '40%',
+          height: '100%',
+          background: `linear-gradient(90deg, transparent, ${isActive ? color + '15' : 'rgba(255,255,255,0.05)'}, transparent)`,
+          transform: 'skewX(-20deg)',
+          pointerEvents: 'none',
+        }}
+      />
+
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: `${color}20`,
+        {/* Icon with glow */}
+        <motion.div
+          animate={isActive && value > 0 ? {
+            scale: [1, 1.1, 1],
+          } : {}}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 12,
+            background: isActive
+              ? `linear-gradient(135deg, ${color}30, ${color}15)`
+              : `rgba(255,255,255,0.06)`,
+            border: `1px solid ${isActive ? color + '40' : 'rgba(255,255,255,0.1)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-          }}>
-            <Icon size={14} color={color} />
-          </div>
-        </div>
-        <div style={{
-          fontSize: 22,
-          fontWeight: 700,
-          color: isActive ? color : 'var(--text-main)',
-          fontFamily: 'var(--font-mono)',
-          lineHeight: 1,
-          marginBottom: 4,
-        }}>
+            marginBottom: 12,
+            boxShadow: isActive ? `0 4px 16px ${color}30` : 'none',
+          }}
+        >
+          <Icon size={18} color={isActive ? color : 'rgba(255,255,255,0.5)'} strokeWidth={isActive ? 2 : 1.5} />
+        </motion.div>
+
+        {/* Value with glow text */}
+        <motion.div
+          animate={isActive ? {
+            textShadow: [
+              `0 0 10px ${color}40`,
+              `0 0 20px ${color}60`,
+              `0 0 10px ${color}40`,
+            ],
+          } : {}}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{
+            fontSize: 28,
+            fontWeight: 800,
+            color: isActive ? color : 'rgba(255,255,255,0.9)',
+            fontFamily: 'var(--font-mono)',
+            lineHeight: 1,
+            marginBottom: 6,
+          }}
+        >
           <AnimatedCounter value={value} />
-        </div>
+        </motion.div>
+
+        {/* Label */}
         <div style={{
           fontSize: 11,
-          color: 'var(--text-muted)',
-          fontWeight: 500,
+          fontWeight: 600,
+          color: isActive ? `${color}cc` : 'rgba(255,255,255,0.45)',
+          letterSpacing: '0.03em',
         }}>
           {label}
         </div>
@@ -1187,140 +1424,218 @@ export function OrdersPage({ orders }: Props) {
       paddingBottom: 160,
     }}>
       {/* ═══════════════════════════════════════════════════════════════════════
-          HERO HEADER
+          ULTRA-PREMIUM HERO HEADER
           ═══════════════════════════════════════════════════════════════════════ */}
       <div style={{
         position: 'relative',
-        padding: '24px 20px 20px',
-        background: 'linear-gradient(180deg, rgba(212,175,55,0.06) 0%, transparent 100%)',
+        padding: '28px 20px 24px',
+        background: `
+          linear-gradient(180deg,
+            rgba(212,175,55,0.08) 0%,
+            rgba(212,175,55,0.03) 50%,
+            transparent 100%
+          )
+        `,
+        overflow: 'hidden',
       }}>
-        {/* Decorative gradient */}
+        {/* Floating particles background */}
+        <FloatingParticles color="#D4AF37" count={10} />
+
+        {/* Premium decorative gradients */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: 200,
-          background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,175,55,0.08), transparent)',
+          height: 250,
+          background: `
+            radial-gradient(ellipse 100% 60% at 50% -10%, rgba(212,175,55,0.12), transparent),
+            radial-gradient(ellipse 60% 40% at 20% 30%, rgba(212,175,55,0.06), transparent),
+            radial-gradient(ellipse 60% 40% at 80% 20%, rgba(212,175,55,0.05), transparent)
+          `,
           pointerEvents: 'none',
         }} />
 
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', damping: 20, stiffness: 200 }}
           style={{ position: 'relative', zIndex: 1 }}
         >
-          {/* Title Row */}
+          {/* Premium Title Row */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 24,
+            marginBottom: 28,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{
-                width: 52,
-                height: 52,
-                borderRadius: 16,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-                border: '1px solid var(--border-gold)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: 'var(--glow-gold)',
-              }}>
-                <FileStack size={26} color="var(--gold-400)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {/* Premium Icon with sparkles */}
+              <div style={{ position: 'relative' }}>
+                <motion.div
+                  animate={{
+                    boxShadow: [
+                      '0 0 20px rgba(212,175,55,0.2), inset 0 0 15px rgba(212,175,55,0.08)',
+                      '0 0 35px rgba(212,175,55,0.35), inset 0 0 20px rgba(212,175,55,0.12)',
+                      '0 0 20px rgba(212,175,55,0.2), inset 0 0 15px rgba(212,175,55,0.08)',
+                    ],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 18,
+                    background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+                    border: '2px solid rgba(212,175,55,0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Inner shine */}
+                  <motion.div
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '50%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
+                      transform: 'skewX(-20deg)',
+                    }}
+                  />
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  >
+                    <FileStack size={26} color="#D4AF37" strokeWidth={1.5} />
+                  </motion.div>
+                </motion.div>
+                <OrbitingSparkles size={80} count={5} />
               </div>
+
               <div>
-                <h1 style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: 28,
-                  fontWeight: 700,
-                  background: 'var(--gold-text-shine)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  margin: 0,
-                }}>
-                  Мои заказы
-                </h1>
-                <p style={{
-                  fontSize: 13,
-                  color: 'var(--text-muted)',
-                  margin: 0,
-                  marginTop: 2,
-                }}>
-                  {orders.length} {orders.length === 1 ? 'заказ' : orders.length < 5 ? 'заказа' : 'заказов'}
-                </p>
+                <motion.h1
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: 30,
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 30%, #B38728 60%, #D4AF37 90%, #FCF6BA 100%)',
+                    backgroundSize: '200% 100%',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    margin: 0,
+                    animation: 'shimmer-text-orders 4s ease-in-out infinite',
+                  }}
+                >
+                  Портфель
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.15 }}
+                  style={{
+                    fontSize: 13,
+                    color: 'rgba(255,255,255,0.5)',
+                    margin: 0,
+                    marginTop: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span style={{
+                    color: '#D4AF37',
+                    fontWeight: 600,
+                    fontSize: 14,
+                  }}>{orders.length}</span>
+                  {orders.length === 1 ? 'проект' : orders.length < 5 ? 'проекта' : 'проектов'}
+                </motion.p>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: 8 }}>
+            {/* Premium Action buttons */}
+            <div style={{ display: 'flex', gap: 10 }}>
               <motion.button
                 whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
                 onClick={() => {
                   haptic('light')
                   setShowSearch(!showSearch)
                 }}
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  border: '1px solid var(--border-default)',
-                  background: showSearch ? 'var(--gold-metallic)' : 'var(--bg-card)',
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  border: showSearch ? '2px solid #D4AF37' : '1px solid rgba(255,255,255,0.1)',
+                  background: showSearch
+                    ? 'linear-gradient(135deg, #D4AF37, #B38728)'
+                    : 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  boxShadow: showSearch ? '0 4px 20px rgba(212,175,55,0.3)' : 'none',
                 }}
               >
-                <Search size={18} color={showSearch ? '#0a0a0c' : 'var(--text-muted)'} />
+                <Search size={18} color={showSearch ? '#0a0a0c' : 'rgba(255,255,255,0.6)'} strokeWidth={showSearch ? 2.5 : 1.5} />
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
                 onClick={() => {
                   haptic('light')
                   setShowSort(!showSort)
                 }}
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  border: '1px solid var(--border-default)',
-                  background: showSort ? 'var(--gold-metallic)' : 'var(--bg-card)',
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  border: showSort ? '2px solid #D4AF37' : '1px solid rgba(255,255,255,0.1)',
+                  background: showSort
+                    ? 'linear-gradient(135deg, #D4AF37, #B38728)'
+                    : 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  boxShadow: showSort ? '0 4px 20px rgba(212,175,55,0.3)' : 'none',
                 }}
               >
-                <SlidersHorizontal size={18} color={showSort ? '#0a0a0c' : 'var(--text-muted)'} />
+                <SlidersHorizontal size={18} color={showSort ? '#0a0a0c' : 'rgba(255,255,255,0.6)'} strokeWidth={showSort ? 2.5 : 1.5} />
               </motion.button>
             </div>
           </div>
 
-          {/* Stats Grid */}
+          {/* Premium Stats Grid */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.1, type: 'spring', damping: 20 }}
             style={{
               display: 'flex',
-              gap: 10,
+              gap: 12,
               marginBottom: 20,
             }}
           >
             <StatCard
               icon={Loader}
               value={stats.active.length}
-              label="Активные"
+              label="В работе"
               color="#3b82f6"
               onClick={() => handleFilterChange('active')}
               isActive={filter === 'active'}
             />
             <StatCard
-              icon={CreditCard}
+              icon={Wallet}
               value={stats.needsPayment.length}
               label="К оплате"
               color="#8b5cf6"
@@ -1330,47 +1645,115 @@ export function OrdersPage({ orders }: Props) {
             <StatCard
               icon={CheckCircle}
               value={stats.completed.length}
-              label="Готовы"
+              label="Готово"
               color="#22c55e"
               onClick={() => handleFilterChange('completed')}
               isActive={filter === 'completed'}
             />
           </motion.div>
 
-          {/* Total sum */}
+          {/* Premium Total Sum Card */}
           {stats.totalSpent > 0 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               style={{
-                padding: '12px 16px',
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.02))',
-                borderRadius: 12,
-                border: '1px solid var(--border-gold)',
+                position: 'relative',
+                padding: '16px 20px',
+                background: `
+                  linear-gradient(135deg,
+                    rgba(212,175,55,0.12) 0%,
+                    rgba(212,175,55,0.05) 50%,
+                    rgba(212,175,55,0.08) 100%
+                  )
+                `,
+                borderRadius: 18,
+                border: '1px solid rgba(212,175,55,0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <TrendingUp size={16} color="var(--gold-400)" />
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  Общая сумма заказов
-                </span>
+              {/* Decorative corners */}
+              <DecorativeCorner position="top-left" />
+              <DecorativeCorner position="top-right" />
+              <DecorativeCorner position="bottom-left" />
+              <DecorativeCorner position="bottom-right" />
+
+              {/* Shimmer */}
+              <motion.div
+                animate={{ x: ['-150%', '250%'] }}
+                transition={{ duration: 3, repeat: Infinity, repeatDelay: 3 }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '40%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                  transform: 'skewX(-20deg)',
+                }}
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
+                    border: '1px solid rgba(212,175,55,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <TrendingUp size={18} color="#D4AF37" />
+                </motion.div>
+                <div>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    ОБЩИЙ ОБОРОТ
+                  </span>
+                </div>
               </div>
-              <span style={{
-                fontSize: 16,
-                fontWeight: 700,
-                color: 'var(--gold-300)',
-                fontFamily: 'var(--font-mono)',
-              }}>
+              <motion.span
+                animate={{
+                  textShadow: [
+                    '0 0 10px rgba(212,175,55,0.3)',
+                    '0 0 20px rgba(212,175,55,0.5)',
+                    '0 0 10px rgba(212,175,55,0.3)',
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontFamily: 'var(--font-mono)',
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
                 <AnimatedCounter value={stats.totalSpent} suffix=" ₽" />
-              </span>
+              </motion.span>
             </motion.div>
           )}
         </motion.div>
       </div>
+
+      {/* CSS Keyframes for shimmer */}
+      <style>{`
+        @keyframes shimmer-text-orders {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+      `}</style>
 
       {/* ═══════════════════════════════════════════════════════════════════════
           SEARCH BAR (Expandable)
