@@ -345,7 +345,7 @@ async def create_order(
     """Create a new order from Mini App."""
     await rate_limit_create.check(request)
 
-    logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}")
+    logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}, promo_code={data.promo_code}")
 
     try:
         bot = get_bot()
@@ -427,16 +427,12 @@ async def create_order(
     # Calculate final price with BOTH loyalty and promo discounts
     base_price = float(price_calc.final_price) if not price_calc.is_manual_required else 0.0
 
-    # Cap loyalty discount at 50%, but allow promo codes to give 100% discount
-    # This ensures promotional campaigns can offer full discounts while preventing
-    # loyalty abuse
+    # Cap loyalty discount at 50%
     capped_loyalty_discount = min(user_discount, 50.0)
 
-    # Total discount combines capped loyalty + uncapped promo, but max out at 100%
-    total_discount = min(capped_loyalty_discount + promo_discount, 100.0)
-
-    # Apply total discount to base price
-    final_order_price = base_price * (1 - total_discount / 100) if total_discount > 0 else base_price
+    # We do NOT combine them here, because Order.final_price property applies them sequentially:
+    # price * (1 - discount/100) * (1 - promo_discount/100)
+    # So we store them separately.
 
     initial_status = OrderStatus.WAITING_ESTIMATION.value
 
@@ -450,7 +446,7 @@ async def create_order(
         description=data.description,
         deadline=data.deadline,
         price=base_price,
-        discount=float(total_discount),
+        discount=float(capped_loyalty_discount),
         promo_code=promo_code_used,
         promo_discount=float(promo_discount) if promo_discount else 0.0,
         status=initial_status,

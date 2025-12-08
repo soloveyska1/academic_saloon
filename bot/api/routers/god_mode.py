@@ -578,20 +578,27 @@ async def update_order_price(
     order.price = new_price
 
     # If this was a manual order (old_price=0) with a promo code,
-    # we need to apply the promo now that we have a real price
-    if old_price == 0 and order.promo_code and new_price > 0:
+    # we need to apply the promo now that we have a real price.
+    # Additionally, if a promo code is stored on the order but its discount
+    # wasn't persisted (or usage wasn't recorded), we refresh it to keep
+    # the final price and admin UI in sync.
+    if order.promo_code and new_price > 0:
         from bot.services.promo_service import PromoService
         from database.models.promocodes import PromoCodeUsage
 
-        # Check if usage already exists
+        promo_discount = order.promo_discount or 0.0
+
+        # Check if usage already exists (for manual orders we defer usage until price is set)
         existing_usage = await session.execute(
             select(PromoCodeUsage).where(
                 PromoCodeUsage.order_id == order_id
             )
         )
-        if not existing_usage.first():
-            # Apply promo now that we have a real price
-            apply_success, apply_msg, _ = await PromoService.apply_promo_to_order(
+        usage_exists = existing_usage.first() is not None
+
+        # Apply promo usage if we haven't yet (manual orders)
+        if old_price == 0 and not usage_exists:
+            apply_success, apply_msg, applied_discount = await PromoService.apply_promo_to_order(
                 session=session,
                 order_id=order_id,
                 code=order.promo_code,
@@ -610,7 +617,23 @@ async def update_order_price(
                 loyalty_discount = user.discount_percent if user else 0.0
                 order.discount = min(loyalty_discount, 50.0)
             else:
-                logger.info(f"[GodMode] Applied deferred promo {order.promo_code} to order #{order_id}")
+                promo_discount = float(applied_discount)
+                order.promo_discount = promo_discount
+                logger.info(f"[GodMode] Applied deferred promo {order.promo_code} ({applied_discount}%) to order #{order_id}")
+
+        # Even if usage already existed, refresh the stored discount
+        if order.promo_code and promo_discount == 0:
+            promo = await PromoService.get_promo_code(session, order.promo_code, for_update=False)
+            if promo and promo.is_active:
+                order.promo_discount = float(promo.discount_percent)
+                logger.info(
+                    f"[GodMode] Restored promo discount for order #{order_id}: "
+                    f"{order.promo_code} (−{promo.discount_percent}%)"
+                )
+            else:
+                # Promo is no longer valid; clear it to avoid showing stale code without discount
+                order.promo_code = None
+                order.promo_discount = 0.0
 
     # Auto-transition status if needed
     old_status = order.status
@@ -645,11 +668,27 @@ async def update_order_price(
     try:
         # Build message with promo info if applicable
         final_price = order.final_price
-        if order.promo_code and order.discount > 0:
+        promo_discount = order.promo_discount or 0
+        loyalty_discount = order.discount or 0
+
+        if order.promo_code and promo_discount > 0:
+            # Show promo discount and loyalty if both exist
+            discount_lines = f"🎟 Промокод: <b>{order.promo_code}</b> (−{promo_discount:.0f}%)"
+            if loyalty_discount > 0:
+                discount_lines += f"\n🎖 Скидка лояльности: −{loyalty_discount:.0f}%"
+
             price_msg = (
                 f"💰 <b>Цена заказа #{order_id} установлена!</b>\n\n"
                 f"Базовая сумма: <s>{new_price:.0f}₽</s>\n"
-                f"🎟 Промокод: <b>{order.promo_code}</b> (−{order.discount:.0f}%)\n"
+                f"{discount_lines}\n"
+                f"К оплате: <code>{final_price:.0f}₽</code>\n\n"
+                f"Оплатите заказ, чтобы мы начали работу."
+            )
+        elif loyalty_discount > 0:
+            price_msg = (
+                f"💰 <b>Цена заказа #{order_id} установлена!</b>\n\n"
+                f"Базовая сумма: <s>{new_price:.0f}₽</s>\n"
+                f"🎖 Скидка лояльности: −{loyalty_discount:.0f}%\n"
                 f"К оплате: <code>{final_price:.0f}₽</code>\n\n"
                 f"Оплатите заказ, чтобы мы начали работу."
             )
@@ -667,9 +706,10 @@ async def update_order_price(
     try:
         from bot.services.realtime_notifications import send_custom_notification
         final_price = order.final_price
+        promo_discount = order.promo_discount or 0
         ws_message = f"К оплате: {final_price:.0f}₽"
-        if order.promo_code:
-            ws_message += f" (со скидкой {order.discount:.0f}%)"
+        if order.promo_code and promo_discount > 0:
+            ws_message += f" (промокод −{promo_discount:.0f}%)"
         await send_custom_notification(
             telegram_id=order.user_id,
             title="💰 Цена установлена!",
