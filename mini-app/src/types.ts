@@ -135,16 +135,8 @@ export interface OrderCreateRequest {
   topic?: string
   deadline: string
   description?: string
-  | 'diploma'
-  | 'coursework'
-  | 'independent'
-  | 'essay'
-  | 'report'
-  | 'control'
-  | 'presentation'
-  | 'practice'
-  | 'other'
-  | 'photo_task'
+  promo_code?: string  // Optional promo code to apply
+}
 
 export interface WorkTypeOption {
   value: WorkType

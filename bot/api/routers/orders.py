@@ -345,7 +345,7 @@ async def create_order(
     """Create a new order from Mini App."""
     await rate_limit_create.check(request)
 
-    logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}")
+    logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}, promo_code={data.promo_code}")
 
     try:
         bot = get_bot()
@@ -406,10 +406,12 @@ async def create_order(
 
     if data.promo_code:
         code = data.promo_code.upper().strip()
+        logger.info(f"[API /orders/create] Validating promo code: '{code}' for user {tg_user.id}")
         # Atomic validation with row locking to prevent race conditions
         is_valid, message, discount, _ = await PromoService.validate_promo_code(
             session, code, tg_user.id
         )
+        logger.info(f"[API /orders/create] Promo validation result: is_valid={is_valid}, message='{message}', discount={discount}")
         if is_valid:
             promo_discount = float(discount)
             promo_code_used = code
@@ -419,6 +421,8 @@ async def create_order(
             promo_validation_failed = True
             promo_failure_reason = message
             logger.warning(f"[API /orders/create] Promo code {code} invalid: {message}")
+    else:
+        logger.info(f"[API /orders/create] No promo code provided in request")
 
     # Calculate final price with BOTH loyalty and promo discounts
     base_price = float(price_calc.final_price) if not price_calc.is_manual_required else 0.0

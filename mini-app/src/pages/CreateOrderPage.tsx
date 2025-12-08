@@ -994,6 +994,9 @@ export function CreateOrderPage() {
         promo_code: promoToUse,
       }
 
+      // Debug: log what we're sending
+      console.log('[CreateOrder] Sending order with promo_code:', promoToUse, 'activePromo:', activePromo)
+
       const res = await createOrder(data)
       if (res.success) {
         // Store promo info and base price BEFORE clearing promo
