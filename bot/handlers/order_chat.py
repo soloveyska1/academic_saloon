@@ -246,19 +246,8 @@ async def get_or_create_topic(
         # Отправляем стартовое сообщение в топик
         await send_topic_header(bot, session, conv, user, order_id)
 
-        # FUSION: Если есть заказ — отправляем и закрепляем карточку
-        if order_id:
-            order = await session.get(Order, order_id)
-            if order:
-                await send_or_update_card(
-                    bot=bot,
-                    order=order,
-                    session=session,
-                    client_username=user.username if user else None,
-                    client_name=client_name,
-                )
-                logger.info(f"📋 Posted order card in new topic {conv.topic_id}")
-
+        # FUSION: Card will be sent by caller with proper context (promo codes, extra_text, etc.)
+        # Removed automatic card sending to prevent duplicates
         logger.info(f"✅ Created topic {conv.topic_id} for user {user_id}, order {order_id}")
 
     except TelegramBadRequest as e:

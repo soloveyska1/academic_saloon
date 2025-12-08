@@ -132,7 +132,7 @@ class PromoCodeResponse(BaseModel):
     """Promo code result"""
     success: bool
     message: str
-    discount: Optional[int] = None
+    discount: Optional[float] = None  # Changed to float to support decimal discounts
 
 
 class RouletteResponse(BaseModel):
