@@ -8,6 +8,7 @@ import {
   ArrowUpDown, X, Bell, Zap, RefreshCw, Copy, Trash2,
   GraduationCap, FileText, BookOpen, Briefcase, PenTool,
   ClipboardCheck, Presentation, Scroll, Camera, ChevronDown,
+  Star, Crown, Gem, Award, Wallet,
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -125,6 +126,169 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
 
 // Timeline steps
 const TIMELINE_STEPS = ['Создан', 'Оценён', 'В работе', 'Готов', 'Завершён']
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PREMIUM VISUAL COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Orbiting sparkles for premium icons
+function OrbitingSparkles({ color = '#D4AF37', count = 6, size = 100 }: { color?: string; count?: number; size?: number }) {
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{ rotate: 360 }}
+          transition={{
+            duration: 10 + i * 0.8,
+            repeat: Infinity,
+            ease: 'linear',
+            delay: i * 0.4,
+          }}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: size,
+            height: size,
+            marginTop: -size / 2,
+            marginLeft: -size / 2,
+          }}
+        >
+          <motion.div
+            animate={{
+              opacity: [0.2, 0.7, 0.2],
+              scale: [0.6, 1.1, 0.6],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              delay: i * 0.3,
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              width: 3 + (i % 2),
+              height: 3 + (i % 2),
+              marginLeft: -1.5,
+              borderRadius: '50%',
+              background: color,
+              boxShadow: `0 0 ${6 + i * 2}px ${color}`,
+            }}
+          />
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+// Premium floating particles
+function FloatingParticles({ color = '#D4AF37', count = 8 }: { color?: string; count?: number }) {
+  const particles = Array.from({ length: count }, (_, i) => ({
+    id: i,
+    left: `${10 + (i * 12) % 80}%`,
+    top: `${15 + (i * 17) % 70}%`,
+    size: 2 + (i % 3),
+    delay: i * 0.5,
+    duration: 5 + (i % 3),
+  }))
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      {particles.map(p => (
+        <motion.div
+          key={p.id}
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: [0, 0.5, 0.3, 0.5, 0],
+            y: [0, -20, -10, -30, -50],
+            x: [0, 8, -4, 12, 0],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          style={{
+            position: 'absolute',
+            left: p.left,
+            top: p.top,
+            width: p.size,
+            height: p.size,
+            borderRadius: '50%',
+            background: color,
+            boxShadow: `0 0 ${p.size * 3}px ${color}`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Premium decorative corner
+function DecorativeCorner({ position, color = '#D4AF37' }: { position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'; color?: string }) {
+  const posStyles: Record<string, React.CSSProperties> = {
+    'top-left': { top: 6, left: 6, borderTop: `2px solid ${color}`, borderLeft: `2px solid ${color}` },
+    'top-right': { top: 6, right: 6, borderTop: `2px solid ${color}`, borderRight: `2px solid ${color}` },
+    'bottom-left': { bottom: 6, left: 6, borderBottom: `2px solid ${color}`, borderLeft: `2px solid ${color}` },
+    'bottom-right': { bottom: 6, right: 6, borderBottom: `2px solid ${color}`, borderRight: `2px solid ${color}` },
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 0.5, scale: 1 }}
+      transition={{ delay: 0.4, duration: 0.4 }}
+      style={{
+        position: 'absolute',
+        width: 16,
+        height: 16,
+        pointerEvents: 'none',
+        ...posStyles[position],
+      }}
+    />
+  )
+}
+
+// Premium Hero Icon with glow and animation
+function PremiumHeroIcon({ icon: Icon, size = 64 }: { icon: typeof Star; size?: number }) {
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Outer glow ring */}
+      <motion.div
+        animate={{
+          boxShadow: [
+            '0 0 30px rgba(212,175,55,0.2), inset 0 0 20px rgba(212,175,55,0.1)',
+            '0 0 50px rgba(212,175,55,0.4), inset 0 0 30px rgba(212,175,55,0.15)',
+            '0 0 30px rgba(212,175,55,0.2), inset 0 0 20px rgba(212,175,55,0.1)',
+          ],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size * 0.28,
+          background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+          border: '2px solid rgba(212,175,55,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+        }}
+      >
+        <motion.div
+          animate={{ scale: [1, 1.08, 1], rotate: [0, 3, -3, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <Icon size={size * 0.45} color="#D4AF37" strokeWidth={1.5} />
+        </motion.div>
+      </motion.div>
+      <OrbitingSparkles size={size + 30} count={6} />
+    </div>
+  )
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ANIMATED COUNTER
@@ -405,7 +569,7 @@ function MonthHeader({ monthKey, count }: { monthKey: string; count: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  STAT CARD
+//  PREMIUM STAT CARD
 // ═══════════════════════════════════════════════════════════════════════════
 
 function StatCard({
@@ -433,55 +597,128 @@ function StatCard({
     <motion.div
       ref={ref}
       {...handlers}
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -3, scale: 1.02 }}
+      animate={isActive ? {
+        boxShadow: [
+          `0 4px 20px ${color}20, 0 0 0 1px ${color}30`,
+          `0 8px 30px ${color}35, 0 0 0 1px ${color}50`,
+          `0 4px 20px ${color}20, 0 0 0 1px ${color}30`,
+        ],
+      } : {}}
+      transition={isActive ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
       style={{
         flex: 1,
-        padding: '14px 12px',
-        borderRadius: 16,
+        padding: '16px 14px',
+        borderRadius: 18,
         background: isActive
-          ? `linear-gradient(135deg, ${color}20, ${color}08)`
-          : 'var(--bg-card)',
-        border: `1px solid ${isActive ? color + '40' : 'var(--border-default)'}`,
+          ? `linear-gradient(145deg, ${color}18, ${color}08, ${color}12)`
+          : 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
+        border: `1px solid ${isActive ? color + '50' : 'rgba(255,255,255,0.08)'}`,
         cursor: onClick ? 'pointer' : 'default',
         position: 'relative',
         overflow: 'hidden',
+        backdropFilter: 'blur(20px)',
       }}
     >
+      {/* Holographic overlay */}
+      {isActive && (
+        <motion.div
+          animate={{
+            background: [
+              `linear-gradient(45deg, ${color}10 0%, transparent 50%, ${color}08 100%)`,
+              `linear-gradient(135deg, ${color}15 0%, transparent 50%, ${color}10 100%)`,
+              `linear-gradient(225deg, ${color}08 0%, transparent 50%, ${color}12 100%)`,
+              `linear-gradient(315deg, ${color}10 0%, transparent 50%, ${color}08 100%)`,
+            ],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+          style={{ position: 'absolute', inset: 0 }}
+        />
+      )}
+
+      {/* Radial glow */}
       {isActive && (
         <div style={{
           position: 'absolute',
-          inset: 0,
-          background: `radial-gradient(circle at 50% 0%, ${color}15, transparent 70%)`,
+          top: -20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '120%',
+          height: 60,
+          background: `radial-gradient(ellipse at center, ${color}25, transparent 70%)`,
+          pointerEvents: 'none',
         }} />
       )}
+
+      {/* Shimmer effect */}
+      <motion.div
+        animate={{ x: ['-150%', '250%'] }}
+        transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '40%',
+          height: '100%',
+          background: `linear-gradient(90deg, transparent, ${isActive ? color + '15' : 'rgba(255,255,255,0.05)'}, transparent)`,
+          transform: 'skewX(-20deg)',
+          pointerEvents: 'none',
+        }}
+      />
+
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: `${color}20`,
+        {/* Icon with glow */}
+        <motion.div
+          animate={isActive && value > 0 ? {
+            scale: [1, 1.1, 1],
+          } : {}}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 12,
+            background: isActive
+              ? `linear-gradient(135deg, ${color}30, ${color}15)`
+              : `rgba(255,255,255,0.06)`,
+            border: `1px solid ${isActive ? color + '40' : 'rgba(255,255,255,0.1)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-          }}>
-            <Icon size={14} color={color} />
-          </div>
-        </div>
-        <div style={{
-          fontSize: 22,
-          fontWeight: 700,
-          color: isActive ? color : 'var(--text-main)',
-          fontFamily: 'var(--font-mono)',
-          lineHeight: 1,
-          marginBottom: 4,
-        }}>
+            marginBottom: 12,
+            boxShadow: isActive ? `0 4px 16px ${color}30` : 'none',
+          }}
+        >
+          <Icon size={18} color={isActive ? color : 'rgba(255,255,255,0.5)'} strokeWidth={isActive ? 2 : 1.5} />
+        </motion.div>
+
+        {/* Value with glow text */}
+        <motion.div
+          animate={isActive ? {
+            textShadow: [
+              `0 0 10px ${color}40`,
+              `0 0 20px ${color}60`,
+              `0 0 10px ${color}40`,
+            ],
+          } : {}}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{
+            fontSize: 28,
+            fontWeight: 800,
+            color: isActive ? color : 'rgba(255,255,255,0.9)',
+            fontFamily: 'var(--font-mono)',
+            lineHeight: 1,
+            marginBottom: 6,
+          }}
+        >
           <AnimatedCounter value={value} />
-        </div>
+        </motion.div>
+
+        {/* Label */}
         <div style={{
           fontSize: 11,
-          color: 'var(--text-muted)',
-          fontWeight: 500,
+          fontWeight: 600,
+          color: isActive ? `${color}cc` : 'rgba(255,255,255,0.45)',
+          letterSpacing: '0.03em',
         }}>
           {label}
         </div>
@@ -491,67 +728,122 @@ function StatCard({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ATTENTION CARD (Compact)
+//  PREMIUM ATTENTION CARD
 // ═══════════════════════════════════════════════════════════════════════════
 
 function AttentionCard({ order, onClick }: { order: Order; onClick: () => void }) {
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const StatusIcon = statusConfig.icon
+  const needsPayment = ['confirmed', 'waiting_payment'].includes(order.status)
 
   return (
     <motion.div
       onClick={onClick}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.97 }}
+      whileHover={{ x: 4, background: 'rgba(255,255,255,0.05)' }}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
-        padding: '12px 14px',
-        background: 'rgba(255,255,255,0.03)',
-        borderRadius: 12,
+        gap: 14,
+        padding: '14px 16px',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+        borderRadius: 16,
         cursor: 'pointer',
-        border: '1px solid var(--border-subtle)',
+        border: `1px solid ${needsPayment ? 'rgba(212,175,55,0.25)' : 'rgba(255,255,255,0.08)'}`,
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        background: statusConfig.bgColor,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <StatusIcon size={18} color={statusConfig.color} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Shimmer for payment cards */}
+      {needsPayment && (
+        <motion.div
+          animate={{ x: ['-200%', '300%'] }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '30%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.1), transparent)',
+            transform: 'skewX(-20deg)',
+          }}
+        />
+      )}
+
+      {/* Icon with pulse */}
+      <motion.div
+        animate={needsPayment ? {
+          boxShadow: [
+            `0 0 0 rgba(212,175,55,0)`,
+            `0 0 16px rgba(212,175,55,0.4)`,
+            `0 0 0 rgba(212,175,55,0)`,
+          ],
+        } : {}}
+        transition={{ duration: 2, repeat: Infinity }}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          background: `linear-gradient(135deg, ${statusConfig.bgColor}, ${statusConfig.bgColor}80)`,
+          border: `1px solid ${statusConfig.color}30`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <StatusIcon size={20} color={statusConfig.color} strokeWidth={needsPayment ? 2.5 : 1.5} />
+      </motion.div>
+
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         <div style={{
           fontSize: 14,
-          fontWeight: 600,
+          fontWeight: 700,
           color: 'var(--text-main)',
-          marginBottom: 2,
+          marginBottom: 3,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
+          fontFamily: 'var(--font-serif)',
         }}>
           {order.work_type_label} #{order.id}
         </div>
         <div style={{
           fontSize: 12,
           color: statusConfig.color,
-          fontWeight: 500,
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
         }}>
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: statusConfig.color,
+              boxShadow: `0 0 6px ${statusConfig.color}`,
+            }}
+          />
           {statusConfig.label}
         </div>
       </div>
-      <ChevronRight size={18} color="var(--text-muted)" />
+
+      <motion.div
+        animate={{ x: [0, 5, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      >
+        <ChevronRight size={20} color={needsPayment ? '#D4AF37' : 'rgba(255,255,255,0.4)'} />
+      </motion.div>
     </motion.div>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SWIPEABLE ORDER CARD
+//  ULTRA-PREMIUM SWIPEABLE ORDER CARD
 // ═══════════════════════════════════════════════════════════════════════════
 
 function SwipeableOrderCard({ order, index, showTimeline = true }: {
@@ -617,11 +909,12 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: index * 0.04, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2 }}
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 20,
+        borderRadius: 22,
       }}
     >
       {/* Swipe Actions Background - Left (Chat) */}
@@ -635,10 +928,10 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: '20px 0 0 20px',
+        borderRadius: '22px 0 0 22px',
       }}>
         <motion.div
-          animate={{ scale: isRevealed && swipeOffset > 0 ? 1.1 : 1 }}
+          animate={{ scale: isRevealed && swipeOffset > 0 ? 1.2 : 1 }}
           onClick={() => handleAction('chat')}
           style={{ cursor: 'pointer' }}
         >
@@ -654,20 +947,20 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
         bottom: 0,
         width: SWIPE_THRESHOLD,
         background: needsPayment
-          ? 'linear-gradient(270deg, #8b5cf6, #7c3aed)'
+          ? 'linear-gradient(270deg, #D4AF37, #B38728)'
           : 'linear-gradient(270deg, #6366f1, #4f46e5)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: '0 20px 20px 0',
+        borderRadius: '0 22px 22px 0',
       }}>
         <motion.div
-          animate={{ scale: isRevealed && swipeOffset < 0 ? 1.1 : 1 }}
+          animate={{ scale: isRevealed && swipeOffset < 0 ? 1.2 : 1 }}
           onClick={() => handleAction(needsPayment ? 'pay' : 'copy')}
           style={{ cursor: 'pointer' }}
         >
           {needsPayment ? (
-            <CreditCard size={24} color="#fff" />
+            <CreditCard size={24} color="#0a0a0c" />
           ) : (
             <Copy size={24} color="#fff" />
           )}
@@ -684,26 +977,71 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
         onClick={handleCardClick}
         style={{
           position: 'relative',
-          padding: 16,
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-default)',
+          padding: 18,
+          background: 'linear-gradient(145deg, rgba(28,28,32,0.95), rgba(18,18,22,0.98))',
+          border: `1px solid ${needsPayment ? 'rgba(212,175,55,0.3)' : isCompleted ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.08)'}`,
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderRadius: 20,
+          borderRadius: 22,
           cursor: 'pointer',
           touchAction: 'pan-y',
+          overflow: 'hidden',
         }}
       >
-        {/* Left accent bar */}
+        {/* Holographic gradient overlay */}
+        <motion.div
+          animate={{
+            background: [
+              `linear-gradient(45deg, transparent 0%, ${workTypeColor}08 25%, transparent 50%, ${workTypeColor}05 75%, transparent 100%)`,
+              `linear-gradient(135deg, ${workTypeColor}05 0%, transparent 25%, ${workTypeColor}08 50%, transparent 75%, ${workTypeColor}05 100%)`,
+              `linear-gradient(225deg, transparent 0%, ${workTypeColor}08 25%, transparent 50%, ${workTypeColor}05 75%, transparent 100%)`,
+              `linear-gradient(315deg, ${workTypeColor}05 0%, transparent 25%, ${workTypeColor}08 50%, transparent 75%, ${workTypeColor}05 100%)`,
+            ],
+          }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Shimmer effect */}
+        <motion.div
+          animate={{ x: ['-200%', '300%'] }}
+          transition={{ duration: 4, repeat: Infinity, repeatDelay: 3 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '30%',
+            height: '100%',
+            background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)`,
+            transform: 'skewX(-20deg)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Premium left accent bar with glow */}
         <div style={{
           position: 'absolute',
           left: 0,
-          top: 14,
-          bottom: 14,
-          width: 3,
-          borderRadius: '0 3px 3px 0',
-          background: `linear-gradient(180deg, ${workTypeColor}, ${workTypeColor}80)`,
-          boxShadow: `0 0 12px ${workTypeColor}50`,
+          top: 16,
+          bottom: 16,
+          width: 4,
+          borderRadius: '0 4px 4px 0',
+          background: `linear-gradient(180deg, ${workTypeColor}, ${workTypeColor}80, ${workTypeColor})`,
+          boxShadow: `0 0 16px ${workTypeColor}60, 0 0 8px ${workTypeColor}40`,
+        }} />
+
+        {/* Premium top shine */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 20,
+          right: 20,
+          height: 1,
+          background: `linear-gradient(90deg, transparent, ${workTypeColor}40, transparent)`,
         }} />
 
         {/* Header Row */}
@@ -711,16 +1049,18 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
-          marginBottom: 10,
-          paddingLeft: 10,
+          marginBottom: 12,
+          paddingLeft: 14,
+          position: 'relative',
+          zIndex: 1,
         }}>
           {/* Left: Icon + Info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-            {/* Work Type Icon with Progress Ring */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+            {/* Work Type Icon with Premium styling */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               {isInProgress && progress > 0 ? (
                 <div style={{ position: 'relative' }}>
-                  <ProgressRing progress={progress} size={44} strokeWidth={3} color={workTypeColor} />
+                  <ProgressRing progress={progress} size={48} strokeWidth={3} color={workTypeColor} />
                   <div style={{
                     position: 'absolute',
                     inset: 0,
@@ -728,55 +1068,93 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                    <WorkIcon size={18} color={workTypeColor} strokeWidth={1.5} />
+                    <motion.div
+                      animate={{ rotate: [0, 360] }}
+                      transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <WorkIcon size={20} color={workTypeColor} strokeWidth={1.5} />
+                    </motion.div>
                   </div>
                 </div>
               ) : (
-                <div style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  background: `linear-gradient(135deg, ${workTypeColor}20, ${workTypeColor}08)`,
-                  border: `1px solid ${workTypeColor}30`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <WorkIcon size={20} color={workTypeColor} strokeWidth={1.5} />
-                </div>
+                <motion.div
+                  whileHover={{ scale: 1.05, rotate: 3 }}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 14,
+                    background: `linear-gradient(145deg, ${workTypeColor}20, ${workTypeColor}08)`,
+                    border: `1.5px solid ${workTypeColor}40`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: `0 4px 16px ${workTypeColor}20, inset 0 1px 0 ${workTypeColor}20`,
+                  }}
+                >
+                  <WorkIcon size={22} color={workTypeColor} strokeWidth={1.5} />
+                </motion.div>
               )}
+              {/* Progress badge */}
               {isInProgress && progress > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: -3,
-                  right: -3,
-                  background: workTypeColor,
-                  color: '#000',
-                  fontSize: 8,
-                  fontWeight: 700,
-                  padding: '1px 4px',
-                  borderRadius: 4,
-                  fontFamily: 'var(--font-mono)',
-                }}>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  style={{
+                    position: 'absolute',
+                    bottom: -4,
+                    right: -4,
+                    background: `linear-gradient(135deg, ${workTypeColor}, ${workTypeColor}cc)`,
+                    color: '#0a0a0c',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    padding: '2px 6px',
+                    borderRadius: 6,
+                    fontFamily: 'var(--font-mono)',
+                    boxShadow: `0 2px 8px ${workTypeColor}50`,
+                  }}
+                >
                   {progress}%
-                </div>
+                </motion.div>
+              )}
+              {/* Completed checkmark */}
+              {isCompleted && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  style={{
+                    position: 'absolute',
+                    bottom: -4,
+                    right: -4,
+                    width: 18,
+                    height: 18,
+                    borderRadius: 6,
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(34,197,94,0.4)',
+                  }}
+                >
+                  <CheckCircle size={12} color="#fff" strokeWidth={3} />
+                </motion.div>
               )}
             </div>
 
-            {/* Title + Subject */}
+            {/* Title + Subject with premium styling */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <h3 style={{
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: 700,
                 color: 'var(--text-main)',
                 margin: 0,
-                marginBottom: 2,
+                marginBottom: 4,
+                fontFamily: 'var(--font-serif)',
               }}>
                 {order.work_type_label}
               </h3>
               <p style={{
                 fontSize: 12,
-                color: 'var(--text-muted)',
+                color: 'rgba(255,255,255,0.5)',
                 margin: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -787,138 +1165,207 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
             </div>
           </div>
 
-          {/* Status Badge */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '5px 10px',
-            background: statusConfig.bgColor,
-            borderRadius: 16,
-            flexShrink: 0,
-          }}>
-            <div style={{
-              width: 5,
-              height: 5,
-              borderRadius: '50%',
-              background: statusConfig.color,
-              boxShadow: `0 0 6px ${statusConfig.color}`,
-            }} />
+          {/* Premium Status Badge */}
+          <motion.div
+            animate={needsPayment ? {
+              boxShadow: [
+                `0 0 10px ${statusConfig.color}30`,
+                `0 0 20px ${statusConfig.color}50`,
+                `0 0 10px ${statusConfig.color}30`,
+              ],
+            } : {}}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              background: `linear-gradient(135deg, ${statusConfig.bgColor}, ${statusConfig.bgColor}80)`,
+              borderRadius: 20,
+              flexShrink: 0,
+              border: `1px solid ${statusConfig.color}30`,
+            }}
+          >
+            <motion.div
+              animate={{
+                scale: [1, 1.3, 1],
+                opacity: [0.8, 1, 0.8],
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: statusConfig.color,
+                boxShadow: `0 0 8px ${statusConfig.color}`,
+              }}
+            />
             <span style={{
               fontSize: 11,
-              fontWeight: 600,
+              fontWeight: 700,
               color: statusConfig.color,
+              letterSpacing: '0.02em',
             }}>
               {statusConfig.label}
             </span>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Mini Timeline */}
+        {/* Premium Mini Timeline */}
         {showTimeline && statusConfig.step >= 0 && (
-          <div style={{ paddingLeft: 10, marginBottom: 6 }}>
+          <div style={{ paddingLeft: 14, marginBottom: 10, position: 'relative', zIndex: 1 }}>
             <MiniTimeline currentStep={statusConfig.step} />
           </div>
         )}
 
-        {/* Footer Row */}
+        {/* Premium Footer Row */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: 10,
-          paddingLeft: 10,
-          borderTop: '1px solid var(--border-subtle)',
+          paddingTop: 12,
+          paddingLeft: 14,
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          position: 'relative',
+          zIndex: 1,
         }}>
           {/* Left: ID + Deadline */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{
               fontSize: 11,
-              color: 'var(--text-muted)',
+              color: 'rgba(255,255,255,0.4)',
               fontFamily: 'var(--font-mono)',
+              fontWeight: 500,
             }}>
               #{order.id}
             </span>
 
             {daysUntilDeadline !== null && !isCompleted && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 3,
-                padding: '3px 7px',
-                background: daysUntilDeadline <= 3
-                  ? 'rgba(239,68,68,0.12)'
-                  : 'rgba(255,255,255,0.04)',
-                borderRadius: 6,
-              }}>
-                <Calendar size={10} color={daysUntilDeadline <= 3 ? '#ef4444' : 'var(--text-muted)'} />
+              <motion.div
+                animate={daysUntilDeadline <= 3 ? {
+                  scale: [1, 1.02, 1],
+                  boxShadow: [
+                    '0 0 0 rgba(239,68,68,0)',
+                    '0 0 12px rgba(239,68,68,0.3)',
+                    '0 0 0 rgba(239,68,68,0)',
+                  ],
+                } : {}}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 10px',
+                  background: daysUntilDeadline <= 3
+                    ? 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.08))'
+                    : 'rgba(255,255,255,0.04)',
+                  borderRadius: 8,
+                  border: daysUntilDeadline <= 3 ? '1px solid rgba(239,68,68,0.3)' : 'none',
+                }}
+              >
+                <Calendar size={11} color={daysUntilDeadline <= 3 ? '#ef4444' : 'rgba(255,255,255,0.4)'} />
                 <span style={{
                   fontSize: 10,
-                  fontWeight: 600,
-                  color: daysUntilDeadline <= 3 ? '#ef4444' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  color: daysUntilDeadline <= 3 ? '#ef4444' : 'rgba(255,255,255,0.5)',
                 }}>
-                  {daysUntilDeadline <= 0 ? 'Сегодня' : `${daysUntilDeadline} дн.`}
+                  {daysUntilDeadline <= 0 ? 'Срочно!' : `${daysUntilDeadline} дн.`}
                 </span>
-              </div>
+              </motion.div>
             )}
           </div>
 
           {/* Right: Price + Arrow */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* Promo indicator */}
             {order.promo_code && order.promo_discount && order.promo_discount > 0 && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 3,
-                padding: '3px 6px',
-                background: 'rgba(34,197,94,0.15)',
-                border: '1px solid rgba(34,197,94,0.3)',
-                borderRadius: 6,
-              }}>
+              <motion.div
+                animate={{
+                  boxShadow: [
+                    '0 0 0 rgba(34,197,94,0)',
+                    '0 0 12px rgba(34,197,94,0.3)',
+                    '0 0 0 rgba(34,197,94,0)',
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 8px',
+                  background: 'linear-gradient(135deg, rgba(34,197,94,0.18), rgba(34,197,94,0.08))',
+                  border: '1px solid rgba(34,197,94,0.35)',
+                  borderRadius: 8,
+                }}
+              >
                 <span style={{ fontSize: 10 }}>🎟️</span>
                 <span style={{
                   fontSize: 10,
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: '#22c55e',
                   fontFamily: 'var(--font-mono)',
                 }}>
                   −{order.promo_discount}%
                 </span>
-              </div>
+              </motion.div>
             )}
             {/* Original price crossed out */}
             {order.promo_code && order.price && order.price !== order.final_price && (
               <span style={{
                 fontSize: 12,
-                color: 'var(--text-muted)',
+                color: 'rgba(255,255,255,0.35)',
                 textDecoration: 'line-through',
                 fontFamily: 'var(--font-mono)',
               }}>
                 {order.price.toLocaleString('ru-RU')}
               </span>
             )}
-            {/* Final price - green if promo applied */}
-            <span style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: order.promo_code && order.promo_discount
-                ? '#22c55e'
-                : needsPayment ? '#8b5cf6' : 'var(--gold-200)',
-              fontFamily: 'var(--font-mono)',
-            }}>
+            {/* Premium Final price with glow */}
+            <motion.span
+              animate={needsPayment ? {
+                textShadow: [
+                  `0 0 10px ${workTypeColor}40`,
+                  `0 0 20px ${workTypeColor}60`,
+                  `0 0 10px ${workTypeColor}40`,
+                ],
+              } : {}}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{
+                fontSize: 17,
+                fontWeight: 800,
+                color: order.promo_code && order.promo_discount
+                  ? '#22c55e'
+                  : needsPayment ? '#D4AF37' : 'var(--gold-200)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
               {(order.final_price || order.price || 0).toLocaleString('ru-RU')} ₽
-            </span>
-            <ChevronRight size={16} color="var(--text-muted)" />
+            </motion.span>
+            <motion.div
+              animate={{ x: [0, 4, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <ChevronRight size={18} color={needsPayment ? '#D4AF37' : 'rgba(255,255,255,0.4)'} />
+            </motion.div>
           </div>
         </div>
+
+        {/* Premium decorative corners for cards needing attention */}
+        {needsPayment && (
+          <>
+            <DecorativeCorner position="top-left" color="#D4AF37" />
+            <DecorativeCorner position="top-right" color="#D4AF37" />
+            <DecorativeCorner position="bottom-left" color="#D4AF37" />
+            <DecorativeCorner position="bottom-right" color="#D4AF37" />
+          </>
+        )}
       </motion.div>
     </motion.div>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  FILTER CHIP
+//  PREMIUM FILTER CHIP
 // ═══════════════════════════════════════════════════════════════════════════
 
 function FilterChip({
@@ -941,51 +1388,84 @@ function FilterChip({
   })
 
   return (
-    <button
+    <motion.button
       ref={ref}
       {...handlers}
+      whileHover={{ scale: 1.02 }}
+      animate={isActive ? {
+        boxShadow: [
+          '0 4px 16px rgba(212,175,55,0.2), 0 0 0 1px rgba(212,175,55,0.3)',
+          '0 6px 24px rgba(212,175,55,0.35), 0 0 0 1px rgba(212,175,55,0.5)',
+          '0 4px 16px rgba(212,175,55,0.2), 0 0 0 1px rgba(212,175,55,0.3)',
+        ],
+      } : {}}
+      transition={isActive ? { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } : {}}
       style={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        padding: '10px 16px',
-        borderRadius: 12,
-        border: 'none',
+        gap: 8,
+        padding: '12px 18px',
+        borderRadius: 14,
+        border: `1.5px solid ${isActive ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.08)'}`,
         fontSize: 13,
-        fontWeight: 600,
+        fontWeight: 700,
         fontFamily: 'var(--font-sans)',
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        overflow: 'hidden',
         background: isActive
-          ? 'var(--gold-metallic)'
-          : 'transparent',
+          ? 'linear-gradient(135deg, #D4AF37, #B38728)'
+          : 'linear-gradient(145deg, rgba(30,30,35,0.6), rgba(20,20,24,0.8))',
         color: isActive
-          ? 'var(--bg-void)'
-          : 'var(--text-muted)',
-        boxShadow: isActive
-          ? 'var(--glow-gold)'
-          : 'none',
+          ? '#0a0a0c'
+          : 'rgba(255,255,255,0.6)',
       }}
     >
-      {Icon && <Icon size={14} />}
-      {label}
-      {count !== undefined && count > 0 && (
-        <span style={{
-          background: isActive ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)',
-          padding: '2px 6px',
-          borderRadius: 6,
-          fontSize: 11,
-          fontFamily: 'var(--font-mono)',
-        }}>
-          {count}
-        </span>
+      {/* Shimmer effect for active state */}
+      {isActive && (
+        <motion.div
+          animate={{ x: ['-150%', '250%'] }}
+          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1.5 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '40%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+            transform: 'skewX(-20deg)',
+            pointerEvents: 'none',
+          }}
+        />
       )}
-    </button>
+
+      {Icon && <Icon size={15} strokeWidth={isActive ? 2.5 : 1.5} />}
+      <span style={{ position: 'relative', zIndex: 1 }}>{label}</span>
+      {count !== undefined && count > 0 && (
+        <motion.span
+          initial={false}
+          animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+          transition={{ duration: 0.3 }}
+          style={{
+            background: isActive ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.08)',
+            padding: '3px 8px',
+            borderRadius: 8,
+            fontSize: 11,
+            fontWeight: 800,
+            fontFamily: 'var(--font-mono)',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {count}
+        </motion.span>
+      )}
+    </motion.button>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  FAB BUTTON
+//  ULTRA-PREMIUM FAB BUTTON
 // ═══════════════════════════════════════════════════════════════════════════
 
 function FABButton({ onClick }: { onClick: () => void }) {
@@ -999,85 +1479,207 @@ function FABButton({ onClick }: { onClick: () => void }) {
     <motion.button
       ref={ref}
       {...handlers}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-      whileHover={{ scale: 1.05 }}
+      initial={{ scale: 0, opacity: 0, rotate: -180 }}
+      animate={{ scale: 1, opacity: 1, rotate: 0 }}
+      transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 15 }}
+      whileHover={{ scale: 1.08, rotate: 90 }}
       style={{
         position: 'fixed',
         bottom: 'calc(100px + env(safe-area-inset-bottom, 0px))',
         right: 20,
-        width: 56,
-        height: 56,
-        borderRadius: 16,
-        border: 'none',
-        background: 'var(--liquid-gold)',
-        boxShadow: '0 8px 24px rgba(212,175,55,0.4), 0 0 40px rgba(212,175,55,0.2)',
+        width: 60,
+        height: 60,
+        borderRadius: 18,
+        border: '2px solid rgba(255,255,255,0.2)',
+        background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 30%, #B38728 70%, #D4AF37 100%)',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 100,
+        overflow: 'hidden',
       }}
     >
-      <Plus size={24} color="#0a0a0c" strokeWidth={2.5} />
+      {/* Animated glow ring */}
+      <motion.div
+        animate={{
+          boxShadow: [
+            '0 0 20px rgba(212,175,55,0.4), 0 8px 30px rgba(212,175,55,0.3)',
+            '0 0 40px rgba(212,175,55,0.6), 0 12px 40px rgba(212,175,55,0.5)',
+            '0 0 20px rgba(212,175,55,0.4), 0 8px 30px rgba(212,175,55,0.3)',
+          ],
+        }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 18,
+        }}
+      />
+
+      {/* Rotating shimmer */}
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+        style={{
+          position: 'absolute',
+          inset: -2,
+          background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.4), transparent, transparent)',
+          borderRadius: 20,
+        }}
+      />
+
+      {/* Inner background */}
+      <div style={{
+        position: 'absolute',
+        inset: 2,
+        borderRadius: 16,
+        background: 'linear-gradient(145deg, #D4AF37, #B38728)',
+      }} />
+
+      {/* Plus icon */}
+      <motion.div
+        animate={{
+          scale: [1, 1.1, 1],
+        }}
+        transition={{ duration: 2, repeat: Infinity }}
+        style={{ position: 'relative', zIndex: 1 }}
+      >
+        <Plus size={26} color="#0a0a0c" strokeWidth={3} />
+      </motion.div>
+
+      {/* Sparkle effects */}
+      <OrbitingSparkles size={90} count={4} color="rgba(255,255,255,0.8)" />
     </motion.button>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  EMPTY STATE
+//  PREMIUM EMPTY STATE
 // ═══════════════════════════════════════════════════════════════════════════
 
 function EmptyState({ filter }: { filter: FilterType }) {
-  const messages: Record<FilterType, { title: string; subtitle: string }> = {
-    all: { title: 'Нет заказов', subtitle: 'Создайте первый заказ, нажав +' },
-    active: { title: 'Нет активных', subtitle: 'Все заказы завершены' },
-    completed: { title: 'Нет завершённых', subtitle: 'Завершённые заказы появятся здесь' },
-    attention: { title: 'Всё в порядке!', subtitle: 'Нет заказов, требующих внимания' },
+  const messages: Record<FilterType, { title: string; subtitle: string; icon: typeof FileStack }> = {
+    all: { title: 'Нет проектов', subtitle: 'Создайте первый проект, нажав +', icon: FileStack },
+    active: { title: 'Нет активных', subtitle: 'Все проекты завершены', icon: Loader },
+    completed: { title: 'Нет завершённых', subtitle: 'Завершённые проекты появятся здесь', icon: CheckCircle },
+    attention: { title: 'Всё в порядке!', subtitle: 'Нет проектов, требующих внимания', icon: Sparkles },
   }
 
   const msg = messages[filter]
+  const IconComponent = msg.icon
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 20 }}
       style={{
         textAlign: 'center',
-        padding: '60px 24px',
-        background: 'var(--bg-card)',
-        borderRadius: 24,
-        border: '1px solid var(--border-default)',
+        padding: '60px 32px',
+        background: 'linear-gradient(145deg, rgba(28,28,32,0.95), rgba(18,18,22,0.98))',
+        borderRadius: 28,
+        border: '1px solid rgba(212,175,55,0.15)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      {/* Background gradient */}
       <div style={{
-        width: 72,
-        height: 72,
-        margin: '0 auto 20px',
-        borderRadius: 20,
-        background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
-        border: '1px solid var(--border-gold)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <FileStack size={32} color="var(--gold-400)" strokeWidth={1.5} />
-      </div>
-      <h3 style={{
-        fontSize: 18,
-        fontWeight: 700,
-        color: 'var(--text-main)',
-        marginBottom: 8,
-      }}>
+        position: 'absolute',
+        inset: 0,
+        background: 'radial-gradient(ellipse 100% 50% at 50% 0%, rgba(212,175,55,0.08), transparent)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Floating particles */}
+      <FloatingParticles color="#D4AF37" count={6} />
+
+      {/* Decorative corners */}
+      <DecorativeCorner position="top-left" />
+      <DecorativeCorner position="top-right" />
+      <DecorativeCorner position="bottom-left" />
+      <DecorativeCorner position="bottom-right" />
+
+      {/* Icon with glow */}
+      <motion.div
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: 'spring', damping: 12, delay: 0.1 }}
+        style={{
+          position: 'relative',
+          display: 'inline-block',
+          marginBottom: 24,
+        }}
+      >
+        <motion.div
+          animate={{
+            boxShadow: [
+              '0 0 30px rgba(212,175,55,0.2), inset 0 0 20px rgba(212,175,55,0.1)',
+              '0 0 50px rgba(212,175,55,0.35), inset 0 0 30px rgba(212,175,55,0.15)',
+              '0 0 30px rgba(212,175,55,0.2), inset 0 0 20px rgba(212,175,55,0.1)',
+            ],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 24,
+            background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+            border: '2px solid rgba(212,175,55,0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <motion.div
+            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          >
+            <IconComponent size={36} color="#D4AF37" strokeWidth={1.5} />
+          </motion.div>
+        </motion.div>
+        <OrbitingSparkles size={110} count={5} />
+      </motion.div>
+
+      {/* Title with gold gradient */}
+      <motion.h3
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        style={{
+          fontSize: 22,
+          fontWeight: 700,
+          fontFamily: 'var(--font-serif)',
+          background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          marginBottom: 12,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
         {msg.title}
-      </h3>
-      <p style={{
-        fontSize: 14,
-        color: 'var(--text-muted)',
-      }}>
+      </motion.h3>
+
+      {/* Subtitle */}
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        style={{
+          fontSize: 14,
+          color: 'rgba(255,255,255,0.5)',
+          maxWidth: 240,
+          margin: '0 auto',
+          lineHeight: 1.5,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
         {msg.subtitle}
-      </p>
+      </motion.p>
     </motion.div>
   )
 }
@@ -1187,140 +1789,218 @@ export function OrdersPage({ orders }: Props) {
       paddingBottom: 160,
     }}>
       {/* ═══════════════════════════════════════════════════════════════════════
-          HERO HEADER
+          ULTRA-PREMIUM HERO HEADER
           ═══════════════════════════════════════════════════════════════════════ */}
       <div style={{
         position: 'relative',
-        padding: '24px 20px 20px',
-        background: 'linear-gradient(180deg, rgba(212,175,55,0.06) 0%, transparent 100%)',
+        padding: '28px 20px 24px',
+        background: `
+          linear-gradient(180deg,
+            rgba(212,175,55,0.08) 0%,
+            rgba(212,175,55,0.03) 50%,
+            transparent 100%
+          )
+        `,
+        overflow: 'hidden',
       }}>
-        {/* Decorative gradient */}
+        {/* Floating particles background */}
+        <FloatingParticles color="#D4AF37" count={10} />
+
+        {/* Premium decorative gradients */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: 200,
-          background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,175,55,0.08), transparent)',
+          height: 250,
+          background: `
+            radial-gradient(ellipse 100% 60% at 50% -10%, rgba(212,175,55,0.12), transparent),
+            radial-gradient(ellipse 60% 40% at 20% 30%, rgba(212,175,55,0.06), transparent),
+            radial-gradient(ellipse 60% 40% at 80% 20%, rgba(212,175,55,0.05), transparent)
+          `,
           pointerEvents: 'none',
         }} />
 
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', damping: 20, stiffness: 200 }}
           style={{ position: 'relative', zIndex: 1 }}
         >
-          {/* Title Row */}
+          {/* Premium Title Row */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 24,
+            marginBottom: 28,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{
-                width: 52,
-                height: 52,
-                borderRadius: 16,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-                border: '1px solid var(--border-gold)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: 'var(--glow-gold)',
-              }}>
-                <FileStack size={26} color="var(--gold-400)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {/* Premium Icon with sparkles */}
+              <div style={{ position: 'relative' }}>
+                <motion.div
+                  animate={{
+                    boxShadow: [
+                      '0 0 20px rgba(212,175,55,0.2), inset 0 0 15px rgba(212,175,55,0.08)',
+                      '0 0 35px rgba(212,175,55,0.35), inset 0 0 20px rgba(212,175,55,0.12)',
+                      '0 0 20px rgba(212,175,55,0.2), inset 0 0 15px rgba(212,175,55,0.08)',
+                    ],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 18,
+                    background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+                    border: '2px solid rgba(212,175,55,0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Inner shine */}
+                  <motion.div
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '50%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
+                      transform: 'skewX(-20deg)',
+                    }}
+                  />
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  >
+                    <FileStack size={26} color="#D4AF37" strokeWidth={1.5} />
+                  </motion.div>
+                </motion.div>
+                <OrbitingSparkles size={80} count={5} />
               </div>
+
               <div>
-                <h1 style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: 28,
-                  fontWeight: 700,
-                  background: 'var(--gold-text-shine)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  margin: 0,
-                }}>
-                  Мои заказы
-                </h1>
-                <p style={{
-                  fontSize: 13,
-                  color: 'var(--text-muted)',
-                  margin: 0,
-                  marginTop: 2,
-                }}>
-                  {orders.length} {orders.length === 1 ? 'заказ' : orders.length < 5 ? 'заказа' : 'заказов'}
-                </p>
+                <motion.h1
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: 30,
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 30%, #B38728 60%, #D4AF37 90%, #FCF6BA 100%)',
+                    backgroundSize: '200% 100%',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    margin: 0,
+                    animation: 'shimmer-text-orders 4s ease-in-out infinite',
+                  }}
+                >
+                  Портфель
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.15 }}
+                  style={{
+                    fontSize: 13,
+                    color: 'rgba(255,255,255,0.5)',
+                    margin: 0,
+                    marginTop: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span style={{
+                    color: '#D4AF37',
+                    fontWeight: 600,
+                    fontSize: 14,
+                  }}>{orders.length}</span>
+                  {orders.length === 1 ? 'проект' : orders.length < 5 ? 'проекта' : 'проектов'}
+                </motion.p>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: 8 }}>
+            {/* Premium Action buttons */}
+            <div style={{ display: 'flex', gap: 10 }}>
               <motion.button
                 whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
                 onClick={() => {
                   haptic('light')
                   setShowSearch(!showSearch)
                 }}
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  border: '1px solid var(--border-default)',
-                  background: showSearch ? 'var(--gold-metallic)' : 'var(--bg-card)',
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  border: showSearch ? '2px solid #D4AF37' : '1px solid rgba(255,255,255,0.1)',
+                  background: showSearch
+                    ? 'linear-gradient(135deg, #D4AF37, #B38728)'
+                    : 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  boxShadow: showSearch ? '0 4px 20px rgba(212,175,55,0.3)' : 'none',
                 }}
               >
-                <Search size={18} color={showSearch ? '#0a0a0c' : 'var(--text-muted)'} />
+                <Search size={18} color={showSearch ? '#0a0a0c' : 'rgba(255,255,255,0.6)'} strokeWidth={showSearch ? 2.5 : 1.5} />
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
                 onClick={() => {
                   haptic('light')
                   setShowSort(!showSort)
                 }}
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  border: '1px solid var(--border-default)',
-                  background: showSort ? 'var(--gold-metallic)' : 'var(--bg-card)',
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  border: showSort ? '2px solid #D4AF37' : '1px solid rgba(255,255,255,0.1)',
+                  background: showSort
+                    ? 'linear-gradient(135deg, #D4AF37, #B38728)'
+                    : 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  boxShadow: showSort ? '0 4px 20px rgba(212,175,55,0.3)' : 'none',
                 }}
               >
-                <SlidersHorizontal size={18} color={showSort ? '#0a0a0c' : 'var(--text-muted)'} />
+                <SlidersHorizontal size={18} color={showSort ? '#0a0a0c' : 'rgba(255,255,255,0.6)'} strokeWidth={showSort ? 2.5 : 1.5} />
               </motion.button>
             </div>
           </div>
 
-          {/* Stats Grid */}
+          {/* Premium Stats Grid */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.1, type: 'spring', damping: 20 }}
             style={{
               display: 'flex',
-              gap: 10,
+              gap: 12,
               marginBottom: 20,
             }}
           >
             <StatCard
               icon={Loader}
               value={stats.active.length}
-              label="Активные"
+              label="В работе"
               color="#3b82f6"
               onClick={() => handleFilterChange('active')}
               isActive={filter === 'active'}
             />
             <StatCard
-              icon={CreditCard}
+              icon={Wallet}
               value={stats.needsPayment.length}
               label="К оплате"
               color="#8b5cf6"
@@ -1330,47 +2010,115 @@ export function OrdersPage({ orders }: Props) {
             <StatCard
               icon={CheckCircle}
               value={stats.completed.length}
-              label="Готовы"
+              label="Готово"
               color="#22c55e"
               onClick={() => handleFilterChange('completed')}
               isActive={filter === 'completed'}
             />
           </motion.div>
 
-          {/* Total sum */}
+          {/* Premium Total Sum Card */}
           {stats.totalSpent > 0 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               style={{
-                padding: '12px 16px',
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.02))',
-                borderRadius: 12,
-                border: '1px solid var(--border-gold)',
+                position: 'relative',
+                padding: '16px 20px',
+                background: `
+                  linear-gradient(135deg,
+                    rgba(212,175,55,0.12) 0%,
+                    rgba(212,175,55,0.05) 50%,
+                    rgba(212,175,55,0.08) 100%
+                  )
+                `,
+                borderRadius: 18,
+                border: '1px solid rgba(212,175,55,0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <TrendingUp size={16} color="var(--gold-400)" />
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  Общая сумма заказов
-                </span>
+              {/* Decorative corners */}
+              <DecorativeCorner position="top-left" />
+              <DecorativeCorner position="top-right" />
+              <DecorativeCorner position="bottom-left" />
+              <DecorativeCorner position="bottom-right" />
+
+              {/* Shimmer */}
+              <motion.div
+                animate={{ x: ['-150%', '250%'] }}
+                transition={{ duration: 3, repeat: Infinity, repeatDelay: 3 }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '40%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                  transform: 'skewX(-20deg)',
+                }}
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
+                    border: '1px solid rgba(212,175,55,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <TrendingUp size={18} color="#D4AF37" />
+                </motion.div>
+                <div>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    ОБЩИЙ ОБОРОТ
+                  </span>
+                </div>
               </div>
-              <span style={{
-                fontSize: 16,
-                fontWeight: 700,
-                color: 'var(--gold-300)',
-                fontFamily: 'var(--font-mono)',
-              }}>
+              <motion.span
+                animate={{
+                  textShadow: [
+                    '0 0 10px rgba(212,175,55,0.3)',
+                    '0 0 20px rgba(212,175,55,0.5)',
+                    '0 0 10px rgba(212,175,55,0.3)',
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontFamily: 'var(--font-mono)',
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
                 <AnimatedCounter value={stats.totalSpent} suffix=" ₽" />
-              </span>
+              </motion.span>
             </motion.div>
           )}
         </motion.div>
       </div>
+
+      {/* CSS Keyframes for shimmer */}
+      <style>{`
+        @keyframes shimmer-text-orders {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+      `}</style>
 
       {/* ═══════════════════════════════════════════════════════════════════════
           SEARCH BAR (Expandable)
@@ -1486,55 +2234,132 @@ export function OrdersPage({ orders }: Props) {
       </AnimatePresence>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          ATTENTION SECTION
+          PREMIUM ATTENTION SECTION
           ═══════════════════════════════════════════════════════════════════════ */}
       {stats.attention.length > 0 && filter === 'all' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          style={{ padding: '0 20px', marginBottom: 20 }}
+          transition={{ delay: 0.15, type: 'spring', damping: 20 }}
+          style={{ padding: '0 20px', marginBottom: 24 }}
         >
           <div style={{
-            padding: 16,
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(139,92,246,0.02))',
-            borderRadius: 18,
-            border: '1px solid rgba(139,92,246,0.2)',
+            padding: 20,
+            background: 'linear-gradient(145deg, rgba(28,28,32,0.95), rgba(18,18,22,0.98))',
+            borderRadius: 22,
+            border: '1px solid rgba(212,175,55,0.25)',
+            position: 'relative',
+            overflow: 'hidden',
           }}>
+            {/* Background glow */}
+            <div style={{
+              position: 'absolute',
+              top: -50,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '150%',
+              height: 100,
+              background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.15), transparent 70%)',
+              pointerEvents: 'none',
+            }} />
+
+            {/* Floating particles */}
+            <FloatingParticles color="#D4AF37" count={5} />
+
+            {/* Decorative corners */}
+            <DecorativeCorner position="top-left" />
+            <DecorativeCorner position="top-right" />
+            <DecorativeCorner position="bottom-left" />
+            <DecorativeCorner position="bottom-right" />
+
+            {/* Header */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: 12,
+              marginBottom: 16,
+              position: 'relative',
+              zIndex: 1,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Bell size={16} color="#8b5cf6" />
-                <span style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: 'var(--text-main)',
-                }}>
-                  Требует внимания
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <motion.div
+                  animate={{
+                    boxShadow: [
+                      '0 0 10px rgba(212,175,55,0.3)',
+                      '0 0 20px rgba(212,175,55,0.5)',
+                      '0 0 10px rgba(212,175,55,0.3)',
+                    ],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
+                    border: '1px solid rgba(212,175,55,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Bell size={18} color="#D4AF37" />
+                </motion.div>
+                <div>
+                  <span style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: 'var(--text-main)',
+                    fontFamily: 'var(--font-serif)',
+                    display: 'block',
+                  }}>
+                    Требует внимания
+                  </span>
+                  <span style={{
+                    fontSize: 11,
+                    color: 'rgba(255,255,255,0.4)',
+                    fontWeight: 500,
+                  }}>
+                    Важные действия по проектам
+                  </span>
+                </div>
               </div>
-              <span style={{
-                background: 'rgba(139,92,246,0.2)',
-                color: '#a78bfa',
-                fontSize: 12,
-                fontWeight: 600,
-                padding: '4px 10px',
-                borderRadius: 8,
-              }}>
+              <motion.span
+                animate={{
+                  scale: [1, 1.05, 1],
+                  boxShadow: [
+                    '0 0 0 rgba(212,175,55,0)',
+                    '0 0 12px rgba(212,175,55,0.3)',
+                    '0 0 0 rgba(212,175,55,0)',
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  background: 'linear-gradient(135deg, #D4AF37, #B38728)',
+                  color: '#0a0a0c',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  padding: '6px 14px',
+                  borderRadius: 10,
+                }}
+              >
                 {stats.attention.length}
-              </span>
+              </motion.span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {stats.attention.slice(0, 3).map((order) => (
-                <AttentionCard
+
+            {/* Cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', zIndex: 1 }}>
+              {stats.attention.slice(0, 3).map((order, index) => (
+                <motion.div
                   key={order.id}
-                  order={order}
-                  onClick={() => navigate(`/order/${order.id}`)}
-                />
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                >
+                  <AttentionCard
+                    order={order}
+                    onClick={() => navigate(`/order/${order.id}`)}
+                  />
+                </motion.div>
               ))}
             </div>
           </div>
