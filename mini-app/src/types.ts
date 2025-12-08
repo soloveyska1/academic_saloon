@@ -135,20 +135,6 @@ export interface OrderCreateRequest {
   topic?: string
   deadline: string
   description?: string
-  promo_code?: string  // Optional promo code for discount
-}
-
-export interface OrderCreateResponse {
-  success: boolean
-  order_id: number
-  message: string
-  price?: number
-  is_manual_required: boolean
-}
-
-// Work types for order creation
-export type WorkType =
-  | 'masters'
   | 'diploma'
   | 'coursework'
   | 'independent'

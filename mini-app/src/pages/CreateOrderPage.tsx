@@ -980,10 +980,10 @@ export function CreateOrderPage() {
         }
       }
 
-    // If forced without promo, don't send promo code
-    if (forceWithoutPromo) {
-      promoToUse = undefined
-    }
+      // If forced without promo, don't send promo code
+      if (forceWithoutPromo) {
+        promoToUse = undefined
+      }
 
       const data: OrderCreateRequest = {
         work_type: workType,
@@ -997,10 +997,12 @@ export function CreateOrderPage() {
       const res = await createOrder(data)
       if (res.success) {
         // Store promo info and base price BEFORE clearing promo
-        const promoUsed = activePromo ? {
+        // CHECK IF PROMO ACTUALLY FAILED ON BACKEND
+        const actualPromoUsed = res.promo_failed ? null : (activePromo ? {
           code: activePromo.code,
           discount: activePromo.discount
-        } : null
+        } : null)
+
         const basePrice = getBaseEstimate()
 
         // Clear draft and used promo code on success
@@ -1010,13 +1012,20 @@ export function CreateOrderPage() {
         }
 
         hapticSuccess()
-        // Trigger confetti celebration
-        setShowConfetti(true)
+        // Trigger confetti celebration ONLY if promo didn't fail or if it's a regular success
+        if (!res.promo_failed) setShowConfetti(true)
+
+        // Construct message
+        let finalMsg = typeof res.message === 'string' ? res.message : JSON.stringify(res.message)
+        if (res.promo_failed && res.promo_failure_reason) {
+          finalMsg = `Заказ создан, но промокод не применён: ${res.promo_failure_reason}`
+        }
+
         setResult({
           ok: true,
-          msg: typeof res.message === 'string' ? res.message : JSON.stringify(res.message),
+          msg: finalMsg,
           id: res.order_id,
-          promoUsed,
+          promoUsed: actualPromoUsed, // Use the verified promo status
           basePrice: basePrice || undefined
         })
       } else {
