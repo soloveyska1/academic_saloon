@@ -7,19 +7,45 @@ interface Props {
     transactions: Transaction[]
 }
 
+// Премиальные названия операций
+const TRANSACTION_LABELS: Record<string, string> = {
+    order_created: '🎁 Бонус за заказ',
+    referral_bonus: '👥 Реферальный бонус',
+    admin_adjustment: '⚙️ Корректировка баланса',
+    order_discount: '💳 Оплата заказа',
+    compensation: '💎 Компенсация',
+    order_cashback: '✨ Кешбэк',
+    bonus_expired: '⏰ Сгорание бонусов',
+    daily_luck: '🎰 Ежедневный бонус',
+    coupon: '🎟️ Активация купона',
+    order_refund: '↩️ Возврат средств',
+    roulette_win: '🎯 Выигрыш в рулетке',
+    welcome_bonus: '👋 Приветственный бонус',
+    achievement: '🏆 Награда за достижение',
+    promo_code: '🎫 Промокод',
+}
+
+// Короткие названия для подзаголовков
+const SHORT_LABELS: Record<string, string> = {
+    order_created: 'Бонус',
+    referral_bonus: 'Реферал',
+    admin_adjustment: 'Корректировка',
+    order_discount: 'Оплата',
+    compensation: 'Компенсация',
+    order_cashback: 'Кешбэк',
+    bonus_expired: 'Сгорание',
+    daily_luck: 'Ежедневный',
+    coupon: 'Купон',
+    order_refund: 'Возврат',
+    roulette_win: 'Рулетка',
+    welcome_bonus: 'Приветствие',
+    achievement: 'Достижение',
+    promo_code: 'Промокод',
+}
+
 export function TransactionHistory({ transactions }: Props) {
-    const reasonLabels: Record<string, string> = {
-        order_created: 'Бонус за заказ',
-        referral_bonus: 'Реферал',
-        admin_adjustment: 'Корректировка',
-        order_discount: 'Списание на заказ',
-        compensation: 'Компенсация',
-        order_cashback: 'Кешбэк',
-        bonus_expired: 'Сгорание бонусов',
-        daily_luck: 'Ежедневный бонус',
-        coupon: 'Купон',
-        order_refund: 'Возврат бонусов'
-    }
+    const reasonLabels = TRANSACTION_LABELS
+    const shortLabels = SHORT_LABELS
 
     const history = [...transactions]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -82,7 +108,7 @@ export function TransactionHistory({ transactions }: Props) {
                                     {tx.description || reasonLabels[tx.reason] || 'Операция'}
                                 </div>
                                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                    {new Date(tx.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} • {reasonLabels[tx.reason] || tx.reason}
+                                    {new Date(tx.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} • {shortLabels[tx.reason] || tx.reason}
                                 </div>
                             </div>
                         </div>
