@@ -138,16 +138,30 @@ class PromoService:
             return False, "Лимит использований исчерпан", 0.0, None
 
         # Check if user already used this promo
-        usage_stmt = select(PromoCodeUsage).where(
-            and_(
-                PromoCodeUsage.promocode_id == promo.id,
-                PromoCodeUsage.user_id == user_id,
-                PromoCodeUsage.is_active == True  # Only count active usages
+        # Try with is_active filter first (if migration applied), fall back to basic check
+        try:
+            usage_stmt = select(PromoCodeUsage).where(
+                and_(
+                    PromoCodeUsage.promocode_id == promo.id,
+                    PromoCodeUsage.user_id == user_id,
+                    PromoCodeUsage.is_active == True  # Only count active usages
+                )
             )
-        )
-        usage_result = await session.execute(usage_stmt)
-        if usage_result.first():
-            return False, "Вы уже использовали этот промокод", 0.0, None
+            usage_result = await session.execute(usage_stmt)
+            if usage_result.first():
+                return False, "Вы уже использовали этот промокод", 0.0, None
+        except Exception as e:
+            # Fallback if is_active column doesn't exist (migration not applied)
+            logger.warning(f"[PromoService] is_active query failed, using fallback: {e}")
+            usage_stmt = select(PromoCodeUsage).where(
+                and_(
+                    PromoCodeUsage.promocode_id == promo.id,
+                    PromoCodeUsage.user_id == user_id
+                )
+            )
+            usage_result = await session.execute(usage_stmt)
+            if usage_result.first():
+                return False, "Вы уже использовали этот промокод", 0.0, None
 
         # Promo is valid!
         expires_at = promo.valid_until if promo.valid_until else None
@@ -209,29 +223,44 @@ class PromoService:
                 return False, "Лимит использований исчерпан", 0.0
 
             # Check for existing usage (with lock to prevent double-apply)
-            usage_stmt = select(PromoCodeUsage).where(
-                and_(
-                    PromoCodeUsage.promocode_id == promo.id,
-                    PromoCodeUsage.user_id == user_id,
-                    PromoCodeUsage.is_active == True
-                )
-            ).with_for_update()
+            # Try with is_active filter, fall back if column doesn't exist
+            try:
+                usage_stmt = select(PromoCodeUsage).where(
+                    and_(
+                        PromoCodeUsage.promocode_id == promo.id,
+                        PromoCodeUsage.user_id == user_id,
+                        PromoCodeUsage.is_active == True
+                    )
+                ).with_for_update()
+                usage_result = await session.execute(usage_stmt)
+            except Exception:
+                # Fallback without is_active filter
+                usage_stmt = select(PromoCodeUsage).where(
+                    and_(
+                        PromoCodeUsage.promocode_id == promo.id,
+                        PromoCodeUsage.user_id == user_id
+                    )
+                ).with_for_update()
+                usage_result = await session.execute(usage_stmt)
 
-            usage_result = await session.execute(usage_stmt)
             if usage_result.first():
                 return False, "Вы уже использовали этот промокод", 0.0
 
             # Calculate discount amount
             discount_amount = base_price * (promo.discount_percent / 100.0)
 
-            # Record usage
+            # Record usage (is_active will be ignored if column doesn't exist)
             usage = PromoCodeUsage(
                 promocode_id=promo.id,
                 user_id=user_id,
                 order_id=order_id,
-                discount_amount=discount_amount,
-                is_active=True
+                discount_amount=discount_amount
             )
+            # Try to set is_active if column exists
+            try:
+                usage.is_active = True
+            except Exception:
+                pass  # Column doesn't exist yet
             session.add(usage)
 
             # Increment usage counter
@@ -326,15 +355,23 @@ class PromoService:
         """
         try:
             # Find the usage record for this order
-            usage_stmt = select(PromoCodeUsage).where(
-                and_(
-                    PromoCodeUsage.order_id == order_id,
-                    PromoCodeUsage.is_active == True
-                )
-            ).with_for_update()
-
-            result = await session.execute(usage_stmt)
-            usage = result.scalar_one_or_none()
+            # Try with is_active filter, fall back if column doesn't exist
+            try:
+                usage_stmt = select(PromoCodeUsage).where(
+                    and_(
+                        PromoCodeUsage.order_id == order_id,
+                        PromoCodeUsage.is_active == True
+                    )
+                ).with_for_update()
+                result = await session.execute(usage_stmt)
+                usage = result.scalar_one_or_none()
+            except Exception:
+                # Fallback: just find by order_id (if is_active column doesn't exist)
+                usage_stmt = select(PromoCodeUsage).where(
+                    PromoCodeUsage.order_id == order_id
+                ).with_for_update()
+                result = await session.execute(usage_stmt)
+                usage = result.scalar_one_or_none()
 
             if not usage:
                 # No promo was used on this order
@@ -353,9 +390,12 @@ class PromoService:
                 if promo.current_uses > 0:
                     promo.current_uses -= 1
 
-            # Mark usage as inactive (soft delete)
-            usage.is_active = False
-            usage.returned_at = datetime.now(MSK_TZ)
+            # Mark usage as inactive (soft delete) if columns exist
+            try:
+                usage.is_active = False
+                usage.returned_at = datetime.now(MSK_TZ)
+            except Exception:
+                pass  # Columns don't exist yet
 
             await session.flush()
 
@@ -476,25 +516,41 @@ class PromoService:
         if not promo:
             return {}
 
-        # Count active usages
-        active_count_stmt = select(func.count()).select_from(PromoCodeUsage).where(
-            and_(
-                PromoCodeUsage.promocode_id == promo_id,
-                PromoCodeUsage.is_active == True
+        # Count active usages (with fallback if is_active column doesn't exist)
+        try:
+            active_count_stmt = select(func.count()).select_from(PromoCodeUsage).where(
+                and_(
+                    PromoCodeUsage.promocode_id == promo_id,
+                    PromoCodeUsage.is_active == True
+                )
             )
-        )
-        active_result = await session.execute(active_count_stmt)
-        active_count = active_result.scalar() or 0
+            active_result = await session.execute(active_count_stmt)
+            active_count = active_result.scalar() or 0
+        except Exception:
+            # Fallback: count all usages
+            active_count_stmt = select(func.count()).select_from(PromoCodeUsage).where(
+                PromoCodeUsage.promocode_id == promo_id
+            )
+            active_result = await session.execute(active_count_stmt)
+            active_count = active_result.scalar() or 0
 
-        # Sum total savings
-        savings_stmt = select(func.sum(PromoCodeUsage.discount_amount)).where(
-            and_(
-                PromoCodeUsage.promocode_id == promo_id,
-                PromoCodeUsage.is_active == True
+        # Sum total savings (with fallback)
+        try:
+            savings_stmt = select(func.sum(PromoCodeUsage.discount_amount)).where(
+                and_(
+                    PromoCodeUsage.promocode_id == promo_id,
+                    PromoCodeUsage.is_active == True
+                )
             )
-        )
-        savings_result = await session.execute(savings_stmt)
-        total_savings = savings_result.scalar() or 0.0
+            savings_result = await session.execute(savings_stmt)
+            total_savings = savings_result.scalar() or 0.0
+        except Exception:
+            # Fallback: sum all savings
+            savings_stmt = select(func.sum(PromoCodeUsage.discount_amount)).where(
+                PromoCodeUsage.promocode_id == promo_id
+            )
+            savings_result = await session.execute(savings_stmt)
+            total_savings = savings_result.scalar() or 0.0
 
         return {
             "code": promo.code,
