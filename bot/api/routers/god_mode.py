@@ -577,20 +577,33 @@ async def update_order_price(
     old_price = order.price
     order.price = new_price
 
+    # Always refresh loyalty discount so recalculations use current user tier
+    user = await session.get(User, order.user_id)
+    loyalty_discount = min(user.discount_percent if user else 0.0, 50.0)
+    order.discount = loyalty_discount
+
     # If this was a manual order (old_price=0) with a promo code,
-    # we need to apply the promo now that we have a real price
-    if old_price == 0 and order.promo_code and new_price > 0:
+    # we need to apply the promo now that we have a real price.
+    # Additionally, if a promo code is stored on the order but its discount
+    # wasn't persisted (or usage wasn't recorded), we refresh it to keep
+    # the final price and admin UI in sync.
+    if order.promo_code and new_price > 0:
         from bot.services.promo_service import PromoService
         from database.models.promocodes import PromoCodeUsage
 
-        # Check if usage already exists
+        promo_discount = order.promo_discount or 0.0
+
+        # Check if usage already exists (for manual orders we defer usage until price is set)
         existing_usage = await session.execute(
             select(PromoCodeUsage).where(
                 PromoCodeUsage.order_id == order_id
             )
         )
-        if not existing_usage.first():
-            # Apply promo now that we have a real price
+        usage_row = existing_usage.scalar_one_or_none()
+        usage_exists = usage_row is not None
+
+        # Apply promo usage if we haven't yet (manual or re-priced orders)
+        if not usage_exists:
             apply_success, apply_msg, applied_discount = await PromoService.apply_promo_to_order(
                 session=session,
                 order_id=order_id,
@@ -605,14 +618,41 @@ async def update_order_price(
                 order.promo_code = None
                 order.promo_discount = 0.0
                 # Keep only loyalty discount (capped at 50%)
-                from database.models import User
-                user = await session.get(User, order.user_id)
-                loyalty_discount = user.discount_percent if user else 0.0
-                order.discount = min(loyalty_discount, 50.0)
+                order.discount = loyalty_discount
             else:
-                # Update promo_discount with the actual discount from the promo code
-                order.promo_discount = float(applied_discount)
+                promo_discount = float(applied_discount)
+                order.promo_discount = promo_discount
                 logger.info(f"[GodMode] Applied deferred promo {order.promo_code} ({applied_discount}%) to order #{order_id}")
+
+        # If usage already exists, sync stored discount percent and amount with current price
+        if usage_exists and order.promo_code:
+            if promo_discount == 0:
+                promo = await PromoService.get_promo_code(session, order.promo_code, for_update=False)
+                if promo and promo.is_active:
+                    promo_discount = float(promo.discount_percent)
+                    order.promo_discount = promo_discount
+                else:
+                    order.promo_code = None
+                    order.promo_discount = 0.0
+            if order.promo_discount:
+                try:
+                    usage_row.discount_amount = new_price * (order.promo_discount / 100.0)
+                except Exception:
+                    pass
+
+        # Even if usage already existed, refresh the stored discount
+        if order.promo_code and promo_discount == 0:
+            promo = await PromoService.get_promo_code(session, order.promo_code, for_update=False)
+            if promo and promo.is_active:
+                order.promo_discount = float(promo.discount_percent)
+                logger.info(
+                    f"[GodMode] Restored promo discount for order #{order_id}: "
+                    f"{order.promo_code} (−{promo.discount_percent}%)"
+                )
+            else:
+                # Promo is no longer valid; clear it to avoid showing stale code without discount
+                order.promo_code = None
+                order.promo_discount = 0.0
 
     # Auto-transition status if needed
     old_status = order.status
