@@ -6,6 +6,7 @@ This service handles all promo code operations with:
 - Row-level locking for concurrent access
 - Proper usage tracking and limits
 - Support for promo code return on order cancellation
+- User and admin notifications for promo events
 """
 
 import logging
@@ -15,9 +16,11 @@ from sqlalchemy import select, update, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from zoneinfo import ZoneInfo
+from aiogram import Bot
 
 from database.models.promocodes import PromoCode, PromoCodeUsage
 from database.models.orders import Order
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 MSK_TZ = ZoneInfo("Europe/Moscow")
@@ -158,7 +161,8 @@ class PromoService:
         order_id: int,
         code: str,
         user_id: int,
-        base_price: float
+        base_price: float,
+        bot: Optional[Bot] = None
     ) -> tuple[bool, str, float]:
         """
         Apply promo code to an order atomically.
@@ -168,6 +172,7 @@ class PromoService:
         2. Validates the promo again (race condition protection)
         3. Records the usage
         4. Increments usage counter
+        5. Notifies admin if promo reaches max uses
 
         Args:
             session: Database session
@@ -175,6 +180,7 @@ class PromoService:
             code: Promo code
             user_id: User's Telegram ID
             base_price: Base price to calculate savings
+            bot: Bot instance for sending notifications (optional)
 
         Returns:
             Tuple of (success, message, discount_percent)
@@ -229,6 +235,7 @@ class PromoService:
             session.add(usage)
 
             # Increment usage counter
+            old_uses = promo.current_uses
             promo.current_uses += 1
 
             # Commit atomically
@@ -238,6 +245,57 @@ class PromoService:
                 f"[PromoService] Applied '{code}' to order #{order_id} for user {user_id}: "
                 f"{promo.discount_percent}% (saved {discount_amount:.2f})"
             )
+
+            # Check if promo has reached max uses and notify admins
+            if bot and promo.max_uses > 0 and promo.current_uses >= promo.max_uses:
+                try:
+                    admin_message = (
+                        f"🚨 <b>Промокод исчерпан!</b>\n\n"
+                        f"🎫 Код: <code>{promo.code}</code>\n"
+                        f"📉 Скидка: {promo.discount_percent}%\n"
+                        f"🔢 Использован: {promo.current_uses}/{promo.max_uses}\n\n"
+                        f"Промокод достиг лимита использований и больше не может быть применён."
+                    )
+
+                    # Send to all admins
+                    for admin_id in settings.ADMIN_IDS:
+                        try:
+                            await bot.send_message(
+                                chat_id=admin_id,
+                                text=admin_message
+                            )
+                        except Exception as e:
+                            logger.warning(f"[PromoService] Failed to notify admin {admin_id}: {e}")
+
+                    logger.info(f"[PromoService] Notified admins: promo '{code}' reached max uses")
+                except Exception as e:
+                    logger.error(f"[PromoService] Error sending admin notifications: {e}")
+
+            # Check if promo is almost at limit (90%) and warn admins
+            elif bot and promo.max_uses > 0:
+                usage_percent = (promo.current_uses / promo.max_uses) * 100
+                if usage_percent >= 90 and old_uses < promo.max_uses * 0.9:
+                    try:
+                        admin_message = (
+                            f"⚠️ <b>Промокод почти исчерпан</b>\n\n"
+                            f"🎫 Код: <code>{promo.code}</code>\n"
+                            f"📉 Скидка: {promo.discount_percent}%\n"
+                            f"🔢 Использовано: {promo.current_uses}/{promo.max_uses} ({usage_percent:.0f}%)\n\n"
+                            f"Осталось {promo.max_uses - promo.current_uses} использований."
+                        )
+
+                        for admin_id in settings.ADMIN_IDS:
+                            try:
+                                await bot.send_message(
+                                    chat_id=admin_id,
+                                    text=admin_message
+                                )
+                            except Exception as e:
+                                logger.warning(f"[PromoService] Failed to notify admin {admin_id}: {e}")
+
+                        logger.info(f"[PromoService] Notified admins: promo '{code}' at 90% usage")
+                    except Exception as e:
+                        logger.error(f"[PromoService] Error sending admin warnings: {e}")
 
             return True, f"Промокод применён: скидка {promo.discount_percent}%", promo.discount_percent
 
@@ -249,16 +307,19 @@ class PromoService:
     @staticmethod
     async def return_promo_usage(
         session: AsyncSession,
-        order_id: int
+        order_id: int,
+        bot: Optional[Bot] = None
     ) -> tuple[bool, str]:
         """
         Return promo code usage when an order is cancelled.
 
         This allows the user to use the promo code again on a future order.
+        Sends notification to user if bot is provided.
 
         Args:
             session: Database session
             order_id: ID of the cancelled order
+            bot: Bot instance for sending notifications (optional)
 
         Returns:
             Tuple of (success, message)
@@ -302,6 +363,24 @@ class PromoService:
                 f"[PromoService] Returned promo usage for order #{order_id}: "
                 f"code '{promo.code if promo else 'unknown'}'"
             )
+
+            # Notify user about promo code return
+            if bot and promo and usage.user_id:
+                try:
+                    message = (
+                        f"🎫 <b>Промокод {promo.code} возвращён!</b>\n\n"
+                        f"Ваш заказ #{order_id} был отменён, и промокод снова доступен для использования.\n\n"
+                        f"💰 Скидка: <b>{promo.discount_percent}%</b>\n"
+                        f"📅 Действителен до: {promo.valid_until.strftime('%d.%m.%Y') if promo.valid_until else 'Безлимитно'}\n\n"
+                        f"Вы можете использовать его при следующем заказе."
+                    )
+                    await bot.send_message(
+                        chat_id=usage.user_id,
+                        text=message
+                    )
+                    logger.info(f"[PromoService] Sent promo return notification to user {usage.user_id}")
+                except Exception as e:
+                    logger.warning(f"[PromoService] Failed to send promo return notification: {e}")
 
             return True, "Промокод возвращён"
 

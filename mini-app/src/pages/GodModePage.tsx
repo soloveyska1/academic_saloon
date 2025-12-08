@@ -760,6 +760,53 @@ function DashboardTab() {
         </div>
       </div>
 
+      {/* Promo Stats */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <Tag size={20} color="#D4AF37" />
+          <span style={{ color: '#fff', fontWeight: 600 }}>Промокоды</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+          <StatCard label="Всего" value={data.promos.total} color="#D4AF37" />
+          <StatCard label="Активных" value={data.promos.active} color="#22c55e" />
+          <StatCard label="Использований" value={data.promos.total_uses} color="#3b82f6" />
+          <StatCard label="Сэкономлено" value={`${data.promos.total_discount_given.toLocaleString()}₽`} color="#8b5cf6" />
+        </div>
+        {data.promos.popular.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 8 }}>
+              Популярные промокоды:
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {data.promos.popular.map((promo, idx) => (
+                <div
+                  key={promo.code}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 10px',
+                    background: 'rgba(212,175,55,0.1)',
+                    borderRadius: 6,
+                    borderLeft: `3px solid ${idx === 0 ? '#D4AF37' : idx === 1 ? '#c0c0c0' : '#cd7f32'}`,
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>
+                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                  </span>
+                  <span style={{ color: '#D4AF37', fontWeight: 600, fontSize: 13 }}>
+                    {promo.code}
+                  </span>
+                  <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                    {promo.uses} исп.
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Orders by Status */}
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -941,7 +988,12 @@ function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void })
             alignItems: 'center',
             gap: 3,
           }}>
-            <Tag size={10} /> {order.promo_code}
+            <Percent size={10} /> {order.promo_code} -{order.promo_discount}%
+          </span>
+        )}
+        {order.promo_code && order.promo_discount_amount > 0 && (
+          <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 600 }}>
+            -{order.promo_discount_amount.toFixed(0)}₽
           </span>
         )}
         <span style={{ marginLeft: 'auto', color: '#D4AF37', fontWeight: 700 }}>{order.final_price.toLocaleString()}₽</span>
@@ -1120,29 +1172,52 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
           <div style={{
             marginBottom: 20,
             padding: 14,
-            background: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
+            background: order.promo_returned ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+            border: `1px solid ${order.promo_returned ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`,
             borderRadius: 12,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <Tag size={16} color="#22c55e" />
-              <span style={{ color: '#22c55e', fontWeight: 700, fontSize: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              <Tag size={16} color={order.promo_returned ? "#ef4444" : "#22c55e"} />
+              <span style={{ color: order.promo_returned ? '#ef4444' : '#22c55e', fontWeight: 700, fontSize: 14 }}>
                 Промокод: {order.promo_code}
               </span>
               <span style={{
                 padding: '2px 8px',
-                background: 'rgba(34, 197, 94, 0.2)',
+                background: order.promo_returned ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
                 borderRadius: 6,
-                color: '#22c55e',
+                color: order.promo_returned ? '#ef4444' : '#22c55e',
                 fontSize: 12,
                 fontWeight: 600,
               }}>
                 −{order.promo_discount}%
               </span>
+              {order.promo_returned && (
+                <span style={{
+                  padding: '2px 8px',
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  borderRadius: 6,
+                  color: '#ef4444',
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}>
+                  Возвращён
+                </span>
+              )}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-              Базовая цена: {Math.round(order.final_price / (1 - order.promo_discount / 100)).toLocaleString()}₽ → Со скидкой: {order.final_price.toLocaleString()}₽
+              {order.promo_discount_amount > 0 && (
+                <>
+                  Сэкономлено: <span style={{ color: '#22c55e', fontWeight: 600 }}>{order.promo_discount_amount.toFixed(0)}₽</span>
+                  <br />
+                </>
+              )}
+              Цена без промо: {order.price.toLocaleString()}₽ → Со скидкой: {order.final_price.toLocaleString()}₽
             </div>
+            {order.promo_returned && (
+              <div style={{ marginTop: 8, color: '#ef4444', fontSize: 11 }}>
+                ⚠️ Промокод был возвращён из-за отмены заказа
+              </div>
+            )}
           </div>
         )}
 
@@ -1738,48 +1813,128 @@ function PromosTab() {
       {/* Promos list */}
       {loading ? <LoadingSpinner /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {promos.map(promo => (
-            <div key={promo.id} style={{
-              ...cardStyle,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              opacity: promo.is_active ? 1 : 0.5,
-            }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#D4AF37', fontWeight: 700, fontSize: 16 }}>{promo.code}</span>
-                  <span style={{
-                    padding: '2px 8px',
-                    background: promo.is_active ? 'rgba(34,197,94,0.2)' : 'rgba(107,114,128,0.2)',
-                    color: promo.is_active ? '#22c55e' : '#6b7280',
-                    borderRadius: 4,
-                    fontSize: 11,
-                  }}>
-                    {promo.is_active ? 'Активен' : 'Выкл'}
-                  </span>
+          {promos.map(promo => {
+            const validFrom = promo.valid_from ? new Date(promo.valid_from) : null
+            const validUntil = promo.valid_until ? new Date(promo.valid_until) : null
+            const now = new Date()
+            const isExpired = validUntil && validUntil < now
+            const notYetValid = validFrom && validFrom > now
+
+            return (
+              <div key={promo.id} style={{
+                ...cardStyle,
+                opacity: promo.is_active && !isExpired && !notYetValid ? 1 : 0.5,
+              }}>
+                {/* Header Row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ color: '#D4AF37', fontWeight: 700, fontSize: 16 }}>{promo.code}</span>
+                      <span style={{
+                        padding: '2px 8px',
+                        background: promo.is_active ? 'rgba(34,197,94,0.2)' : 'rgba(107,114,128,0.2)',
+                        color: promo.is_active ? '#22c55e' : '#6b7280',
+                        borderRadius: 4,
+                        fontSize: 11,
+                      }}>
+                        {promo.is_active ? 'Активен' : 'Выкл'}
+                      </span>
+                      {isExpired && (
+                        <span style={{
+                          padding: '2px 8px',
+                          background: 'rgba(239,68,68,0.2)',
+                          color: '#ef4444',
+                          borderRadius: 4,
+                          fontSize: 11,
+                        }}>
+                          Истёк
+                        </span>
+                      )}
+                      {notYetValid && (
+                        <span style={{
+                          padding: '2px 8px',
+                          background: 'rgba(245,158,11,0.2)',
+                          color: '#f59e0b',
+                          borderRadius: 4,
+                          fontSize: 11,
+                        }}>
+                          Скоро
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600 }}>
+                      -{promo.discount_percent}%
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleToggle(promo.id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    {promo.is_active
+                      ? <ToggleRight size={28} color="#22c55e" />
+                      : <ToggleLeft size={28} color="#6b7280" />
+                    }
+                  </button>
+                  <button
+                    onClick={() => handleDelete(promo.id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    <Trash2 size={20} color="#ef4444" />
+                  </button>
                 </div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                  -{promo.discount_percent}% • Исп: {promo.current_uses}/{promo.max_uses || '∞'}
+
+                {/* Stats Row */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 8,
+                  padding: 10,
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}>
+                  <div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Использования</div>
+                    <div style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>
+                      {promo.active_usages}/{promo.max_uses || '∞'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>Всего сэкономлено</div>
+                    <div style={{ color: '#22c55e', fontSize: 13, fontWeight: 600 }}>
+                      {promo.total_savings.toFixed(0)}₽
+                    </div>
+                  </div>
+                </div>
+
+                {/* Validity & Creator */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {validFrom && (
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                      Действует с: {validFrom.toLocaleDateString('ru-RU')}
+                    </div>
+                  )}
+                  {validUntil && (
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                      Действует до: {validUntil.toLocaleDateString('ru-RU')}
+                      {isExpired && <span style={{ color: '#ef4444' }}> (истёк)</span>}
+                    </div>
+                  )}
+                  {!validUntil && (
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                      Без срока действия
+                    </div>
+                  )}
+                  {promo.created_by && (
+                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>
+                      Создал: {promo.created_by.fullname}
+                      {promo.created_by.username && ` (@${promo.created_by.username})`}
+                    </div>
+                  )}
                 </div>
               </div>
-              <button
-                onClick={() => handleToggle(promo.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                {promo.is_active
-                  ? <ToggleRight size={28} color="#22c55e" />
-                  : <ToggleLeft size={28} color="#6b7280" />
-                }
-              </button>
-              <button
-                onClick={() => handleDelete(promo.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                <Trash2 size={20} color="#ef4444" />
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </motion.div>

@@ -1,12 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, CheckCircle2, X, Loader, Sparkles, Gift, Percent, ChevronDown, ChevronUp } from 'lucide-react'
+import { Tag, CheckCircle2, X, Loader, Sparkles, Gift, Percent, ChevronDown, ChevronUp, Calendar, Clock } from 'lucide-react'
 import { usePromo } from '../../contexts/PromoContext'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  PREMIUM PROMO CODE SECTION
 //  A beautiful, premium component for entering and displaying promo codes
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// Helper function to format expiration date
+function formatExpiryDate(timestamp: number): string {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diffMs = timestamp - now.getTime()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) return 'Истёк'
+  if (diffDays === 0) return 'Истекает сегодня'
+  if (diffDays === 1) return 'Истекает завтра'
+  if (diffDays <= 7) return `Истекает через ${diffDays} дн.`
+
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+}
 
 interface PromoCodeSectionProps {
   // Display mode
@@ -158,48 +173,113 @@ export function PromoCodeSection({
         <AnimatePresence>
           {activePromo ? (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px 16px',
-                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.05))',
-                border: '1px solid rgba(34, 197, 94, 0.25)',
+                padding: '14px 16px',
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
                 borderRadius: 16,
                 marginBottom: 12,
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 4px 20px -4px rgba(34, 197, 94, 0.25)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  background: 'rgba(34, 197, 94, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <CheckCircle2 size={16} color="#22c55e" />
-                </div>
-                <div>
+              {/* Success glow animation */}
+              {showSuccess && (
+                <motion.div
+                  initial={{ opacity: 0.6, scale: 0.8 }}
+                  animate={{ opacity: 0, scale: 2 }}
+                  transition={{ duration: 0.8 }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'radial-gradient(circle, rgba(34, 197, 94, 0.3) 0%, transparent 70%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'rgba(34, 197, 94, 0.2)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <CheckCircle2 size={18} color="#22c55e" strokeWidth={2.5} />
+                </motion.div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    fontFamily: 'var(--font-mono)',
-                    color: '#22c55e',
-                    letterSpacing: '0.03em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginBottom: 4,
                   }}>
-                    {activePromo.code}
+                    <span style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)',
+                      color: '#22c55e',
+                      letterSpacing: '0.03em',
+                    }}>
+                      {activePromo.code}
+                    </span>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.2, type: 'spring' }}
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: 6,
+                        background: 'rgba(34, 197, 94, 0.25)',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: '#22c55e',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      −{activePromo.discount}%
+                    </motion.div>
                   </div>
                   <div style={{
                     fontSize: 11,
                     color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    flexWrap: 'wrap',
                   }}>
-                    Скидка {activePromo.discount}%
-                    {savings > 0 && ` • Экономия ${savings.toLocaleString('ru-RU')} ₽`}
+                    {savings > 0 && (
+                      <span style={{ color: '#22c55e', fontWeight: 600 }}>
+                        Экономия {savings.toLocaleString('ru-RU')} ₽
+                      </span>
+                    )}
+                    {activePromo.expiresAt && (
+                      <>
+                        {savings > 0 && <span>•</span>}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <Clock size={10} />
+                          {formatExpiryDate(activePromo.expiresAt)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -216,6 +296,7 @@ export function PromoCodeSection({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
                 <X size={14} color="var(--text-muted)" />
@@ -276,16 +357,22 @@ export function PromoCodeSection({
                   border: inputCode.trim()
                     ? '1px solid rgba(212, 175, 55, 0.3)'
                     : '1px solid rgba(255, 255, 255, 0.08)',
-                  cursor: inputCode.trim() ? 'pointer' : 'default',
-                  opacity: inputCode.trim() ? 1 : 0.5,
+                  cursor: inputCode.trim() && !isValidating ? 'pointer' : 'default',
+                  opacity: isValidating ? 0.7 : (inputCode.trim() ? 1 : 0.5),
+                  transition: 'opacity 0.2s',
                 }}
               >
                 {isValidating ? (
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
-                    <Loader size={16} color="#d4af37" />
+                    <Loader size={16} color="#d4af37" strokeWidth={3} />
                   </motion.div>
                 ) : (
                   <span style={{
@@ -387,10 +474,11 @@ export function PromoCodeSection({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  marginBottom: 6,
+                  marginBottom: 8,
+                  flexWrap: 'wrap',
                 }}>
                   <span style={{
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: 700,
                     fontFamily: 'var(--font-mono)',
                     color: '#22c55e',
@@ -398,24 +486,52 @@ export function PromoCodeSection({
                   }}>
                     {activePromo.code}
                   </span>
-                  <span style={{
-                    padding: '3px 8px',
-                    borderRadius: 6,
-                    background: 'rgba(34, 197, 94, 0.2)',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: '#22c55e',
-                  }}>
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 500 }}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: 8,
+                      background: 'rgba(34, 197, 94, 0.25)',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#22c55e',
+                    }}
+                  >
                     -{activePromo.discount}%
-                  </span>
+                  </motion.span>
                 </div>
                 <div style={{
                   fontSize: 13,
                   color: 'var(--text-secondary)',
-                  lineHeight: 1.4,
+                  lineHeight: 1.5,
+                  marginBottom: activePromo.expiresAt ? 8 : 0,
                 }}>
                   Промокод активирован и будет применён к вашему следующему заказу
                 </div>
+                {activePromo.expiresAt && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 10px',
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      border: '1px solid rgba(34, 197, 94, 0.2)',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      color: '#22c55e',
+                      width: 'fit-content',
+                    }}
+                  >
+                    <Calendar size={12} />
+                    Действует до: {formatExpiryDate(activePromo.expiresAt)}
+                  </motion.div>
+                )}
               </div>
 
               {/* Clear button */}
@@ -529,45 +645,71 @@ export function PromoCodeSection({
               </div>
 
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: inputCode.trim() && !isValidating ? 0.95 : 1 }}
                 onClick={handleSubmit}
                 disabled={isValidating || !inputCode.trim()}
                 style={{
                   height: 48,
-                  padding: '0 20px',
+                  padding: '0 24px',
                   borderRadius: 14,
                   background: inputCode.trim()
                     ? 'linear-gradient(135deg, #d4af37, #b8962e)'
                     : 'rgba(255, 255, 255, 0.05)',
                   border: 'none',
-                  cursor: inputCode.trim() ? 'pointer' : 'default',
-                  opacity: isValidating ? 0.7 : 1,
+                  cursor: inputCode.trim() && !isValidating ? 'pointer' : 'default',
+                  opacity: isValidating ? 0.8 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
-                  boxShadow: inputCode.trim() ? '0 4px 15px rgba(212, 175, 55, 0.3)' : 'none',
+                  boxShadow: inputCode.trim() ? '0 4px 20px rgba(212, 175, 55, 0.35)' : 'none',
+                  transition: 'opacity 0.2s, box-shadow 0.3s',
                 }}
               >
-                {isValidating ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <Loader size={18} color="#0a0a0c" />
-                  </motion.div>
-                ) : (
-                  <>
-                    <Sparkles size={16} color={inputCode.trim() ? '#0a0a0c' : 'var(--text-muted)'} />
-                    <span style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: inputCode.trim() ? '#0a0a0c' : 'var(--text-muted)',
-                    }}>
-                      Применить
-                    </span>
-                  </>
-                )}
+                <AnimatePresence mode="wait">
+                  {isValidating ? (
+                    <motion.div
+                      key="loading"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 360 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{
+                        rotate: { duration: 0.8, repeat: Infinity, ease: 'linear' },
+                        opacity: { duration: 0.2 },
+                        scale: { duration: 0.2 }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Loader size={20} color="#0a0a0c" strokeWidth={3} />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="apply"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.2 }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <Sparkles size={18} color={inputCode.trim() ? '#0a0a0c' : 'var(--text-muted)'} />
+                      <span style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: inputCode.trim() ? '#0a0a0c' : 'var(--text-muted)',
+                      }}>
+                        Применить
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.button>
             </div>
 

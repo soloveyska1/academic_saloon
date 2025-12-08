@@ -18,6 +18,7 @@ export interface ActivePromo {
   message: string
   activatedAt: number // timestamp when promo was validated
   validatedAt: number // timestamp of last successful validation
+  expiresAt?: number | null // timestamp when promo expires (from server)
 }
 
 interface PromoContextType {
@@ -170,6 +171,7 @@ export function PromoProvider({ children }: { children: ReactNode }) {
               message: result.message,
               activatedAt: Date.now(),
               validatedAt: Date.now(),
+              expiresAt: result.valid_until ? new Date(result.valid_until).getTime() : null,
             }
             setActivePromo(newPromo)
             setValidationError(null)
@@ -235,6 +237,7 @@ export function PromoProvider({ children }: { children: ReactNode }) {
           ...activePromo,
           validatedAt: Date.now(),
           discount: result.discount, // Update discount in case it changed
+          expiresAt: result.valid_until ? new Date(result.valid_until).getTime() : activePromo.expiresAt,
         })
         return true
       } else {
