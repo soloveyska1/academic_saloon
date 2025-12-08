@@ -976,6 +976,13 @@ export function CreateOrderPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   if (step === 4 && result) {
+    // Calculate savings if promo was applied
+    const baseEstimate = getBaseEstimate()
+    const finalEstimate = getEstimate()
+    const savings = baseEstimate && finalEstimate && activePromo
+      ? baseEstimate - finalEstimate
+      : 0
+
     return (
       <div style={{ padding: 24, paddingBottom: 160, minHeight: '100vh', background: 'var(--bg-main)' }}>
         <motion.div
@@ -1026,13 +1033,111 @@ export function CreateOrderPage() {
             {result.ok ? 'Заказ создан!' : 'Ошибка'}
           </h2>
 
-          <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: 40, maxWidth: 300, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: result.ok && activePromo ? 20 : 40, maxWidth: 300, lineHeight: 1.6 }}>
             {result.msg}
           </p>
+
+          {/* Promo savings card */}
+          {result.ok && activePromo && savings > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.3, type: 'spring' }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 12,
+                padding: '20px 24px',
+                marginBottom: 32,
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))',
+                border: '2px solid rgba(34, 197, 94, 0.3)',
+                borderRadius: 20,
+                maxWidth: 320,
+                width: '100%',
+                boxShadow: '0 8px 32px -8px rgba(34, 197, 94, 0.3)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Shimmer effect */}
+              <motion.div
+                animate={{ x: ['-100%', '200%'] }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                  transform: 'skewX(-20deg)',
+                  pointerEvents: 'none',
+                }}
+              />
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 8,
+              }}>
+                <Tag size={18} color="#22c55e" />
+                <span style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  color: '#22c55e',
+                  letterSpacing: '0.05em',
+                }}>
+                  {activePromo.code}
+                </span>
+                <span style={{
+                  padding: '3px 8px',
+                  borderRadius: 6,
+                  background: 'rgba(34, 197, 94, 0.25)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#22c55e',
+                }}>
+                  -{activePromo.discount}%
+                </span>
+              </div>
+
+              <div style={{
+                fontSize: 14,
+                color: 'var(--text-secondary)',
+                marginBottom: 4,
+              }}>
+                Ваша экономия
+              </div>
+
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
+                style={{
+                  fontSize: 32,
+                  fontWeight: 800,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  background: 'linear-gradient(135deg, #22c55e, #4ade80)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  textShadow: '0 0 20px rgba(34, 197, 94, 0.3)',
+                }}
+              >
+                {savings.toLocaleString('ru-RU')} ₽
+              </motion.div>
+            </motion.div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 320 }}>
             {result.ok && result.id && (
               <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: activePromo ? 0.6 : 0.3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => navigate(`/order/${result.id}`)}
                 style={{
@@ -1052,6 +1157,9 @@ export function CreateOrderPage() {
               </motion.button>
             )}
             <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: activePromo ? 0.7 : 0.4 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate('/')}
               style={{
@@ -1526,18 +1634,20 @@ export function CreateOrderPage() {
         </AnimatePresence>
       </motion.div>
 
-      {/* Promo Lost Warning Modal */}
+      {/* Promo Lost Warning Modal - Premium Enhanced */}
       <AnimatePresence>
         {showPromoWarning && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0, 0, 0, 0.8)',
-              backdropFilter: 'blur(8px)',
+              background: 'rgba(0, 0, 0, 0.85)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
               zIndex: 9999,
               display: 'flex',
               alignItems: 'center',
@@ -1547,98 +1657,179 @@ export function CreateOrderPage() {
             onClick={handlePromoWarningCancel}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.85, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 10 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
               style={{
-                background: isDark ? '#1a1a1f' : '#ffffff',
-                borderRadius: 24,
-                padding: 28,
-                maxWidth: 360,
+                background: isDark
+                  ? 'linear-gradient(145deg, #1f1f25 0%, #18181c 100%)'
+                  : 'linear-gradient(145deg, #ffffff 0%, #f8f8f8 100%)',
+                borderRadius: 28,
+                padding: '32px 28px',
+                maxWidth: 380,
                 width: '100%',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+                border: `2px solid rgba(239, 68, 68, 0.3)`,
+                boxShadow: isDark
+                  ? '0 25px 80px -15px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(239, 68, 68, 0.1)'
+                  : '0 25px 80px -15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(239, 68, 68, 0.1)',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              {/* Warning Icon */}
-              <div style={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '2px solid rgba(239, 68, 68, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px',
-              }}>
-                <AlertCircle size={32} color="#ef4444" />
-              </div>
+              {/* Animated gradient background */}
+              <motion.div
+                animate={{
+                  opacity: [0.1, 0.2, 0.1],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+                style={{
+                  position: 'absolute',
+                  top: -50,
+                  left: -50,
+                  width: 200,
+                  height: 200,
+                  background: 'radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, transparent 70%)',
+                  filter: 'blur(40px)',
+                  pointerEvents: 'none',
+                }}
+              />
+
+              {/* Warning Icon with Pulse */}
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  width: 72,
+                  height: 72,
+                  borderRadius: '50%',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '3px solid rgba(239, 68, 68, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 24px',
+                  boxShadow: '0 0 30px -5px rgba(239, 68, 68, 0.4)',
+                }}
+              >
+                <motion.div
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  <AlertCircle size={36} color="#ef4444" strokeWidth={2.5} />
+                </motion.div>
+              </motion.div>
 
               {/* Title */}
-              <h3 style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 22,
-                fontWeight: 700,
-                color: isDark ? '#f2f2f2' : '#18181b',
-                textAlign: 'center',
-                marginBottom: 12,
-              }}>
+              <motion.h3
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: isDark ? '#f2f2f2' : '#18181b',
+                  textAlign: 'center',
+                  marginBottom: 14,
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
                 Промокод недействителен
-              </h3>
+              </motion.h3>
 
               {/* Description */}
-              <p style={{
-                fontSize: 14,
-                color: isDark ? '#a1a1aa' : '#52525b',
-                textAlign: 'center',
-                lineHeight: 1.6,
-                marginBottom: 24,
-              }}>
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                style={{
+                  fontSize: 15,
+                  color: isDark ? '#a1a1aa' : '#52525b',
+                  textAlign: 'center',
+                  lineHeight: 1.7,
+                  marginBottom: 28,
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
                 {promoLostReason || 'Промокод больше не действителен.'}
                 {' '}Вы можете создать заказ без скидки или вернуться и ввести другой промокод.
-              </p>
+              </motion.p>
 
               {/* Buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
                 <motion.button
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handlePromoWarningContinue}
                   style={{
                     width: '100%',
-                    padding: '16px 24px',
+                    padding: '18px 24px',
                     fontSize: 16,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: '#050505',
                     background: 'linear-gradient(135deg, #d4af37, #b8962e)',
                     border: 'none',
-                    borderRadius: 14,
+                    borderRadius: 16,
                     cursor: 'pointer',
-                    boxShadow: '0 4px 20px rgba(212, 175, 55, 0.3)',
+                    boxShadow: '0 6px 24px -4px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    transition: 'box-shadow 0.3s',
                   }}
                 >
                   Создать без скидки
                 </motion.button>
 
                 <motion.button
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handlePromoWarningCancel}
                   style={{
                     width: '100%',
-                    padding: '16px 24px',
+                    padding: '18px 24px',
                     fontSize: 16,
                     fontWeight: 600,
-                    color: isDark ? '#a1a1aa' : '#52525b',
-                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-                    borderRadius: 14,
+                    color: isDark ? '#d4af37' : '#b8962e',
+                    background: isDark
+                      ? 'rgba(212, 175, 55, 0.08)'
+                      : 'rgba(212, 175, 55, 0.12)',
+                    border: `1.5px solid ${isDark ? 'rgba(212, 175, 55, 0.25)' : 'rgba(212, 175, 55, 0.3)'}`,
+                    borderRadius: 16,
                     cursor: 'pointer',
+                    transition: 'background 0.3s, border-color 0.3s',
                   }}
                 >
                   Ввести другой промокод
                 </motion.button>
-              </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}

@@ -118,6 +118,7 @@ export interface PromoResult {
   success: boolean
   message: string
   discount?: number
+  valid_until?: string | null  // ISO date string for promo expiration
 }
 
 export interface RouletteResult {
@@ -300,8 +301,14 @@ export interface GodDashboard {
     total_bonus_balance: number
   }
   promos: {
+    total: number
     active: number
     total_uses: number
+    total_discount_given: number
+    popular: Array<{
+      code: string
+      uses: number
+    }>
   }
 }
 
@@ -319,6 +326,8 @@ export interface GodOrder {
   discount: number
   promo_code: string | null  // Applied promo code
   promo_discount: number  // Promo discount percentage
+  promo_discount_amount: number  // Actual amount saved with promo
+  promo_returned?: boolean  // Whether promo was returned (for cancelled orders)
   bonus_used: number
   progress: number
   payment_scheme: string | null
@@ -363,9 +372,16 @@ export interface GodPromo {
   discount_percent: number
   max_uses: number
   current_uses: number
+  active_usages: number
+  total_savings: number
   is_active: boolean
   valid_from: string | null
   valid_until: string | null
+  created_by: {
+    telegram_id: number
+    username: string | null
+    fullname: string
+  } | null
   created_at: string | null
 }
 

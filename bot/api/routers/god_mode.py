@@ -204,12 +204,36 @@ async def get_dashboard(
     ) or 0.0
 
     # === PROMO STATS ===
+    total_promos = await session.scalar(
+        select(func.count(PromoCode.id))
+    ) or 0
     active_promos = await session.scalar(
         select(func.count(PromoCode.id)).where(PromoCode.is_active == True)
-    )
+    ) or 0
     total_promo_uses = await session.scalar(
         select(func.count(PromoCodeUsage.id))
     ) or 0
+
+    # Total discount given (sum of all active promo usages)
+    total_discount_given = await session.scalar(
+        select(func.sum(PromoCodeUsage.discount_amount)).where(
+            PromoCodeUsage.is_active == True
+        )
+    ) or 0.0
+
+    # Most popular promo codes (top 3 by usage count)
+    popular_promos_result = await session.execute(
+        select(PromoCode.code, func.count(PromoCodeUsage.id).label('usage_count'))
+        .join(PromoCodeUsage, PromoCodeUsage.promocode_id == PromoCode.id)
+        .where(PromoCodeUsage.is_active == True)
+        .group_by(PromoCode.code)
+        .order_by(desc('usage_count'))
+        .limit(3)
+    )
+    popular_promos = [
+        {"code": row[0], "uses": row[1]}
+        for row in popular_promos_result.fetchall()
+    ]
 
     # === ONLINE USERS ===
     five_min_ago = now - timedelta(minutes=5)
@@ -246,8 +270,11 @@ async def get_dashboard(
             "total_bonus_balance": float(total_bonus_balance),
         },
         "promos": {
-            "active": active_promos or 0,
+            "total": total_promos,
+            "active": active_promos,
             "total_uses": total_promo_uses,
+            "total_discount_given": float(total_discount_given),
+            "popular": popular_promos,
         },
     }
 
@@ -309,6 +336,12 @@ async def get_orders(
     for o in orders:
         user = users_map.get(o.user_id)
         order_dict = order_to_response(o).__dict__
+
+        # Calculate discount amount saved if promo was used
+        promo_discount_amount = 0.0
+        if o.promo_code and o.promo_discount > 0:
+            promo_discount_amount = o.price * (o.promo_discount / 100.0)
+
         order_dict.update({
             "user_telegram_id": o.user_id,
             "user_fullname": user.fullname if user else "Unknown",
@@ -317,6 +350,9 @@ async def get_orders(
             "channel_message_id": o.channel_message_id,
             "revision_count": o.revision_count,
             "description": o.description,
+            "promo_code": o.promo_code,
+            "promo_discount": o.promo_discount,
+            "promo_discount_amount": promo_discount_amount,
         })
         orders_data.append(order_dict)
 
@@ -353,6 +389,24 @@ async def get_order_details(
     )
     messages = messages_result.scalars().all()
 
+    # Calculate promo discount amount
+    promo_discount_amount = 0.0
+    promo_returned = False
+    if order.promo_code and order.promo_discount > 0:
+        promo_discount_amount = order.price * (order.promo_discount / 100.0)
+
+        # Check if promo was returned (for cancelled orders)
+        promo_usage_result = await session.execute(
+            select(PromoCodeUsage).where(
+                and_(
+                    PromoCodeUsage.order_id == order_id,
+                    PromoCodeUsage.returned_at.isnot(None)
+                )
+            )
+        )
+        if promo_usage_result.scalar_one_or_none():
+            promo_returned = True
+
     return {
         "order": {
             **order_to_response(order).__dict__,
@@ -363,6 +417,10 @@ async def get_order_details(
             "revision_count": order.revision_count,
             "description": order.description,
             "payment_method": order.payment_method,
+            "promo_code": order.promo_code,
+            "promo_discount": order.promo_discount,
+            "promo_discount_amount": promo_discount_amount,
+            "promo_returned": promo_returned,
         },
         "user": {
             "telegram_id": user.telegram_id if user else None,
@@ -426,7 +484,9 @@ async def update_order_status(
         if order.promo_code:
             try:
                 from bot.services.promo_service import PromoService
-                success, msg = await PromoService.return_promo_usage(session, order_id)
+                from bot.bot_instance import get_bot
+                bot = await get_bot()
+                success, msg = await PromoService.return_promo_usage(session, order_id, bot=bot)
                 if success:
                     logger.info(f"[God Mode] Promo returned for cancelled order #{order_id}")
                 else:
@@ -1131,7 +1191,7 @@ async def get_promos(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """Get all promo codes"""
+    """Get all promo codes with usage statistics"""
     require_god_mode(tg_user)
 
     result = await session.execute(
@@ -1139,22 +1199,67 @@ async def get_promos(
     )
     promos = result.scalars().all()
 
-    return {
-        "promos": [
-            {
-                "id": p.id,
-                "code": p.code,
-                "discount_percent": p.discount_percent,
-                "max_uses": p.max_uses,
-                "current_uses": p.current_uses,
-                "is_active": p.is_active,
-                "valid_from": p.valid_from.isoformat() if p.valid_from else None,
-                "valid_until": p.valid_until.isoformat() if p.valid_until else None,
-                "created_at": p.created_at.isoformat() if p.created_at else None,
-            }
-            for p in promos
-        ]
+    # Get creator info for each promo
+    creator_ids = list(set(p.created_by for p in promos if p.created_by))
+    creators_result = await session.execute(
+        select(User.telegram_id, User.username, User.fullname)
+        .where(User.telegram_id.in_(creator_ids))
+    )
+    creators_map = {
+        row[0]: {"username": row[1], "fullname": row[2]}
+        for row in creators_result.fetchall()
     }
+
+    # Build promo data with stats
+    promo_data = []
+    for p in promos:
+        # Get active usage count
+        active_count = await session.scalar(
+            select(func.count(PromoCodeUsage.id)).where(
+                and_(
+                    PromoCodeUsage.promocode_id == p.id,
+                    PromoCodeUsage.is_active == True
+                )
+            )
+        ) or 0
+
+        # Get total savings
+        total_savings = await session.scalar(
+            select(func.sum(PromoCodeUsage.discount_amount)).where(
+                and_(
+                    PromoCodeUsage.promocode_id == p.id,
+                    PromoCodeUsage.is_active == True
+                )
+            )
+        ) or 0.0
+
+        # Get creator info
+        creator = None
+        if p.created_by:
+            creator_data = creators_map.get(p.created_by)
+            if creator_data:
+                creator = {
+                    "telegram_id": p.created_by,
+                    "username": creator_data["username"],
+                    "fullname": creator_data["fullname"],
+                }
+
+        promo_data.append({
+            "id": p.id,
+            "code": p.code,
+            "discount_percent": p.discount_percent,
+            "max_uses": p.max_uses,
+            "current_uses": p.current_uses,
+            "active_usages": active_count,
+            "total_savings": float(total_savings),
+            "is_active": p.is_active,
+            "valid_from": p.valid_from.isoformat() if p.valid_from else None,
+            "valid_until": p.valid_until.isoformat() if p.valid_until else None,
+            "created_by": creator,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        })
+
+    return {"promos": promo_data}
 
 
 @router.post("/promos")
