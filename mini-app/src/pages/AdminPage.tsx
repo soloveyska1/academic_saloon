@@ -417,14 +417,70 @@ export const AdminPage: React.FC = () => {
                                         <div className="text-green-500/50 text-xs mb-1">Статус</div>
                                         <div className="text-green-400 font-bold text-lg">{selectedOrder.status.toUpperCase()}</div>
                                     </div>
+
+                                    {/* Price breakdown with promo */}
+                                    <div className="bg-green-900/10 p-4 rounded border border-green-900 space-y-3">
+                                        <div className="text-green-500/50 text-xs mb-1">💰 Цена заказа</div>
+
+                                        {/* Original price */}
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-green-500/70">Базовая цена:</span>
+                                            <span className="text-white">{selectedOrder.price?.toLocaleString('ru-RU')} ₽</span>
+                                        </div>
+
+                                        {/* Promo code if exists */}
+                                        {selectedOrder.promo_code && (
+                                            <>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-purple-400 flex items-center gap-1">
+                                                        🎟️ Промокод: <span className="font-bold">{selectedOrder.promo_code}</span>
+                                                    </span>
+                                                    <span className="text-purple-400">-{selectedOrder.promo_discount || 0}%</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-purple-300 text-xs">
+                                                    <span>Экономия:</span>
+                                                    <span>-{Math.round(selectedOrder.price * (selectedOrder.promo_discount || 0) / 100).toLocaleString('ru-RU')} ₽</span>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Loyalty discount if exists */}
+                                        {(selectedOrder.discount || 0) > 0 && (
+                                            <div className="flex justify-between items-center text-blue-400">
+                                                <span>🎖️ Скидка лояльности:</span>
+                                                <span>-{selectedOrder.discount}%</span>
+                                            </div>
+                                        )}
+
+                                        {/* Bonuses if used */}
+                                        {(selectedOrder.bonus_used || 0) > 0 && (
+                                            <div className="flex justify-between items-center text-amber-400">
+                                                <span>⭐ Бонусы:</span>
+                                                <span>-{selectedOrder.bonus_used?.toLocaleString('ru-RU')} ₽</span>
+                                            </div>
+                                        )}
+
+                                        {/* Final price */}
+                                        <div className="border-t border-green-900 pt-2 mt-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-green-400 font-bold">ИТОГО:</span>
+                                                <span className="text-yellow-400 font-bold text-lg">
+                                                    {(selectedOrder.final_price ?? selectedOrder.price)?.toLocaleString('ru-RU')} ₽
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-green-900/10 p-4 rounded border border-green-900">
-                                            <div className="text-green-500/50 text-xs mb-1">Цена</div>
-                                            <div className="text-yellow-400 font-bold">{selectedOrder.price} ₽</div>
+                                            <div className="text-green-500/50 text-xs mb-1">Оплачено</div>
+                                            <div className="text-green-400 font-bold">{selectedOrder.paid_amount?.toLocaleString('ru-RU')} ₽</div>
                                         </div>
                                         <div className="bg-green-900/10 p-4 rounded border border-green-900">
-                                            <div className="text-green-500/50 text-xs mb-1">Оплачено</div>
-                                            <div className="text-green-400 font-bold">{selectedOrder.paid_amount} ₽</div>
+                                            <div className="text-green-500/50 text-xs mb-1">Остаток</div>
+                                            <div className="text-orange-400 font-bold">
+                                                {Math.max(0, (selectedOrder.final_price ?? selectedOrder.price) - (selectedOrder.paid_amount || 0))?.toLocaleString('ru-RU')} ₽
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="bg-green-900/10 p-4 rounded border border-green-900">

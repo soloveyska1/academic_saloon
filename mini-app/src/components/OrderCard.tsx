@@ -189,6 +189,48 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
         </div>
       )}
 
+      {/* Promo Badge (if applied) */}
+      {order.promo_code && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 12,
+          padding: '8px 12px',
+          background: 'rgba(139,92,246,0.1)',
+          borderRadius: 10,
+          border: '1px solid rgba(139,92,246,0.2)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12 }}>🎟️</span>
+            <span style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#a78bfa',
+            }}>
+              {order.promo_code}
+            </span>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#22c55e',
+              background: 'rgba(34,197,94,0.15)',
+              padding: '2px 6px',
+              borderRadius: 4,
+            }}>
+              −{order.promo_discount || 0}%
+            </span>
+          </div>
+          <span style={{
+            fontSize: 11,
+            color: '#22c55e',
+            fontWeight: 500,
+          }}>
+            💚 Экономия {Math.round(order.price - (order.final_price || order.price)).toLocaleString('ru-RU')} ₽
+          </span>
+        </div>
+      )}
+
       {/* Footer: ID + Price */}
       <div style={{
         display: 'flex',
@@ -206,13 +248,24 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
         </span>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Show original price struck through if promo applied */}
+          {order.promo_code && order.price !== order.final_price && (
+            <span style={{
+              fontSize: 13,
+              color: 'var(--text-muted)',
+              textDecoration: 'line-through',
+              fontFamily: "var(--font-mono)",
+            }}>
+              {order.price?.toLocaleString('ru-RU')}
+            </span>
+          )}
           <span style={{
             fontSize: 18,
             fontWeight: 700,
-            color: 'var(--gold-200)',
+            color: order.promo_code ? '#22c55e' : 'var(--gold-200)',
             fontFamily: "var(--font-mono)",
           }}>
-            {order.final_price.toLocaleString('ru-RU')} ₽
+            {(order.final_price || order.price).toLocaleString('ru-RU')} ₽
           </span>
           <ChevronRight size={18} color="var(--text-muted)" />
         </div>

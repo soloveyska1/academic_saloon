@@ -343,9 +343,14 @@ class Order(Base):
 
     @property
     def final_price(self) -> float:
-        """Итоговая цена с учётом скидки и бонусов"""
+        """Итоговая цена с учётом скидки, промокода и бонусов"""
+        # Сначала применяем скидку лояльности
         price_with_discount = self.price * (1 - self.discount / 100)
-        return max(0, price_with_discount - self.bonus_used)
+        # Затем применяем скидку по промокоду
+        promo_discount = getattr(self, 'promo_discount', 0) or 0
+        price_with_promo = price_with_discount * (1 - promo_discount / 100)
+        # И в конце вычитаем бонусы
+        return max(0, price_with_promo - self.bonus_used)
 
 
 class MessageSender(str, enum.Enum):

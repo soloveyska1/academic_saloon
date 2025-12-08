@@ -247,6 +247,152 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
 
             {/* Main Content */}
             <div style={{ padding: 24 }}>
+                {/* Price Breakdown - показываем если есть промокод или скидки */}
+                {(order.promo_code || (order.discount || 0) > 0 || (order.bonus_used || 0) > 0) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        style={{
+                            marginBottom: 20,
+                            padding: '16px',
+                            background: 'rgba(139,92,246,0.05)',
+                            borderRadius: 16,
+                            border: '1px solid rgba(139,92,246,0.2)',
+                        }}
+                    >
+                        <p style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: 'var(--text-muted)',
+                            margin: 0,
+                            marginBottom: 12,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                        }}>
+                            💰 Расчёт стоимости
+                        </p>
+
+                        {/* Original price */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 8,
+                        }}>
+                            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                                Базовая цена:
+                            </span>
+                            <span style={{
+                                fontSize: 13,
+                                color: 'var(--text-secondary)',
+                                textDecoration: 'line-through',
+                                fontFamily: 'var(--font-mono)',
+                            }}>
+                                {order.price?.toLocaleString('ru-RU')} ₽
+                            </span>
+                        </div>
+
+                        {/* Promo code discount */}
+                        {order.promo_code && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 8,
+                                padding: '8px 12px',
+                                background: 'rgba(139,92,246,0.1)',
+                                borderRadius: 10,
+                            }}>
+                                <span style={{
+                                    fontSize: 13,
+                                    color: '#a78bfa',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                }}>
+                                    🎟️ <span style={{ fontWeight: 600 }}>{order.promo_code}</span>
+                                </span>
+                                <span style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: '#22c55e',
+                                    fontFamily: 'var(--font-mono)',
+                                }}>
+                                    −{order.promo_discount || 0}%
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Loyalty discount */}
+                        {(order.discount || 0) > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 8,
+                            }}>
+                                <span style={{ fontSize: 13, color: '#60a5fa' }}>
+                                    🎖️ Скидка лояльности:
+                                </span>
+                                <span style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: '#22c55e',
+                                    fontFamily: 'var(--font-mono)',
+                                }}>
+                                    −{order.discount}%
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Bonuses */}
+                        {(order.bonus_used || 0) > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 8,
+                            }}>
+                                <span style={{ fontSize: 13, color: '#fbbf24' }}>
+                                    ⭐ Бонусы:
+                                </span>
+                                <span style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: '#22c55e',
+                                    fontFamily: 'var(--font-mono)',
+                                }}>
+                                    −{order.bonus_used?.toLocaleString('ru-RU')} ₽
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Savings summary */}
+                        {order.promo_code && (
+                            <div style={{
+                                marginTop: 12,
+                                paddingTop: 12,
+                                borderTop: '1px solid rgba(139,92,246,0.2)',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                            }}>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: '#22c55e' }}>
+                                    💚 Ваша экономия:
+                                </span>
+                                <span style={{
+                                    fontSize: 15,
+                                    fontWeight: 700,
+                                    color: '#22c55e',
+                                    fontFamily: 'var(--font-mono)',
+                                }}>
+                                    {Math.round(order.price - order.final_price).toLocaleString('ru-RU')} ₽
+                                </span>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+
                 {/* Big Price */}
                 <div style={{
                     textAlign: 'center',
