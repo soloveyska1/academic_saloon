@@ -1,16 +1,23 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react'
 import { applyPromoCode } from '../api/userApi'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  PROMO CONTEXT — Global Promo Code State Management
-//  Stores validated promo codes to be used across pages
+//  PROMO CONTEXT — Bulletproof Global Promo Code State Management
+//
+//  Features:
+//  - Debounced validation to prevent spam
+//  - Cross-tab synchronization via localStorage events
+//  - Re-validation before order submission
+//  - Proper expiration handling
+//  - Race condition prevention
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface ActivePromo {
   code: string
   discount: number
   message: string
-  activatedAt: number // timestamp
+  activatedAt: number // timestamp when promo was validated
+  validatedAt: number // timestamp of last successful validation
 }
 
 interface PromoContextType {
@@ -26,8 +33,9 @@ interface PromoContextType {
   // Actions
   validateAndSetPromo: (code: string) => Promise<boolean>
   clearPromo: () => void
+  revalidatePromo: () => Promise<boolean>
 
-  // Helper to check if promo is still valid (not expired)
+  // Helper to check if promo is still valid (not expired locally)
   isPromoValid: () => boolean
 }
 
@@ -35,6 +43,8 @@ const PromoContext = createContext<PromoContextType | null>(null)
 
 const STORAGE_KEY = 'academic_saloon_active_promo'
 const PROMO_EXPIRY_HOURS = 24 // Promo expires after 24 hours of inactivity
+const DEBOUNCE_MS = 500 // Debounce validation requests
+const REVALIDATION_INTERVAL_MS = 5 * 60 * 1000 // Re-validate every 5 minutes
 
 export function usePromo() {
   const context = useContext(PromoContext)
@@ -56,7 +66,7 @@ export function PromoProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
         const parsed = JSON.parse(saved) as ActivePromo
-        // Check if promo has expired (24 hours)
+        // Check if promo has expired (24 hours from activation)
         const hoursElapsed = (Date.now() - parsed.activatedAt) / (1000 * 60 * 60)
         if (hoursElapsed < PROMO_EXPIRY_HOURS) {
           return parsed
@@ -73,6 +83,10 @@ export function PromoProvider({ children }: { children: ReactNode }) {
   const [isValidating, setIsValidating] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
 
+  // Refs for debouncing and preventing race conditions
+  const debounceTimerRef = useRef<number | null>(null)
+  const validationInProgressRef = useRef<string | null>(null)
+
   // Save to localStorage whenever activePromo changes
   useEffect(() => {
     try {
@@ -86,55 +100,165 @@ export function PromoProvider({ children }: { children: ReactNode }) {
     }
   }, [activePromo])
 
-  // Validate and set promo code
+  // Cross-tab synchronization
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        try {
+          if (e.newValue) {
+            const parsed = JSON.parse(e.newValue) as ActivePromo
+            // Check expiration
+            const hoursElapsed = (Date.now() - parsed.activatedAt) / (1000 * 60 * 60)
+            if (hoursElapsed < PROMO_EXPIRY_HOURS) {
+              setActivePromo(parsed)
+              setValidationError(null)
+            }
+          } else {
+            // Promo was cleared in another tab
+            setActivePromo(null)
+            setValidationError(null)
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  // Validate and set promo code (with debounce)
   const validateAndSetPromo = useCallback(async (code: string): Promise<boolean> => {
-    if (!code.trim()) {
+    const normalizedCode = code.trim().toUpperCase()
+
+    if (!normalizedCode) {
       setValidationError('Введите промокод')
       return false
     }
 
-    setIsValidating(true)
-    setValidationError(null)
+    // Prevent duplicate validation of the same code
+    if (validationInProgressRef.current === normalizedCode) {
+      return false
+    }
 
-    try {
-      const result = await applyPromoCode(code.trim().toUpperCase())
+    // Clear any pending debounce
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current)
+    }
 
-      if (result.success && result.discount) {
-        const newPromo: ActivePromo = {
-          code: code.trim().toUpperCase(),
-          discount: result.discount,
-          message: result.message,
-          activatedAt: Date.now(),
-        }
-        setActivePromo(newPromo)
+    // Debounce the validation
+    return new Promise((resolve) => {
+      debounceTimerRef.current = window.setTimeout(async () => {
+        validationInProgressRef.current = normalizedCode
+        setIsValidating(true)
         setValidationError(null)
 
-        // Haptic feedback on success
-        const tg = window.Telegram?.WebApp
-        if (tg?.HapticFeedback) {
-          tg.HapticFeedback.notificationOccurred('success')
-        }
+        try {
+          const result = await applyPromoCode(normalizedCode)
 
+          // Check if another validation started while we were waiting
+          if (validationInProgressRef.current !== normalizedCode) {
+            resolve(false)
+            return
+          }
+
+          if (result.success && result.discount) {
+            const newPromo: ActivePromo = {
+              code: normalizedCode,
+              discount: result.discount,
+              message: result.message,
+              activatedAt: Date.now(),
+              validatedAt: Date.now(),
+            }
+            setActivePromo(newPromo)
+            setValidationError(null)
+
+            // Haptic feedback on success
+            const tg = window.Telegram?.WebApp
+            if (tg?.HapticFeedback) {
+              tg.HapticFeedback.notificationOccurred('success')
+            }
+
+            resolve(true)
+          } else {
+            setValidationError(result.message || 'Промокод недействителен')
+
+            // Haptic feedback on error
+            const tg = window.Telegram?.WebApp
+            if (tg?.HapticFeedback) {
+              tg.HapticFeedback.notificationOccurred('error')
+            }
+
+            resolve(false)
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Ошибка проверки промокода'
+          setValidationError(message)
+          resolve(false)
+        } finally {
+          setIsValidating(false)
+          validationInProgressRef.current = null
+        }
+      }, DEBOUNCE_MS)
+    })
+  }, [])
+
+  // Re-validate currently active promo (for use before order submission)
+  const revalidatePromo = useCallback(async (): Promise<boolean> => {
+    if (!activePromo) {
+      return true // No promo to validate
+    }
+
+    // Check local expiration first
+    const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
+    if (hoursElapsed >= PROMO_EXPIRY_HOURS) {
+      setActivePromo(null)
+      setValidationError('Промокод истёк. Попробуйте ввести снова.')
+      return false
+    }
+
+    // Skip API call if recently validated (within last 5 minutes)
+    const timeSinceLastValidation = Date.now() - activePromo.validatedAt
+    if (timeSinceLastValidation < REVALIDATION_INTERVAL_MS) {
+      return true
+    }
+
+    // Re-validate with server
+    setIsValidating(true)
+    try {
+      const result = await applyPromoCode(activePromo.code)
+
+      if (result.success && result.discount) {
+        // Update validation timestamp
+        setActivePromo({
+          ...activePromo,
+          validatedAt: Date.now(),
+          discount: result.discount, // Update discount in case it changed
+        })
         return true
       } else {
-        setValidationError(result.message || 'Промокод недействителен')
+        // Promo is no longer valid
+        setActivePromo(null)
+        setValidationError(result.message || 'Промокод больше не действителен')
 
-        // Haptic feedback on error
+        // Haptic feedback
         const tg = window.Telegram?.WebApp
         if (tg?.HapticFeedback) {
-          tg.HapticFeedback.notificationOccurred('error')
+          tg.HapticFeedback.notificationOccurred('warning')
         }
 
         return false
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Ошибка проверки промокода'
-      setValidationError(message)
-      return false
+      // Network error - keep the promo but mark as potentially stale
+      console.warn('[PromoContext] Revalidation failed:', err)
+      // Don't clear the promo on network error - let the server handle it at order time
+      return true
     } finally {
       setIsValidating(false)
     }
-  }, [])
+  }, [activePromo])
 
   // Clear promo code
   const clearPromo = useCallback(() => {
@@ -148,11 +272,28 @@ export function PromoProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Check if promo is still valid
+  // Check if promo is still valid (local expiration check only)
   const isPromoValid = useCallback(() => {
     if (!activePromo) return false
     const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
     return hoursElapsed < PROMO_EXPIRY_HOURS
+  }, [activePromo])
+
+  // Periodic expiration check
+  useEffect(() => {
+    if (!activePromo) return
+
+    const checkExpiration = () => {
+      const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
+      if (hoursElapsed >= PROMO_EXPIRY_HOURS) {
+        setActivePromo(null)
+        setValidationError('Промокод истёк')
+      }
+    }
+
+    // Check every minute
+    const interval = setInterval(checkExpiration, 60 * 1000)
+    return () => clearInterval(interval)
   }, [activePromo])
 
   return (
@@ -163,6 +304,7 @@ export function PromoProvider({ children }: { children: ReactNode }) {
         validationError,
         validateAndSetPromo,
         clearPromo,
+        revalidatePromo,
         isPromoValid,
       }}
     >

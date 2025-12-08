@@ -806,7 +806,11 @@ export function CreateOrderPage() {
   const [searchParams] = useSearchParams()
   const { haptic, hapticSuccess, hapticError } = useTelegram()
   const { isDark } = useTheme()
-  const { activePromo, clearPromo } = usePromo()
+  const { activePromo, clearPromo, revalidatePromo, isValidating: isRevalidating } = usePromo()
+
+  // State for promo warning modal
+  const [showPromoWarning, setShowPromoWarning] = useState(false)
+  const [promoLostReason, setPromoLostReason] = useState<string | null>(null)
 
   // Check for prefill data from navigation state (Quick Reorder)
   const prefillData = (location.state as { prefill?: PrefillData })?.prefill
@@ -872,12 +876,31 @@ export function CreateOrderPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  // Submit
-  const handleSubmit = async () => {
+  // Submit with promo re-validation
+  const handleSubmit = async (forceWithoutPromo: boolean = false) => {
     if (!workType || !deadline || !subject.trim()) return
 
     haptic('heavy')
     setSubmitting(true)
+
+    // Re-validate promo before submitting (unless forced to proceed without it)
+    let promoToUse = activePromo?.code
+    if (activePromo && !forceWithoutPromo) {
+      const promoStillValid = await revalidatePromo()
+      if (!promoStillValid) {
+        // Promo became invalid - show warning to user
+        setSubmitting(false)
+        setPromoLostReason('Промокод больше не действителен')
+        setShowPromoWarning(true)
+        hapticError()
+        return
+      }
+    }
+
+    // If forced without promo, don't send promo code
+    if (forceWithoutPromo) {
+      promoToUse = undefined
+    }
 
     const data: OrderCreateRequest = {
       work_type: workType,
@@ -885,7 +908,7 @@ export function CreateOrderPage() {
       topic: topic.trim() || undefined,
       deadline,
       description: description.trim() || undefined,
-      promo_code: activePromo?.code || undefined,
+      promo_code: promoToUse,
     }
 
     try {
@@ -912,6 +935,18 @@ export function CreateOrderPage() {
       setSubmitting(false)
       setStep(4) // Result screen
     }
+  }
+
+  // Handle promo warning response
+  const handlePromoWarningContinue = () => {
+    setShowPromoWarning(false)
+    clearPromo()
+    handleSubmit(true) // Continue without promo
+  }
+
+  const handlePromoWarningCancel = () => {
+    setShowPromoWarning(false)
+    setPromoLostReason(null)
   }
 
   // Get estimated price (with promo discount if valid)
@@ -1490,6 +1525,124 @@ export function CreateOrderPage() {
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Promo Lost Warning Modal */}
+      <AnimatePresence>
+        {showPromoWarning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+            }}
+            onClick={handlePromoWarningCancel}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: isDark ? '#1a1a1f' : '#ffffff',
+                borderRadius: 24,
+                padding: 28,
+                maxWidth: 360,
+                width: '100%',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              {/* Warning Icon */}
+              <div style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '2px solid rgba(239, 68, 68, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px',
+              }}>
+                <AlertCircle size={32} color="#ef4444" />
+              </div>
+
+              {/* Title */}
+              <h3 style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 22,
+                fontWeight: 700,
+                color: isDark ? '#f2f2f2' : '#18181b',
+                textAlign: 'center',
+                marginBottom: 12,
+              }}>
+                Промокод недействителен
+              </h3>
+
+              {/* Description */}
+              <p style={{
+                fontSize: 14,
+                color: isDark ? '#a1a1aa' : '#52525b',
+                textAlign: 'center',
+                lineHeight: 1.6,
+                marginBottom: 24,
+              }}>
+                {promoLostReason || 'Промокод больше не действителен.'}
+                {' '}Вы можете создать заказ без скидки или вернуться и ввести другой промокод.
+              </p>
+
+              {/* Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handlePromoWarningContinue}
+                  style={{
+                    width: '100%',
+                    padding: '16px 24px',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: '#050505',
+                    background: 'linear-gradient(135deg, #d4af37, #b8962e)',
+                    border: 'none',
+                    borderRadius: 14,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 20px rgba(212, 175, 55, 0.3)',
+                  }}
+                >
+                  Создать без скидки
+                </motion.button>
+
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handlePromoWarningCancel}
+                  style={{
+                    width: '100%',
+                    padding: '16px 24px',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: isDark ? '#a1a1aa' : '#52525b',
+                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                    borderRadius: 14,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Ввести другой промокод
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

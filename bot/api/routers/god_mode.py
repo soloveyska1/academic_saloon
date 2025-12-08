@@ -421,6 +421,19 @@ async def update_order_status(
         except Exception as e:
             logger.error(f"Cashback error: {e}")
 
+    # Return promo code if order is cancelled or rejected
+    if new_status in [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value]:
+        if order.promo_code:
+            try:
+                from bot.services.promo_service import PromoService
+                success, msg = await PromoService.return_promo_usage(session, order_id)
+                if success:
+                    logger.info(f"[God Mode] Promo returned for cancelled order #{order_id}")
+                else:
+                    logger.warning(f"[God Mode] Failed to return promo for order #{order_id}: {msg}")
+            except Exception as e:
+                logger.error(f"[God Mode] Error returning promo for order #{order_id}: {e}")
+
     # Log action
     await log_admin_action(
         session, tg_user, AdminActionType.ORDER_STATUS_CHANGE,
