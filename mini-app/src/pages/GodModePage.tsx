@@ -128,7 +128,7 @@ const secondaryButtonStyle: React.CSSProperties = {
 }
 
 export function GodModePage() {
-  const { isAdmin, telegramId, simulateNewUser, setSimulateNewUser } = useAdmin()
+  const { isAdmin, telegramId, simulateNewUser, toggleSimulateNewUser } = useAdmin()
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
   const [loading, setLoading] = useState(true)
 
@@ -311,7 +311,7 @@ export function GodModePage() {
           {/* New user simulation toggle */}
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => setSimulateNewUser(!simulateNewUser)}
+            onClick={toggleSimulateNewUser}
             style={{
               width: 36,
               height: 36,
