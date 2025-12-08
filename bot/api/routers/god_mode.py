@@ -215,21 +215,36 @@ async def get_dashboard(
     ) or 0
 
     # Total discount given (sum of all active promo usages)
-    total_discount_given = await session.scalar(
-        select(func.sum(PromoCodeUsage.discount_amount)).where(
-            PromoCodeUsage.is_active == True
-        )
-    ) or 0.0
+    # Use fallback if is_active column doesn't exist on promocode_usages
+    try:
+        total_discount_given = await session.scalar(
+            select(func.sum(PromoCodeUsage.discount_amount)).where(
+                PromoCodeUsage.is_active == True
+            )
+        ) or 0.0
+    except Exception:
+        total_discount_given = await session.scalar(
+            select(func.sum(PromoCodeUsage.discount_amount))
+        ) or 0.0
 
     # Most popular promo codes (top 3 by usage count)
-    popular_promos_result = await session.execute(
-        select(PromoCode.code, func.count(PromoCodeUsage.id).label('usage_count'))
-        .join(PromoCodeUsage, PromoCodeUsage.promocode_id == PromoCode.id)
-        .where(PromoCodeUsage.is_active == True)
-        .group_by(PromoCode.code)
-        .order_by(desc('usage_count'))
-        .limit(3)
-    )
+    try:
+        popular_promos_result = await session.execute(
+            select(PromoCode.code, func.count(PromoCodeUsage.id).label('usage_count'))
+            .join(PromoCodeUsage, PromoCodeUsage.promocode_id == PromoCode.id)
+            .where(PromoCodeUsage.is_active == True)
+            .group_by(PromoCode.code)
+            .order_by(desc('usage_count'))
+            .limit(3)
+        )
+    except Exception:
+        popular_promos_result = await session.execute(
+            select(PromoCode.code, func.count(PromoCodeUsage.id).label('usage_count'))
+            .join(PromoCodeUsage, PromoCodeUsage.promocode_id == PromoCode.id)
+            .group_by(PromoCode.code)
+            .order_by(desc('usage_count'))
+            .limit(3)
+        )
     popular_promos = [
         {"code": row[0], "uses": row[1]}
         for row in popular_promos_result.fetchall()
@@ -1213,25 +1228,39 @@ async def get_promos(
     # Build promo data with stats
     promo_data = []
     for p in promos:
-        # Get active usage count
-        active_count = await session.scalar(
-            select(func.count(PromoCodeUsage.id)).where(
-                and_(
-                    PromoCodeUsage.promocode_id == p.id,
-                    PromoCodeUsage.is_active == True
+        # Get active usage count (with fallback if is_active column doesn't exist)
+        try:
+            active_count = await session.scalar(
+                select(func.count(PromoCodeUsage.id)).where(
+                    and_(
+                        PromoCodeUsage.promocode_id == p.id,
+                        PromoCodeUsage.is_active == True
+                    )
                 )
-            )
-        ) or 0
+            ) or 0
+        except Exception:
+            active_count = await session.scalar(
+                select(func.count(PromoCodeUsage.id)).where(
+                    PromoCodeUsage.promocode_id == p.id
+                )
+            ) or 0
 
-        # Get total savings
-        total_savings = await session.scalar(
-            select(func.sum(PromoCodeUsage.discount_amount)).where(
-                and_(
-                    PromoCodeUsage.promocode_id == p.id,
-                    PromoCodeUsage.is_active == True
+        # Get total savings (with fallback)
+        try:
+            total_savings = await session.scalar(
+                select(func.sum(PromoCodeUsage.discount_amount)).where(
+                    and_(
+                        PromoCodeUsage.promocode_id == p.id,
+                        PromoCodeUsage.is_active == True
+                    )
                 )
-            )
-        ) or 0.0
+            ) or 0.0
+        except Exception:
+            total_savings = await session.scalar(
+                select(func.sum(PromoCodeUsage.discount_amount)).where(
+                    PromoCodeUsage.promocode_id == p.id
+                )
+            ) or 0.0
 
         # Get creator info
         creator = None
