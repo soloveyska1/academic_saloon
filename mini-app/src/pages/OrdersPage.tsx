@@ -867,6 +867,7 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
   const isInProgress = ['paid', 'paid_full', 'in_progress'].includes(order.status)
   const isCompleted = order.status === 'completed'
   const needsPayment = ['confirmed', 'waiting_payment'].includes(order.status)
+  const isPending = ['pending', 'waiting_estimation'].includes(order.status)
 
   const SWIPE_THRESHOLD = 80
 
@@ -978,20 +979,39 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
         style={{
           position: 'relative',
           padding: 18,
-          background: 'linear-gradient(145deg, rgba(28,28,32,0.95), rgba(18,18,22,0.98))',
-          border: `1px solid ${needsPayment ? 'rgba(212,175,55,0.3)' : isCompleted ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.08)'}`,
+          background: isCompleted
+            ? 'linear-gradient(145deg, rgba(34,197,94,0.08), rgba(18,18,22,0.98))'
+            : isPending
+              ? 'linear-gradient(145deg, rgba(212,175,55,0.06), rgba(18,18,22,0.98))'
+              : 'linear-gradient(145deg, rgba(28,28,32,0.95), rgba(18,18,22,0.98))',
+          border: `1.5px solid ${
+            needsPayment ? 'rgba(212,175,55,0.35)'
+            : isCompleted ? 'rgba(34,197,94,0.35)'
+            : isPending ? 'rgba(212,175,55,0.25)'
+            : 'rgba(255,255,255,0.08)'
+          }`,
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderRadius: 22,
           cursor: 'pointer',
           touchAction: 'pan-y',
           overflow: 'hidden',
+          boxShadow: isCompleted
+            ? '0 8px 32px -8px rgba(34,197,94,0.2)'
+            : isPending
+              ? '0 8px 32px -8px rgba(212,175,55,0.15)'
+              : 'none',
         }}
       >
         {/* Holographic gradient overlay */}
         <motion.div
           animate={{
-            background: [
+            background: isCompleted ? [
+              `linear-gradient(45deg, transparent 0%, rgba(34,197,94,0.1) 25%, transparent 50%, rgba(34,197,94,0.06) 75%, transparent 100%)`,
+              `linear-gradient(135deg, rgba(34,197,94,0.06) 0%, transparent 25%, rgba(34,197,94,0.1) 50%, transparent 75%, rgba(34,197,94,0.06) 100%)`,
+              `linear-gradient(225deg, transparent 0%, rgba(34,197,94,0.1) 25%, transparent 50%, rgba(34,197,94,0.06) 75%, transparent 100%)`,
+              `linear-gradient(315deg, rgba(34,197,94,0.06) 0%, transparent 25%, rgba(34,197,94,0.1) 50%, transparent 75%, rgba(34,197,94,0.06) 100%)`,
+            ] : [
               `linear-gradient(45deg, transparent 0%, ${workTypeColor}08 25%, transparent 50%, ${workTypeColor}05 75%, transparent 100%)`,
               `linear-gradient(135deg, ${workTypeColor}05 0%, transparent 25%, ${workTypeColor}08 50%, transparent 75%, ${workTypeColor}05 100%)`,
               `linear-gradient(225deg, transparent 0%, ${workTypeColor}08 25%, transparent 50%, ${workTypeColor}05 75%, transparent 100%)`,
@@ -1006,21 +1026,77 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
           }}
         />
 
-        {/* Shimmer effect */}
+        {/* Shimmer effect - green for completed, gold for pending */}
         <motion.div
           animate={{ x: ['-200%', '300%'] }}
-          transition={{ duration: 4, repeat: Infinity, repeatDelay: 3 }}
+          transition={{ duration: isCompleted ? 3 : isPending ? 3.5 : 4, repeat: Infinity, repeatDelay: isCompleted ? 2 : isPending ? 2.5 : 3 }}
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '30%',
             height: '100%',
-            background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)`,
+            background: isCompleted
+              ? 'linear-gradient(90deg, transparent, rgba(34,197,94,0.1), transparent)'
+              : isPending
+                ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)'
+                : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
             transform: 'skewX(-20deg)',
             pointerEvents: 'none',
           }}
         />
+
+        {/* Floating particles for completed orders */}
+        {isCompleted && (
+          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+            {[...Array(4)].map((_, i) => (
+              <motion.div
+                key={i}
+                animate={{
+                  opacity: [0, 0.5, 0],
+                  y: [10, -40],
+                  x: [0, (i % 2 === 0 ? 10 : -10)],
+                }}
+                transition={{
+                  duration: 3 + i * 0.5,
+                  repeat: Infinity,
+                  delay: i * 0.8,
+                  ease: 'easeOut',
+                }}
+                style={{
+                  position: 'absolute',
+                  left: `${20 + (i * 18)}%`,
+                  bottom: '15%',
+                  width: 4,
+                  height: 4,
+                  borderRadius: '50%',
+                  background: '#22c55e',
+                  boxShadow: '0 0 6px #22c55e',
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Pulsing glow for pending orders */}
+        {isPending && (
+          <motion.div
+            animate={{
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+            style={{
+              position: 'absolute',
+              top: -20,
+              right: -20,
+              width: 100,
+              height: 100,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
 
         {/* Premium left accent bar with glow */}
         <div style={{
@@ -1030,8 +1106,12 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
           bottom: 16,
           width: 4,
           borderRadius: '0 4px 4px 0',
-          background: `linear-gradient(180deg, ${workTypeColor}, ${workTypeColor}80, ${workTypeColor})`,
-          boxShadow: `0 0 16px ${workTypeColor}60, 0 0 8px ${workTypeColor}40`,
+          background: isCompleted
+            ? 'linear-gradient(180deg, #22c55e, #16a34a, #22c55e)'
+            : `linear-gradient(180deg, ${workTypeColor}, ${workTypeColor}80, ${workTypeColor})`,
+          boxShadow: isCompleted
+            ? '0 0 16px rgba(34,197,94,0.6), 0 0 8px rgba(34,197,94,0.4)'
+            : `0 0 16px ${workTypeColor}60, 0 0 8px ${workTypeColor}40`,
         }} />
 
         {/* Premium top shine */}
@@ -1116,26 +1196,64 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
                   {progress}%
                 </motion.div>
               )}
-              {/* Completed checkmark */}
+              {/* Premium Completed checkmark with glow */}
               {isCompleted && (
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                  style={{
+                    position: 'absolute',
+                    bottom: -6,
+                    right: -6,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(34,197,94,0.5), 0 0 20px rgba(34,197,94,0.3)',
+                    border: '2px solid rgba(255,255,255,0.2)',
+                  }}
+                >
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.15, 1],
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <CheckCircle size={14} color="#fff" strokeWidth={3} />
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {/* Pending hourglass indicator */}
+              {isPending && (
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   style={{
                     position: 'absolute',
-                    bottom: -4,
-                    right: -4,
-                    width: 18,
-                    height: 18,
-                    borderRadius: 6,
-                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    bottom: -6,
+                    right: -6,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #D4AF37, #B38728)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 2px 8px rgba(34,197,94,0.4)',
+                    boxShadow: '0 4px 12px rgba(212,175,55,0.4)',
+                    border: '2px solid rgba(255,255,255,0.15)',
                   }}
                 >
-                  <CheckCircle size={12} color="#fff" strokeWidth={3} />
+                  <motion.div
+                    animate={{ rotate: [0, 180, 360] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <Clock size={12} color="#0a0a0c" strokeWidth={2.5} />
+                  </motion.div>
                 </motion.div>
               )}
             </div>
@@ -1350,7 +1468,7 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
           </div>
         </div>
 
-        {/* Premium decorative corners for cards needing attention */}
+        {/* Premium decorative corners for special states */}
         {needsPayment && (
           <>
             <DecorativeCorner position="top-left" color="#D4AF37" />
@@ -1358,6 +1476,137 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
             <DecorativeCorner position="bottom-left" color="#D4AF37" />
             <DecorativeCorner position="bottom-right" color="#D4AF37" />
           </>
+        )}
+        {isCompleted && (
+          <>
+            <DecorativeCorner position="top-left" color="#22c55e" />
+            <DecorativeCorner position="top-right" color="#22c55e" />
+            <DecorativeCorner position="bottom-left" color="#22c55e" />
+            <DecorativeCorner position="bottom-right" color="#22c55e" />
+          </>
+        )}
+        {isPending && (
+          <>
+            <DecorativeCorner position="top-left" color="#D4AF37" />
+            <DecorativeCorner position="bottom-right" color="#D4AF37" />
+          </>
+        )}
+
+        {/* Premium info row for pending orders */}
+        {isPending && (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginTop: 12,
+              paddingTop: 12,
+              paddingLeft: 14,
+              borderTop: '1px solid rgba(212,175,55,0.15)',
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.7, 1, 0.7],
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
+                border: '1px solid rgba(212,175,55,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Clock size={14} color="#D4AF37" />
+            </motion.div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#D4AF37', marginBottom: 2 }}>
+                Оцениваем заказ...
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
+                Эксперт изучает задание и рассчитывает стоимость
+              </div>
+            </div>
+            <motion.div
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              style={{
+                display: 'flex',
+                gap: 4,
+              }}
+            >
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                  style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: '50%',
+                    background: '#D4AF37',
+                  }}
+                />
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Premium completion badge row for completed orders */}
+        {isCompleted && (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              marginTop: 12,
+              paddingTop: 12,
+              paddingLeft: 14,
+              borderTop: '1px solid rgba(34,197,94,0.15)',
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            {[
+              { icon: CheckCircle, label: 'Готово', color: '#22c55e' },
+              { icon: Star, label: 'Качество', color: '#D4AF37' },
+            ].map((badge, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 + i * 0.1 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  background: `${badge.color}15`,
+                  border: `1px solid ${badge.color}25`,
+                }}
+              >
+                <badge.icon size={12} color={badge.color} />
+                <span style={{ fontSize: 10, fontWeight: 600, color: badge.color }}>
+                  {badge.label}
+                </span>
+              </motion.div>
+            ))}
+          </motion.div>
         )}
       </motion.div>
     </motion.div>
