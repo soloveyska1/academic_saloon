@@ -15,6 +15,7 @@ import { QRCodeModal } from '../components/ui/QRCode'
 import { Confetti } from '../components/ui/Confetti'
 import { DailyBonusModal } from '../components/ui/DailyBonus'
 import { CashbackModal, GuaranteesModal, TransactionsModal, RanksModal } from '../components/ui/HomeModals'
+import { WelcomePromoModal } from '../components/ui/WelcomePromoModal'
 import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
 
@@ -615,6 +616,7 @@ export function HomePage({ user }: Props) {
   const [showGuaranteesModal, setShowGuaranteesModal] = useState(false)
   const [showTransactionsModal, setShowTransactionsModal] = useState(false)
   const [showRanksModal, setShowRanksModal] = useState(false)
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
   // State for loading indicators
   const [isLoadingBonus, setIsLoadingBonus] = useState(true)
@@ -672,6 +674,37 @@ export function HomePage({ user }: Props) {
   // Use real daily bonus data from API
   const canClaimBonus = dailyBonusInfo?.can_claim ?? false
   const dailyStreak = dailyBonusInfo?.streak ?? 1
+
+  // Welcome promo modal for new users
+  // Shows once per user (tracked in localStorage)
+  // Admin can simulate via simulateNewUser toggle
+  const WELCOME_MODAL_SHOWN_KEY = 'academic_saloon_welcome_shown'
+  useEffect(() => {
+    if (!user) return
+
+    // Determine if user is "new" (0 orders) or admin is simulating
+    const isNewUser = user.orders_count === 0
+    const isSimulatingNewUser = admin.simulateNewUser
+
+    // Check if we should show the modal
+    const shouldShow = isNewUser || isSimulatingNewUser
+
+    // Check if already shown (unless simulating - always show for admin testing)
+    const alreadyShown = localStorage.getItem(WELCOME_MODAL_SHOWN_KEY) === 'true'
+    if (alreadyShown && !isSimulatingNewUser) return
+
+    if (shouldShow) {
+      // Delay to let the page load first
+      const timer = setTimeout(() => {
+        setShowWelcomeModal(true)
+        // Mark as shown (only for real new users, not simulations)
+        if (!isSimulatingNewUser) {
+          localStorage.setItem(WELCOME_MODAL_SHOWN_KEY, 'true')
+        }
+      }, 1500) // 1.5s delay for dramatic effect
+      return () => clearTimeout(timer)
+    }
+  }, [user, admin.simulateNewUser])
 
   if (!user) return null
 
@@ -1717,6 +1750,16 @@ export function HomePage({ user }: Props) {
         isOpen={showRanksModal}
         onClose={() => setShowRanksModal(false)}
         user={user}
+      />
+      <WelcomePromoModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        promoCode="WELCOME10"
+        discount={10}
+        onApplyPromo={(code) => {
+          // Navigate to create order with promo pre-applied
+          navigate('/create-order')
+        }}
       />
     </div>
   )

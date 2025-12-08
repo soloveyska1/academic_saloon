@@ -375,6 +375,7 @@ export interface GodPromo {
   active_usages: number
   total_savings: number
   is_active: boolean
+  new_users_only: boolean
   valid_from: string | null
   valid_until: string | null
   created_by: {

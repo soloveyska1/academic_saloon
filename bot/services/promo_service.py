@@ -134,6 +134,27 @@ class PromoService:
         if promo.max_uses > 0 and promo.current_uses >= promo.max_uses:
             return False, "Лимит использований исчерпан", 0.0, None
 
+        # Check if promo is for new users only
+        try:
+            if promo.new_users_only:
+                # Count user's completed orders (not cancelled/rejected)
+                from database.models.orders import OrderStatus
+                orders_count_stmt = select(func.count(Order.id)).where(
+                    and_(
+                        Order.user_id == user_id,
+                        Order.status.notin_([OrderStatus.cancelled.value, OrderStatus.rejected.value])
+                    )
+                )
+                orders_result = await session.execute(orders_count_stmt)
+                orders_count = orders_result.scalar() or 0
+
+                if orders_count > 0:
+                    logger.info(f"[PromoService] Code '{code}' is new_users_only but user {user_id} has {orders_count} orders")
+                    return False, "Этот промокод только для новых пользователей", 0.0, None
+        except Exception as e:
+            # Fallback if new_users_only column doesn't exist yet
+            logger.warning(f"[PromoService] new_users_only check failed (column may not exist): {e}")
+
         # Check if user already used this promo
         # Try with is_active filter first (if migration applied), fall back to basic check
         try:
@@ -218,6 +239,24 @@ class PromoService:
 
             if promo.max_uses > 0 and promo.current_uses >= promo.max_uses:
                 return False, "Лимит использований исчерпан", 0.0
+
+            # Check if promo is for new users only
+            try:
+                if promo.new_users_only:
+                    from database.models.orders import OrderStatus
+                    orders_count_stmt = select(func.count(Order.id)).where(
+                        and_(
+                            Order.user_id == user_id,
+                            Order.status.notin_([OrderStatus.cancelled.value, OrderStatus.rejected.value])
+                        )
+                    )
+                    orders_result = await session.execute(orders_count_stmt)
+                    orders_count = orders_result.scalar() or 0
+
+                    if orders_count > 0:
+                        return False, "Этот промокод только для новых пользователей", 0.0
+            except Exception as e:
+                logger.warning(f"[PromoService] new_users_only check failed in apply: {e}")
 
             # Check for existing usage (with lock to prevent double-apply)
             # Try with is_active filter, fall back if column doesn't exist

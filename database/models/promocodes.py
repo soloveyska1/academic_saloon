@@ -19,7 +19,10 @@ class PromoCode(Base):
     valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    
+
+    # Только для новых пользователей (без заказов)
+    new_users_only: Mapped[bool] = mapped_column(Boolean, default=False)
+
     # Кто создал (админ)
     created_by: Mapped[int] = mapped_column(BigInteger, nullable=True)
     
