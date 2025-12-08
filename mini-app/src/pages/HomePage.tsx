@@ -613,12 +613,16 @@ export function HomePage({ user }: Props) {
   const [showTransactionsModal, setShowTransactionsModal] = useState(false)
   const [showRanksModal, setShowRanksModal] = useState(false)
 
-  // Fetch daily bonus info on mount with retry
+  // State for loading indicators
+  const [isLoadingBonus, setIsLoadingBonus] = useState(true)
+
+  // Fetch daily bonus info on mount with retry and better loading states
   useEffect(() => {
     let retryCount = 0
     const maxRetries = 3
 
     const loadDailyBonus = async () => {
+      setIsLoadingBonus(true)
       try {
         const info = await fetchDailyBonusInfo()
         setDailyBonusInfo(info)
@@ -632,6 +636,8 @@ export function HomePage({ user }: Props) {
         } else {
           setDailyBonusError(true)
         }
+      } finally {
+        setIsLoadingBonus(false)
       }
     }
 
@@ -1587,56 +1593,60 @@ export function HomePage({ user }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          DAILY BONUS FLOATING BUTTON — Premium Gold
+          DAILY BONUS FLOATING BUTTON — Premium Gold with Loading State
           ═══════════════════════════════════════════════════════════════════ */}
-      {canClaimBonus && !dailyBonusError && (
-        <motion.button
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1, type: 'spring' }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => { setShowDailyBonus(true); haptic('medium') }}
-          style={{
-            position: 'fixed',
-            bottom: 110,
-            right: 20,
-            width: 60,
-            height: 60,
-            borderRadius: '50%',
-            background: 'var(--gold-metallic)',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 40px rgba(212,175,55,0.6), 0 10px 30px -10px rgba(0,0,0,0.4)',
-            zIndex: 100,
-          }}
-        >
-          <Gift size={26} color="#09090b" strokeWidth={2} />
-          {/* Notification badge */}
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+      <AnimatePresence>
+        {canClaimBonus && !dailyBonusError && !isLoadingBonus && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ delay: 1, type: 'spring' }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => { setShowDailyBonus(true); haptic('medium') }}
             style={{
-              position: 'absolute',
-              top: -4,
-              right: -4,
-              width: 22,
-              height: 22,
+              position: 'fixed',
+              bottom: 110,
+              right: 20,
+              width: 60,
+              height: 60,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              background: 'var(--gold-metallic)',
+              border: 'none',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 15px rgba(239,68,68,0.5)',
-              border: '2px solid var(--bg-main)',
+              boxShadow: '0 0 40px rgba(212,175,55,0.6), 0 10px 30px -10px rgba(0,0,0,0.4)',
+              zIndex: 100,
             }}
           >
-            <Flame size={12} color="#fff" />
-          </motion.div>
-        </motion.button>
-      )}
+            <Gift size={26} color="#09090b" strokeWidth={2} />
+            {/* Notification badge with tooltip */}
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              title="Ежедневный бонус доступен!"
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 15px rgba(239,68,68,0.5)',
+                border: '2px solid var(--bg-main)',
+              }}
+            >
+              <Flame size={12} color="#fff" />
+            </motion.div>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* ═══════════════════════════════════════════════════════════════════
           MODALS

@@ -83,11 +83,21 @@ export function PromoCodeSection({
 
   const handleSubmit = async () => {
     if (!inputCode.trim() || isValidating) return
+
+    // Optimistic UI - show loading immediately
     const success = await validateAndSetPromo(inputCode)
     if (success) {
       setInputCode('')
       if (collapsible) {
         // Don't collapse - keep it open to show the active promo
+      }
+    } else {
+      // Shake animation on error
+      if (inputRef.current) {
+        inputRef.current.style.animation = 'shake 0.4s'
+        setTimeout(() => {
+          if (inputRef.current) inputRef.current.style.animation = ''
+        }, 400)
       }
     }
   }
@@ -617,6 +627,13 @@ export function PromoCodeSection({
             </div>
 
             {/* Input Row */}
+            <style>{`
+              @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-8px); }
+                75% { transform: translateX(8px); }
+              }
+            `}</style>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -634,7 +651,8 @@ export function PromoCodeSection({
                   ? '1px solid rgba(239, 68, 68, 0.4)'
                   : '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: 14,
-                transition: 'border-color 0.2s',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+                boxShadow: isValidating ? '0 0 0 2px rgba(212,175,55,0.2)' : 'none',
               }}>
                 <Tag size={18} color="var(--text-muted)" />
                 <input
@@ -644,6 +662,7 @@ export function PromoCodeSection({
                   onChange={(e) => setInputCode(e.target.value.toUpperCase())}
                   onKeyDown={handleKeyDown}
                   placeholder="ПРОМОКОД"
+                  disabled={isValidating}
                   style={{
                     flex: 1,
                     minWidth: 0,
@@ -655,8 +674,17 @@ export function PromoCodeSection({
                     fontFamily: 'var(--font-mono)',
                     color: 'var(--text-main)',
                     letterSpacing: '0.08em',
+                    opacity: isValidating ? 0.6 : 1,
                   }}
                 />
+                {isValidating && (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Loader size={16} color="var(--gold-400)" />
+                  </motion.div>
+                )}
               </div>
 
               <motion.button

@@ -73,14 +73,19 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     try {
       const error = await response.json()
       if (error.detail) {
-        if (error.detail.includes('Invalid or expired')) {
+        // Ensure detail is a string - convert objects/arrays to JSON string
+        const detailStr = typeof error.detail === 'string'
+          ? error.detail
+          : JSON.stringify(error.detail)
+
+        if (detailStr.includes('Invalid or expired')) {
           errorMessage = 'Сессия истекла. Перезапустите приложение.'
-        } else if (error.detail.includes('Missing X-Telegram')) {
+        } else if (detailStr.includes('Missing X-Telegram')) {
           errorMessage = 'Откройте приложение через Telegram'
-        } else if (error.detail.includes('Rate limit')) {
+        } else if (detailStr.includes('Rate limit')) {
           errorMessage = 'Слишком много запросов. Подождите минуту.'
         } else {
-          errorMessage = error.detail
+          errorMessage = detailStr
         }
       }
     } catch { }

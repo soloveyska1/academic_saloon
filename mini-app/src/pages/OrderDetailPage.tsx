@@ -72,7 +72,10 @@ export function OrderDetailPage() {
         try {
           const payment = await fetchPaymentInfo(orderId)
           setPaymentInfo(payment)
-        } catch (err) { console.error(err) }
+        } catch (err) {
+          console.error('[OrderDetail] Failed to load payment info:', err)
+          // Payment info is optional - continue without it
+        }
       }
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Ошибка загрузки')
@@ -124,7 +127,13 @@ export function OrderDetailPage() {
       setOrder(prev => prev ? { ...prev, status: 'completed' } : null)
       safeHapticSuccess()
     } catch (err) {
-      console.error(err)
+      console.error('[OrderDetail] Failed to confirm completion:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка подтверждения. Попробуйте позже.'
+      // Show error to user via Telegram notification
+      const tg = window.Telegram?.WebApp
+      if (tg?.showAlert) {
+        tg.showAlert(errorMessage)
+      }
     } finally {
       setIsConfirming(false)
     }
@@ -139,7 +148,13 @@ export function OrderDetailPage() {
       setOrder(prev => prev ? { ...prev, status: 'revision' } : null)
       openChat()
     } catch (err) {
-      console.error(err)
+      console.error('[OrderDetail] Failed to request revision:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка запроса правок. Попробуйте позже.'
+      // Show error to user via Telegram notification
+      const tg = window.Telegram?.WebApp
+      if (tg?.showAlert) {
+        tg.showAlert(errorMessage)
+      }
     } finally {
       setIsRequestingRevision(false)
     }

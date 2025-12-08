@@ -849,6 +849,61 @@ export function CreateOrderPage() {
     basePrice?: number;
   } | null>(null)
 
+  // Auto-save draft functionality - save form data to localStorage
+  useEffect(() => {
+    // Don't save if we're on result screen or submitting
+    if (step === 4 || submitting) return
+
+    const draftData = {
+      workType,
+      subject,
+      topic,
+      description,
+      deadline,
+      step,
+      timestamp: Date.now(),
+    }
+
+    // Debounce saves to avoid too many writes
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+  }, [workType, subject, topic, description, deadline, step, submitting])
+
+  // Load draft on mount (only if not prefilled and not result screen)
+  useEffect(() => {
+    if (isReorder || isUrgentMode) return // Don't load draft if coming from prefill
+
+    try {
+      const savedDraft = localStorage.getItem(DRAFT_KEY)
+      if (savedDraft) {
+        const draft = JSON.parse(savedDraft)
+        const age = Date.now() - (draft.timestamp || 0)
+
+        // Only restore if draft is less than 24 hours old
+        if (age < 24 * 60 * 60 * 1000) {
+          setWorkType(draft.workType || null)
+          setSubject(draft.subject || '')
+          setTopic(draft.topic || '')
+          setDescription(draft.description || '')
+          setDeadline(draft.deadline || null)
+          setStep(draft.step || 1)
+
+          // Show a subtle hint that draft was restored
+          haptic('light')
+        } else {
+          // Clear old draft
+          localStorage.removeItem(DRAFT_KEY)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load draft:', err)
+      localStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // Only run on mount
+
   // Auto-advance to step 2 if type is pre-selected (urgent mode)
   useEffect(() => {
     if (preselectedType && isUrgentMode) {
@@ -887,42 +942,42 @@ export function CreateOrderPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  // Submit with promo re-validation
+  // Enhanced submit with better progress feedback
   const handleSubmit = async (forceWithoutPromo: boolean = false) => {
     if (!workType || !deadline || !subject.trim()) return
 
     haptic('heavy')
     setSubmitting(true)
 
-    // Re-validate promo before submitting (unless forced to proceed without it)
-    let promoToUse = activePromo?.code
-    if (activePromo && !forceWithoutPromo) {
-      const promoStillValid = await revalidatePromo()
-      if (!promoStillValid) {
-        // Promo became invalid - show warning to user
-        setSubmitting(false)
-        setPromoLostReason('Промокод больше не действителен')
-        setShowPromoWarning(true)
-        hapticError()
-        return
+    try {
+      // Re-validate promo before submitting (unless forced to proceed without it)
+      let promoToUse = activePromo?.code
+      if (activePromo && !forceWithoutPromo) {
+        const promoStillValid = await revalidatePromo()
+        if (!promoStillValid) {
+          // Promo became invalid - show warning to user
+          setSubmitting(false)
+          setPromoLostReason('Промокод больше не действителен')
+          setShowPromoWarning(true)
+          hapticError()
+          return
+        }
       }
-    }
 
     // If forced without promo, don't send promo code
     if (forceWithoutPromo) {
       promoToUse = undefined
     }
 
-    const data: OrderCreateRequest = {
-      work_type: workType,
-      subject: subject.trim(),
-      topic: topic.trim() || undefined,
-      deadline,
-      description: description.trim() || undefined,
-      promo_code: promoToUse,
-    }
+      const data: OrderCreateRequest = {
+        work_type: workType,
+        subject: subject.trim(),
+        topic: topic.trim() || undefined,
+        deadline,
+        description: description.trim() || undefined,
+        promo_code: promoToUse,
+      }
 
-    try {
       const res = await createOrder(data)
       if (res.success) {
         // Store promo info and base price BEFORE clearing promo
@@ -941,14 +996,18 @@ export function CreateOrderPage() {
         hapticSuccess()
         setResult({
           ok: true,
-          msg: res.message,
+          msg: typeof res.message === 'string' ? res.message : JSON.stringify(res.message),
           id: res.order_id,
           promoUsed,
           basePrice: basePrice || undefined
         })
       } else {
         hapticError()
-        setResult({ ok: false, msg: res.message })
+        // Ensure message is always a string - handle unexpected object responses
+        const errorMsg = typeof res.message === 'string'
+          ? res.message
+          : (typeof res.message === 'object' ? JSON.stringify(res.message) : 'Произошла ошибка')
+        setResult({ ok: false, msg: errorMsg })
       }
     } catch (err) {
       hapticError()
@@ -1258,6 +1317,50 @@ export function CreateOrderPage() {
         </motion.div>
       )}
 
+      {/* Draft Restored Banner */}
+      <AnimatePresence>
+        {localStorage.getItem(DRAFT_KEY) && step === 1 && !isReorder && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 14px',
+              marginBottom: 16,
+              background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))',
+              border: '1px solid rgba(59,130,246,0.3)',
+              borderRadius: 12,
+            }}
+          >
+            <Clock size={16} color="#3b82f6" />
+            <span style={{ fontSize: 12, color: '#60a5fa', flex: 1 }}>
+              Черновик восстановлен
+            </span>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                localStorage.removeItem(DRAFT_KEY)
+                window.location.reload()
+              }}
+              style={{
+                padding: '4px 8px',
+                background: 'rgba(59,130,246,0.2)',
+                border: '1px solid rgba(59,130,246,0.3)',
+                borderRadius: 6,
+                fontSize: 11,
+                color: '#60a5fa',
+                cursor: 'pointer',
+              }}
+            >
+              Сбросить
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -1433,7 +1536,7 @@ export function CreateOrderPage() {
               />
             </motion.div>
 
-            {/* Premium Estimate Card */}
+            {/* Premium Estimate Card with Tooltip */}
             {estimate && (
               <motion.div
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -1493,30 +1596,43 @@ export function CreateOrderPage() {
                       <Thermometer size={22} color={isDark ? '#d4af37' : '#9e7a1a'} />
                     </div>
                     <div>
-                      <span style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: isDark ? '#a1a1aa' : '#52525b',
-                      }}>
-                        Ориентировочно
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: isDark ? '#a1a1aa' : '#52525b',
+                        }}>
+                          Ориентировочно
+                        </span>
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            background: 'rgba(59,130,246,0.15)',
+                            border: '1px solid rgba(59,130,246,0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'help',
+                          }}
+                          title="Точная цена будет рассчитана менеджером после оценки объёма работы"
+                        >
+                          <AlertCircle size={10} color="#3b82f6" />
+                        </motion.div>
+                      </div>
                       {activePromo && (
                         <span style={{
                           fontSize: 12,
                           fontWeight: 600,
                           color: '#22c55e',
-                          marginLeft: 6,
+                          display: 'block',
+                          marginTop: 2,
                         }}>
-                          (с учётом скидки {activePromo.discount}%)
+                          С учётом скидки {activePromo.discount}%
                         </span>
                       )}
-                      <span style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: isDark ? '#a1a1aa' : '#52525b',
-                      }}>
-                        :
-                      </span>
                     </div>
                   </div>
 
@@ -1659,9 +1775,14 @@ export function CreateOrderPage() {
                 {submitting ? (
                   <>
                     <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-                      <Clock size={22} />
+                      <Loader2 size={22} />
                     </motion.div>
-                    Отправка...
+                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                      <span>Отправка заказа...</span>
+                      <span style={{ fontSize: 11, opacity: 0.7 }}>
+                        {isRevalidating ? 'Проверка промокода...' : 'Создание заказа...'}
+                      </span>
+                    </span>
                   </>
                 ) : step === 3 ? (
                   <>
