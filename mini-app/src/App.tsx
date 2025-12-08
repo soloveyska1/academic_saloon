@@ -401,6 +401,7 @@ function AppContent() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
+        {/* PromoProvider stays mounted even during loading to preserve state */}
         <PromoProvider>
           <AdminProvider>
             <ToastProvider>

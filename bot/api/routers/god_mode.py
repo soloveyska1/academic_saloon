@@ -530,8 +530,18 @@ async def update_order_status(
 
     # Send notification to user
     try:
-        from bot.services.realtime_notifications import send_order_update_notification
-        await send_order_update_notification(order.user_id, order_id, new_status)
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=order.user_id,
+            order_id=order_id,
+            new_status=new_status,
+            old_status=old_status,
+            extra_data={
+                "final_price": order.final_price,
+                "price": order.price,
+                "paid_amount": order.paid_amount,
+            }
+        )
     except Exception as e:
         logger.warning(f"WebSocket notification failed: {e}")
 
@@ -590,7 +600,7 @@ async def update_order_price(
     except Exception:
         pass
 
-    # Notify user
+    # Notify user via Telegram
     try:
         await bot.send_message(
             order.user_id,
@@ -600,6 +610,22 @@ async def update_order_price(
         )
     except Exception:
         pass
+
+    # Send WebSocket notification to client
+    try:
+        from bot.services.realtime_notifications import send_custom_notification
+        await send_custom_notification(
+            telegram_id=order.user_id,
+            title="💰 Цена установлена!",
+            message=f"К оплате: {new_price:.0f}₽",
+            notification_type="success",
+            icon="check-circle",
+            color="#d4af37",
+            action="view_order",
+            data={"order_id": order_id, "price": new_price, "final_price": order.final_price}
+        )
+    except Exception as e:
+        logger.warning(f"WebSocket notification failed: {e}")
 
     return {"success": True, "old_price": old_price, "new_price": new_price}
 
@@ -641,8 +667,13 @@ async def update_order_progress(
 
     # Send progress notification
     try:
-        from bot.services.order_progress import send_progress_notification
-        await send_progress_notification(bot, order, new_progress, status_text)
+        from bot.services.realtime_notifications import send_progress_notification
+        await send_progress_notification(
+            telegram_id=order.user_id,
+            order_id=order_id,
+            progress=new_progress,
+            custom_message=status_text
+        )
     except Exception as e:
         logger.warning(f"Progress notification failed: {e}")
 
@@ -696,7 +727,7 @@ async def confirm_order_payment(
 
     await session.commit()
 
-    # Notify user
+    # Notify user via Telegram
     try:
         await bot.send_message(
             order.user_id,
@@ -714,6 +745,23 @@ async def confirm_order_payment(
         await update_live_card(bot, session, order)
     except Exception:
         pass
+
+    # Send WebSocket notification to client
+    try:
+        from bot.services.realtime_notifications import send_custom_notification
+        await send_custom_notification(
+            telegram_id=order.user_id,
+            title="✅ Оплата подтверждена!",
+            message=f"Сумма {amount:.0f}₽ получена. Приступаем к работе!",
+            notification_type="success",
+            icon="check-circle",
+            color="#22c55e",
+            celebration=True,
+            action="view_order",
+            data={"order_id": order_id, "paid_amount": order.paid_amount, "status": order.status}
+        )
+    except Exception as e:
+        logger.warning(f"WebSocket notification failed: {e}")
 
     return {"success": True, "new_status": order.status, "paid_amount": order.paid_amount}
 
@@ -750,7 +798,7 @@ async def reject_order_payment(
 
     await session.commit()
 
-    # Notify user
+    # Notify user via Telegram
     try:
         await bot.send_message(
             order.user_id,
@@ -761,6 +809,22 @@ async def reject_order_payment(
         )
     except Exception:
         pass
+
+    # Send WebSocket notification to client
+    try:
+        from bot.services.realtime_notifications import send_custom_notification
+        await send_custom_notification(
+            telegram_id=order.user_id,
+            title="❌ Платёж не подтверждён",
+            message=f"Причина: {reason}. Проверьте перевод или свяжитесь с поддержкой.",
+            notification_type="warning",
+            icon="alert-circle",
+            color="#f59e0b",
+            action="view_order",
+            data={"order_id": order_id, "reason": reason, "status": order.status}
+        )
+    except Exception as e:
+        logger.warning(f"WebSocket notification failed: {e}")
 
     return {"success": True, "new_status": order.status}
 
@@ -811,6 +875,19 @@ async def send_order_message(
         )
     except Exception as e:
         logger.error(f"Failed to send message: {e}")
+
+    # Send WebSocket notification to client
+    try:
+        from bot.services.realtime_notifications import notify_new_chat_message
+        await notify_new_chat_message(
+            telegram_id=order.user_id,
+            order_id=order_id,
+            sender_name="Администратор",
+            message_preview=text,
+            file_type=None
+        )
+    except Exception as e:
+        logger.warning(f"WebSocket notification failed: {e}")
 
     return {"success": True, "message_id": message.id}
 

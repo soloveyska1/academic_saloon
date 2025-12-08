@@ -60,23 +60,56 @@ export function usePromoSafe(): PromoContextType | null {
   return useContext(PromoContext)
 }
 
+// Validate that parsed data is a valid ActivePromo object
+function isValidActivePromo(data: any): data is ActivePromo {
+  return (
+    data &&
+    typeof data === 'object' &&
+    typeof data.code === 'string' &&
+    typeof data.discount === 'number' &&
+    typeof data.message === 'string' &&
+    typeof data.activatedAt === 'number' &&
+    typeof data.validatedAt === 'number' &&
+    data.code.length > 0 &&
+    data.discount >= 0 &&
+    data.discount <= 100
+  )
+}
+
 export function PromoProvider({ children }: { children: ReactNode }) {
   const [activePromo, setActivePromo] = useState<ActivePromo | null>(() => {
     // Load saved promo from localStorage
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
-        const parsed = JSON.parse(saved) as ActivePromo
+        const parsed = JSON.parse(saved)
+
+        // Validate the parsed data
+        if (!isValidActivePromo(parsed)) {
+          console.warn('[PromoContext] Invalid promo data in localStorage, clearing:', parsed)
+          localStorage.removeItem(STORAGE_KEY)
+          return null
+        }
+
         // Check if promo has expired (24 hours from activation)
         const hoursElapsed = (Date.now() - parsed.activatedAt) / (1000 * 60 * 60)
         if (hoursElapsed < PROMO_EXPIRY_HOURS) {
+          console.log('[PromoContext] Restored promo from localStorage:', parsed.code)
           return parsed
         }
         // Clear expired promo
+        console.log('[PromoContext] Promo expired, clearing:', parsed.code)
         localStorage.removeItem(STORAGE_KEY)
       }
-    } catch {
-      // Ignore storage errors
+    } catch (err) {
+      // Log storage errors for debugging
+      console.error('[PromoContext] Failed to load promo from localStorage:', err)
+      // Clear corrupted data
+      try {
+        localStorage.removeItem(STORAGE_KEY)
+      } catch {
+        // Ignore errors when clearing
+      }
     }
     return null
   })
@@ -92,12 +125,17 @@ export function PromoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       if (activePromo) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(activePromo))
+        const serialized = JSON.stringify(activePromo)
+        localStorage.setItem(STORAGE_KEY, serialized)
+        console.log('[PromoContext] Saved promo to localStorage:', activePromo.code)
       } else {
         localStorage.removeItem(STORAGE_KEY)
+        console.log('[PromoContext] Cleared promo from localStorage')
       }
-    } catch {
-      // Ignore storage errors
+    } catch (err) {
+      // Log storage errors for debugging
+      console.error('[PromoContext] Failed to save promo to localStorage:', err)
+      console.error('[PromoContext] Promo data:', activePromo)
     }
   }, [activePromo])
 
@@ -107,20 +145,30 @@ export function PromoProvider({ children }: { children: ReactNode }) {
       if (e.key === STORAGE_KEY) {
         try {
           if (e.newValue) {
-            const parsed = JSON.parse(e.newValue) as ActivePromo
+            const parsed = JSON.parse(e.newValue)
+
+            // Validate the parsed data
+            if (!isValidActivePromo(parsed)) {
+              console.warn('[PromoContext] Invalid promo data from storage event, ignoring')
+              return
+            }
+
             // Check expiration
             const hoursElapsed = (Date.now() - parsed.activatedAt) / (1000 * 60 * 60)
             if (hoursElapsed < PROMO_EXPIRY_HOURS) {
+              console.log('[PromoContext] Promo synced from another tab:', parsed.code)
               setActivePromo(parsed)
               setValidationError(null)
             }
           } else {
             // Promo was cleared in another tab
+            console.log('[PromoContext] Promo cleared in another tab')
             setActivePromo(null)
             setValidationError(null)
           }
-        } catch {
-          // Ignore parse errors
+        } catch (err) {
+          // Log parse errors for debugging
+          console.error('[PromoContext] Failed to parse storage event:', err)
         }
       }
     }
