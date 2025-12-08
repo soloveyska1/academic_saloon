@@ -987,7 +987,8 @@ export function CreateOrderPage() {
       }
 
     // If forced without promo, don't send promo code
-    if (forceWithoutPromo) {
+    // NOTE: Check for boolean true explicitly because React may pass event object
+    if (forceWithoutPromo === true) {
       promoToUse = undefined
     }
 
