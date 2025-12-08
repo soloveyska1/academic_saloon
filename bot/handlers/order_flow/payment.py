@@ -617,9 +617,34 @@ async def process_promo_code(message: Message, state: FSMContext, session: Async
         await message.answer("⚠️ Введите текстовый код.")
         return
 
-    # Try apply
-    success, result_msg = await PromoService.apply_promo_code(session, order_id, code, message.from_user.id)
-    
+    # Fetch order first to get base_price
+    order_stmt = select(Order).where(Order.id == order_id)
+    result = await session.execute(order_stmt)
+    order = result.scalar_one_or_none()
+
+    if not order:
+        await message.answer("❌ Заказ не найден.")
+        await state.clear()
+        return
+
+    if order.user_id != message.from_user.id:
+        await message.answer("❌ Это не ваш заказ.")
+        await state.clear()
+        return
+
+    # Get base price (order.price is the original price before discounts)
+    base_price = float(order.price) if order.price else 0.0
+
+    # Try apply promo code
+    success, result_msg, discount_percent = await PromoService.apply_promo_to_order(
+        session=session,
+        order_id=order_id,
+        code=code,
+        user_id=message.from_user.id,
+        base_price=base_price,
+        bot=bot
+    )
+
     if not success:
         await message.answer(
             f"❌ **Не удалось применить промокод:**\n{result_msg}\n\n"
@@ -627,13 +652,27 @@ async def process_promo_code(message: Message, state: FSMContext, session: Async
         )
         return
 
+    # Success! Recalculate final price combining loyalty and promo discounts
+    # Extract loyalty discount (total discount - old promo discount)
+    existing_total_discount = float(order.discount) if order.discount else 0.0
+    old_promo_discount = float(order.promo_discount) if order.promo_discount else 0.0
+    loyalty_discount = existing_total_discount - old_promo_discount
+
+    # Cap loyalty at 50%, allow promo to be uncapped
+    capped_loyalty = min(loyalty_discount, 50.0)
+    total_discount = min(capped_loyalty + discount_percent, 100.0)
+
+    # Update order fields
+    order.promo_code = code
+    order.promo_discount = float(discount_percent)
+    order.discount = total_discount
+    # final_price is computed from price, discount, and bonus_used
+
+    await session.commit()
+    await session.refresh(order)
+
     # Success!
     await state.clear()
-    
-    # Reload order to get new price
-    order_stmt = select(Order).where(Order.id == order_id)
-    result = await session.execute(order_stmt)
-    order = result.scalar_one_or_none()
     
     await message.answer(f"✅ **{result_msg}**")
     

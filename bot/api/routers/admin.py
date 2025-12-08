@@ -154,10 +154,10 @@ async def update_order_price_admin(
     order = await session.get(Order, order_id)
     if not order:
         raise HTTPException(status_code=404, detail='Order not found')
-        
+
     order.price = data.price
-    order.final_price = data.price - (order.bonus_used or 0)
-    
+    # final_price is computed from price, discount, and bonus_used
+
     if order.status == OrderStatus.WAITING_ESTIMATION.value:
         order.status = OrderStatus.WAITING_PAYMENT.value
         

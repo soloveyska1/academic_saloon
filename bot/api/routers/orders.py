@@ -1,5 +1,4 @@
 import logging
-import random
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from zoneinfo import ZoneInfo
@@ -11,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db import get_session
 from database.models.users import User
-from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS, OrderMessage, MessageSender, Conversation, ConversationType
+from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS, OrderMessage, MessageSender, ConversationType
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
@@ -96,8 +95,6 @@ async def get_orders(
 # ═══════════════════════════════════════════════════════════════════════════
 #  BATCH PAYMENT (Pay All) — Must be before /orders/{order_id} route!
 # ═══════════════════════════════════════════════════════════════════════════
-
-from bot.api.rate_limit import rate_limit_payment
 
 @router.post("/orders/batch-payment-info", response_model=BatchPaymentInfoResponse)
 async def get_batch_payment_info(
@@ -347,9 +344,6 @@ async def create_order(
 ):
     """Create a new order from Mini App."""
     await rate_limit_create.check(request)
-    from bot.handlers.order_chat import get_or_create_topic
-    from bot.services.live_cards import send_or_update_card
-    from bot.services.promo_service import PromoService
 
     logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}")
 
@@ -403,6 +397,8 @@ async def create_order(
         return OrderCreateResponse(success=False, order_id=0, message=f"Ошибка расчёта цены", price=None, is_manual_required=False)
 
     # Handle promo code if provided (atomic check and reserve)
+    from bot.services.promo_service import PromoService
+
     promo_discount = 0.0
     promo_code_used = None
     promo_validation_failed = False
@@ -448,7 +444,6 @@ async def create_order(
         description=data.description,
         deadline=data.deadline,
         price=base_price,
-        final_price=final_order_price,
         discount=float(total_discount),
         promo_code=promo_code_used,
         promo_discount=float(promo_discount) if promo_discount else 0.0,
@@ -466,7 +461,8 @@ async def create_order(
                 order_id=order.id,
                 code=promo_code_used,
                 user_id=tg_user.id,
-                base_price=base_price
+                base_price=base_price,
+                bot=bot  # Pass bot for admin notifications
             )
             if not apply_success:
                 # Promo became invalid between validation and order creation
@@ -477,8 +473,7 @@ async def create_order(
                 # Recalculate discount with only loyalty (capped at 50%)
                 capped_loyalty = min(user_discount, 50.0)
                 order.discount = float(capped_loyalty)
-                # Recalculate final_price without promo
-                order.final_price = base_price * (1 - capped_loyalty / 100) if capped_loyalty > 0 else base_price
+                # final_price is computed from price, discount, and bonus_used
                 promo_code_used = None
                 promo_discount = 0.0
                 promo_validation_failed = True
@@ -524,6 +519,9 @@ async def create_order(
 
     # Admin notification
     try:
+        from bot.handlers.order_chat import get_or_create_topic
+        from bot.services.live_cards import send_or_update_card
+
         conv, topic_id = await get_or_create_topic(
             bot=bot,
             session=session,
@@ -575,12 +573,19 @@ async def create_order(
 
     message = "🦄 Спецзаказ принят! Шериф оценит сложность и вернётся с ценой." if price_calc.is_manual_required else f"✅ Заказ #{order.id} создан! Ожидайте оценку от менеджера."
 
+    # Add promo failure warning to message if applicable
+    if promo_validation_failed and promo_failure_reason:
+        message += f"\n\n⚠️ Промокод не применён: {promo_failure_reason}"
+
     return OrderCreateResponse(
         success=True,
         order_id=order.id,
         message=message,
         price=float(price_calc.final_price) if not price_calc.is_manual_required else None,
-        is_manual_required=price_calc.is_manual_required
+        is_manual_required=price_calc.is_manual_required,
+        promo_applied=bool(promo_code_used),
+        promo_failed=promo_validation_failed,
+        promo_failure_reason=promo_failure_reason if promo_validation_failed else None
     )
 
 # ═══════════════════════════════════════════════════════════════════════════
