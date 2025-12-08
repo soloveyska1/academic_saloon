@@ -844,8 +844,8 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
         extra_text=f"❌ Оплата не найдена {datetime.now().strftime('%d.%m %H:%M')}"
     )
 
-    # Красивое уведомление клиенту с кнопками
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    # Красивое уведомление клиенту с кнопками (с учётом скидки и бонусов)
+    final_price = order.final_price
 
     client_text = f"""⚠️ <b>Оплата не найдена</b>
 

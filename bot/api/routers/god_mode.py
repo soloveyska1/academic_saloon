@@ -577,6 +577,41 @@ async def update_order_price(
     old_price = order.price
     order.price = new_price
 
+    # If this was a manual order (old_price=0) with a promo code,
+    # we need to apply the promo now that we have a real price
+    if old_price == 0 and order.promo_code and new_price > 0:
+        from bot.services.promo_service import PromoService
+        from database.models.promocodes import PromoCodeUsage
+
+        # Check if usage already exists
+        existing_usage = await session.execute(
+            select(PromoCodeUsage).where(
+                PromoCodeUsage.order_id == order_id
+            )
+        )
+        if not existing_usage.first():
+            # Apply promo now that we have a real price
+            apply_success, apply_msg, _ = await PromoService.apply_promo_to_order(
+                session=session,
+                order_id=order_id,
+                code=order.promo_code,
+                user_id=order.user_id,
+                base_price=new_price,
+                bot=bot
+            )
+            if not apply_success:
+                # Promo became invalid - clear it
+                logger.warning(f"[GodMode] Promo {order.promo_code} failed for order #{order_id}: {apply_msg}")
+                order.promo_code = None
+                order.promo_discount = 0.0
+                # Keep only loyalty discount (capped at 50%)
+                from database.models import User
+                user = await session.get(User, order.user_id)
+                loyalty_discount = user.discount_percent if user else 0.0
+                order.discount = min(loyalty_discount, 50.0)
+            else:
+                logger.info(f"[GodMode] Applied deferred promo {order.promo_code} to order #{order_id}")
+
     # Auto-transition status if needed
     old_status = order.status
     if order.status in [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value]:
@@ -608,27 +643,42 @@ async def update_order_price(
 
     # Notify user via Telegram
     try:
-        await bot.send_message(
-            order.user_id,
-            f"💰 <b>Цена заказа #{order_id} установлена!</b>\n\n"
-            f"Сумма: <code>{new_price:.0f}₽</code>\n\n"
-            f"Оплатите заказ, чтобы мы начали работу.",
-        )
+        # Build message with promo info if applicable
+        final_price = order.final_price
+        if order.promo_code and order.discount > 0:
+            price_msg = (
+                f"💰 <b>Цена заказа #{order_id} установлена!</b>\n\n"
+                f"Базовая сумма: <s>{new_price:.0f}₽</s>\n"
+                f"🎟 Промокод: <b>{order.promo_code}</b> (−{order.discount:.0f}%)\n"
+                f"К оплате: <code>{final_price:.0f}₽</code>\n\n"
+                f"Оплатите заказ, чтобы мы начали работу."
+            )
+        else:
+            price_msg = (
+                f"💰 <b>Цена заказа #{order_id} установлена!</b>\n\n"
+                f"Сумма: <code>{final_price:.0f}₽</code>\n\n"
+                f"Оплатите заказ, чтобы мы начали работу."
+            )
+        await bot.send_message(order.user_id, price_msg)
     except Exception:
         pass
 
     # Send WebSocket notification to client
     try:
         from bot.services.realtime_notifications import send_custom_notification
+        final_price = order.final_price
+        ws_message = f"К оплате: {final_price:.0f}₽"
+        if order.promo_code:
+            ws_message += f" (со скидкой {order.discount:.0f}%)"
         await send_custom_notification(
             telegram_id=order.user_id,
             title="💰 Цена установлена!",
-            message=f"К оплате: {new_price:.0f}₽",
+            message=ws_message,
             notification_type="success",
             icon="check-circle",
             color="#d4af37",
             action="view_order",
-            data={"order_id": order_id, "price": new_price, "final_price": order.final_price}
+            data={"order_id": order_id, "price": new_price, "final_price": final_price}
         )
     except Exception as e:
         logger.warning(f"WebSocket notification failed: {e}")

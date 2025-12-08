@@ -2329,8 +2329,8 @@ async def pay_scheme_callback(callback: CallbackQuery, session: AsyncSession):
 
     await callback.answer("⏳")
 
-    # Рассчитываем сумму к оплате
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    # Рассчитываем сумму к оплате (с учётом скидки и бонусов)
+    final_price = order.final_price
     if scheme == "half":
         amount_now = final_price / 2
         amount_later = final_price - amount_now
@@ -2418,7 +2418,8 @@ async def pay_back_callback(callback: CallbackQuery, session: AsyncSession):
 
     await callback.answer("⏳")
 
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    # Используем правильный final_price с учётом скидки и бонусов
+    final_price = order.final_price
     half_amount = final_price / 2
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "Работа"
 
@@ -2601,11 +2602,11 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
 # ══════════════════════════════════════════════════════════════
 
 def get_payment_amount(order: Order) -> float:
-    """Получить сумму к оплате с учётом схемы"""
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    """Получить сумму к оплате с учётом схемы и скидки промокода"""
+    # Use order.final_price which correctly applies discount and bonus
     if order.payment_scheme == "half":
-        return final_price / 2
-    return final_price
+        return order.final_price / 2
+    return order.final_price
 
 
 def get_payment_keyboard(order_id: int) -> InlineKeyboardMarkup:
@@ -2926,8 +2927,8 @@ async def cancel_payment_check_callback(callback: CallbackQuery, session: AsyncS
     if not order:
         return
 
-    # Возвращаем к выбору способа оплаты
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    # Возвращаем к выбору способа оплаты (с учётом скидки и бонусов)
+    final_price = order.final_price
     amount = final_price / 2 if order.payment_scheme == "half" else final_price
 
     text = f"""<b>💳 КАССА ОТКРЫТА</b>
@@ -3640,7 +3641,8 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
     except Exception:
         pass  # Если не удалось — возможно уже обработано
 
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    # Используем final_price с учётом скидки и бонусов
+    final_price = order.final_price
 
     # Новое улучшенное сообщение для клиента
     client_text = f"""🚫 <b>ОПЛАТА НЕ НАЙДЕНА</b>
@@ -3750,7 +3752,8 @@ async def retry_payment_check_callback(callback: CallbackQuery, session: AsyncSe
     except Exception:
         pass
 
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    # Используем final_price с учётом скидки и бонусов
+    final_price = order.final_price
 
     # Уведомляем админов
     admin_text = f"""🔄 <b>Клиент настаивает на оплате!</b>
@@ -3793,7 +3796,8 @@ async def show_requisites_callback(callback: CallbackQuery, session: AsyncSessio
         await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
         return
 
-    final_price = order.price - order.bonus_used if order.bonus_used else order.price
+    # Используем final_price с учётом скидки и бонусов
+    final_price = order.final_price
 
     # Показываем реквизиты
     requisites_text = f"""💳 <b>Реквизиты для оплаты</b>

@@ -94,10 +94,15 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
   const revisionCount = (order as any).revision_count || 0
   const maxFreeRevisions = 3
 
-  // Promo code info
+  // Promo code info - with validation to prevent division by zero
   const promoCode = order.promo_code
-  const promoDiscount = order.promo_discount || 0
-  const basePrice = promoDiscount > 0 ? Math.round(finalPrice / (1 - promoDiscount / 100)) : order.price || 0
+  // Clamp promoDiscount to 0-99 range to prevent division by zero
+  const rawPromoDiscount = order.promo_discount || 0
+  const promoDiscount = Math.max(0, Math.min(99, rawPromoDiscount))
+  // Calculate base price (before discount). Guard against 100% discount (division by zero)
+  const basePrice = promoDiscount > 0 && promoDiscount < 100
+    ? Math.round(finalPrice / (1 - promoDiscount / 100))
+    : order.price || 0
 
   // Calculate cashback
   const cashbackAmount = Math.floor(finalPrice * (cashbackPercent / 100))

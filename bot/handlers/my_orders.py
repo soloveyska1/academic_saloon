@@ -872,6 +872,16 @@ async def confirm_cancel_order(callback: CallbackQuery, session: AsyncSession, b
     old_status = order.status
     order.status = OrderStatus.CANCELLED.value
     order.updated_at = datetime.now(MSK_TZ)
+
+    # Return promo code if one was used (allows user to reuse it)
+    if order.promo_code:
+        try:
+            from bot.services.promo_service import PromoService
+            await PromoService.return_promo_usage(session, order.id, bot=bot)
+            logger.info(f"[CancelOrder] Returned promo code for order #{order_id}")
+        except Exception as e:
+            logger.warning(f"[CancelOrder] Failed to return promo for order #{order_id}: {e}")
+
     await session.commit()
 
     try:
