@@ -53,22 +53,11 @@ function getActionsForStatus(
   */
 
   // Status-specific actions
+  // NOTE: Payment button removed - GoldenInvoice has the payment CTA directly on the page
   switch (status) {
     case 'waiting_payment':
     case 'confirmed':
-      if (props.onPaymentClick) {
-        actions.unshift({
-          id: 'payment',
-          icon: CreditCard,
-          label: 'Оплатить',
-          color: '#d4af37',
-          bgColor: 'rgba(212, 175, 55, 0.15)',
-          borderColor: 'rgba(212, 175, 55, 0.3)',
-          onClick: props.onPaymentClick,
-          primary: true,
-          pulse: true,
-        })
-      }
+      // Кнопка оплаты убрана - GoldenInvoice виден на странице с кнопкой "Я оплатил"
       break
 
     case 'review':

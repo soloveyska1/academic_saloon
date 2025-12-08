@@ -271,8 +271,9 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
   const countdownText = formatCountdown()
 
   // Determine primary action
+  // NOTE: Payment action removed - GoldenInvoice has the payment CTA
   const getPrimaryAction = () => {
-    if (needsPayment) return { label: 'Оплатить', action: 'payment', color: '#D4AF37' }
+    if (needsPayment) return null // Кнопка оплаты находится в GoldenInvoice
     if (isReview) return { label: 'Проверить', action: 'files', color: '#8b5cf6' }
     if (isInProgress) return { label: 'Написать', action: 'chat', color: '#3b82f6' }
     if (isCompleted && !order.review_submitted) return { label: 'Оценить', action: 'review', color: '#22c55e' }
