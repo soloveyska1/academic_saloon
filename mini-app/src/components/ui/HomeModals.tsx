@@ -995,6 +995,28 @@ function DecorativeCorner({ position, color = '#D4AF37' }: { position: 'top-left
   )
 }
 
+// Premium transaction reason translations
+const TRANSACTION_LABELS: Record<string, string> = {
+  order_created: '🎁 Бонус за заказ',
+  referral_bonus: '👥 Реферальный бонус',
+  admin_adjustment: '⚙️ Корректировка баланса',
+  order_discount: '💳 Оплата заказа',
+  compensation: '💎 Компенсация',
+  order_cashback: '✨ Кешбэк',
+  bonus_expired: '⏰ Сгорание бонусов',
+  daily_luck: '🎰 Ежедневный бонус',
+  coupon: '🎟️ Активация купона',
+  order_refund: '↩️ Возврат средств',
+  roulette_win: '🎯 Выигрыш в рулетке',
+  welcome_bonus: '👋 Приветственный бонус',
+  achievement: '🏆 Награда за достижение',
+  promo_code: '🎫 Промокод',
+}
+
+function formatTransactionReason(reason: string): string {
+  return TRANSACTION_LABELS[reason] || reason
+}
+
 export function TransactionsModal({ isOpen, onClose, transactions, balance, onViewAll }: TransactionsModalProps) {
   const recentTransactions = transactions.slice(0, 5)
 
@@ -1307,7 +1329,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                        }}>{tx.reason}</div>
+                        }}>{formatTransactionReason(tx.reason)}</div>
                         <div style={{
                           fontSize: 11,
                           color: 'rgba(255,255,255,0.45)',
