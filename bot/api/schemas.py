@@ -121,8 +121,8 @@ class PromoCodeRequest(BaseModel):
     @field_validator('code')
     @classmethod
     def validate_code(cls, v: str) -> str:
-        # Only allow alphanumeric characters
-        cleaned = re.sub(r'[^A-Za-z0-9]', '', v)
+        # Allow alphanumeric characters (Latin and Cyrillic)
+        cleaned = re.sub(r'[^A-Za-z0-9А-Яа-яЁё]', '', v)
         if not cleaned:
             raise ValueError('Некорректный промокод')
         return cleaned.upper()

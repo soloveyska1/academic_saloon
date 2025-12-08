@@ -104,12 +104,25 @@ def create_app() -> FastAPI:
             body = await request.json()
         except Exception:
             pass
+
+        # Make errors JSON-serializable
+        errors = []
+        for err in exc.errors():
+            clean_err = {
+                "type": err.get("type", "unknown"),
+                "loc": err.get("loc", []),
+                "msg": str(err.get("msg", "Validation error")),
+                "input": err.get("input")
+            }
+            # Remove non-serializable ctx
+            errors.append(clean_err)
+
         logger.error(f"[422 Validation Error] URL: {request.url}")
         logger.error(f"[422 Validation Error] Body: {body}")
-        logger.error(f"[422 Validation Error] Errors: {exc.errors()}")
+        logger.error(f"[422 Validation Error] Errors: {errors}")
         return JSONResponse(
             status_code=422,
-            content={"detail": exc.errors(), "body": body}
+            content={"detail": errors, "body": body}
         )
 
     return app
