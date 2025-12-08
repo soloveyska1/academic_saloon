@@ -9,7 +9,6 @@ import { useWebSocketContext } from '../hooks/useWebSocket'
 
 // New Premium Components
 import { OrderHeroHeader } from '../components/order/OrderHeroHeader'
-import { SmartStatusCard } from '../components/order/SmartStatusCard'
 import { PremiumBentoGrid } from '../components/order/PremiumBentoGrid'
 import { OrderTimeline } from '../components/order/OrderTimeline'
 import { PremiumFilesSection } from '../components/order/PremiumFilesSection'
@@ -290,13 +289,10 @@ export function OrderDetailPage() {
           exit={{ opacity: 0 }}
           style={{ position: 'relative', zIndex: 10 }}
         >
-          {/* 1. Premium Hero Header */}
-          <OrderHeroHeader order={order} onBack={handleBack} />
+          {/* 1. Premium Hero Header (includes status, deadline, price, primary action) */}
+          <OrderHeroHeader order={order} onBack={handleBack} onActionClick={handleStatusAction} />
 
-          {/* 2. Smart Status Card */}
-          <SmartStatusCard order={order} onActionClick={handleStatusAction} />
-
-          {/* 3. Premium Bento Grid */}
+          {/* 2. Premium Bento Grid (guarantees, revisions, cashback) */}
           <PremiumBentoGrid order={order} cashbackPercent={5} />
 
           {/* 4. Payment Section (if needed) */}
