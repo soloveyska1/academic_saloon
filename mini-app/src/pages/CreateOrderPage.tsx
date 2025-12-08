@@ -90,9 +90,10 @@ interface BentoInputCardProps {
   required?: boolean
   icon?: typeof FileText
   hasDropdown?: boolean
+  disabled?: boolean
 }
 
-function BentoInputCard({ label, value, onChange, placeholder, multiline, required, icon: Icon, hasDropdown }: BentoInputCardProps) {
+function BentoInputCard({ label, value, onChange, placeholder, multiline, required, icon: Icon, hasDropdown, disabled }: BentoInputCardProps) {
   const [focused, setFocused] = useState(false)
 
   return (
@@ -106,6 +107,8 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
         padding: '16px 18px',
         transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         boxShadow: focused ? 'var(--glow-gold)' : 'none',
+        opacity: disabled ? 0.6 : 1,
+        cursor: disabled ? 'not-allowed' : 'default',
       }}
     >
       {/* Label */}
@@ -137,6 +140,7 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
             onBlur={() => setFocused(false)}
             placeholder={placeholder}
             rows={3}
+            disabled={disabled}
             style={{
               width: '100%',
               fontSize: 16,
@@ -158,6 +162,7 @@ function BentoInputCard({ label, value, onChange, placeholder, multiline, requir
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               placeholder={placeholder}
+              disabled={disabled}
               style={{
                 flex: 1,
                 fontSize: 16,
@@ -1347,6 +1352,7 @@ export function CreateOrderPage() {
               icon={BookOpen}
               hasDropdown
               required
+              disabled={submitting || isRevalidating}
             />
 
             <BentoInputCard
@@ -1355,6 +1361,7 @@ export function CreateOrderPage() {
               onChange={setTopic}
               placeholder="Оставьте пустым, если тема свободная"
               icon={FileText}
+              disabled={submitting || isRevalidating}
             />
 
             <BentoInputCard
@@ -1364,6 +1371,7 @@ export function CreateOrderPage() {
               placeholder="Объём, оформление, особые пожелания..."
               icon={PenTool}
               multiline
+              disabled={submitting || isRevalidating}
             />
 
             <FileVaultMini files={files} onAdd={addFiles} onRemove={removeFile} />

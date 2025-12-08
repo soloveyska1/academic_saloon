@@ -1396,8 +1396,7 @@ async def dashboard_refresh(callback: CallbackQuery, session: AsyncSession, bot:
 async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, bot: Bot):
     """
     Открывает или создаёт топик для чата с клиентом.
-    FUSION: При создании топика автоматически постится карточка заказа.
-    После создания обновляет кнопку на карточке канала для прямой ссылки.
+    После создания отправляет/обновляет карточку заказа в топике.
     """
     try:
         order_id = parse_order_id(callback.data)
@@ -1412,7 +1411,7 @@ async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, b
         return
 
     try:
-        # Получаем или создаём топик (с автопостингом карточки через FUSION)
+        # Получаем или создаём топик
         conv, topic_id = await get_or_create_topic(
             bot=bot,
             session=session,
@@ -1427,7 +1426,7 @@ async def card_open_chat_topic(callback: CallbackQuery, session: AsyncSession, b
 
         await callback.answer(f"💬 Топик готов!", show_alert=True)
 
-        # Обновляем карточку в канале чтобы кнопка "Чат" стала прямой ссылкой
+        # Отправляем/обновляем карточку в топике
         await send_or_update_card(
             bot=bot,
             order=order,

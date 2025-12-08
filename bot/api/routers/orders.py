@@ -299,10 +299,12 @@ async def apply_promo_code(
     )
 
     if is_valid:
+        # Format discount nicely (show as int if whole number, otherwise show decimals)
+        discount_display = int(discount) if discount == int(discount) else discount
         return PromoCodeResponse(
             success=True,
-            message=f"Промокод {code} активирован! Скидка {int(discount)}%",
-            discount=int(discount)
+            message=f"Промокод {code} активирован! Скидка {discount_display}%",
+            discount=discount  # Keep as float to preserve precision
         )
 
     # Return specific error message from PromoService
@@ -406,10 +408,15 @@ async def create_order(
     # Calculate final price with BOTH loyalty and promo discounts
     base_price = float(price_calc.final_price) if not price_calc.is_manual_required else 0.0
 
-    # Total discount is sum of loyalty + promo, capped at 50%
-    total_discount = min(user_discount + promo_discount, 50.0)
+    # Cap loyalty discount at 50%, but allow promo codes to give 100% discount
+    # This ensures promotional campaigns can offer full discounts while preventing
+    # loyalty abuse
+    capped_loyalty_discount = min(user_discount, 50.0)
 
-    # Apply total discount to base price (FIXED: was only applying promo_discount!)
+    # Total discount combines capped loyalty + uncapped promo, but max out at 100%
+    total_discount = min(capped_loyalty_discount + promo_discount, 100.0)
+
+    # Apply total discount to base price
     final_order_price = base_price * (1 - total_discount / 100) if total_discount > 0 else base_price
 
     initial_status = OrderStatus.WAITING_ESTIMATION.value
