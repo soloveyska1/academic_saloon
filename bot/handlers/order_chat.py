@@ -301,9 +301,15 @@ def format_order_info(order: Order) -> str:
 
     if order.price > 0:
         price_str = f"{int(order.price):,}₽".replace(",", " ")
+        # Показываем скидку если есть
+        if order.discount > 0:
+            price_str = f"{price_str} (−{order.discount:.0f}%)"
+        # Показываем бонусы если использованы
         if order.bonus_used > 0:
-            final = order.price - order.bonus_used
-            price_str = f"{price_str} (−{int(order.bonus_used)}₽ = {int(final):,}₽)".replace(",", " ")
+            price_str = f"{price_str} (−{int(order.bonus_used)}₽)"
+        # Показываем итоговую сумму если есть скидки/бонусы
+        if order.discount > 0 or order.bonus_used > 0:
+            price_str = f"{price_str} = {int(order.final_price):,}₽".replace(",", " ")
     else:
         price_str = "не установлена"
 

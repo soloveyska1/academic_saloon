@@ -100,8 +100,9 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
         )],
     ]
 
-    # Add Promocode button if no discount yet
-    if order.discount == 0:
+    # Add Promocode button if no promo code applied yet
+    # (don't check discount == 0, because user may have loyalty discount)
+    if not order.promo_code:
         buttons.append([InlineKeyboardButton(
             text="🎟 Ввести промокод",
             callback_data=f"enter_promo:{order_id}"

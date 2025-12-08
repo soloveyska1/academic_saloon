@@ -455,7 +455,10 @@ async def create_order(
         await session.flush()  # Get order.id without committing
 
         # Apply promo code atomically (records usage and increments counter)
-        if promo_code_used:
+        # BUT: For manual orders (base_price=0), don't apply promo yet!
+        # The promo will be applied when admin sets the price in god_mode.
+        # This prevents "burning" promo usage with discount_amount=0.
+        if promo_code_used and base_price > 0:
             apply_success, apply_msg, _ = await PromoService.apply_promo_to_order(
                 session=session,
                 order_id=order.id,
@@ -478,6 +481,13 @@ async def create_order(
                 promo_discount = 0.0
                 promo_validation_failed = True
                 promo_failure_reason = apply_msg
+        elif promo_code_used and base_price == 0:
+            # Manual order with promo - promo_code is saved but usage not recorded yet
+            # Will be applied when admin sets price in god_mode
+            logger.info(
+                f"[API /orders/create] Manual order #{order.id} with promo {promo_code_used} - "
+                f"usage will be recorded when price is set"
+            )
 
         await session.commit()
         await session.refresh(order)
