@@ -1781,10 +1781,11 @@ function PromosTab() {
       <AnimatePresence>
         {showCreate && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            style={{ ...cardStyle, overflow: 'hidden' }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            style={cardStyle}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input
@@ -1793,6 +1794,7 @@ function PromosTab() {
                 onChange={(e) => setNewCode(e.target.value.toUpperCase())}
                 placeholder="Код (напр. SALE20)"
                 style={inputStyle}
+                autoComplete="off"
               />
               <div style={{ display: 'flex', gap: 10 }}>
                 <input
@@ -1801,6 +1803,7 @@ function PromosTab() {
                   onChange={(e) => setNewDiscount(e.target.value)}
                   placeholder="Скидка %"
                   style={{ ...inputStyle, flex: 1 }}
+                  autoComplete="off"
                 />
                 <input
                   type="number"
@@ -1808,6 +1811,7 @@ function PromosTab() {
                   onChange={(e) => setNewMaxUses(e.target.value)}
                   placeholder="Макс. исп. (0=безлимит)"
                   style={{ ...inputStyle, flex: 1 }}
+                  autoComplete="off"
                 />
               </div>
               <button onClick={handleCreate} style={buttonStyle}>

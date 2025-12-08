@@ -391,7 +391,8 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
     await session.commit()
 
     # Обновляем карточку в канале
-    final_price = price - bonus_used
+    # Use order.final_price property which includes discount (loyalty + promo)
+    final_price = order.final_price
 
     # Формируем текст с информацией о бонусах
     if bonus_used > 0:

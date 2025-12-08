@@ -171,10 +171,9 @@ async def send_payment_notification(
         return False
 
     try:
-        # Рассчитываем бонусы (максимум 50% от цены)
-        max_bonus = price * 0.5
-        bonus_used = min(user.balance, max_bonus)
-        final_price = price - bonus_used
+        # Use order.final_price which includes discount (loyalty + promo) and bonus_used
+        final_price = order.final_price
+        bonus_used = order.bonus_used
 
         # Формируем краткий премиум-текст
         price_formatted = f"{int(final_price):,}".replace(",", " ")
@@ -525,7 +524,8 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     await update_topic_name(bot, session, order, user)
 
     # Обновляем карточку
-    final_price = price - bonus_used
+    # Use order.final_price property which includes discount (loyalty + promo)
+    final_price = order.final_price
 
     # Формируем текст с информацией о бонусах
     if bonus_used > 0:
