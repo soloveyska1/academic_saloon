@@ -1635,7 +1635,7 @@ export function CreateOrderPage() {
                             justifyContent: 'center',
                             cursor: 'help',
                           }}
-                          title="Точная цена будет рассчитана менеджером после оценки объёма работы"
+                          title="Точная цена будет рассчитана менеджером после оценки объёма работы. Дополнительные скидки (постоянного клиента) будут применены автоматически."
                         >
                           <AlertCircle size={10} color="#3b82f6" />
                         </motion.div>
@@ -1648,7 +1648,7 @@ export function CreateOrderPage() {
                           display: 'block',
                           marginTop: 2,
                         }}>
-                          С учётом скидки {activePromo.discount}%
+                          С промокодом {activePromo.discount}%
                         </span>
                       )}
                     </div>

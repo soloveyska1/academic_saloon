@@ -91,14 +91,18 @@ export function PromoProvider({ children }: { children: ReactNode }) {
           return null
         }
 
-        // Check if promo has expired (24 hours from activation)
+        // Check if promo has expired (either 24 hours from activation OR server expiry time)
         const hoursElapsed = (Date.now() - parsed.activatedAt) / (1000 * 60 * 60)
-        if (hoursElapsed < PROMO_EXPIRY_HOURS) {
+        const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
+        const isServerExpired = parsed.expiresAt && parsed.expiresAt < Date.now()
+
+        if (!isLocallyExpired && !isServerExpired) {
           console.log('[PromoContext] Restored promo from localStorage:', parsed.code)
           return parsed
         }
         // Clear expired promo
-        console.log('[PromoContext] Promo expired, clearing:', parsed.code)
+        const expireReason = isServerExpired ? 'server expiry reached' : 'local expiry (24h)'
+        console.log(`[PromoContext] Promo expired (${expireReason}), clearing:`, parsed.code)
         localStorage.removeItem(STORAGE_KEY)
       }
     } catch (err) {
@@ -153,9 +157,12 @@ export function PromoProvider({ children }: { children: ReactNode }) {
               return
             }
 
-            // Check expiration
+            // Check expiration (both local and server)
             const hoursElapsed = (Date.now() - parsed.activatedAt) / (1000 * 60 * 60)
-            if (hoursElapsed < PROMO_EXPIRY_HOURS) {
+            const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
+            const isServerExpired = parsed.expiresAt && parsed.expiresAt < Date.now()
+
+            if (!isLocallyExpired && !isServerExpired) {
               console.log('[PromoContext] Promo synced from another tab:', parsed.code)
               setActivePromo(parsed)
               setValidationError(null)
@@ -260,19 +267,20 @@ export function PromoProvider({ children }: { children: ReactNode }) {
       return true // No promo to validate
     }
 
-    // Check local expiration first
+    // Check local expiration first (both local and server)
     const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
-    if (hoursElapsed >= PROMO_EXPIRY_HOURS) {
+    const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
+    const isServerExpired = activePromo.expiresAt && activePromo.expiresAt < Date.now()
+
+    if (isLocallyExpired || isServerExpired) {
       setActivePromo(null)
-      setValidationError('Промокод истёк. Попробуйте ввести снова.')
+      const reason = isServerExpired ? 'Срок действия истёк' : 'Промокод истёк (24 часа с активации)'
+      setValidationError(reason)
       return false
     }
 
-    // Skip API call if recently validated (within last 5 minutes)
-    const timeSinceLastValidation = Date.now() - activePromo.validatedAt
-    if (timeSinceLastValidation < REVALIDATION_INTERVAL_MS) {
-      return true
-    }
+    // ALWAYS revalidate before order submission - no time-based skipping
+    // This ensures promo is still valid on server side
 
     // Re-validate with server
     setIsValidating(true)
@@ -323,11 +331,13 @@ export function PromoProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Check if promo is still valid (local expiration check only)
+  // Check if promo is still valid (both local and server expiration)
   const isPromoValid = useCallback(() => {
     if (!activePromo) return false
     const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
-    return hoursElapsed < PROMO_EXPIRY_HOURS
+    const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
+    const isServerExpired = activePromo.expiresAt && activePromo.expiresAt < Date.now()
+    return !isLocallyExpired && !isServerExpired
   }, [activePromo])
 
   // Periodic expiration check
@@ -336,9 +346,13 @@ export function PromoProvider({ children }: { children: ReactNode }) {
 
     const checkExpiration = () => {
       const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
-      if (hoursElapsed >= PROMO_EXPIRY_HOURS) {
+      const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
+      const isServerExpired = activePromo.expiresAt && activePromo.expiresAt < Date.now()
+
+      if (isLocallyExpired || isServerExpired) {
         setActivePromo(null)
-        setValidationError('Промокод истёк')
+        const reason = isServerExpired ? 'Срок действия истёк' : 'Промокод истёк'
+        setValidationError(reason)
       }
     }
 

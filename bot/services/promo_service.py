@@ -25,9 +25,6 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
-# Maximum total discount allowed (loyalty + promo)
-MAX_TOTAL_DISCOUNT = 50.0
-
 
 class PromoValidationResult:
     """Result of promo code validation"""
