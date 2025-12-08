@@ -962,12 +962,18 @@ export function CreateOrderPage() {
   const handleSubmit = async (forceWithoutPromo: boolean = false) => {
     if (!workType || !deadline || !subject.trim()) return
 
+    // DEBUG: Log promo state at submit time
+    console.log('[CreateOrderPage] 🎟️ handleSubmit called')
+    console.log('[CreateOrderPage] 🎟️ activePromo at submit:', activePromo)
+    console.log('[CreateOrderPage] 🎟️ forceWithoutPromo:', forceWithoutPromo)
+
     haptic('heavy')
     setSubmitting(true)
 
     try {
       // Re-validate promo before submitting (unless forced to proceed without it)
       let promoToUse = activePromo?.code
+      console.log('[CreateOrderPage] 🎟️ promoToUse initial:', promoToUse)
       if (activePromo && !forceWithoutPromo) {
         const promoStillValid = await revalidatePromo()
         if (!promoStillValid) {
@@ -993,6 +999,9 @@ export function CreateOrderPage() {
         description: description.trim() || undefined,
         promo_code: promoToUse,
       }
+
+      console.log('[CreateOrderPage] 🎟️ Sending order with data:', JSON.stringify(data))
+      console.log('[CreateOrderPage] 🎟️ promo_code in request:', data.promo_code)
 
       const res = await createOrder(data)
       if (res.success) {
