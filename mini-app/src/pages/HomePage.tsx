@@ -8,7 +8,9 @@ import {
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { applyPromoCode, fetchDailyBonusInfo, claimDailyBonus, DailyBonusInfo } from '../api/userApi'
+import { fetchDailyBonusInfo, claimDailyBonus, DailyBonusInfo } from '../api/userApi'
+import { PromoCodeSection } from '../components/ui/PromoCodeSection'
+import { usePromo } from '../contexts/PromoContext'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { Confetti } from '../components/ui/Confetti'
 import { DailyBonusModal } from '../components/ui/DailyBonus'
@@ -391,222 +393,6 @@ function LastOrderCard({ order, onClick }: { order: { id: number; work_type_labe
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  COLLAPSIBLE PROMO CODE — Premium Accordion with Active Badge
-// ═══════════════════════════════════════════════════════════════════════════
-
-function CollapsiblePromoCode({
-  promoCode,
-  setPromoCode,
-  promoLoading,
-  promoMessage,
-  onSubmit,
-  activePromo,
-}: {
-  promoCode: string
-  setPromoCode: (v: string) => void
-  promoLoading: boolean
-  promoMessage: { type: 'success' | 'error'; text: string } | null
-  onSubmit: () => void
-  activePromo?: { code: string; discount: number } | null
-}) {
-  const [isOpen, setIsOpen] = useState(false)
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.28 }}
-      style={{
-        ...glassStyle,
-        marginBottom: 16,
-        padding: 0,
-        overflow: 'hidden',
-        border: activePromo ? '1px solid rgba(34,197,94,0.35)' : '1px solid var(--card-border)',
-        background: activePromo
-          ? 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, var(--bg-card) 50%)'
-          : 'var(--bg-card)',
-      }}
-    >
-      <CardInnerShine />
-      {/* Collapsed Header */}
-      <motion.div
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 18px',
-          cursor: 'pointer',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <motion.div
-            animate={activePromo ? {
-              boxShadow: [
-                '0 0 12px rgba(34,197,94,0.3)',
-                '0 0 20px rgba(34,197,94,0.5)',
-                '0 0 12px rgba(34,197,94,0.3)',
-              ]
-            } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: activePromo
-                ? 'linear-gradient(135deg, rgba(34,197,94,0.25), rgba(34,197,94,0.1))'
-                : 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
-              border: activePromo
-                ? '1px solid rgba(34,197,94,0.5)'
-                : '1px solid var(--border-gold)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Gift size={18} color={activePromo ? '#22c55e' : 'var(--gold-400)'} strokeWidth={1.5} />
-          </motion.div>
-          <div>
-            {activePromo ? (
-              <>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}>
-                  <span style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    fontFamily: 'var(--font-mono)',
-                    color: '#22c55e',
-                    letterSpacing: '0.05em',
-                  }}>{activePromo.code}</span>
-                  <span style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: '#22c55e',
-                    background: 'rgba(34,197,94,0.15)',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                  }}>−{activePromo.discount}%</span>
-                </div>
-                <div style={{
-                  fontSize: 10,
-                  color: 'rgba(34,197,94,0.7)',
-                  marginTop: 2,
-                }}>Промокод активен</div>
-              </>
-            ) : (
-              <>
-                <div style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'var(--text-main)',
-                }}>Есть промокод?</div>
-                <div style={{
-                  fontSize: 10,
-                  color: 'var(--text-muted)',
-                  marginTop: 2,
-                }}>Активируйте скидку</div>
-              </>
-            )}
-          </div>
-        </div>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown size={20} color="var(--text-muted)" strokeWidth={1.5} />
-        </motion.div>
-      </motion.div>
-
-      {/* Expanded Content */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{
-              padding: '0 18px 18px',
-              borderTop: '1px solid var(--border-subtle)',
-              paddingTop: 16,
-            }}>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <input
-                  type="text"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  placeholder="Введите код"
-                  style={{
-                    flex: 1,
-                    padding: '14px 16px',
-                    background: 'var(--bg-glass)',
-                    border: '1px solid var(--border-default)',
-                    borderRadius: 12,
-                    color: 'var(--text-main)',
-                    fontSize: 14,
-                    fontFamily: 'var(--font-mono)',
-                    letterSpacing: '0.12em',
-                    outline: 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = 'var(--border-gold)'
-                    e.target.style.boxShadow = '0 0 0 3px rgba(212,175,55,0.1), var(--glow-gold)'
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = 'var(--border-default)'
-                    e.target.style.boxShadow = 'none'
-                  }}
-                />
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onSubmit}
-                  disabled={promoLoading}
-                  style={{
-                    padding: '14px 22px',
-                    background: promoLoading ? 'var(--text-muted)' : 'var(--gold-metallic)',
-                    border: 'none',
-                    borderRadius: 12,
-                    color: '#09090b',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    fontFamily: 'var(--font-sans)',
-                    cursor: promoLoading ? 'wait' : 'pointer',
-                    boxShadow: promoLoading ? 'none' : '0 0 20px -5px rgba(212,175,55,0.4)',
-                  }}
-                >
-                  {promoLoading ? '...' : 'OK'}
-                </motion.button>
-              </div>
-              {promoMessage && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  style={{
-                    marginTop: 12,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: promoMessage.type === 'success' ? 'var(--success-text)' : 'var(--error-text)',
-                  }}
-                >
-                  {promoMessage.text}
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  COMPACT ACHIEVEMENTS ROW — Single Line Premium with Next Preview
@@ -814,10 +600,8 @@ export function HomePage({ user }: Props) {
   const navigate = useNavigate()
   const { haptic, hapticSuccess, tg } = useTelegram()
   const admin = useAdmin()
+  const { activePromo } = usePromo()
   const [copied, setCopied] = useState(false)
-  const [promoCode, setPromoCode] = useState('')
-  const [promoLoading, setPromoLoading] = useState(false)
-  const [promoMessage, setPromoMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [showQR, setShowQR] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showDailyBonus, setShowDailyBonus] = useState(false)
@@ -897,26 +681,6 @@ export function HomePage({ user }: Props) {
     setCopied(true)
     hapticSuccess()
     setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handlePromoSubmit = async () => {
-    if (!promoCode.trim() || promoLoading) return
-    setPromoLoading(true)
-    setPromoMessage(null)
-    try {
-      const result = await applyPromoCode(promoCode.trim())
-      if (result.success) {
-        setPromoMessage({ type: 'success', text: result.message || 'Промокод активирован!' })
-        setPromoCode('')
-        hapticSuccess()
-      } else {
-        setPromoMessage({ type: 'error', text: result.message || 'Неверный промокод' })
-      }
-    } catch {
-      setPromoMessage({ type: 'error', text: 'Ошибка сети' })
-    }
-    setPromoLoading(false)
-    setTimeout(() => setPromoMessage(null), 3000)
   }
 
   const activeOrders = user.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length
@@ -1416,16 +1180,20 @@ export function HomePage({ user }: Props) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PROMO CODE — Collapsible Premium Accordion
+          PROMO CODE — Premium Global Promo Code Section
           ═══════════════════════════════════════════════════════════════════ */}
-      <CollapsiblePromoCode
-        promoCode={promoCode}
-        setPromoCode={setPromoCode}
-        promoLoading={promoLoading}
-        promoMessage={promoMessage}
-        onSubmit={handlePromoSubmit}
-        activePromo={user.discount > 0 ? { code: 'АКТИВЕН', discount: user.discount } : null}
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28 }}
+        style={{ marginBottom: 16 }}
+      >
+        <PromoCodeSection
+          variant="full"
+          collapsible={true}
+          defaultExpanded={!!activePromo}
+        />
+      </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           ACHIEVEMENTS — Compact Single Line Premium
