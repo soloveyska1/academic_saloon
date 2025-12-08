@@ -5,6 +5,7 @@ from typing import List, Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -57,7 +58,10 @@ async def get_orders(
     )
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "User not found"}
+        )
 
     query = select(Order).where(
         Order.user_id == user.telegram_id,
@@ -112,7 +116,10 @@ async def get_batch_payment_info(
     orders = result.scalars().all()
 
     if not orders:
-        raise HTTPException(status_code=404, detail="Не найдено заказов для оплаты")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Не найдено заказов для оплаты"}
+        )
 
     order_items = []
     total_amount = 0.0
@@ -134,7 +141,10 @@ async def get_batch_payment_info(
         total_amount += remaining
 
     if not order_items:
-        raise HTTPException(status_code=400, detail="Все заказы уже оплачены")
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Все заказы уже оплачены"}
+        )
 
     card_raw = settings.PAYMENT_CARD.replace(" ", "").replace("-", "")
     card_formatted = " ".join([card_raw[i:i+4] for i in range(0, len(card_raw), 4)])
@@ -169,7 +179,10 @@ async def confirm_batch_payment(
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "User not found"}
+        )
 
     result = await session.execute(
         select(Order).where(
@@ -181,7 +194,10 @@ async def confirm_batch_payment(
     orders = result.scalars().all()
 
     if not orders:
-        raise HTTPException(status_code=404, detail="Не найдено заказов для оплаты")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Не найдено заказов для оплаты"}
+        )
 
     processed_orders = []
     failed_orders = []
@@ -270,7 +286,10 @@ async def get_order_detail(
     order = result.scalar_one_or_none()
 
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
 
     return order_to_response(order)
 
@@ -429,6 +448,7 @@ async def create_order(
         description=data.description,
         deadline=data.deadline,
         price=base_price,
+        final_price=final_order_price,
         discount=float(total_discount),
         promo_code=promo_code_used,
         promo_discount=float(promo_discount) if promo_discount else 0.0,
@@ -454,7 +474,11 @@ async def create_order(
                 logger.warning(f"[API /orders/create] Promo application failed: {apply_msg}")
                 order.promo_code = None
                 order.promo_discount = 0.0
-                order.discount = float(user_discount)  # Only loyalty discount
+                # Recalculate discount with only loyalty (capped at 50%)
+                capped_loyalty = min(user_discount, 50.0)
+                order.discount = float(capped_loyalty)
+                # Recalculate final_price without promo
+                order.final_price = base_price * (1 - capped_loyalty / 100) if capped_loyalty > 0 else base_price
                 promo_code_used = None
                 promo_discount = 0.0
                 promo_validation_failed = True
@@ -574,13 +598,22 @@ async def upload_order_files(
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "User not found"}
+        )
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
     if order.user_id != tg_user.id:
-        raise HTTPException(status_code=403, detail="Not your order")
+        return JSONResponse(
+            status_code=403,
+            content={"success": False, "message": "Not your order"}
+        )
 
     if not yandex_disk_service.is_available:
         return FileUploadResponse(success=False, message="Файловое хранилище временно недоступно")
@@ -640,16 +673,25 @@ async def confirm_payment(
     await rate_limit_payment.check(request)
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
-    
+
     order = await session.get(Order, order_id)
     if not order or order.user_id != tg_user.id:
-        raise HTTPException(status_code=404, detail="Order not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
 
     if order.status in [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value, OrderStatus.COMPLETED.value]:
-        raise HTTPException(status_code=400, detail="Order cannot accept payment")
-    
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Order cannot accept payment"}
+        )
+
     if not order.final_price or order.final_price <= 0:
-        raise HTTPException(status_code=400, detail="Order has no price")
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Order has no price"}
+        )
 
     final_price = order.final_price
     amount_to_pay = final_price / 2 if data.payment_scheme == 'half' else final_price
@@ -716,7 +758,10 @@ async def get_payment_info(
 ):
     order = await session.get(Order, order_id)
     if not order or order.user_id != tg_user.id:
-        raise HTTPException(status_code=404, detail="Order not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
 
     card_raw = settings.PAYMENT_CARD.replace(" ", "").replace("-", "")
     card_formatted = " ".join([card_raw[i:i+4] for i in range(0, len(card_raw), 4)])
@@ -727,12 +772,20 @@ async def get_payment_info(
     
     phone_formatted = f"{phone_raw[:2]} ({phone_raw[2:5]}) {phone_raw[5:8]}-{phone_raw[8:10]}-{phone_raw[10:12]}" if len(phone_raw) >= 12 else phone_raw
 
+    # Safe conversion with null checks
+    price = round(float(order.price or 0), 2)
+    final_price = round(float(order.final_price or 0), 2)
+    discount = round(float(order.discount or 0), 2)
+    bonus_used = round(float(order.bonus_used or 0), 2)
+    paid_amount = round(float(order.paid_amount or 0), 2)
+    remaining = round(float((order.final_price or 0) - (order.paid_amount or 0)), 2)
+
     return PaymentInfoResponse(
         order_id=order.id, status=order.status,
-        price=round(float(order.price), 2), final_price=round(float(order.final_price), 2),
-        discount=round(float(order.discount), 2), bonus_used=round(float(order.bonus_used), 2),
-        paid_amount=round(float(order.paid_amount or 0), 2),
-        remaining=round(float(order.final_price - (order.paid_amount or 0)), 2),
+        price=price, final_price=final_price,
+        discount=discount, bonus_used=bonus_used,
+        paid_amount=paid_amount,
+        remaining=remaining,
         card_number=card_formatted, card_holder=settings.PAYMENT_NAME.upper(),
         sbp_phone=phone_formatted, sbp_bank=settings.PAYMENT_BANKS,
     )
@@ -752,13 +805,22 @@ async def submit_order_review(
 ):
     order = await session.get(Order, order_id)
     if not order or order.user_id != tg_user.id:
-        raise HTTPException(status_code=404, detail="Order not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
 
     if order.status != OrderStatus.COMPLETED.value:
-        raise HTTPException(status_code=400, detail="Only for completed orders")
-    
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Only for completed orders"}
+        )
+
     if getattr(order, 'review_submitted', False):
-        raise HTTPException(status_code=400, detail="Review already submitted")
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Review already submitted"}
+        )
 
     stars = "⭐" * data.rating + "☆" * (5 - data.rating)
     work_label = order.work_type_label or order.work_type
@@ -785,10 +847,16 @@ async def request_revision(
 ):
     order = await session.get(Order, order_id)
     if not order or order.user_id != tg_user.id:
-        raise HTTPException(status_code=404, detail="Not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
 
     if order.status != OrderStatus.REVIEW.value:
-        raise HTTPException(status_code=400, detail="Order must be in review")
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Order must be in review"}
+        )
 
     order.status = OrderStatus.REVISION.value
     order.revision_count = (order.revision_count or 0) + 1
@@ -807,11 +875,20 @@ async def request_revision(
         from bot.handlers.order_chat import get_or_create_topic
         from bot.services.live_cards import send_or_update_card
         bot = get_bot()
+        # Get user info for card update
+        user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+        user = user_result.scalar_one_or_none()
         conv, topic_id = await get_or_create_topic(bot, session, tg_user.id, order_id)
         if topic_id:
             paid_text = "💰 <b>ПЛАТНАЯ ПРАВКА</b>\n" if is_paid else ""
             await bot.send_message(settings.ADMIN_GROUP_ID, message_thread_id=topic_id, text=f"✏️ <b>ЗАПРОС НА ПРАВКИ</b>\n{paid_text}Комментарий: {data.message}")
-        await send_or_update_card(bot, order, session)
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None
+        )
     except Exception:
         pass
 
@@ -825,10 +902,16 @@ async def confirm_work_completion(
 ):
     order = await session.get(Order, order_id)
     if not order or order.user_id != tg_user.id:
-        raise HTTPException(status_code=404, detail="Not found")
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
 
     if order.status != OrderStatus.REVIEW.value:
-        raise HTTPException(status_code=400, detail="Must be in review")
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Order must be in review"}
+        )
 
     order.status = OrderStatus.COMPLETED.value
     order.completed_at = datetime.now(timezone.utc)
