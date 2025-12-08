@@ -306,14 +306,56 @@ def render_order_card(
 
     details_text = "\n".join(details) if details else ""
 
-    # Цена (если есть)
+    # ═══ ЦЕНА И СКИДКИ (UPDATED) ═══
     price_text = ""
     if order.price > 0:
-        price_formatted = f"{order.price:,.0f}".replace(",", " ")
-        price_text = f"\n💰 <b>Цена:</b> {price_formatted}₽"
+        price_text = "\n💰 <b>Финансы:</b>"
+        
+        # Base Price Formatting
+        base_price_fmt = f"{order.price:,.0f}".replace(",", " ")
+        
+        # Check for discounts
+        has_promo = bool(order.promo_code)
+        has_loyalty = bool(order.discount and order.discount > 0)
+        has_bonus = bool(order.bonus_used and order.bonus_used > 0)
+        
+        if has_promo or has_loyalty or has_bonus:
+            # 1. Base Price (crossed out)
+            price_text += f"\n  • Базовая: <s>{base_price_fmt}₽</s>"
+            
+            # 2. Loyalty Discount
+            if has_loyalty:
+                price_text += f"\n  • Лояльность: -{order.discount}%"
+                
+            # 3. Promo Code
+            if has_promo:
+                promo_val = order.promo_discount if order.promo_discount else 0
+                price_text += f"\n  • Промокод: <code>{order.promo_code}</code> (-{promo_val}%)"
+                
+            # 4. Bonuses
+            if has_bonus:
+                bonus_fmt = f"{order.bonus_used:,.0f}".replace(",", " ")
+                price_text += f"\n  • Бонусы: -{bonus_fmt}₽"
+                
+            # 5. FINAL PRICE
+            final_price = order.final_price
+            final_fmt = f"{final_price:,.0f}".replace(",", " ")
+            price_text += f"\n  👉 <b>Итого: {final_fmt}₽</b>"
+        else:
+            # Check if paid full/partially
+            price_text += f" <b>{base_price_fmt}₽</b>"
+            
+        # Payment Status
         if order.paid_amount > 0:
             paid_formatted = f"{order.paid_amount:,.0f}".replace(",", " ")
-            price_text += f" (оплачено: {paid_formatted}₽)"
+            price_text += f"\n  ✅ Оплачено: {paid_formatted}₽"
+            
+            # Show remaining
+            final = order.final_price
+            if order.paid_amount < final:
+                left = final - order.paid_amount
+                left_fmt = f"{left:,.0f}".replace(",", " ")
+                price_text += f" (ост. {left_fmt}₽)"
 
     # Оценка времени выполнения (только для новых)
     estimate_text = ""
@@ -329,7 +371,17 @@ def render_order_card(
     # Extra text (для комментариев)
     extra_section = ""
     if extra_text:
-        extra_section = f"\n\n📌 <i>{extra_text}</i>"
+        # Filter out promo lines if we already showed them
+        lines = extra_text.split('\n')
+        filtered = []
+        for line in lines:
+            if "🏷️ Промокод" in line and (order.price > 0):
+                continue
+            filtered.append(line)
+        
+        final_extra = "\n".join(filtered).strip()
+        if final_extra:
+            extra_section = f"\n\n📌 <i>{final_extra}</i>"
 
     # Прогресс выполнения (только для статусов "в работе")
     progress_section = ""
