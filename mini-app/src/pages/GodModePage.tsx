@@ -42,6 +42,7 @@ import {
   API_WS_URL,
 } from '../api/userApi'
 import type { GodDashboard, GodOrder, GodUser, GodPromo, GodLog, GodLiveUser } from '../types'
+import { useToast } from '../components/ui/Toast'
 
 // Notification sound (base64 encoded simple beep)
 const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YVoGAACBhYaJioiGg4B9enh3dnd5fICDhYaHiImJiomJiIeGhYOBf3x6d3V0dHV2eXx/goWHiYqLjIyMi4qIhoSBfnx5dnRyc3N1d3p9gIOGiImLjI2NjYyLiYeFgn98eXd0cnFyc3Z4e36BhIeLjI6Pj4+OjYuJhoN/fHl2c3FwcXJ0d3p+gYSHi46Qk5KRkI6Liod/e3ZycG9vb3Byd3p+goeLj5KVlpWUko+Mh4B7dXFubmxsbW90eH2Dh4yQlJeYmJiWk4+LhX51cG1ramprbnJ3fYOJjZGVmJqampiVko6IgHpzbWppaGhqbnN5f4WKjpSXmZqbmZaUkYuEfnhxbGloZ2hqb3R7gYeMkZWYmpubmJaTjoiAeXJsaGdmZ2ptc3qAhoyRlpmbnJ2bmJaTjYaAeXJsaGZlZmhtc3mAh4ySlpmcnp6bmJaTjYaAeXJsamdmZ2htc3qAhoySlpmbnJ2bmJaUj4iFfnlybWppaWltc3mAhoqPlJibnJ2bmJaTj4iFgHlzbWppZ2hrb3V7gYeMkZWYmpubmJaSjoiCe3VuaGdmZ2hscnl/hYqPlJeampyamJaTj4mDfXZwbGhnZmdqb3V7gYeNkZWYmZqZl5WSkI2KhYB6dXBsaGZlZWdrcHZ8goeMkJOWl5iXlZKPjImFgXx3c29raWhmZmdqbXF3fIGGioqKi4uLioqJh4aCfXl1cnBtbWxsbW1vcHJ1d3p9f4GCg4OEhISDg4KAfn18e3p6enp7fH5/gIGCgoKCgoKCgYGAfn18e3t7fH1+f4GCgoKCgoKBgYCAfn18e3t7e3x+gIGCg4ODg4OCgYCAfn18fHx8fH1/gIGCg4ODgoKBgH9+fXx8fHx9fn+AgYKDg4OCgYGAf359fHx8fX1+f4CCgoODg4KBgH9+fXx8fH19foCAgoKDg4OCgYB/fn18fHx9fX6AgIKCg4OCgoGAf359fHx8fX1+gICCgoODg4KCAX9/fn1+fn5+foCAgoKCgoKBgIB/fn19fX19fX+AgIGCgoKCgoGAgH9+fX19fX5/gICBgoKCgoKBgH9/fn19fX5+f4CAgYKCgoKBgYCAf35+fn5+fn+AgIGBgoKCgoGAgIB/fn5+fn5/gICBgoKCgoGBgIB/f35+fn5/gICBgoKCgoGBgIB/f39+fn5/f4CAgYGCgoKBgYCAf39/fn5/f4CAgYGCgoKBgYCAf39/f39/f4CAgYGBgoKBgYCAgH9/f39/f4CAgYGBgYGBgYCAgIB/f39/f4CAgIGBgYGBgYGAgICAf39/f3+AgICBgYGBgYGBgICAgH9/f3+AgICBgYGBgYGBgICAgH9/f3+AgICBgYGBgYGBgICAf39/f4CAgICBgYGBgYCAgICAgH9/f4CAgICBgYGBgYCAf39/f39/f4CAgICBgYGBgYB/f39/f39/gICAgYGBgYGAgH9/f39/f4CAgIGBgYGBgIB/f39/f39/gICAgYGBgYGAf39/f39/f4CAgIGBgYGBgH9/f39/f3+AgICBgYGBgYB/f39/f39/gICAgYGBgYGAf39/f39/gICAgIGBgYGBgH9/f39/f4CAgICBgYGBgYB/f39/f3+AgICAgYGBgYGAf39/f39/gICAgIGBgYGBgH9/f39/f4CAgICBgYGBgYB/f39/f3+AgICAgYGBgYGAf39/f39/gICAgYGBgYGAgH9/f39/f4CAgICBgYGBgIB/f39/f39/gICAgYGBgYCAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgICAgICAf39/f39/f3+AgICAgICAf39/f39/f3+AgICAgICAf39/f39/f3+AgICAgICAf39/f39/f4CAgICAgIB/f39/f39/f4CAgICAgH9/f39/f39/gICAgICAgH9/f39/f39/gICAgICAgA=='
@@ -179,14 +180,9 @@ export function GodModePage() {
     const connectWs = () => {
       const ws = new WebSocket(`${API_WS_URL}?telegram_id=${telegramId}`)
 
-      ws.onopen = () => {
-        console.log('[GOD WS] Connected')
-      }
-
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          console.log('[GOD WS] Message:', data)
 
           // Handle admin-specific messages
           if (data.type === 'admin_new_order') {
@@ -205,11 +201,10 @@ export function GodModePage() {
               data,
             })
           }
-        } catch {}
+        } catch { /* ignore parse errors */ }
       }
 
       ws.onclose = () => {
-        console.log('[GOD WS] Disconnected, reconnecting...')
         setTimeout(connectWs, 3000) // Reconnect after 3s
       }
 
@@ -1844,9 +1839,11 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
 // ═══════════════════════════════════════════════════════════════════════════
 
 function PromosTab() {
+  const { showToast } = useToast()
   const [promos, setPromos] = useState<GodPromo[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
+  const [creating, setCreating] = useState(false)
   const [newCode, setNewCode] = useState('')
   const [newDiscount, setNewDiscount] = useState('10')
   const [newMaxUses, setNewMaxUses] = useState('0')
@@ -1856,11 +1853,11 @@ function PromosTab() {
     try {
       const result = await fetchGodPromos()
       setPromos(result.promos)
-    } catch (e) {
-      console.error('Promos load error:', e)
+    } catch {
+      showToast({ type: 'error', title: 'Ошибка загрузки', message: 'Не удалось загрузить промокоды' })
     }
     setLoading(false)
-  }, [])
+  }, [showToast])
 
   useEffect(() => {
     load()
@@ -1868,36 +1865,54 @@ function PromosTab() {
 
   const handleCreate = async () => {
     if (!newCode.trim()) return
+    setCreating(true)
     try {
       await createGodPromo({
         code: newCode,
         discount_percent: parseFloat(newDiscount),
         max_uses: parseInt(newMaxUses),
       })
+      showToast({
+        type: 'success',
+        title: '✓ Промокод создан',
+        message: `${newCode} — скидка ${newDiscount}%`
+      })
       setNewCode('')
+      setNewDiscount('10')
+      setNewMaxUses('0')
       setShowCreate(false)
       load()
     } catch (e) {
-      console.error(e)
+      showToast({
+        type: 'error',
+        title: 'Ошибка создания',
+        message: e instanceof Error ? e.message : 'Не удалось создать промокод'
+      })
     }
+    setCreating(false)
   }
 
-  const handleToggle = async (id: number) => {
+  const handleToggle = async (id: number, currentlyActive: boolean) => {
     try {
       await toggleGodPromo(id)
+      showToast({
+        type: 'success',
+        title: currentlyActive ? '⏸ Промокод деактивирован' : '✓ Промокод активирован'
+      })
       load()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      showToast({ type: 'error', title: 'Ошибка', message: 'Не удалось изменить статус' })
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Удалить промокод?')) return
+  const handleDelete = async (id: number, code: string) => {
+    if (!confirm(`Удалить промокод ${code}?`)) return
     try {
       await deleteGodPromo(id)
+      showToast({ type: 'success', title: '🗑 Промокод удалён', message: code })
       load()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      showToast({ type: 'error', title: 'Ошибка удаления', message: 'Не удалось удалить промокод' })
     }
   }
 
@@ -1929,32 +1944,66 @@ function PromosTab() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input
                 type="text"
+                inputMode="text"
                 value={newCode}
-                onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                onChange={(e) => setNewCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                onFocus={(e) => e.target.select()}
                 placeholder="Код (напр. SALE20)"
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  WebkitUserSelect: 'text',
+                  userSelect: 'text',
+                  WebkitAppearance: 'none',
+                }}
                 autoComplete="off"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="next"
               />
               <div style={{ display: 'flex', gap: 10 }}>
                 <input
                   type="number"
+                  inputMode="numeric"
                   value={newDiscount}
                   onChange={(e) => setNewDiscount(e.target.value)}
                   placeholder="Скидка %"
-                  style={{ ...inputStyle, flex: 1 }}
+                  min="1"
+                  max="100"
+                  style={{ ...inputStyle, flex: 1, WebkitAppearance: 'none' }}
                   autoComplete="off"
+                  enterKeyHint="next"
                 />
                 <input
                   type="number"
+                  inputMode="numeric"
                   value={newMaxUses}
                   onChange={(e) => setNewMaxUses(e.target.value)}
-                  placeholder="Макс. исп. (0=безлимит)"
-                  style={{ ...inputStyle, flex: 1 }}
+                  placeholder="Лимит (0=∞)"
+                  min="0"
+                  style={{ ...inputStyle, flex: 1, WebkitAppearance: 'none' }}
                   autoComplete="off"
+                  enterKeyHint="done"
                 />
               </div>
-              <button onClick={handleCreate} style={buttonStyle}>
-                <Check size={18} /> Создать
+              <button
+                onClick={handleCreate}
+                disabled={!newCode.trim() || creating}
+                style={{
+                  ...buttonStyle,
+                  opacity: newCode.trim() && !creating ? 1 : 0.5,
+                  cursor: newCode.trim() && !creating ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {creating ? (
+                  <>
+                    <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} /> Создание...
+                  </>
+                ) : (
+                  <>
+                    <Check size={18} /> Создать
+                  </>
+                )}
               </button>
             </div>
           </motion.div>
@@ -2018,8 +2067,9 @@ function PromosTab() {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleToggle(promo.id)}
+                    onClick={() => handleToggle(promo.id, promo.is_active)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                    title={promo.is_active ? 'Деактивировать' : 'Активировать'}
                   >
                     {promo.is_active
                       ? <ToggleRight size={28} color="#22c55e" />
@@ -2027,8 +2077,9 @@ function PromosTab() {
                     }
                   </button>
                   <button
-                    onClick={() => handleDelete(promo.id)}
+                    onClick={() => handleDelete(promo.id, promo.code)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                    title="Удалить"
                   >
                     <Trash2 size={20} color="#ef4444" />
                   </button>
