@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
+import { PremiumSplashScreen } from './components/PremiumSplashScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ToastProvider } from './components/ui/Toast'
 import { AdminProvider, useAdmin } from './contexts/AdminContext'
@@ -95,6 +96,8 @@ function AdminAwareWSIndicator() {
 function AppContent() {
   const { userData, loading: userDataLoading, error, refetch } = useUserData()
   const [isReady, setIsReady] = useState(false)
+  const [splashComplete, setSplashComplete] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
 
   // Smart notification state - handles all notification types
   const [notification, setNotification] = useState<SmartNotificationData | null>(null)
@@ -202,16 +205,36 @@ function AppContent() {
   }, [])
 
   useEffect(() => {
-    // Simulate initial load
+    // Mark ready after minimum time
     const timer = setTimeout(() => setIsReady(true), 500)
     return () => clearTimeout(timer)
+  }, [])
+
+  // Check if this is the first time the user opens the app in this session
+  useEffect(() => {
+    const hasSeenSplash = sessionStorage.getItem('as_splash_seen')
+    if (hasSeenSplash) {
+      setShowSplash(false)
+      setSplashComplete(true)
+    }
+  }, [])
+
+  // Handle splash screen completion
+  const handleSplashComplete = useCallback(() => {
+    sessionStorage.setItem('as_splash_seen', 'true')
+    setSplashComplete(true)
+    setShowSplash(false)
   }, [])
 
   // Get telegram ID for WebSocket - need it before loading check
   const telegramId = userData?.telegram_id || null
 
-  // Show loading during initial load
-  // We wait for BOTH the minimum splash time (isReady) AND the user data fetch (userDataLoading)
+  // Show premium splash screen on first load
+  if (showSplash && !splashComplete) {
+    return <PremiumSplashScreen onComplete={handleSplashComplete} />
+  }
+
+  // Show simple loading screen if still fetching user data after splash
   if (!isReady || userDataLoading) {
     return <LoadingScreen />
   }
