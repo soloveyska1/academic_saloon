@@ -3,23 +3,47 @@ import { motion, AnimatePresence, useAnimation } from 'framer-motion'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * PREMIUM SPLASH SCREEN — "The Golden Vault"
+ * PREMIUM SPLASH SCREEN v2.0 — "The Golden Vault"
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * A cinematic brand reveal experience combining:
- * - 3D Rotating Monogram "AS"
- * - Golden particle vortex convergence
- * - Massive vault doors opening
- * - Light burst revelation
- * - Premium brand typography
+ * PHILOSOPHY: "Less is more. Silence is gold. Exclusivity is everything."
  *
- * Timeline (4 seconds total):
- * Phase 0 (0-0.3s):   Darkness, anticipation
- * Phase 1 (0.3-1.2s): 3D Monogram appears and rotates
- * Phase 2 (1.2-2.2s): Golden particles swirl and converge
- * Phase 3 (2.2-3.2s): Vault doors slide open, light bursts through
- * Phase 4 (3.2-3.8s): Brand "САЛУН" rises from depth
- * Phase 5 (3.8-4.2s): Elegant fade out to app
+ * Inspired by: Cartier, Rolex, Hermès digital experiences
+ * - Fewer effects, more meaning
+ * - Breathing moments between phases
+ * - Narrative arc that tells a story
+ * - Sound of silence (strategic pauses)
+ *
+ * NARRATIVE ARC (5.8 seconds):
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ PHASE 0: DARKNESS (0-0.6s)                                              │
+ * │   → Pure black. Anticipation. "Something is about to happen"            │
+ * │                                                                         │
+ * │ PHASE 1: MONOGRAM EMERGES (0.6-2.0s)                                    │
+ * │   → 3D monogram fades in from depth, rotates slowly                     │
+ * │   → Rings begin spinning. Glow pulses.                                  │
+ * │                                                                         │
+ * │ PAUSE: BREATHING MOMENT (2.0-2.3s)                                      │
+ * │   → Nothing moves. Just the monogram breathing.                         │
+ * │                                                                         │
+ * │ PHASE 2: TENSION BUILDS (2.3-3.5s)                                      │
+ * │   → Light begins seeping through vault door cracks                      │
+ * │   → Particles start swirling slowly toward center                       │
+ * │   → Anticipation grows                                                  │
+ * │                                                                         │
+ * │ PHASE 3: CLIMAX - VAULT OPENS (3.5-4.5s)                                │
+ * │   → Doors slide apart with weight                                       │
+ * │   → Light bursts through (300ms AFTER doors start)                      │
+ * │   → Haptic impact                                                       │
+ * │                                                                         │
+ * │ PHASE 4: REVELATION (4.5-5.4s)                                          │
+ * │   → Brand crystallizes from light (blur → sharp)                        │
+ * │   → Elegant typography appears                                          │
+ * │                                                                         │
+ * │ PHASE 5: HOLD & APPRECIATE (5.4-5.8s)                                   │
+ * │   → Everything settles. User absorbs the moment.                        │
+ * │   → Gentle fade to app                                                  │
+ * └─────────────────────────────────────────────────────────────────────────┘
  *
  * ═══════════════════════════════════════════════════════════════════════════
  */
@@ -29,41 +53,55 @@ interface PremiumSplashScreenProps {
   minimumDuration?: number
 }
 
-// Easing functions for ultra-smooth animations
+// ═══════════════════════════════════════════════════════════════════════════
+// REFINED EASING FUNCTIONS — Luxury motion curves
+// ═══════════════════════════════════════════════════════════════════════════
 const EASING = {
-  // Cinematic ease - slow start, powerful middle, gentle end
-  cinematic: [0.16, 1, 0.3, 1] as const,
-  // Heavy vault door movement
-  vault: [0.7, 0, 0.3, 1] as const,
-  // Elastic spring for reveals
+  // Smooth appearance — gentle acceleration, controlled deceleration
+  smooth: [0.25, 0.46, 0.45, 0.94] as const,
+
+  // Heavy vault doors — weight and power
+  vault: [0.22, 1, 0.36, 1] as const,
+
+  // Ethereal light — magical, floating
+  ethereal: [0.17, 0.67, 0.83, 0.67] as const,
+
+  // Spring pop — elegant bounce for reveals
   spring: [0.34, 1.56, 0.64, 1] as const,
-  // Smooth exponential
-  expo: [0.87, 0, 0.13, 1] as const,
+
+  // Cinematic — slow start, powerful finish
+  cinematic: [0.16, 1, 0.3, 1] as const,
+
+  // Fade out — graceful exit
+  fadeOut: [0.4, 0, 0.2, 1] as const,
 }
 
-// Golden color palette
+// ═══════════════════════════════════════════════════════════════════════════
+// REFINED GOLD PALETTE — Luxury metallics
+// ═══════════════════════════════════════════════════════════════════════════
 const GOLD = {
+  darkest: '#3d2e0a',
   dark: '#5c4510',
   deep: '#8E6E27',
   primary: '#D4AF37',
   bright: '#e6c547',
   light: '#FFF8D6',
   shine: '#FCF6BA',
+  white: '#FFFEF5',
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Ambient Floating Particles (always visible subtle effect)
+// COMPONENT: Ambient Dust Particles (subtle, elegant)
 // ═══════════════════════════════════════════════════════════════════════════
-function AmbientParticles() {
+function AmbientDust() {
   const particles = useMemo(() => {
-    return [...Array(20)].map((_, i) => ({
+    return [...Array(15)].map((_, i) => ({
       id: i,
       x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 1 + Math.random() * 2,
-      duration: 15 + Math.random() * 20,
-      delay: Math.random() * 10,
-      opacity: 0.1 + Math.random() * 0.2,
+      size: 1 + Math.random() * 1.5,
+      duration: 20 + Math.random() * 15,
+      delay: Math.random() * 8,
+      opacity: 0.08 + Math.random() * 0.12,
     }))
   }, [])
 
@@ -72,9 +110,9 @@ function AmbientParticles() {
       {particles.map((p) => (
         <motion.div
           key={p.id}
-          initial={{ x: `${p.x}vw`, y: '110vh', opacity: 0 }}
+          initial={{ y: '110vh', opacity: 0 }}
           animate={{
-            y: ['-10vh'],
+            y: '-10vh',
             opacity: [0, p.opacity, p.opacity, 0],
           }}
           transition={{
@@ -90,7 +128,7 @@ function AmbientParticles() {
             height: p.size,
             borderRadius: '50%',
             background: GOLD.primary,
-            boxShadow: `0 0 ${p.size * 3}px ${GOLD.primary}60`,
+            boxShadow: `0 0 ${p.size * 4}px ${GOLD.primary}40`,
           }}
         />
       ))}
@@ -99,29 +137,30 @@ function AmbientParticles() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Pulsing Glow Ring (behind monogram)
+// COMPONENT: Breathing Glow (pulses slowly behind monogram)
 // ═══════════════════════════════════════════════════════════════════════════
-function PulsingGlowRing({ phase }: { phase: number }) {
-  if (phase < 1) return null
+function BreathingGlow({ visible }: { visible: boolean }) {
+  if (!visible) return null
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.5 }}
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={{
-        opacity: phase >= 3 ? 0 : [0.3, 0.6, 0.3],
-        scale: phase >= 3 ? 2 : [1, 1.1, 1],
+        opacity: [0.2, 0.4, 0.2],
+        scale: [1, 1.05, 1],
       }}
       transition={{
-        opacity: { duration: phase >= 3 ? 0.5 : 2, repeat: phase >= 3 ? 0 : Infinity },
-        scale: { duration: phase >= 3 ? 0.8 : 2, repeat: phase >= 3 ? 0 : Infinity },
+        duration: 3,
+        repeat: Infinity,
+        ease: 'easeInOut',
       }}
       style={{
         position: 'absolute',
-        width: 250,
-        height: 250,
+        width: 300,
+        height: 300,
         borderRadius: '50%',
-        background: `radial-gradient(circle, ${GOLD.primary}15, transparent 70%)`,
-        filter: 'blur(30px)',
+        background: `radial-gradient(circle, ${GOLD.primary}12, ${GOLD.primary}05 40%, transparent 70%)`,
+        filter: 'blur(40px)',
         zIndex: 5,
       }}
     />
@@ -129,145 +168,155 @@ function PulsingGlowRing({ phase }: { phase: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: 3D Rotating Monogram
+// COMPONENT: Refined 3D Monogram
 // ═══════════════════════════════════════════════════════════════════════════
 function Monogram3D({ phase }: { phase: number }) {
   const controls = useAnimation()
+  const isVisible = phase >= 1
 
   useEffect(() => {
-    if (phase >= 1) {
+    if (phase >= 1 && phase < 3) {
       controls.start({
         opacity: 1,
-        rotateY: 0,
         scale: 1,
+        y: 0,
+        filter: 'blur(0px)',
         transition: {
-          duration: 1.2,
-          ease: EASING.cinematic,
+          duration: 1.4,
+          ease: EASING.smooth,
         },
       })
     }
     if (phase >= 3) {
       controls.start({
-        scale: 0.6,
-        y: -80,
-        opacity: 0.3,
+        scale: 0.5,
+        y: -120,
+        opacity: 0,
         transition: {
-          duration: 0.8,
-          ease: EASING.vault,
+          duration: 1,
+          ease: EASING.cinematic,
         },
       })
     }
   }, [phase, controls])
 
+  if (!isVisible) return null
+
   return (
     <motion.div
-      initial={{ opacity: 0, rotateY: -90, scale: 0.5 }}
+      initial={{ opacity: 0, scale: 0.7, y: 30, filter: 'blur(10px)' }}
       animate={controls}
       style={{
         position: 'absolute',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        perspective: '1000px',
-        transformStyle: 'preserve-3d',
+        zIndex: 20,
       }}
     >
-      {/* Outer ring - rotating */}
+      {/* Outer ring - slow rotation */}
       <motion.div
         animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
         style={{
           position: 'absolute',
-          width: 180,
-          height: 180,
+          width: 160,
+          height: 160,
           borderRadius: '50%',
-          border: `1px solid ${GOLD.primary}30`,
-          boxShadow: `0 0 40px ${GOLD.primary}20`,
+          border: `1px solid ${GOLD.primary}25`,
         }}
       />
 
-      {/* Inner ring - counter-rotating */}
+      {/* Inner ring - counter rotation */}
       <motion.div
         animate={{ rotate: -360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
         style={{
           position: 'absolute',
-          width: 140,
-          height: 140,
+          width: 130,
+          height: 130,
           borderRadius: '50%',
-          border: `1px solid ${GOLD.bright}40`,
+          border: `1px solid ${GOLD.bright}30`,
         }}
       />
 
-      {/* Core monogram container */}
+      {/* Core monogram */}
       <motion.div
         style={{
-          width: 100,
-          height: 100,
+          width: 90,
+          height: 90,
           borderRadius: '50%',
-          background: `radial-gradient(circle at 30% 30%, ${GOLD.light}15, transparent 60%),
-                       linear-gradient(135deg, ${GOLD.dark}40, ${GOLD.primary}20, ${GOLD.dark}40)`,
-          border: `2px solid ${GOLD.primary}60`,
+          background: `
+            conic-gradient(from 45deg at 30% 30%,
+              ${GOLD.shine}15,
+              ${GOLD.primary}10,
+              ${GOLD.dark}20,
+              ${GOLD.primary}10,
+              ${GOLD.shine}15
+            ),
+            radial-gradient(circle at 30% 30%, ${GOLD.light}10, transparent 60%)
+          `,
+          border: `1.5px solid ${GOLD.primary}50`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           boxShadow: `
-            0 0 60px ${GOLD.primary}30,
-            inset 0 0 30px ${GOLD.primary}10,
-            0 20px 40px rgba(0,0,0,0.5)
+            0 0 40px ${GOLD.primary}20,
+            0 0 80px ${GOLD.primary}10,
+            inset 0 0 20px ${GOLD.primary}08,
+            0 15px 30px rgba(0,0,0,0.4)
           `,
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Shine sweep animation */}
+        {/* Subtle shine sweep */}
         <motion.div
-          animate={{ x: ['-100%', '200%'] }}
-          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+          animate={{ x: ['-150%', '250%'] }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
-            width: '50%',
+            width: '40%',
             height: '100%',
-            background: `linear-gradient(90deg, transparent, ${GOLD.shine}30, transparent)`,
+            background: `linear-gradient(90deg, transparent, ${GOLD.shine}20, transparent)`,
             transform: 'skewX(-20deg)',
           }}
         />
 
-        {/* AS Monogram Text */}
+        {/* AS Text */}
         <span
           style={{
             fontFamily: "'Cinzel', 'Playfair Display', serif",
-            fontSize: 32,
-            fontWeight: 700,
-            background: `linear-gradient(180deg, ${GOLD.light} 0%, ${GOLD.primary} 50%, ${GOLD.deep} 100%)`,
+            fontSize: 28,
+            fontWeight: 600,
+            background: `linear-gradient(180deg, ${GOLD.white} 0%, ${GOLD.primary} 50%, ${GOLD.deep} 100%)`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-            letterSpacing: '0.1em',
-            textShadow: `0 2px 10px ${GOLD.primary}40`,
+            letterSpacing: '0.08em',
           }}
         >
           AS
         </span>
       </motion.div>
 
-      {/* Decorative dots around monogram */}
-      {[...Array(8)].map((_, i) => (
+      {/* Minimal accent dots */}
+      {[0, 90, 180, 270].map((angle) => (
         <motion.div
-          key={i}
+          key={angle}
           initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 0.6, scale: 1 }}
-          transition={{ delay: 0.5 + i * 0.05, duration: 0.3 }}
+          animate={{ opacity: 0.5, scale: 1 }}
+          transition={{ delay: 0.8 + angle * 0.001, duration: 0.4 }}
           style={{
             position: 'absolute',
-            width: 4,
-            height: 4,
+            width: 3,
+            height: 3,
             borderRadius: '50%',
             background: GOLD.primary,
-            boxShadow: `0 0 10px ${GOLD.primary}`,
-            transform: `rotate(${i * 45}deg) translateY(-70px)`,
+            transform: `rotate(${angle}deg) translateY(-65px)`,
+            boxShadow: `0 0 6px ${GOLD.primary}60`,
           }}
         />
       ))}
@@ -276,87 +325,146 @@ function Monogram3D({ phase }: { phase: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Golden Particle Vortex
+// COMPONENT: Light Seeping Through Cracks (builds tension)
 // ═══════════════════════════════════════════════════════════════════════════
-function ParticleVortex({ phase, particleCount = 60 }: { phase: number; particleCount?: number }) {
-  const particles = useMemo(() => {
-    return [...Array(particleCount)].map((_, i) => ({
-      id: i,
-      angle: (i / particleCount) * 360,
-      delay: Math.random() * 0.5,
-      size: 2 + Math.random() * 4,
-      distance: 120 + Math.random() * 180,
-      speed: 0.5 + Math.random() * 1.5,
-      brightness: 0.4 + Math.random() * 0.6,
-    }))
-  }, [particleCount])
+function SeepingLight({ phase }: { phase: number }) {
+  const isVisible = phase >= 2 && phase < 3.5
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden',
-        pointerEvents: 'none',
-      }}
-    >
-      {particles.map((particle) => (
+    <AnimatePresence>
+      {isVisible && (
+        <>
+          {/* Central seam glow - pulsing */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: [0.3, 0.8, 0.5, 0.9, 0.6],
+              boxShadow: [
+                `0 0 30px ${GOLD.primary}40`,
+                `0 0 80px ${GOLD.primary}80`,
+                `0 0 50px ${GOLD.primary}60`,
+                `0 0 100px ${GOLD.primary}90`,
+                `0 0 60px ${GOLD.primary}70`,
+              ],
+            }}
+            exit={{ opacity: 0 }}
+            transition={{
+              duration: 1.2,
+              repeat: Infinity,
+              repeatType: 'reverse',
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              width: 3,
+              height: '100%',
+              background: `linear-gradient(180deg,
+                transparent 5%,
+                ${GOLD.shine}80 20%,
+                ${GOLD.white} 50%,
+                ${GOLD.shine}80 80%,
+                transparent 95%
+              )`,
+              transform: 'translateX(-50%)',
+              zIndex: 45,
+            }}
+          />
+
+          {/* Ambient glow behind doors */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{
+              opacity: [0.1, 0.3, 0.2],
+              scale: [0.8, 1.2, 1],
+            }}
+            exit={{ opacity: 0, scale: 2, transition: { duration: 0.5 } }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              repeatType: 'reverse',
+            }}
+            style={{
+              position: 'absolute',
+              width: 400,
+              height: 400,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${GOLD.primary}25, transparent 70%)`,
+              filter: 'blur(60px)',
+              zIndex: 30,
+            }}
+          />
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENT: Converging Particles (minimal, elegant)
+// ═══════════════════════════════════════════════════════════════════════════
+function ConvergingParticles({ phase }: { phase: number }) {
+  const isActive = phase >= 2 && phase < 4
+
+  const particles = useMemo(() => {
+    return [...Array(24)].map((_, i) => ({
+      id: i,
+      angle: (i / 24) * 360 + Math.random() * 15,
+      distance: 150 + Math.random() * 100,
+      size: 2 + Math.random() * 2,
+      delay: Math.random() * 0.5,
+      speed: 0.8 + Math.random() * 0.4,
+    }))
+  }, [])
+
+  if (!isActive) return null
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 35 }}>
+      {particles.map((p) => (
         <motion.div
-          key={particle.id}
+          key={p.id}
           initial={{
             opacity: 0,
-            x: Math.cos((particle.angle * Math.PI) / 180) * particle.distance,
-            y: Math.sin((particle.angle * Math.PI) / 180) * particle.distance,
-            scale: 0,
+            x: Math.cos((p.angle * Math.PI) / 180) * p.distance,
+            y: Math.sin((p.angle * Math.PI) / 180) * p.distance,
           }}
           animate={
-            phase >= 2
-              ? phase >= 3
-                ? {
-                    // Converge to center and fade
-                    opacity: 0,
-                    x: 0,
-                    y: 0,
-                    scale: 2,
-                    transition: {
-                      duration: 0.8,
-                      delay: particle.delay * 0.3,
-                      ease: EASING.cinematic,
-                    },
-                  }
-                : {
-                    // Swirl around
-                    opacity: particle.brightness,
-                    x: [
-                      Math.cos((particle.angle * Math.PI) / 180) * particle.distance,
-                      Math.cos(((particle.angle + 180) * Math.PI) / 180) * particle.distance * 0.8,
-                      Math.cos(((particle.angle + 360) * Math.PI) / 180) * particle.distance * 0.6,
-                    ],
-                    y: [
-                      Math.sin((particle.angle * Math.PI) / 180) * particle.distance,
-                      Math.sin(((particle.angle + 180) * Math.PI) / 180) * particle.distance * 0.8,
-                      Math.sin(((particle.angle + 360) * Math.PI) / 180) * particle.distance * 0.6,
-                    ],
-                    scale: 1,
-                    transition: {
-                      duration: 2 * particle.speed,
-                      delay: particle.delay,
-                      repeat: Infinity,
-                      ease: 'linear',
-                    },
-                  }
-              : {}
+            phase >= 3
+              ? {
+                  opacity: 0,
+                  x: 0,
+                  y: 0,
+                  scale: 0,
+                  transition: {
+                    duration: 0.6,
+                    delay: p.delay * 0.2,
+                    ease: 'easeIn',
+                  },
+                }
+              : {
+                  opacity: [0, 0.6, 0.4],
+                  x: Math.cos((p.angle * Math.PI) / 180) * p.distance * 0.7,
+                  y: Math.sin((p.angle * Math.PI) / 180) * p.distance * 0.7,
+                  transition: {
+                    duration: 2 * p.speed,
+                    delay: p.delay,
+                    ease: 'easeOut',
+                  },
+                }
           }
           style={{
             position: 'absolute',
             left: '50%',
             top: '50%',
-            width: particle.size,
-            height: particle.size,
+            width: p.size,
+            height: p.size,
             borderRadius: '50%',
-            background: `radial-gradient(circle, ${GOLD.shine}, ${GOLD.primary})`,
-            boxShadow: `0 0 ${particle.size * 2}px ${GOLD.primary}80`,
+            background: GOLD.shine,
+            boxShadow: `
+              0 0 ${p.size * 2}px ${GOLD.primary}60,
+              0 0 ${p.size * 4}px ${GOLD.primary}30
+            `,
           }}
         />
       ))}
@@ -365,120 +473,117 @@ function ParticleVortex({ phase, particleCount = 60 }: { phase: number; particle
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Vault Doors
+// COMPONENT: Vault Doors (refined, with ornaments)
 // ═══════════════════════════════════════════════════════════════════════════
 function VaultDoors({ phase }: { phase: number }) {
-  const isOpen = phase >= 3
+  const isOpen = phase >= 3.5
 
-  // Door pattern - decorative elements
-  const DoorPattern = ({ side }: { side: 'left' | 'right' }) => (
+  const DoorSurface = ({ side }: { side: 'left' | 'right' }) => (
     <div
       style={{
-        position: 'absolute',
-        top: 0,
-        [side]: 0,
         width: '100%',
         height: '100%',
+        background: `
+          linear-gradient(${side === 'left' ? '90deg' : '270deg'},
+            #080808 0%,
+            #121212 40%,
+            #0a0a0a 100%
+          )
+        `,
+        position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Main door surface */}
+      {/* Door seam edge */}
       <div
         style={{
-          width: '100%',
+          position: 'absolute',
+          top: 0,
+          [side === 'left' ? 'right' : 'left']: 0,
+          width: 2,
           height: '100%',
-          background: `
-            linear-gradient(${side === 'left' ? '90deg' : '270deg'},
-              #0a0a0a 0%,
-              #141414 50%,
-              #0a0a0a 100%
-            )
-          `,
-          borderLeft: side === 'right' ? `1px solid ${GOLD.primary}30` : 'none',
-          borderRight: side === 'left' ? `1px solid ${GOLD.primary}30` : 'none',
+          background: `linear-gradient(180deg,
+            transparent 10%,
+            ${GOLD.primary}20 30%,
+            ${GOLD.primary}30 50%,
+            ${GOLD.primary}20 70%,
+            transparent 90%
+          )`,
+        }}
+      />
+
+      {/* Vertical accent line */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '15%',
+          [side === 'left' ? 'right' : 'left']: 40,
+          width: 1,
+          height: '70%',
+          background: `linear-gradient(180deg, transparent, ${GOLD.primary}15, ${GOLD.primary}25, ${GOLD.primary}15, transparent)`,
+        }}
+      />
+
+      {/* Central emblem area */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '50%',
+          [side === 'left' ? 'right' : 'left']: 50,
+          transform: 'translateY(-50%)',
+          width: 50,
+          height: 50,
+          borderRadius: '50%',
+          border: `1px solid ${GOLD.primary}20`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        {/* Vertical gold accent lines */}
         <div
           style={{
-            position: 'absolute',
-            top: '10%',
-            [side === 'left' ? 'right' : 'left']: 30,
-            width: 1,
-            height: '80%',
-            background: `linear-gradient(180deg, transparent, ${GOLD.primary}40, ${GOLD.primary}60, ${GOLD.primary}40, transparent)`,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: '15%',
-            [side === 'left' ? 'right' : 'left']: 50,
-            width: 1,
-            height: '70%',
-            background: `linear-gradient(180deg, transparent, ${GOLD.primary}20, ${GOLD.primary}30, ${GOLD.primary}20, transparent)`,
-          }}
-        />
-
-        {/* Decorative corner ornaments */}
-        {['top', 'bottom'].map((pos) => (
-          <div
-            key={pos}
-            style={{
-              position: 'absolute',
-              [pos]: 40,
-              [side === 'left' ? 'right' : 'left']: 20,
-              width: 40,
-              height: 40,
-              border: `1px solid ${GOLD.primary}30`,
-              borderRadius: 4,
-              transform: 'rotate(45deg)',
-            }}
-          />
-        ))}
-
-        {/* Central emblem */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            [side === 'left' ? 'right' : 'left']: 40,
-            transform: 'translateY(-50%)',
-            width: 60,
-            height: 60,
+            width: 20,
+            height: 20,
             borderRadius: '50%',
-            border: `2px solid ${GOLD.primary}40`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: `radial-gradient(circle, ${GOLD.primary}10, transparent)`,
+            border: `1px solid ${GOLD.primary}30`,
+            background: `radial-gradient(circle at 30% 30%, ${GOLD.primary}10, transparent)`,
           }}
-        >
-          <div
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: '50%',
-              border: `1px solid ${GOLD.primary}50`,
-              background: `radial-gradient(circle at 30% 30%, ${GOLD.primary}20, transparent)`,
-            }}
-          />
-        </div>
+        />
+      </div>
 
-        {/* Door texture lines */}
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              top: `${20 + i * 15}%`,
-              left: 0,
-              right: 0,
-              height: 1,
-              background: `linear-gradient(90deg, transparent, ${GOLD.dark}20, transparent)`,
-            }}
-          />
-        ))}
+      {/* Corner ornaments */}
+      {['top', 'bottom'].map((pos) => (
+        <div
+          key={pos}
+          style={{
+            position: 'absolute',
+            [pos]: 60,
+            [side === 'left' ? 'right' : 'left']: 30,
+            width: 30,
+            height: 30,
+            border: `1px solid ${GOLD.primary}15`,
+            borderRadius: 3,
+            transform: 'rotate(45deg)',
+          }}
+        />
+      ))}
+
+      {/* "PRIVATE" text on door */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '35%',
+          [side === 'left' ? 'right' : 'left']: 35,
+          fontSize: 8,
+          letterSpacing: '0.25em',
+          color: `${GOLD.primary}20`,
+          writingMode: 'vertical-rl',
+          textOrientation: 'mixed',
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 500,
+        }}
+      >
+        PRIVATE
       </div>
     </div>
   )
@@ -490,7 +595,7 @@ function VaultDoors({ phase }: { phase: number }) {
         initial={{ x: 0 }}
         animate={{ x: isOpen ? '-100%' : 0 }}
         transition={{
-          duration: 1.2,
+          duration: 1.4,
           ease: EASING.vault,
         }}
         style={{
@@ -500,10 +605,9 @@ function VaultDoors({ phase }: { phase: number }) {
           width: '50%',
           height: '100%',
           zIndex: 50,
-          boxShadow: isOpen ? '20px 0 60px rgba(0,0,0,0.8)' : 'none',
         }}
       >
-        <DoorPattern side="left" />
+        <DoorSurface side="left" />
       </motion.div>
 
       {/* Right door */}
@@ -511,7 +615,7 @@ function VaultDoors({ phase }: { phase: number }) {
         initial={{ x: 0 }}
         animate={{ x: isOpen ? '100%' : 0 }}
         transition={{
-          duration: 1.2,
+          duration: 1.4,
           ease: EASING.vault,
         }}
         style={{
@@ -521,97 +625,75 @@ function VaultDoors({ phase }: { phase: number }) {
           width: '50%',
           height: '100%',
           zIndex: 50,
-          boxShadow: isOpen ? '-20px 0 60px rgba(0,0,0,0.8)' : 'none',
         }}
       >
-        <DoorPattern side="right" />
+        <DoorSurface side="right" />
       </motion.div>
-
-      {/* Center seam glow - visible before opening */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: phase >= 2.5 && !isOpen ? 1 : 0 }}
-        transition={{ duration: 0.5 }}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: '50%',
-          width: 2,
-          height: '100%',
-          background: `linear-gradient(180deg, transparent, ${GOLD.primary}60, ${GOLD.shine}, ${GOLD.primary}60, transparent)`,
-          boxShadow: `0 0 30px ${GOLD.primary}60, 0 0 60px ${GOLD.primary}40`,
-          transform: 'translateX(-50%)',
-          zIndex: 51,
-        }}
-      />
     </>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Light Burst
+// COMPONENT: Light Burst (delayed after doors)
 // ═══════════════════════════════════════════════════════════════════════════
 function LightBurst({ phase }: { phase: number }) {
-  const showBurst = phase >= 3
+  // Light bursts 300ms AFTER doors start opening
+  const showBurst = phase >= 3.8
 
   return (
     <AnimatePresence>
       {showBurst && (
         <>
-          {/* Central light explosion */}
+          {/* Central explosion */}
           <motion.div
             initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: [0, 1, 0.6], scale: [0, 1.5, 3] }}
+            animate={{
+              opacity: [0, 0.9, 0.5],
+              scale: [0, 1.5, 3],
+            }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: EASING.expo }}
+            transition={{ duration: 1, ease: EASING.ethereal }}
             style={{
               position: 'absolute',
               width: 200,
               height: 200,
               borderRadius: '50%',
-              background: `radial-gradient(circle, ${GOLD.shine}80, ${GOLD.primary}40, transparent 70%)`,
+              background: `radial-gradient(circle,
+                ${GOLD.white}90,
+                ${GOLD.shine}60 30%,
+                ${GOLD.primary}30 60%,
+                transparent 80%
+              )`,
               filter: 'blur(20px)',
               zIndex: 40,
             }}
           />
 
-          {/* Light rays */}
-          {[...Array(12)].map((_, i) => (
+          {/* Light rays - fewer, more elegant */}
+          {[...Array(8)].map((_, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scaleY: 0 }}
-              animate={{ opacity: [0, 0.8, 0], scaleY: [0, 1, 0.5] }}
+              animate={{
+                opacity: [0, 0.7, 0],
+                scaleY: [0, 1, 0.3],
+              }}
               transition={{
-                duration: 1,
-                delay: i * 0.02,
+                duration: 0.8,
+                delay: i * 0.03,
                 ease: EASING.cinematic,
               }}
               style={{
                 position: 'absolute',
                 width: 2,
-                height: 400,
-                background: `linear-gradient(180deg, transparent, ${GOLD.shine}60, transparent)`,
+                height: 300,
+                background: `linear-gradient(180deg, transparent, ${GOLD.shine}50, transparent)`,
                 transformOrigin: 'center center',
-                transform: `rotate(${i * 30}deg)`,
+                transform: `rotate(${i * 45}deg)`,
                 zIndex: 39,
               }}
             />
           ))}
-
-          {/* Ambient glow expansion */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 0.3, scale: 2 }}
-            transition={{ duration: 1.5, ease: EASING.cinematic }}
-            style={{
-              position: 'absolute',
-              width: 400,
-              height: 400,
-              borderRadius: '50%',
-              background: `radial-gradient(circle, ${GOLD.primary}30, transparent 70%)`,
-              zIndex: 38,
-            }}
-          />
         </>
       )}
     </AnimatePresence>
@@ -619,7 +701,7 @@ function LightBurst({ phase }: { phase: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Brand Reveal
+// COMPONENT: Brand Reveal (crystallizes from blur)
 // ═══════════════════════════════════════════════════════════════════════════
 function BrandReveal({ phase }: { phase: number }) {
   const showBrand = phase >= 4
@@ -631,73 +713,110 @@ function BrandReveal({ phase }: { phase: number }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.4 }}
           style={{
             position: 'absolute',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 16,
+            gap: 20,
             zIndex: 60,
           }}
         >
-          {/* Decorative line above */}
+          {/* Ambient glow behind brand */}
           <motion.div
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{ scaleX: 1, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: EASING.cinematic }}
+            animate={{
+              opacity: [0.15, 0.3, 0.15],
+              scale: [0.9, 1.1, 0.9],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
             style={{
-              width: 120,
-              height: 1,
-              background: `linear-gradient(90deg, transparent, ${GOLD.primary}60, transparent)`,
+              position: 'absolute',
+              inset: -80,
+              borderRadius: '50%',
+              background: `radial-gradient(ellipse at center, ${GOLD.primary}20, transparent 70%)`,
+              filter: 'blur(50px)',
+              zIndex: -1,
             }}
           />
 
-          {/* Main brand name */}
+          {/* Top decorative line */}
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{
-              duration: 1,
-              ease: EASING.spring,
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: EASING.spring }}
+            style={{
+              width: 100,
+              height: 1,
+              background: `linear-gradient(90deg, transparent, ${GOLD.primary}50, transparent)`,
             }}
-            style={{ position: 'relative' }}
-          >
-            {/* Glow behind text */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: -20,
-                background: `radial-gradient(ellipse at center, ${GOLD.primary}20, transparent 70%)`,
-                filter: 'blur(20px)',
-              }}
-            />
+          />
 
-            <h1
-              style={{
-                fontFamily: "'Cinzel', 'Playfair Display', serif",
-                fontSize: 56,
-                fontWeight: 700,
-                letterSpacing: '0.25em',
-                textTransform: 'uppercase',
-                background: `linear-gradient(180deg, ${GOLD.light} 0%, ${GOLD.primary} 40%, ${GOLD.deep} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                margin: 0,
-                position: 'relative',
-                textShadow: `0 4px 30px ${GOLD.primary}60`,
-              }}
-            >
-              Салун
-            </h1>
+          {/* Exclusivity badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 0.5, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            style={{
+              fontSize: 9,
+              letterSpacing: '0.25em',
+              color: GOLD.primary,
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 500,
+            }}
+          >
+            MEMBERS ONLY
+          </motion.div>
+
+          {/* Main brand name - blur to sharp */}
+          <motion.h1
+            initial={{
+              opacity: 0,
+              y: 50,
+              scale: 0.8,
+              filter: 'blur(20px)',
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              filter: 'blur(0px)',
+            }}
+            transition={{
+              duration: 1.2,
+              ease: EASING.smooth,
+            }}
+            style={{
+              fontFamily: "'Cinzel', 'Playfair Display', serif",
+              fontSize: 58,
+              fontWeight: 700,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              background: `linear-gradient(180deg,
+                ${GOLD.white} 0%,
+                ${GOLD.light} 20%,
+                ${GOLD.primary} 50%,
+                ${GOLD.deep} 100%
+              )`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              margin: 0,
+              position: 'relative',
+            }}
+          >
+            Салун
 
             {/* Shimmer overlay */}
             <motion.div
               animate={{ x: ['-100%', '200%'] }}
               transition={{
                 duration: 2,
-                delay: 0.5,
+                delay: 1,
                 repeat: Infinity,
                 repeatDelay: 4,
                 ease: 'easeInOut',
@@ -706,59 +825,38 @@ function BrandReveal({ phase }: { phase: number }) {
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                width: '50%',
+                width: '40%',
                 height: '100%',
                 background: `linear-gradient(90deg, transparent, ${GOLD.shine}40, transparent)`,
                 transform: 'skewX(-20deg)',
               }}
             />
+          </motion.h1>
+
+          {/* Decorative diamond */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 0.4, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            style={{
+              fontSize: 10,
+              color: GOLD.primary,
+            }}
+          >
+            ✦
           </motion.div>
 
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: EASING.cinematic }}
-            style={{
-              fontFamily: "'Manrope', 'Inter', sans-serif",
-              fontSize: 12,
-              fontWeight: 500,
-              letterSpacing: '0.3em',
-              textTransform: 'uppercase',
-              color: `${GOLD.primary}80`,
-              margin: 0,
-            }}
-          >
-            Академический сервис
-          </motion.p>
-
-          {/* Decorative line below */}
+          {/* Bottom line */}
           <motion.div
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{ scaleX: 1, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.5, ease: EASING.cinematic }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.6, delay: 0.7, ease: EASING.spring }}
             style={{
-              width: 80,
+              width: 60,
               height: 1,
-              background: `linear-gradient(90deg, transparent, ${GOLD.primary}40, transparent)`,
+              background: `linear-gradient(90deg, transparent, ${GOLD.primary}30, transparent)`,
             }}
           />
-
-          {/* EST. 2024 */}
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 10,
-              letterSpacing: '0.2em',
-              color: 'rgba(255,255,255,0.25)',
-              marginTop: 8,
-            }}
-          >
-            EST. 2024
-          </motion.span>
         </motion.div>
       )}
     </AnimatePresence>
@@ -766,110 +864,141 @@ function BrandReveal({ phase }: { phase: number }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Skip Indicator
+// COMPONENT: Status Indicator (elegant "please wait")
 // ═══════════════════════════════════════════════════════════════════════════
-function SkipIndicator({ visible }: { visible: boolean }) {
+function StatusIndicator({ phase, canSkip }: { phase: number; canSkip: boolean }) {
+  // Hide during brand reveal
+  if (phase >= 4) return null
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: visible ? 0.4 : 0 }}
-      transition={{ duration: 0.3 }}
+      animate={{ opacity: canSkip ? 0.35 : 0.2 }}
+      transition={{ duration: 0.5 }}
       style={{
         position: 'absolute',
-        bottom: 40,
-        left: '50%',
-        transform: 'translateX(-50%)',
+        bottom: 50,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        gap: 8,
+        gap: 10,
         zIndex: 100,
       }}
     >
+      <div
+        style={{
+          width: 30,
+          height: 1,
+          background: `linear-gradient(90deg, transparent, ${GOLD.primary}40, transparent)`,
+        }}
+      />
       <span
         style={{
           fontFamily: "'Inter', sans-serif",
-          fontSize: 11,
-          letterSpacing: '0.1em',
-          color: 'rgba(255,255,255,0.4)',
+          fontSize: 9,
+          letterSpacing: '0.15em',
+          color: canSkip ? `${GOLD.primary}60` : 'rgba(255,255,255,0.3)',
         }}
       >
-        Нажмите для пропуска
+        {canSkip ? 'TAP TO CONTINUE' : 'PLEASE WAIT'}
       </span>
+      <div
+        style={{
+          width: 30,
+          height: 1,
+          background: `linear-gradient(90deg, transparent, ${GOLD.primary}40, transparent)`,
+        }}
+      />
     </motion.div>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT: Premium Splash Screen
+// MAIN COMPONENT: Premium Splash Screen v2.0
 // ═══════════════════════════════════════════════════════════════════════════
 export function PremiumSplashScreen({
   onComplete,
-  minimumDuration = 4200
+  minimumDuration = 5800,
 }: PremiumSplashScreenProps) {
   const [phase, setPhase] = useState(0)
   const [isExiting, setIsExiting] = useState(false)
   const [canSkip, setCanSkip] = useState(false)
 
-  // Phase progression
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NARRATIVE ARC TIMELINE
+  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     const timers: NodeJS.Timeout[] = []
 
-    // Phase 1: Monogram appears (300ms)
-    timers.push(setTimeout(() => setPhase(1), 300))
+    // Phase 0: Darkness (0-600ms) - anticipation
+    // [implicit - starts at 0]
 
-    // Phase 2: Particles swirl (1200ms)
-    timers.push(setTimeout(() => setPhase(2), 1200))
+    // Phase 1: Monogram emerges (600ms)
+    timers.push(setTimeout(() => setPhase(1), 600))
 
-    // Phase 3: Vault opens (2200ms)
-    timers.push(setTimeout(() => setPhase(3), 2200))
+    // BREATHING PAUSE built into Phase 1 duration
 
-    // Phase 4: Brand reveal (3200ms)
-    timers.push(setTimeout(() => setPhase(4), 3200))
+    // Phase 2: Tension builds - light seeps, particles appear (2300ms)
+    timers.push(setTimeout(() => setPhase(2), 2300))
 
-    // Enable skip after 1 second
-    timers.push(setTimeout(() => setCanSkip(true), 1000))
+    // Phase 3: Vault doors begin opening (3500ms)
+    timers.push(setTimeout(() => setPhase(3), 3500))
 
-    // Auto-complete (4200ms)
+    // Phase 3.5: Doors fully opening (3800ms)
+    timers.push(setTimeout(() => setPhase(3.5), 3800))
+
+    // Phase 3.8: Light burst (300ms after doors start) (4100ms)
+    timers.push(setTimeout(() => setPhase(3.8), 4100))
+
+    // Phase 4: Brand reveals (4500ms)
+    timers.push(setTimeout(() => setPhase(4), 4500))
+
+    // Enable skip after 1.5 seconds
+    timers.push(setTimeout(() => setCanSkip(true), 1500))
+
+    // Phase 5: Exit (5800ms)
     timers.push(setTimeout(() => {
       setIsExiting(true)
-      setTimeout(onComplete, 500)
+      setTimeout(onComplete, 400)
     }, minimumDuration))
 
     return () => timers.forEach(clearTimeout)
   }, [onComplete, minimumDuration])
 
-  // Haptic feedback on phase change
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HAPTIC FEEDBACK
+  // ═══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     const tg = window.Telegram?.WebApp
-    if (tg?.HapticFeedback) {
-      if (phase === 3) {
-        // Heavy impact when vault opens
-        tg.HapticFeedback.impactOccurred('heavy')
-      } else if (phase === 4) {
-        // Medium impact on brand reveal
-        tg.HapticFeedback.impactOccurred('medium')
-      }
+    if (!tg?.HapticFeedback) return
+
+    if (phase === 3.5) {
+      // Heavy impact when vault opens
+      tg.HapticFeedback.impactOccurred('heavy')
+    } else if (phase === 4) {
+      // Medium impact on brand reveal
+      tg.HapticFeedback.impactOccurred('medium')
     }
   }, [phase])
 
-  // Skip handler
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SKIP HANDLER
+  // ═══════════════════════════════════════════════════════════════════════════
   const handleSkip = useCallback(() => {
     if (!canSkip || isExiting) return
 
     const tg = window.Telegram?.WebApp
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.impactOccurred('light')
-    }
+    tg?.HapticFeedback?.impactOccurred('light')
 
     setIsExiting(true)
-    setTimeout(onComplete, 400)
+    setTimeout(onComplete, 300)
   }, [canSkip, isExiting, onComplete])
 
   return (
     <motion.div
       initial={{ opacity: 1 }}
       animate={{ opacity: isExiting ? 0 : 1 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      transition={{ duration: 0.4, ease: EASING.fadeOut }}
       onClick={handleSkip}
       style={{
         position: 'fixed',
@@ -877,44 +1006,50 @@ export function PremiumSplashScreen({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#050507',
+        background: '#000000',
         zIndex: 9999,
         overflow: 'hidden',
         cursor: canSkip ? 'pointer' : 'default',
       }}
     >
-      {/* Deep ambient background */}
-      <div
+      {/* Phase-based background transition */}
+      <motion.div
+        animate={{
+          background: phase >= 1
+            ? `radial-gradient(ellipse 80% 60% at 50% 50%, ${GOLD.darkest}15, transparent 70%),
+               linear-gradient(180deg, #030303 0%, #080808 50%, #030303 100%)`
+            : '#000000',
+        }}
+        transition={{ duration: 1.5, ease: 'easeOut' }}
         style={{
           position: 'absolute',
           inset: 0,
-          background: `
-            radial-gradient(ellipse 80% 50% at 50% 50%, ${GOLD.dark}08, transparent 60%),
-            linear-gradient(180deg, #050507 0%, #0a0a0c 50%, #050507 100%)
-          `,
         }}
       />
 
-      {/* Ambient floating particles (always visible) */}
-      <AmbientParticles />
+      {/* Subtle ambient dust */}
+      <AmbientDust />
 
       {/* Vignette */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.6) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)',
           pointerEvents: 'none',
         }}
       />
 
-      {/* Pulsing glow ring behind monogram */}
-      <PulsingGlowRing phase={phase} />
+      {/* Breathing glow behind monogram */}
+      <BreathingGlow visible={phase >= 1 && phase < 3.5} />
 
-      {/* Particle vortex layer */}
-      <ParticleVortex phase={phase} particleCount={50} />
+      {/* Converging particles */}
+      <ConvergingParticles phase={phase} />
 
-      {/* Light burst layer */}
+      {/* Light seeping through cracks */}
+      <SeepingLight phase={phase} />
+
+      {/* Light burst */}
       <LightBurst phase={phase} />
 
       {/* 3D Monogram */}
@@ -926,15 +1061,15 @@ export function PremiumSplashScreen({
       {/* Brand reveal */}
       <BrandReveal phase={phase} />
 
-      {/* Skip indicator */}
-      <SkipIndicator visible={canSkip && !isExiting && phase < 4} />
+      {/* Status indicator */}
+      <StatusIndicator phase={phase} canSkip={canSkip} />
 
-      {/* Noise texture overlay */}
+      {/* Noise texture */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          opacity: 0.03,
+          opacity: 0.025,
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
           pointerEvents: 'none',
         }}
@@ -943,7 +1078,7 @@ export function PremiumSplashScreen({
   )
 }
 
-// Type declaration for Telegram WebApp
+// Type declarations
 declare global {
   interface Window {
     Telegram?: {
