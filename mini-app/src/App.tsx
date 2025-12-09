@@ -9,7 +9,6 @@ import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { PromoProvider } from './contexts/PromoContext'
 import { DeviceCapabilityProvider } from './contexts/DeviceCapabilityContext'
-import { AdaptiveParticles } from './components/ui/AdaptiveParticles'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
 import {
@@ -441,14 +440,6 @@ function AppContent() {
             >
               <BrowserRouter>
                 <div className="app">
-                  {/* Adaptive Gold Particles - adjusts to device capability */}
-                  <AdaptiveParticles
-                    color="rgba(212, 175, 55, 0.8)"
-                    secondaryColor="rgba(251, 245, 183, 0.6)"
-                    count={30}
-                    glow={true}
-                  />
-
                   {/* Smart Realtime Notifications */}
                   <SmartNotification
                     notification={notification}
