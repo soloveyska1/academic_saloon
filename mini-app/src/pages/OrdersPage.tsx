@@ -66,6 +66,13 @@ function getMonthLabel(monthKey: string): string {
   return isCurrentYear ? months[month - 1] : `${months[month - 1]} ${year}`
 }
 
+// Get card tier based on order status
+function getCardTier(status: string): 'action' | 'active' | 'archived' {
+  if (['waiting_payment', 'confirmed'].includes(status)) return 'action'
+  if (['completed', 'cancelled', 'rejected'].includes(status)) return 'archived'
+  return 'active'
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -109,23 +116,42 @@ interface StatusConfig {
 }
 
 const STATUS_CONFIG: Record<string, StatusConfig> = {
-  pending: { label: 'На оценке', color: '#d4af37', bgColor: 'rgba(212,175,55,0.12)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
-  waiting_estimation: { label: 'На оценке', color: '#d4af37', bgColor: 'rgba(212,175,55,0.12)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
-  confirmed: { label: 'К оплате', color: '#e6c453', bgColor: 'rgba(230,196,83,0.12)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
-  waiting_payment: { label: 'К оплате', color: '#e6c453', bgColor: 'rgba(230,196,83,0.12)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
-  verification_pending: { label: 'Проверка оплаты', color: '#c9a227', bgColor: 'rgba(201,162,39,0.12)', icon: Loader, priority: 3, needsAttention: false, step: 2 },
-  paid: { label: 'В работе', color: '#b8972b', bgColor: 'rgba(184,151,43,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
-  paid_full: { label: 'В работе', color: '#b8972b', bgColor: 'rgba(184,151,43,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
-  in_progress: { label: 'В работе', color: '#b8972b', bgColor: 'rgba(184,151,43,0.12)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
-  review: { label: 'Готов', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)', icon: CheckCircle, priority: 5, needsAttention: true, step: 3 },
-  revision: { label: 'На правках', color: '#d4af37', bgColor: 'rgba(212,175,55,0.12)', icon: AlertCircle, priority: 3, needsAttention: true, step: 2 },
-  completed: { label: 'Завершён', color: '#22c55e', bgColor: 'rgba(34,197,94,0.12)', icon: CheckCircle, priority: 6, needsAttention: false, step: 4 },
-  cancelled: { label: 'Отменён', color: '#71717a', bgColor: 'rgba(113,113,122,0.12)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
-  rejected: { label: 'Отклонён', color: '#71717a', bgColor: 'rgba(113,113,122,0.12)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
+  pending: { label: 'На оценке', color: 'rgba(212,175,55,0.6)', bgColor: 'rgba(212,175,55,0.08)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
+  waiting_estimation: { label: 'На оценке', color: 'rgba(212,175,55,0.6)', bgColor: 'rgba(212,175,55,0.08)', icon: Clock, priority: 2, needsAttention: false, step: 0 },
+  confirmed: { label: 'К оплате', color: '#B8972B', bgColor: 'rgba(184,151,43,0.15)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
+  waiting_payment: { label: 'К оплате', color: '#B8972B', bgColor: 'rgba(184,151,43,0.15)', icon: CreditCard, priority: 1, needsAttention: true, step: 1 },
+  verification_pending: { label: 'Проверка оплаты', color: 'rgba(212,175,55,0.7)', bgColor: 'rgba(212,175,55,0.1)', icon: Loader, priority: 3, needsAttention: false, step: 2 },
+  paid: { label: 'В работе', color: 'rgba(212,175,55,0.75)', bgColor: 'rgba(212,175,55,0.1)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  paid_full: { label: 'В работе', color: 'rgba(212,175,55,0.75)', bgColor: 'rgba(212,175,55,0.1)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  in_progress: { label: 'В работе', color: 'rgba(212,175,55,0.75)', bgColor: 'rgba(212,175,55,0.1)', icon: Loader, priority: 4, needsAttention: false, step: 2 },
+  review: { label: 'Готов', color: 'rgba(212,175,55,0.85)', bgColor: 'rgba(212,175,55,0.12)', icon: CheckCircle, priority: 5, needsAttention: true, step: 3 },
+  revision: { label: 'На правках', color: 'rgba(212,175,55,0.7)', bgColor: 'rgba(212,175,55,0.1)', icon: AlertCircle, priority: 3, needsAttention: true, step: 2 },
+  completed: { label: 'Завершён', color: 'rgba(212,175,55,0.4)', bgColor: 'rgba(212,175,55,0.05)', icon: CheckCircle, priority: 6, needsAttention: false, step: 4 },
+  cancelled: { label: 'Отменён', color: 'rgba(113,113,122,0.5)', bgColor: 'rgba(113,113,122,0.08)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
+  rejected: { label: 'Отклонён', color: 'rgba(113,113,122,0.5)', bgColor: 'rgba(113,113,122,0.08)', icon: XCircle, priority: 7, needsAttention: false, step: -1 },
 }
 
 // Timeline steps
 const TIMELINE_STEPS = ['Создан', 'Оценён', 'В работе', 'Готов', 'Завершён']
+
+// 3-tier visual hierarchy styles
+const TIER_STYLES = {
+  action: {
+    border: '1.5px solid rgba(184,151,43,0.4)',
+    boxShadow: '0 8px 32px -8px rgba(184,151,43,0.2)',
+    opacity: 1,
+  },
+  active: {
+    border: '1px solid rgba(184,151,43,0.15)',
+    boxShadow: '0 4px 16px -8px rgba(0,0,0,0.2)',
+    opacity: 1,
+  },
+  archived: {
+    border: '1px solid rgba(255,255,255,0.05)',
+    boxShadow: 'none',
+    opacity: 0.65,
+  },
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  PREMIUM VISUAL COMPONENTS
@@ -442,8 +468,9 @@ function QuickPayButton({
           width: '100%',
           padding: '16px 20px',
           borderRadius: 16,
-          border: 'none',
-          background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
+          boxShadow: '0 8px 32px rgba(184,134,11,0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -473,13 +500,13 @@ function QuickPayButton({
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <Zap size={20} color="#fff" fill="#fff" />
+            <Zap size={20} color="#0a0a0c" fill="#0a0a0c" />
           </div>
           <div style={{ textAlign: 'left' }}>
             <div style={{
               fontSize: 15,
               fontWeight: 700,
-              color: '#fff',
+              color: '#0a0a0c',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -500,11 +527,11 @@ function QuickPayButton({
             </div>
             <div style={{
               fontSize: 12,
-              color: 'rgba(255,255,255,0.7)',
+              color: 'rgba(10,10,12,0.7)',
             }}>
               {orders.length} {orders.length === 1 ? 'заказ' : orders.length < 5 ? 'заказа' : 'заказов'}
               {totalSavings > 0 && (
-                <span style={{ color: '#86efac', marginLeft: 6 }}>
+                <span style={{ color: '#15803d', marginLeft: 6, fontWeight: 600 }}>
                   (экономия {totalSavings.toLocaleString('ru-RU')} ₽)
                 </span>
               )}
@@ -515,7 +542,7 @@ function QuickPayButton({
         <div style={{
           fontSize: 20,
           fontWeight: 700,
-          color: totalSavings > 0 ? '#86efac' : '#fff',
+          color: '#0a0a0c',
           fontFamily: 'var(--font-mono)',
           zIndex: 1,
         }}>
@@ -754,38 +781,14 @@ function AttentionCard({ order, onClick }: { order: Order; onClick: () => void }
         overflow: 'hidden',
       }}
     >
-      {/* Shimmer for payment cards */}
-      {needsPayment && (
-        <motion.div
-          animate={{ x: ['-200%', '300%'] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '30%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.1), transparent)',
-            transform: 'skewX(-20deg)',
-          }}
-        />
-      )}
 
-      {/* Icon with pulse */}
-      <motion.div
-        animate={needsPayment ? {
-          boxShadow: [
-            `0 0 0 rgba(212,175,55,0)`,
-            `0 0 16px rgba(212,175,55,0.4)`,
-            `0 0 0 rgba(212,175,55,0)`,
-          ],
-        } : {}}
-        transition={{ duration: 2, repeat: Infinity }}
+      {/* Icon */}
+      <div
         style={{
           width: 40,
           height: 40,
           borderRadius: 12,
-          background: `linear-gradient(135deg, ${statusConfig.bgColor}, ${statusConfig.bgColor}80)`,
+          background: statusConfig.bgColor,
           border: `1px solid ${statusConfig.color}30`,
           display: 'flex',
           alignItems: 'center',
@@ -794,7 +797,7 @@ function AttentionCard({ order, onClick }: { order: Order; onClick: () => void }
         }}
       >
         <StatusIcon size={20} color={statusConfig.color} strokeWidth={needsPayment ? 2.5 : 1.5} />
-      </motion.div>
+      </div>
 
       <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         <div style={{
@@ -817,27 +820,19 @@ function AttentionCard({ order, onClick }: { order: Order; onClick: () => void }
           alignItems: 'center',
           gap: 6,
         }}>
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+          <div
             style={{
               width: 5,
               height: 5,
               borderRadius: '50%',
               background: statusConfig.color,
-              boxShadow: `0 0 6px ${statusConfig.color}`,
             }}
           />
           {statusConfig.label}
         </div>
       </div>
 
-      <motion.div
-        animate={{ x: [0, 5, 0] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-      >
-        <ChevronRight size={20} color={needsPayment ? '#D4AF37' : 'rgba(255,255,255,0.4)'} />
-      </motion.div>
+      <ChevronRight size={20} color={needsPayment ? '#D4AF37' : 'rgba(255,255,255,0.4)'} />
     </motion.div>
   )
 }
@@ -868,6 +863,10 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
   const isCompleted = order.status === 'completed'
   const needsPayment = ['confirmed', 'waiting_payment'].includes(order.status)
   const isPending = ['pending', 'waiting_estimation'].includes(order.status)
+
+  // Get tier styles for visual hierarchy
+  const tier = getCardTier(order.status)
+  const tierStyles = TIER_STYLES[tier]
 
   const SWIPE_THRESHOLD = 80
 
@@ -980,125 +979,26 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
           position: 'relative',
           padding: 18,
           background: isCompleted
-            ? 'linear-gradient(145deg, rgba(34,197,94,0.08), rgba(18,18,22,0.98))'
+            ? 'linear-gradient(145deg, rgba(212,175,55,0.04), rgba(18,18,22,0.98))'
             : isPending
               ? 'linear-gradient(145deg, rgba(212,175,55,0.06), rgba(18,18,22,0.98))'
               : 'linear-gradient(145deg, rgba(28,28,32,0.95), rgba(18,18,22,0.98))',
-          border: `1.5px solid ${
-            needsPayment ? 'rgba(212,175,55,0.35)'
-            : isCompleted ? 'rgba(34,197,94,0.35)'
-            : isPending ? 'rgba(212,175,55,0.25)'
-            : 'rgba(255,255,255,0.08)'
-          }`,
+          border: tierStyles.border,
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderRadius: 22,
           cursor: 'pointer',
           touchAction: 'pan-y',
           overflow: 'hidden',
-          boxShadow: isCompleted
-            ? '0 8px 32px -8px rgba(34,197,94,0.2)'
-            : isPending
-              ? '0 8px 32px -8px rgba(212,175,55,0.15)'
-              : 'none',
+          boxShadow: tierStyles.boxShadow,
+          opacity: tierStyles.opacity,
         }}
       >
-        {/* Holographic gradient overlay */}
-        <motion.div
-          animate={{
-            background: isCompleted ? [
-              `linear-gradient(45deg, transparent 0%, rgba(34,197,94,0.1) 25%, transparent 50%, rgba(34,197,94,0.06) 75%, transparent 100%)`,
-              `linear-gradient(135deg, rgba(34,197,94,0.06) 0%, transparent 25%, rgba(34,197,94,0.1) 50%, transparent 75%, rgba(34,197,94,0.06) 100%)`,
-              `linear-gradient(225deg, transparent 0%, rgba(34,197,94,0.1) 25%, transparent 50%, rgba(34,197,94,0.06) 75%, transparent 100%)`,
-              `linear-gradient(315deg, rgba(34,197,94,0.06) 0%, transparent 25%, rgba(34,197,94,0.1) 50%, transparent 75%, rgba(34,197,94,0.06) 100%)`,
-            ] : [
-              `linear-gradient(45deg, transparent 0%, ${workTypeColor}08 25%, transparent 50%, ${workTypeColor}05 75%, transparent 100%)`,
-              `linear-gradient(135deg, ${workTypeColor}05 0%, transparent 25%, ${workTypeColor}08 50%, transparent 75%, ${workTypeColor}05 100%)`,
-              `linear-gradient(225deg, transparent 0%, ${workTypeColor}08 25%, transparent 50%, ${workTypeColor}05 75%, transparent 100%)`,
-              `linear-gradient(315deg, ${workTypeColor}05 0%, transparent 25%, ${workTypeColor}08 50%, transparent 75%, ${workTypeColor}05 100%)`,
-            ],
-          }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-          }}
-        />
 
-        {/* Shimmer effect - green for completed, gold for pending */}
-        <motion.div
-          animate={{ x: ['-200%', '300%'] }}
-          transition={{ duration: isCompleted ? 3 : isPending ? 3.5 : 4, repeat: Infinity, repeatDelay: isCompleted ? 2 : isPending ? 2.5 : 3 }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '30%',
-            height: '100%',
-            background: isCompleted
-              ? 'linear-gradient(90deg, transparent, rgba(34,197,94,0.1), transparent)'
-              : isPending
-                ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)'
-                : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
-            transform: 'skewX(-20deg)',
-            pointerEvents: 'none',
-          }}
-        />
 
-        {/* Floating particles for completed orders */}
-        {isCompleted && (
-          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-            {[...Array(4)].map((_, i) => (
-              <motion.div
-                key={i}
-                animate={{
-                  opacity: [0, 0.5, 0],
-                  y: [10, -40],
-                  x: [0, (i % 2 === 0 ? 10 : -10)],
-                }}
-                transition={{
-                  duration: 3 + i * 0.5,
-                  repeat: Infinity,
-                  delay: i * 0.8,
-                  ease: 'easeOut',
-                }}
-                style={{
-                  position: 'absolute',
-                  left: `${20 + (i * 18)}%`,
-                  bottom: '15%',
-                  width: 4,
-                  height: 4,
-                  borderRadius: '50%',
-                  background: '#22c55e',
-                  boxShadow: '0 0 6px #22c55e',
-                }}
-              />
-            ))}
-          </div>
-        )}
 
-        {/* Pulsing glow for pending orders */}
-        {isPending && (
-          <motion.div
-            animate={{
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{ duration: 2.5, repeat: Infinity }}
-            style={{
-              position: 'absolute',
-              top: -20,
-              right: -20,
-              width: 100,
-              height: 100,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
-        )}
 
-        {/* Premium left accent bar with glow */}
+        {/* Premium left accent bar */}
         <div style={{
           position: 'absolute',
           left: 0,
@@ -1107,10 +1007,10 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
           width: 4,
           borderRadius: '0 4px 4px 0',
           background: isCompleted
-            ? 'linear-gradient(180deg, #22c55e, #16a34a, #22c55e)'
+            ? 'linear-gradient(180deg, rgba(212,175,55,0.6), rgba(212,175,55,0.3), rgba(212,175,55,0.6))'
             : `linear-gradient(180deg, ${workTypeColor}, ${workTypeColor}80, ${workTypeColor})`,
           boxShadow: isCompleted
-            ? '0 0 16px rgba(34,197,94,0.6), 0 0 8px rgba(34,197,94,0.4)'
+            ? '0 0 12px rgba(212,175,55,0.3)'
             : `0 0 16px ${workTypeColor}60, 0 0 8px ${workTypeColor}40`,
         }} />
 
@@ -1196,7 +1096,7 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
                   {progress}%
                 </motion.div>
               )}
-              {/* Premium Completed checkmark with glow */}
+              {/* Premium Completed checkmark */}
               {isCompleted && (
                 <motion.div
                   initial={{ scale: 0, rotate: -180 }}
@@ -1209,22 +1109,15 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
                     width: 24,
                     height: 24,
                     borderRadius: 8,
-                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    background: 'linear-gradient(135deg, #D4AF37, #B38728)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(34,197,94,0.5), 0 0 20px rgba(34,197,94,0.3)',
-                    border: '2px solid rgba(255,255,255,0.2)',
+                    boxShadow: '0 4px 12px rgba(212,175,55,0.4)',
+                    border: '2px solid rgba(255,255,255,0.15)',
                   }}
                 >
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.15, 1],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <CheckCircle size={14} color="#fff" strokeWidth={3} />
-                  </motion.div>
+                  <CheckCircle size={14} color="#0a0a0c" strokeWidth={3} />
                 </motion.div>
               )}
 
@@ -1284,38 +1177,24 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
           </div>
 
           {/* Premium Status Badge */}
-          <motion.div
-            animate={needsPayment ? {
-              boxShadow: [
-                `0 0 10px ${statusConfig.color}30`,
-                `0 0 20px ${statusConfig.color}50`,
-                `0 0 10px ${statusConfig.color}30`,
-              ],
-            } : {}}
-            transition={{ duration: 2, repeat: Infinity }}
+          <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 6,
               padding: '6px 12px',
-              background: `linear-gradient(135deg, ${statusConfig.bgColor}, ${statusConfig.bgColor}80)`,
+              background: statusConfig.bgColor,
               borderRadius: 20,
               flexShrink: 0,
               border: `1px solid ${statusConfig.color}30`,
             }}
           >
-            <motion.div
-              animate={{
-                scale: [1, 1.3, 1],
-                opacity: [0.8, 1, 0.8],
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
+            <div
               style={{
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
                 background: statusConfig.color,
-                boxShadow: `0 0 8px ${statusConfig.color}`,
               }}
             />
             <span style={{
@@ -1326,7 +1205,7 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
             }}>
               {statusConfig.label}
             </span>
-          </motion.div>
+          </div>
         </div>
 
         {/* Premium Mini Timeline */}
@@ -1479,10 +1358,10 @@ function SwipeableOrderCard({ order, index, showTimeline = true }: {
         )}
         {isCompleted && (
           <>
-            <DecorativeCorner position="top-left" color="#22c55e" />
-            <DecorativeCorner position="top-right" color="#22c55e" />
-            <DecorativeCorner position="bottom-left" color="#22c55e" />
-            <DecorativeCorner position="bottom-right" color="#22c55e" />
+            <DecorativeCorner position="top-left" color="rgba(212,175,55,0.4)" />
+            <DecorativeCorner position="top-right" color="rgba(212,175,55,0.4)" />
+            <DecorativeCorner position="bottom-left" color="rgba(212,175,55,0.4)" />
+            <DecorativeCorner position="bottom-right" color="rgba(212,175,55,0.4)" />
           </>
         )}
         {isPending && (
