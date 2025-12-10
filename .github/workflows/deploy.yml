@@ -41,6 +41,36 @@ jobs:
             echo "Updated to commit: $(git rev-parse --short HEAD)"
 
             # ============================================
+            # BACKEND: Python dependencies
+            # ============================================
+            echo "=== Installing Python dependencies ==="
+            cd ~/academic_saloon
+
+            # Activate virtual environment if exists, or create it
+            if [ ! -d "venv" ]; then
+                python3 -m venv venv
+            fi
+            source venv/bin/activate
+
+            # Install/update dependencies
+            pip install --upgrade pip
+            pip install -r requirements.txt --quiet
+
+            echo "✅ Python dependencies installed"
+
+            # ============================================
+            # DATABASE: Run migrations
+            # ============================================
+            echo "=== Running database migrations ==="
+            cd ~/academic_saloon
+            source venv/bin/activate
+
+            # Run alembic migrations (if any pending)
+            alembic upgrade head 2>/dev/null || echo "No migrations or alembic not configured"
+
+            echo "✅ Migrations complete"
+
+            # ============================================
             # BACKEND: Restart the bot service
             # ============================================
             echo "=== Restarting bot service ==="
