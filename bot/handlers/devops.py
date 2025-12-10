@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from aiogram import Router, F
-from aiogram.filters import Command, CommandObject
+from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 from core.config import settings
@@ -66,7 +66,7 @@ async def trigger_workflow(workflow_name: str, inputs: dict = None) -> dict:
 #                        COMMANDS
 # ══════════════════════════════════════════════════════════════
 
-@router.message(Command("deploy"), F.from_user.id.in_(settings.ADMIN_IDS))
+@router.message(Command("deploy"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_deploy(message: Message):
     """Trigger deploy workflow"""
     msg = await message.answer("🚀 Запускаю deploy...")
@@ -88,7 +88,7 @@ async def cmd_deploy(message: Message):
         await msg.edit_text(f"❌ Ошибка: {result['error']}")
 
 
-@router.message(Command("rollback"), F.from_user.id.in_(settings.ADMIN_IDS))
+@router.message(Command("rollback"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_rollback(message: Message, command: CommandObject):
     """Rollback N commits"""
     commits_back = "1"
@@ -113,7 +113,7 @@ async def cmd_rollback(message: Message, command: CommandObject):
         await msg.edit_text(f"❌ Ошибка: {result['error']}")
 
 
-@router.message(Command("backup"), F.from_user.id.in_(settings.ADMIN_IDS))
+@router.message(Command("backup"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_backup(message: Message):
     """Trigger database backup"""
     msg = await message.answer("💾 Запускаю backup БД...")
@@ -130,7 +130,7 @@ async def cmd_backup(message: Message):
         await msg.edit_text(f"❌ Ошибка: {result['error']}")
 
 
-@router.message(Command("health"), F.from_user.id.in_(settings.ADMIN_IDS))
+@router.message(Command("health"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_health(message: Message):
     """Trigger health check"""
     msg = await message.answer("🏥 Запускаю проверку здоровья...")
@@ -146,7 +146,7 @@ async def cmd_health(message: Message):
         await msg.edit_text(f"❌ Ошибка: {result['error']}")
 
 
-@router.message(Command("status"), F.from_user.id.in_(settings.ADMIN_IDS))
+@router.message(Command("status"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_status(message: Message):
     """Get server status"""
     msg = await message.answer("📊 Получаю статус сервера...")
@@ -168,7 +168,7 @@ async def cmd_status(message: Message):
         await msg.edit_text(f"❌ Ошибка: {result['error']}")
 
 
-@router.message(Command("logs"), F.from_user.id.in_(settings.ADMIN_IDS))
+@router.message(Command("logs"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_logs(message: Message, command: CommandObject):
     """View server logs: /logs [bot|nginx|errors] [lines]"""
     action = "logs-bot"
@@ -204,7 +204,7 @@ async def cmd_logs(message: Message, command: CommandObject):
         await msg.edit_text(f"❌ Ошибка: {result['error']}")
 
 
-@router.message(Command("cleanup"), F.from_user.id.in_(settings.ADMIN_IDS))
+@router.message(Command("cleanup"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_cleanup(message: Message):
     """Clean up disk space"""
     msg = await message.answer("🧹 Запускаю очистку диска...")
@@ -224,7 +224,7 @@ async def cmd_cleanup(message: Message):
 #                     DEVOPS MENU
 # ══════════════════════════════════════════════════════════════
 
-@router.message(Command("devops"), F.from_user.id.in_(settings.ADMIN_IDS))
+@router.message(Command("devops"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_devops_menu(message: Message):
     """Show DevOps menu with all available actions"""
     now = datetime.now(MSK_TZ).strftime("%d.%m.%Y %H:%M")
