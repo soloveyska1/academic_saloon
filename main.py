@@ -16,6 +16,7 @@ from bot.handlers.log_actions import router as log_actions_router
 from bot.handlers.my_orders import router as my_orders_router
 from bot.handlers.channel_cards import router as channel_cards_router
 from bot.handlers.order_chat import router as order_chat_router
+from bot.handlers.devops import router as devops_router
 from bot.middlewares import (
     ErrorHandlerMiddleware,
     DbSessionMiddleware,
@@ -112,6 +113,7 @@ async def run_bot():
     dp.include_router(channel_cards_router)  # Live-карточки в канале заказов
     dp.include_router(admin_promo_router)   # Promo codes (admin)
     dp.include_router(admin_router)   # Админка (до start, чтобы /admin обрабатывался)
+    dp.include_router(devops_router)  # DevOps команды (/deploy, /rollback, /status, /logs)
     dp.include_router(start_router)
     dp.include_router(terms_router)   # Оферта
     dp.include_router(order_chat_router)  # Приватный чат по заказам

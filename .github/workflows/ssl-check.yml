@@ -1,0 +1,91 @@
+name: SSL Certificate Check
+
+# Проверка SSL сертификата раз в неделю
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Каждый понедельник в 9:00 UTC (12:00 МСК)
+  workflow_dispatch:
+
+jobs:
+  check-ssl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check SSL certificate expiry
+        id: ssl
+        run: |
+          DOMAIN="academic-saloon.duckdns.org"
+
+          echo "Checking SSL for $DOMAIN..."
+
+          # Получаем дату истечения сертификата
+          EXPIRY_DATE=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+
+          if [ -z "$EXPIRY_DATE" ]; then
+            echo "ERROR: Could not get certificate info"
+            echo "status=error" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Конвертируем в timestamp
+          EXPIRY_TS=$(date -d "$EXPIRY_DATE" +%s)
+          NOW_TS=$(date +%s)
+          DAYS_LEFT=$(( (EXPIRY_TS - NOW_TS) / 86400 ))
+
+          echo "Certificate expires: $EXPIRY_DATE"
+          echo "Days left: $DAYS_LEFT"
+
+          echo "expiry_date=$EXPIRY_DATE" >> $GITHUB_OUTPUT
+          echo "days_left=$DAYS_LEFT" >> $GITHUB_OUTPUT
+
+          if [ $DAYS_LEFT -lt 14 ]; then
+            echo "status=critical" >> $GITHUB_OUTPUT
+          elif [ $DAYS_LEFT -lt 30 ]; then
+            echo "status=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=ok" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Telegram (Critical - <14 days)
+        if: steps.ssl.outputs.status == 'critical'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            🚨 *SSL СЕРТИФИКАТ ИСТЕКАЕТ!*
+
+            ⚠️ Осталось дней: *${{ steps.ssl.outputs.days_left }}*
+            📅 Дата истечения: ${{ steps.ssl.outputs.expiry_date }}
+
+            Нужно обновить сертификат!
+            На сервере выполни: `certbot renew`
+
+      - name: Notify Telegram (Warning - <30 days)
+        if: steps.ssl.outputs.status == 'warning'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ⚠️ *SSL сертификат скоро истекает*
+
+            📅 Осталось дней: ${{ steps.ssl.outputs.days_left }}
+            📅 Дата истечения: ${{ steps.ssl.outputs.expiry_date }}
+
+            Certbot должен обновить автоматически, но проверь.
+
+      - name: Notify Telegram (Error)
+        if: steps.ssl.outputs.status == 'error'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *Не удалось проверить SSL*
+
+            Возможно, сервер недоступен или сертификат уже истёк.
+
+            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

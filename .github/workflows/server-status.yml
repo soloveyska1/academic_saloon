@@ -1,0 +1,123 @@
+name: Server Status & Logs
+
+# Получить статус сервера и логи по запросу
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'What to check'
+        required: true
+        default: 'status'
+        type: choice
+        options:
+          - status
+          - logs-bot
+          - logs-nginx
+          - logs-errors
+          - disk-cleanup
+      lines:
+        description: 'Number of log lines (for logs actions)'
+        required: false
+        default: '50'
+
+jobs:
+  server-action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute server action
+        uses: appleboy/ssh-action@v1.0.3
+        id: action
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            ACTION="${{ github.event.inputs.action }}"
+            LINES="${{ github.event.inputs.lines }}"
+
+            case "$ACTION" in
+              "status")
+                echo "=== SERVER STATUS ==="
+                echo ""
+                echo "📊 SYSTEM INFO:"
+                echo "Uptime: $(uptime -p)"
+                echo "Load: $(cat /proc/loadavg | awk '{print $1, $2, $3}')"
+                echo ""
+                echo "💾 DISK:"
+                df -h / | tail -1 | awk '{print "Used: "$3" / "$2" ("$5")"}'
+                echo ""
+                echo "🧠 MEMORY:"
+                free -h | grep Mem | awk '{print "Used: "$3" / "$2}'
+                echo ""
+                echo "🤖 SERVICES:"
+                echo -n "Bot: "; systemctl is-active saloon-bot || echo "stopped"
+                echo -n "Nginx: "; systemctl is-active nginx || echo "stopped"
+                echo -n "PostgreSQL: "; systemctl is-active postgresql || echo "stopped"
+                echo -n "Redis: "; (systemctl is-active redis-server 2>/dev/null || systemctl is-active redis 2>/dev/null) || echo "stopped"
+                echo ""
+                echo "📦 LAST DEPLOY:"
+                cd ~/academic_saloon && git log -1 --format="Commit: %h%nDate: %ci%nMessage: %s"
+                echo ""
+                echo "🔒 SSL CERT:"
+                DOMAIN="academic-saloon.duckdns.org"
+                EXPIRY=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+                if [ -n "$EXPIRY" ]; then
+                  echo "Expires: $EXPIRY"
+                else
+                  echo "Could not check SSL"
+                fi
+                ;;
+
+              "logs-bot")
+                echo "=== BOT LOGS (last $LINES lines) ==="
+                journalctl -u saloon-bot --no-pager -n $LINES
+                ;;
+
+              "logs-nginx")
+                echo "=== NGINX LOGS (last $LINES lines) ==="
+                echo "--- Access Log ---"
+                tail -n $((LINES/2)) /var/log/nginx/access.log 2>/dev/null || echo "No access log"
+                echo ""
+                echo "--- Error Log ---"
+                tail -n $((LINES/2)) /var/log/nginx/error.log 2>/dev/null || echo "No error log"
+                ;;
+
+              "logs-errors")
+                echo "=== ERROR LOGS (last $LINES lines) ==="
+                journalctl -u saloon-bot --no-pager -n $LINES -p err
+                ;;
+
+              "disk-cleanup")
+                echo "=== DISK CLEANUP ==="
+                echo "Before:"
+                df -h / | tail -1
+
+                # Очищаем логи старше 7 дней
+                journalctl --vacuum-time=7d 2>/dev/null || true
+
+                # Очищаем npm cache
+                npm cache clean --force 2>/dev/null || true
+
+                # Очищаем apt cache
+                apt-get clean 2>/dev/null || true
+
+                # Удаляем старые бэкапы
+                find /root/backups -name "*.sql.gz" -mtime +7 -delete 2>/dev/null || true
+
+                echo "After:"
+                df -h / | tail -1
+                echo "✅ Cleanup complete"
+                ;;
+            esac
+
+      - name: Send result to Telegram
+        if: always()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            📋 *Server ${{ github.event.inputs.action }}*
+
+            🔗 [Посмотреть полный вывод](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
