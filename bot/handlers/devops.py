@@ -594,6 +594,68 @@ async def cmd_backup(message: Message):
 #                     DEVOPS MENU
 # ══════════════════════════════════════════════════════════════
 
+@router.message(Command("help_admin"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
+async def cmd_help_admin(message: Message):
+    """Simple help for non-technical admin"""
+    text = """📚 <b>ШПАРГАЛКА АДМИНА</b>
+
+<b>Что хочешь сделать?</b>
+
+🔴 <b>Бот не работает / глючит:</b>
+→ Напиши <code>/restart</code>
+
+🔴 <b>Посмотреть что происходит:</b>
+→ Напиши <code>/server</code> (статус всего)
+→ Напиши <code>/logs</code> (ошибки бота)
+
+🔴 <b>Обновить бота (новый код):</b>
+→ Ничего не делай! Само обновится после push в GitHub
+
+🔴 <b>Добавить новый API ключ / настройку:</b>
+→ Напиши <code>/env set КЛЮЧ=значение</code>
+→ Потом <code>/restart</code>
+
+🔴 <b>Место на диске кончается:</b>
+→ Напиши <code>/cleanup</code>
+
+🔴 <b>Откатить если что-то сломалось:</b>
+→ Напиши <code>/rollback</code> (откат на 1 версию назад)
+
+🔴 <b>Сделать бэкап базы:</b>
+→ Напиши <code>/backup</code>
+
+━━━━━━━━━━━━━━━━━━━━━
+💡 <b>ВСЁ ОСТАЛЬНОЕ — АВТОМАТИЧЕСКИ!</b>
+
+✅ Код обновляется сам после push
+✅ Зависимости ставятся сами
+✅ База мигрируется сама
+✅ Mini-app пересобирается сам
+✅ SSL сертификаты обновляются сами
+✅ Бэкапы делаются каждый день
+✅ Если бот упал — сам перезапустится
+━━━━━━━━━━━━━━━━━━━━━"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📊 Статус", callback_data="devops_instant:server"),
+            InlineKeyboardButton(text="🔄 Перезапуск", callback_data="devops_instant:restart"),
+        ],
+        [
+            InlineKeyboardButton(text="📋 Все команды", callback_data="devops_menu:full"),
+        ]
+    ])
+
+    await message.answer(text, reply_markup=keyboard)
+
+
+@router.callback_query(F.data == "devops_menu:full", F.from_user.id.in_(settings.ADMIN_IDS))
+async def show_full_menu(callback: CallbackQuery):
+    """Show full DevOps menu"""
+    await callback.answer()
+    await cmd_devops_menu(callback.message)
+
+
 @router.message(Command("devops"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
 async def cmd_devops_menu(message: Message):
     """Show DevOps menu"""
