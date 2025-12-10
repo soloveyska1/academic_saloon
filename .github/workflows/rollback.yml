@@ -53,3 +53,35 @@ jobs:
             nginx -t && systemctl reload nginx
 
             echo "=== Rollback completed: $CURRENT → $NEW ==="
+
+      # ============================================
+      # TELEGRAM NOTIFICATIONS
+      # ============================================
+      - name: Notify Telegram (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ⏪ *Rollback выполнен!*
+
+            🔙 Откатились на ${{ github.event.inputs.commits_back }} коммит(ов)
+            👤 Инициатор: ${{ github.actor }}
+
+            🔗 [Посмотреть workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *Rollback провалился!*
+
+            👤 Инициатор: ${{ github.actor }}
+
+            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

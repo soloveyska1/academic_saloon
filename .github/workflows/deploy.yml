@@ -10,7 +10,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Deploy via SSH
+        id: deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -78,3 +84,38 @@ jobs:
             echo "✅ Mini-app deployed: $(ls /var/www/academic_saloon/dist/assets/index-*.js)"
 
             echo "=== Deploy completed successfully at $(date) ==="
+
+      # ============================================
+      # TELEGRAM NOTIFICATIONS
+      # ============================================
+      - name: Notify Telegram (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ✅ *Deploy успешен!*
+
+            📦 Коммит: `${{ github.sha }}`
+            👤 Автор: ${{ github.actor }}
+            📝 Сообщение: ${{ github.event.head_commit.message }}
+
+            🔗 [Посмотреть коммит](${{ github.event.head_commit.url }})
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *Deploy провалился!*
+
+            📦 Коммит: `${{ github.sha }}`
+            👤 Автор: ${{ github.actor }}
+            📝 Сообщение: ${{ github.event.head_commit.message }}
+
+            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
