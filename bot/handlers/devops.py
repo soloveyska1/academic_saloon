@@ -9,6 +9,13 @@ INSTANT commands (run directly on server):
 - /restart - Restart bot service
 - /cleanup - Clean disk space
 
+CONFIG commands (manage server config without SSH):
+- /env - View environment variables (masked)
+- /env set KEY=VALUE - Add/update env variable
+- /env del KEY - Remove env variable
+- /nginx - View/test nginx config
+- /ssl - Check SSL certificate status
+
 GITHUB commands (trigger workflows):
 - /deploy - Trigger deploy workflow
 - /rollback [N] - Rollback N commits
@@ -258,6 +265,277 @@ async def cmd_ram(message: Message):
 
 
 # ══════════════════════════════════════════════════════════════
+#                 CONFIG COMMANDS (ENV, NGINX, SSL)
+# ══════════════════════════════════════════════════════════════
+
+# Sensitive keys to mask in output
+SENSITIVE_KEYS = {'TOKEN', 'SECRET', 'PASSWORD', 'KEY', 'PRIVATE', 'CREDENTIAL'}
+
+def mask_value(key: str, value: str) -> str:
+    """Mask sensitive values, show only first/last 4 chars"""
+    key_upper = key.upper()
+    if any(s in key_upper for s in SENSITIVE_KEYS):
+        if len(value) > 10:
+            return f"{value[:4]}...{value[-4:]}"
+        return "****"
+    return value
+
+
+@router.message(Command("env"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
+async def cmd_env(message: Message, command: CommandObject):
+    """
+    Manage environment variables:
+    /env - View all (masked)
+    /env set KEY=VALUE - Add/update
+    /env del KEY - Remove
+    """
+    env_file = os.path.expanduser("~/academic_saloon/.env")
+
+    if not command.args:
+        # View all env vars (masked)
+        msg = await message.answer("🔐 Загружаю переменные окружения...")
+
+        try:
+            with open(env_file, 'r') as f:
+                lines = f.readlines()
+
+            env_vars = []
+            for line in lines:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    masked = mask_value(key, value)
+                    env_vars.append(f"<code>{key}</code> = {masked}")
+
+            text = f"🔐 <b>Environment Variables</b>\n\n"
+            text += "\n".join(env_vars) if env_vars else "Нет переменных"
+            text += f"\n\n<i>📁 {env_file}</i>"
+            text += "\n\n💡 <code>/env set KEY=VALUE</code> - добавить"
+            text += "\n💡 <code>/env del KEY</code> - удалить"
+
+            await msg.edit_text(text)
+        except FileNotFoundError:
+            await msg.edit_text(f"❌ Файл не найден: {env_file}")
+        except Exception as e:
+            await msg.edit_text(f"❌ Ошибка: {e}")
+        return
+
+    args = command.args.split(maxsplit=1)
+    action = args[0].lower()
+
+    if action == "set" and len(args) > 1:
+        # Set env variable
+        if '=' not in args[1]:
+            await message.answer("❌ Формат: /env set KEY=VALUE")
+            return
+
+        key, value = args[1].split('=', 1)
+        key = key.strip().upper()
+        value = value.strip()
+
+        if not key:
+            await message.answer("❌ Ключ не может быть пустым")
+            return
+
+        msg = await message.answer(f"⏳ Добавляю {key}...")
+
+        try:
+            # Read existing env
+            lines = []
+            key_found = False
+            try:
+                with open(env_file, 'r') as f:
+                    lines = f.readlines()
+            except FileNotFoundError:
+                pass
+
+            # Update or add
+            new_lines = []
+            for line in lines:
+                if line.strip().startswith(f"{key}="):
+                    new_lines.append(f"{key}={value}\n")
+                    key_found = True
+                else:
+                    new_lines.append(line)
+
+            if not key_found:
+                new_lines.append(f"{key}={value}\n")
+
+            # Write back
+            with open(env_file, 'w') as f:
+                f.writelines(new_lines)
+
+            masked = mask_value(key, value)
+            await msg.edit_text(
+                f"✅ <b>Переменная {'обновлена' if key_found else 'добавлена'}!</b>\n\n"
+                f"<code>{key}</code> = {masked}\n\n"
+                f"⚠️ Для применения нужен <b>/restart</b>",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔄 Restart Bot", callback_data="devops_instant:restart")]
+                ])
+            )
+        except Exception as e:
+            await msg.edit_text(f"❌ Ошибка: {e}")
+
+    elif action == "del" and len(args) > 1:
+        # Delete env variable
+        key = args[1].strip().upper()
+        msg = await message.answer(f"⏳ Удаляю {key}...")
+
+        try:
+            with open(env_file, 'r') as f:
+                lines = f.readlines()
+
+            new_lines = [l for l in lines if not l.strip().startswith(f"{key}=")]
+
+            if len(new_lines) == len(lines):
+                await msg.edit_text(f"❌ Переменная {key} не найдена")
+                return
+
+            with open(env_file, 'w') as f:
+                f.writelines(new_lines)
+
+            await msg.edit_text(
+                f"✅ Переменная <code>{key}</code> удалена!\n\n"
+                f"⚠️ Для применения нужен <b>/restart</b>",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔄 Restart Bot", callback_data="devops_instant:restart")]
+                ])
+            )
+        except Exception as e:
+            await msg.edit_text(f"❌ Ошибка: {e}")
+    else:
+        await message.answer(
+            "💡 <b>Использование:</b>\n\n"
+            "<code>/env</code> - показать все\n"
+            "<code>/env set KEY=VALUE</code> - добавить/обновить\n"
+            "<code>/env del KEY</code> - удалить"
+        )
+
+
+@router.message(Command("nginx"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
+async def cmd_nginx(message: Message, command: CommandObject):
+    """View and manage nginx config"""
+    msg = await message.answer("🌐 Проверяю nginx...")
+
+    # Test config
+    test_output, test_code = await run_shell("nginx -t 2>&1")
+
+    # Get sites-enabled
+    sites, _ = await run_shell("ls -la /etc/nginx/sites-enabled/ 2>/dev/null || echo 'No sites-enabled'")
+
+    # Check status
+    status, _ = await run_shell("systemctl is-active nginx")
+
+    # Get active connections
+    connections, _ = await run_shell("ss -tuln | grep ':80\\|:443' | wc -l")
+
+    text = f"""🌐 <b>Nginx Status</b>
+
+📊 <b>Service:</b> {'✅' if 'active' in status else '❌'} {status.strip()}
+🔗 <b>Active ports:</b> {connections.strip()}
+
+📋 <b>Config test:</b>
+<code>{test_output.strip()}</code>
+
+📁 <b>Sites enabled:</b>
+<code>{sites.strip()}</code>"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔄 Reload", callback_data="devops_nginx:reload"),
+            InlineKeyboardButton(text="📋 Full Config", callback_data="devops_nginx:config"),
+        ]
+    ])
+
+    await msg.edit_text(text, reply_markup=keyboard)
+
+
+@router.message(Command("ssl"), F.from_user.id.in_(settings.ADMIN_IDS), StateFilter(None))
+async def cmd_ssl(message: Message):
+    """Check SSL certificate status"""
+    msg = await message.answer("🔒 Проверяю SSL сертификаты...")
+
+    # Check certbot certificates
+    certs_output, _ = await run_shell("certbot certificates 2>/dev/null || echo 'Certbot not installed'")
+
+    # Check nginx SSL config
+    ssl_conf, _ = await run_shell("grep -r 'ssl_certificate' /etc/nginx/sites-enabled/ 2>/dev/null | head -5")
+
+    # Check certificate expiry for main domain
+    domain_check, _ = await run_shell("""
+        DOMAIN=$(grep server_name /etc/nginx/sites-enabled/* 2>/dev/null | grep -v '#' | head -1 | awk '{print $2}' | tr -d ';')
+        if [ -n "$DOMAIN" ]; then
+            echo "Domain: $DOMAIN"
+            echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -dates 2>/dev/null || echo "Could not check"
+        else
+            echo "No domain found in nginx config"
+        fi
+    """)
+
+    text = f"""🔒 <b>SSL Status</b>
+
+📜 <b>Certificate Info:</b>
+<code>{domain_check.strip()}</code>
+
+📁 <b>SSL Configs:</b>
+<code>{ssl_conf.strip() if ssl_conf.strip() else 'No SSL configs found'}</code>
+
+🔐 <b>Certbot:</b>
+<code>{certs_output[:1500] if len(certs_output) > 1500 else certs_output}</code>"""
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔄 Renew Certs", callback_data="devops_ssl:renew")]
+    ])
+
+    await msg.edit_text(text, reply_markup=keyboard)
+
+
+@router.callback_query(F.data.startswith("devops_nginx:"), F.from_user.id.in_(settings.ADMIN_IDS))
+async def handle_nginx_callback(callback: CallbackQuery):
+    """Handle nginx callbacks"""
+    action = callback.data.split(":")[1]
+    await callback.answer("Выполняю...")
+
+    if action == "reload":
+        output, code = await run_shell("nginx -t && systemctl reload nginx")
+        if code == 0:
+            await callback.message.answer("✅ Nginx перезагружен!")
+        else:
+            await callback.message.answer(f"❌ Ошибка:\n<code>{output}</code>")
+
+    elif action == "config":
+        # Get main site config
+        config, _ = await run_shell("cat /etc/nginx/sites-enabled/default 2>/dev/null || cat /etc/nginx/sites-enabled/* 2>/dev/null | head -100")
+        if len(config) > 4000:
+            file = BufferedInputFile(config.encode(), filename="nginx_config.txt")
+            await callback.message.answer_document(file, caption="📋 Nginx Config")
+        else:
+            await callback.message.answer(f"📋 <b>Nginx Config:</b>\n\n<code>{config[:3900]}</code>")
+
+
+@router.callback_query(F.data.startswith("devops_ssl:"), F.from_user.id.in_(settings.ADMIN_IDS))
+async def handle_ssl_callback(callback: CallbackQuery):
+    """Handle SSL callbacks"""
+    action = callback.data.split(":")[1]
+    await callback.answer("Выполняю...")
+
+    if action == "renew":
+        msg = await callback.message.answer("🔄 Обновляю SSL сертификаты...")
+        output, code = await run_shell("certbot renew --dry-run 2>&1", timeout=60)
+
+        if "dry run" in output.lower() and code == 0:
+            # Dry run successful, do actual renewal
+            output, code = await run_shell("certbot renew 2>&1", timeout=120)
+            if code == 0:
+                await msg.edit_text(f"✅ Сертификаты обновлены!\n\n<code>{output[:1000]}</code>")
+            else:
+                await msg.edit_text(f"❌ Ошибка:\n<code>{output[:2000]}</code>")
+        else:
+            await msg.edit_text(f"❌ Dry run failed:\n<code>{output[:2000]}</code>")
+
+
+# ══════════════════════════════════════════════════════════════
 #                  GITHUB WORKFLOW COMMANDS
 # ══════════════════════════════════════════════════════════════
 
@@ -332,6 +610,12 @@ async def cmd_devops_menu(message: Message):
 /restart - Перезапуск бота
 /cleanup - Очистка диска
 
+🔐 <b>CONFIG</b> (управление без SSH):
+/env - Переменные окружения
+/env set KEY=VALUE - Добавить переменную
+/nginx - Статус и конфиг nginx
+/ssl - SSL сертификаты
+
 🔄 <b>WORKFLOWS</b> (GitHub Actions):
 /deploy - Деплой (git pull + restart)
 /rollback [N] - Откат коммитов
@@ -341,6 +625,10 @@ async def cmd_devops_menu(message: Message):
         [
             InlineKeyboardButton(text="📊 Status", callback_data="devops_instant:server"),
             InlineKeyboardButton(text="📋 Logs", callback_data="devops_instant:logs"),
+        ],
+        [
+            InlineKeyboardButton(text="🔐 Env", callback_data="devops_config:env"),
+            InlineKeyboardButton(text="🌐 Nginx", callback_data="devops_config:nginx"),
         ],
         [
             InlineKeyboardButton(text="🚀 Deploy", callback_data="devops_workflow:deploy"),
@@ -395,3 +683,22 @@ async def handle_workflow_callback(callback: CallbackQuery):
         text = "❓ Unknown action"
 
     await callback.message.answer(text)
+
+
+@router.callback_query(F.data.startswith("devops_config:"), F.from_user.id.in_(settings.ADMIN_IDS))
+async def handle_config_callback(callback: CallbackQuery):
+    """Handle config callbacks (env, nginx, ssl)"""
+    action = callback.data.split(":")[1]
+    await callback.answer("Загружаю...")
+
+    if action == "env":
+        # Create fake command object
+        class FakeCommand:
+            args = None
+        await cmd_env(callback.message, FakeCommand())
+    elif action == "nginx":
+        class FakeCommand:
+            args = None
+        await cmd_nginx(callback.message, FakeCommand())
+    elif action == "ssl":
+        await cmd_ssl(callback.message)
