@@ -85,18 +85,19 @@ const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
   other: Sparkles,
 }
 
+// Premium subdued color palette - lower opacity for refined look
 const WORK_TYPE_COLORS: Record<string, { primary: string; glow: string }> = {
-  masters: { primary: '#a78bfa', glow: 'rgba(167,139,250,0.4)' },
-  diploma: { primary: '#a78bfa', glow: 'rgba(167,139,250,0.4)' },
-  coursework: { primary: '#d4af37', glow: 'rgba(212,175,55,0.4)' },
-  practice: { primary: '#60a5fa', glow: 'rgba(96,165,250,0.4)' },
-  essay: { primary: '#d4af37', glow: 'rgba(212,175,55,0.4)' },
-  presentation: { primary: '#f472b6', glow: 'rgba(244,114,182,0.4)' },
-  control: { primary: '#4ade80', glow: 'rgba(74,222,128,0.4)' },
-  independent: { primary: '#d4af37', glow: 'rgba(212,175,55,0.4)' },
-  report: { primary: '#d4af37', glow: 'rgba(212,175,55,0.4)' },
-  photo_task: { primary: '#fb923c', glow: 'rgba(251,146,60,0.4)' },
-  other: { primary: '#d4af37', glow: 'rgba(212,175,55,0.4)' },
+  masters: { primary: '#a78bfa', glow: 'rgba(167,139,250,0.2)' },
+  diploma: { primary: '#a78bfa', glow: 'rgba(167,139,250,0.2)' },
+  coursework: { primary: '#d4af37', glow: 'rgba(212,175,55,0.2)' },
+  practice: { primary: '#60a5fa', glow: 'rgba(96,165,250,0.2)' },
+  essay: { primary: '#d4af37', glow: 'rgba(212,175,55,0.2)' },
+  presentation: { primary: '#f472b6', glow: 'rgba(244,114,182,0.2)' },
+  control: { primary: '#4ade80', glow: 'rgba(74,222,128,0.2)' },
+  independent: { primary: '#d4af37', glow: 'rgba(212,175,55,0.2)' },
+  report: { primary: '#d4af37', glow: 'rgba(212,175,55,0.2)' },
+  photo_task: { primary: '#fb923c', glow: 'rgba(251,146,60,0.2)' },
+  other: { primary: '#d4af37', glow: 'rgba(212,175,55,0.2)' },
 }
 
 interface StatusConfig {
@@ -133,15 +134,16 @@ const TIMELINE_STEPS = ['Создан', 'Оценён', 'В работе', 'Го
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function PortfolioHealthOrb({ health, totalOrders, onClick }: { health: 'excellent' | 'good' | 'warning' | 'critical'; totalOrders: number; onClick: () => void }) {
+  // Premium color palette - warm amber instead of aggressive red
   const healthColors = {
-    excellent: { primary: '#4ade80', secondary: '#22c55e', glow: 'rgba(74,222,128,0.5)' },
-    good: { primary: '#d4af37', secondary: '#b48e26', glow: 'rgba(212,175,55,0.5)' },
-    warning: { primary: '#fb923c', secondary: '#f97316', glow: 'rgba(251,146,60,0.5)' },
-    critical: { primary: '#f87171', secondary: '#ef4444', glow: 'rgba(248,113,113,0.6)' },
+    excellent: { primary: '#4ade80', secondary: '#22c55e', glow: 'rgba(74,222,128,0.35)' },
+    good: { primary: '#d4af37', secondary: '#b48e26', glow: 'rgba(212,175,55,0.35)' },
+    warning: { primary: '#fbbf24', secondary: '#f59e0b', glow: 'rgba(251,191,36,0.3)' },
+    critical: { primary: '#fb923c', secondary: '#f97316', glow: 'rgba(251,146,60,0.35)' }, // Warm amber, not red!
   }
 
   const colors = healthColors[health]
-  const healthLabels = { excellent: 'Отлично', good: 'Хорошо', warning: 'Внимание', critical: 'Требует внимания' }
+  const healthLabels = { excellent: 'Отлично', good: 'Хорошо', warning: 'Внимание', critical: 'Требует заботы' } // "Заботы" sounds more premium than "внимания"
 
   return (
     <motion.div
@@ -496,7 +498,7 @@ function FocusModeToggle({ isActive, onToggle, actionsCount }: { isActive: boole
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        padding: '12px 18px',
+        padding: '12px 16px',
         borderRadius: 14,
         border: isActive ? '2px solid #d4af37' : '1px solid rgba(255,255,255,0.1)',
         background: isActive
@@ -505,6 +507,8 @@ function FocusModeToggle({ isActive, onToggle, actionsCount }: { isActive: boole
         cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
+        minWidth: 'fit-content',
+        flexShrink: 0, // Prevent squashing
       }}
     >
       {isActive && (
@@ -540,13 +544,17 @@ function FocusModeToggle({ isActive, onToggle, actionsCount }: { isActive: boole
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           style={{
-            background: isActive ? 'rgba(0,0,0,0.3)' : '#ef4444',
-            color: isActive ? '#0a0a0c' : '#fff',
-            padding: '3px 8px',
+            background: isActive
+              ? 'rgba(0,0,0,0.3)'
+              : 'linear-gradient(135deg, #fb923c, #f97316)', // Warm amber, not aggressive red
+            color: '#0a0a0c', // Dark text for contrast
+            padding: '4px 10px',
             borderRadius: 8,
             fontSize: 11,
             fontWeight: 800,
             fontFamily: 'var(--font-mono)',
+            border: isActive ? 'none' : '1px solid rgba(251,146,60,0.3)',
+            boxShadow: isActive ? 'none' : '0 2px 8px rgba(251,146,60,0.25)',
           }}
         >
           {actionsCount}
@@ -686,9 +694,9 @@ function PaymentBadge({ amount, hasPromo, discount }: { amount: number; hasPromo
     <motion.div
       animate={{
         boxShadow: [
-          '0 0 20px rgba(167,139,250,0.3)',
-          '0 0 35px rgba(167,139,250,0.5)',
-          '0 0 20px rgba(167,139,250,0.3)',
+          '0 0 15px rgba(212,175,55,0.15)',
+          '0 0 25px rgba(212,175,55,0.25)',
+          '0 0 15px rgba(212,175,55,0.15)',
         ],
       }}
       transition={{ duration: 2.5, repeat: Infinity }}
@@ -697,8 +705,8 @@ function PaymentBadge({ amount, hasPromo, discount }: { amount: number; hasPromo
         alignItems: 'center',
         gap: 8,
         padding: '10px 14px',
-        background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.15))',
-        border: '1.5px solid rgba(167,139,250,0.4)',
+        background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(184,135,40,0.08))', // Gold, not purple
+        border: '1px solid rgba(212,175,55,0.2)', // Subtle gold border
         borderRadius: 14,
         position: 'relative',
         overflow: 'hidden',
@@ -719,13 +727,13 @@ function PaymentBadge({ amount, hasPromo, discount }: { amount: number; hasPromo
         }}
       />
 
-      <CreditCard size={18} color="#a78bfa" strokeWidth={2} />
+      <CreditCard size={18} color="#d4af37" strokeWidth={2} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{
           fontSize: 10,
           fontWeight: 600,
-          color: 'rgba(167,139,250,0.8)',
+          color: 'rgba(212,175,55,0.8)', // Gold color
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
         }}>
@@ -735,7 +743,7 @@ function PaymentBadge({ amount, hasPromo, discount }: { amount: number; hasPromo
           <span style={{
             fontSize: 16,
             fontWeight: 800,
-            color: hasPromo ? '#4ade80' : '#a78bfa',
+            color: hasPromo ? '#4ade80' : '#d4af37', // Gold color
             fontFamily: 'var(--font-mono)',
           }}>
             {amount.toLocaleString('ru-RU')} ₽
@@ -810,24 +818,35 @@ function PremiumOrderCard({ order, index, showTimeline = true, isFocusMode = fal
     }
   }
 
-  // Card priority styling
+  // Card priority styling — PREMIUM: subtle, hair-thin borders like private banking
   const getPriorityStyles = () => {
     if (needsPayment) return {
-      border: '1.5px solid rgba(167,139,250,0.4)',
-      boxShadow: '0 8px 40px -12px rgba(167,139,250,0.3), 0 20px 50px -20px rgba(0,0,0,0.6)',
+      border: '1px solid rgba(212,175,55,0.2)', // Gold accent for payment, not purple
+      boxShadow: `
+        0 1px 2px rgba(212,175,55,0.06),
+        0 8px 24px -8px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(212,175,55,0.12)
+      `,
     }
     if (isReady) return {
-      border: '1.5px solid rgba(74,222,128,0.3)',
-      boxShadow: '0 8px 40px -12px rgba(74,222,128,0.25), 0 20px 50px -20px rgba(0,0,0,0.6)',
+      border: '1px solid rgba(74,222,128,0.12)', // Muted sage green
+      boxShadow: `
+        0 1px 2px rgba(74,222,128,0.04),
+        0 8px 24px -8px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(74,222,128,0.08)
+      `,
     }
     if (isCompleted) return {
-      border: '1px solid rgba(255,255,255,0.05)',
-      boxShadow: '0 4px 20px -10px rgba(0,0,0,0.4)',
-      opacity: 0.7,
+      border: '1px solid rgba(255,255,255,0.03)',
+      boxShadow: '0 4px 16px -8px rgba(0,0,0,0.4)',
+      opacity: 0.6,
     }
     return {
-      border: '1px solid rgba(212,175,55,0.15)',
-      boxShadow: '0 8px 30px -10px rgba(0,0,0,0.5), 0 0 40px -20px rgba(212,175,55,0.1)',
+      border: '1px solid rgba(212,175,55,0.06)', // Barely visible gold whisper
+      boxShadow: `
+        0 1px 1px rgba(212,175,55,0.03),
+        0 8px 20px -8px rgba(0,0,0,0.5)
+      `,
     }
   }
 
@@ -871,14 +890,14 @@ function PremiumOrderCard({ order, index, showTimeline = true, isFocusMode = fal
         top: 0,
         bottom: 0,
         width: SWIPE_THRESHOLD,
-        background: needsPayment ? 'linear-gradient(270deg, #a78bfa, #8b5cf6)' : 'linear-gradient(270deg, #d4af37, #b48e26)',
+        background: 'linear-gradient(270deg, #d4af37, #b48e26)', // Always gold for premium feel
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: '0 24px 24px 0',
       }}>
         <motion.div animate={{ scale: swipeX < 0 ? 1.2 : 1 }} onClick={() => handleAction(needsPayment ? 'pay' : 'view')}>
-          {needsPayment ? <CreditCard size={24} color="#fff" /> : <ChevronRight size={24} color="#0a0a0c" />}
+          {needsPayment ? <CreditCard size={24} color="#0a0a0c" /> : <ChevronRight size={24} color="#0a0a0c" />}
         </motion.div>
       </div>
 
@@ -1986,7 +2005,11 @@ export function OrdersPage({ orders }: Props) {
             marginBottom: 20,
             overflowX: 'auto',
             paddingBottom: 4,
+            paddingLeft: 4, // Prevent left cutoff
+            paddingRight: 4, // Prevent right cutoff
             WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none', // Hide scrollbar Firefox
+            msOverflowStyle: 'none', // Hide scrollbar IE
           }}>
             <FocusModeToggle
               isActive={isFocusMode}
@@ -1994,13 +2017,13 @@ export function OrdersPage({ orders }: Props) {
               actionsCount={stats.attention.length}
             />
 
-            <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
 
             {[
               { key: 'all', label: 'Все', count: orders.length },
               { key: 'active', label: 'Активные', count: stats.active.length },
               { key: 'attention', label: 'Внимание', count: stats.attention.length },
-              { key: 'completed', label: 'Завершённые', count: stats.completed.length },
+              { key: 'completed', label: 'Готовы', count: stats.completed.length }, // Shorter label for mobile
             ].map((f) => (
               <motion.button
                 key={f.key}
@@ -2010,7 +2033,7 @@ export function OrdersPage({ orders }: Props) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  padding: '10px 16px',
+                  padding: '10px 14px', // Slightly reduced padding
                   borderRadius: 12,
                   border: `1px solid ${filter === f.key && !isFocusMode ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.08)'}`,
                   background: filter === f.key && !isFocusMode
@@ -2018,6 +2041,7 @@ export function OrdersPage({ orders }: Props) {
                     : 'rgba(30,30,35,0.6)',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0, // Prevent squashing
                 }}
               >
                 <span style={{
