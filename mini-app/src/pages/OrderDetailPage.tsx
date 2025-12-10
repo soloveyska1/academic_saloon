@@ -1,20 +1,19 @@
 /**
- * OrderDetailPage V6.0 — Private Concierge Experience
+ * OrderDetailPage V7.0 — Private Concierge Masterpiece
  *
- * Philosophy: "Your order deserves undivided attention"
+ * Philosophy: "Every detail matters. Every interaction delights."
  *
- * Design Principles:
- * 1. FOCUS — One clear action at a time
- * 2. HIERARCHY — Status → Price → Action → Details
- * 3. PERFORMANCE — No infinite animations, respect prefers-reduced-motion
- * 4. ACCESSIBILITY — Keyboard navigation, proper ARIA labels
- * 5. ELEGANCE — Premium through restraint, not decoration
+ * Architecture:
+ * 1. DESIGN SYSTEM — Consistent tokens for colors, spacing, radii
+ * 2. NO DUPLICATES — Single source of truth for all configurations
+ * 3. UNIQUE SECTIONS — Each card has its own personality, unified style
+ * 4. FULL FUNCTIONALITY — Revision modal, real-time updates, accessible
+ * 5. TYPE SAFETY — No `as any`, proper interfaces
  *
- * @version 6.0.0
- * @author Premium Design Team
+ * @version 7.0.0
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
+import { useState, useEffect, useCallback, useRef, memo, ReactNode } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -38,16 +37,117 @@ import {
   ExternalLink,
   Sparkles,
   Eye,
+  Gift,
+  X,
+  Send,
+  Calendar,
+  Zap,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { fetchOrderDetail, fetchPaymentInfo, confirmWorkCompletion, requestRevision, PaymentInfo } from '../api/userApi'
+import {
+  fetchOrderDetail,
+  fetchPaymentInfo,
+  confirmWorkCompletion,
+  requestRevision,
+  PaymentInfo,
+} from '../api/userApi'
 import { useWebSocketContext } from '../hooks/useWebSocket'
 
-// Keep existing premium components
 import { ReviewSection } from '../components/order/ReviewSection'
 import { GoldenInvoice } from '../components/order/GoldenInvoice'
 import { PremiumChat, PremiumChatHandle } from '../components/order/PremiumChat'
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              DESIGN SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const DS = {
+  // Color Palette
+  colors: {
+    // Primary
+    gold: '#D4AF37',
+    goldLight: '#FCF6BA',
+    goldDark: '#B38728',
+    // Semantic
+    success: '#22c55e',
+    successLight: '#4ade80',
+    warning: '#f59e0b',
+    warningLight: '#fbbf24',
+    error: '#ef4444',
+    info: '#3b82f6',
+    infoLight: '#60a5fa',
+    purple: '#8b5cf6',
+    purpleLight: '#a78bfa',
+    cyan: '#06b6d4',
+    orange: '#f97316',
+    // Neutral
+    white: '#ffffff',
+    textPrimary: 'var(--text-main)',
+    textSecondary: 'rgba(255,255,255,0.6)',
+    textMuted: 'rgba(255,255,255,0.4)',
+    border: 'rgba(255,255,255,0.08)',
+    borderLight: 'rgba(255,255,255,0.12)',
+    surface: 'rgba(255,255,255,0.02)',
+    surfaceElevated: 'rgba(255,255,255,0.05)',
+  },
+  // Spacing Scale (4px base)
+  space: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    '2xl': 24,
+    '3xl': 32,
+  },
+  // Border Radius
+  radius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    full: 9999,
+  },
+  // Typography
+  fontSize: {
+    xs: 11,
+    sm: 12,
+    md: 13,
+    base: 14,
+    lg: 15,
+    xl: 16,
+    '2xl': 18,
+    '3xl': 20,
+    '4xl': 24,
+    '5xl': 28,
+  },
+  // Shadows
+  shadow: {
+    gold: '0 8px 24px -4px rgba(212,175,55,0.35)',
+    success: '0 8px 24px -4px rgba(34,197,94,0.35)',
+    purple: '0 8px 24px -4px rgba(139,92,246,0.35)',
+    warning: '0 8px 24px -4px rgba(245,158,11,0.35)',
+  },
+} as const
+
+// Business Constants
+const CONFIG = {
+  MAX_FREE_REVISIONS: 3,
+  CASHBACK_PERCENT: 5,
+  URGENCY_CRITICAL_HOURS: 12,
+  URGENCY_WARNING_HOURS: 48,
+  COUNTDOWN_UPDATE_MS: 60000, // 1 minute
+} as const
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              EXTENDED ORDER TYPE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Extend Order type with fields used in this component
+interface ExtendedOrder extends Order {
+  revision_count?: number
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              UTILITIES
@@ -69,14 +169,17 @@ const useReducedMotion = () => {
 }
 
 // Format price with Russian locale
-const formatPrice = (amount: number) =>
-  amount.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+const formatPrice = (amount: number | undefined | null): string => {
+  if (amount === undefined || amount === null || typeof amount !== 'number') return '0'
+  return amount.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+}
 
 // Format date relative to now
 const formatRelativeDate = (dateStr: string | null): string => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
+
   const now = new Date()
   const isToday = date.toDateString() === now.toDateString()
   const yesterday = new Date(now)
@@ -89,121 +192,98 @@ const formatRelativeDate = (dateStr: string | null): string => {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
+// Generate color variants
+const colorWithAlpha = (color: string, alpha: number): string => {
+  // Handle hex colors
+  if (color.startsWith('#')) {
+    const hex = color.slice(1)
+    const r = parseInt(hex.slice(0, 2), 16)
+    const g = parseInt(hex.slice(2, 4), 16)
+    const b = parseInt(hex.slice(4, 6), 16)
+    return `rgba(${r},${g},${b},${alpha})`
+  }
+  return color
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
-//                              STATUS CONFIG
+//                              STATUS CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface StatusConfig {
   label: string
   shortLabel: string
   color: string
-  bgColor: string
-  borderColor: string
   icon: typeof Clock
   needsAction: boolean
   actionLabel?: string
   step: number
 }
 
+// Status presets to avoid duplication
+const STATUS_PRESETS = {
+  estimation: {
+    label: 'На оценке',
+    shortLabel: 'Оценка',
+    color: DS.colors.warning,
+    icon: Clock,
+    needsAction: false,
+    step: 1,
+  },
+  payment: {
+    label: 'Ожидает оплаты',
+    shortLabel: 'К оплате',
+    color: DS.colors.gold,
+    icon: CreditCard,
+    needsAction: true,
+    actionLabel: 'Оплатить',
+    step: 2,
+  },
+  working: {
+    label: 'В работе',
+    shortLabel: 'В работе',
+    color: DS.colors.info,
+    icon: Loader2,
+    needsAction: false,
+    step: 3,
+  },
+  cancelled: {
+    label: 'Отменён',
+    shortLabel: 'Отменён',
+    color: DS.colors.error,
+    icon: XCircle,
+    needsAction: false,
+    step: -1,
+  },
+} as const
+
 const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   draft: {
     label: 'Черновик',
     shortLabel: 'Черновик',
     color: '#6b7280',
-    bgColor: 'rgba(107,114,128,0.12)',
-    borderColor: 'rgba(107,114,128,0.25)',
     icon: PenTool,
     needsAction: false,
     step: 0,
   },
-  pending: {
-    label: 'На оценке',
-    shortLabel: 'Оценка',
-    color: '#f59e0b',
-    bgColor: 'rgba(245,158,11,0.12)',
-    borderColor: 'rgba(245,158,11,0.25)',
-    icon: Clock,
-    needsAction: false,
-    step: 1,
-  },
-  waiting_estimation: {
-    label: 'На оценке',
-    shortLabel: 'Оценка',
-    color: '#f59e0b',
-    bgColor: 'rgba(245,158,11,0.12)',
-    borderColor: 'rgba(245,158,11,0.25)',
-    icon: Clock,
-    needsAction: false,
-    step: 1,
-  },
-  confirmed: {
-    label: 'Ожидает оплаты',
-    shortLabel: 'К оплате',
-    color: '#D4AF37',
-    bgColor: 'rgba(212,175,55,0.12)',
-    borderColor: 'rgba(212,175,55,0.3)',
-    icon: CreditCard,
-    needsAction: true,
-    actionLabel: 'Оплатить',
-    step: 2,
-  },
-  waiting_payment: {
-    label: 'Ожидает оплаты',
-    shortLabel: 'К оплате',
-    color: '#D4AF37',
-    bgColor: 'rgba(212,175,55,0.12)',
-    borderColor: 'rgba(212,175,55,0.3)',
-    icon: CreditCard,
-    needsAction: true,
-    actionLabel: 'Оплатить',
-    step: 2,
-  },
+  pending: STATUS_PRESETS.estimation,
+  waiting_estimation: STATUS_PRESETS.estimation,
+  confirmed: STATUS_PRESETS.payment,
+  waiting_payment: STATUS_PRESETS.payment,
   verification_pending: {
     label: 'Проверка оплаты',
     shortLabel: 'Проверка',
-    color: '#06b6d4',
-    bgColor: 'rgba(6,182,212,0.12)',
-    borderColor: 'rgba(6,182,212,0.25)',
+    color: DS.colors.cyan,
     icon: Loader2,
     needsAction: false,
     step: 2,
   },
-  paid: {
-    label: 'В работе',
-    shortLabel: 'В работе',
-    color: '#3b82f6',
-    bgColor: 'rgba(59,130,246,0.12)',
-    borderColor: 'rgba(59,130,246,0.25)',
-    icon: Loader2,
-    needsAction: false,
-    step: 3,
-  },
-  paid_full: {
-    label: 'В работе',
-    shortLabel: 'В работе',
-    color: '#3b82f6',
-    bgColor: 'rgba(59,130,246,0.12)',
-    borderColor: 'rgba(59,130,246,0.25)',
-    icon: Loader2,
-    needsAction: false,
-    step: 3,
-  },
-  in_progress: {
-    label: 'В работе',
-    shortLabel: 'В работе',
-    color: '#3b82f6',
-    bgColor: 'rgba(59,130,246,0.12)',
-    borderColor: 'rgba(59,130,246,0.25)',
-    icon: Loader2,
-    needsAction: false,
-    step: 3,
-  },
+  paid: STATUS_PRESETS.working,
+  paid_full: STATUS_PRESETS.working,
+  in_progress: STATUS_PRESETS.working,
   revision: {
     label: 'На доработке',
     shortLabel: 'Правки',
-    color: '#f97316',
-    bgColor: 'rgba(249,115,22,0.12)',
-    borderColor: 'rgba(249,115,22,0.25)',
+    color: DS.colors.orange,
     icon: RefreshCw,
     needsAction: false,
     step: 3,
@@ -211,9 +291,7 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   review: {
     label: 'Готов к проверке',
     shortLabel: 'Проверка',
-    color: '#8b5cf6',
-    bgColor: 'rgba(139,92,246,0.12)',
-    borderColor: 'rgba(139,92,246,0.25)',
+    color: DS.colors.purple,
     icon: Eye,
     needsAction: true,
     actionLabel: 'Проверить',
@@ -222,47 +300,31 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   completed: {
     label: 'Выполнен',
     shortLabel: 'Готово',
-    color: '#22c55e',
-    bgColor: 'rgba(34,197,94,0.12)',
-    borderColor: 'rgba(34,197,94,0.25)',
+    color: DS.colors.success,
     icon: CheckCircle2,
     needsAction: false,
     step: 5,
   },
-  cancelled: {
-    label: 'Отменён',
-    shortLabel: 'Отменён',
-    color: '#ef4444',
-    bgColor: 'rgba(239,68,68,0.12)',
-    borderColor: 'rgba(239,68,68,0.25)',
-    icon: XCircle,
-    needsAction: false,
-    step: -1,
-  },
+  cancelled: STATUS_PRESETS.cancelled,
   rejected: {
+    ...STATUS_PRESETS.cancelled,
     label: 'Отклонён',
     shortLabel: 'Отклонён',
-    color: '#ef4444',
-    bgColor: 'rgba(239,68,68,0.12)',
-    borderColor: 'rgba(239,68,68,0.25)',
-    icon: XCircle,
-    needsAction: false,
-    step: -1,
   },
 }
 
-const WORK_TYPE_CONFIG: Record<string, { emoji: string }> = {
-  masters: { emoji: '🎓' },
-  diploma: { emoji: '📜' },
-  coursework: { emoji: '📚' },
-  essay: { emoji: '✍️' },
-  report: { emoji: '📋' },
-  control: { emoji: '📝' },
-  presentation: { emoji: '🎯' },
-  practice: { emoji: '💼' },
-  independent: { emoji: '📖' },
-  other: { emoji: '📄' },
-  photo_task: { emoji: '📸' },
+const WORK_TYPE_EMOJI: Record<string, string> = {
+  masters: '🎓',
+  diploma: '📜',
+  coursework: '📚',
+  essay: '✍️',
+  report: '📋',
+  control: '📝',
+  presentation: '🎯',
+  practice: '💼',
+  independent: '📖',
+  other: '📄',
+  photo_task: '📸',
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -329,8 +391,8 @@ function useCountdown(deadline: string | null): CountdownResult | null {
       const totalHours = days * 24 + hours
 
       let urgency: CountdownResult['urgency'] = 'safe'
-      if (totalHours < 12) urgency = 'critical'
-      else if (totalHours < 48) urgency = 'warning'
+      if (totalHours < CONFIG.URGENCY_CRITICAL_HOURS) urgency = 'critical'
+      else if (totalHours < CONFIG.URGENCY_WARNING_HOURS) urgency = 'warning'
 
       let formatted = ''
       if (days > 0) formatted = `${days}д ${hours}ч`
@@ -341,8 +403,7 @@ function useCountdown(deadline: string | null): CountdownResult | null {
     }
 
     setResult(calculate())
-    // Update every minute (not every second - saves CPU)
-    const interval = setInterval(() => setResult(calculate()), 60000)
+    const interval = setInterval(() => setResult(calculate()), CONFIG.COUNTDOWN_UPDATE_MS)
     return () => clearInterval(interval)
   }, [deadline])
 
@@ -350,36 +411,447 @@ function useCountdown(deadline: string | null): CountdownResult | null {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//                              COMPACT HEADER
+//                              REUSABLE COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Premium Button Component
+interface PremiumButtonProps {
+  onClick: () => void
+  disabled?: boolean
+  loading?: boolean
+  variant: 'primary' | 'secondary' | 'ghost'
+  color?: string
+  icon?: ReactNode
+  children: ReactNode
+  fullWidth?: boolean
+  reduced?: boolean
+  ariaLabel?: string
+}
+
+const PremiumButton = memo(function PremiumButton({
+  onClick,
+  disabled = false,
+  loading = false,
+  variant,
+  color = DS.colors.gold,
+  icon,
+  children,
+  fullWidth = false,
+  reduced = false,
+  ariaLabel,
+}: PremiumButtonProps) {
+  const styles: Record<string, React.CSSProperties> = {
+    primary: {
+      background: `linear-gradient(135deg, ${color}, ${colorWithAlpha(color, 0.8)})`,
+      border: 'none',
+      color: color === DS.colors.success || color === DS.colors.gold ? '#fff' : '#fff',
+      boxShadow: `0 8px 24px -4px ${colorWithAlpha(color, 0.35)}`,
+    },
+    secondary: {
+      background: colorWithAlpha(color, 0.1),
+      border: `1px solid ${colorWithAlpha(color, 0.3)}`,
+      color: color,
+    },
+    ghost: {
+      background: DS.colors.surfaceElevated,
+      border: `1px solid ${DS.colors.border}`,
+      color: DS.colors.textSecondary,
+    },
+  }
+
+  return (
+    <motion.button
+      whileTap={reduced || disabled ? undefined : { scale: 0.97 }}
+      onClick={onClick}
+      disabled={disabled || loading}
+      aria-label={ariaLabel}
+      style={{
+        ...styles[variant],
+        width: fullWidth ? '100%' : 'auto',
+        padding: `${DS.space.lg}px ${DS.space.xl}px`,
+        borderRadius: DS.radius.md,
+        fontSize: DS.fontSize.lg,
+        fontWeight: 700,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.6 : 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: DS.space.sm,
+        transition: 'opacity 0.2s ease',
+      }}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : icon}
+      {children}
+    </motion.button>
+  )
+})
+
+// Collapsible Section Component
+interface CollapsibleSectionProps {
+  title: string
+  subtitle?: string
+  icon: ReactNode
+  iconColor?: string
+  children: ReactNode
+  defaultOpen?: boolean
+  reduced?: boolean
+}
+
+const CollapsibleSection = memo(function CollapsibleSection({
+  title,
+  subtitle,
+  icon,
+  iconColor = DS.colors.gold,
+  children,
+  defaultOpen = false,
+  reduced = false,
+}: CollapsibleSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <div
+      style={{
+        borderRadius: DS.radius.lg,
+        background: DS.colors.surface,
+        border: `1px solid ${DS.colors.border}`,
+        marginBottom: DS.space.lg,
+        overflow: 'hidden',
+      }}
+    >
+      <motion.button
+        whileTap={reduced ? undefined : { scale: 0.99 }}
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          padding: `${DS.space.lg}px ${DS.space.xl - 2}px`,
+          background: 'transparent',
+          border: 'none',
+          color: DS.colors.textSecondary,
+          fontSize: DS.fontSize.md,
+          fontWeight: 600,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+          <span style={{ color: iconColor }}>{icon}</span>
+          {title}
+          {subtitle && (
+            <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted }}>
+              {subtitle}
+            </span>
+          )}
+        </span>
+        {isOpen ? (
+          <ChevronUp size={16} color={DS.colors.textMuted} />
+        ) : (
+          <ChevronDown size={16} color={DS.colors.textMuted} />
+        )}
+      </motion.button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ padding: `0 ${DS.space.xl - 2}px ${DS.space.xl - 2}px` }}>{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+})
+
+// Info Card Component
+interface InfoCardProps {
+  value: string | number
+  label: string
+  color: string
+  icon?: ReactNode
+  compact?: boolean
+}
+
+const InfoCard = memo(function InfoCard({ value, label, color, icon, compact = false }: InfoCardProps) {
+  return (
+    <div
+      style={{
+        flex: compact ? '1 1 100px' : '1 1 140px',
+        padding: compact ? DS.space.md : DS.space.lg,
+        borderRadius: DS.radius.md,
+        background: colorWithAlpha(color, 0.08),
+        border: `1px solid ${colorWithAlpha(color, 0.2)}`,
+        display: compact ? 'flex' : 'block',
+        alignItems: compact ? 'center' : undefined,
+        justifyContent: compact ? 'space-between' : undefined,
+      }}
+    >
+      <div>
+        <div
+          style={{
+            fontSize: compact ? DS.fontSize.md : DS.fontSize['3xl'],
+            fontWeight: 700,
+            color: color,
+            marginBottom: compact ? 0 : DS.space.xs,
+            display: 'flex',
+            alignItems: 'center',
+            gap: DS.space.sm,
+          }}
+        >
+          {icon}
+          {value}
+        </div>
+        <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted }}>{label}</div>
+      </div>
+      {compact && icon && (
+        <div style={{ fontSize: DS.fontSize.xl, fontWeight: 700, color, fontFamily: 'var(--font-mono)' }}>
+          {value}
+        </div>
+      )}
+    </div>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              REVISION MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface RevisionModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (comment: string) => void
+  isLoading: boolean
+  reduced: boolean
+}
+
+const RevisionModal = memo(function RevisionModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+  reduced,
+}: RevisionModalProps) {
+  const [comment, setComment] = useState('')
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 100)
+    }
+    if (!isOpen) {
+      setComment('')
+    }
+  }, [isOpen])
+
+  const handleSubmit = () => {
+    if (comment.trim().length < 5) return
+    onSubmit(comment.trim())
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.8)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            padding: DS.space.lg,
+          }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={reduced ? false : { y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={reduced ? undefined : { y: 100, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 480,
+              background: 'linear-gradient(145deg, #1c1c20, #14141a)',
+              borderRadius: `${DS.radius.xl}px ${DS.radius.xl}px ${DS.radius.md}px ${DS.radius.md}px`,
+              border: `1px solid ${colorWithAlpha(DS.colors.warning, 0.3)}`,
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: DS.space.xl,
+                borderBottom: `1px solid ${DS.colors.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: DS.radius.md,
+                    background: colorWithAlpha(DS.colors.warning, 0.15),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <PenTool size={22} color={DS.colors.warning} />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: DS.fontSize.xl,
+                      fontWeight: 700,
+                      color: DS.colors.textPrimary,
+                      fontFamily: 'var(--font-serif)',
+                    }}
+                  >
+                    Запрос правок
+                  </h3>
+                  <p style={{ margin: 0, fontSize: DS.fontSize.sm, color: DS.colors.textMuted }}>
+                    Опишите, что нужно исправить
+                  </p>
+                </div>
+              </div>
+              <motion.button
+                whileTap={reduced ? undefined : { scale: 0.9 }}
+                onClick={onClose}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: DS.radius.sm,
+                  background: DS.colors.surfaceElevated,
+                  border: `1px solid ${DS.colors.border}`,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={18} color={DS.colors.textMuted} />
+              </motion.button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: DS.space.xl }}>
+              <textarea
+                ref={inputRef}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Например: Нужно исправить оформление списка литературы и добавить больше источников..."
+                style={{
+                  width: '100%',
+                  minHeight: 120,
+                  padding: DS.space.lg,
+                  borderRadius: DS.radius.md,
+                  background: DS.colors.surfaceElevated,
+                  border: `1px solid ${DS.colors.borderLight}`,
+                  color: DS.colors.textPrimary,
+                  fontSize: DS.fontSize.base,
+                  lineHeight: 1.5,
+                  resize: 'vertical',
+                  outline: 'none',
+                }}
+              />
+              <p
+                style={{
+                  margin: `${DS.space.md}px 0 0`,
+                  fontSize: DS.fontSize.xs,
+                  color: comment.length < 5 ? DS.colors.warning : DS.colors.textMuted,
+                }}
+              >
+                {comment.length < 5
+                  ? `Минимум 5 символов (ещё ${5 - comment.length})`
+                  : 'Менеджер получит ваш комментарий и свяжется с вами'}
+              </p>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: DS.space.md, marginTop: DS.space.xl }}>
+                <PremiumButton
+                  onClick={onClose}
+                  variant="ghost"
+                  reduced={reduced}
+                  fullWidth
+                >
+                  Отмена
+                </PremiumButton>
+                <PremiumButton
+                  onClick={handleSubmit}
+                  variant="primary"
+                  color={DS.colors.warning}
+                  disabled={comment.trim().length < 5}
+                  loading={isLoading}
+                  icon={<Send size={18} />}
+                  reduced={reduced}
+                  fullWidth
+                  ariaLabel="Отправить запрос на правки"
+                >
+                  Отправить
+                </PremiumButton>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              ORDER HEADER
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface OrderHeaderProps {
-  order: Order
+  order: ExtendedOrder
   onBack: () => void
   reduced: boolean
 }
 
 const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderHeaderProps) {
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
-  const typeConfig = WORK_TYPE_CONFIG[order.work_type] || WORK_TYPE_CONFIG.other
+  const typeEmoji = WORK_TYPE_EMOJI[order.work_type] || WORK_TYPE_EMOJI.other
   const countdown = useCountdown(order.deadline)
   const StatusIcon = statusConfig.icon
 
   const isWorking = ['paid', 'paid_full', 'in_progress', 'revision'].includes(order.status)
-  const progress = (order as any).progress || 0
+  const progress = order.progress || 0
+
+  const urgencyColor =
+    countdown?.urgency === 'critical'
+      ? DS.colors.error
+      : countdown?.urgency === 'warning'
+      ? DS.colors.warning
+      : DS.colors.success
 
   return (
     <div
       style={{
-        padding: 20,
-        borderRadius: 24,
+        padding: DS.space.xl,
+        borderRadius: DS.radius.xl,
         background: 'linear-gradient(145deg, rgba(28,28,32,0.98), rgba(18,18,22,0.99))',
-        border: `1px solid ${statusConfig.borderColor}`,
-        marginBottom: 16,
+        border: `1px solid ${colorWithAlpha(statusConfig.color, 0.25)}`,
+        marginBottom: DS.space.lg,
       }}
     >
-      {/* TOP ROW: Back + Type + ID */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+      {/* Row 1: Back + Type + ID */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md, marginBottom: DS.space.lg }}>
         <motion.button
           whileTap={reduced ? undefined : { scale: 0.95 }}
           onClick={onBack}
@@ -387,9 +859,9 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
           style={{
             width: 44,
             height: 44,
-            borderRadius: 14,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: DS.radius.md,
+            background: DS.colors.surfaceElevated,
+            border: `1px solid ${DS.colors.border}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -397,17 +869,17 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
             flexShrink: 0,
           }}
         >
-          <ArrowLeft size={20} color="rgba(255,255,255,0.7)" />
+          <ArrowLeft size={20} color={DS.colors.textSecondary} />
         </motion.button>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 20 }}>{typeConfig.emoji}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm, marginBottom: DS.space.xs }}>
+            <span style={{ fontSize: DS.fontSize['3xl'] }}>{typeEmoji}</span>
             <span
               style={{
-                fontSize: 17,
+                fontSize: DS.fontSize['2xl'] - 1,
                 fontWeight: 700,
-                color: 'var(--text-main)',
+                color: DS.colors.textPrimary,
                 fontFamily: 'var(--font-serif)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -420,8 +892,8 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
           {order.subject && (
             <p
               style={{
-                fontSize: 13,
-                color: 'rgba(255,255,255,0.6)',
+                fontSize: DS.fontSize.md,
+                color: DS.colors.textSecondary,
                 margin: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -433,21 +905,22 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
           )}
         </div>
 
+        {/* Order ID Badge */}
         <div
           style={{
-            padding: '8px 14px',
-            borderRadius: 12,
-            background: 'rgba(212,175,55,0.1)',
-            border: '1px solid rgba(212,175,55,0.25)',
+            padding: `${DS.space.sm}px ${DS.space.lg}px`,
+            borderRadius: DS.radius.md,
+            background: colorWithAlpha(DS.colors.gold, 0.1),
+            border: `1px solid ${colorWithAlpha(DS.colors.gold, 0.25)}`,
             flexShrink: 0,
           }}
         >
           <span
             style={{
-              fontSize: 14,
+              fontSize: DS.fontSize.base,
               fontWeight: 800,
               fontFamily: 'var(--font-mono)',
-              color: '#D4AF37',
+              color: DS.colors.gold,
             }}
           >
             #{order.id}
@@ -455,39 +928,31 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
         </div>
       </div>
 
-      {/* MIDDLE ROW: Status + Deadline */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          marginBottom: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        {/* Status Badge */}
+      {/* Row 2: Status + Deadline */}
+      <div style={{ display: 'flex', gap: DS.space.md, marginBottom: DS.space.lg, flexWrap: 'wrap' }}>
+        {/* Status */}
         <div
           style={{
             flex: '1 1 auto',
             minWidth: 140,
-            padding: '12px 16px',
-            borderRadius: 14,
-            background: statusConfig.bgColor,
-            border: `1px solid ${statusConfig.borderColor}`,
+            padding: `${DS.space.md}px ${DS.space.lg}px`,
+            borderRadius: DS.radius.md,
+            background: colorWithAlpha(statusConfig.color, 0.12),
+            border: `1px solid ${colorWithAlpha(statusConfig.color, 0.25)}`,
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: DS.space.md,
           }}
         >
           <div
             style={{
               width: 36,
               height: 36,
-              borderRadius: 10,
-              background: `${statusConfig.color}20`,
+              borderRadius: DS.radius.sm + 2,
+              background: colorWithAlpha(statusConfig.color, 0.2),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              position: 'relative',
             }}
           >
             {isWorking && !reduced ? (
@@ -504,23 +969,22 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontSize: 14,
+                fontSize: DS.fontSize.base,
                 fontWeight: 700,
                 color: statusConfig.color,
-                marginBottom: isWorking && progress > 0 ? 6 : 0,
+                marginBottom: isWorking && progress > 0 ? DS.space.sm : 0,
               }}
             >
               {statusConfig.label}
             </div>
-            {/* Progress bar for working states */}
             {isWorking && progress > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
                 <div
                   style={{
                     flex: 1,
                     height: 4,
                     borderRadius: 2,
-                    background: 'rgba(255,255,255,0.1)',
+                    background: colorWithAlpha(DS.colors.white, 0.1),
                     overflow: 'hidden',
                   }}
                 >
@@ -536,7 +1000,7 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
                 </div>
                 <span
                   style={{
-                    fontSize: 12,
+                    fontSize: DS.fontSize.sm,
                     fontWeight: 700,
                     color: statusConfig.color,
                     fontFamily: 'var(--font-mono)',
@@ -549,53 +1013,37 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
           </div>
         </div>
 
-        {/* Deadline Badge (if not completed/cancelled) */}
+        {/* Deadline */}
         {countdown && !['completed', 'cancelled', 'rejected'].includes(order.status) && (
           <div
             style={{
               flex: '0 0 auto',
-              padding: '12px 16px',
-              borderRadius: 14,
-              background:
-                countdown.urgency === 'critical'
-                  ? 'rgba(239,68,68,0.12)'
-                  : countdown.urgency === 'warning'
-                  ? 'rgba(245,158,11,0.12)'
-                  : 'rgba(34,197,94,0.12)',
-              border: `1px solid ${
-                countdown.urgency === 'critical'
-                  ? 'rgba(239,68,68,0.25)'
-                  : countdown.urgency === 'warning'
-                  ? 'rgba(245,158,11,0.25)'
-                  : 'rgba(34,197,94,0.25)'
-              }`,
+              padding: `${DS.space.md}px ${DS.space.lg}px`,
+              borderRadius: DS.radius.md,
+              background: colorWithAlpha(urgencyColor, 0.12),
+              border: `1px solid ${colorWithAlpha(urgencyColor, 0.25)}`,
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
+              gap: DS.space.sm,
             }}
           >
             {countdown.urgency === 'critical' ? (
               <Flame
                 size={18}
-                color="#ef4444"
+                color={DS.colors.error}
                 style={{ animation: reduced ? undefined : 'pulse 2s infinite' }}
               />
             ) : countdown.urgency === 'warning' ? (
-              <AlertTriangle size={18} color="#f59e0b" />
+              <AlertTriangle size={18} color={DS.colors.warning} />
             ) : (
-              <Clock size={18} color="#22c55e" />
+              <Calendar size={18} color={DS.colors.success} />
             )}
             <span
               style={{
-                fontSize: 15,
+                fontSize: DS.fontSize.lg,
                 fontWeight: 700,
                 fontFamily: 'var(--font-mono)',
-                color:
-                  countdown.urgency === 'critical'
-                    ? '#ef4444'
-                    : countdown.urgency === 'warning'
-                    ? '#f59e0b'
-                    : '#22c55e',
+                color: urgencyColor,
               }}
             >
               {countdown.formatted}
@@ -604,11 +1052,11 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
         )}
       </div>
 
-      {/* BOTTOM ROW: Price */}
+      {/* Row 3: Price */}
       <div
         style={{
-          paddingTop: 16,
-          borderTop: '1px solid rgba(255,255,255,0.08)',
+          paddingTop: DS.space.lg,
+          borderTop: `1px solid ${DS.colors.border}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -617,26 +1065,25 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
         <div>
           {order.final_price && order.final_price > 0 ? (
             <>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                {/* Promo discount badge */}
-                {order.promo_code && order.promo_discount && (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: DS.space.sm }}>
+                {order.promo_code && order.promo_discount && order.promo_discount > 0 && (
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 4,
-                      padding: '4px 8px',
-                      borderRadius: 8,
-                      background: 'rgba(34,197,94,0.15)',
-                      border: '1px solid rgba(34,197,94,0.3)',
+                      gap: DS.space.xs,
+                      padding: `${DS.space.xs}px ${DS.space.sm}px`,
+                      borderRadius: DS.radius.sm,
+                      background: colorWithAlpha(DS.colors.success, 0.15),
+                      border: `1px solid ${colorWithAlpha(DS.colors.success, 0.3)}`,
                     }}
                   >
-                    <Sparkles size={12} color="#22c55e" />
+                    <Sparkles size={12} color={DS.colors.success} />
                     <span
                       style={{
-                        fontSize: 11,
+                        fontSize: DS.fontSize.xs,
                         fontWeight: 700,
-                        color: '#22c55e',
+                        color: DS.colors.success,
                         fontFamily: 'var(--font-mono)',
                       }}
                     >
@@ -646,12 +1093,12 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
                 )}
                 <span
                   style={{
-                    fontSize: 26,
+                    fontSize: DS.fontSize['5xl'],
                     fontWeight: 800,
                     fontFamily: 'var(--font-mono)',
                     background: order.promo_code
-                      ? 'linear-gradient(135deg, #22c55e, #4ade80)'
-                      : 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                      ? `linear-gradient(135deg, ${DS.colors.success}, ${DS.colors.successLight})`
+                      : `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                   }}
@@ -659,22 +1106,21 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
                   {formatPrice(order.final_price)} ₽
                 </span>
               </div>
-              {/* Payment status */}
-              {order.paid_amount && order.paid_amount > 0 && (
+              {order.paid_amount !== undefined && order.paid_amount > 0 && (
                 <div
                   style={{
-                    fontSize: 12,
+                    fontSize: DS.fontSize.sm,
                     color:
-                      order.paid_amount >= order.final_price
-                        ? '#22c55e'
-                        : 'rgba(255,255,255,0.5)',
-                    marginTop: 4,
+                      (order.paid_amount || 0) >= order.final_price
+                        ? DS.colors.success
+                        : DS.colors.textMuted,
+                    marginTop: DS.space.xs,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
+                    gap: DS.space.sm,
                   }}
                 >
-                  {order.paid_amount >= order.final_price ? (
+                  {(order.paid_amount || 0) >= order.final_price ? (
                     <>
                       <CheckCircle2 size={12} />
                       Оплачено полностью
@@ -682,16 +1128,16 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
                   ) : (
                     <>
                       Оплачено {formatPrice(order.paid_amount)} ₽ • Осталось{' '}
-                      {formatPrice(order.final_price - order.paid_amount)} ₽
+                      {formatPrice(order.final_price - (order.paid_amount || 0))} ₽
                     </>
                   )}
                 </div>
               )}
             </>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Clock size={18} color="#f59e0b" />
-              <span style={{ fontSize: 15, fontWeight: 600, color: '#f59e0b' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+              <Clock size={18} color={DS.colors.warning} />
+              <span style={{ fontSize: DS.fontSize.lg, fontWeight: 600, color: DS.colors.warning }}>
                 На оценке...
               </span>
             </div>
@@ -707,25 +1153,23 @@ const OrderHeader = memo(function OrderHeader({ order, onBack, reduced }: OrderH
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface ReviewActionsProps {
-  order: Order
+  order: ExtendedOrder
   isConfirming: boolean
-  isRequestingRevision: boolean
   onConfirm: () => void
-  onRevision: () => void
+  onRevisionClick: () => void
   reduced: boolean
 }
 
 const ReviewActions = memo(function ReviewActions({
   order,
   isConfirming,
-  isRequestingRevision,
   onConfirm,
-  onRevision,
+  onRevisionClick,
   reduced,
 }: ReviewActionsProps) {
-  const revisionCount = (order as any).revision_count || 0
-  const maxFreeRevisions = 3
-  const nextRevisionPaid = revisionCount >= maxFreeRevisions
+  const revisionCount = order.revision_count || 0
+  const remainingFree = Math.max(0, CONFIG.MAX_FREE_REVISIONS - revisionCount)
+  const nextRevisionPaid = remainingFree === 0
 
   return (
     <motion.div
@@ -733,220 +1177,161 @@ const ReviewActions = memo(function ReviewActions({
       animate={{ opacity: 1, y: 0 }}
       style={{
         position: 'sticky',
-        top: 16,
+        top: DS.space.lg,
         zIndex: 50,
-        padding: 20,
-        borderRadius: 20,
-        background: 'linear-gradient(145deg, rgba(139,92,246,0.12), rgba(20,20,23,0.98))',
-        border: '1px solid rgba(139,92,246,0.3)',
-        marginBottom: 16,
+        padding: DS.space.xl,
+        borderRadius: DS.radius.xl,
+        background: `linear-gradient(145deg, ${colorWithAlpha(DS.colors.purple, 0.12)}, rgba(20,20,23,0.98))`,
+        border: `1px solid ${colorWithAlpha(DS.colors.purple, 0.3)}`,
+        marginBottom: DS.space.lg,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 16,
-        }}
-      >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md, marginBottom: DS.space.lg }}>
         <div
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            background: 'rgba(139,92,246,0.2)',
+            width: 48,
+            height: 48,
+            borderRadius: DS.radius.md,
+            background: colorWithAlpha(DS.colors.purple, 0.2),
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Eye size={22} color="#8b5cf6" />
+          <Eye size={24} color={DS.colors.purple} />
         </div>
         <div>
           <h3
             style={{
-              fontSize: 16,
+              fontSize: DS.fontSize.xl,
               fontWeight: 700,
-              color: 'var(--text-main)',
+              color: DS.colors.textPrimary,
               margin: 0,
               fontFamily: 'var(--font-serif)',
             }}
           >
             Проверьте работу
           </h3>
-          <p
-            style={{
-              fontSize: 13,
-              color: 'rgba(255,255,255,0.6)',
-              margin: 0,
-            }}
-          >
+          <p style={{ fontSize: DS.fontSize.md, color: DS.colors.textSecondary, margin: 0 }}>
             Скачайте файлы ниже и оцените качество
           </p>
         </div>
       </div>
 
-      {/* Revisions left indicator */}
+      {/* Revisions Info */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          padding: '10px 14px',
-          borderRadius: 12,
+          gap: DS.space.sm,
+          padding: `${DS.space.sm + 2}px ${DS.space.lg}px`,
+          borderRadius: DS.radius.md,
           background: nextRevisionPaid
-            ? 'rgba(245,158,11,0.1)'
-            : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${
-            nextRevisionPaid ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.08)'
-          }`,
-          marginBottom: 16,
+            ? colorWithAlpha(DS.colors.warning, 0.1)
+            : DS.colors.surface,
+          border: `1px solid ${nextRevisionPaid ? colorWithAlpha(DS.colors.warning, 0.25) : DS.colors.border}`,
+          marginBottom: DS.space.lg,
         }}
       >
-        <RefreshCw size={14} color={nextRevisionPaid ? '#f59e0b' : '#8b5cf6'} />
+        <RefreshCw size={14} color={nextRevisionPaid ? DS.colors.warning : DS.colors.purple} />
         <span
           style={{
-            fontSize: 12,
-            color: nextRevisionPaid ? '#f59e0b' : 'rgba(255,255,255,0.6)',
+            fontSize: DS.fontSize.sm,
+            color: nextRevisionPaid ? DS.colors.warning : DS.colors.textSecondary,
           }}
         >
           {nextRevisionPaid
             ? 'Следующая правка будет платной'
-            : `Бесплатных правок: ${maxFreeRevisions - revisionCount} из ${maxFreeRevisions}`}
+            : `Бесплатных правок: ${remainingFree} из ${CONFIG.MAX_FREE_REVISIONS}`}
         </span>
       </div>
 
-      {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: 12 }}>
-        <motion.button
-          whileTap={reduced ? undefined : { scale: 0.97 }}
-          disabled={isConfirming}
+      {/* Buttons */}
+      <div style={{ display: 'flex', gap: DS.space.md }}>
+        <PremiumButton
           onClick={onConfirm}
-          aria-label="Принять работу"
-          style={{
-            flex: 1,
-            padding: 16,
-            borderRadius: 14,
-            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-            border: 'none',
-            color: '#fff',
-            fontSize: 15,
-            fontWeight: 700,
-            cursor: isConfirming ? 'not-allowed' : 'pointer',
-            opacity: isConfirming ? 0.6 : 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            boxShadow: '0 8px 24px -4px rgba(34,197,94,0.4)',
-          }}
+          variant="primary"
+          color={DS.colors.success}
+          disabled={isConfirming}
+          loading={isConfirming}
+          icon={<CheckCircle2 size={18} />}
+          fullWidth
+          reduced={reduced}
+          ariaLabel="Принять работу"
         >
-          {isConfirming ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <CheckCircle2 size={18} />
-          )}
           {isConfirming ? 'Принимаем...' : 'Всё отлично'}
-        </motion.button>
+        </PremiumButton>
 
-        <motion.button
-          whileTap={reduced ? undefined : { scale: 0.97 }}
-          disabled={isRequestingRevision}
-          onClick={onRevision}
-          aria-label="Запросить правки"
-          style={{
-            flex: 1,
-            padding: 16,
-            borderRadius: 14,
-            background: 'rgba(245,158,11,0.1)',
-            border: '1px solid rgba(245,158,11,0.3)',
-            color: '#f59e0b',
-            fontSize: 15,
-            fontWeight: 600,
-            cursor: isRequestingRevision ? 'not-allowed' : 'pointer',
-            opacity: isRequestingRevision ? 0.6 : 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-          }}
+        <PremiumButton
+          onClick={onRevisionClick}
+          variant="secondary"
+          color={DS.colors.warning}
+          icon={<PenTool size={18} />}
+          fullWidth
+          reduced={reduced}
+          ariaLabel="Запросить правки"
         >
-          {isRequestingRevision ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <PenTool size={18} />
-          )}
-          {isRequestingRevision ? 'Отправляем...' : 'Нужны правки'}
-        </motion.button>
+          Нужны правки
+        </PremiumButton>
       </div>
     </motion.div>
   )
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//                              FILES SECTION (SIMPLIFIED)
+//                              FILES SECTION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface FilesSectionProps {
-  order: Order
+  order: ExtendedOrder
   onDownload: () => void
   reduced: boolean
 }
 
-const FilesSection = memo(function FilesSection({
-  order,
-  onDownload,
-  reduced,
-}: FilesSectionProps) {
+const FilesSection = memo(function FilesSection({ order, onDownload, reduced }: FilesSectionProps) {
   const hasFiles = !!order.files_url
   const isCompleted = order.status === 'completed'
-  const accentColor = isCompleted ? '#22c55e' : '#8b5cf6'
+  const accentColor = isCompleted ? DS.colors.success : DS.colors.purple
 
+  // No files yet
   if (!hasFiles) {
     return (
       <div
         style={{
-          padding: 20,
-          borderRadius: 20,
+          padding: DS.space.xl,
+          borderRadius: DS.radius.xl,
           background: 'linear-gradient(145deg, rgba(28,28,32,0.95), rgba(18,18,22,0.98))',
-          border: '1px solid rgba(255,255,255,0.08)',
-          marginBottom: 16,
+          border: `1px solid ${DS.colors.border}`,
+          marginBottom: DS.space.lg,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.lg }}>
           <div
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
+              width: 52,
+              height: 52,
+              borderRadius: DS.radius.md,
               background: 'rgba(107,114,128,0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <FileText size={22} color="#6b7280" />
+            <FileText size={24} color="#6b7280" />
           </div>
           <div>
-            <h3
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: 'var(--text-main)',
-                margin: 0,
-              }}
-            >
+            <h3 style={{ fontSize: DS.fontSize.lg, fontWeight: 600, color: DS.colors.textPrimary, margin: 0 }}>
               Файлы заказа
             </h3>
             <p
               style={{
-                fontSize: 13,
-                color: 'rgba(255,255,255,0.5)',
+                fontSize: DS.fontSize.md,
+                color: DS.colors.textMuted,
                 margin: 0,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: DS.space.sm,
               }}
             >
               <Clock size={12} />
@@ -958,46 +1343,57 @@ const FilesSection = memo(function FilesSection({
     )
   }
 
+  const handleDownload = () => {
+    if (!order.files_url) return
+    try {
+      window.open(order.files_url, '_blank', 'noopener,noreferrer')
+      onDownload()
+    } catch (err) {
+      console.error('[FilesSection] Failed to open files:', err)
+    }
+  }
+
   return (
     <motion.div
       initial={reduced ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        padding: 20,
-        borderRadius: 20,
-        background: `linear-gradient(145deg, ${accentColor}12, rgba(20,20,23,0.98))`,
-        border: `1px solid ${accentColor}30`,
-        marginBottom: 16,
+        padding: DS.space.xl,
+        borderRadius: DS.radius.xl,
+        background: `linear-gradient(145deg, ${colorWithAlpha(accentColor, 0.08)}, rgba(20,20,23,0.98))`,
+        border: `1px solid ${colorWithAlpha(accentColor, 0.25)}`,
+        marginBottom: DS.space.lg,
       }}
     >
+      {/* Header */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 16,
+          marginBottom: DS.space.lg,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.lg }}>
           <div
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              background: `${accentColor}20`,
+              width: 52,
+              height: 52,
+              borderRadius: DS.radius.md,
+              background: colorWithAlpha(accentColor, 0.2),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <FileText size={22} color={accentColor} />
+            <FileText size={24} color={accentColor} />
           </div>
           <div>
             <h3
               style={{
-                fontSize: 16,
+                fontSize: DS.fontSize.xl,
                 fontWeight: 700,
-                color: 'var(--text-main)',
+                color: DS.colors.textPrimary,
                 margin: 0,
                 fontFamily: 'var(--font-serif)',
               }}
@@ -1006,15 +1402,15 @@ const FilesSection = memo(function FilesSection({
             </h3>
             <p
               style={{
-                fontSize: 13,
+                fontSize: DS.fontSize.md,
                 color: accentColor,
                 margin: 0,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: DS.space.sm,
               }}
             >
-              <CheckCircle2 size={12} />
+              <CheckCircle2 size={14} />
               {isCompleted ? 'Заказ успешно выполнен' : 'Скачайте и проверьте'}
             </p>
           </div>
@@ -1022,72 +1418,52 @@ const FilesSection = memo(function FilesSection({
         {isCompleted && (
           <div
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #D4AF37, #B38728)',
+              width: 40,
+              height: 40,
+              borderRadius: DS.radius.sm + 2,
+              background: `linear-gradient(135deg, ${DS.colors.gold}, ${DS.colors.goldDark})`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Star size={18} color="#0a0a0c" fill="#0a0a0c" />
+            <Star size={20} color="#0a0a0c" fill="#0a0a0c" />
           </div>
         )}
       </div>
 
-      <motion.button
-        whileTap={reduced ? undefined : { scale: 0.98 }}
-        onClick={() => {
-          if (order.files_url) {
-            window.open(order.files_url, '_blank')
-            onDownload()
-          }
-        }}
-        style={{
-          width: '100%',
-          padding: 16,
-          borderRadius: 14,
-          background: `linear-gradient(135deg, ${accentColor}, ${
-            isCompleted ? '#16a34a' : '#7c3aed'
-          })`,
-          border: 'none',
-          color: '#fff',
-          fontSize: 15,
-          fontWeight: 700,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 10,
-          boxShadow: `0 8px 24px -4px ${accentColor}40`,
-        }}
+      {/* Download Button */}
+      <PremiumButton
+        onClick={handleDownload}
+        variant="primary"
+        color={accentColor}
+        icon={<Download size={18} />}
+        fullWidth
+        reduced={reduced}
+        ariaLabel="Скачать файлы работы"
       >
-        <Download size={18} />
         Скачать файлы
-        <ExternalLink size={14} style={{ opacity: 0.7 }} />
-      </motion.button>
+        <ExternalLink size={14} style={{ opacity: 0.7, marginLeft: DS.space.xs }} />
+      </PremiumButton>
 
-      {/* Quality indicators - compact version */}
+      {/* Quality Badges */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'center',
-          gap: 16,
-          marginTop: 14,
-          paddingTop: 14,
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          gap: DS.space.xl,
+          marginTop: DS.space.lg,
+          paddingTop: DS.space.lg,
+          borderTop: `1px solid ${DS.colors.border}`,
         }}
       >
         {[
           { icon: Shield, label: 'Проверено' },
           { icon: CheckCircle2, label: 'По ГОСТ' },
         ].map((badge, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <badge.icon size={12} color="rgba(255,255,255,0.4)" />
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-              {badge.label}
-            </span>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+            <badge.icon size={14} color={DS.colors.textMuted} />
+            <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted }}>{badge.label}</span>
           </div>
         ))}
       </div>
@@ -1096,177 +1472,200 @@ const FilesSection = memo(function FilesSection({
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//                              GUARANTEES SECTION (COLLAPSED)
+//                              CHAT BUTTON
 // ═══════════════════════════════════════════════════════════════════════════════
 
-interface GuaranteesSectionProps {
-  order: Order
+interface ChatButtonProps {
+  unreadCount: number
+  onClick: () => void
   reduced: boolean
 }
 
-const GuaranteesSection = memo(function GuaranteesSection({
-  order,
-  reduced,
-}: GuaranteesSectionProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const revisionCount = (order as any).revision_count || 0
-  const finalPrice = order.final_price || order.price || 0
-  const cashbackPercent = 5
-  const cashbackAmount = Math.floor(finalPrice * (cashbackPercent / 100))
-
+const ChatButton = memo(function ChatButton({ unreadCount, onClick, reduced }: ChatButtonProps) {
   return (
-    <div
+    <motion.button
+      whileTap={reduced ? undefined : { scale: 0.98 }}
+      onClick={onClick}
       style={{
-        borderRadius: 16,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        marginBottom: 16,
-        overflow: 'hidden',
+        width: '100%',
+        padding: DS.space.xl - 2,
+        borderRadius: DS.radius.xl - 2,
+        background: 'linear-gradient(145deg, rgba(25,25,30,0.95), rgba(30,30,35,0.9))',
+        border: `1px solid ${colorWithAlpha(DS.colors.gold, 0.25)}`,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: DS.space.lg,
       }}
     >
-      <motion.button
-        whileTap={reduced ? undefined : { scale: 0.99 }}
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          width: '100%',
-          padding: '14px 18px',
-          background: 'transparent',
-          border: 'none',
-          color: 'var(--text-secondary)',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Shield size={14} color="#D4AF37" />
-          Гарантии и бонусы
-        </span>
-        {isOpen ? (
-          <ChevronUp size={16} color="rgba(255,255,255,0.4)" />
-        ) : (
-          <ChevronDown size={16} color="rgba(255,255,255,0.4)" />
-        )}
-      </motion.button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{ padding: '0 18px 18px' }}>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {/* 30 days guarantee */}
-                <div
-                  style={{
-                    flex: '1 1 140px',
-                    padding: 14,
-                    borderRadius: 14,
-                    background: 'rgba(34,197,94,0.08)',
-                    border: '1px solid rgba(34,197,94,0.2)',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: '#22c55e',
-                      marginBottom: 4,
-                    }}
-                  >
-                    30 дней
-                  </div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                    гарантии на правки
-                  </div>
-                </div>
-
-                {/* Revisions */}
-                <div
-                  style={{
-                    flex: '1 1 140px',
-                    padding: 14,
-                    borderRadius: 14,
-                    background: 'rgba(139,92,246,0.08)',
-                    border: '1px solid rgba(139,92,246,0.2)',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: '#8b5cf6',
-                      marginBottom: 4,
-                    }}
-                  >
-                    {3 - revisionCount > 0 ? 3 - revisionCount : 0} / 3
-                  </div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                    бесплатных правок
-                  </div>
-                </div>
-
-                {/* Cashback */}
-                {finalPrice > 0 && (
-                  <div
-                    style={{
-                      flex: '1 1 100%',
-                      padding: 14,
-                      borderRadius: 14,
-                      background: 'rgba(212,175,55,0.08)',
-                      border: '1px solid rgba(212,175,55,0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#D4AF37' }}>
-                        Кэшбэк {cashbackPercent}%
-                      </div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                        после завершения заказа
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        color: '#D4AF37',
-                        fontFamily: 'var(--font-mono)',
-                      }}
-                    >
-                      +{formatPrice(cashbackAmount)} ₽
-                    </div>
-                  </div>
-                )}
-              </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.lg }}>
+        <div
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: DS.radius.md,
+            background: `linear-gradient(135deg, ${DS.colors.gold}, ${DS.colors.goldDark})`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+          }}
+        >
+          <MessageCircle size={24} color="#050505" />
+          {unreadCount > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                minWidth: 20,
+                height: 20,
+                borderRadius: DS.radius.full,
+                background: DS.colors.error,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: DS.fontSize.xs,
+                fontWeight: 700,
+                color: DS.colors.white,
+                padding: `0 ${DS.space.xs}px`,
+              }}
+            >
+              {unreadCount > 9 ? '9+' : unreadCount}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </div>
+        <div style={{ textAlign: 'left' }}>
+          <div
+            style={{
+              fontSize: DS.fontSize.lg,
+              fontWeight: 700,
+              color: DS.colors.textPrimary,
+              fontFamily: 'var(--font-serif)',
+            }}
+          >
+            Написать менеджеру
+          </div>
+          <div
+            style={{
+              fontSize: DS.fontSize.sm,
+              color: unreadCount > 0 ? DS.colors.success : colorWithAlpha(DS.colors.gold, 0.7),
+              display: 'flex',
+              alignItems: 'center',
+              gap: DS.space.sm,
+            }}
+          >
+            {unreadCount > 0 ? (
+              <span style={{ fontWeight: 600 }}>{unreadCount} новых сообщений</span>
+            ) : (
+              <>
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: DS.colors.success,
+                  }}
+                />
+                Онлайн • Отвечаем быстро
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <ChevronDown size={20} color={DS.colors.textMuted} style={{ transform: 'rotate(-90deg)' }} />
+    </motion.button>
   )
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//                              TIMELINE (COMPACT)
+//                              GUARANTEES SECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface GuaranteesSectionProps {
+  order: ExtendedOrder
+  reduced: boolean
+}
+
+const GuaranteesSection = memo(function GuaranteesSection({ order, reduced }: GuaranteesSectionProps) {
+  const revisionCount = order.revision_count || 0
+  const remainingFree = Math.max(0, CONFIG.MAX_FREE_REVISIONS - revisionCount)
+  const finalPrice = order.final_price || order.price || 0
+  const cashbackAmount = Math.floor(finalPrice * (CONFIG.CASHBACK_PERCENT / 100))
+
+  return (
+    <CollapsibleSection
+      title="Гарантии и бонусы"
+      icon={<Shield size={14} />}
+      iconColor={DS.colors.gold}
+      reduced={reduced}
+    >
+      <div style={{ display: 'flex', gap: DS.space.md, flexWrap: 'wrap' }}>
+        <InfoCard value="30 дней" label="гарантии на правки" color={DS.colors.success} />
+        <InfoCard
+          value={`${remainingFree} / ${CONFIG.MAX_FREE_REVISIONS}`}
+          label="бесплатных правок"
+          color={DS.colors.purple}
+        />
+        {finalPrice > 0 && (
+          <div
+            style={{
+              flex: '1 1 100%',
+              padding: DS.space.lg,
+              borderRadius: DS.radius.md,
+              background: colorWithAlpha(DS.colors.gold, 0.08),
+              border: `1px solid ${colorWithAlpha(DS.colors.gold, 0.2)}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: DS.fontSize.md,
+                  fontWeight: 600,
+                  color: DS.colors.gold,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: DS.space.sm,
+                }}
+              >
+                <Gift size={14} />
+                Кэшбэк {CONFIG.CASHBACK_PERCENT}%
+              </div>
+              <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted }}>
+                после завершения заказа
+              </div>
+            </div>
+            <div
+              style={{
+                fontSize: DS.fontSize.xl,
+                fontWeight: 700,
+                color: DS.colors.gold,
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              +{formatPrice(cashbackAmount)} ₽
+            </div>
+          </div>
+        )}
+      </div>
+    </CollapsibleSection>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              TIMELINE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface TimelineProps {
-  order: Order
+  order: ExtendedOrder
   reduced: boolean
 }
 
 const Timeline = memo(function Timeline({ order, reduced }: TimelineProps) {
-  const [isOpen, setIsOpen] = useState(false)
   const isCancelled = ['cancelled', 'rejected'].includes(order.status)
 
   const steps = [
@@ -1279,9 +1678,7 @@ const Timeline = memo(function Timeline({ order, reduced }: TimelineProps) {
     {
       key: 'paid',
       label: 'Оплачен',
-      done: ['paid', 'paid_full', 'in_progress', 'revision', 'review', 'completed'].includes(
-        order.status
-      ),
+      done: ['paid', 'paid_full', 'in_progress', 'revision', 'review', 'completed'].includes(order.status),
     },
     {
       key: 'in_progress',
@@ -1300,274 +1697,110 @@ const Timeline = memo(function Timeline({ order, reduced }: TimelineProps) {
   const progress = ((currentStep === -1 ? steps.length : currentStep) / steps.length) * 100
 
   return (
-    <div
-      style={{
-        borderRadius: 16,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        marginBottom: 16,
-        overflow: 'hidden',
-      }}
+    <CollapsibleSection
+      title="История заказа"
+      subtitle={`• создан ${formatRelativeDate(order.created_at)}`}
+      icon={<Clock size={14} />}
+      iconColor={DS.colors.gold}
+      reduced={reduced}
     >
-      <motion.button
-        whileTap={reduced ? undefined : { scale: 0.99 }}
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          width: '100%',
-          padding: '14px 18px',
-          background: 'transparent',
-          border: 'none',
-          color: 'var(--text-secondary)',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Clock size={14} color="#D4AF37" />
-          История заказа
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-            • создан {formatRelativeDate(order.created_at)}
-          </span>
-        </span>
-        {isOpen ? (
-          <ChevronUp size={16} color="rgba(255,255,255,0.4)" />
-        ) : (
-          <ChevronDown size={16} color="rgba(255,255,255,0.4)" />
-        )}
-      </motion.button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{ padding: '0 18px 18px' }}>
-              {isCancelled ? (
-                <div
-                  style={{
-                    padding: 16,
-                    borderRadius: 12,
-                    background: 'rgba(239,68,68,0.1)',
-                    border: '1px solid rgba(239,68,68,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                  }}
-                >
-                  <XCircle size={20} color="#ef4444" />
-                  <span style={{ fontSize: 14, color: '#ef4444' }}>
-                    Заказ {order.status === 'cancelled' ? 'отменён' : 'отклонён'}
-                  </span>
-                </div>
-              ) : (
-                <div style={{ position: 'relative' }}>
-                  {/* Progress bar */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: 11,
-                      top: 0,
-                      bottom: 0,
-                      width: 2,
-                      background: 'rgba(255,255,255,0.1)',
-                      borderRadius: 1,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '100%',
-                        height: `${progress}%`,
-                        background: 'linear-gradient(180deg, #D4AF37, #22c55e)',
-                        borderRadius: 1,
-                        transition: 'height 0.3s ease',
-                      }}
-                    />
-                  </div>
-
-                  {/* Steps */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {steps.map((step, i) => {
-                      const isCurrent = !step.done && (i === 0 || steps[i - 1].done)
-                      return (
-                        <div
-                          key={step.key}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: '8px 0',
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: 12,
-                              background: step.done
-                                ? '#22c55e'
-                                : isCurrent
-                                ? '#D4AF37'
-                                : 'rgba(255,255,255,0.1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                              position: 'relative',
-                              zIndex: 1,
-                            }}
-                          >
-                            {step.done && <CheckCircle2 size={12} color="#fff" />}
-                          </div>
-                          <span
-                            style={{
-                              fontSize: 13,
-                              color: step.done
-                                ? 'var(--text-main)'
-                                : isCurrent
-                                ? '#D4AF37'
-                                : 'rgba(255,255,255,0.4)',
-                              fontWeight: isCurrent ? 600 : 400,
-                            }}
-                          >
-                            {step.label}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-})
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//                              CHAT BUTTON
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface ChatButtonProps {
-  orderId: number
-  unreadCount: number
-  onClick: () => void
-  reduced: boolean
-}
-
-const ChatButton = memo(function ChatButton({
-  orderId,
-  unreadCount,
-  onClick,
-  reduced,
-}: ChatButtonProps) {
-  return (
-    <motion.button
-      whileTap={reduced ? undefined : { scale: 0.98 }}
-      onClick={onClick}
-      style={{
-        width: '100%',
-        padding: 18,
-        borderRadius: 18,
-        background: 'linear-gradient(145deg, rgba(25,25,30,0.95), rgba(30,30,35,0.9))',
-        border: '1px solid rgba(212,175,55,0.25)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      {isCancelled ? (
         <div
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 14,
-            background: 'linear-gradient(135deg, #D4AF37, #B38728)',
+            padding: DS.space.lg,
+            borderRadius: DS.radius.md,
+            background: colorWithAlpha(DS.colors.error, 0.1),
+            border: `1px solid ${colorWithAlpha(DS.colors.error, 0.2)}`,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
+            gap: DS.space.md,
           }}
         >
-          <MessageCircle size={22} color="#050505" />
-          {unreadCount > 0 && (
+          <XCircle size={20} color={DS.colors.error} />
+          <span style={{ fontSize: DS.fontSize.base, color: DS.colors.error }}>
+            Заказ {order.status === 'cancelled' ? 'отменён' : 'отклонён'}
+          </span>
+        </div>
+      ) : (
+        <div style={{ position: 'relative' }}>
+          {/* Progress Line */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 11,
+              top: 0,
+              bottom: 0,
+              width: 2,
+              background: colorWithAlpha(DS.colors.white, 0.1),
+              borderRadius: 1,
+            }}
+          >
             <div
               style={{
-                position: 'absolute',
-                top: -4,
-                right: -4,
-                minWidth: 18,
-                height: 18,
-                borderRadius: 9,
-                background: '#ef4444',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontWeight: 700,
-                color: '#fff',
-                padding: '0 4px',
+                width: '100%',
+                height: `${progress}%`,
+                background: `linear-gradient(180deg, ${DS.colors.gold}, ${DS.colors.success})`,
+                borderRadius: 1,
+                transition: 'height 0.3s ease',
               }}
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </div>
-          )}
-        </div>
-        <div style={{ textAlign: 'left' }}>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: 'var(--text-main)',
-              fontFamily: 'var(--font-serif)',
-            }}
-          >
-            Написать менеджеру
+            />
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: unreadCount > 0 ? '#22c55e' : 'rgba(212,175,55,0.7)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            {unreadCount > 0 ? (
-              <span style={{ fontWeight: 600 }}>{unreadCount} новых сообщений</span>
-            ) : (
-              <>
-                <span
+
+          {/* Steps */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: DS.space.sm }}>
+            {steps.map((step, i) => {
+              const isCurrent = !step.done && (i === 0 || steps[i - 1].done)
+              return (
+                <div
+                  key={step.key}
                   style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: '#22c55e',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: DS.space.md,
+                    padding: `${DS.space.sm}px 0`,
                   }}
-                />
-                Онлайн • Отвечаем быстро
-              </>
-            )}
+                >
+                  <div
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: DS.radius.full,
+                      background: step.done
+                        ? DS.colors.success
+                        : isCurrent
+                        ? DS.colors.gold
+                        : colorWithAlpha(DS.colors.white, 0.1),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      position: 'relative',
+                      zIndex: 1,
+                    }}
+                  >
+                    {step.done && <CheckCircle2 size={12} color={DS.colors.white} />}
+                    {isCurrent && <Zap size={10} color="#0a0a0c" />}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: DS.fontSize.md,
+                      color: step.done
+                        ? DS.colors.textPrimary
+                        : isCurrent
+                        ? DS.colors.gold
+                        : DS.colors.textMuted,
+                      fontWeight: isCurrent ? 600 : 400,
+                    }}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
-      </div>
-      <ChevronDown
-        size={20}
-        color="rgba(255,255,255,0.4)"
-        style={{ transform: 'rotate(-90deg)' }}
-      />
-    </motion.button>
+      )}
+    </CollapsibleSection>
   )
 })
 
@@ -1582,28 +1815,9 @@ interface ReorderButtonProps {
 
 const ReorderButton = memo(function ReorderButton({ onClick, reduced }: ReorderButtonProps) {
   return (
-    <motion.button
-      whileTap={reduced ? undefined : { scale: 0.98 }}
-      onClick={onClick}
-      style={{
-        width: '100%',
-        padding: 14,
-        borderRadius: 14,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        marginBottom: 16,
-      }}
-    >
-      <RefreshCw size={16} color="rgba(255,255,255,0.6)" />
-      <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>
-        Заказать похожую работу
-      </span>
-    </motion.button>
+    <PremiumButton onClick={onClick} variant="ghost" icon={<RefreshCw size={16} />} fullWidth reduced={reduced}>
+      Заказать похожую работу
+    </PremiumButton>
   )
 })
 
@@ -1617,16 +1831,20 @@ export function OrderDetailPage() {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
   const reducedMotion = useReducedMotion()
 
-  const [order, setOrder] = useState<Order | null>(null)
+  // State
+  const [order, setOrder] = useState<ExtendedOrder | null>(null)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
   const [isConfirming, setIsConfirming] = useState(false)
   const [isRequestingRevision, setIsRequestingRevision] = useState(false)
+  const [revisionModalOpen, setRevisionModalOpen] = useState(false)
+
   const { addMessageHandler } = useWebSocketContext()
   const chatRef = useRef<PremiumChatHandle>(null)
 
+  // Safe haptic feedback
   const safeHaptic = useCallback(
     (type: 'light' | 'medium' | 'heavy' = 'light') => {
       try {
@@ -1654,9 +1872,11 @@ export function OrderDetailPage() {
     }
   }, [hapticError])
 
+  // Parse and validate order ID
   const orderId = id ? parseInt(id, 10) : NaN
   const isValidOrderId = !isNaN(orderId) && orderId > 0
 
+  // Load order data
   const loadOrder = useCallback(async () => {
     if (!isValidOrderId) {
       setLoadError('Некорректный ID заказа')
@@ -1666,11 +1886,12 @@ export function OrderDetailPage() {
     setLoadError(null)
     try {
       const data = await fetchOrderDetail(orderId)
-      setOrder(data)
+      setOrder(data as ExtendedOrder)
       if (data.payment_scheme) setPaymentScheme(data.payment_scheme as 'full' | 'half')
 
       // Load payment info if needed
       if (
+        data.final_price &&
         data.final_price > 0 &&
         (data.paid_amount || 0) < data.final_price &&
         ['confirmed', 'waiting_payment', 'paid'].includes(data.status)
@@ -1697,8 +1918,15 @@ export function OrderDetailPage() {
   useEffect(() => {
     if (!isValidOrderId) return
     const unsubscribe = addMessageHandler((message) => {
-      const msgOrderId = (message as any).order_id
-      if (msgOrderId && msgOrderId === orderId) {
+      // Type-safe comparison: convert both to numbers
+      const msgOrderId =
+        typeof (message as { order_id?: unknown }).order_id === 'number'
+          ? (message as { order_id: number }).order_id
+          : typeof (message as { order_id?: unknown }).order_id === 'string'
+          ? parseInt((message as { order_id: string }).order_id, 10)
+          : null
+
+      if (msgOrderId !== null && msgOrderId === orderId) {
         if (message.type === 'order_update') loadOrder()
       }
       if (message.type === 'refresh') loadOrder()
@@ -1717,16 +1945,6 @@ export function OrderDetailPage() {
     chatRef.current?.open()
   }, [safeHaptic])
 
-  const scrollToPayment = useCallback(() => {
-    safeHaptic('light')
-    document.getElementById('payment-section')?.scrollIntoView({ behavior: 'smooth' })
-  }, [safeHaptic])
-
-  const scrollToReview = useCallback(() => {
-    safeHaptic('light')
-    document.getElementById('review-section')?.scrollIntoView({ behavior: 'smooth' })
-  }, [safeHaptic])
-
   const handleConfirmCompletion = useCallback(async () => {
     if (isConfirming || !order) return
     setIsConfirming(true)
@@ -1740,30 +1958,44 @@ export function OrderDetailPage() {
       safeHapticError()
       const errorMessage =
         err instanceof Error ? err.message : 'Ошибка подтверждения. Попробуйте позже.'
-      window.Telegram?.WebApp?.showAlert?.(errorMessage)
+      try {
+        window.Telegram?.WebApp?.showAlert?.(errorMessage)
+      } catch {
+        alert(errorMessage)
+      }
     } finally {
       setIsConfirming(false)
     }
   }, [order, isConfirming, safeHaptic, safeHapticSuccess, safeHapticError])
 
-  const handleRequestRevision = useCallback(async () => {
-    if (isRequestingRevision || !order) return
-    setIsRequestingRevision(true)
-    safeHaptic('light')
-    try {
-      await requestRevision(order.id, '')
-      setOrder((prev) => (prev ? { ...prev, status: 'revision' } : null))
-      openChat()
-    } catch (err) {
-      console.error('[OrderDetail] Failed to request revision:', err)
-      safeHapticError()
-      const errorMessage =
-        err instanceof Error ? err.message : 'Ошибка запроса правок. Попробуйте позже.'
-      window.Telegram?.WebApp?.showAlert?.(errorMessage)
-    } finally {
-      setIsRequestingRevision(false)
-    }
-  }, [order, isRequestingRevision, safeHaptic, safeHapticError, openChat])
+  const handleRevisionSubmit = useCallback(
+    async (comment: string) => {
+      if (isRequestingRevision || !order) return
+      setIsRequestingRevision(true)
+      safeHaptic('light')
+      try {
+        await requestRevision(order.id, comment)
+        setOrder((prev) => (prev ? { ...prev, status: 'revision' } : null))
+        setRevisionModalOpen(false)
+        safeHapticSuccess()
+        // Open chat so user can continue discussion
+        setTimeout(() => openChat(), 300)
+      } catch (err) {
+        console.error('[OrderDetail] Failed to request revision:', err)
+        safeHapticError()
+        const errorMessage =
+          err instanceof Error ? err.message : 'Ошибка запроса правок. Попробуйте позже.'
+        try {
+          window.Telegram?.WebApp?.showAlert?.(errorMessage)
+        } catch {
+          alert(errorMessage)
+        }
+      } finally {
+        setIsRequestingRevision(false)
+      }
+    },
+    [order, isRequestingRevision, safeHaptic, safeHapticSuccess, safeHapticError, openChat]
+  )
 
   const handleReorder = useCallback(() => {
     if (!order) return
@@ -1784,14 +2016,17 @@ export function OrderDetailPage() {
     return (
       <div
         className="premium-club-page"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: DS.space.lg }}
       >
         <motion.div
           animate={reducedMotion ? undefined : { rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         >
-          <Loader2 size={32} className="text-gold" />
+          <Loader2 size={36} color={DS.colors.gold} />
         </motion.div>
+        <span style={{ fontSize: DS.fontSize.base, color: DS.colors.textSecondary }}>
+          Загружаем заказ...
+        </span>
       </div>
     )
   }
@@ -1806,56 +2041,45 @@ export function OrderDetailPage() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 24,
-          gap: 20,
+          padding: DS.space['2xl'],
+          gap: DS.space.xl,
         }}
       >
         <div
           style={{
             width: 80,
             height: 80,
-            borderRadius: 20,
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.2)',
+            borderRadius: DS.radius.xl,
+            background: colorWithAlpha(DS.colors.error, 0.1),
+            border: `1px solid ${colorWithAlpha(DS.colors.error, 0.2)}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <XCircle size={40} color="#ef4444" />
+          <XCircle size={40} color={DS.colors.error} />
         </div>
         <p
           style={{
-            fontSize: 18,
+            fontSize: DS.fontSize['2xl'],
             fontWeight: 600,
-            color: 'var(--text-main)',
+            color: DS.colors.textPrimary,
             textAlign: 'center',
+            margin: 0,
           }}
         >
           {loadError || 'Заказ не найден'}
         </p>
-        <motion.button
-          whileTap={reducedMotion ? undefined : { scale: 0.95 }}
-          onClick={handleBack}
-          style={{
-            padding: '14px 28px',
-            borderRadius: 14,
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: 'var(--text-main)',
-            fontSize: 15,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
+        <PremiumButton onClick={handleBack} variant="ghost" reduced={reducedMotion}>
           Назад к заказам
-        </motion.button>
+        </PremiumButton>
       </div>
     )
   }
 
-  // Computed values
+  // Computed
   const showPaymentUI =
+    order.final_price &&
     order.final_price > 0 &&
     (order.paid_amount || 0) < order.final_price &&
     !['completed', 'cancelled', 'rejected'].includes(order.status) &&
@@ -1866,7 +2090,7 @@ export function OrderDetailPage() {
 
   return (
     <div className="premium-club-page">
-      {/* Minimal background - no particles */}
+      {/* Subtle background gradient */}
       <div
         style={{
           position: 'absolute',
@@ -1874,24 +2098,22 @@ export function OrderDetailPage() {
           left: 0,
           right: 0,
           height: 300,
-          background:
-            'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,175,55,0.08) 0%, transparent 70%)',
+          background: `radial-gradient(ellipse 80% 50% at 50% 0%, ${colorWithAlpha(DS.colors.gold, 0.08)} 0%, transparent 70%)`,
           pointerEvents: 'none',
         }}
       />
 
       <div className="club-content" style={{ paddingBottom: 40, position: 'relative', zIndex: 1 }}>
-        {/* 1. Compact Header */}
+        {/* 1. Header */}
         <OrderHeader order={order} onBack={handleBack} reduced={reducedMotion} />
 
-        {/* 2. Review Actions (STICKY - only for review status) */}
+        {/* 2. Review Actions (sticky) */}
         {isReview && (
           <ReviewActions
             order={order}
             isConfirming={isConfirming}
-            isRequestingRevision={isRequestingRevision}
             onConfirm={handleConfirmCompletion}
-            onRevision={handleRequestRevision}
+            onRevisionClick={() => setRevisionModalOpen(true)}
             reduced={reducedMotion}
           />
         )}
@@ -1913,7 +2135,7 @@ export function OrderDetailPage() {
         {/* 4. Files Section */}
         <FilesSection order={order} onDownload={() => safeHaptic('medium')} reduced={reducedMotion} />
 
-        {/* 5. Review Section (for completed orders) */}
+        {/* 5. Review Section */}
         {isCompleted && !order.review_submitted && (
           <div id="review-section">
             <ReviewSection
@@ -1925,31 +2147,36 @@ export function OrderDetailPage() {
         )}
 
         {/* 6. Chat Button */}
-        {!isCancelled && (
-          <ChatButton orderId={order.id} unreadCount={0} onClick={openChat} reduced={reducedMotion} />
-        )}
+        {!isCancelled && <ChatButton unreadCount={0} onClick={openChat} reduced={reducedMotion} />}
 
-        {/* 7. Guarantees (Collapsed) */}
+        {/* 7. Guarantees */}
         <GuaranteesSection order={order} reduced={reducedMotion} />
 
-        {/* 8. Timeline (Collapsed) */}
+        {/* 8. Timeline */}
         <Timeline order={order} reduced={reducedMotion} />
 
-        {/* 9. Reorder Button (for completed/cancelled) */}
-        {(isCompleted || isCancelled) && (
-          <ReorderButton onClick={handleReorder} reduced={reducedMotion} />
-        )}
+        {/* 9. Reorder Button */}
+        {(isCompleted || isCancelled) && <ReorderButton onClick={handleReorder} reduced={reducedMotion} />}
 
         {/* 10. Chat Component */}
         <PremiumChat ref={chatRef} orderId={order.id} />
       </div>
+
+      {/* Revision Modal */}
+      <RevisionModal
+        isOpen={revisionModalOpen}
+        onClose={() => setRevisionModalOpen(false)}
+        onSubmit={handleRevisionSubmit}
+        isLoading={isRequestingRevision}
+        reduced={reducedMotion}
+      />
     </div>
   )
 }
 
-// CSS keyframes for pulse animation (injected once)
+// CSS keyframes (injected once)
 if (typeof document !== 'undefined') {
-  const styleId = 'order-detail-animations'
+  const styleId = 'order-detail-v7-animations'
   if (!document.getElementById(styleId)) {
     const style = document.createElement('style')
     style.id = styleId
