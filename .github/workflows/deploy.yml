@@ -17,38 +17,64 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Use a safer relative path (home directory)
+            set -e  # Exit on any error
+
+            echo "=== Starting deploy at $(date) ==="
+
+            # Navigate to project directory
             cd ~/academic_saloon || git clone https://github.com/soloveyska1/academic_saloon.git ~/academic_saloon
             cd ~/academic_saloon
 
-            echo "=== Starting deploy ==="
             echo "Current commit: $(git rev-parse --short HEAD)"
 
-            # Update code
+            # Update code from GitHub
             git fetch --all --prune
             git checkout main
             git reset --hard origin/main
 
-            echo "After reset commit: $(git rev-parse --short HEAD)"
+            echo "Updated to commit: $(git rev-parse --short HEAD)"
 
-            # Create .env file from secrets if needed, or assume it's there. 
-            # Ideally, we should inject secrets here, but for now we rely on the file existing.
-            # If you want to inject secrets:
-            # echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" > .env
-            # echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
-            # ... and so on.
+            # ============================================
+            # BACKEND: Restart the bot service
+            # ============================================
+            echo "=== Restarting bot service ==="
 
-            # Stop legacy systemd service if it exists to free up port 8000
+            # Kill any orphan python processes on port 8000
+            fuser -k 8000/tcp 2>/dev/null || true
+            sleep 2
+
+            # Restart systemd service
+            systemctl restart saloon-bot
+            sleep 3
+
+            # Verify bot is running
             if systemctl is-active --quiet saloon-bot; then
-                echo "Stopping legacy systemd service..."
-                systemctl stop saloon-bot || true
-                systemctl disable saloon-bot || true
+                echo "✅ Bot service is running"
+            else
+                echo "❌ Bot service failed to start"
+                journalctl -u saloon-bot --no-pager -n 20
+                exit 1
             fi
 
-            # Start Docker containers
-            docker compose up -d --build
+            # ============================================
+            # FRONTEND: Build and deploy mini-app
+            # ============================================
+            echo "=== Building mini-app ==="
+            cd ~/academic_saloon/mini-app
 
-            # Prune unused images to save space
-            docker image prune -f
+            # Install dependencies and build
+            npm ci --prefer-offline
+            npm run build
 
-            echo "=== Deploy completed at $(date) ==="
+            # Deploy to web directory
+            echo "=== Deploying mini-app to /var/www ==="
+            rm -rf /var/www/academic_saloon/dist/*
+            cp -r dist/* /var/www/academic_saloon/dist/
+            chown -R www-data:www-data /var/www/academic_saloon/dist/
+
+            # Reload nginx to clear any cache
+            nginx -t && systemctl reload nginx
+
+            echo "✅ Mini-app deployed: $(ls /var/www/academic_saloon/dist/assets/index-*.js)"
+
+            echo "=== Deploy completed successfully at $(date) ==="
