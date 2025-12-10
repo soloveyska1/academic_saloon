@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     OFFER_URL: str = "https://telegra.ph/Bolshoj-Kodeks-Akademicheskogo-Saluna-11-30"  # Юридическая оферта
 
     # Mini App URL (Web App для Telegram)
-    WEBAPP_URL: str = "https://academic-saloon.duckdns.org"
+    # Hosted on Vercel with auto-deploy on push to main
+    WEBAPP_URL: str = "https://academic-saloon.vercel.app"
 
     # Реквизиты для оплаты (ручной перевод) — из .env
     PAYMENT_PHONE: str  # Номер для СБП
