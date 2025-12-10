@@ -1,0 +1,91 @@
+name: Auto-Merge Claude Branches
+
+# Автоматически мержит ветки claude/* в main
+# Это позволяет Claude Code работать автономно - пушить в свои ветки,
+# которые автоматически попадают в main и деплоятся
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to merge (leave empty for current)'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge to main
+        run: |
+          set -e
+
+          # Get branch name
+          if [ -n "${{ github.event.inputs.branch }}" ]; then
+            BRANCH="${{ github.event.inputs.branch }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+          fi
+
+          echo "🔀 Merging branch: $BRANCH → main"
+
+          # Fetch all branches
+          git fetch origin main
+          git fetch origin "$BRANCH"
+
+          # Checkout main and merge
+          git checkout main
+          git merge "origin/$BRANCH" --no-ff -m "🤖 Auto-merge: $BRANCH → main"
+
+          # Push to main
+          git push origin main
+
+          echo "✅ Successfully merged $BRANCH to main"
+
+      - name: Notify Telegram (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            🔀 *Auto-merge выполнен!*
+
+            📌 Ветка: `${{ github.ref_name }}`
+            ➡️ Смержено в: `main`
+
+            ⏳ Сейчас запустится деплой...
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *Auto-merge провалился!*
+
+            📌 Ветка: `${{ github.ref_name }}`
+            👤 Автор: ${{ github.actor }}
+
+            Возможен конфликт. Проверь логи:
+            🔗 [Посмотреть](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

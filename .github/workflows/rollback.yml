@@ -61,7 +61,7 @@ jobs:
         if: success()
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
@@ -76,7 +76,7 @@ jobs:
         if: failure()
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
