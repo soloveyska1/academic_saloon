@@ -1,0 +1,87 @@
+name: Rollback to Previous Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      commits_back:
+        description: 'How many commits to rollback (default: 1)'
+        required: false
+        default: '1'
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollback via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            COMMITS_BACK=${{ github.event.inputs.commits_back }}
+            echo "=== Rolling back $COMMITS_BACK commit(s) at $(date) ==="
+
+            cd ~/academic_saloon
+
+            # Get current commit before rollback
+            CURRENT=$(git rev-parse --short HEAD)
+            echo "Current commit: $CURRENT"
+
+            # Rollback
+            git reset --hard HEAD~$COMMITS_BACK
+            NEW=$(git rev-parse --short HEAD)
+            echo "Rolled back to: $NEW"
+
+            # Rebuild mini-app
+            echo "=== Rebuilding mini-app ==="
+            cd ~/academic_saloon/mini-app
+            npm ci --prefer-offline
+            npm run build
+
+            # Deploy
+            rm -rf /var/www/academic_saloon/dist/*
+            cp -r dist/* /var/www/academic_saloon/dist/
+            chown -R www-data:www-data /var/www/academic_saloon/dist/
+
+            # Restart services
+            fuser -k 8000/tcp 2>/dev/null || true
+            sleep 2
+            systemctl restart saloon-bot
+            nginx -t && systemctl reload nginx
+
+            echo "=== Rollback completed: $CURRENT → $NEW ==="
+
+      # ============================================
+      # TELEGRAM NOTIFICATIONS
+      # ============================================
+      - name: Notify Telegram (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ⏪ *Rollback выполнен!*
+
+            🔙 Откатились на ${{ github.event.inputs.commits_back }} коммит(ов)
+            👤 Инициатор: ${{ github.actor }}
+
+            🔗 [Посмотреть workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *Rollback провалился!*
+
+            👤 Инициатор: ${{ github.actor }}
+
+            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
