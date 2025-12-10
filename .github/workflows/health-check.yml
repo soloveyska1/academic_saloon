@@ -84,22 +84,67 @@ jobs:
               echo "✅ Redis is running"
             fi
 
-            # 5. Проверяем диск
+            # 5. Проверяем диск и АВТОМАТИЧЕСКИ чистим если > 80%
             echo "Checking disk space..."
             DISK_USAGE=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
-            if [ "$DISK_USAGE" -gt 85 ]; then
-              ISSUES="$ISSUES disk_${DISK_USAGE}%"
-              echo "⚠️ Disk usage is ${DISK_USAGE}%"
+            if [ "$DISK_USAGE" -gt 80 ]; then
+              echo "⚠️ Disk usage is ${DISK_USAGE}% — АВТО-ОЧИСТКА..."
+
+              # Чистим логи старше 3 дней
+              journalctl --vacuum-time=3d 2>/dev/null || true
+
+              # Чистим apt кэш
+              apt-get clean 2>/dev/null || true
+
+              # Удаляем старые бэкапы (> 7 дней)
+              find /root/backups -name '*.sql.gz' -mtime +7 -delete 2>/dev/null || true
+
+              # Чистим tmp
+              find /tmp -type f -mtime +1 -delete 2>/dev/null || true
+
+              # Чистим pip кэш
+              pip cache purge 2>/dev/null || true
+
+              # Чистим npm кэш
+              npm cache clean --force 2>/dev/null || true
+
+              # Проверяем результат
+              DISK_AFTER=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
+              echo "✅ Disk cleaned: ${DISK_USAGE}% → ${DISK_AFTER}%"
+              DISK_USAGE=$DISK_AFTER
+              RESTARTED="$RESTARTED disk_cleaned"
+
+              # Если всё ещё > 90% — это проблема
+              if [ "$DISK_USAGE" -gt 90 ]; then
+                ISSUES="$ISSUES disk_critical_${DISK_USAGE}%"
+              fi
             else
               echo "✅ Disk usage: ${DISK_USAGE}%"
             fi
 
-            # 6. Проверяем RAM
+            # 6. Проверяем RAM и АВТОМАТИЧЕСКИ перезапускаем бота если > 85%
             echo "Checking memory..."
             MEM_USAGE=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
-            if [ "$MEM_USAGE" -gt 90 ]; then
-              ISSUES="$ISSUES memory_${MEM_USAGE}%"
-              echo "⚠️ Memory usage is ${MEM_USAGE}%"
+            if [ "$MEM_USAGE" -gt 85 ]; then
+              echo "⚠️ Memory usage is ${MEM_USAGE}% — АВТО-ПЕРЕЗАПУСК бота..."
+
+              # Перезапускаем бота чтобы освободить память
+              fuser -k 8000/tcp 2>/dev/null || true
+              sleep 2
+              systemctl restart saloon-bot
+              sleep 5
+
+              # Очищаем кэши памяти
+              sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
+
+              MEM_AFTER=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
+              echo "✅ Memory freed: ${MEM_USAGE}% → ${MEM_AFTER}%"
+              RESTARTED="$RESTARTED memory_cleaned"
+
+              # Если всё ещё > 95% — критическая проблема
+              if [ "$MEM_AFTER" -gt 95 ]; then
+                ISSUES="$ISSUES memory_critical_${MEM_AFTER}%"
+              fi
             else
               echo "✅ Memory usage: ${MEM_USAGE}%"
             fi
