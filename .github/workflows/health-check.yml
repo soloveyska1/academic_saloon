@@ -1,0 +1,167 @@
+name: Health Check & Auto-Restart
+
+# Проверка здоровья каждые 10 минут + ручной запуск
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # Каждые 10 минут
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check services health
+        uses: appleboy/ssh-action@v1.0.3
+        id: health
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            echo "=== Health Check at $(date) ==="
+
+            ISSUES=""
+            RESTARTED=""
+
+            # 1. Проверяем бота
+            echo "Checking saloon-bot service..."
+            if ! systemctl is-active --quiet saloon-bot; then
+              echo "⚠️ Bot service is DOWN! Restarting..."
+              fuser -k 8000/tcp 2>/dev/null || true
+              sleep 2
+              systemctl restart saloon-bot
+              sleep 5
+              if systemctl is-active --quiet saloon-bot; then
+                RESTARTED="$RESTARTED bot"
+                echo "✅ Bot restarted successfully"
+              else
+                ISSUES="$ISSUES bot_failed"
+                echo "❌ Bot failed to restart"
+              fi
+            else
+              echo "✅ Bot is running"
+            fi
+
+            # 2. Проверяем Nginx
+            echo "Checking nginx..."
+            if ! systemctl is-active --quiet nginx; then
+              echo "⚠️ Nginx is DOWN! Restarting..."
+              systemctl restart nginx
+              if systemctl is-active --quiet nginx; then
+                RESTARTED="$RESTARTED nginx"
+                echo "✅ Nginx restarted"
+              else
+                ISSUES="$ISSUES nginx_failed"
+              fi
+            else
+              echo "✅ Nginx is running"
+            fi
+
+            # 3. Проверяем PostgreSQL
+            echo "Checking PostgreSQL..."
+            if ! systemctl is-active --quiet postgresql; then
+              echo "⚠️ PostgreSQL is DOWN! Restarting..."
+              systemctl restart postgresql
+              if systemctl is-active --quiet postgresql; then
+                RESTARTED="$RESTARTED postgresql"
+              else
+                ISSUES="$ISSUES postgresql_failed"
+              fi
+            else
+              echo "✅ PostgreSQL is running"
+            fi
+
+            # 4. Проверяем Redis
+            echo "Checking Redis..."
+            if ! systemctl is-active --quiet redis-server 2>/dev/null && ! systemctl is-active --quiet redis 2>/dev/null; then
+              echo "⚠️ Redis might be down, checking..."
+              if command -v redis-cli &> /dev/null && ! redis-cli ping &> /dev/null; then
+                ISSUES="$ISSUES redis_down"
+              fi
+            else
+              echo "✅ Redis is running"
+            fi
+
+            # 5. Проверяем диск
+            echo "Checking disk space..."
+            DISK_USAGE=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
+            if [ "$DISK_USAGE" -gt 85 ]; then
+              ISSUES="$ISSUES disk_${DISK_USAGE}%"
+              echo "⚠️ Disk usage is ${DISK_USAGE}%"
+            else
+              echo "✅ Disk usage: ${DISK_USAGE}%"
+            fi
+
+            # 6. Проверяем RAM
+            echo "Checking memory..."
+            MEM_USAGE=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
+            if [ "$MEM_USAGE" -gt 90 ]; then
+              ISSUES="$ISSUES memory_${MEM_USAGE}%"
+              echo "⚠️ Memory usage is ${MEM_USAGE}%"
+            else
+              echo "✅ Memory usage: ${MEM_USAGE}%"
+            fi
+
+            # 7. Проверяем что бот отвечает на порту
+            echo "Checking bot API..."
+            if ! curl -s --max-time 5 http://localhost:8000/health > /dev/null 2>&1; then
+              # Попробуем базовый endpoint
+              if ! curl -s --max-time 5 http://localhost:8000/ > /dev/null 2>&1; then
+                echo "⚠️ Bot API not responding on port 8000"
+                # Не добавляем в ISSUES если сервис работает - может не быть /health endpoint
+              fi
+            else
+              echo "✅ Bot API responding"
+            fi
+
+            echo "=== Health Check Complete ==="
+            echo "ISSUES: $ISSUES"
+            echo "RESTARTED: $RESTARTED"
+            echo "DISK_USAGE: $DISK_USAGE"
+            echo "MEM_USAGE: $MEM_USAGE"
+
+            # Записываем результаты для следующих шагов
+            echo "ISSUES=$ISSUES" >> $GITHUB_OUTPUT 2>/dev/null || echo "ISSUES=$ISSUES"
+            echo "RESTARTED=$RESTARTED" >> $GITHUB_OUTPUT 2>/dev/null || echo "RESTARTED=$RESTARTED"
+            echo "DISK_USAGE=$DISK_USAGE" >> $GITHUB_OUTPUT 2>/dev/null || echo "DISK_USAGE=$DISK_USAGE"
+            echo "MEM_USAGE=$MEM_USAGE" >> $GITHUB_OUTPUT 2>/dev/null || echo "MEM_USAGE=$MEM_USAGE"
+
+            # Выходим с ошибкой если есть нерешённые проблемы
+            if [ -n "$ISSUES" ]; then
+              exit 1
+            fi
+
+      - name: Notify Telegram (Issues Found)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            🚨 *Health Check: Проблемы!*
+
+            ⏰ Время: ${{ github.event.schedule && 'Автоматическая проверка' || 'Ручная проверка' }}
+
+            Проверь сервер - возможные проблемы:
+            - Сервис не запустился после рестарта
+            - Диск заполнен >85%
+            - Память >90%
+
+            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      # Уведомляем только если были рестарты (не каждые 10 минут)
+      - name: Notify Telegram (Auto-Restart)
+        if: success() && contains(steps.health.outputs.RESTARTED, ' ')
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            🔄 *Auto-Restart выполнен!*
+
+            Сервисы были перезапущены автоматически.
+            Всё работает!
