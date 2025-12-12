@@ -1524,11 +1524,11 @@ const PaymentSheet = memo(function PaymentSheet({
                           color: DS.colors.textPrimary,
                           letterSpacing: '0.02em',
                         }}>
-                          +7 (999) 123-45-67
+                          +7 (919) 673-91-20
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => handleCopy('+79991234567', 'sbp_phone')}
+                          onClick={() => handleCopy('+79196739120', 'sbp_phone')}
                           style={{
                             width: 40,
                             height: 40,
@@ -1563,7 +1563,7 @@ const PaymentSheet = memo(function PaymentSheet({
                         fontSize: DS.fontSize.base,
                         color: DS.colors.textPrimary,
                       }}>
-                        Тинькофф Банк
+                        Сбербанк · Т-Банк
                       </div>
                     </div>
 
@@ -2727,7 +2727,7 @@ const FilesSection = memo(function FilesSection({
 const SUPPORT_CONFIG = {
   name: 'Семён',
   role: 'Основатель · Поддержка',
-  telegramUsername: 'smnfom',
+  telegramUsername: 'acadsaloninfo',
   responseTime: '~10 мин',
 }
 
