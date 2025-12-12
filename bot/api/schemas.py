@@ -316,7 +316,50 @@ class AdminUserResponse(BaseModel):
     fullname: str
     username: Optional[str] = None
     is_admin: bool
+    is_banned: Optional[bool] = None
     last_active: Optional[str] = None
+
+class ClientOrderSummary(BaseModel):
+    id: int
+    status: str
+    work_type: str
+    subject: Optional[str] = None
+    price: float
+    final_price: float
+    paid_amount: float
+    created_at: str
+    completed_at: Optional[str] = None
+
+class ClientProfileResponse(BaseModel):
+    """Full client profile for CRM"""
+    id: int
+    telegram_id: int
+    fullname: str
+    username: Optional[str] = None
+    is_banned: bool = False
+    admin_notes: Optional[str] = None
+    created_at: Optional[str] = None
+    last_active: Optional[str] = None
+    # Financial
+    balance: float = 0
+    bonus_balance: float = 0
+    total_spent: float = 0
+    # Loyalty
+    rank_name: str = "Новичок"
+    rank_emoji: str = "🌱"
+    loyalty_status: str = "Стандарт"
+    loyalty_discount: int = 0
+    # Stats
+    orders_count: int = 0
+    completed_orders: int = 0
+    cancelled_orders: int = 0
+    # Referrals
+    referrals_count: int = 0
+    referral_earnings: float = 0
+    # Orders
+    orders: List[ClientOrderSummary] = []
+    # Segment
+    segment: str = "new"  # new, active, vip, dormant, churned
 
 class AdminOrderUpdate(BaseModel):
     status: str

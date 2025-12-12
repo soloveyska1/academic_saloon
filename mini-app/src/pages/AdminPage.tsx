@@ -17,6 +17,7 @@ import {
     OrderFilters,
     OrderFiltersState,
     OrderRow,
+    ClientProfileModal,
 } from '../components/admin'
 import {
     useKeyboardShortcuts,
@@ -92,6 +93,10 @@ export const AdminPage: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
     const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null)
     const [orderModalTab, setOrderModalTab] = useState<'info' | 'chat' | 'actions'>('info')
+
+    // Client Profile State
+    const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
+    const [clientProfileOpen, setClientProfileOpen] = useState(false)
 
     // Action State
     const [priceInput, setPriceInput] = useState('')
@@ -616,7 +621,11 @@ export const AdminPage: React.FC = () => {
                                         key={u.internal_id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-colors"
+                                        className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-colors cursor-pointer"
+                                        onClick={() => {
+                                            setSelectedClientId(u.internal_id)
+                                            setClientProfileOpen(true)
+                                        }}
                                     >
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-4">
@@ -643,6 +652,16 @@ export const AdminPage: React.FC = () => {
                                                         Заблокирован
                                                     </span>
                                                 )}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setSelectedClientId(u.internal_id)
+                                                        setClientProfileOpen(true)
+                                                    }}
+                                                    className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs hover:bg-emerald-500/20 transition-colors"
+                                                >
+                                                    Подробнее
+                                                </button>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -1111,6 +1130,16 @@ export const AdminPage: React.FC = () => {
                 isOpen={showHelp}
                 onClose={() => setShowHelp(false)}
                 shortcuts={shortcuts}
+            />
+
+            {/* Client Profile Modal */}
+            <ClientProfileModal
+                isOpen={clientProfileOpen}
+                userId={selectedClientId}
+                onClose={() => {
+                    setClientProfileOpen(false)
+                    setSelectedClientId(null)
+                }}
             />
         </div>
     )

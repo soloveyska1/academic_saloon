@@ -425,6 +425,49 @@ export interface AdminSqlResponse {
   error?: string
 }
 
+export interface ClientOrderSummary {
+  id: number
+  status: string
+  work_type: string
+  subject: string | null
+  price: number
+  final_price: number
+  paid_amount: number
+  created_at: string
+  completed_at: string | null
+}
+
+export interface ClientProfile {
+  id: number
+  telegram_id: number
+  fullname: string
+  username: string | null
+  is_banned: boolean
+  admin_notes: string | null
+  created_at: string | null
+  last_active: string | null
+  // Financial
+  balance: number
+  bonus_balance: number
+  total_spent: number
+  // Loyalty
+  rank_name: string
+  rank_emoji: string
+  loyalty_status: string
+  loyalty_discount: number
+  // Stats
+  orders_count: number
+  completed_orders: number
+  cancelled_orders: number
+  // Referrals
+  referrals_count: number
+  referral_earnings: number
+  // Orders
+  orders: ClientOrderSummary[]
+  // Segment: 'new' | 'active' | 'vip' | 'dormant' | 'churned'
+  segment: string
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //                          GOD MODE TYPES
 // ═══════════════════════════════════════════════════════════════════════════════

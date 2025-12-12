@@ -313,6 +313,10 @@ export async function fetchAdminStats(): Promise<AdminStats> {
   return apiFetch<AdminStats>('/admin/stats')
 }
 
+export async function fetchClientProfile(userId: number): Promise<import('../types').ClientProfile> {
+  return apiFetch<import('../types').ClientProfile>(`/admin/clients/${userId}`)
+}
+
 export async function executeAdminSql(query: string): Promise<AdminSqlResponse> {
   return apiFetch<AdminSqlResponse>('/admin/sql', {
     method: 'POST',
