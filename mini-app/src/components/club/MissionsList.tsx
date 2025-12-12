@@ -73,7 +73,7 @@ export const MissionsList = memo(function MissionsList({
 
     // Haptic feedback
     try {
-      window.Telegram?.WebApp.HapticFeedback.selectionChanged()
+      window.Telegram?.WebApp?.HapticFeedback?.selectionChanged()
     } catch {}
 
     if (onMissionClick) {

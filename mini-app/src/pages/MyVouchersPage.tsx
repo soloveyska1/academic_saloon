@@ -94,7 +94,7 @@ function MyVouchersPage() {
   const handleApplyVoucher = useCallback((voucher: Voucher) => {
     // Haptic feedback
     try {
-      window.Telegram?.WebApp.HapticFeedback.impactOccurred('medium')
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
     } catch {}
 
     // Переход к созданию заказа с предустановленным ваучером

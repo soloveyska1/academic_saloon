@@ -218,20 +218,18 @@ export function PromoProvider({ children }: { children: ReactNode }) {
             setValidationError(null)
 
             // Haptic feedback on success
-            const tg = window.Telegram?.WebApp
-            if (tg?.HapticFeedback) {
-              tg.HapticFeedback.notificationOccurred('success')
-            }
+            try {
+              window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+            } catch { /* ignore */ }
 
             resolve(true)
           } else {
             setValidationError(result.message || 'Промокод недействителен')
 
             // Haptic feedback on error
-            const tg = window.Telegram?.WebApp
-            if (tg?.HapticFeedback) {
-              tg.HapticFeedback.notificationOccurred('error')
-            }
+            try {
+              window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error')
+            } catch { /* ignore */ }
 
             resolve(false)
           }
@@ -288,10 +286,9 @@ export function PromoProvider({ children }: { children: ReactNode }) {
         setValidationError(result.message || 'Промокод больше не действителен')
 
         // Haptic feedback
-        const tg = window.Telegram?.WebApp
-        if (tg?.HapticFeedback) {
-          tg.HapticFeedback.notificationOccurred('warning')
-        }
+        try {
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('warning')
+        } catch { /* ignore */ }
 
         return false
       }
@@ -310,10 +307,9 @@ export function PromoProvider({ children }: { children: ReactNode }) {
     setValidationError(null)
 
     // Light haptic feedback
-    const tg = window.Telegram?.WebApp
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.impactOccurred('light')
-    }
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
+    } catch { /* ignore */ }
   }, [])
 
   // Check if promo is still valid (both local and server expiration)

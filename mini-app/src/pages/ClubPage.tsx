@@ -143,9 +143,9 @@ function ClubPage({ user }: ClubPageProps) {
     // Haptic feedback
     try {
       if (result.success) {
-        window.Telegram?.WebApp.HapticFeedback.notificationOccurred('success')
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
       } else {
-        window.Telegram?.WebApp.HapticFeedback.notificationOccurred('error')
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error')
       }
     } catch {}
 
@@ -181,7 +181,7 @@ function ClubPage({ user }: ClubPageProps) {
       const result = club.completeMission(mission.id)
       if (result.success) {
         try {
-          window.Telegram?.WebApp.HapticFeedback.notificationOccurred('success')
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
         } catch {}
       }
     }

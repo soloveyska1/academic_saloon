@@ -250,10 +250,9 @@ export function WelcomePromoModal({
     setCopied(true)
 
     // Haptic feedback
-    const tg = window.Telegram?.WebApp
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.notificationOccurred('success')
-    }
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+    } catch {}
 
     setTimeout(() => setCopied(false), 2000)
   }, [promoCode])

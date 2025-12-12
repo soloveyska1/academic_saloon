@@ -38,14 +38,14 @@ export const VoucherSelector = memo(function VoucherSelector({
 
   const toggleExpand = useCallback(() => {
     try {
-      window.Telegram?.WebApp.HapticFeedback.impactOccurred('light')
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
     } catch {}
     setIsExpanded(prev => !prev)
   }, [])
 
   const handleSelect = useCallback((voucherId: string) => {
     try {
-      window.Telegram?.WebApp.HapticFeedback.impactOccurred('medium')
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
     } catch {}
     onSelect(voucherId)
     setIsExpanded(false)
@@ -54,7 +54,7 @@ export const VoucherSelector = memo(function VoucherSelector({
   const handleRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      window.Telegram?.WebApp.HapticFeedback.impactOccurred('light')
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
     } catch {}
     onSelect(null)
   }, [onSelect])

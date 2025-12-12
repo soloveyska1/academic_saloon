@@ -134,9 +134,9 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
       onReveal()
 
       // Haptic feedback
-      if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success')
-      }
+      try {
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+      } catch {}
     }
   }, [calculateScratchPercent, revealed, onReveal])
 
@@ -148,9 +148,9 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
     scratch(touch.clientX, touch.clientY)
 
     // Light haptic
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-      window.Telegram.WebApp.HapticFeedback.impactOccurred('light')
-    }
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
+    } catch {}
   }, [scratch])
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {

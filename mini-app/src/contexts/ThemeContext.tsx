@@ -85,10 +85,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(prev => prev === 'dark' ? 'light' : 'dark')
 
     // Heavy haptic feedback — premium "click" feel like an expensive switch
-    const tg = window.Telegram?.WebApp
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.impactOccurred('heavy')
-    }
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('heavy')
+    } catch { /* ignore */ }
   }, [])
 
   const setTheme = useCallback((newTheme: Theme) => {

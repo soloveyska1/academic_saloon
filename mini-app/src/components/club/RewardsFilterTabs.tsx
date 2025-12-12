@@ -53,7 +53,7 @@ export const RewardsFilterTabs = memo(function RewardsFilterTabs({
             whileTap={{ scale: 0.95 }}
             onClick={() => {
               try {
-                window.Telegram?.WebApp.HapticFeedback.selectionChanged()
+                window.Telegram?.WebApp?.HapticFeedback?.selectionChanged()
               } catch {}
               onTabChange(tab.id)
             }}
