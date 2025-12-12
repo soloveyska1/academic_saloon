@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, memo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plus, Copy, Check, ChevronRight, TrendingUp, Gift, QrCode,
-  Star, Zap, Crown, CreditCard, Briefcase, Award, Target, Sparkles, Flame,
-  GraduationCap, Clock, Percent, FileText, ChevronDown, ArrowRight, Medal, Gem, Shield, ArrowUpRight
+  Copy, Check, ChevronRight, TrendingUp, Gift, QrCode,
+  Star, Crown, Briefcase, Sparkles, Flame, Gem, Target, Medal, Zap
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -16,10 +15,18 @@ import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
 import { useCapability } from '../contexts/DeviceCapabilityContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
-import { KineticText, FadeInText } from '../components/ui/KineticText'
-import { Reveal, StaggerReveal } from '../components/ui/StaggerReveal'
 import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
-import { CardSpotlight } from '../components/ui/SpotlightEffect'
+
+// New Home Components
+import {
+  HomeHeader,
+  QuickActionsRow,
+  NextActionCard,
+  NewTaskCTA,
+  LastOrderCard,
+  BenefitsCard,
+  UrgentHubSheet,
+} from '../components/home'
 
 // Lazy load heavy modal components (reduces initial bundle by ~45KB)
 const QRCodeModal = lazy(() => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal })))
@@ -35,34 +42,7 @@ interface Props {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-function getTimeGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour >= 5 && hour < 12) return 'Доброе утро'
-  if (hour >= 12 && hour < 17) return 'Добрый день'
-  if (hour >= 17 && hour < 22) return 'Добрый вечер'
-  return 'Доброй ночи'
-}
-
-function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: string }) {
-  const count = useMotionValue(0)
-  const rounded = useTransform(count, (v: number) => `${Math.round(v).toLocaleString('ru-RU')}${suffix}`)
-  const [displayValue, setDisplayValue] = useState(`0${suffix}`)
-
-  useEffect(() => {
-    const controls = animate(count, value, { duration: 1.5, ease: [0.16, 1, 0.3, 1] })
-    const unsubscribe = rounded.on('change', (v: string) => setDisplayValue(v))
-    return () => { controls.stop(); unsubscribe() }
-  }, [value, count, rounded, suffix])
-
-  return <span>{displayValue}</span>
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  ULTRA-PREMIUM GLASS CARD STYLES
-//  Rule: Never flat backgrounds, always gradient borders, gold-tinted shadows
+//  GLASS CARD STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 
 const glassStyle: React.CSSProperties = {
@@ -70,14 +50,10 @@ const glassStyle: React.CSSProperties = {
   overflow: 'hidden',
   borderRadius: 24,
   padding: 20,
-  // Glass background
   background: 'var(--bg-card)',
-  // Heavy blur
   backdropFilter: 'blur(24px) saturate(130%)',
   WebkitBackdropFilter: 'blur(24px) saturate(130%)',
-  // Gradient border simulating light on edges
   border: '1px solid var(--card-border)',
-  // Gold-tinted shadow (THE SECRET)
   boxShadow: 'var(--card-shadow)',
 }
 
@@ -86,18 +62,14 @@ const glassGoldStyle: React.CSSProperties = {
   overflow: 'hidden',
   borderRadius: 24,
   padding: 20,
-  // Premium gold gradient background
   background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-  // Heavy blur
   backdropFilter: 'blur(24px) saturate(130%)',
   WebkitBackdropFilter: 'blur(24px) saturate(130%)',
-  // Gold gradient border
   border: '1px solid var(--border-gold)',
-  // Gold aura shadow
   boxShadow: 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)',
 }
 
-// Inner shine effect component for cards - memoized to prevent re-renders
+// Inner shine effect component for cards - memoized
 const CardInnerShine = memo(function CardInnerShine() {
   return (
     <div style={{
@@ -110,308 +82,32 @@ const CardInnerShine = memo(function CardInnerShine() {
   )
 })
 
-
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM TIPS CAROUSEL — Monochrome Luxury Style
-// ═══════════════════════════════════════════════════════════════════════════
-
-const tipsData = [
-  {
-    id: 1,
-    icon: GraduationCap,
-    title: 'Курсовые',
-    subtitle: 'от 14 000 ₽',
-    action: 'navigate' as const,
-    route: '/create-order?type=coursework',
-  },
-  {
-    id: 2,
-    icon: Clock,
-    title: 'Срочные',
-    subtitle: 'за 24 часа',
-    action: 'navigate' as const,
-    route: '/create-order?urgent=true',
-  },
-  {
-    id: 3,
-    icon: Percent,
-    title: 'Кешбэк',
-    subtitle: 'до 10%',
-    action: 'modal' as const,
-    modal: 'cashback',
-  },
-  {
-    id: 4,
-    icon: Shield,
-    title: 'Гарантии',
-    subtitle: '100% качество',
-    action: 'modal' as const,
-    modal: 'guarantees',
-  },
-]
-
-function TipsCarousel({ onNavigate, onOpenModal, haptic }: {
-  onNavigate: (route: string) => void
-  onOpenModal: (modal: 'cashback' | 'guarantees') => void
-  haptic: (style: 'light' | 'medium' | 'heavy') => void
-}) {
-  const handleClick = (tip: typeof tipsData[0]) => {
-    haptic('light')
-    if (tip.action === 'navigate' && tip.route) {
-      onNavigate(tip.route)
-    } else if (tip.action === 'modal' && tip.modal) {
-      onOpenModal(tip.modal as 'cashback' | 'guarantees')
-    }
-  }
-
+// Modal loading fallback
+const ModalLoadingFallback = memo(function ModalLoadingFallback() {
   return (
     <div style={{
-      margin: '0 -20px 24px',
-      padding: '8px 20px',
-      overflowX: 'auto',
-      overflowY: 'hidden',
-      WebkitOverflowScrolling: 'touch',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.6)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
     }}>
-      <style>{`.tips-scroll::-webkit-scrollbar { display: none; }`}</style>
-      <motion.div
-        className="tips-scroll"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.15 }}
-        style={{
-          display: 'flex',
-          gap: 12,
-          paddingBottom: 8,
-        }}
-      >
-        {tipsData.map((tip, index) => (
-          <motion.div
-            key={tip.id}
-            onClick={() => handleClick(tip)}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + index * 0.06 }}
-            whileHover={{ scale: 1.05, y: -3 }}
-            whileTap={{ scale: 0.95 }}
-            className="group"
-            style={{
-              flexShrink: 0,
-              width: 110,
-              padding: '16px 14px',
-              borderRadius: 18,
-              cursor: 'pointer',
-              position: 'relative',
-              // Dark glass background with subtle gradient
-              background: 'linear-gradient(145deg, rgba(28,28,32,0.95) 0%, rgba(18,18,20,0.98) 100%)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              // Subtle gold border
-              border: '1px solid rgba(212,175,55,0.15)',
-              // Minimal shadow
-              boxShadow: '0 4px 20px -4px rgba(0,0,0,0.5)',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Subtle top highlight — static, premium feel */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '1px',
-              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.25), transparent)',
-            }} />
-
-            {/* Content */}
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              {/* Icon — floating effect */}
-              <motion.div
-                whileHover={{ y: -2, scale: 1.1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                style={{ marginBottom: 12, display: 'inline-block' }}
-              >
-                <tip.icon
-                  size={26}
-                  color="#D4AF37"
-                  strokeWidth={1.5}
-                  style={{
-                    filter: 'drop-shadow(0 2px 8px rgba(212,175,55,0.3))'
-                  }}
-                />
-              </motion.div>
-
-              {/* Title */}
-              <div style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: '#fff',
-                marginBottom: 4,
-                letterSpacing: '0.01em',
-              }}>
-                {tip.title}
-              </div>
-
-              {/* Subtitle */}
-              <div style={{
-                fontSize: 10,
-                color: 'rgba(212,175,55,0.7)',
-                fontWeight: 600,
-                letterSpacing: '0.02em',
-              }}>
-                {tip.subtitle}
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
+      <div style={{
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        border: '2px solid transparent',
+        borderTopColor: 'rgba(212,175,55,0.8)',
+        animation: 'spin 1s linear infinite',
+      }} />
     </div>
   )
-}
+})
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  LAST ORDER CARD — Premium Style with Work Type Icons
-// ═══════════════════════════════════════════════════════════════════════════
-
-// Work type to icon mapping for visual distinction
-const workTypeIconMap: Record<string, typeof GraduationCap> = {
-  'Курсовая работа': GraduationCap,
-  'Дипломная работа': Award,
-  'Реферат': FileText,
-  'Контрольная работа': Target,
-  'Эссе': FileText,
-  'Отчёт по практике': Briefcase,
-  'Диссертация': Crown,
-  'Презентация': Sparkles,
-  'Задача': Zap,
-  'Лабораторная работа': Flame,
-  'Чертёж': Target,
-  'Фото задания': Zap,
-}
-
-const orderStatusMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  'draft': { label: 'Черновик', color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
-  'pending': { label: 'Ожидает', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
-  'waiting_estimation': { label: 'Оценка', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
-  'waiting_payment': { label: 'К оплате', color: '#D4AF37', bg: 'rgba(212,175,55,0.15)', border: 'rgba(212,175,55,0.4)' },
-  'verification_pending': { label: 'Проверка', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)' },
-  'confirmed': { label: 'Подтверждён', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
-  'paid': { label: 'Оплачен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
-  'paid_full': { label: 'Оплачен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
-  'in_progress': { label: 'В работе', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.3)' },
-  'review': { label: 'На проверке', color: '#06b6d4', bg: 'rgba(6,182,212,0.15)', border: 'rgba(6,182,212,0.3)' },
-  'revision': { label: 'Доработка', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.3)' },
-  'completed': { label: 'Выполнен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
-  'cancelled': { label: 'Отменён', color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
-  'rejected': { label: 'Отклонён', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)' },
-}
-
-function LastOrderCard({ order, onClick }: { order: { id: number; work_type_label: string; subject: string; status: string; created_at: string }; onClick: () => void }) {
-  const status = orderStatusMap[order.status] || { label: order.status, color: '#888', bg: 'rgba(136,136,136,0.15)', border: 'rgba(136,136,136,0.3)' }
-  const title = order.subject || order.work_type_label || `Заказ #${order.id}`
-  // Get work type icon or fallback to FileText
-  const WorkTypeIcon = workTypeIconMap[order.work_type_label] || FileText
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.26 }}
-      whileHover={{ scale: 1.01, y: -1 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      style={{
-        ...glassStyle,
-        marginBottom: 16,
-        cursor: 'pointer',
-        border: `1px solid ${status.border}`,
-        background: `linear-gradient(135deg, ${status.bg} 0%, var(--bg-card) 50%)`,
-      }}
-    >
-      <CardInnerShine />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative', zIndex: 1 }}>
-        <motion.div
-          animate={['pending', 'in_progress', 'review', 'waiting_payment'].includes(order.status) ? {
-            boxShadow: [
-              `0 0 12px ${status.color}40`,
-              `0 0 20px ${status.color}60`,
-              `0 0 12px ${status.color}40`,
-            ]
-          } : {}}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 14,
-            background: status.bg,
-            border: `1px solid ${status.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <WorkTypeIcon size={22} color={status.color} strokeWidth={1.5} />
-        </motion.div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: 'var(--text-muted)',
-              letterSpacing: '0.1em',
-            }}>ПОСЛЕДНИЙ ЗАКАЗ</span>
-          </div>
-          <div style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--text-main)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {title}
-          </div>
-          <div style={{
-            marginTop: 6,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '3px 8px',
-            background: status.bg,
-            border: `1px solid ${status.border}`,
-            borderRadius: 100,
-          }}>
-            <motion.div
-              animate={['pending', 'in_progress'].includes(order.status) ? { scale: [1, 1.3, 1], opacity: [1, 0.7, 1] } : {}}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: status.color,
-                boxShadow: `0 0 8px ${status.color}`,
-              }}
-            />
-            <span style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: status.color,
-            }}>
-              {status.label}
-            </span>
-          </div>
-        </div>
-        <ArrowRight size={20} color="var(--text-muted)" strokeWidth={1.5} />
-      </div>
-    </motion.div>
-  )
-}
-
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPACT ACHIEVEMENTS ROW — Single Line Premium with Next Preview
+//  COMPACT ACHIEVEMENTS ROW
 // ═══════════════════════════════════════════════════════════════════════════
 
 function CompactAchievements({ achievements, onViewAll }: {
@@ -446,7 +142,7 @@ function CompactAchievements({ achievements, onViewAll }: {
         zIndex: 1,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Achievement icons stack - last unlocked + next to unlock */}
+          {/* Achievement icons stack */}
           <div style={{ position: 'relative', width: 52, height: 44 }}>
             {/* Last unlocked (main) */}
             <motion.div
@@ -478,17 +174,12 @@ function CompactAchievements({ achievements, onViewAll }: {
               }}
             >
               {lastUnlocked ? (
-                <lastUnlocked.icon
-                  size={22}
-                  color="#D4AF37"
-                  strokeWidth={2}
-                  fill="rgba(212,175,55,0.2)"
-                />
+                <lastUnlocked.icon size={22} color="#D4AF37" strokeWidth={2} fill="rgba(212,175,55,0.2)" />
               ) : (
-                <Award size={22} color="rgba(100,100,100,0.5)" strokeWidth={1.5} />
+                <Star size={22} color="rgba(100,100,100,0.5)" strokeWidth={1.5} />
               )}
             </motion.div>
-            {/* Next to unlock (preview - smaller, offset) */}
+            {/* Next to unlock (preview) */}
             {nextToUnlock && (
               <motion.div
                 animate={{ opacity: [0.5, 0.8, 0.5] }}
@@ -508,11 +199,7 @@ function CompactAchievements({ achievements, onViewAll }: {
                   zIndex: 3,
                 }}
               >
-                <nextToUnlock.icon
-                  size={12}
-                  color="rgba(212,175,55,0.5)"
-                  strokeWidth={1.5}
-                />
+                <nextToUnlock.icon size={12} color="rgba(212,175,55,0.5)" strokeWidth={1.5} />
               </motion.div>
             )}
           </div>
@@ -524,20 +211,11 @@ function CompactAchievements({ achievements, onViewAll }: {
               letterSpacing: '0.1em',
               marginBottom: 4,
             }}>ДОСТИЖЕНИЯ</div>
-            <div style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-main)',
-            }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>
               {lastUnlocked ? lastUnlocked.label : 'Начните путь'}
             </div>
-            {/* Next to unlock hint */}
             {nextToUnlock && (
-              <div style={{
-                fontSize: 10,
-                color: 'rgba(212,175,55,0.6)',
-                marginTop: 2,
-              }}>
+              <div style={{ fontSize: 10, color: 'rgba(212,175,55,0.6)', marginTop: 2 }}>
                 Далее: {nextToUnlock.label}
               </div>
             )}
@@ -558,20 +236,16 @@ function CompactAchievements({ achievements, onViewAll }: {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  background: a.unlocked
-                    ? 'var(--gold-metallic)'
-                    : 'rgba(80,80,80,0.4)',
+                  background: a.unlocked ? 'var(--gold-metallic)' : 'rgba(80,80,80,0.4)',
                   boxShadow: a.unlocked ? '0 0 8px rgba(212,175,55,0.5)' : 'none',
                   border: !a.unlocked && i === unlockedCount ? '1px solid rgba(212,175,55,0.4)' : 'none',
                 }}
               />
             ))}
           </div>
-          <span style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: 'var(--text-secondary)',
-          }}>{unlockedCount}/{achievements.length}</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+            {unlockedCount}/{achievements.length}
+          </span>
           <ChevronRight size={18} color="var(--text-muted)" strokeWidth={1.5} />
         </div>
       </div>
@@ -580,32 +254,8 @@ function CompactAchievements({ achievements, onViewAll }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MAIN HOMEPAGE — HEAVY LUXURY PREMIUM WITH ADAPTIVE PERFORMANCE
+//  MAIN HOMEPAGE
 // ═══════════════════════════════════════════════════════════════════════════
-
-// Modal loading fallback - minimal spinner
-const ModalLoadingFallback = memo(function ModalLoadingFallback() {
-  return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.6)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-    }}>
-      <div style={{
-        width: 40,
-        height: 40,
-        borderRadius: '50%',
-        border: '2px solid transparent',
-        borderTopColor: 'rgba(212,175,55,0.8)',
-        animation: 'spin 1s linear infinite',
-      }} />
-    </div>
-  )
-})
 
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
@@ -613,23 +263,27 @@ export function HomePage({ user }: Props) {
   const admin = useAdmin()
   const { activePromo } = usePromo()
   const capability = useCapability()
+
+  // UI State
   const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showDailyBonus, setShowDailyBonus] = useState(false)
   const [dailyBonusInfo, setDailyBonusInfo] = useState<DailyBonusInfo | null>(null)
   const [dailyBonusError, setDailyBonusError] = useState(false)
-  // New modals
+  const [isLoadingBonus, setIsLoadingBonus] = useState(true)
+
+  // Modals
   const [showCashbackModal, setShowCashbackModal] = useState(false)
   const [showGuaranteesModal, setShowGuaranteesModal] = useState(false)
   const [showTransactionsModal, setShowTransactionsModal] = useState(false)
   const [showRanksModal, setShowRanksModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
-  // State for loading indicators
-  const [isLoadingBonus, setIsLoadingBonus] = useState(true)
+  // NEW: UrgentHubSheet state (fixes duplicate "Urgent" issue)
+  const [showUrgentSheet, setShowUrgentSheet] = useState(false)
 
-  // Fetch daily bonus info on mount with retry and better loading states
+  // Fetch daily bonus info
   useEffect(() => {
     let retryCount = 0
     const maxRetries = 3
@@ -644,7 +298,6 @@ export function HomePage({ user }: Props) {
         console.error('Failed to load daily bonus:', err)
         retryCount++
         if (retryCount < maxRetries) {
-          // Retry with exponential backoff
           setTimeout(loadDailyBonus, 1000 * retryCount)
         } else {
           setDailyBonusError(true)
@@ -662,68 +315,88 @@ export function HomePage({ user }: Props) {
   const lastTapTimeRef = useRef(0)
 
   const handleSecretTap = useCallback(() => {
-    if (!admin.isAdmin) return // Only for admins
+    if (!admin.isAdmin) return
 
     const now = Date.now()
-    // Reset if more than 500ms between taps
     if (now - lastTapTimeRef.current > 500) {
       tapCountRef.current = 1
     } else {
       tapCountRef.current += 1
       if (tapCountRef.current >= 5) {
         haptic('heavy')
-        openAdminPanel() // Open the admin panel via global function
+        openAdminPanel()
         tapCountRef.current = 0
       }
     }
     lastTapTimeRef.current = now
   }, [admin.isAdmin, haptic])
 
-  // Use real daily bonus data from API
+  // Daily bonus data
   const canClaimBonus = dailyBonusInfo?.can_claim ?? false
   const dailyStreak = dailyBonusInfo?.streak ?? 1
 
   // Welcome promo modal for new users
-  // Shows once per user (tracked in localStorage)
-  // Admin can simulate via simulateNewUser toggle
   const WELCOME_MODAL_SHOWN_KEY = 'academic_saloon_welcome_shown'
   useEffect(() => {
     if (!user) return
 
-    // Determine if user is "new" (0 orders) or admin is simulating
     const isNewUser = user.orders_count === 0
     const isSimulatingNewUser = admin.simulateNewUser
-
-    // Check if we should show the modal
     const shouldShow = isNewUser || isSimulatingNewUser
-
-    // Check if already shown (unless simulating - always show for admin testing)
     const alreadyShown = localStorage.getItem(WELCOME_MODAL_SHOWN_KEY) === 'true'
+
     if (alreadyShown && !isSimulatingNewUser) return
 
     if (shouldShow) {
-      // Delay to let the page load first
       const timer = setTimeout(() => {
         setShowWelcomeModal(true)
-        // Mark as shown (only for real new users, not simulations)
         if (!isSimulatingNewUser) {
           localStorage.setItem(WELCOME_MODAL_SHOWN_KEY, 'true')
         }
-      }, 1500) // 1.5s delay for dramatic effect
+      }, 1500)
       return () => clearTimeout(timer)
     }
   }, [user, admin.simulateNewUser])
 
+  // Memoized calculations
+  const activeOrders = useMemo(
+    () => user?.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length ?? 0,
+    [user?.orders]
+  )
+
+  const completedOrders = useMemo(
+    () => user?.orders.filter(o => o.status === 'completed').length ?? 0,
+    [user?.orders]
+  )
+
+  // Achievement badges
+  const achievements = useMemo(() => user ? [
+    { icon: Star, label: 'Первый шаг', unlocked: user.orders_count >= 1, description: 'Первый заказ' },
+    { icon: Medal, label: 'Постоянный', unlocked: user.orders_count >= 5, description: '5 заказов' },
+    { icon: Crown, label: 'VIP статус', unlocked: user.rank.level >= 3, description: 'VIP уровень' },
+    { icon: Zap, label: 'Молниеносный', unlocked: user.orders_count >= 1, description: 'Быстрый заказ' },
+    { icon: Gem, label: 'Щедрая душа', unlocked: user.total_spent >= 10000, description: '10 000₽ потрачено' },
+    { icon: Target, label: 'Рефералы', unlocked: user.referrals_count >= 3, description: '3+ приглашённых' },
+    { icon: Flame, label: 'Джекпот', unlocked: false, description: 'Выигрыш в рулетке', glow: true },
+    { icon: Sparkles, label: 'Легенда', unlocked: user.rank.level >= 4, description: 'Макс. уровень', glow: true },
+  ] : [], [user])
+
+  // Display rank name mapping
+  const rankNameMap: Record<string, string> = {
+    'Салага': 'Резидент',
+    'Ковбой': 'Партнёр',
+    'Головорез': 'VIP-Клиент',
+    'Легенда Запада': 'Премиум',
+  }
+
   if (!user) return null
+
+  const displayNextRank = user.rank.next_rank ? (rankNameMap[user.rank.next_rank] || user.rank.next_rank) : null
+  const userPhoto = tg?.initDataUnsafe?.user?.photo_url
 
   const handleNewOrder = () => {
     haptic('heavy')
     navigate('/create-order')
-  }
-
-  const handlePanicOrder = () => {
-    haptic('heavy')
-    navigate('/create-order?type=photo_task&urgent=true')
   }
 
   const copyReferralCode = () => {
@@ -733,513 +406,80 @@ export function HomePage({ user }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Memoize expensive calculations to prevent unnecessary re-renders
-  const activeOrders = useMemo(
-    () => user.orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status)).length,
-    [user.orders]
-  )
-
-  const completedOrders = useMemo(
-    () => user.orders.filter(o => o.status === 'completed').length,
-    [user.orders]
-  )
-
-  // Premium rank name mapping (backend rank names → display names)
-  const rankNameMap: Record<string, string> = {
-    'Салага': 'Резидент',
-    'Ковбой': 'Партнёр',
-    'Головорез': 'VIP-Клиент',
-    'Легенда Запада': 'Премиум',
-  }
-  const displayRankName = rankNameMap[user.rank.name] || user.rank.name
-  const displayNextRank = user.rank.next_rank ? (rankNameMap[user.rank.next_rank] || user.rank.next_rank) : null
-
-  // Achievement badges - memoized to prevent re-creation every render
-  const achievements = useMemo(() => [
-    { icon: Star, label: 'Первый шаг', unlocked: user.orders_count >= 1, description: 'Первый заказ' },
-    { icon: Medal, label: 'Постоянный', unlocked: user.orders_count >= 5, description: '5 заказов' },
-    { icon: Crown, label: 'VIP статус', unlocked: user.rank.level >= 3, description: 'VIP уровень' },
-    { icon: Zap, label: 'Молниеносный', unlocked: user.orders_count >= 1, description: 'Быстрый заказ' },
-    { icon: Gem, label: 'Щедрая душа', unlocked: user.total_spent >= 10000, description: '10 000₽ потрачено' },
-    { icon: Target, label: 'Рефералы', unlocked: user.referrals_count >= 3, description: '3+ приглашённых' },
-    { icon: Flame, label: 'Джекпот', unlocked: false, description: 'Выигрыш в рулетке', glow: true },
-    { icon: Sparkles, label: 'Легенда', unlocked: user.rank.level >= 4, description: 'Макс. уровень', glow: true },
-  ], [user.orders_count, user.rank.level, user.total_spent, user.referrals_count])
-
-  // User's Telegram photo
-  const userPhoto = tg?.initDataUnsafe?.user?.photo_url
-  const [avatarError, setAvatarError] = useState(false)
-
   return (
-    <div style={{ minHeight: '100vh', padding: '24px 20px 100px', background: 'var(--bg-main)', position: 'relative', overflow: 'hidden' }}>
-      {/* Premium Background - adapts to device capability */}
+    <div style={{
+      minHeight: '100vh',
+      padding: '24px 20px 100px',
+      background: 'var(--bg-main)',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Premium Background */}
       <PremiumBackground
         variant="gold"
         intensity="subtle"
         interactive={capability.tier >= 3}
       />
-
-      {/* Adaptive floating particles - adjusts count based on device tier */}
       <FloatingGoldParticles count={capability.getParticleCount(8)} />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HEADER WITH AVATAR — Ultra-Premium
+          HEADER — New compact component
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* User Avatar with Spinning Gold Ring + VIP Glow */}
-          <div style={{ position: 'relative' }}>
-            {/* VIP Glow Effect for Max Rank */}
-            {user.rank.is_max && (
-              <motion.div
-                animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute',
-                  inset: -8,
-                  borderRadius: '50%',
-                  background: 'radial-gradient(circle, rgba(212,175,55,0.4) 0%, transparent 70%)',
-                  filter: 'blur(4px)',
-                }}
-              />
-            )}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-              style={{
-                position: 'absolute',
-                inset: -3,
-                borderRadius: '50%',
-                background: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
-              }}
-            />
-            <div style={{
-              position: 'relative',
-              width: 52,
-              height: 52,
-              borderRadius: '50%',
-              background: 'var(--bg-main)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-            }}>
-              {userPhoto && !avatarError ? (
-                <img
-                  src={userPhoto}
-                  alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={() => setAvatarError(true)}
-                />
-              ) : (
-                <span style={{
-                  fontFamily: "var(--font-serif)",
-                  fontWeight: 700,
-                  fontSize: 20,
-                  background: 'var(--gold-metallic)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}>
-                  {user.fullname?.charAt(0) || 'U'}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Greeting — Premium Serif + Gold Name */}
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 500 }}>
-              {getTimeGreeting()},
-            </div>
-            <div style={{
-              fontSize: 22,
-              fontWeight: 700,
-              fontFamily: "var(--font-serif)",
-              letterSpacing: '0.02em',
-              background: user.rank.is_max
-                ? 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #BF953F 100%)'
-                : 'var(--text-main)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: user.rank.is_max ? 'transparent' : 'var(--text-main)',
-              filter: user.rank.is_max ? 'drop-shadow(0 0 8px rgba(212,175,55,0.3))' : 'none',
-            }}>
-              {user.fullname?.split(' ')[0] || 'Гость'}
-            </div>
-            {/* Premium Streak Badge */}
-            {user.daily_bonus_streak > 0 && (
-              <div style={{
-                marginTop: 6,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-                padding: '3px 8px',
-                background: 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.1) 100%)',
-                border: '1px solid rgba(249,115,22,0.3)',
-                borderRadius: 100,
-              }}>
-                <span style={{ fontSize: 10 }}>🔥</span>
-                <span style={{
-                  fontSize: 9,
-                  fontWeight: 600,
-                  color: '#fb923c',
-                  letterSpacing: '0.03em',
-                }}>
-                  {user.daily_bonus_streak} {user.daily_bonus_streak === 1 ? 'день' : user.daily_bonus_streak < 5 ? 'дня' : 'дней'} подряд
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Logo Badge — Premium Pulsing Gold Border (5 taps opens admin panel) */}
-        <motion.div
-          onClick={handleSecretTap}
-          whileTap={{ scale: 0.97 }}
-          animate={{
-            borderColor: [
-              'rgba(212,175,55,0.4)',
-              'rgba(212,175,55,0.7)',
-              'rgba(212,175,55,0.4)'
-            ],
-            boxShadow: [
-              '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)',
-              '0 0 20px rgba(212,175,55,0.3), inset 0 0 30px rgba(212,175,55,0.06)',
-              '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)'
-            ]
-          }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'relative',
-            padding: '10px 18px',
-            background: 'linear-gradient(145deg, rgba(20,18,14,0.98), rgba(12,11,8,0.98))',
-            borderRadius: 10,
-            border: '1px solid rgba(212,175,55,0.5)',
-            cursor: 'default',
-            userSelect: 'none',
-          }}
-        >
-          <span style={{
-            fontFamily: "var(--font-serif)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: '0.12em',
-            background: 'linear-gradient(135deg, #f5d485 0%, #D4AF37 50%, #b48e26 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>ЭЛИТНЫЙ КЛУБ</span>
-        </motion.div>
-      </motion.div>
+      <HomeHeader
+        user={{
+          fullname: user.fullname,
+          rank: { is_max: user.rank.is_max },
+          daily_bonus_streak: user.daily_bonus_streak,
+        }}
+        userPhoto={userPhoto}
+        onSecretTap={handleSecretTap}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          TIPS CAROUSEL — Premium Horizontal Scroll
+          QUICK ACTIONS — Replaces TipsCarousel + Panic Button
+          Single "Срочно" entry that opens UrgentHubSheet
           ═══════════════════════════════════════════════════════════════════ */}
-      <TipsCarousel
+      <QuickActionsRow
         onNavigate={navigate}
         onOpenModal={(modal) => {
           if (modal === 'cashback') setShowCashbackModal(true)
           else if (modal === 'guarantees') setShowGuaranteesModal(true)
         }}
+        onOpenUrgentSheet={() => {
+          haptic('medium')
+          setShowUrgentSheet(true)
+        }}
         haptic={haptic}
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          BENTO GRID: BALANCE & LEVEL — Ultra-Premium Glass Cards
+          NEXT ACTION CARD — Dynamic priority-based actions
+          Shows payment needed, files needed, revision, etc.
           ═══════════════════════════════════════════════════════════════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-        {/* BALANCE — Clean Gold Style */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          whileHover={{ scale: 1.03, y: -3 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => { haptic('light'); setShowTransactionsModal(true) }}
-          style={{
-            ...glassGoldStyle,
-            cursor: 'pointer',
-            transition: 'transform 0.2s ease-out',
-          }}
-        >
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <CreditCard size={14} color="var(--gold-400)" strokeWidth={1.5} />
-              <span style={{
-                fontSize: 10,
-                letterSpacing: '0.15em',
-                fontWeight: 700,
-                background: 'var(--gold-text-shine)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>СЧЁТ</span>
-            </div>
-            {/* Balance with Gold Gradient Currency Symbol */}
-            <div style={{
-              fontSize: 30,
-              fontWeight: 800,
-              fontFamily: "var(--font-serif)",
-              color: 'var(--text-main)',
-              display: 'flex',
-              alignItems: 'baseline',
-            }}>
-              <AnimatedCounter value={user.balance} />
-              <span style={{
-                marginLeft: 6,
-                fontSize: 24,
-                background: 'var(--gold-metallic)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.4))',
-              }}>₽</span>
-            </div>
-            {/* Cashback Badge — Glass Pill */}
-            <div style={{
-              marginTop: 10,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '5px 12px',
-              background: user.rank.is_max
-                ? 'linear-gradient(135deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.25) 100%)'
-                : 'var(--success-glass)',
-              border: user.rank.is_max
-                ? '1px solid rgba(212,175,55,0.5)'
-                : '1px solid var(--success-border)',
-              borderRadius: 100,
-            }}>
-              {user.rank.is_max && <span style={{ fontSize: 12 }}>👑</span>}
-              <span style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.03em',
-                background: user.rank.is_max ? 'var(--gold-metallic)' : 'none',
-                WebkitBackgroundClip: user.rank.is_max ? 'text' : 'unset',
-                WebkitTextFillColor: user.rank.is_max ? 'transparent' : 'var(--success-text)',
-                color: user.rank.is_max ? 'transparent' : 'var(--success-text)',
-              }}>
-                Кешбэк {user.rank.cashback}%
-              </span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* LEVEL — Clean Glass Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          whileHover={{ scale: 1.03, y: -3 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => { haptic('light'); setShowRanksModal(true) }}
-          style={{ ...glassStyle, cursor: 'pointer', transition: 'transform 0.2s ease-out' }}
-        >
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: 'var(--text-muted)' }}>
-              <Crown size={14} strokeWidth={1.5} />
-              <span style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 700 }}>УРОВЕНЬ</span>
-            </div>
-            {/* Rank Name — Serif with Gold Gradient */}
-            <div style={{
-              fontSize: 18,
-              fontWeight: 700,
-              fontFamily: "var(--font-serif)",
-              marginBottom: 10,
-              background: 'var(--gold-text-shine)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '0.02em',
-            }}>
-              {displayRankName}
-            </div>
-            {/* Progress Bar or MAX indicator */}
-            {user.rank.is_max ? (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '5px 12px',
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(180,140,40,0.1) 100%)',
-                borderRadius: 100,
-                border: '1px solid rgba(212,175,55,0.4)',
-                width: 'fit-content',
-              }}>
-                <span style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.1em',
-                  background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #BF953F)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}>
-                  ★ MAX
-                </span>
-              </div>
-            ) : (
-              <div style={{
-                height: 5,
-                background: 'var(--bg-glass)',
-                borderRadius: 100,
-                overflow: 'hidden',
-                border: '1px solid var(--border-subtle)',
-              }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(user.rank.progress, 5)}%` }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                  className="progress-shimmer"
-                  style={{
-                    height: '100%',
-                    borderRadius: 100,
-                    boxShadow: '0 0 10px rgba(212,175,55,0.4)',
-                  }}
-                />
-              </div>
-            )}
-            {/* Bonus perk or Level info */}
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, fontWeight: 500 }}>
-              {user.rank.bonus || `Уровень ${user.rank.level}`}
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      <NextActionCard
+        orders={user.orders}
+        onNavigate={navigate}
+        haptic={haptic}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HERO BUTTON — Minimalist Premium CTA
+          BENEFITS CARD — Combined Balance + Level (Bento Grid)
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-        whileHover={{ scale: 1.01, y: -1 }}
-        whileTap={{ scale: 0.97 }}
-        onClick={() => { haptic('medium'); handleNewOrder() }}
-        style={{
-          position: 'relative',
-          width: '100%',
-          padding: '20px 24px',
-          borderRadius: 16,
-          border: '1px solid rgba(212,175,55,0.25)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'linear-gradient(145deg, rgba(22,22,25,0.98), rgba(16,16,18,0.98))',
-          boxShadow: '0 8px 24px -8px rgba(0,0,0,0.4)',
-          marginBottom: 16,
-        }}
-      >
-        {/* Subtle gold accent line at top */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 20,
-          right: 20,
-          height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
-        }} />
-
-        <div style={{ textAlign: 'left' }}>
-          <div style={{
-            fontSize: 15,
-            fontWeight: 700,
-            color: '#fff',
-            fontFamily: "var(--font-serif)",
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            Поручить задачу
-            <ArrowUpRight size={14} color="rgba(212,175,55,0.6)" strokeWidth={2} />
-          </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
-            Персональный менеджер
-          </div>
-        </div>
-
-        <div style={{
-          width: 46,
-          height: 46,
-          borderRadius: '50%',
-          background: 'linear-gradient(145deg, #D4AF37, #b48e26)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
-        }}>
-          <Plus size={24} color="#0a0a0a" strokeWidth={2.5} />
-        </div>
-      </motion.button>
+      <BenefitsCard
+        balance={user.balance}
+        rank={user.rank}
+        onBalanceClick={() => setShowTransactionsModal(true)}
+        onRankClick={() => setShowRanksModal(true)}
+        haptic={haptic}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PANIC BUTTON — Clean Urgent Style
+          NEW TASK CTA — Primary action button
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        whileHover={{ scale: 1.01, y: -1 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => { haptic('medium'); handlePanicOrder() }}
-        style={{
-          padding: '16px 20px',
-          marginBottom: 16,
-          cursor: 'pointer',
-          borderRadius: 16,
-          border: '1px solid rgba(239, 68, 68, 0.25)',
-          background: 'linear-gradient(145deg, rgba(25,12,12,0.98), rgba(18,10,10,0.98))',
-          boxShadow: '0 4px 20px -8px rgba(220, 38, 38, 0.2)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: 'linear-gradient(145deg, #991b1b, #7f1d1d)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <Zap size={20} color="#fca5a5" strokeWidth={2} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: '#f87171',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4
-            }}>
-              Срочно?
-              <ChevronRight size={14} color="#f87171" strokeWidth={2} />
-            </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-              Скинь фото — оценим за 5 минут
-            </div>
-          </div>
-          <div style={{
-            padding: '5px 10px',
-            background: 'rgba(185, 28, 28, 0.15)',
-            border: '1px solid rgba(185, 28, 28, 0.3)',
-            borderRadius: 6,
-          }}>
-            <span style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: '#f87171',
-            }}>24ч</span>
-          </div>
-        </div>
-      </motion.div>
+      <NewTaskCTA onClick={handleNewOrder} />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          LAST ORDER CARD — Quick Access to Recent Order
+          LAST ORDER CARD — Quick access to recent order
           ═══════════════════════════════════════════════════════════════════ */}
       {user.orders.length > 0 && (
         <LastOrderCard
@@ -1249,7 +489,7 @@ export function HomePage({ user }: Props) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PROMO CODE — Premium Global Promo Code Section
+          PROMO CODE SECTION
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1265,7 +505,7 @@ export function HomePage({ user }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ACHIEVEMENTS — Compact Single Line Premium
+          ACHIEVEMENTS — Compact Single Line
           ═══════════════════════════════════════════════════════════════════ */}
       <CompactAchievements
         achievements={achievements}
@@ -1379,7 +619,7 @@ export function HomePage({ user }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          PROGRESS TO NEXT LEVEL — Glass Card
+          PROGRESS TO NEXT LEVEL
           ═══════════════════════════════════════════════════════════════════ */}
       {displayNextRank && (
         <motion.div
@@ -1458,7 +698,7 @@ export function HomePage({ user }: Props) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          QUICK STATS — Premium Dashboard Style
+          QUICK STATS — My Orders Dashboard
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1478,7 +718,6 @@ export function HomePage({ user }: Props) {
       >
         <CardInnerShine />
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Header */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -1516,9 +755,9 @@ export function HomePage({ user }: Props) {
             <ChevronRight size={18} color="rgba(212,175,55,0.4)" strokeWidth={1.5} />
           </div>
 
-          {/* Stats Grid — Clean premium style */}
+          {/* Stats Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            {/* Active — Gold, only pulsing dot for attention */}
+            {/* Active */}
             <div style={{
               padding: 16,
               borderRadius: 14,
@@ -1569,7 +808,7 @@ export function HomePage({ user }: Props) {
               </div>
             </div>
 
-            {/* Completed — Static green, no animation needed */}
+            {/* Completed */}
             <div style={{
               padding: 16,
               borderRadius: 14,
@@ -1608,22 +847,15 @@ export function HomePage({ user }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          ELEGANT FOOTER — Premium Tagline
+          ELEGANT FOOTER
           ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        style={{
-          textAlign: 'center',
-          padding: '20px 0 12px',
-        }}
+        style={{ textAlign: 'center', padding: '20px 0 12px' }}
       >
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-        }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <div style={{
             width: 24,
             height: 1,
@@ -1638,10 +870,7 @@ export function HomePage({ user }: Props) {
           }}>
             САЛУН
           </span>
-          <span style={{
-            fontSize: 8,
-            color: 'rgba(212,175,55,0.4)',
-          }}>✦</span>
+          <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.4)' }}>&#x2726;</span>
           <span style={{
             fontSize: 9,
             color: 'rgba(255,255,255,0.3)',
@@ -1658,7 +887,7 @@ export function HomePage({ user }: Props) {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          DAILY BONUS FLOATING BUTTON — Premium Gold with Loading State
+          DAILY BONUS FLOATING BUTTON
           ═══════════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {canClaimBonus && !dailyBonusError && !isLoadingBonus && (
@@ -1687,7 +916,6 @@ export function HomePage({ user }: Props) {
             }}
           >
             <Gift size={26} color="#09090b" strokeWidth={2} />
-            {/* Notification badge with tooltip */}
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
@@ -1714,15 +942,23 @@ export function HomePage({ user }: Props) {
       </AnimatePresence>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          MODALS — Lazy loaded for performance (~45KB savings on initial load)
+          URGENT HUB SHEET — Bottom sheet with 2 urgent options
+          Fixes the duplicate "Urgent" issue
+          ═══════════════════════════════════════════════════════════════════ */}
+      <UrgentHubSheet
+        isOpen={showUrgentSheet}
+        onClose={() => setShowUrgentSheet(false)}
+        onNavigate={navigate}
+        haptic={haptic}
+      />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          MODALS — Lazy loaded
           ═══════════════════════════════════════════════════════════════════ */}
       <Suspense fallback={<ModalLoadingFallback />}>
         <AnimatePresence>
           {showQR && (
-            <QRCodeModal
-              value={user.referral_code}
-              onClose={() => setShowQR(false)}
-            />
+            <QRCodeModal value={user.referral_code} onClose={() => setShowQR(false)} />
           )}
         </AnimatePresence>
 
@@ -1738,7 +974,6 @@ export function HomePage({ user }: Props) {
                 if (result.won) {
                   setShowConfetti(true)
                 }
-                // Refresh daily bonus info after claim
                 setDailyBonusInfo(prev => prev ? { ...prev, can_claim: false, cooldown_remaining: '24ч' } : null)
                 return result
               }}
@@ -1747,14 +982,12 @@ export function HomePage({ user }: Props) {
           )}
         </AnimatePresence>
 
-        {/* Confetti Effect - optimized with device capability */}
         <Confetti
           active={showConfetti}
           onComplete={() => setShowConfetti(false)}
           intensity={capability.tier === 3 ? 'medium' : 'low'}
         />
 
-        {/* Premium Modals — only rendered when open */}
         {showCashbackModal && (
           <CashbackModal
             isOpen={showCashbackModal}
@@ -1790,10 +1023,7 @@ export function HomePage({ user }: Props) {
             onClose={() => setShowWelcomeModal(false)}
             promoCode="WELCOME10"
             discount={10}
-            onApplyPromo={(code) => {
-              // Navigate to create order with promo pre-applied
-              navigate('/create-order')
-            }}
+            onApplyPromo={() => navigate('/create-order')}
           />
         )}
       </Suspense>
