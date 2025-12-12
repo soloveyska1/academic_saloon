@@ -390,8 +390,8 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
         audioRef.current.pause()
       }
 
-      // Start new playback
-      const audio = new Audio(msg.file_url)
+      // Start new playback with error handling for Telegram WebView
+      const audio = new Audio()
       audioRef.current = audio
 
       audio.onended = () => {
@@ -399,8 +399,20 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
         audioRef.current = null
       }
 
+      audio.onerror = () => {
+        setPlayingAudioId(null)
+        audioRef.current = null
+        // Fallback: open in new tab if playback fails
+        if (msg.file_url) window.open(msg.file_url, '_blank')
+      }
+
+      audio.src = msg.file_url || ''
+      audio.load()
+
       audio.play().catch(() => {
         setPlayingAudioId(null)
+        // Fallback: open audio in new tab/window
+        if (msg.file_url) window.open(msg.file_url, '_blank')
       })
 
       setPlayingAudioId(msg.id)
