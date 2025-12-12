@@ -71,8 +71,7 @@ export const DepthBackground = memo(function DepthBackground({
             window.addEventListener('deviceorientation', handleOrientation)
           }
         }
-      } catch (err) {
-        console.warn('[DepthBackground] Gyroscope setup failed:', err)
+      } catch {
         gyroEnabled = false
       }
     }

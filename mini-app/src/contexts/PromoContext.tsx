@@ -86,7 +86,6 @@ export function PromoProvider({ children }: { children: ReactNode }) {
 
         // Validate the parsed data
         if (!isValidActivePromo(parsed)) {
-          console.warn('[PromoContext] Invalid promo data in localStorage, clearing:', parsed)
           localStorage.removeItem(STORAGE_KEY)
           return null
         }
@@ -97,17 +96,12 @@ export function PromoProvider({ children }: { children: ReactNode }) {
         const isServerExpired = parsed.expiresAt && parsed.expiresAt < Date.now()
 
         if (!isLocallyExpired && !isServerExpired) {
-          console.log('[PromoContext] Restored promo from localStorage:', parsed.code)
           return parsed
         }
         // Clear expired promo
-        const expireReason = isServerExpired ? 'server expiry reached' : 'local expiry (24h)'
-        console.log(`[PromoContext] Promo expired (${expireReason}), clearing:`, parsed.code)
         localStorage.removeItem(STORAGE_KEY)
       }
-    } catch (err) {
-      // Log storage errors for debugging
-      console.error('[PromoContext] Failed to load promo from localStorage:', err)
+    } catch {
       // Clear corrupted data
       try {
         localStorage.removeItem(STORAGE_KEY)
@@ -131,15 +125,11 @@ export function PromoProvider({ children }: { children: ReactNode }) {
       if (activePromo) {
         const serialized = JSON.stringify(activePromo)
         localStorage.setItem(STORAGE_KEY, serialized)
-        console.log('[PromoContext] Saved promo to localStorage:', activePromo.code)
       } else {
         localStorage.removeItem(STORAGE_KEY)
-        console.log('[PromoContext] Cleared promo from localStorage')
       }
-    } catch (err) {
-      // Log storage errors for debugging
-      console.error('[PromoContext] Failed to save promo to localStorage:', err)
-      console.error('[PromoContext] Promo data:', activePromo)
+    } catch {
+      // Storage error - ignore (user may have disabled localStorage)
     }
   }, [activePromo])
 
@@ -153,7 +143,6 @@ export function PromoProvider({ children }: { children: ReactNode }) {
 
             // Validate the parsed data
             if (!isValidActivePromo(parsed)) {
-              console.warn('[PromoContext] Invalid promo data from storage event, ignoring')
               return
             }
 
@@ -163,19 +152,16 @@ export function PromoProvider({ children }: { children: ReactNode }) {
             const isServerExpired = parsed.expiresAt && parsed.expiresAt < Date.now()
 
             if (!isLocallyExpired && !isServerExpired) {
-              console.log('[PromoContext] Promo synced from another tab:', parsed.code)
               setActivePromo(parsed)
               setValidationError(null)
             }
           } else {
             // Promo was cleared in another tab
-            console.log('[PromoContext] Promo cleared in another tab')
             setActivePromo(null)
             setValidationError(null)
           }
-        } catch (err) {
-          // Log parse errors for debugging
-          console.error('[PromoContext] Failed to parse storage event:', err)
+        } catch {
+          // Invalid JSON - ignore
         }
       }
     }
@@ -309,9 +295,8 @@ export function PromoProvider({ children }: { children: ReactNode }) {
 
         return false
       }
-    } catch (err) {
+    } catch {
       // Network error - keep the promo but mark as potentially stale
-      console.warn('[PromoContext] Revalidation failed:', err)
       // Don't clear the promo on network error - let the server handle it at order time
       return true
     } finally {

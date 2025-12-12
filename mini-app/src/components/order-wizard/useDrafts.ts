@@ -46,8 +46,8 @@ export function useDrafts({ serviceTypeId, currentData }: UseDraftsOptions): Use
   useEffect(() => {
     try {
       localStorage.setItem(DRAFTS_BY_TYPE_KEY, JSON.stringify(drafts))
-    } catch (err) {
-      console.warn('Failed to save drafts:', err)
+    } catch {
+      /* silent */
     }
   }, [drafts])
 

@@ -80,8 +80,8 @@ export const useSensoryFeedback = (config: SensoryConfig = {}) => {
                         webApp.HapticFeedback.selectionChanged();
                         break;
                 }
-            } catch (e) {
-                console.warn('Telegram haptics failed:', e);
+            } catch {
+                /* silent */
             }
         } else {
             // Browser Fallback (Navigator API)
@@ -123,8 +123,8 @@ export const useSensoryFeedback = (config: SensoryConfig = {}) => {
                 case 'failure': playFailure(); break;
                 case 'selection': playSelection(); break;
             }
-        } catch (e) {
-            console.warn('Audio playback failed:', e);
+        } catch {
+            /* silent */
         }
     }, [isMuted, playTouch, playActuate, playClimax, playSuccess, playFailure, playSelection]);
 

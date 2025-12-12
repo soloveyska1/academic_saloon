@@ -519,12 +519,11 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       const msgs = normalizeMessageDates(response?.messages || [])
       setMessages(msgs)
       setUnreadCount(response?.unread_count || 0)
-    } catch (err) {
+    } catch {
       // Only show error if we have no messages at all
       if (messages.length === 0) {
         setError('Не удалось загрузить сообщения')
       }
-      console.error('Chat load error:', err)
     } finally {
       setLoading(false)
     }

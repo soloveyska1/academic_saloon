@@ -1980,6 +1980,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                     <img
                       src={screenshotPreview}
                       alt="Скриншот оплаты"
+                      loading="lazy"
                       style={{
                         width: '100%',
                         maxHeight: 200,
@@ -3493,8 +3494,8 @@ export function OrderDetailPageV8() {
         try {
           const payment = await fetchPaymentInfo(orderId)
           setPaymentInfo(payment)
-        } catch (err) {
-          console.error('[OrderDetailV8] Failed to load payment info:', err)
+        } catch {
+          /* silent */
         }
       }
     } catch (err) {

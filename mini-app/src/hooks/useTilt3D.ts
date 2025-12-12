@@ -217,8 +217,7 @@ export function useTilt3D<T extends HTMLElement>(options: UseTilt3DOptions = {})
             window.addEventListener('deviceorientation', handleDeviceOrientation)
           }
         }
-      } catch (err) {
-        console.warn('[useTilt3D] Gyroscope setup failed:', err)
+      } catch {
         gyroPermissionRef.current = false
       }
     }

@@ -223,8 +223,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// Convenience functions
-export function toast(type: ToastType, title: string, message?: string) {
-  // This is a placeholder - actual implementation needs context
-  console.log(`[Toast] ${type}: ${title} - ${message}`)
-}
+// Note: For toast functionality, use the useToast() hook within components:
+// const { showToast } = useToast()
+// showToast({ type: 'success', title: 'Done!', message: 'Optional message' })

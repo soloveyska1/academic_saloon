@@ -171,7 +171,8 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
                 {userPhotoUrl ? (
                   <img
                     src={userPhotoUrl}
-                    alt="User"
+                    alt="User avatar"
+                    loading="lazy"
                     className="w-full h-full object-cover opacity-90 mix-blend-luminosity"
                   />
                 ) : (

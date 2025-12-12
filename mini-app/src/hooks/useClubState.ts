@@ -99,8 +99,8 @@ export function useClubState(userId?: number) {
           level: calculateLevel(parsed.xp || 0),
         }
       }
-    } catch (e) {
-      console.error('[useClubState] Ошибка загрузки состояния:', e)
+    } catch {
+      // Invalid stored data - use default state
     }
     return getDefaultState()
   })
@@ -112,8 +112,8 @@ export function useClubState(userId?: number) {
         ...state,
         lastUpdated: new Date().toISOString(),
       }))
-    } catch (e) {
-      console.error('[useClubState] Ошибка сохранения:', e)
+    } catch {
+      // Storage unavailable - ignore
     }
   }, [state, storageKey])
 

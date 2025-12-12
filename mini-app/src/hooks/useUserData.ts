@@ -50,8 +50,8 @@ export function useUserData() {
     try {
       const data = await fetchUserData()
       setUserData(data)
-    } catch (err) {
-      console.error('Refetch error:', err)
+    } catch {
+      // Silent refetch failure - user data stays unchanged
     }
   }
 

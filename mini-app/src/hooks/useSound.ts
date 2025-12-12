@@ -10,8 +10,8 @@ export const useSound = () => {
     return () => {
       try {
         audioContextRef.current?.close();
-      } catch (e) {
-        console.error('AudioContext close failed:', e);
+      } catch {
+        /* silent */
       }
     };
   }, []);
@@ -23,13 +23,13 @@ export const useSound = () => {
         if (AudioContextClass) {
           audioContextRef.current = new AudioContextClass();
         }
-      } catch (e) {
-        console.error('AudioContext init failed:', e);
+      } catch {
+        /* silent */
       }
     }
 
     if (audioContextRef.current?.state === 'suspended') {
-      audioContextRef.current.resume().catch((e: unknown) => console.error('Audio resume failed:', e));
+      audioContextRef.current.resume().catch(() => { /* silent */ });
     }
   }, []);
 

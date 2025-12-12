@@ -33,9 +33,8 @@ export function SupportChat() {
                 }
                 return prev
             })
-        } catch (err) {
+        } catch {
             errorCountRef.current++
-            console.error('Failed to load messages:', err)
 
             // Show error after 3 consecutive failures
             if (errorCountRef.current >= 3) {
@@ -104,8 +103,7 @@ export function SupportChat() {
 
             await sendSupportMessage(textToSend)
             await loadMessages() // Sync real ID
-        } catch (err) {
-            console.error('Failed to send:', err)
+        } catch {
             // Rollback - restore input
             setInputText(textToSend)
             setMessages(prev => prev.filter(m => m.id !== Date.now()))

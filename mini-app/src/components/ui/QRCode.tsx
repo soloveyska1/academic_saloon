@@ -46,8 +46,7 @@ export function QRCodeModal({
         const blob = await response.blob()
         const url = URL.createObjectURL(blob)
         setPremiumCardUrl(url)
-      } catch (err) {
-        console.error('Premium QR load failed:', err)
+      } catch {
         setCardError(true)
       } finally {
         setCardLoading(false)
@@ -91,8 +90,8 @@ export function QRCodeModal({
         setSharing(false)
         return
       }
-    } catch (e) {
-      console.warn('Image share failed, falling back to text:', e)
+    } catch {
+      /* silent */
     }
 
     // Fallback to text share
@@ -101,8 +100,8 @@ export function QRCodeModal({
         title: 'Academic Saloon — Приглашение',
         text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\n👉 t.me/Kladovaya_GIPSR_bot?start=${value}`,
       })
-    } catch (e) {
-      console.log('Share cancelled')
+    } catch {
+      /* silent */
     }
     setSharing(false)
   }
@@ -142,8 +141,7 @@ export function QRCodeModal({
 
       setDownloaded(true)
       setTimeout(() => setDownloaded(false), 2000)
-    } catch (error) {
-      console.error('Download failed:', error)
+    } catch {
       // Fallback: open in new tab
       window.open(fallbackQrUrl, '_blank')
     }
@@ -247,6 +245,7 @@ export function QRCodeModal({
             <img
               src={fallbackQrUrl}
               alt="QR Code"
+              loading="lazy"
               style={{
                 width: size,
                 height: size,
@@ -257,6 +256,7 @@ export function QRCodeModal({
             <img
               src={premiumCardUrl}
               alt="Premium QR Card"
+              loading="lazy"
               style={{
                 width: '100%',
                 maxWidth: 320,
@@ -268,6 +268,7 @@ export function QRCodeModal({
             <img
               src={fallbackQrUrl}
               alt="QR Code"
+              loading="lazy"
               style={{
                 width: size,
                 height: size,

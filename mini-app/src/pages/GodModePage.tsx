@@ -544,8 +544,8 @@ function DashboardTab() {
           audio.play().catch(() => {})
         } catch {}
       }
-    } catch (e) {
-      console.error('Dashboard load error:', e)
+    } catch {
+      /* silent */
     }
     setLoading(false)
   }, [pendingOrders.length])
@@ -563,8 +563,8 @@ function DashboardTab() {
       setPendingOrders(prev => prev.filter(o => o.id !== orderId))
       // Vibrate on success
       if (navigator.vibrate) navigator.vibrate(100)
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setActionLoading(null)
   }
@@ -574,8 +574,8 @@ function DashboardTab() {
     try {
       await rejectGodPayment(orderId, 'Платёж не найден')
       setPendingOrders(prev => prev.filter(o => o.id !== orderId))
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setActionLoading(null)
   }
@@ -913,8 +913,8 @@ function OrdersTab() {
       const result = await fetchGodOrders({ status: statusFilter, search, limit: 100 })
       setOrders(result.orders)
       setTotal(result.total)
-    } catch (e) {
-      console.error('Orders load error:', e)
+    } catch {
+      /* silent */
     }
     setLoading(false)
   }, [statusFilter, search])
@@ -1190,8 +1190,8 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
     try {
       await updateGodOrderStatus(order.id, status)
       onUpdate()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1201,8 +1201,8 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
     try {
       await updateGodOrderPrice(order.id, parseFloat(price))
       onUpdate()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1212,8 +1212,8 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
     try {
       await updateGodOrderProgress(order.id, parseInt(progress))
       onUpdate()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1224,8 +1224,8 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
       await confirmGodPayment(order.id)
       onUpdate()
       onClose()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1236,8 +1236,8 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
       await rejectGodPayment(order.id, 'Платёж не найден')
       onUpdate()
       onClose()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1248,8 +1248,8 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
     try {
       await sendGodOrderMessage(order.id, message)
       setMessage('')
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1542,8 +1542,8 @@ function UsersTab() {
     try {
       const result = await fetchGodUsers({ search, filter_type: filterType, limit: 100 })
       setUsers(result.users)
-    } catch (e) {
-      console.error('Users load error:', e)
+    } catch {
+      /* silent */
     }
     setLoading(false)
   }, [search, filterType])
@@ -1670,8 +1670,8 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
       setBalanceAmount('')
       setBalanceReason('')
       onUpdate()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1682,8 +1682,8 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
       await toggleGodUserBan(user.telegram_id, !user.is_banned, banReason)
       onUpdate()
       onClose()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1693,8 +1693,8 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
     try {
       await toggleGodUserWatch(user.telegram_id, !user.is_watched)
       onUpdate()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -1704,8 +1704,8 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
     try {
       await updateGodUserNotes(user.telegram_id, notes)
       onUpdate()
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSaving(false)
   }
@@ -2236,8 +2236,8 @@ function LiveTab() {
     try {
       const result = await fetchGodLiveActivity()
       setData(result)
-    } catch (e) {
-      console.error('Live load error:', e)
+    } catch {
+      /* silent */
     }
     setLoading(false)
   }, [])
@@ -2335,8 +2335,8 @@ function LogsTab() {
     try {
       const result = await fetchGodLogs({ limit: 100 })
       setLogs(result.logs)
-    } catch (e) {
-      console.error('Logs load error:', e)
+    } catch {
+      /* silent */
     }
     setLoading(false)
   }, [])
@@ -2511,8 +2511,8 @@ function BroadcastTab() {
       const res = await sendGodBroadcast(text, target)
       setResult({ sent: res.sent, failed: res.failed })
       setText('')
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setSending(false)
   }

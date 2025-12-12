@@ -25,6 +25,15 @@ export interface OrderUpdateMessage extends WSMessage {
   order_id: number
   status: string
   data?: Record<string, unknown>
+  // Smart notification fields from server
+  title?: string
+  message?: string
+  icon?: string
+  color?: string
+  priority?: 'low' | 'normal' | 'high'
+  action?: string
+  celebration?: boolean
+  confetti?: boolean
 }
 
 export interface BalanceUpdateMessage extends WSMessage {
@@ -32,6 +41,12 @@ export interface BalanceUpdateMessage extends WSMessage {
   balance: number
   change: number
   reason: string
+  // Smart notification fields from server
+  title?: string
+  message?: string
+  icon?: string
+  color?: string
+  celebration?: boolean
 }
 
 export interface NotificationMessage extends WSMessage {
@@ -39,6 +54,9 @@ export interface NotificationMessage extends WSMessage {
   notification_type: 'info' | 'success' | 'warning' | 'error'
   title: string
   message: string
+  // Smart notification fields from server
+  icon?: string
+  color?: string
 }
 
 export interface RefreshMessage extends WSMessage {
@@ -143,7 +161,6 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const message: WSMessage = JSON.parse(event.data)
-      console.log('[WS] Received message:', message.type, message)
       setLastMessage(message)
 
       // Call all registered handlers
@@ -153,23 +170,18 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       const handlers = handlersRef.current
       switch (message.type) {
         case 'order_update':
-          console.log('[WS] Calling onOrderUpdate handler')
           handlers.onOrderUpdate?.(message as OrderUpdateMessage)
           break
         case 'balance_update':
-          console.log('[WS] Calling onBalanceUpdate handler')
           handlers.onBalanceUpdate?.(message as BalanceUpdateMessage)
           break
         case 'progress_update':
-          console.log('[WS] Calling onProgressUpdate handler')
           handlers.onProgressUpdate?.(message as ProgressUpdateMessage)
           break
         case 'notification':
-          console.log('[WS] Calling onNotification handler')
           handlers.onNotification?.(message as NotificationMessage)
           break
         case 'refresh':
-          console.log('[WS] Calling onRefresh handler')
           handlers.onRefresh?.(message as RefreshMessage)
           break
         case 'ping':
@@ -177,18 +189,17 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
           sendMessage({ type: 'pong' })
           break
         case 'connected':
-          console.log('[WS] Connected to server')
+          // Connection confirmed by server
           break
       }
-    } catch (e) {
-      console.error('[WS] Failed to parse message:', e)
+    } catch {
+      // Invalid message format - ignore
     }
   }, [sendMessage]) // Only depends on sendMessage now, handlers are from refs
 
   // Connect to WebSocket
   const connect = useCallback(() => {
     if (!telegramId) {
-      console.log('[WS] No telegramId, skipping connection')
       return
     }
 
@@ -198,13 +209,11 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     }
 
     const url = getWebSocketUrl(telegramId)
-    console.log('[WS] Connecting to:', url)
 
     try {
       const ws = new WebSocket(url)
 
       ws.onopen = () => {
-        console.log('[WS] Connection opened successfully!')
         setIsConnected(true)
         setConnectionError(null)
         reconnectAttemptsRef.current = 0 // Сброс счётчика при успешном подключении
@@ -224,7 +233,6 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       ws.onmessage = handleMessage
 
       ws.onclose = (event) => {
-        console.log('[WS] Connection closed:', event.code, event.reason)
         setIsConnected(false)
         handlersRef.current.onDisconnect?.()
 
@@ -242,25 +250,21 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
               60000 // Максимум 60 секунд
             )
             reconnectAttemptsRef.current++
-            console.log(`[WS] Reconnecting in ${backoffDelay}ms... (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`)
             reconnectTimeoutRef.current = window.setTimeout(() => {
               connect()
             }, backoffDelay)
           } else {
-            console.log('[WS] Max reconnection attempts reached, stopping auto-reconnect')
             setConnectionError('Connection lost. Please refresh the page.')
           }
         }
       }
 
-      ws.onerror = (error) => {
-        console.error('[WS] Error:', error)
+      ws.onerror = () => {
         setConnectionError('Connection error')
       }
 
       wsRef.current = ws
-    } catch (e) {
-      console.error('[WS] Failed to create WebSocket:', e)
+    } catch {
       setConnectionError('Failed to connect')
     }
   }, [telegramId, handleMessage, autoReconnect, reconnectInterval, sendMessage])
@@ -301,7 +305,6 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && telegramId && !isConnected) {
-        console.log('[WS] Tab visible, reconnecting...')
         connect()
       }
     }
