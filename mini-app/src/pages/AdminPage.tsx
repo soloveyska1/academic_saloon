@@ -19,6 +19,7 @@ import {
     OrderRow,
     ClientProfileModal,
     MessageTemplates,
+    LiveActivityFeed,
 } from '../components/admin'
 import {
     useKeyboardShortcuts,
@@ -178,7 +179,7 @@ export const AdminPage: React.FC = () => {
     // DATA LOADING
     // ═══════════════════════════════════════════════════════════════
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setIsLoading(true)
         try {
             const [s, o, u] = await Promise.all([
@@ -195,7 +196,18 @@ export const AdminPage: React.FC = () => {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [showToast])
+
+    // Auto-refresh data every 30 seconds
+    useEffect(() => {
+        if (!isAuthenticated) return
+
+        const interval = setInterval(() => {
+            loadData()
+        }, 30000)
+
+        return () => clearInterval(interval)
+    }, [isAuthenticated, loadData])
 
     // ═══════════════════════════════════════════════════════════════
     // FILTERED ORDERS
@@ -575,7 +587,32 @@ export const AdminPage: React.FC = () => {
                 <main className="p-4 lg:p-6 pb-24">
                     {/* DASHBOARD */}
                     {activeSection === 'dashboard' && (
-                        <CRMDashboard stats={stats} isLoading={isLoading} />
+                        <div className="space-y-6">
+                            {/* Live Feed - главное на дашборде */}
+                            <LiveActivityFeed
+                                onOrderClick={(orderId) => {
+                                    const order = orders.find(o => o.id === orderId)
+                                    if (order) {
+                                        setSelectedOrder(order)
+                                    } else {
+                                        // Если заказ не загружен, перейти к заказам и обновить
+                                        setActiveSection('orders')
+                                        loadData()
+                                    }
+                                }}
+                                onUserClick={(userId) => {
+                                    // Найти пользователя по telegram_id и открыть профиль
+                                    const user = users.find(u => u.telegram_id === userId)
+                                    if (user) {
+                                        setSelectedClientId(user.internal_id)
+                                        setClientProfileOpen(true)
+                                    }
+                                }}
+                            />
+
+                            {/* Краткая статистика под лентой */}
+                            <CRMDashboard stats={stats} isLoading={isLoading} />
+                        </div>
                     )}
 
                     {/* ORDERS */}

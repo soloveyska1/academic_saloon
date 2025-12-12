@@ -321,6 +321,11 @@ export async function fetchClientProfile(userId: number): Promise<import('../typ
   return apiFetch<import('../types').ClientProfile>(`/admin/clients/${userId}`)
 }
 
+export async function fetchLiveFeed(since?: string): Promise<import('../types').LiveFeedData> {
+  const url = since ? `/admin/live-feed?since=${encodeURIComponent(since)}` : '/admin/live-feed'
+  return apiFetch<import('../types').LiveFeedData>(url)
+}
+
 export async function executeAdminSql(query: string): Promise<AdminSqlResponse> {
   return apiFetch<AdminSqlResponse>('/admin/sql', {
     method: 'POST',

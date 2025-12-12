@@ -481,6 +481,37 @@ export interface ClientProfile {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//                          LIVE FEED TYPES (Real-time admin)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export type LiveEventType = 'new_order' | 'payment_received' | 'needs_estimation' | 'new_user' | 'order_completed' | 'status_changed'
+export type LiveEventPriority = 'critical' | 'high' | 'normal' | 'low'
+
+export interface LiveEvent {
+  id: string
+  type: LiveEventType
+  priority: LiveEventPriority
+  title: string
+  message: string
+  order_id?: number
+  user_id?: number
+  amount?: number
+  timestamp: string
+  is_new: boolean
+}
+
+export interface LiveFeedData {
+  events: LiveEvent[]
+  counters: {
+    pending_orders: number
+    pending_payments: number
+    needs_estimation: number
+  }
+  last_update: string
+  has_critical: boolean
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //                          GOD MODE TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 

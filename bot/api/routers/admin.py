@@ -17,7 +17,8 @@ from bot.api.schemas import (
     AdminSqlRequest, AdminSqlResponse, AdminUserResponse,
     AdminStatsResponse, OrderResponse, AdminOrderUpdate, AdminPriceUpdate,
     AdminMessageRequest, AdminProgressUpdate, RecentActivityItem,
-    ClientProfileResponse, ClientOrderSummary, RevenueChartResponse, DailyRevenueItem
+    ClientProfileResponse, ClientOrderSummary, RevenueChartResponse, DailyRevenueItem,
+    LiveEvent, LiveFeedResponse
 )
 from bot.bot_instance import get_bot
 
@@ -512,5 +513,180 @@ async def update_order_progress_admin(
         # Even if error in helper, return success if DB updated... helper does DB update though.
         # Assuming helper handles it.
         pass
-    
+
     return {'success': True}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  LIVE FEED ENDPOINT (Real-time updates)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/admin/live-feed", response_model=LiveFeedResponse)
+async def get_live_feed(
+    since: str = None,  # ISO timestamp to get events after
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get live feed of events for real-time admin updates
+
+    Returns:
+    - New orders (pending status)
+    - Payments awaiting verification
+    - Recent status changes
+    - New users
+
+    Pass `since` timestamp to get only new events since last poll.
+    """
+    if not is_admin(tg_user.id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    now = datetime.utcnow()
+
+    # Parse since timestamp or default to last 30 minutes
+    if since:
+        try:
+            since_dt = datetime.fromisoformat(since.replace('Z', '+00:00').replace('+00:00', ''))
+        except ValueError:
+            since_dt = now - timedelta(minutes=30)
+    else:
+        since_dt = now - timedelta(minutes=30)
+
+    events: List[LiveEvent] = []
+
+    # 1. New orders (pending) - CRITICAL priority
+    pending_orders_query = select(Order).where(
+        and_(
+            Order.status == OrderStatus.PENDING.value,
+            Order.created_at >= since_dt
+        )
+    ).order_by(desc(Order.created_at)).limit(20)
+
+    pending_res = await session.execute(pending_orders_query)
+    for order in pending_res.scalars():
+        work_label = WORK_TYPE_LABELS.get(order.work_type, order.work_type)
+        events.append(LiveEvent(
+            id=f"{order.created_at.timestamp()}_new_order_{order.id}",
+            type="new_order",
+            priority="critical",
+            title="🆕 Новый заказ",
+            message=f"#{order.id} • {work_label}" + (f" • {order.subject}" if order.subject else ""),
+            order_id=order.id,
+            user_id=order.user_id,
+            timestamp=order.created_at.isoformat() if order.created_at else now.isoformat()
+        ))
+
+    # 2. Payments awaiting verification - CRITICAL priority
+    payment_orders_query = select(Order).where(
+        and_(
+            Order.status == OrderStatus.VERIFICATION_PENDING.value,
+            Order.updated_at >= since_dt
+        )
+    ).order_by(desc(Order.updated_at)).limit(20)
+
+    payment_res = await session.execute(payment_orders_query)
+    for order in payment_res.scalars():
+        events.append(LiveEvent(
+            id=f"{order.updated_at.timestamp()}_payment_{order.id}",
+            type="payment_received",
+            priority="critical",
+            title="💰 Оплата на проверке",
+            message=f"#{order.id} • {order.final_price or order.price or 0:,.0f} ₽",
+            order_id=order.id,
+            user_id=order.user_id,
+            amount=float(order.final_price or order.price or 0),
+            timestamp=order.updated_at.isoformat() if order.updated_at else now.isoformat()
+        ))
+
+    # 3. Orders waiting estimation - HIGH priority
+    estimation_orders_query = select(Order).where(
+        and_(
+            Order.status == OrderStatus.WAITING_ESTIMATION.value,
+            Order.created_at >= since_dt
+        )
+    ).order_by(desc(Order.created_at)).limit(10)
+
+    estimation_res = await session.execute(estimation_orders_query)
+    for order in estimation_res.scalars():
+        events.append(LiveEvent(
+            id=f"{order.created_at.timestamp()}_estimation_{order.id}",
+            type="needs_estimation",
+            priority="high",
+            title="📝 Нужна оценка",
+            message=f"#{order.id} • {order.subject or 'Без темы'}",
+            order_id=order.id,
+            user_id=order.user_id,
+            timestamp=order.created_at.isoformat() if order.created_at else now.isoformat()
+        ))
+
+    # 4. New users - NORMAL priority
+    new_users_query = select(User).where(
+        User.created_at >= since_dt
+    ).order_by(desc(User.created_at)).limit(10)
+
+    users_res = await session.execute(new_users_query)
+    for user in users_res.scalars():
+        events.append(LiveEvent(
+            id=f"{user.created_at.timestamp()}_new_user_{user.id}",
+            type="new_user",
+            priority="normal",
+            title="👤 Новый клиент",
+            message=user.fullname or user.username or f"ID: {user.telegram_id}",
+            user_id=user.telegram_id,
+            timestamp=user.created_at.isoformat() if user.created_at else now.isoformat()
+        ))
+
+    # 5. Completed orders - LOW priority (just for info)
+    completed_query = select(Order).where(
+        and_(
+            Order.status == OrderStatus.COMPLETED.value,
+            Order.completed_at >= since_dt
+        )
+    ).order_by(desc(Order.completed_at)).limit(5)
+
+    completed_res = await session.execute(completed_query)
+    for order in completed_res.scalars():
+        events.append(LiveEvent(
+            id=f"{order.completed_at.timestamp()}_completed_{order.id}",
+            type="order_completed",
+            priority="low",
+            title="✅ Заказ завершён",
+            message=f"#{order.id} • +{order.paid_amount or 0:,.0f} ₽",
+            order_id=order.id,
+            amount=float(order.paid_amount or 0),
+            timestamp=order.completed_at.isoformat() if order.completed_at else now.isoformat()
+        ))
+
+    # Sort events by timestamp (newest first)
+    events.sort(key=lambda e: e.timestamp, reverse=True)
+
+    # Calculate counters
+    pending_count_query = select(func.count(Order.id)).where(
+        Order.status == OrderStatus.PENDING.value
+    )
+    pending_count_res = await session.execute(pending_count_query)
+    pending_count = pending_count_res.scalar() or 0
+
+    payments_count_query = select(func.count(Order.id)).where(
+        Order.status == OrderStatus.VERIFICATION_PENDING.value
+    )
+    payments_count_res = await session.execute(payments_count_query)
+    payments_count = payments_count_res.scalar() or 0
+
+    estimation_count_query = select(func.count(Order.id)).where(
+        Order.status == OrderStatus.WAITING_ESTIMATION.value
+    )
+    estimation_count_res = await session.execute(estimation_count_query)
+    estimation_count = estimation_count_res.scalar() or 0
+
+    has_critical = pending_count > 0 or payments_count > 0
+
+    return LiveFeedResponse(
+        events=events[:30],  # Limit to 30 events
+        counters={
+            "pending_orders": pending_count,
+            "pending_payments": payments_count,
+            "needs_estimation": estimation_count,
+        },
+        last_update=now.isoformat(),
+        has_critical=has_critical
+    )
