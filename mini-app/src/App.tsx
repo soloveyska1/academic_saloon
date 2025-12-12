@@ -30,7 +30,6 @@ import { motion } from 'framer-motion'
 // Lazy Load Pages
 const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })))
 const OrdersPage = lazy(() => import('./pages/OrdersPage').then(module => ({ default: module.OrdersPage })))
-const OrderDetailPage = lazy(() => import('./pages/OrderDetailPage').then(module => ({ default: module.OrderDetailPage })))
 const OrderDetailPageV8 = lazy(() => import('./pages/OrderDetailPageV8').then(module => ({ default: module.OrderDetailPageV8 })))
 const RoulettePage = lazy(() => import('./pages/RoulettePage').then(module => ({ default: module.RoulettePage })))
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then(module => ({ default: module.ProfilePage })))
@@ -452,8 +451,7 @@ function AppContent() {
                     <Routes>
                       <Route path="/" element={<HomePage user={userData} />} />
                       <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
-                      <Route path="/order/:id" element={<OrderDetailPage />} />
-                      <Route path="/order-v8/:id" element={<OrderDetailPageV8 />} />
+                      <Route path="/order/:id" element={<OrderDetailPageV8 />} />
                       <Route path="/roulette" element={
                         <ErrorBoundary>
                           <RoulettePage user={userData} />
