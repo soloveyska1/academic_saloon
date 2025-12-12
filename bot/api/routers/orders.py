@@ -976,3 +976,47 @@ async def confirm_work_completion(
         pass
 
     return ConfirmWorkResponse(success=True, message=f"Спасибо! Заказ завершён.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ARCHIVE / UNARCHIVE
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.post("/orders/{order_id}/archive")
+async def archive_order(
+    order_id: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Archive an order to hide it from the main list"""
+    order = await session.get(Order, order_id)
+    if not order or order.user_id != tg_user.id:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
+
+    order.is_archived = True
+    await session.commit()
+
+    return {"success": True, "message": "Заказ перемещён в архив"}
+
+
+@router.post("/orders/{order_id}/unarchive")
+async def unarchive_order(
+    order_id: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Restore an order from archive"""
+    order = await session.get(Order, order_id)
+    if not order or order.user_id != tg_user.id:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Order not found"}
+        )
+
+    order.is_archived = False
+    await session.commit()
+
+    return {"success": True, "message": "Заказ восстановлен из архива"}

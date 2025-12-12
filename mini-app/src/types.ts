@@ -99,6 +99,7 @@ export interface Order {
   username?: string | null
   telegram_id?: number
   review_submitted?: boolean
+  is_archived?: boolean  // Whether order is hidden in archive
 }
 
 export type OrderStatus =

@@ -76,6 +76,7 @@ class OrderResponse(BaseModel):
     payment_scheme: Optional[str] = None  # full / half
     files_url: Optional[str] = None  # Yandex.Disk folder URL with work files
     review_submitted: bool = False  # Whether review was submitted
+    is_archived: bool = False  # Whether order is archived
     created_at: str
     completed_at: Optional[str] = None
 

@@ -95,6 +95,7 @@ def order_to_response(order: Order) -> OrderResponse:
         payment_scheme=order.payment_scheme,  # full / half
         files_url=getattr(order, 'files_url', None),  # Work files URL (Yandex.Disk)
         review_submitted=getattr(order, 'review_submitted', False),  # Whether review was submitted
+        is_archived=getattr(order, 'is_archived', False),  # Whether order is archived
         created_at=order.created_at.isoformat() if order.created_at else "",
         completed_at=order.completed_at.isoformat() if order.completed_at else None
     )

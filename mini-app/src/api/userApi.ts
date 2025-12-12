@@ -136,6 +136,23 @@ export async function fetchOrderDetail(orderId: number): Promise<Order> {
   return await apiFetch<Order>(`/orders/${orderId}`)
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  ORDER ARCHIVE
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ArchiveResponse {
+  success: boolean
+  message: string
+}
+
+export async function archiveOrder(orderId: number): Promise<ArchiveResponse> {
+  return await apiFetch<ArchiveResponse>(`/orders/${orderId}/archive`, { method: 'POST' })
+}
+
+export async function unarchiveOrder(orderId: number): Promise<ArchiveResponse> {
+  return await apiFetch<ArchiveResponse>(`/orders/${orderId}/unarchive`, { method: 'POST' })
+}
+
 export async function applyPromoCode(code: string): Promise<PromoResult> {
   if (!hasTelegramContext() && IS_DEV) return { success: code === 'COWBOY20', message: 'OK', discount: 20 }
   return await apiFetch<PromoResult>('/promo', {

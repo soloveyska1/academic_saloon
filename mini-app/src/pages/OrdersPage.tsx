@@ -6,7 +6,7 @@ import {
   Calendar, MessageCircle, Sparkles, Filter, X, Zap, Target, Eye, EyeOff,
   GraduationCap, FileText, BookOpen, Briefcase, PenTool, ClipboardCheck, Presentation, Scroll, Camera,
   Star, Crown, Gem, Award, Wallet, ChevronDown, Activity, Flame, Shield, Trophy,
-  SortAsc, ArrowUpRight, Package, Layers, Bell, ChevronUp
+  SortAsc, ArrowUpRight, Package, Layers, Bell, ChevronUp, Archive
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -30,7 +30,7 @@ interface Props {
   orders: Order[]
 }
 
-type FilterType = 'all' | 'action' | 'active' | 'completed'
+type FilterType = 'all' | 'action' | 'active' | 'completed' | 'archived'
 type SortOption = 'priority' | 'deadline' | 'price' | 'date'
 type ViewMode = 'list' | 'timeline'
 
@@ -423,6 +423,7 @@ const FilterBar = memo(function FilterBar({
     { key: 'action', label: 'Требуют', count: counts.action },
     { key: 'active', label: 'Активные', count: counts.active },
     { key: 'completed', label: 'Готово', count: counts.completed },
+    ...(counts.archived > 0 ? [{ key: 'archived' as FilterType, label: 'Архив', count: counts.archived }] : []),
   ]
 
   return (
@@ -1066,6 +1067,12 @@ const EmptyState = memo(function EmptyState({
       subtitle: 'Завершённые заказы появятся здесь',
       showCreate: true,
     },
+    archived: {
+      icon: Archive,
+      title: 'Архив пуст',
+      subtitle: 'Перемещённые в архив заказы появятся здесь',
+      showCreate: false,
+    },
   }
 
   const config = searchQuery ? {
@@ -1285,12 +1292,14 @@ export function OrdersPage({ orders }: Props) {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  // Calculate stats
+  // Calculate stats (exclude archived from main counts)
   const stats = useMemo(() => {
-    const active = orders.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status))
-    const needsAction = orders.filter(o => STATUS_CONFIG[o.status]?.needsAction)
-    const completed = orders.filter(o => o.status === 'completed')
-    const totalValue = orders.reduce((sum, o) => {
+    const nonArchived = orders.filter(o => !o.is_archived)
+    const archived = orders.filter(o => o.is_archived)
+    const active = nonArchived.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status))
+    const needsAction = nonArchived.filter(o => STATUS_CONFIG[o.status]?.needsAction)
+    const completed = nonArchived.filter(o => o.status === 'completed')
+    const totalValue = nonArchived.reduce((sum, o) => {
       if (!['cancelled', 'rejected'].includes(o.status)) {
         return sum + (o.final_price || o.price || 0)
       }
@@ -1301,7 +1310,8 @@ export function OrdersPage({ orders }: Props) {
       active: active.length,
       action: needsAction.length,
       completed: completed.length,
-      all: orders.length,
+      all: nonArchived.length,
+      archived: archived.length,
       totalValue,
     }
   }, [orders])
@@ -1310,13 +1320,20 @@ export function OrdersPage({ orders }: Props) {
   const filteredOrders = useMemo(() => {
     let result = [...orders]
 
-    // Apply filter
-    if (filter === 'action') {
-      result = result.filter(o => STATUS_CONFIG[o.status]?.needsAction)
-    } else if (filter === 'active') {
-      result = result.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status))
-    } else if (filter === 'completed') {
-      result = result.filter(o => o.status === 'completed')
+    // Apply filter (archived orders hidden by default, shown only in 'archived' tab)
+    if (filter === 'archived') {
+      result = result.filter(o => o.is_archived)
+    } else {
+      // Hide archived from all other views
+      result = result.filter(o => !o.is_archived)
+
+      if (filter === 'action') {
+        result = result.filter(o => STATUS_CONFIG[o.status]?.needsAction)
+      } else if (filter === 'active') {
+        result = result.filter(o => !['completed', 'cancelled', 'rejected'].includes(o.status))
+      } else if (filter === 'completed') {
+        result = result.filter(o => o.status === 'completed')
+      }
     }
 
     // Apply search
