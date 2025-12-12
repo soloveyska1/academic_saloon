@@ -425,6 +425,18 @@ export interface AdminSqlResponse {
   error?: string
 }
 
+export interface DailyRevenueItem {
+  date: string
+  revenue: number
+  orders_count: number
+}
+
+export interface RevenueChartData {
+  data: DailyRevenueItem[]
+  total: number
+  period_days: number
+}
+
 export interface ClientOrderSummary {
   id: number
   status: string
