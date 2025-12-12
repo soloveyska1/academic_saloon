@@ -179,7 +179,7 @@ export function ProfilePageNew({ user }: Props) {
 
   const handleNewOrder = useCallback(() => {
     haptic('medium')
-    navigate('/order')
+    navigate('/create-order')
   }, [haptic, navigate])
 
   const handleBonuses = useCallback(() => {
