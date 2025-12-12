@@ -13,6 +13,7 @@ export type WSMessageType =
   | 'pong'
   | 'chat_message'
   | 'typing_indicator'
+  | 'file_delivery'
 
 export interface WSMessage {
   type: WSMessageType
@@ -57,6 +58,18 @@ export interface NotificationMessage extends WSMessage {
   // Smart notification fields from server
   icon?: string
   color?: string
+}
+
+export interface FileDeliveryMessage extends WSMessage {
+  type: 'file_delivery'
+  order_id: number
+  file_count: number
+  files_url: string
+  title: string
+  message: string
+  icon?: string
+  color?: string
+  priority?: 'low' | 'normal' | 'high'
 }
 
 export interface RefreshMessage extends WSMessage {

@@ -310,3 +310,25 @@ async def notify_admin_event(event_type: str, data: dict):
         if await manager.send_to_user(admin_id, message):
             sent_to.append(admin_id)
     return len(sent_to) > 0
+
+
+async def notify_file_delivery(telegram_id: int, order_id: int, file_count: int, files_url: str):
+    """
+    Notify user that work files have been uploaded and are ready for download.
+    """
+    message = {
+        "type": "file_delivery",
+        "order_id": order_id,
+        "file_count": file_count,
+        "files_url": files_url,
+        "title": "📁 Файлы готовы!",
+        "message": f"Загружено {file_count} файл(ов) к вашему заказу #{order_id}",
+        "icon": "download",
+        "color": "#22c55e",
+        "priority": "high",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    success = await manager.send_to_user(telegram_id, message)
+    if success:
+        logger.info(f"[WS] Notified user {telegram_id} about file delivery for order #{order_id}")
+    return success

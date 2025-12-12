@@ -628,7 +628,9 @@ async def upload_order_files(
             status_code=404,
             content={"success": False, "message": "Order not found"}
         )
-    if order.user_id != tg_user.id:
+    # Allow order owner OR admins to upload files
+    is_admin = tg_user.id in settings.ADMIN_IDS
+    if order.user_id != tg_user.id and not is_admin:
         return JSONResponse(
             status_code=403,
             content={"success": False, "message": "Not your order"}
@@ -669,6 +671,18 @@ async def upload_order_files(
                 client_username=user.username,
                 client_name=user.fullname,
                 extra_text=f"📎 {len(file_data)} файл(ов) загружено",
+            )
+        except Exception:
+            pass
+
+        # Notify client about file delivery via WebSocket
+        try:
+            from bot.api.websocket import notify_file_delivery
+            await notify_file_delivery(
+                telegram_id=order.user_id,
+                order_id=order.id,
+                file_count=len(file_data),
+                files_url=result.folder_url
             )
         except Exception:
             pass
