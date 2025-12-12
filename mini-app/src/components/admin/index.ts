@@ -8,3 +8,4 @@ export type { OrderFiltersState } from './OrderFilters'
 
 export { OrderRow } from './OrderRow'
 export { CRMDashboard } from './CRMDashboard'
+export { ClientProfileModal } from './ClientProfileModal'

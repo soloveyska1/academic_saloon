@@ -16,7 +16,8 @@ from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
     AdminSqlRequest, AdminSqlResponse, AdminUserResponse,
     AdminStatsResponse, OrderResponse, AdminOrderUpdate, AdminPriceUpdate,
-    AdminMessageRequest, AdminProgressUpdate, RecentActivityItem
+    AdminMessageRequest, AdminProgressUpdate, RecentActivityItem,
+    ClientProfileResponse, ClientOrderSummary
 )
 from bot.bot_instance import get_bot
 
@@ -78,6 +79,93 @@ async def get_all_users(
             last_active=user.updated_at.isoformat() if user.updated_at else None
         ))
     return response
+
+@router.get("/admin/clients/{user_id}", response_model=ClientProfileResponse)
+async def get_client_profile(
+    user_id: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get full client profile with order history"""
+    if not is_admin(tg_user.id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    user = await session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # Get user's orders
+    orders_query = select(Order).where(Order.user_id == user.telegram_id).order_by(desc(Order.created_at))
+    orders_res = await session.execute(orders_query)
+    orders = orders_res.scalars().all()
+
+    # Calculate stats
+    completed_orders = sum(1 for o in orders if o.status == OrderStatus.COMPLETED.value)
+    cancelled_orders = sum(1 for o in orders if o.status in [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value])
+    total_spent = sum(o.paid_amount or 0 for o in orders)
+
+    # Determine segment
+    now = datetime.utcnow()
+    last_order_date = orders[0].created_at if orders else None
+
+    if not orders:
+        segment = "new"
+    elif total_spent >= 50000:
+        segment = "vip"
+    elif last_order_date and (now - last_order_date).days > 90:
+        segment = "churned"
+    elif last_order_date and (now - last_order_date).days > 30:
+        segment = "dormant"
+    else:
+        segment = "active"
+
+    # Get rank and loyalty info
+    from bot.api.dependencies import get_rank_levels, get_loyalty_levels, get_rank_info, get_loyalty_info
+    rank_levels = await get_rank_levels(session)
+    loyalty_levels = await get_loyalty_levels(session)
+    rank_info_obj = get_rank_info(total_spent, rank_levels) if rank_levels else None
+    loyalty_info_obj = get_loyalty_info(len(orders), loyalty_levels) if loyalty_levels else None
+
+    # Build order summaries
+    order_summaries = [
+        ClientOrderSummary(
+            id=o.id,
+            status=o.status,
+            work_type=o.work_type or '',
+            subject=o.subject,
+            price=o.price or 0,
+            final_price=o.final_price or o.price or 0,
+            paid_amount=o.paid_amount or 0,
+            created_at=o.created_at.isoformat() if o.created_at else '',
+            completed_at=o.completed_at.isoformat() if o.completed_at else None
+        )
+        for o in orders[:20]  # Limit to 20 most recent
+    ]
+
+    return ClientProfileResponse(
+        id=user.id,
+        telegram_id=user.telegram_id,
+        fullname=user.fullname or "Unknown",
+        username=user.username,
+        is_banned=getattr(user, 'is_banned', False),
+        admin_notes=getattr(user, 'admin_notes', None),
+        created_at=user.created_at.isoformat() if user.created_at else None,
+        last_active=user.updated_at.isoformat() if user.updated_at else None,
+        balance=user.balance or 0,
+        bonus_balance=getattr(user, 'bonus_balance', 0) or 0,
+        total_spent=total_spent,
+        rank_name=rank_info_obj.name if rank_info_obj else 'Новичок',
+        rank_emoji=rank_info_obj.emoji if rank_info_obj else '🌱',
+        loyalty_status=loyalty_info_obj.status if loyalty_info_obj else 'Стандарт',
+        loyalty_discount=loyalty_info_obj.discount if loyalty_info_obj else 0,
+        orders_count=len(orders),
+        completed_orders=completed_orders,
+        cancelled_orders=cancelled_orders,
+        referrals_count=getattr(user, 'referrals_count', 0) or 0,
+        referral_earnings=getattr(user, 'referral_earnings', 0) or 0,
+        orders=order_summaries,
+        segment=segment
+    )
 
 @router.get("/admin/stats", response_model=AdminStatsResponse)
 async def get_admin_stats(
