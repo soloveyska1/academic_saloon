@@ -121,11 +121,91 @@ export interface PromoResult {
   valid_until?: string | null  // ISO date string for promo expiration
 }
 
-export interface RouletteResult {
-  prize: string
-  type: 'bonus' | 'discount' | 'nothing' | 'jackpot'
-  value: number
-  message: string
+// ═══════════════════════════════════════════════════════════════════════════════
+//                          CLUB PRIVILEGES TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export type ClubLevelId = 'silver' | 'gold' | 'platinum'
+
+export interface ClubLevel {
+  id: ClubLevelId
+  name: string
+  emoji: string
+  perks: string[]
+  minXp: number
+  nextLevelXp: number | null
+  accentColor: string
+}
+
+export interface UserClubState {
+  xp: number
+  levelId: ClubLevelId
+  streakDays: number
+  lastClaimAt: string | null  // ISO date
+  pointsBalance: number
+  activeMissions: Mission[]
+  activeVouchers: Voucher[]
+}
+
+export type MissionStatus = 'pending' | 'in_progress' | 'completed'
+
+export interface Mission {
+  id: string
+  title: string
+  description: string
+  rewardPoints: number
+  status: MissionStatus
+  deepLinkTarget: string  // e.g., '/create-order?step=requirements'
+  icon: string
+}
+
+export type RewardCategory = 'free' | 'speed' | 'design' | 'discount'
+
+export interface RewardConstraints {
+  minOrderAmount?: number  // Минимальная сумма заказа
+  validDays: number  // Срок действия в днях
+  stackable: boolean  // Можно ли суммировать с другими
+  maxDiscountPercent?: number  // Лимит скидки
+  usageLimit?: number  // Сколько раз можно использовать
+}
+
+export interface Reward {
+  id: string
+  title: string
+  description: string
+  costPoints: number
+  constraints: RewardConstraints
+  category: RewardCategory
+  icon: string
+}
+
+export type VoucherStatus = 'active' | 'used' | 'expired'
+
+export interface Voucher {
+  id: string
+  rewardId: string
+  title: string
+  description: string
+  expiresAt: string  // ISO date
+  status: VoucherStatus
+  applyRules: string  // Human-readable conditions
+}
+
+export type DailyBonusStatus = 'available' | 'claimed' | 'cooldown'
+
+export interface DailyBonusState {
+  status: DailyBonusStatus
+  nextClaimAt: string | null  // ISO date
+  streakDay: number  // Current day in 7-day cycle (1-7)
+  weekRewards: number[]  // Points for each day of the week
+}
+
+export interface ClubHistoryEntry {
+  id: string
+  type: 'bonus_claim' | 'mission_complete' | 'reward_exchange' | 'voucher_use' | 'xp_gain'
+  title: string
+  points: number  // positive = earned, negative = spent
+  timestamp: string
 }
 
 // Order Creation (Web App First)

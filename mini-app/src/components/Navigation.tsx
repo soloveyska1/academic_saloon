@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion'
-import { Home, ClipboardList, Target, User, LucideIcon } from 'lucide-react'
+import { Home, ClipboardList, Crown, User, LucideIcon } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePremiumGesture } from '../hooks/usePremiumGesture'
 
@@ -19,7 +19,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/', icon: Home, label: 'Главная' },
   { path: '/orders', icon: ClipboardList, label: 'Портфель' },
-  { path: '/roulette', icon: Target, label: 'Клуб' },
+  { path: '/club', icon: Crown, label: 'Клуб' },
   { path: '/profile', icon: User, label: 'Профиль' },
 ]
 
