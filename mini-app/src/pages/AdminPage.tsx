@@ -18,6 +18,7 @@ import {
     OrderFiltersState,
     OrderRow,
     ClientProfileModal,
+    MessageTemplates,
 } from '../components/admin'
 import {
     useKeyboardShortcuts,
@@ -923,6 +924,9 @@ export const AdminPage: React.FC = () => {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Message Templates */}
+                                        <MessageTemplates onSelect={(text) => setMessageInput(text)} />
 
                                         <div className="flex gap-2">
                                             <input
