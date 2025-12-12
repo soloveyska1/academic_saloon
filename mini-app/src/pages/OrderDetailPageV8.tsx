@@ -43,6 +43,15 @@ import {
   Trash2,
   Info,
   ChevronDown,
+  FileText,
+  File,
+  Image,
+  FileArchive,
+  ExternalLink,
+  User,
+  Phone,
+  Send,
+  Award,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
 import { fetchOrderDetail, fetchPaymentInfo, PaymentInfo } from '../api/userApi'
@@ -2278,6 +2287,504 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//                              FILES SECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface OrderFile {
+  id: string
+  name: string
+  size: number
+  type: 'pdf' | 'doc' | 'docx' | 'image' | 'archive' | 'other'
+  url?: string
+  uploadedAt?: string
+}
+
+// Utility functions for files
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Б'
+  const k = 1024
+  const sizes = ['Б', 'КБ', 'МБ', 'ГБ']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+const getFileIcon = (type: OrderFile['type']) => {
+  switch (type) {
+    case 'pdf':
+    case 'doc':
+    case 'docx':
+      return FileText
+    case 'image':
+      return Image
+    case 'archive':
+      return FileArchive
+    default:
+      return File
+  }
+}
+
+const getFileColor = (type: OrderFile['type']): string => {
+  switch (type) {
+    case 'pdf':
+      return DS.colors.error
+    case 'doc':
+    case 'docx':
+      return DS.colors.info
+    case 'image':
+      return DS.colors.purple
+    case 'archive':
+      return DS.colors.warning
+    default:
+      return DS.colors.textMuted
+  }
+}
+
+interface FilesSectionProps {
+  order: Order
+  onDownloadFile: (file: OrderFile) => void
+  onDownloadAll: () => void
+}
+
+const FilesSection = memo(function FilesSection({
+  order,
+  onDownloadFile,
+  onDownloadAll,
+}: FilesSectionProps) {
+  const { haptic } = useTelegram()
+
+  // Parse files from order (mock data structure)
+  const files: OrderFile[] = order.files_url
+    ? [
+        {
+          id: '1',
+          name: 'Готовая_работа.docx',
+          size: 245760,
+          type: 'docx',
+          url: order.files_url,
+        },
+      ]
+    : []
+
+  // Check if files are available based on status
+  const filesAvailable = ['completed', 'review', 'paid', 'paid_full', 'in_progress'].includes(order.status)
+  const hasFiles = files.length > 0
+
+  if (!filesAvailable && !hasFiles) return null
+
+  return (
+    <div
+      style={{
+        margin: `0 ${DS.space.lg}px`,
+        marginBottom: DS.space.lg,
+      }}
+    >
+      {/* Section Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: DS.space.md,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+          <FileText size={18} color={DS.colors.gold} />
+          <span
+            style={{
+              fontSize: DS.fontSize.lg,
+              fontWeight: 700,
+              color: DS.colors.textPrimary,
+            }}
+          >
+            Файлы
+          </span>
+          {hasFiles && (
+            <span
+              style={{
+                padding: `${DS.space.xs}px ${DS.space.sm}px`,
+                borderRadius: DS.radius.sm,
+                background: 'rgba(212,175,55,0.15)',
+                fontSize: DS.fontSize.xs,
+                fontWeight: 600,
+                color: DS.colors.gold,
+              }}
+            >
+              {files.length}
+            </span>
+          )}
+        </div>
+
+        {hasFiles && files.length > 1 && (
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              haptic?.('light')
+              onDownloadAll()
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: DS.space.xs,
+              padding: `${DS.space.sm}px ${DS.space.md}px`,
+              borderRadius: DS.radius.md,
+              background: 'transparent',
+              border: `1px solid ${DS.colors.borderGold}`,
+              cursor: 'pointer',
+            }}
+          >
+            <Download size={14} color={DS.colors.gold} />
+            <span style={{ fontSize: DS.fontSize.sm, color: DS.colors.gold }}>
+              Скачать всё
+            </span>
+          </motion.button>
+        )}
+      </div>
+
+      {/* Files List */}
+      <div
+        style={{
+          padding: DS.space.lg,
+          borderRadius: DS.radius.xl,
+          background: DS.colors.bgCard,
+          border: `1px solid ${DS.colors.border}`,
+        }}
+      >
+        {hasFiles ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: DS.space.sm }}>
+            {files.map((file) => {
+              const FileIcon = getFileIcon(file.type)
+              const fileColor = getFileColor(file.type)
+
+              return (
+                <motion.button
+                  key={file.id}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    haptic?.('light')
+                    onDownloadFile(file)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: DS.space.md,
+                    borderRadius: DS.radius.lg,
+                    background: DS.colors.bgElevated,
+                    border: `1px solid ${DS.colors.border}`,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: DS.space.md,
+                    textAlign: 'left',
+                  }}
+                >
+                  {/* File Icon */}
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: DS.radius.md,
+                      background: `${fileColor}15`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <FileIcon size={22} color={fileColor} />
+                  </div>
+
+                  {/* File Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: DS.fontSize.base,
+                        fontWeight: 600,
+                        color: DS.colors.textPrimary,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {file.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginTop: 2,
+                      }}
+                    >
+                      {formatFileSize(file.size)}
+                    </div>
+                  </div>
+
+                  {/* Download Icon */}
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: DS.radius.sm,
+                      background: 'rgba(212,175,55,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Download size={18} color={DS.colors.gold} />
+                  </div>
+                </motion.button>
+              )
+            })}
+          </div>
+        ) : (
+          /* Empty State */
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: DS.space.xl,
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: DS.radius.lg,
+                background: 'rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: DS.space.md,
+              }}
+            >
+              <FileText size={28} color={DS.colors.textMuted} />
+            </div>
+            <p
+              style={{
+                fontSize: DS.fontSize.base,
+                color: DS.colors.textSecondary,
+                margin: 0,
+                marginBottom: DS.space.xs,
+              }}
+            >
+              Файлы появятся здесь
+            </p>
+            <p
+              style={{
+                fontSize: DS.fontSize.sm,
+                color: DS.colors.textMuted,
+                margin: 0,
+              }}
+            >
+              После выполнения работы
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              MANAGER CARD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface Manager {
+  id: string
+  name: string
+  avatar?: string
+  role: string
+  rating?: number
+  responseTime?: string
+  telegramUsername?: string
+}
+
+interface ManagerCardProps {
+  manager: Manager
+  onContactManager: () => void
+}
+
+const ManagerCard = memo(function ManagerCard({
+  manager,
+  onContactManager,
+}: ManagerCardProps) {
+  const { haptic } = useTelegram()
+
+  // Generate initials from name
+  const initials = manager.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  return (
+    <div
+      style={{
+        margin: `0 ${DS.space.lg}px`,
+        marginBottom: DS.space.lg,
+      }}
+    >
+      {/* Section Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: DS.space.sm,
+          marginBottom: DS.space.md,
+        }}
+      >
+        <User size={18} color={DS.colors.gold} />
+        <span
+          style={{
+            fontSize: DS.fontSize.lg,
+            fontWeight: 700,
+            color: DS.colors.textPrimary,
+          }}
+        >
+          Ваш менеджер
+        </span>
+      </div>
+
+      {/* Card */}
+      <div
+        style={{
+          padding: DS.space.lg,
+          borderRadius: DS.radius.xl,
+          background: DS.colors.bgCard,
+          border: `1px solid ${DS.colors.border}`,
+        }}
+      >
+        <div style={{ display: 'flex', gap: DS.space.lg }}>
+          {/* Avatar */}
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: DS.radius.lg,
+              background: `linear-gradient(135deg, ${DS.colors.gold}30, ${DS.colors.goldDark}20)`,
+              border: `2px solid ${DS.colors.borderGold}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              overflow: 'hidden',
+            }}
+          >
+            {manager.avatar ? (
+              <img
+                src={manager.avatar}
+                alt={manager.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <span
+                style={{
+                  fontSize: DS.fontSize.xl,
+                  fontWeight: 700,
+                  color: DS.colors.gold,
+                  fontFamily: 'var(--font-serif)',
+                }}
+              >
+                {initials}
+              </span>
+            )}
+          </div>
+
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: DS.fontSize.lg,
+                fontWeight: 700,
+                color: DS.colors.textPrimary,
+                marginBottom: 2,
+              }}
+            >
+              {manager.name}
+            </div>
+            <div
+              style={{
+                fontSize: DS.fontSize.sm,
+                color: DS.colors.textSecondary,
+                marginBottom: DS.space.sm,
+              }}
+            >
+              {manager.role}
+            </div>
+
+            {/* Stats Row */}
+            <div style={{ display: 'flex', gap: DS.space.md, flexWrap: 'wrap' }}>
+              {manager.rating && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.xs }}>
+                  <Star size={12} color={DS.colors.gold} fill={DS.colors.gold} />
+                  <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.textSecondary }}>
+                    {manager.rating.toFixed(1)}
+                  </span>
+                </div>
+              )}
+              {manager.responseTime && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.xs }}>
+                  <Clock size={12} color={DS.colors.success} />
+                  <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.textSecondary }}>
+                    Ответ ~{manager.responseTime}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Button */}
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            haptic?.('medium')
+            onContactManager()
+          }}
+          style={{
+            width: '100%',
+            marginTop: DS.space.lg,
+            padding: `${DS.space.md}px ${DS.space.lg}px`,
+            borderRadius: DS.radius.lg,
+            background: DS.colors.bgElevated,
+            border: `1px solid ${DS.colors.borderLight}`,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: DS.space.sm,
+          }}
+        >
+          <Send size={18} color={DS.colors.gold} />
+          <span
+            style={{
+              fontSize: DS.fontSize.base,
+              fontWeight: 600,
+              color: DS.colors.textPrimary,
+            }}
+          >
+            Написать в Telegram
+          </span>
+          {manager.telegramUsername && (
+            <span
+              style={{
+                fontSize: DS.fontSize.sm,
+                color: DS.colors.textMuted,
+              }}
+            >
+              @{manager.telegramUsername}
+            </span>
+          )}
+        </motion.button>
+      </div>
+    </div>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //                              LOADING & ERROR STATES
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -2519,6 +3026,31 @@ export function OrderDetailPageV8() {
   const isPaymentFlow = ['waiting_payment', 'confirmed'].includes(order?.status || '')
   const isVerificationPending = order?.status === 'verification_pending'
 
+  // Mock manager data (in real app would come from API)
+  const manager: Manager = {
+    id: '1',
+    name: 'Анна Смирнова',
+    role: 'Персональный менеджер',
+    rating: 4.9,
+    responseTime: '5 мин',
+    telegramUsername: 'anna_manager',
+  }
+
+  // File handlers
+  const handleDownloadFile = useCallback((file: OrderFile) => {
+    if (!file.url) return
+    haptic?.('light')
+    window.open(file.url, '_blank', 'noopener,noreferrer')
+    showToast({ type: 'success', title: 'Загрузка начата', message: file.name })
+  }, [haptic, showToast])
+
+  const handleDownloadAllFiles = useCallback(() => {
+    if (!order?.files_url) return
+    haptic?.('medium')
+    window.open(order.files_url, '_blank', 'noopener,noreferrer')
+    showToast({ type: 'success', title: 'Загрузка всех файлов' })
+  }, [order, haptic, showToast])
+
   // Render
   if (loading) {
     return (
@@ -2556,6 +3088,19 @@ export function OrderDetailPageV8() {
       {/* Trust Section - показываем для платёжного flow */}
       {(isPaymentFlow || isVerificationPending) && <TrustSection isPaymentFlow={isPaymentFlow} />}
 
+      {/* Files Section */}
+      <FilesSection
+        order={order}
+        onDownloadFile={handleDownloadFile}
+        onDownloadAll={handleDownloadAllFiles}
+      />
+
+      {/* Manager Card */}
+      <ManagerCard
+        manager={manager}
+        onContactManager={handleContactManager}
+      />
+
       {/* Placeholder for next components */}
       <div
         style={{
@@ -2568,8 +3113,8 @@ export function OrderDetailPageV8() {
         }}
       >
         <p style={{ color: DS.colors.textMuted, fontSize: DS.fontSize.sm, margin: 0 }}>
-          Этап 4 завершён<br />
-          Далее: Files, Manager, Timeline...
+          Этап 5 завершён<br />
+          Далее: Guarantees + Timeline...
         </p>
       </div>
 
