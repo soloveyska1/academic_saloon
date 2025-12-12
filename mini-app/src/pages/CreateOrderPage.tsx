@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -94,79 +94,20 @@ export function CreateOrderPage() {
     basePrice?: number
   } | null>(null)
 
-  // Ref for Telegram MainButton
-  const mainButtonCallbackRef = useRef<(() => void) | null>(null)
-
   // ─────────────────────────────────────────────────────────────────────────
-  //  TELEGRAM MAINBUTTON INTEGRATION
+  //  TELEGRAM MAINBUTTON — DISABLED
+  //  Используем собственный FloatingCtaDock для полного контроля над дизайном
   // ─────────────────────────────────────────────────────────────────────────
 
+  // Hide Telegram MainButton on mount and keep it hidden
   useEffect(() => {
     const tg = window.Telegram?.WebApp
-    if (!tg?.MainButton) return
-
-    const canProceed = step === 1 ? serviceTypeId !== null
-      : step === 2 ? subject.trim().length >= 2
-      : step === 3 ? deadline !== null
-      : false
-
-    if (step === 4 || result) {
-      tg.MainButton.hide()
-      return
-    }
-
-    // Configure MainButton text based on step
-    const buttonText = step === 3
-      ? (submitting ? 'Отправка...' : 'Рассчитать стоимость')
-      : step === 2
-        ? 'Выбрать сроки'
-        : 'Продолжить'
-
-    tg.MainButton.setParams({
-      text: buttonText,
-      color: '#D4AF37',
-      text_color: '#050505',
-    })
-
-    // Show/hide based on canProceed
-    if (canProceed && !submitting) {
-      tg.MainButton.show()
-    } else {
+    if (tg?.MainButton) {
       tg.MainButton.hide()
     }
-
-    // Set up callback
-    const handleMainButton = () => {
-      if (step === 3) {
-        handleSubmit()
-      } else {
-        goNext()
-      }
-    }
-
-    // Remove old callback and add new one
-    if (mainButtonCallbackRef.current) {
-      tg.MainButton.offClick(mainButtonCallbackRef.current)
-    }
-    tg.MainButton.onClick(handleMainButton)
-    mainButtonCallbackRef.current = handleMainButton
-
     return () => {
-      if (mainButtonCallbackRef.current) {
-        tg.MainButton.offClick(mainButtonCallbackRef.current)
-      }
-    }
-  }, [step, serviceTypeId, subject, deadline, submitting, result])
-
-  // Hide MainButton on unmount
-  useEffect(() => {
-    return () => {
-      const tg = window.Telegram?.WebApp
       if (tg?.MainButton) {
         tg.MainButton.hide()
-        if (mainButtonCallbackRef.current) {
-          tg.MainButton.offClick(mainButtonCallbackRef.current)
-        }
       }
     }
   }, [])
@@ -1127,11 +1068,8 @@ function FloatingCtaDock({
   onSubmit,
   selectedServiceLabel,
 }: FloatingCtaDockProps) {
-  // Check if Telegram MainButton is available
-  const hasTelegramMainButton = !!window.Telegram?.WebApp?.MainButton
-
-  // Don't render if Telegram MainButton is available
-  if (hasTelegramMainButton) return null
+  // Always use our custom FloatingCtaDock for full design control
+  // Telegram MainButton is disabled in favor of this component
 
   return (
     <AnimatePresence>
