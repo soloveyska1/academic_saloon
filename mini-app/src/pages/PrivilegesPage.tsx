@@ -1,18 +1,14 @@
-import { useState, useCallback, memo } from 'react'
+import { useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Crown, Check, Lock, ChevronRight, Gem, Medal } from 'lucide-react'
-import { ClubLevelId } from '../types'
+import { ArrowLeft, Crown, Check, Lock, Gem, Medal } from 'lucide-react'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { CLUB_LEVELS } from '../components/club'
+import { useClub } from '../contexts/ClubContext'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  PRIVILEGES PAGE - Full list of privileges by level
+//  PRIVILEGES PAGE - Реальные привилегии из состояния клуба
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// Current user level (mock)
-const CURRENT_LEVEL: ClubLevelId = 'silver'
-const CURRENT_XP = 350
 
 const getLevelIcon = (levelId: string, size: number = 20) => {
   switch (levelId) {
@@ -286,6 +282,7 @@ const LevelCard = memo(function LevelCard({ levelId, currentLevelId, currentXp }
 
 function PrivilegesPage() {
   const navigate = useNavigate()
+  const club = useClub()
 
   const handleBack = useCallback(() => {
     navigate('/club')
@@ -316,7 +313,7 @@ function PrivilegesPage() {
         {/* Header */}
         <PrivilegesHeader onBack={handleBack} />
 
-        {/* Explanation */}
+        {/* Current status */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -328,9 +325,24 @@ function PrivilegesPage() {
             marginBottom: 20,
           }}
         >
-          <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.7)', lineHeight: 1.5 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.6)' }}>
+              Ваш уровень
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#D4AF37' }}>
+              {CLUB_LEVELS[club.level]?.name || club.level}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.6)' }}>
+              Опыт (XP)
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+              {club.xp} XP
+            </span>
+          </div>
+          <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)', marginTop: 10 }}>
             Повышайте уровень, набирая XP за активность в клубе и оплаченные заказы.
-            Чем выше уровень — тем больше привилегий!
           </div>
         </motion.div>
 
@@ -340,8 +352,8 @@ function PrivilegesPage() {
             <LevelCard
               key={levelId}
               levelId={levelId}
-              currentLevelId={CURRENT_LEVEL}
-              currentXp={CURRENT_XP}
+              currentLevelId={club.level}
+              currentXp={club.xp}
             />
           ))}
         </div>

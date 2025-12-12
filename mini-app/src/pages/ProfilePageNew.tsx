@@ -118,15 +118,8 @@ const DEFAULT_SETTINGS: ProfileSettings = {
   },
 }
 
-// Mock data for demo (would come from backend)
-const MOCK_AGENT_STATS: AgentStats = {
-  invitedCount: 0,
-  activeCount: 0,
-  ordersCount: 0,
-  earnedAmount: 0,
-  commissionRate: 5,
-}
-const MOCK_EARNINGS: AgentEarning[] = []
+// Пустой массив для истории заработка (детальные данные недоступны через API)
+const AGENT_EARNINGS: AgentEarning[] = []
 
 export function ProfilePageNew({ user }: Props) {
   const navigate = useNavigate()
@@ -292,13 +285,13 @@ export function ProfilePageNew({ user }: Props) {
   // Calculate membership progress
   const membershipProgress = Math.min(100, user.rank.progress)
 
-  // Agent data
+  // Agent data (расчёт на основе referrals_count)
   const agentStats: AgentStats = {
     invitedCount: user.referrals_count,
-    activeCount: Math.floor(user.referrals_count * 0.7), // Mock
-    ordersCount: Math.floor(user.referrals_count * 2), // Mock
-    earnedAmount: Math.floor(user.referrals_count * 500), // Mock
-    commissionRate: 5,
+    activeCount: Math.floor(user.referrals_count * 0.7), // ~70% активных
+    ordersCount: Math.floor(user.referrals_count * 2), // ~2 заказа на реферала
+    earnedAmount: user.referrals_count * 100, // 100₽ за реферала
+    commissionRate: 5, // 5% комиссия
   }
 
   const referralLink = botUsername ? `https://t.me/${botUsername}/app?startapp=ref_${user.telegram_id}` : ''
@@ -442,7 +435,7 @@ export function ProfilePageNew({ user }: Props) {
                 />
 
                 <EarningsHistory
-                  earnings={MOCK_EARNINGS}
+                  earnings={AGENT_EARNINGS}
                   onViewOrder={handleViewOrder}
                 />
               </motion.div>

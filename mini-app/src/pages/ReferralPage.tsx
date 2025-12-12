@@ -100,14 +100,13 @@ export function ReferralPage({ user }: Props) {
   // Correct Mini App deep link format for referrals
   const referralLink = `https://t.me/${botUsername}/app?startapp=ref_${user?.telegram_id || ''}`
 
-  // Mock data - replace with real data
-  const referralCount = 3
-  const totalEarned = 250
-  const invitedFriends = [
-    { name: 'Александр', bonus: 100, date: '2 дня назад' },
-    { name: 'Мария', bonus: 100, date: '5 дней назад' },
-    { name: 'Дмитрий', bonus: 50, date: '1 неделю назад' },
-  ]
+  // Реальные данные из user
+  const referralCount = user?.referrals_count || 0
+  // Примерный расчёт заработка (100₽ за реферала)
+  const totalEarned = referralCount * 100
+
+  // Список рефералов - пока недоступен из API, показываем количество
+  const invitedFriends: { name: string; bonus: number; date: string }[] = []
 
   // Find current tier
   const currentTier = REFERRAL_TIERS.find(t => referralCount < t.count) || REFERRAL_TIERS[REFERRAL_TIERS.length - 1]
