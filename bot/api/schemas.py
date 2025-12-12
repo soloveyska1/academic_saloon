@@ -490,3 +490,29 @@ class BatchPaymentConfirmResponse(BaseModel):
     processed_count: int
     total_amount: float
     failed_orders: List[int] = []
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  LIVE FEED SCHEMAS (Real-time admin notifications)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class LiveEvent(BaseModel):
+    """Single live event for admin feed"""
+    id: str  # Unique event ID (timestamp_type_entity_id)
+    type: str  # new_order, payment_received, status_changed, new_message, new_user
+    priority: str  # critical, high, normal, low
+    title: str
+    message: str
+    order_id: Optional[int] = None
+    user_id: Optional[int] = None
+    amount: Optional[float] = None
+    timestamp: str
+    is_new: bool = True  # For highlighting new events
+
+
+class LiveFeedResponse(BaseModel):
+    """Live feed response with events and counters"""
+    events: List[LiveEvent]
+    counters: Dict[str, int]  # pending_orders, pending_payments, unread_messages
+    last_update: str
+    has_critical: bool = False  # True if there are critical events
