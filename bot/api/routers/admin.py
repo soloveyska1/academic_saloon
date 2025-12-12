@@ -23,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Admin"])
 
-ADMIN_ID = 872379852  # TODO: Move to settings/ENV
+def is_admin(user_id: int) -> bool:
+    """Check if user is in admin list"""
+    return user_id in settings.ADMIN_IDS
 
 @router.post("/admin/sql", response_model=AdminSqlResponse)
 async def execute_sql(
@@ -32,7 +34,7 @@ async def execute_sql(
     session: AsyncSession = Depends(get_session)
 ):
     """Execute raw SQL (Admin only)"""
-    if tg_user.id != ADMIN_ID:
+    if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail="Access denied")
     
     try:
@@ -58,12 +60,12 @@ async def get_all_users(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    if tg_user.id != ADMIN_ID:
+    if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail="Access denied")
-        
+
     result = await session.execute(select(User).order_by(desc(User.created_at)).limit(100))
     users = result.scalars().all()
-    
+
     response = []
     for user in users:
         response.append(AdminUserResponse(
@@ -71,7 +73,7 @@ async def get_all_users(
             telegram_id=user.telegram_id,
             fullname=user.fullname or "Unknown",
             username=user.username,
-            is_admin=user.telegram_id == ADMIN_ID,
+            is_admin=is_admin(user.telegram_id),
             last_active=user.updated_at.isoformat() if user.updated_at else None
         ))
     return response
@@ -81,7 +83,7 @@ async def get_admin_stats(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    if tg_user.id != ADMIN_ID:
+    if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail="Access denied")
         
     revenue_query = select(func.sum(Order.paid_amount)).where(Order.status == OrderStatus.COMPLETED.value)
@@ -105,7 +107,7 @@ async def get_all_orders_admin(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    if tg_user.id != ADMIN_ID:
+    if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
         
     result = await session.execute(select(Order).order_by(desc(Order.created_at)).limit(100))
@@ -129,7 +131,7 @@ async def update_order_status_admin(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    if tg_user.id != ADMIN_ID:
+    if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
         
     order = await session.get(Order, order_id)
@@ -148,7 +150,7 @@ async def update_order_price_admin(
     session: AsyncSession = Depends(get_session),
     bot: Bot = Depends(get_bot)
 ):
-    if tg_user.id != ADMIN_ID:
+    if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
         
     order = await session.get(Order, order_id)
@@ -179,7 +181,7 @@ async def send_order_message_admin(
     session: AsyncSession = Depends(get_session),
     bot: Bot = Depends(get_bot)
 ):
-    if tg_user.id != ADMIN_ID:
+    if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
         
     order = await session.get(Order, order_id)
@@ -201,7 +203,7 @@ async def update_order_progress_admin(
     session: AsyncSession = Depends(get_session),
     bot: Bot = Depends(get_bot)
 ):
-    if tg_user.id != ADMIN_ID:
+    if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail='Access denied')
 
     try:
