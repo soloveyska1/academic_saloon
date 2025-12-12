@@ -13,6 +13,7 @@ import {
   MembershipLevel,
 } from '../types'
 import { useTelegram } from '../hooks/useUserData'
+import { useClub } from '../contexts/ClubContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import {
   ProfileHeader,
@@ -118,7 +119,6 @@ const DEFAULT_SETTINGS: ProfileSettings = {
 }
 
 // Mock data for demo (would come from backend)
-const MOCK_VOUCHERS: Voucher[] = []
 const MOCK_AGENT_STATS: AgentStats = {
   invitedCount: 0,
   activeCount: 0,
@@ -131,6 +131,7 @@ const MOCK_EARNINGS: AgentEarning[] = []
 export function ProfilePageNew({ user }: Props) {
   const navigate = useNavigate()
   const { haptic, hapticSuccess, botUsername } = useTelegram()
+  const club = useClub()
 
   // Tab state - define tabs based on user role
   const isAgent = user ? user.referrals_count > 0 : false
@@ -413,7 +414,7 @@ export function ProfilePageNew({ user }: Props) {
                 exit={{ opacity: 0, y: -10 }}
               >
                 <ProfileVoucherList
-                  vouchers={MOCK_VOUCHERS}
+                  vouchers={club.vouchers}
                   onVoucherClick={handleVoucherClick}
                   onGoToClub={handleGoToClub}
                 />

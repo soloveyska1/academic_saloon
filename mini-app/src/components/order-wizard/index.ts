@@ -1,6 +1,7 @@
 // Order Wizard Components
 export { ServiceTypeStep } from './ServiceTypeStep'
 export { RequirementsStep } from './RequirementsStep'
+export { VoucherSelector } from './VoucherSelector'
 
 // Hooks
 export { useDrafts } from './useDrafts'

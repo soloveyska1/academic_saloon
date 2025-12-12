@@ -10,11 +10,13 @@ import { createOrder } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePromo } from '../contexts/PromoContext'
+import { useClub } from '../contexts/ClubContext'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
 import { Confetti } from '../components/ui/Confetti'
 import {
   ServiceTypeStep,
   RequirementsStep,
+  VoucherSelector,
   useDrafts,
   SERVICE_TYPES,
   DEADLINES,
@@ -41,6 +43,7 @@ interface PrefillData {
   subject?: string
   deadline?: string
   topic?: string
+  voucherId?: string
 }
 
 export function CreateOrderPage() {
@@ -50,6 +53,7 @@ export function CreateOrderPage() {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
   const { isDark } = useTheme()
   const { activePromo, clearPromo, revalidatePromo, isValidating: isRevalidating } = usePromo()
+  const club = useClub()
 
   // State for promo warning modal
   const [showPromoWarning, setShowPromoWarning] = useState(false)
@@ -57,6 +61,9 @@ export function CreateOrderPage() {
 
   // Check for prefill data from navigation state (Quick Reorder)
   const prefillData = (location.state as { prefill?: PrefillData })?.prefill
+
+  // Check for voucherId from navigation (coming from MyVouchersPage)
+  const preselectedVoucherId = (location.state as { voucherId?: string })?.voucherId || prefillData?.voucherId
 
   // Check for urgent/panic mode from URL params
   const isUrgentMode = searchParams.get('urgent') === 'true'
@@ -76,6 +83,7 @@ export function CreateOrderPage() {
   const [requirements, setRequirements] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
   const [files, setFiles] = useState<File[]>([])
   const [deadline, setDeadline] = useState<string | null>(isUrgentMode ? 'today' : null)
+  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(preselectedVoucherId || null)
 
   // Drafts per service type
   const { saveDraft, loadDraft, clearAllDrafts, hasDraft } = useDrafts({
@@ -209,6 +217,12 @@ export function CreateOrderPage() {
     setDeadline(value)
   }, [haptic])
 
+  // Voucher selection
+  const handleVoucherSelect = useCallback((voucherId: string | null) => {
+    haptic('light')
+    setSelectedVoucherId(voucherId)
+  }, [haptic])
+
   // Files
   const addFiles = useCallback((fileList: FileList) => {
     haptic('light')
@@ -286,6 +300,13 @@ export function CreateOrderPage() {
 
         const basePrice = getBaseEstimate()
 
+        // Use voucher if selected
+        let voucherUsed = false
+        if (selectedVoucherId && res.order_id) {
+          const voucherResult = club.useVoucher(selectedVoucherId, res.order_id)
+          voucherUsed = voucherResult.success
+        }
+
         // Clear drafts on success
         localStorage.removeItem(DRAFT_KEY)
         clearAllDrafts()
@@ -299,6 +320,9 @@ export function CreateOrderPage() {
         let finalMsg = typeof res.message === 'string' ? res.message : JSON.stringify(res.message)
         if (res.promo_failed && res.promo_failure_reason) {
           finalMsg = `Заказ создан, но промокод не применён: ${res.promo_failure_reason}`
+        }
+        if (voucherUsed) {
+          finalMsg = finalMsg + ' Ваучер применён!'
         }
 
         setResult({
@@ -323,7 +347,7 @@ export function CreateOrderPage() {
       setSubmitting(false)
       setStep(4)
     }
-  }, [serviceTypeId, deadline, subject, topic, requirements, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts])
+  }, [serviceTypeId, deadline, subject, topic, requirements, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, selectedVoucherId, club])
 
   const handlePromoWarningContinue = useCallback(() => {
     setShowPromoWarning(false)
@@ -747,6 +771,13 @@ export function CreateOrderPage() {
                   basePrice={getBaseEstimate() || undefined}
                 />
               </motion.div>
+
+              {/* Voucher Selector */}
+              <VoucherSelector
+                vouchers={club.activeVouchers}
+                selectedVoucherId={selectedVoucherId}
+                onSelect={handleVoucherSelect}
+              />
 
               {/* Estimate Card */}
               {estimate && (

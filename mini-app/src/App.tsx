@@ -8,6 +8,7 @@ import { ToastProvider } from './components/ui/Toast'
 import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { PromoProvider } from './contexts/PromoContext'
+import { ClubProvider } from './contexts/ClubContext'
 import { DeviceCapabilityProvider } from './contexts/DeviceCapabilityContext'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
@@ -434,6 +435,7 @@ function AppContent() {
         {/* PromoProvider stays mounted even during loading to preserve state */}
         <PromoProvider>
           <AdminProvider>
+            <ClubProvider userId={telegramId || undefined}>
             <ToastProvider>
               <WebSocketProvider
               telegramId={telegramId}
@@ -483,6 +485,7 @@ function AppContent() {
               </BrowserRouter>
             </WebSocketProvider>
           </ToastProvider>
+            </ClubProvider>
         </AdminProvider>
         </PromoProvider>
         </DeviceCapabilityProvider>

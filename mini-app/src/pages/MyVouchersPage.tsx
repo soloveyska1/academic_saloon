@@ -1,54 +1,15 @@
-import { useState, useCallback, memo } from 'react'
+import { useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Ticket, ShoppingBag } from 'lucide-react'
 import { Voucher } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { VoucherList } from '../components/club'
+import { useClub } from '../contexts/ClubContext'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  MY VOUCHERS PAGE - Active and past vouchers
+//  MY VOUCHERS PAGE - Реальные ваучеры из клубного состояния
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// Mock vouchers for demo
-const MOCK_VOUCHERS: Voucher[] = [
-  {
-    id: 'v1',
-    rewardId: 'priority-queue',
-    title: 'Приоритет в очереди',
-    description: 'Ваш заказ будет обработан первым',
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'active',
-    applyRules: 'Применяется автоматически к следующему заказу. Не суммируется с другими приоритетами.',
-  },
-  {
-    id: 'v2',
-    rewardId: 'template-basic',
-    title: 'Шаблон оформления',
-    description: 'Готовый шаблон по ГОСТ',
-    expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'active',
-    applyRules: 'Доступен для скачивания в личном кабинете.',
-  },
-  {
-    id: 'v3',
-    rewardId: 'discount-5-options',
-    title: '5% на опции',
-    description: 'Скидка на дополнительные услуги',
-    expiresAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'expired',
-    applyRules: 'Срок действия истёк.',
-  },
-  {
-    id: 'v4',
-    rewardId: 'fast-estimation',
-    title: 'Быстрая оценка',
-    description: 'Оценка за 1 час',
-    expiresAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'used',
-    applyRules: 'Использован для заказа #1234.',
-  },
-]
 
 // Header
 const VouchersHeader = memo(function VouchersHeader({
@@ -119,11 +80,11 @@ const VouchersHeader = memo(function VouchersHeader({
 
 function MyVouchersPage() {
   const navigate = useNavigate()
+  const club = useClub()
 
-  // State
-  const [vouchers, setVouchers] = useState<Voucher[]>(MOCK_VOUCHERS)
-
-  const activeCount = vouchers.filter(v => v.status === 'active').length
+  // Получаем реальные ваучеры из состояния клуба
+  const vouchers = club.vouchers
+  const activeCount = club.activeVouchers.length
 
   // Handlers
   const handleBack = useCallback(() => {
@@ -136,7 +97,7 @@ function MyVouchersPage() {
       window.Telegram?.WebApp.HapticFeedback.impactOccurred('medium')
     } catch {}
 
-    // In real app, would navigate to order creation with voucher pre-applied
+    // Переход к созданию заказа с предустановленным ваучером
     navigate('/create-order', { state: { voucherId: voucher.id } })
   }, [navigate])
 
