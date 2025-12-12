@@ -35,6 +35,14 @@ import {
   Check,
   Smartphone,
   Star,
+  Shield,
+  ShieldCheck,
+  Timer,
+  Upload,
+  FileImage,
+  Trash2,
+  Info,
+  ChevronDown,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
 import { fetchOrderDetail, fetchPaymentInfo, PaymentInfo } from '../api/userApi'
@@ -1548,6 +1556,728 @@ const PaymentSheet = memo(function PaymentSheet({
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//                              CONFIRM PAYMENT MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface ConfirmPaymentModalProps {
+  isOpen: boolean
+  onClose: () => void
+  order: Order
+  paymentAmount: number
+  onSubmit: () => void
+}
+
+interface ChecklistItem {
+  id: string
+  label: string
+  checked: boolean
+}
+
+const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
+  isOpen,
+  onClose,
+  order,
+  paymentAmount,
+  onSubmit,
+}: ConfirmPaymentModalProps) {
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([
+    { id: 'amount', label: `Сумма перевода: ${formatPrice(paymentAmount)} ₽`, checked: false },
+    { id: 'details', label: 'Реквизиты указаны верно', checked: false },
+    { id: 'comment', label: `Комментарий к переводу: Заказ #${order.id}`, checked: false },
+  ])
+  const [screenshot, setScreenshot] = useState<File | null>(null)
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { haptic } = useTelegram()
+  const { showToast } = useToast()
+
+  // Reset on open
+  useEffect(() => {
+    if (isOpen) {
+      setChecklist([
+        { id: 'amount', label: `Сумма перевода: ${formatPrice(paymentAmount)} ₽`, checked: false },
+        { id: 'details', label: 'Реквизиты указаны верно', checked: false },
+        { id: 'comment', label: `Комментарий к переводу: Заказ #${order.id}`, checked: false },
+      ])
+      setScreenshot(null)
+      setScreenshotPreview(null)
+      setIsSubmitting(false)
+    }
+  }, [isOpen, paymentAmount, order.id])
+
+  const allChecked = checklist.every((item) => item.checked)
+
+  const toggleItem = (id: string) => {
+    haptic?.('light')
+    setChecklist((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, checked: !item.checked } : item
+      )
+    )
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        showToast({ type: 'error', title: 'Файл слишком большой', message: 'Максимум 10 МБ' })
+        return
+      }
+      haptic?.('light')
+      setScreenshot(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setScreenshotPreview(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeScreenshot = () => {
+    haptic?.('light')
+    setScreenshot(null)
+    setScreenshotPreview(null)
+  }
+
+  const handleSubmit = async () => {
+    if (!allChecked) {
+      haptic?.('warning')
+      showToast({ type: 'warning', title: 'Подтвердите все пункты' })
+      return
+    }
+
+    haptic?.('medium')
+    setIsSubmitting(true)
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    setIsSubmitting(false)
+    onSubmit()
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.8)',
+            zIndex: 400,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: DS.space.lg,
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              maxHeight: '85vh',
+              background: DS.colors.bgSurface,
+              borderRadius: DS.radius['2xl'],
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: DS.space.xl,
+                borderBottom: `1px solid ${DS.colors.border}`,
+              }}
+            >
+              <div>
+                <h2 style={{
+                  fontSize: DS.fontSize['2xl'],
+                  fontWeight: 700,
+                  color: DS.colors.textPrimary,
+                  margin: 0,
+                  fontFamily: 'var(--font-serif)',
+                }}>
+                  Подтверждение
+                </h2>
+                <p style={{
+                  fontSize: DS.fontSize.sm,
+                  color: DS.colors.textMuted,
+                  margin: 0,
+                  marginTop: 4,
+                }}>
+                  Проверьте данные перед отправкой
+                </p>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: DS.radius.md,
+                  background: DS.colors.bgElevated,
+                  border: `1px solid ${DS.colors.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={18} color={DS.colors.textSecondary} />
+              </motion.button>
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: DS.space.xl }}>
+              {/* Checklist */}
+              <div style={{ marginBottom: DS.space['2xl'] }}>
+                <div style={{
+                  fontSize: DS.fontSize.xs,
+                  fontWeight: 600,
+                  color: DS.colors.textMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: DS.space.md,
+                }}>
+                  Чеклист подтверждения
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: DS.space.sm }}>
+                  {checklist.map((item) => (
+                    <motion.button
+                      key={item.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => toggleItem(item.id)}
+                      style={{
+                        width: '100%',
+                        padding: DS.space.lg,
+                        borderRadius: DS.radius.md,
+                        background: item.checked
+                          ? 'rgba(34,197,94,0.1)'
+                          : DS.colors.bgElevated,
+                        border: `1px solid ${item.checked ? DS.colors.success + '40' : DS.colors.border}`,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: DS.space.md,
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: DS.radius.sm,
+                          background: item.checked ? DS.colors.success : 'transparent',
+                          border: `2px solid ${item.checked ? DS.colors.success : DS.colors.textMuted}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {item.checked && <Check size={14} color={DS.colors.white} />}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: DS.fontSize.base,
+                          color: item.checked ? DS.colors.textPrimary : DS.colors.textSecondary,
+                          flex: 1,
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Screenshot Upload (Optional) */}
+              <div>
+                <div style={{
+                  fontSize: DS.fontSize.xs,
+                  fontWeight: 600,
+                  color: DS.colors.textMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: DS.space.sm,
+                }}>
+                  Скриншот оплаты (опционально)
+                </div>
+                <p style={{
+                  fontSize: DS.fontSize.sm,
+                  color: DS.colors.textMuted,
+                  marginBottom: DS.space.md,
+                }}>
+                  Прикрепите для ускорения проверки
+                </p>
+
+                {screenshotPreview ? (
+                  <div
+                    style={{
+                      position: 'relative',
+                      borderRadius: DS.radius.lg,
+                      overflow: 'hidden',
+                      border: `1px solid ${DS.colors.border}`,
+                    }}
+                  >
+                    <img
+                      src={screenshotPreview}
+                      alt="Скриншот оплаты"
+                      style={{
+                        width: '100%',
+                        maxHeight: 200,
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={removeScreenshot}
+                      style={{
+                        position: 'absolute',
+                        top: DS.space.sm,
+                        right: DS.space.sm,
+                        width: 32,
+                        height: 32,
+                        borderRadius: DS.radius.sm,
+                        background: 'rgba(0,0,0,0.7)',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Trash2 size={16} color={DS.colors.error} />
+                    </motion.button>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        padding: DS.space.sm,
+                        background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: DS.space.sm,
+                      }}>
+                        <FileImage size={14} color={DS.colors.success} />
+                        <span style={{
+                          fontSize: DS.fontSize.xs,
+                          color: DS.colors.textSecondary,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {screenshot?.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <label
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: DS.space.xl,
+                      borderRadius: DS.radius.lg,
+                      background: DS.colors.bgElevated,
+                      border: `2px dashed ${DS.colors.border}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      style={{ display: 'none' }}
+                    />
+                    <Upload size={24} color={DS.colors.textMuted} />
+                    <span style={{
+                      fontSize: DS.fontSize.sm,
+                      color: DS.colors.textMuted,
+                      marginTop: DS.space.sm,
+                    }}>
+                      Нажмите для загрузки
+                    </span>
+                    <span style={{
+                      fontSize: DS.fontSize.xs,
+                      color: DS.colors.textMuted,
+                      marginTop: DS.space.xs,
+                    }}>
+                      PNG, JPG до 10 МБ
+                    </span>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: DS.space.xl,
+                paddingBottom: 'max(env(safe-area-inset-bottom, 20px), 20px)',
+                borderTop: `1px solid ${DS.colors.border}`,
+                background: DS.colors.bgSurface,
+              }}
+            >
+              {/* Info note */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: DS.space.sm,
+                  padding: DS.space.md,
+                  borderRadius: DS.radius.md,
+                  background: 'rgba(6,182,212,0.1)',
+                  border: `1px solid rgba(6,182,212,0.2)`,
+                  marginBottom: DS.space.lg,
+                }}
+              >
+                <Timer size={16} color={DS.colors.cyan} style={{ flexShrink: 0, marginTop: 2 }} />
+                <span style={{
+                  fontSize: DS.fontSize.sm,
+                  color: DS.colors.textSecondary,
+                  lineHeight: 1.4,
+                }}>
+                  После отправки проверка займёт <strong style={{ color: DS.colors.cyan }}>5-15 минут</strong>
+                </span>
+              </div>
+
+              {/* Submit Button */}
+              <motion.button
+                whileTap={allChecked && !isSubmitting ? { scale: 0.98 } : undefined}
+                onClick={handleSubmit}
+                disabled={!allChecked || isSubmitting}
+                style={{
+                  width: '100%',
+                  padding: `${DS.space.lg}px ${DS.space.xl}px`,
+                  borderRadius: DS.radius.lg,
+                  background: allChecked
+                    ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
+                    : DS.colors.bgElevated,
+                  border: allChecked ? 'none' : `1px solid ${DS.colors.border}`,
+                  cursor: allChecked && !isSubmitting ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: DS.space.sm,
+                  opacity: isSubmitting ? 0.7 : 1,
+                  boxShadow: allChecked ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={20} color="#0a0a0c" className="animate-spin" />
+                    <span style={{
+                      fontSize: DS.fontSize.lg,
+                      fontWeight: 700,
+                      color: '#0a0a0c',
+                    }}>
+                      Отправка...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={20} color={allChecked ? '#0a0a0c' : DS.colors.textMuted} />
+                    <span style={{
+                      fontSize: DS.fontSize.lg,
+                      fontWeight: 700,
+                      color: allChecked ? '#0a0a0c' : DS.colors.textMuted,
+                    }}>
+                      Отправить на проверку
+                    </span>
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              TRUST SECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface TrustChip {
+  id: string
+  icon: typeof Shield
+  label: string
+  color: string
+  bgColor: string
+  details: string
+}
+
+const TRUST_CHIPS: TrustChip[] = [
+  {
+    id: 'secure',
+    icon: Shield,
+    label: 'Безопасно',
+    color: DS.colors.success,
+    bgColor: 'rgba(34,197,94,0.12)',
+    details: 'Все платежи защищены. Мы не храним данные ваших карт и работаем только с проверенными платёжными системами.',
+  },
+  {
+    id: 'protected',
+    icon: ShieldCheck,
+    label: 'Гарантия',
+    color: DS.colors.info,
+    bgColor: 'rgba(59,130,246,0.12)',
+    details: 'Возврат средств гарантирован, если работа не соответствует требованиям. Мы работаем по договору.',
+  },
+  {
+    id: 'fast',
+    icon: Timer,
+    label: '5-15 мин',
+    color: DS.colors.purple,
+    bgColor: 'rgba(139,92,246,0.12)',
+    details: 'Среднее время проверки оплаты — от 5 до 15 минут. После подтверждения работа сразу берётся в исполнение.',
+  },
+]
+
+interface TrustSectionProps {
+  isPaymentFlow?: boolean
+}
+
+const TrustSection = memo(function TrustSection({ isPaymentFlow = true }: TrustSectionProps) {
+  const [expandedChip, setExpandedChip] = useState<string | null>(null)
+  const { haptic } = useTelegram()
+
+  const handleChipClick = (id: string) => {
+    haptic?.('light')
+    setExpandedChip(expandedChip === id ? null : id)
+  }
+
+  return (
+    <div
+      style={{
+        margin: `0 ${DS.space.lg}px`,
+        marginBottom: DS.space.lg,
+      }}
+    >
+      {/* Chips Row */}
+      <div
+        style={{
+          display: 'flex',
+          gap: DS.space.sm,
+          flexWrap: 'wrap',
+        }}
+      >
+        {TRUST_CHIPS.map((chip) => {
+          const ChipIcon = chip.icon
+          const isExpanded = expandedChip === chip.id
+
+          return (
+            <motion.button
+              key={chip.id}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => handleChipClick(chip.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: DS.space.sm,
+                padding: `${DS.space.sm}px ${DS.space.md}px`,
+                borderRadius: DS.radius.full,
+                background: chip.bgColor,
+                border: `1px solid ${chip.color}30`,
+                cursor: 'pointer',
+              }}
+            >
+              <ChipIcon size={14} color={chip.color} />
+              <span
+                style={{
+                  fontSize: DS.fontSize.sm,
+                  fontWeight: 600,
+                  color: chip.color,
+                }}
+              >
+                {chip.label}
+              </span>
+              <ChevronDown
+                size={12}
+                color={chip.color}
+                style={{
+                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease',
+                }}
+              />
+            </motion.button>
+          )
+        })}
+      </div>
+
+      {/* Expanded Detail */}
+      <AnimatePresence>
+        {expandedChip && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            {TRUST_CHIPS.filter((c) => c.id === expandedChip).map((chip) => (
+              <div
+                key={chip.id}
+                style={{
+                  marginTop: DS.space.md,
+                  padding: DS.space.lg,
+                  borderRadius: DS.radius.lg,
+                  background: chip.bgColor,
+                  border: `1px solid ${chip.color}25`,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: DS.space.md,
+                  }}
+                >
+                  <Info size={16} color={chip.color} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <p
+                    style={{
+                      fontSize: DS.fontSize.sm,
+                      color: DS.colors.textSecondary,
+                      lineHeight: 1.5,
+                      margin: 0,
+                    }}
+                  >
+                    {chip.details}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              VERIFICATION PENDING BANNER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface VerificationPendingBannerProps {
+  estimatedMinutes?: number
+}
+
+const VerificationPendingBanner = memo(function VerificationPendingBanner({
+  estimatedMinutes = 15,
+}: VerificationPendingBannerProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{
+        margin: `0 ${DS.space.lg}px`,
+        marginBottom: DS.space.lg,
+        padding: DS.space.lg,
+        borderRadius: DS.radius.xl,
+        background: `linear-gradient(135deg, rgba(6,182,212,0.15), rgba(6,182,212,0.05))`,
+        border: `1px solid rgba(6,182,212,0.25)`,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md }}>
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: DS.radius.lg,
+            background: 'rgba(6,182,212,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Loader2 size={24} color={DS.colors.cyan} className="animate-spin" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <h3
+            style={{
+              fontSize: DS.fontSize.lg,
+              fontWeight: 700,
+              color: DS.colors.textPrimary,
+              margin: 0,
+            }}
+          >
+            Проверяем оплату
+          </h3>
+          <p
+            style={{
+              fontSize: DS.fontSize.sm,
+              color: DS.colors.textSecondary,
+              margin: 0,
+              marginTop: 2,
+            }}
+          >
+            Обычно это занимает {estimatedMinutes} минут
+          </p>
+        </div>
+      </div>
+
+      {/* Progress dots */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: DS.space.sm,
+          marginTop: DS.space.lg,
+        }}
+      >
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            animate={{
+              scale: [1, 1.3, 1],
+              opacity: [0.4, 1, 0.4],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              delay: i * 0.3,
+            }}
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              background: DS.colors.cyan,
+            }}
+          />
+        ))}
+      </div>
+    </motion.div>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //                              LOADING & ERROR STATES
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1752,6 +2482,43 @@ export function OrderDetailPageV8() {
     setConfirmModalOpen(true)
   }, [haptic])
 
+  // Submit payment confirmation
+  const handleSubmitPaymentConfirmation = useCallback(() => {
+    haptic?.('success')
+    setConfirmModalOpen(false)
+
+    // Optimistically update order status to verification_pending
+    if (order) {
+      setOrder((prev) =>
+        prev ? { ...prev, status: 'verification_pending' as OrderStatus } : prev
+      )
+    }
+
+    showToast({
+      type: 'success',
+      title: 'Отправлено на проверку',
+      message: 'Мы уведомим вас о результате',
+    })
+  }, [haptic, order, showToast])
+
+  // Calculate today's payment amount
+  const calculateTodayAmount = useCallback((): number => {
+    if (!order?.final_price) return 0
+    const remaining = order.final_price - (order.paid_amount || 0)
+    if (remaining <= 0) return 0
+
+    if (paymentScheme === 'half' && (order.paid_amount || 0) === 0) {
+      return Math.ceil(order.final_price / 2)
+    }
+    return remaining
+  }, [order, paymentScheme])
+
+  const todayAmount = calculateTodayAmount()
+
+  // Determine if we're in payment flow
+  const isPaymentFlow = ['waiting_payment', 'confirmed'].includes(order?.status || '')
+  const isVerificationPending = order?.status === 'verification_pending'
+
   // Render
   if (loading) {
     return (
@@ -1783,6 +2550,12 @@ export function OrderDetailPageV8() {
       {/* Hero Summary */}
       <HeroSummary order={order} countdown={countdown} />
 
+      {/* Verification Pending Banner */}
+      {isVerificationPending && <VerificationPendingBanner />}
+
+      {/* Trust Section - показываем для платёжного flow */}
+      {(isPaymentFlow || isVerificationPending) && <TrustSection isPaymentFlow={isPaymentFlow} />}
+
       {/* Placeholder for next components */}
       <div
         style={{
@@ -1795,32 +2568,9 @@ export function OrderDetailPageV8() {
         }}
       >
         <p style={{ color: DS.colors.textMuted, fontSize: DS.fontSize.sm, margin: 0 }}>
-          Этап 3 завершён<br />
-          Далее: ConfirmModal, Files, Manager, Timeline...
+          Этап 4 завершён<br />
+          Далее: Files, Manager, Timeline...
         </p>
-        {confirmModalOpen && (
-          <div style={{ marginTop: DS.space.lg }}>
-            <p style={{ color: DS.colors.cyan, fontSize: DS.fontSize.sm }}>
-              ConfirmPaymentModal будет здесь (Этап 4)
-            </p>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setConfirmModalOpen(false)}
-              style={{
-                marginTop: DS.space.md,
-                padding: `${DS.space.sm}px ${DS.space.lg}px`,
-                borderRadius: DS.radius.sm,
-                background: DS.colors.bgElevated,
-                border: `1px solid ${DS.colors.border}`,
-                color: DS.colors.textSecondary,
-                fontSize: DS.fontSize.sm,
-                cursor: 'pointer',
-              }}
-            >
-              Закрыть
-            </motion.button>
-          </div>
-        )}
       </div>
 
       {/* Payment Sheet */}
@@ -1841,6 +2591,15 @@ export function OrderDetailPageV8() {
         onPaymentClick={handlePaymentClick}
         onContactManager={handleContactManager}
         onDownloadFiles={handleDownloadFiles}
+      />
+
+      {/* Confirm Payment Modal */}
+      <ConfirmPaymentModal
+        isOpen={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        order={order}
+        paymentAmount={todayAmount}
+        onSubmit={handleSubmitPaymentConfirmation}
       />
     </div>
   )
