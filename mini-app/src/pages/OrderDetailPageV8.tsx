@@ -3535,8 +3535,10 @@ export function OrderDetailPageV8() {
 
   const handleContactManager = useCallback(() => {
     haptic?.('medium')
-    navigate('/support')
-  }, [haptic, navigate])
+    if (order?.id) {
+      navigate(`/order/${order.id}/chat`)
+    }
+  }, [haptic, navigate, order?.id])
 
   const handleOpenFAQ = useCallback(() => {
     haptic?.('light')
@@ -3598,12 +3600,13 @@ export function OrderDetailPageV8() {
   const isPaymentFlow = ['waiting_payment', 'confirmed'].includes(order?.status || '')
   const isVerificationPending = order?.status === 'verification_pending'
 
-  // Open in-app chat handler
+  // Open in-app chat handler for this specific order
   const handleOpenChat = useCallback(() => {
     haptic?.('medium')
-    // Navigate to support page or open chat modal
-    navigate('/support')
-  }, [haptic, navigate])
+    if (order?.id) {
+      navigate(`/order/${order.id}/chat`)
+    }
+  }, [haptic, navigate, order?.id])
 
   // File handlers
   const handleDownloadFile = useCallback((file: OrderFile) => {
