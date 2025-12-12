@@ -1,13 +1,32 @@
 /**
  * OrderDetailPage V8.0 — Premium Concierge Redesign
  *
- * Этап 1: AppBar + HeroSummary + базовая структура
+ * Полностью переработанный экран детальной карточки заказа
+ * для Telegram Mini App академического сервиса.
+ *
+ * Компоненты:
+ * - OrderAppBar: навигация + меню действий + статус-пилюля
+ * - HeroSummary: описание заказа, инфо-чипы, countdown оплаты
+ * - StickyActionBar: фиксированная CTA-кнопка внизу экрана
+ * - PaymentSheet: bottom-sheet с выбором плана и реквизитами
+ * - ConfirmPaymentModal: чеклист подтверждения + upload скриншота
+ * - TrustSection: чипы гарантий с expand-деталями
+ * - VerificationPendingBanner: анимированный баннер проверки
+ * - FilesSection: список файлов с download
+ * - ManagerCard: карточка менеджера с контактами
+ * - GuaranteesRow: grid гарантий (возврат, правки, сроки)
+ * - OrderTimeline: визуальная история заказа
  *
  * Ключевые принципы:
- * - Mobile first (320-430px)
- * - State-driven UI
- * - Единая система токенов
- * - Минимум blur/shadow для производительности
+ * - Mobile first (320-430px viewport)
+ * - State-driven UI на основе OrderStatus
+ * - Единая дизайн-система (DS tokens)
+ * - Минимум blur/shadow для производительности в WebView
+ * - Safe-area insets для iOS
+ * - Haptic feedback интеграция
+ *
+ * @version 8.0.0
+ * @route /order-v8/:id
  */
 
 import { useState, useEffect, useCallback, memo } from 'react'
@@ -47,16 +66,12 @@ import {
   File,
   Image,
   FileArchive,
-  ExternalLink,
   User,
-  Phone,
   Send,
   Award,
   RotateCcw,
   CalendarCheck,
   Banknote,
-  CircleDot,
-  CircleCheck,
   Circle,
   Package,
   FileCheck,
