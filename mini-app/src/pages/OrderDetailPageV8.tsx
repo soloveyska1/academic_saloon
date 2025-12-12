@@ -28,6 +28,13 @@ import {
   Flame,
   Download,
   ChevronRight,
+  X,
+  Zap,
+  Eye,
+  EyeOff,
+  Check,
+  Smartphone,
+  Star,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
 import { fetchOrderDetail, fetchPaymentInfo, PaymentInfo } from '../api/userApi'
@@ -819,6 +826,728 @@ const StickyActionBar = memo(function StickyActionBar({
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//                              PAYMENT SHEET
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type PaymentMethod = 'card' | 'sbp'
+
+interface PaymentSheetProps {
+  isOpen: boolean
+  onClose: () => void
+  order: Order
+  paymentInfo: PaymentInfo | null
+  paymentScheme: 'full' | 'half'
+  setPaymentScheme: (scheme: 'full' | 'half') => void
+  onConfirmPayment: () => void
+}
+
+const PaymentSheet = memo(function PaymentSheet({
+  isOpen,
+  onClose,
+  order,
+  paymentInfo,
+  paymentScheme,
+  setPaymentScheme,
+  onConfirmPayment,
+}: PaymentSheetProps) {
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card')
+  const [cardNumberVisible, setCardNumberVisible] = useState(false)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const { showToast } = useToast()
+  const { haptic } = useTelegram()
+
+  // Calculate amounts
+  const fullAmount = order.final_price || 0
+  const halfAmount = Math.ceil(fullAmount / 2)
+  const remainingAfterHalf = fullAmount - halfAmount
+  const todayAmount = paymentScheme === 'full' ? fullAmount : halfAmount
+
+  // Card info from paymentInfo
+  const cardNumber = paymentInfo?.card_number || '2200 0000 0000 0000'
+  const cardHolder = paymentInfo?.card_holder || 'ПОЛУЧАТЕЛЬ'
+  const maskedCard = cardNumber.replace(/(\d{4})\s*(\d{4})\s*(\d{4})\s*(\d{4})/, '$1 •••• •••• $4')
+
+  // Copy handler
+  const handleCopy = useCallback((text: string, field: string) => {
+    navigator.clipboard.writeText(text)
+    haptic?.('light')
+    setCopiedField(field)
+    showToast({ type: 'success', title: 'Скопировано' })
+    setTimeout(() => setCopiedField(null), 2000)
+  }, [haptic, showToast])
+
+  // Copy all for card
+  const handleCopyAll = useCallback(() => {
+    const allText = `Карта: ${cardNumber}\nПолучатель: ${cardHolder}\nСумма: ${todayAmount} ₽\nКомментарий: Заказ #${order.id}`
+    navigator.clipboard.writeText(allText)
+    haptic?.('medium')
+    setCopiedField('all')
+    showToast({ type: 'success', title: 'Все данные скопированы' })
+    setTimeout(() => setCopiedField(null), 2000)
+  }, [cardNumber, cardHolder, todayAmount, order.id, haptic, showToast])
+
+  if (!isOpen) return null
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            zIndex: 300,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+        >
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 480,
+              maxHeight: '90vh',
+              background: DS.colors.bgSurface,
+              borderRadius: `${DS.radius['2xl']}px ${DS.radius['2xl']}px 0 0`,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: `${DS.space.xl}px ${DS.space.lg}px`,
+                borderBottom: `1px solid ${DS.colors.border}`,
+              }}
+            >
+              <div>
+                <h2 style={{
+                  fontSize: DS.fontSize['2xl'],
+                  fontWeight: 700,
+                  color: DS.colors.textPrimary,
+                  margin: 0,
+                  fontFamily: 'var(--font-serif)',
+                }}>
+                  Оплата
+                </h2>
+                <p style={{
+                  fontSize: DS.fontSize.sm,
+                  color: DS.colors.textMuted,
+                  margin: 0,
+                  marginTop: 2,
+                }}>
+                  Заказ #{order.id}
+                </p>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: DS.radius.md,
+                  background: DS.colors.bgElevated,
+                  border: `1px solid ${DS.colors.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={18} color={DS.colors.textSecondary} />
+              </motion.button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: DS.space.lg }}>
+
+              {/* Step A: Payment Plan Selection */}
+              <div style={{ marginBottom: DS.space['2xl'] }}>
+                <div style={{
+                  fontSize: DS.fontSize.xs,
+                  fontWeight: 600,
+                  color: DS.colors.textMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: DS.space.md,
+                }}>
+                  Шаг 1 · План оплаты
+                </div>
+
+                {/* Full Payment Card */}
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setPaymentScheme('full')}
+                  style={{
+                    width: '100%',
+                    padding: DS.space.lg,
+                    borderRadius: DS.radius.lg,
+                    background: paymentScheme === 'full'
+                      ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
+                      : DS.colors.bgElevated,
+                    border: `2px solid ${paymentScheme === 'full' ? DS.colors.gold : DS.colors.border}`,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    marginBottom: DS.space.md,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md }}>
+                      <div style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 10,
+                        border: `2px solid ${paymentScheme === 'full' ? DS.colors.gold : DS.colors.textMuted}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {paymentScheme === 'full' && (
+                          <div style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: 5,
+                            background: DS.colors.gold,
+                          }} />
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: DS.fontSize.base, fontWeight: 600, color: DS.colors.textPrimary }}>
+                          100% Полная оплата
+                        </div>
+                        <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted, marginTop: 2 }}>
+                          Рекомендуем · Приоритет в работе
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: DS.fontSize.lg,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)',
+                      color: paymentScheme === 'full' ? DS.colors.gold : DS.colors.textSecondary,
+                    }}>
+                      {formatPrice(fullAmount)} ₽
+                    </div>
+                  </div>
+                  {paymentScheme === 'full' && (
+                    <div style={{
+                      display: 'flex',
+                      gap: DS.space.sm,
+                      marginTop: DS.space.md,
+                      paddingTop: DS.space.md,
+                      borderTop: `1px solid ${DS.colors.borderGold}`,
+                    }}>
+                      <div style={{
+                        padding: `${DS.space.xs}px ${DS.space.sm}px`,
+                        borderRadius: DS.radius.sm,
+                        background: 'rgba(34,197,94,0.15)',
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.success,
+                      }}>
+                        <Zap size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                        Быстрый старт
+                      </div>
+                      <div style={{
+                        padding: `${DS.space.xs}px ${DS.space.sm}px`,
+                        borderRadius: DS.radius.sm,
+                        background: 'rgba(212,175,55,0.15)',
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.gold,
+                      }}>
+                        <Star size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                        Приоритет
+                      </div>
+                    </div>
+                  )}
+                </motion.button>
+
+                {/* Half Payment Card */}
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setPaymentScheme('half')}
+                  style={{
+                    width: '100%',
+                    padding: DS.space.lg,
+                    borderRadius: DS.radius.lg,
+                    background: paymentScheme === 'half'
+                      ? 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))'
+                      : DS.colors.bgElevated,
+                    border: `2px solid ${paymentScheme === 'half' ? DS.colors.info : DS.colors.border}`,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md }}>
+                      <div style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 10,
+                        border: `2px solid ${paymentScheme === 'half' ? DS.colors.info : DS.colors.textMuted}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {paymentScheme === 'half' && (
+                          <div style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: 5,
+                            background: DS.colors.info,
+                          }} />
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: DS.fontSize.base, fontWeight: 600, color: DS.colors.textPrimary }}>
+                          50% Предоплата
+                        </div>
+                        <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted, marginTop: 2 }}>
+                          Остаток {formatPrice(remainingAfterHalf)} ₽ после готовности
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: DS.fontSize.lg,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)',
+                      color: paymentScheme === 'half' ? DS.colors.info : DS.colors.textSecondary,
+                    }}>
+                      {formatPrice(halfAmount)} ₽
+                    </div>
+                  </div>
+                </motion.button>
+              </div>
+
+              {/* Step B: Payment Method */}
+              <div style={{ marginBottom: DS.space['2xl'] }}>
+                <div style={{
+                  fontSize: DS.fontSize.xs,
+                  fontWeight: 600,
+                  color: DS.colors.textMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: DS.space.md,
+                }}>
+                  Шаг 2 · Способ оплаты
+                </div>
+
+                {/* Segmented Control */}
+                <div style={{
+                  display: 'flex',
+                  gap: DS.space.xs,
+                  padding: DS.space.xs,
+                  background: DS.colors.bgElevated,
+                  borderRadius: DS.radius.md,
+                }}>
+                  {(['card', 'sbp'] as PaymentMethod[]).map((method) => (
+                    <motion.button
+                      key={method}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setPaymentMethod(method)}
+                      style={{
+                        flex: 1,
+                        padding: `${DS.space.md}px ${DS.space.lg}px`,
+                        borderRadius: DS.radius.sm,
+                        background: paymentMethod === method ? DS.colors.bgCard : 'transparent',
+                        border: paymentMethod === method ? `1px solid ${DS.colors.borderLight}` : '1px solid transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: DS.space.sm,
+                      }}
+                    >
+                      {method === 'card' ? (
+                        <CreditCard size={16} color={paymentMethod === method ? DS.colors.textPrimary : DS.colors.textMuted} />
+                      ) : (
+                        <Smartphone size={16} color={paymentMethod === method ? DS.colors.textPrimary : DS.colors.textMuted} />
+                      )}
+                      <span style={{
+                        fontSize: DS.fontSize.base,
+                        fontWeight: 600,
+                        color: paymentMethod === method ? DS.colors.textPrimary : DS.colors.textMuted,
+                      }}>
+                        {method === 'card' ? 'Карта' : 'СБП'}
+                      </span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Step C: Payment Details */}
+              <div style={{ marginBottom: DS.space['2xl'] }}>
+                <div style={{
+                  fontSize: DS.fontSize.xs,
+                  fontWeight: 600,
+                  color: DS.colors.textMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: DS.space.md,
+                }}>
+                  Шаг 3 · Реквизиты
+                </div>
+
+                {paymentMethod === 'card' ? (
+                  <div style={{
+                    padding: DS.space.lg,
+                    borderRadius: DS.radius.lg,
+                    background: DS.colors.bgElevated,
+                    border: `1px solid ${DS.colors.border}`,
+                  }}>
+                    {/* Card Number */}
+                    <div style={{ marginBottom: DS.space.lg }}>
+                      <div style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginBottom: DS.space.xs,
+                      }}>
+                        Номер карты
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+                        <div style={{
+                          flex: 1,
+                          fontSize: DS.fontSize.lg,
+                          fontWeight: 600,
+                          fontFamily: 'var(--font-mono)',
+                          color: DS.colors.textPrimary,
+                          letterSpacing: '0.05em',
+                        }}>
+                          {cardNumberVisible ? cardNumber : maskedCard}
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setCardNumberVisible(!cardNumberVisible)}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: DS.radius.sm,
+                            background: DS.colors.bgCard,
+                            border: `1px solid ${DS.colors.border}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {cardNumberVisible ? (
+                            <EyeOff size={16} color={DS.colors.textSecondary} />
+                          ) : (
+                            <Eye size={16} color={DS.colors.textSecondary} />
+                          )}
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleCopy(cardNumber, 'card')}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: DS.radius.sm,
+                            background: copiedField === 'card' ? DS.colors.success : DS.colors.bgCard,
+                            border: `1px solid ${copiedField === 'card' ? DS.colors.success : DS.colors.border}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {copiedField === 'card' ? (
+                            <Check size={16} color={DS.colors.white} />
+                          ) : (
+                            <Copy size={16} color={DS.colors.textSecondary} />
+                          )}
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    {/* Card Holder */}
+                    <div style={{ marginBottom: DS.space.lg }}>
+                      <div style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginBottom: DS.space.xs,
+                      }}>
+                        Получатель
+                      </div>
+                      <div style={{
+                        fontSize: DS.fontSize.base,
+                        color: DS.colors.textPrimary,
+                      }}>
+                        {cardHolder}
+                      </div>
+                    </div>
+
+                    {/* Amount */}
+                    <div style={{ marginBottom: DS.space.lg }}>
+                      <div style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginBottom: DS.space.xs,
+                      }}>
+                        Сумма
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+                        <div style={{
+                          flex: 1,
+                          fontSize: DS.fontSize.xl,
+                          fontWeight: 700,
+                          fontFamily: 'var(--font-mono)',
+                          color: DS.colors.gold,
+                        }}>
+                          {formatPrice(todayAmount)} ₽
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleCopy(todayAmount.toString(), 'amount')}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: DS.radius.sm,
+                            background: copiedField === 'amount' ? DS.colors.success : DS.colors.bgCard,
+                            border: `1px solid ${copiedField === 'amount' ? DS.colors.success : DS.colors.border}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {copiedField === 'amount' ? (
+                            <Check size={16} color={DS.colors.white} />
+                          ) : (
+                            <Copy size={16} color={DS.colors.textSecondary} />
+                          )}
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    {/* Comment */}
+                    <div style={{ marginBottom: DS.space.lg }}>
+                      <div style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginBottom: DS.space.xs,
+                      }}>
+                        Комментарий к переводу
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+                        <div style={{
+                          flex: 1,
+                          fontSize: DS.fontSize.base,
+                          color: DS.colors.textPrimary,
+                        }}>
+                          Заказ #{order.id}
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleCopy(`Заказ #${order.id}`, 'comment')}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: DS.radius.sm,
+                            background: copiedField === 'comment' ? DS.colors.success : DS.colors.bgCard,
+                            border: `1px solid ${copiedField === 'comment' ? DS.colors.success : DS.colors.border}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {copiedField === 'comment' ? (
+                            <Check size={16} color={DS.colors.white} />
+                          ) : (
+                            <Copy size={16} color={DS.colors.textSecondary} />
+                          )}
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    {/* Copy All Button */}
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleCopyAll}
+                      style={{
+                        width: '100%',
+                        padding: `${DS.space.md}px ${DS.space.lg}px`,
+                        borderRadius: DS.radius.md,
+                        background: copiedField === 'all' ? DS.colors.success : 'transparent',
+                        border: `1px solid ${copiedField === 'all' ? DS.colors.success : DS.colors.borderLight}`,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: DS.space.sm,
+                      }}
+                    >
+                      {copiedField === 'all' ? (
+                        <Check size={16} color={DS.colors.white} />
+                      ) : (
+                        <Copy size={16} color={DS.colors.textSecondary} />
+                      )}
+                      <span style={{
+                        fontSize: DS.fontSize.sm,
+                        fontWeight: 600,
+                        color: copiedField === 'all' ? DS.colors.white : DS.colors.textSecondary,
+                      }}>
+                        Скопировать всё
+                      </span>
+                    </motion.button>
+                  </div>
+                ) : (
+                  /* SBP Method */
+                  <div style={{
+                    padding: DS.space.lg,
+                    borderRadius: DS.radius.lg,
+                    background: DS.colors.bgElevated,
+                    border: `1px solid ${DS.colors.border}`,
+                    textAlign: 'center',
+                  }}>
+                    {/* QR Placeholder */}
+                    <div style={{
+                      width: 180,
+                      height: 180,
+                      margin: '0 auto',
+                      borderRadius: DS.radius.lg,
+                      background: DS.colors.white,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: DS.space.lg,
+                    }}>
+                      <div style={{
+                        width: 140,
+                        height: 140,
+                        background: `repeating-linear-gradient(
+                          0deg,
+                          #000 0px,
+                          #000 10px,
+                          #fff 10px,
+                          #fff 20px
+                        ),
+                        repeating-linear-gradient(
+                          90deg,
+                          #000 0px,
+                          #000 10px,
+                          #fff 10px,
+                          #fff 20px
+                        )`,
+                        backgroundBlendMode: 'difference',
+                        borderRadius: DS.radius.sm,
+                      }} />
+                    </div>
+
+                    <p style={{
+                      fontSize: DS.fontSize.sm,
+                      color: DS.colors.textMuted,
+                      marginBottom: DS.space.lg,
+                    }}>
+                      Отсканируйте QR-код в приложении банка
+                    </p>
+
+                    <div style={{ display: 'flex', gap: DS.space.sm }}>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleCopy('https://sbp.nspk.ru/...', 'sbp_link')}
+                        style={{
+                          flex: 1,
+                          padding: `${DS.space.md}px ${DS.space.lg}px`,
+                          borderRadius: DS.radius.md,
+                          background: DS.colors.bgCard,
+                          border: `1px solid ${DS.colors.border}`,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: DS.space.sm,
+                        }}
+                      >
+                        <Copy size={14} color={DS.colors.textSecondary} />
+                        <span style={{ fontSize: DS.fontSize.sm, color: DS.colors.textSecondary }}>
+                          Копировать ссылку
+                        </span>
+                      </motion.button>
+                    </div>
+
+                    {/* Amount display for SBP */}
+                    <div style={{
+                      marginTop: DS.space.lg,
+                      paddingTop: DS.space.lg,
+                      borderTop: `1px solid ${DS.colors.border}`,
+                    }}>
+                      <div style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginBottom: DS.space.xs,
+                      }}>
+                        Сумма к оплате
+                      </div>
+                      <div style={{
+                        fontSize: DS.fontSize['2xl'],
+                        fontWeight: 700,
+                        fontFamily: 'var(--font-mono)',
+                        color: DS.colors.gold,
+                      }}>
+                        {formatPrice(todayAmount)} ₽
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer with CTA */}
+            <div style={{
+              padding: DS.space.lg,
+              paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
+              borderTop: `1px solid ${DS.colors.border}`,
+              background: DS.colors.bgSurface,
+            }}>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={onConfirmPayment}
+                style={{
+                  width: '100%',
+                  padding: `${DS.space.lg}px ${DS.space.xl}px`,
+                  borderRadius: DS.radius.lg,
+                  background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: DS.space.sm,
+                  boxShadow: '0 8px 24px -4px rgba(212,175,55,0.4)',
+                }}
+              >
+                <CheckCircle2 size={20} color="#0a0a0c" />
+                <span style={{
+                  fontSize: DS.fontSize.lg,
+                  fontWeight: 700,
+                  color: '#0a0a0c',
+                }}>
+                  Я оплатил(а)
+                </span>
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //                              LOADING & ERROR STATES
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -923,6 +1652,7 @@ export function OrderDetailPageV8() {
   const [error, setError] = useState<string | null>(null)
   const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
   const [paymentSheetOpen, setPaymentSheetOpen] = useState(false)
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
 
   // Parse order ID
   const orderId = id ? parseInt(id, 10) : NaN
@@ -1016,6 +1746,12 @@ export function OrderDetailPageV8() {
     showToast({ type: 'success', title: 'Открываем файлы', message: 'Загрузка началась' })
   }, [order, haptic, showToast])
 
+  const handleOpenConfirmModal = useCallback(() => {
+    haptic?.('medium')
+    setPaymentSheetOpen(false)
+    setConfirmModalOpen(true)
+  }, [haptic])
+
   // Render
   if (loading) {
     return (
@@ -1047,7 +1783,7 @@ export function OrderDetailPageV8() {
       {/* Hero Summary */}
       <HeroSummary order={order} countdown={countdown} />
 
-      {/* Placeholder for PaymentSheet and other components */}
+      {/* Placeholder for next components */}
       <div
         style={{
           margin: `0 ${DS.space.lg}px`,
@@ -1059,17 +1795,17 @@ export function OrderDetailPageV8() {
         }}
       >
         <p style={{ color: DS.colors.textMuted, fontSize: DS.fontSize.sm, margin: 0 }}>
-          Этап 2 завершён<br />
-          Далее: PaymentSheet, Files, Manager...
+          Этап 3 завершён<br />
+          Далее: ConfirmModal, Files, Manager, Timeline...
         </p>
-        {paymentSheetOpen && (
+        {confirmModalOpen && (
           <div style={{ marginTop: DS.space.lg }}>
-            <p style={{ color: DS.colors.gold, fontSize: DS.fontSize.sm }}>
-              PaymentSheet будет здесь (Этап 3)
+            <p style={{ color: DS.colors.cyan, fontSize: DS.fontSize.sm }}>
+              ConfirmPaymentModal будет здесь (Этап 4)
             </p>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => setPaymentSheetOpen(false)}
+              onClick={() => setConfirmModalOpen(false)}
               style={{
                 marginTop: DS.space.md,
                 padding: `${DS.space.sm}px ${DS.space.lg}px`,
@@ -1086,6 +1822,17 @@ export function OrderDetailPageV8() {
           </div>
         )}
       </div>
+
+      {/* Payment Sheet */}
+      <PaymentSheet
+        isOpen={paymentSheetOpen}
+        onClose={() => setPaymentSheetOpen(false)}
+        order={order}
+        paymentInfo={paymentInfo}
+        paymentScheme={paymentScheme}
+        setPaymentScheme={setPaymentScheme}
+        onConfirmPayment={handleOpenConfirmModal}
+      />
 
       {/* Sticky Action Bar */}
       <StickyActionBar
