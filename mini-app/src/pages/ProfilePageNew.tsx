@@ -71,7 +71,7 @@ function transformToProfileUser(user: UserData): ProfileUser {
 
 // Transform UserData to Wallet
 function transformToWallet(user: UserData): Wallet {
-  // Calculate saved amount (mock - would come from backend)
+  // Расчёт суммы экономии за счёт кэшбэка
   const savedLast30Days = Math.round((user.total_spent * user.rank.cashback) / 100)
 
   return {
