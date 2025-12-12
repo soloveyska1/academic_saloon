@@ -79,8 +79,10 @@ export function MagneticButton({
     scale.set(0.96)
 
     // Haptic feedback
-    if (haptic && window.Telegram?.WebApp?.HapticFeedback) {
-      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium')
+    if (haptic) {
+      try {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
+      } catch {}
     }
   }, [disabled, scale, haptic])
 
@@ -94,8 +96,10 @@ export function MagneticButton({
     onClick?.()
 
     // Success haptic on click
-    if (haptic && window.Telegram?.WebApp?.HapticFeedback) {
-      window.Telegram.WebApp.HapticFeedback.impactOccurred('light')
+    if (haptic) {
+      try {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
+      } catch {}
     }
   }, [disabled, onClick, haptic])
 
@@ -116,8 +120,10 @@ export function MagneticButton({
     scale.set(0.96)
     glowIntensity.set(0.5)
 
-    if (haptic && window.Telegram?.WebApp?.HapticFeedback) {
-      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium')
+    if (haptic) {
+      try {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
+      } catch {}
     }
   }, [disabled, magneticStrength, x, y, scale, glowIntensity, haptic])
 

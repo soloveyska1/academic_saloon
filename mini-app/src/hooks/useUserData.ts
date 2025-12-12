@@ -78,41 +78,87 @@ export function useTelegram() {
   }, [])
 
   // Memoize all callbacks to prevent infinite re-render loops
-  const haptic = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
-    tg?.HapticFeedback?.impactOccurred(type)
+  // Smart haptic that routes to correct Telegram API based on type
+  const haptic = useCallback((type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light') => {
+    try {
+      const hf = tg?.HapticFeedback
+      if (!hf) return
+
+      // Route notification types to notificationOccurred
+      if (type === 'success' || type === 'warning' || type === 'error') {
+        hf.notificationOccurred(type)
+      } else {
+        // Route impact types to impactOccurred
+        hf.impactOccurred(type)
+      }
+    } catch {
+      // Silently ignore haptic errors (can happen in non-Telegram contexts)
+    }
   }, [tg])
 
   const hapticSuccess = useCallback(() => {
-    tg?.HapticFeedback?.notificationOccurred('success')
+    try {
+      tg?.HapticFeedback?.notificationOccurred('success')
+    } catch {
+      // Silently ignore
+    }
   }, [tg])
 
   const hapticError = useCallback(() => {
-    tg?.HapticFeedback?.notificationOccurred('error')
+    try {
+      tg?.HapticFeedback?.notificationOccurred('error')
+    } catch {
+      // Silently ignore
+    }
   }, [tg])
 
   const openBot = useCallback((startParam?: string) => {
-    const url = startParam
-      ? `https://t.me/${botUsername}?start=${startParam}`
-      : `https://t.me/${botUsername}`
-    tg?.openTelegramLink(url)
+    try {
+      const url = startParam
+        ? `https://t.me/${botUsername}?start=${startParam}`
+        : `https://t.me/${botUsername}`
+      tg?.openTelegramLink(url)
+    } catch {
+      // Fallback to regular link opening
+      const url = startParam
+        ? `https://t.me/${botUsername}?start=${startParam}`
+        : `https://t.me/${botUsername}`
+      window.open(url, '_blank')
+    }
   }, [tg, botUsername])
 
   const openSupport = useCallback(() => {
-    // Open bot with support command to create topic
-    const url = `https://t.me/${botUsername}?start=support`
-    tg?.openTelegramLink(url)
+    try {
+      // Open bot with support command to create topic
+      const url = `https://t.me/${botUsername}?start=support`
+      tg?.openTelegramLink(url)
+    } catch {
+      window.open(`https://t.me/${botUsername}?start=support`, '_blank')
+    }
   }, [tg, botUsername])
 
   const showAlert = useCallback((message: string) => {
-    tg?.showAlert(message)
+    try {
+      tg?.showAlert(message)
+    } catch {
+      alert(message)
+    }
   }, [tg])
 
   const showConfirm = useCallback((message: string, callback: (confirmed: boolean) => void) => {
-    tg?.showConfirm(message, callback)
+    try {
+      tg?.showConfirm(message, callback)
+    } catch {
+      callback(window.confirm(message))
+    }
   }, [tg])
 
   const close = useCallback(() => {
-    tg?.close()
+    try {
+      tg?.close()
+    } catch {
+      // Cannot close outside Telegram
+    }
   }, [tg])
 
   return {

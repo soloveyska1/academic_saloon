@@ -330,15 +330,18 @@ export function DynamicIslandProvider({ children }: { children: ReactNode }) {
     }
 
     // Haptic feedback
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-      if (notification.type === 'success' || notification.type === 'bonus') {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success')
-      } else if (notification.type === 'error') {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error')
-      } else {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred('light')
+    try {
+      const hf = window.Telegram?.WebApp?.HapticFeedback
+      if (hf) {
+        if (notification.type === 'success' || notification.type === 'bonus') {
+          hf.notificationOccurred('success')
+        } else if (notification.type === 'error') {
+          hf.notificationOccurred('error')
+        } else {
+          hf.impactOccurred('light')
+        }
       }
-    }
+    } catch { /* ignore */ }
 
     return id
   }, [])

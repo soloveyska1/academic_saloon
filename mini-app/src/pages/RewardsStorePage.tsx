@@ -365,7 +365,7 @@ function RewardsStorePage() {
     if (!result.success) {
       // Haptic feedback - error
       try {
-        window.Telegram?.WebApp.HapticFeedback.notificationOccurred('error')
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error')
       } catch {}
 
       setError(result.message)
@@ -375,7 +375,7 @@ function RewardsStorePage() {
 
     // Haptic feedback - success
     try {
-      window.Telegram?.WebApp.HapticFeedback.notificationOccurred('success')
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
     } catch {}
 
     // Показываем модалку успеха

@@ -79,7 +79,7 @@ export const ProfileHeader = memo(function ProfileHeader({
     // Trigger admin access after 3 seconds
     longPressTimer.current = setTimeout(() => {
       try {
-        window.Telegram?.WebApp.HapticFeedback.notificationOccurred('success')
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
       } catch {}
       onAdminAccess()
       handlePressEnd()

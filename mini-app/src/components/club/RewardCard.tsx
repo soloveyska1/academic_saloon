@@ -93,7 +93,7 @@ export const RewardCard = memo(function RewardCard({
     if (!canAfford) return
 
     try {
-      window.Telegram?.WebApp.HapticFeedback.impactOccurred('medium')
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
     } catch {}
 
     onExchange(reward)

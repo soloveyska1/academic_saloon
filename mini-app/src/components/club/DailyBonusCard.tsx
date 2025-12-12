@@ -71,7 +71,7 @@ export const DailyBonusCard = memo(function DailyBonusCard({
 
     // Trigger haptic
     try {
-      window.Telegram?.WebApp.HapticFeedback.notificationOccurred('success')
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
     } catch {}
 
     setShowClaimed(true)

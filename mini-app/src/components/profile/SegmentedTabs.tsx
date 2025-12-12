@@ -97,7 +97,7 @@ export const SegmentedTabs = memo(function SegmentedTabs({
               whileTap={{ scale: 0.98 }}
               onClick={() => {
                 try {
-                  window.Telegram?.WebApp.HapticFeedback.selectionChanged()
+                  window.Telegram?.WebApp?.HapticFeedback?.selectionChanged()
                 } catch {}
                 onChange(tab.id)
               }}

@@ -186,7 +186,7 @@ export const VoucherList = memo(function VoucherList({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       try {
-                        window.Telegram?.WebApp.HapticFeedback.impactOccurred('light')
+                        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
                       } catch {}
                       onApply(voucher)
                     }}
