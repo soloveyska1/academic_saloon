@@ -397,6 +397,7 @@ export interface AdminUser {
   fullname: string
   username: string | null
   is_admin: boolean
+  is_banned?: boolean
   last_active: string | null
 }
 
@@ -404,6 +405,18 @@ export interface AdminStats {
   revenue: number
   active_orders_count: number
   total_users_count: number
+  // Extended CRM fields
+  orders_by_status?: Record<string, number>
+  new_users_today?: number
+  completed_today?: number
+  revenue_this_week?: number
+  revenue_last_week?: number
+  average_order_value?: number
+  recent_activity?: Array<{
+    type: 'order' | 'payment' | 'user' | 'system'
+    message: string
+    time: string
+  }>
 }
 
 export interface AdminSqlResponse {
