@@ -62,8 +62,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       try {
         tg.setHeaderColor(colors.header as `#${string}`)
         tg.setBackgroundColor(colors.background as `#${string}`)
-      } catch (e) {
-        console.warn('[Theme] Failed to set Telegram colors:', e)
+      } catch {
+        // Telegram color API may not be available in all contexts
       }
     }
 

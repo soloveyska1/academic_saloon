@@ -31,8 +31,7 @@ function normalizeApiBase(rawUrl?: string): string {
     // Remove trailing slash for consistency
     const normalized = url.toString().replace(/\/$/, '')
     return normalized
-  } catch (error) {
-    console.warn('[API] Invalid VITE_API_URL provided, falling back to default', error)
+  } catch {
     return fallback
   }
 }

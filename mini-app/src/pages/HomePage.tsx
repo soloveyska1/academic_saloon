@@ -294,8 +294,7 @@ export function HomePage({ user }: Props) {
         const info = await fetchDailyBonusInfo()
         setDailyBonusInfo(info)
         setDailyBonusError(false)
-      } catch (err) {
-        console.error('Failed to load daily bonus:', err)
+      } catch {
         retryCount++
         if (retryCount < maxRetries) {
           setTimeout(loadDailyBonus, 1000 * retryCount)

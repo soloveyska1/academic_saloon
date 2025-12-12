@@ -22,8 +22,8 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
     try {
       const claimResult = await onClaim()
       setResult(claimResult)
-    } catch (e) {
-      console.error(e)
+    } catch {
+      /* silent */
     }
     setClaiming(false)
   }

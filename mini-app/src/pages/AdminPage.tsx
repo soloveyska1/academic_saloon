@@ -17,8 +17,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 
-// 🚧 Security Configuration
-const ACCESS_CODE_HASH = '777' // Simple hash for demo
+// Access code should be validated on the server in production
+// This is a client-side gate for quick access; actual permissions are server-enforced
+const ACCESS_CODE_HASH = import.meta.env.VITE_ADMIN_ACCESS_CODE || 'admin2024'
 
 export const AdminPage: React.FC = () => {
     // Hooks
@@ -80,9 +81,9 @@ export const AdminPage: React.FC = () => {
             setStats(s)
             setOrders(o)
             setUsers(u)
-        } catch (e: any) {
-            console.error('Failed to load admin data', e)
-            setError(e.message || 'Ошибка загрузки данных')
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'Ошибка загрузки данных'
+            setError(errorMessage)
         } finally {
             setIsLoading(false)
         }
@@ -94,8 +95,9 @@ export const AdminPage: React.FC = () => {
             const res = await executeAdminSql(sqlQuery)
             setSqlResult(res)
             trigger('touch')
-        } catch (e: any) {
-            setSqlResult({ error: e.message })
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'Ошибка выполнения запроса'
+            setSqlResult({ error: errorMessage })
             trigger('failure')
         } finally {
             setIsLoading(false)
@@ -111,7 +113,9 @@ export const AdminPage: React.FC = () => {
             alert('Цена установлена!')
             setPriceInput('')
             loadData() // Refresh
-        } catch (e) { alert('Ошибка'); console.error(e) }
+        } catch {
+            alert('Ошибка установки цены')
+        }
     }
 
     const handleSendMessage = async () => {
@@ -122,7 +126,9 @@ export const AdminPage: React.FC = () => {
             setMessageInput('')
             alert('Сообщение отправлено')
             // In real app, we would append to local chat list
-        } catch (e) { alert('Ошибка'); console.error(e) }
+        } catch {
+            alert('Ошибка отправки сообщения')
+        }
     }
 
     const handleSetStatus = async (status: string) => {
@@ -131,9 +137,10 @@ export const AdminPage: React.FC = () => {
             await updateAdminOrderStatus(selectedOrder.id, status)
             trigger('success')
             loadData()
-            // @ts-ignore
-            setSelectedOrder((prev: Order | null) => prev ? { ...prev, status } : null)
-        } catch (e) { alert('Ошибка') }
+            setSelectedOrder(prev => prev ? { ...prev, status: status as Order['status'] } : null)
+        } catch {
+            alert('Ошибка изменения статуса')
+        }
     }
 
     const handleSetProgress = async () => {
@@ -142,7 +149,9 @@ export const AdminPage: React.FC = () => {
             await updateAdminOrderProgress(selectedOrder.id, parseInt(progressInput))
             trigger('success')
             alert('Прогресс обновлен')
-        } catch (e) { alert('Ошибка') }
+        } catch {
+            alert('Ошибка обновления прогресса')
+        }
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -231,7 +240,7 @@ export const AdminPage: React.FC = () => {
                 ].map(tab => (
                     <button
                         key={tab.id}
-                        onClick={() => { setActiveTab(tab.id as any); trigger('selection') }}
+                        onClick={() => { setActiveTab(tab.id as typeof activeTab); trigger('selection') }}
                         className={`flex flex-col items-center justify-center p-2 rounded border transition-all ${activeTab === tab.id
                             ? 'bg-green-500/20 border-green-500 text-green-400'
                             : 'bg-black border-green-900/50 text-green-700 hover:border-green-700'
@@ -360,7 +369,7 @@ export const AdminPage: React.FC = () => {
                                         <tbody>
                                             {sqlResult.rows?.map((row, i) => (
                                                 <tr key={i} className="border-b border-green-900/30">
-                                                    {Object.values(row).map((val: any, j) => (
+                                                    {Object.values(row).map((val, j) => (
                                                         <td key={j} className="p-2 text-green-300 whitespace-nowrap overflow-hidden max-w-[150px] text-ellipsis">
                                                             {String(val)}
                                                         </td>
@@ -407,7 +416,7 @@ export const AdminPage: React.FC = () => {
                                 {['info', 'chat', 'actions'].map((t) => (
                                     <button
                                         key={t}
-                                        onClick={() => setOrderModalTab(t as any)}
+                                        onClick={() => setOrderModalTab(t as typeof orderModalTab)}
                                         className={`flex-1 py-3 text-sm font-bold uppercase transition-colors ${orderModalTab === t ? 'text-green-400 border-b-2 border-green-400' : 'text-green-800'
                                             }`}
                                     >

@@ -50,7 +50,6 @@ export function BatchPaymentPage() {
         const info = await fetchBatchPaymentInfo(orderIds)
         setPaymentInfo(info)
       } catch (err) {
-        console.error('[BatchPayment] Error loading:', err)
         setError(err instanceof Error ? err.message : 'Ошибка загрузки')
       } finally {
         setLoading(false)
@@ -109,7 +108,6 @@ export function BatchPaymentPage() {
         hapticError()
       }
     } catch (err) {
-      console.error('[BatchPayment] Error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Ошибка соединения'
       setSubmitError(errorMessage)
       hapticError()

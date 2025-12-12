@@ -91,6 +91,9 @@ export interface Order {
   progress?: number
   bonus_used?: number
   payment_scheme?: 'full' | 'half' | null
+  revision_count?: number  // Number of revision rounds (3 free included)
+  completed_at?: string | null
+  delivered_at?: string | null  // When work was delivered (30-day revision period starts)
   // Admin-specific fields
   fullname?: string
   username?: string | null

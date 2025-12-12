@@ -128,7 +128,6 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
     const unsubscribe = addMessageHandler((message) => {
       if (message.type === 'chat_message' && (message as any).order_id === orderId) {
         // New message received via WebSocket
-        console.log('[Chat] New message received:', message)
         setIsAdminTyping(false) // Stop typing indicator
         loadMessages()
         hapticSuccess()
@@ -164,9 +163,8 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
       const response = await fetchOrderMessages(orderId)
       setMessages(response.messages)
       setUnreadCount(response.unread_count)
-    } catch (err) {
+    } catch {
       setError('Не удалось загрузить сообщения')
-      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -201,10 +199,9 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
         hapticError()
         setError('Не удалось отправить сообщение')
       }
-    } catch (err) {
+    } catch {
       hapticError()
       setError('Ошибка отправки')
-      console.error(err)
     } finally {
       setSending(false)
     }
@@ -301,8 +298,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
         setRecordingDuration(prev => prev + 1)
       }, 1000)
 
-    } catch (err) {
-      console.error('Failed to start recording:', err)
+    } catch {
       setError('Не удалось начать запись. Разрешите доступ к микрофону.')
       hapticError()
     }
@@ -403,8 +399,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
         audioRef.current = null
       }
 
-      audio.play().catch(err => {
-        console.error('Failed to play audio:', err)
+      audio.play().catch(() => {
         setPlayingAudioId(null)
       })
 

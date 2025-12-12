@@ -109,8 +109,6 @@ function AppContent() {
 
   // WebSocket handlers - now unified for smart notifications
   const handleOrderUpdate = useCallback((msg: OrderUpdateMessage) => {
-    console.log('[App] Order update received:', msg)
-
     // Smart notification data comes directly from server
     // Merge order_id into data for navigation action
     const mergedData = {
@@ -122,14 +120,14 @@ function AppContent() {
       type: 'order_update',
       order_id: msg.order_id,
       status: msg.status,
-      title: (msg as any).title || 'Обновление заказа',
-      message: (msg as any).message || `Статус: ${msg.status}`,
-      icon: (msg as any).icon || 'package',
-      color: (msg as any).color || '#d4af37',
-      priority: (msg as any).priority || 'normal',
-      action: (msg as any).action || 'view_order', // Default action to view order
-      celebration: (msg as any).celebration,
-      confetti: (msg as any).confetti,
+      title: msg.title || 'Обновление заказа',
+      message: msg.message || `Статус: ${msg.status}`,
+      icon: msg.icon || 'package',
+      color: msg.color || '#d4af37',
+      priority: msg.priority || 'normal',
+      action: msg.action || 'view_order', // Default action to view order
+      celebration: msg.celebration,
+      confetti: msg.confetti,
       data: mergedData,
     }
 
@@ -138,17 +136,15 @@ function AppContent() {
   }, [refetch])
 
   const handleBalanceUpdate = useCallback((msg: BalanceUpdateMessage) => {
-    console.log('[App] Balance update received:', msg)
-
     const smartData: SmartNotificationData = {
       type: 'balance_update',
-      title: (msg as any).title || (msg.change > 0 ? 'Баланс пополнен' : 'Списание'),
-      message: (msg as any).message || msg.reason,
-      icon: (msg as any).icon || (msg.change > 0 ? 'trending-up' : 'trending-down'),
-      color: (msg as any).color || (msg.change > 0 ? '#22c55e' : '#ef4444'),
+      title: msg.title || (msg.change > 0 ? 'Баланс пополнен' : 'Списание'),
+      message: msg.message || msg.reason,
+      icon: msg.icon || (msg.change > 0 ? 'trending-up' : 'trending-down'),
+      color: msg.color || (msg.change > 0 ? '#22c55e' : '#ef4444'),
       balance: msg.balance,
       change: msg.change,
-      celebration: (msg as any).celebration,
+      celebration: msg.celebration,
     }
 
     setNotification(smartData)
@@ -156,15 +152,13 @@ function AppContent() {
   }, [refetch])
 
   const handleNotification = useCallback((msg: NotificationMessage) => {
-    console.log('[App] Notification received:', msg)
-
     const smartData: SmartNotificationData = {
       type: 'notification',
       notification_type: msg.notification_type,
       title: msg.title,
       message: msg.message,
-      icon: (msg as any).icon || 'bell',
-      color: (msg as any).color || '#d4af37',
+      icon: msg.icon || 'bell',
+      color: msg.color || '#d4af37',
     }
 
     setNotification(smartData)
@@ -172,8 +166,6 @@ function AppContent() {
 
   // Handle progress updates
   const handleProgressUpdate = useCallback((msg: ProgressUpdateMessage) => {
-    console.log('[App] Progress update received:', msg)
-
     const smartData: SmartNotificationData = {
       type: 'progress_update',
       order_id: msg.order_id,
@@ -191,20 +183,17 @@ function AppContent() {
   }, [refetch])
 
   const handleRefresh = useCallback((msg: RefreshMessage) => {
-    console.log('[App] Refresh requested:', msg.refresh_type)
+    // Trigger data refresh based on refresh_type from server
     refetch()
   }, [refetch])
 
   // Handle notification action (e.g., navigate to order)
   const handleNotificationAction = useCallback((action: string, data: Record<string, unknown>) => {
-    console.log('[App] Notification action:', action, 'data:', data)
     if (action === 'view_order') {
       const orderId = data.order_id || data.orderId
       if (orderId) {
         // Navigate to order page
         window.location.href = `/order/${orderId}`
-      } else {
-        console.warn('[App] No order_id in notification data')
       }
     }
   }, [])

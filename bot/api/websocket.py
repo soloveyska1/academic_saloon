@@ -163,7 +163,7 @@ async def websocket_endpoint(
                         "type": "ping",
                         "timestamp": datetime.utcnow().isoformat()
                     })
-                except:
+                except Exception:
                     break  # Connection dead
 
     except WebSocketDisconnect:

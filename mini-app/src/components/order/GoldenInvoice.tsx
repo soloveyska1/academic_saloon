@@ -476,7 +476,6 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                 hapticError()
             }
         } catch (err) {
-            console.error('[Payment] Error:', err)
             const errorMessage = err instanceof Error ? err.message : 'Ошибка соединения'
             setError(errorMessage)
             hapticError()

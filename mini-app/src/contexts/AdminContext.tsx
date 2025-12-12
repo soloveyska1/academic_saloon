@@ -12,7 +12,7 @@ interface AdminSettings {
   simulateNewUser: boolean
   unlimitedRoulette: boolean
   showDebugInfo: boolean
-  bypassPayments: boolean
+  // bypassPayments removed for security - payments must always go through server validation
 }
 
 interface AdminContextType extends AdminSettings {
@@ -20,7 +20,6 @@ interface AdminContextType extends AdminSettings {
   toggleSimulateNewUser: () => void
   toggleUnlimitedRoulette: () => void
   toggleShowDebugInfo: () => void
-  toggleBypassPayments: () => void
   resetAllSettings: () => void
 }
 
@@ -31,7 +30,6 @@ const defaultSettings: AdminSettings = {
   simulateNewUser: false,
   unlimitedRoulette: false,
   showDebugInfo: false,
-  bypassPayments: false,
 }
 
 const AdminContext = createContext<AdminContextType | null>(null)
@@ -130,10 +128,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setSettings(prev => ({ ...prev, showDebugInfo: !prev.showDebugInfo }))
   }
 
-  const toggleBypassPayments = () => {
-    setSettings(prev => ({ ...prev, bypassPayments: !prev.bypassPayments }))
-  }
-
   const resetAllSettings = () => {
     setSettings(prev => ({
       ...defaultSettings,
@@ -149,7 +143,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         toggleSimulateNewUser,
         toggleUnlimitedRoulette,
         toggleShowDebugInfo,
-        toggleBypassPayments,
         resetAllSettings,
       }}
     >
