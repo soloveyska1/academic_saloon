@@ -13,7 +13,7 @@
  * - TrustSection: чипы гарантий с expand-деталями
  * - VerificationPendingBanner: анимированный баннер проверки
  * - FilesSection: список файлов с download
- * - ManagerCard: карточка менеджера с контактами
+ * - SupportCard: карточка поддержки (Семён)
  * - GuaranteesRow: grid гарантий (возврат, правки, сроки)
  * - OrderTimeline: визуальная история заказа
  *
@@ -193,6 +193,30 @@ const WORK_TYPE_LABELS: Record<string, string> = {
 const formatPrice = (amount: number | undefined | null): string => {
   if (!amount || typeof amount !== 'number') return '0'
   return amount.toLocaleString('ru-RU')
+}
+
+// Format deadline to Russian
+const formatDeadlineRu = (deadline: string): string => {
+  if (!deadline) return ''
+
+  const lower = deadline.toLowerCase().trim()
+
+  // Handle common English words
+  if (lower === 'today' || lower === 'сегодня') return 'Сегодня'
+  if (lower === 'tomorrow' || lower === 'завтра') return 'Завтра'
+  if (lower === 'yesterday' || lower === 'вчера') return 'Вчера'
+
+  // Try to parse as date
+  const date = new Date(deadline)
+  if (!isNaN(date.getTime())) {
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+    })
+  }
+
+  // Return as-is if can't parse
+  return deadline
 }
 
 // Countdown hook
@@ -559,7 +583,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
             }}
           >
             <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.purple }}>
-              Сдать: {order.deadline}
+              Сдать: {formatDeadlineRu(order.deadline)}
             </span>
           </div>
         )}
@@ -1446,100 +1470,184 @@ const PaymentSheet = memo(function PaymentSheet({
                     </motion.button>
                   </div>
                 ) : (
-                  /* SBP Method */
+                  /* SBP Method - Phone Number */
                   <div style={{
                     padding: DS.space.lg,
                     borderRadius: DS.radius.lg,
                     background: DS.colors.bgElevated,
                     border: `1px solid ${DS.colors.border}`,
-                    textAlign: 'center',
                   }}>
-                    {/* QR Placeholder */}
+                    {/* SBP Icon */}
                     <div style={{
-                      width: 180,
-                      height: 180,
-                      margin: '0 auto',
-                      borderRadius: DS.radius.lg,
-                      background: DS.colors.white,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       marginBottom: DS.space.lg,
                     }}>
                       <div style={{
-                        width: 140,
-                        height: 140,
-                        background: `repeating-linear-gradient(
-                          0deg,
-                          #000 0px,
-                          #000 10px,
-                          #fff 10px,
-                          #fff 20px
-                        ),
-                        repeating-linear-gradient(
-                          90deg,
-                          #000 0px,
-                          #000 10px,
-                          #fff 10px,
-                          #fff 20px
-                        )`,
-                        backgroundBlendMode: 'difference',
-                        borderRadius: DS.radius.sm,
-                      }} />
+                        width: 64,
+                        height: 64,
+                        borderRadius: DS.radius.lg,
+                        background: 'linear-gradient(135deg, #7B3FE4, #4F46E5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Smartphone size={32} color={DS.colors.white} />
+                      </div>
                     </div>
 
                     <p style={{
                       fontSize: DS.fontSize.sm,
-                      color: DS.colors.textMuted,
+                      color: DS.colors.textSecondary,
                       marginBottom: DS.space.lg,
+                      textAlign: 'center',
                     }}>
-                      Отсканируйте QR-код в приложении банка
+                      Переведите по номеру телефона через СБП
                     </p>
 
-                    <div style={{ display: 'flex', gap: DS.space.sm }}>
-                      <motion.button
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleCopy('https://sbp.nspk.ru/...', 'sbp_link')}
-                        style={{
-                          flex: 1,
-                          padding: `${DS.space.md}px ${DS.space.lg}px`,
-                          borderRadius: DS.radius.md,
-                          background: DS.colors.bgCard,
-                          border: `1px solid ${DS.colors.border}`,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: DS.space.sm,
-                        }}
-                      >
-                        <Copy size={14} color={DS.colors.textSecondary} />
-                        <span style={{ fontSize: DS.fontSize.sm, color: DS.colors.textSecondary }}>
-                          Копировать ссылку
-                        </span>
-                      </motion.button>
-                    </div>
-
-                    {/* Amount display for SBP */}
-                    <div style={{
-                      marginTop: DS.space.lg,
-                      paddingTop: DS.space.lg,
-                      borderTop: `1px solid ${DS.colors.border}`,
-                    }}>
+                    {/* Phone Number */}
+                    <div style={{ marginBottom: DS.space.lg }}>
                       <div style={{
                         fontSize: DS.fontSize.xs,
                         color: DS.colors.textMuted,
                         marginBottom: DS.space.xs,
                       }}>
-                        Сумма к оплате
+                        Номер телефона
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+                        <div style={{
+                          flex: 1,
+                          fontSize: DS.fontSize.xl,
+                          fontWeight: 700,
+                          fontFamily: 'var(--font-mono)',
+                          color: DS.colors.textPrimary,
+                          letterSpacing: '0.02em',
+                        }}>
+                          +7 (999) 123-45-67
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleCopy('+79991234567', 'sbp_phone')}
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: DS.radius.md,
+                            background: copiedField === 'sbp_phone' ? DS.colors.success : DS.colors.bgCard,
+                            border: `1px solid ${copiedField === 'sbp_phone' ? DS.colors.success : DS.colors.border}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {copiedField === 'sbp_phone' ? (
+                            <Check size={18} color={DS.colors.white} />
+                          ) : (
+                            <Copy size={18} color={DS.colors.textSecondary} />
+                          )}
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    {/* Bank Name */}
+                    <div style={{ marginBottom: DS.space.lg }}>
+                      <div style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginBottom: DS.space.xs,
+                      }}>
+                        Банк получателя
                       </div>
                       <div style={{
-                        fontSize: DS.fontSize['2xl'],
-                        fontWeight: 700,
-                        fontFamily: 'var(--font-mono)',
-                        color: DS.colors.gold,
+                        fontSize: DS.fontSize.base,
+                        color: DS.colors.textPrimary,
                       }}>
-                        {formatPrice(todayAmount)} ₽
+                        Тинькофф Банк
+                      </div>
+                    </div>
+
+                    {/* Amount */}
+                    <div style={{ marginBottom: DS.space.lg }}>
+                      <div style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginBottom: DS.space.xs,
+                      }}>
+                        Сумма
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+                        <div style={{
+                          flex: 1,
+                          fontSize: DS.fontSize.xl,
+                          fontWeight: 700,
+                          fontFamily: 'var(--font-mono)',
+                          color: DS.colors.gold,
+                        }}>
+                          {formatPrice(todayAmount)} ₽
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleCopy(todayAmount.toString(), 'sbp_amount')}
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: DS.radius.md,
+                            background: copiedField === 'sbp_amount' ? DS.colors.success : DS.colors.bgCard,
+                            border: `1px solid ${copiedField === 'sbp_amount' ? DS.colors.success : DS.colors.border}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {copiedField === 'sbp_amount' ? (
+                            <Check size={18} color={DS.colors.white} />
+                          ) : (
+                            <Copy size={18} color={DS.colors.textSecondary} />
+                          )}
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    {/* Comment */}
+                    <div>
+                      <div style={{
+                        fontSize: DS.fontSize.xs,
+                        color: DS.colors.textMuted,
+                        marginBottom: DS.space.xs,
+                      }}>
+                        Комментарий к переводу
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+                        <div style={{
+                          flex: 1,
+                          fontSize: DS.fontSize.base,
+                          color: DS.colors.textPrimary,
+                        }}>
+                          Заказ #{order.id}
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleCopy(`Заказ #${order.id}`, 'sbp_comment')}
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: DS.radius.md,
+                            background: copiedField === 'sbp_comment' ? DS.colors.success : DS.colors.bgCard,
+                            border: `1px solid ${copiedField === 'sbp_comment' ? DS.colors.success : DS.colors.border}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {copiedField === 'sbp_comment' ? (
+                            <Check size={18} color={DS.colors.white} />
+                          ) : (
+                            <Copy size={18} color={DS.colors.textSecondary} />
+                          )}
+                        </motion.button>
                       </div>
                     </div>
                   </div>
@@ -2612,37 +2720,29 @@ const FilesSection = memo(function FilesSection({
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//                              MANAGER CARD
+//                              SUPPORT CARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-interface Manager {
-  id: string
-  name: string
-  avatar?: string
-  role: string
-  rating?: number
-  responseTime?: string
-  telegramUsername?: string
+// Support contact configuration
+const SUPPORT_CONFIG = {
+  name: 'Семён',
+  role: 'Основатель · Поддержка',
+  telegramUsername: 'smnfom',
+  responseTime: '~10 мин',
 }
 
-interface ManagerCardProps {
-  manager: Manager
-  onContactManager: () => void
+interface SupportCardProps {
+  onOpenChat: () => void
 }
 
-const ManagerCard = memo(function ManagerCard({
-  manager,
-  onContactManager,
-}: ManagerCardProps) {
+const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) {
   const { haptic } = useTelegram()
 
-  // Generate initials from name
-  const initials = manager.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const handleTelegramClick = () => {
+    haptic?.('medium')
+    // Open Telegram link
+    window.open(`https://t.me/${SUPPORT_CONFIG.telegramUsername}`, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div
@@ -2660,7 +2760,7 @@ const ManagerCard = memo(function ManagerCard({
           marginBottom: DS.space.md,
         }}
       >
-        <User size={18} color={DS.colors.gold} />
+        <MessageCircle size={18} color={DS.colors.gold} />
         <span
           style={{
             fontSize: DS.fontSize.lg,
@@ -2668,7 +2768,7 @@ const ManagerCard = memo(function ManagerCard({
             color: DS.colors.textPrimary,
           }}
         >
-          Ваш менеджер
+          Поддержка
         </span>
       </div>
 
@@ -2694,27 +2794,18 @@ const ManagerCard = memo(function ManagerCard({
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              overflow: 'hidden',
             }}
           >
-            {manager.avatar ? (
-              <img
-                src={manager.avatar}
-                alt={manager.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : (
-              <span
-                style={{
-                  fontSize: DS.fontSize.xl,
-                  fontWeight: 700,
-                  color: DS.colors.gold,
-                  fontFamily: 'var(--font-serif)',
-                }}
-              >
-                {initials}
-              </span>
-            )}
+            <span
+              style={{
+                fontSize: DS.fontSize['2xl'],
+                fontWeight: 700,
+                color: DS.colors.gold,
+                fontFamily: 'var(--font-serif)',
+              }}
+            >
+              С
+            </span>
           </div>
 
           {/* Info */}
@@ -2727,7 +2818,7 @@ const ManagerCard = memo(function ManagerCard({
                 marginBottom: 2,
               }}
             >
-              {manager.name}
+              {SUPPORT_CONFIG.name}
             </div>
             <div
               style={{
@@ -2736,73 +2827,81 @@ const ManagerCard = memo(function ManagerCard({
                 marginBottom: DS.space.sm,
               }}
             >
-              {manager.role}
+              {SUPPORT_CONFIG.role}
             </div>
 
             {/* Stats Row */}
-            <div style={{ display: 'flex', gap: DS.space.md, flexWrap: 'wrap' }}>
-              {manager.rating && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.xs }}>
-                  <Star size={12} color={DS.colors.gold} fill={DS.colors.gold} />
-                  <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.textSecondary }}>
-                    {manager.rating.toFixed(1)}
-                  </span>
-                </div>
-              )}
-              {manager.responseTime && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.xs }}>
-                  <Clock size={12} color={DS.colors.success} />
-                  <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.textSecondary }}>
-                    Ответ ~{manager.responseTime}
-                  </span>
-                </div>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.xs }}>
+              <Clock size={12} color={DS.colors.success} />
+              <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.textSecondary }}>
+                Ответ {SUPPORT_CONFIG.responseTime}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Contact Button */}
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={() => {
-            haptic?.('medium')
-            onContactManager()
-          }}
-          style={{
-            width: '100%',
-            marginTop: DS.space.lg,
-            padding: `${DS.space.md}px ${DS.space.lg}px`,
-            borderRadius: DS.radius.lg,
-            background: DS.colors.bgElevated,
-            border: `1px solid ${DS.colors.borderLight}`,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: DS.space.sm,
-          }}
-        >
-          <Send size={18} color={DS.colors.gold} />
-          <span
+        {/* Buttons */}
+        <div style={{ display: 'flex', gap: DS.space.sm, marginTop: DS.space.lg }}>
+          {/* In-app chat button */}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              haptic?.('medium')
+              onOpenChat()
+            }}
             style={{
-              fontSize: DS.fontSize.base,
-              fontWeight: 600,
-              color: DS.colors.textPrimary,
+              flex: 1,
+              padding: `${DS.space.md}px ${DS.space.lg}px`,
+              borderRadius: DS.radius.lg,
+              background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: DS.space.sm,
+              boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
             }}
           >
-            Написать в Telegram
-          </span>
-          {manager.telegramUsername && (
+            <MessageCircle size={18} color="#0a0a0c" />
+            <span
+              style={{
+                fontSize: DS.fontSize.base,
+                fontWeight: 600,
+                color: '#0a0a0c',
+              }}
+            >
+              Написать
+            </span>
+          </motion.button>
+
+          {/* Telegram button */}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={handleTelegramClick}
+            style={{
+              padding: `${DS.space.md}px ${DS.space.lg}px`,
+              borderRadius: DS.radius.lg,
+              background: DS.colors.bgElevated,
+              border: `1px solid ${DS.colors.borderLight}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: DS.space.sm,
+            }}
+          >
+            <Send size={18} color={DS.colors.info} />
             <span
               style={{
                 fontSize: DS.fontSize.sm,
-                color: DS.colors.textMuted,
+                color: DS.colors.textSecondary,
               }}
             >
-              @{manager.telegramUsername}
+              @{SUPPORT_CONFIG.telegramUsername}
             </span>
-          )}
-        </motion.button>
+          </motion.button>
+        </div>
       </div>
     </div>
   )
@@ -3498,15 +3597,12 @@ export function OrderDetailPageV8() {
   const isPaymentFlow = ['waiting_payment', 'confirmed'].includes(order?.status || '')
   const isVerificationPending = order?.status === 'verification_pending'
 
-  // Mock manager data (in real app would come from API)
-  const manager: Manager = {
-    id: '1',
-    name: 'Анна Смирнова',
-    role: 'Персональный менеджер',
-    rating: 4.9,
-    responseTime: '5 мин',
-    telegramUsername: 'anna_manager',
-  }
+  // Open in-app chat handler
+  const handleOpenChat = useCallback(() => {
+    haptic?.('medium')
+    // Navigate to support page or open chat modal
+    navigate('/support')
+  }, [haptic, navigate])
 
   // File handlers
   const handleDownloadFile = useCallback((file: OrderFile) => {
@@ -3567,11 +3663,8 @@ export function OrderDetailPageV8() {
         onDownloadAll={handleDownloadAllFiles}
       />
 
-      {/* Manager Card */}
-      <ManagerCard
-        manager={manager}
-        onContactManager={handleContactManager}
-      />
+      {/* Support Card */}
+      <SupportCard onOpenChat={handleOpenChat} />
 
       {/* Guarantees Row */}
       <GuaranteesRow />
