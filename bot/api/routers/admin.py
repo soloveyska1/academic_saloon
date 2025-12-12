@@ -29,32 +29,78 @@ def is_admin(user_id: int) -> bool:
     """Check if user is in admin list"""
     return user_id in settings.ADMIN_IDS
 
+import re
+
+# Dangerous SQL keywords to block
+BLOCKED_SQL_KEYWORDS = [
+    'DROP', 'DELETE', 'TRUNCATE', 'ALTER', 'CREATE', 'INSERT', 'UPDATE',
+    'GRANT', 'REVOKE', 'EXEC', 'EXECUTE', 'INTO OUTFILE', 'INTO DUMPFILE',
+    'LOAD_FILE', 'BENCHMARK', 'SLEEP', 'PG_SLEEP', 'WAITFOR', 'SHUTDOWN',
+]
+
+def validate_sql_query(query: str) -> tuple[bool, str]:
+    """Validate SQL query for security"""
+    normalized = query.strip().upper()
+
+    # Only allow SELECT queries
+    if not normalized.startswith('SELECT'):
+        return False, "Разрешены только SELECT запросы"
+
+    # Check for dangerous keywords
+    for keyword in BLOCKED_SQL_KEYWORDS:
+        # Use word boundary to avoid false positives
+        if re.search(rf'\b{keyword}\b', normalized):
+            return False, f"Запрещённое ключевое слово: {keyword}"
+
+    # Block subqueries with write operations (injection attempts)
+    if re.search(r'\(\s*DELETE|\(\s*INSERT|\(\s*UPDATE|\(\s*DROP', normalized):
+        return False, "Запрещённые подзапросы"
+
+    # Block comment attacks
+    if '--' in query or '/*' in query:
+        return False, "SQL комментарии запрещены"
+
+    return True, ""
+
 @router.post("/admin/sql", response_model=AdminSqlResponse)
 async def execute_sql(
     data: AdminSqlRequest,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Execute raw SQL (Admin only)"""
+    """Execute read-only SQL queries (Admin only)
+
+    Security measures:
+    - Only SELECT queries allowed
+    - Dangerous keywords blocked
+    - Results limited to 1000 rows
+    - All queries logged
+    """
     if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail="Access denied")
-    
+
+    # Validate query
+    is_valid, error_msg = validate_sql_query(data.query)
+    if not is_valid:
+        logger.warning(f"Blocked SQL query from admin {tg_user.id}: {error_msg}")
+        return AdminSqlResponse(columns=[], rows=[], error=error_msg)
+
+    # Log query for audit
+    logger.info(f"Admin SQL query by {tg_user.id}: {data.query[:200]}...")
+
     try:
         result = await session.execute(text(data.query))
-        
-        if data.query.strip().upper().startswith("SELECT"):
-            rows = result.fetchall()
-            columns = list(result.keys())
-            serializable_rows = []
-            for row in rows:
-                serializable_rows.append([str(item) for item in row])
-            
-            return AdminSqlResponse(columns=columns, rows=serializable_rows)
-        else:
-            await session.commit()
-            return AdminSqlResponse(columns=["Result"], rows=[[f"Query executed successfully"]])
-            
+        rows = result.fetchmany(1000)  # Limit to 1000 rows
+        columns = list(result.keys())
+
+        serializable_rows = []
+        for row in rows:
+            serializable_rows.append([str(item) for item in row])
+
+        return AdminSqlResponse(columns=columns, rows=serializable_rows)
+
     except Exception as e:
+        logger.error(f"SQL execution error: {e}")
         return AdminSqlResponse(columns=[], rows=[], error=str(e))
 
 @router.get("/admin/users", response_model=List[AdminUserResponse])
