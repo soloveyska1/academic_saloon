@@ -306,6 +306,7 @@ class Order(Base):
     reminder_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # Напоминание отправлено
     review_submitted: Mapped[bool] = mapped_column(default=False)  # Отзыв оставлен
     revision_count: Mapped[int] = mapped_column(Integer, default=0)  # Счётчик кругов правок (3 бесплатно)
+    is_archived: Mapped[bool] = mapped_column(default=False)  # Архивный заказ (скрыт из основного списка)
 
     # Live-карточка в канале заказов
     channel_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # ID сообщения в канале

@@ -66,6 +66,7 @@ import {
   File,
   Image,
   FileArchive,
+  Archive,
   User,
   Send,
   Award,
@@ -78,7 +79,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
-import { fetchOrderDetail, fetchPaymentInfo, PaymentInfo } from '../api/userApi'
+import { fetchOrderDetail, fetchPaymentInfo, PaymentInfo, archiveOrder, unarchiveOrder } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
 import { useToast } from '../components/ui/Toast'
@@ -289,6 +290,7 @@ interface OrderAppBarProps {
   onCopyOrderId: () => void
   onContactManager: () => void
   onOpenFAQ: () => void
+  onArchive: () => void
 }
 
 const OrderAppBar = memo(function OrderAppBar({
@@ -297,6 +299,7 @@ const OrderAppBar = memo(function OrderAppBar({
   onCopyOrderId,
   onContactManager,
   onOpenFAQ,
+  onArchive,
 }: OrderAppBarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
@@ -307,6 +310,7 @@ const OrderAppBar = memo(function OrderAppBar({
     { icon: Copy, label: 'Скопировать номер', onClick: () => { onCopyOrderId(); setMenuOpen(false) } },
     { icon: MessageCircle, label: 'Написать менеджеру', onClick: () => { onContactManager(); setMenuOpen(false) } },
     { icon: HelpCircle, label: 'FAQ / Помощь', onClick: () => { onOpenFAQ(); setMenuOpen(false) } },
+    { icon: Archive, label: order.is_archived ? 'Из архива' : 'В архив', onClick: () => { onArchive(); setMenuOpen(false) } },
   ]
 
   return (
@@ -3608,6 +3612,25 @@ export function OrderDetailPageV8() {
     }
   }, [haptic, navigate, order?.id])
 
+  // Archive handler
+  const handleArchive = useCallback(async () => {
+    if (!order?.id) return
+    haptic?.('medium')
+    try {
+      if (order.is_archived) {
+        await unarchiveOrder(order.id)
+        setOrder(prev => prev ? { ...prev, is_archived: false } : prev)
+        showToast({ type: 'success', title: 'Восстановлено', message: 'Заказ убран из архива' })
+      } else {
+        await archiveOrder(order.id)
+        setOrder(prev => prev ? { ...prev, is_archived: true } : prev)
+        showToast({ type: 'success', title: 'Архивировано', message: 'Заказ перемещён в архив' })
+      }
+    } catch {
+      showToast({ type: 'error', title: 'Ошибка', message: 'Не удалось изменить статус архива' })
+    }
+  }, [order?.id, order?.is_archived, haptic, showToast])
+
   // File handlers
   const handleDownloadFile = useCallback((file: OrderFile) => {
     if (!file.url) return
@@ -3649,6 +3672,7 @@ export function OrderDetailPageV8() {
         onCopyOrderId={handleCopyOrderId}
         onContactManager={handleContactManager}
         onOpenFAQ={handleOpenFAQ}
+        onArchive={handleArchive}
       />
 
       {/* Hero Summary */}
