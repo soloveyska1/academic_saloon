@@ -1,66 +1,14 @@
-import { useState, useCallback, memo } from 'react'
+import { useCallback, memo, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, History, Gift, Target, ShoppingBag, Ticket, TrendingUp } from 'lucide-react'
 import { ClubHistoryEntry } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
+import { useClub } from '../contexts/ClubContext'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  CLUB HISTORY PAGE - Points earning and spending history
+//  CLUB HISTORY PAGE - Реальная история баллов и начислений
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// Mock history for demo
-const MOCK_HISTORY: ClubHistoryEntry[] = [
-  {
-    id: 'h1',
-    type: 'bonus_claim',
-    title: 'Ежедневный бонус',
-    points: 25,
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h2',
-    type: 'mission_complete',
-    title: 'Задание: Уточнить требования',
-    points: 15,
-    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h3',
-    type: 'reward_exchange',
-    title: 'Обмен: Приоритет в очереди',
-    points: -80,
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h4',
-    type: 'bonus_claim',
-    title: 'Ежедневный бонус',
-    points: 20,
-    timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h5',
-    type: 'xp_gain',
-    title: 'XP за оплату заказа #1234',
-    points: 50,
-    timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h6',
-    type: 'voucher_use',
-    title: 'Использован: Быстрая оценка',
-    points: 0,
-    timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h7',
-    type: 'mission_complete',
-    title: 'Задание: Заполнить профиль',
-    points: 20,
-    timestamp: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(),
-  },
-]
 
 const getEntryIcon = (type: ClubHistoryEntry['type']) => {
   switch (type) {
@@ -84,10 +32,12 @@ function formatTimestamp(timestamp: string): string {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
 
+  const minutes = Math.floor(diff / (1000 * 60))
   const hours = Math.floor(diff / (1000 * 60 * 60))
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
 
-  if (hours < 1) return 'Только что'
+  if (minutes < 1) return 'Только что'
+  if (minutes < 60) return `${minutes} мин. назад`
   if (hours < 24) return `${hours} ч. назад`
   if (days === 1) return 'Вчера'
   if (days < 7) return `${days} дн. назад`
@@ -99,9 +49,11 @@ function formatTimestamp(timestamp: string): string {
 const HistoryHeader = memo(function HistoryHeader({
   onBack,
   totalEarned,
+  currentBalance,
 }: {
   onBack: () => void
   totalEarned: number
+  currentBalance: number
 }) {
   return (
     <motion.div
@@ -153,10 +105,24 @@ const HistoryHeader = memo(function HistoryHeader({
               История
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>
-              Всего заработано: {totalEarned}
+              Баланс: {currentBalance} баллов
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Stats badge */}
+      <div
+        style={{
+          padding: '8px 12px',
+          borderRadius: 10,
+          background: 'rgba(34, 197, 94, 0.1)',
+          border: '1px solid rgba(34, 197, 94, 0.2)',
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#22c55e' }}>
+          +{totalEarned} всего
+        </span>
       </div>
     </motion.div>
   )
@@ -164,12 +130,15 @@ const HistoryHeader = memo(function HistoryHeader({
 
 function ClubHistoryPage() {
   const navigate = useNavigate()
+  const club = useClub()
 
-  const [history] = useState<ClubHistoryEntry[]>(MOCK_HISTORY)
+  // Получаем реальную историю из состояния клуба
+  const history = club.history
 
-  const totalEarned = history
-    .filter(e => e.points > 0)
-    .reduce((sum, e) => sum + e.points, 0)
+  const totalEarned = useMemo(() =>
+    history.filter(e => e.points > 0).reduce((sum, e) => sum + e.points, 0),
+    [history]
+  )
 
   const handleBack = useCallback(() => {
     navigate('/club')
@@ -196,7 +165,11 @@ function ClubHistoryPage() {
         }}
       >
         {/* Header */}
-        <HistoryHeader onBack={handleBack} totalEarned={totalEarned} />
+        <HistoryHeader
+          onBack={handleBack}
+          totalEarned={totalEarned}
+          currentBalance={club.points}
+        />
 
         {/* History list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
