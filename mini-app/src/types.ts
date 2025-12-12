@@ -208,6 +208,87 @@ export interface ClubHistoryEntry {
   timestamp: string
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//                          PROFILE TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export type UserRole = 'client' | 'agent' | 'admin'
+
+export type MembershipLevel = 'standard' | 'silver' | 'gold' | 'premium' | 'max'
+
+export interface ProfileUser {
+  id: number
+  telegramId: number
+  name: string
+  username: string | null
+  role: UserRole
+  memberSince: string  // ISO date
+  membershipLevel: MembershipLevel
+  avatar?: string
+  agentSince?: string  // ISO date, only for agents
+}
+
+export interface Wallet {
+  balance: number
+  bonusBalance: number
+  cashbackPercent: number
+  discountPercent: number
+  savedLast30Days: number
+  breakdown: {
+    bonuses: number
+    cashback: number
+    referralEarnings: number
+  }
+}
+
+export type TransactionCategory = 'all' | 'bonus' | 'cashback' | 'adjustment' | 'referral'
+
+export interface ProfileTransaction {
+  id: number
+  type: 'credit' | 'debit'
+  category: TransactionCategory
+  title: string
+  subtitle?: string
+  amount: number
+  date: string  // ISO date
+  comment?: string  // Especially for admin adjustments
+  orderId?: number
+  icon?: string
+}
+
+export interface AgentStats {
+  invitedCount: number
+  activeCount: number
+  ordersCount: number
+  earnedAmount: number
+  commissionRate: number
+}
+
+export interface AgentEarning {
+  id: string
+  amount: number
+  referralName: string
+  orderId: number
+  date: string
+  status: 'pending' | 'paid'
+}
+
+export interface ProfileSettings {
+  notifications: {
+    orderUpdates: boolean
+    promotions: boolean
+    reminders: boolean
+  }
+  preferences: {
+    defaultWorkType?: string
+    defaultSubject?: string
+    citationStyle?: string
+  }
+  privacy: {
+    showOnlineStatus: boolean
+  }
+}
+
 // Order Creation (Web App First)
 export interface OrderCreateRequest {
   work_type: string
