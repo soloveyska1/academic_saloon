@@ -4,7 +4,7 @@ Pydantic schemas for Mini App API responses
 
 import re
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 from pydantic import BaseModel, field_validator, Field
 
 
@@ -292,10 +292,23 @@ class AdminSqlResponse(BaseModel):
     rows: List[List[Any]]
     error: Optional[str] = None
 
+class RecentActivityItem(BaseModel):
+    type: str  # 'order', 'payment', 'user', 'system'
+    message: str
+    time: str
+
 class AdminStatsResponse(BaseModel):
     revenue: float
     active_orders_count: int
     total_users_count: int
+    # Extended CRM fields
+    orders_by_status: Optional[Dict[str, int]] = None
+    new_users_today: Optional[int] = None
+    completed_today: Optional[int] = None
+    revenue_this_week: Optional[float] = None
+    revenue_last_week: Optional[float] = None
+    average_order_value: Optional[float] = None
+    recent_activity: Optional[List[RecentActivityItem]] = None
 
 class AdminUserResponse(BaseModel):
     internal_id: int
