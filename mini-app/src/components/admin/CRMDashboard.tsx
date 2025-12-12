@@ -1,11 +1,12 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
     DollarSign, Package, CreditCard, TrendingUp,
     AlertCircle, Activity
 } from 'lucide-react'
 import { KPICard, QuickStats } from './KPICard'
-import { AdminStats } from '../../types'
+import { AdminStats, RevenueChartData } from '../../types'
+import { fetchRevenueChart } from '../../api/userApi'
 
 interface CRMDashboardProps {
     stats: AdminStats | null
@@ -13,6 +14,26 @@ interface CRMDashboardProps {
 }
 
 export const CRMDashboard: React.FC<CRMDashboardProps> = ({ stats, isLoading }) => {
+    const [chartData, setChartData] = useState<RevenueChartData | null>(null)
+    const [chartLoading, setChartLoading] = useState(false)
+
+    useEffect(() => {
+        const loadChart = async () => {
+            setChartLoading(true)
+            try {
+                const data = await fetchRevenueChart(30)
+                setChartData(data)
+            } catch (e) {
+                console.error('Failed to load chart:', e)
+            } finally {
+                setChartLoading(false)
+            }
+        }
+        if (stats) {
+            loadChart()
+        }
+    }, [stats])
+
     if (isLoading || !stats) {
         return (
             <div className="space-y-6">
@@ -150,7 +171,7 @@ export const CRMDashboard: React.FC<CRMDashboardProps> = ({ stats, isLoading }) 
                 </div>
             </motion.div>
 
-            {/* Revenue Chart Placeholder */}
+            {/* Revenue Chart */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -161,42 +182,60 @@ export const CRMDashboard: React.FC<CRMDashboardProps> = ({ stats, isLoading }) 
                     <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
                         <TrendingUp className="w-4 h-4" />
                         Выручка за 30 дней
+                        {chartData && (
+                            <span className="text-emerald-400 font-bold">
+                                {chartData.total.toLocaleString('ru-RU')} ₽
+                            </span>
+                        )}
                     </h3>
-                    <div className="flex items-center gap-4 text-xs">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                            <span className="text-zinc-400">Этот месяц</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-zinc-600" />
-                            <span className="text-zinc-400">Прошлый месяц</span>
-                        </div>
+                </div>
+
+                {/* Bar Chart Visualization */}
+                {chartLoading ? (
+                    <div className="h-48 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                     </div>
-                </div>
-
-                {/* Simple Bar Chart Visualization */}
-                <div className="h-48 flex items-end gap-1">
-                    {[...Array(30)].map((_, i) => {
-                        const height = Math.random() * 100 + 20
-                        const isToday = i === 29
-                        return (
-                            <div
-                                key={i}
-                                className={`flex-1 rounded-t transition-all hover:opacity-80 ${
-                                    isToday ? 'bg-emerald-500' : 'bg-emerald-500/30'
-                                }`}
-                                style={{ height: `${height}%` }}
-                                title={`День ${i + 1}`}
-                            />
-                        )
-                    })}
-                </div>
-
-                <div className="flex justify-between mt-2 text-[10px] text-zinc-500">
-                    <span>1 дек</span>
-                    <span>15 дек</span>
-                    <span>Сегодня</span>
-                </div>
+                ) : chartData && chartData.data.length > 0 ? (
+                    <>
+                        <div className="h-48 flex items-end gap-1">
+                            {(() => {
+                                const maxRevenue = Math.max(...chartData.data.map(d => d.revenue), 1)
+                                return chartData.data.map((day, i) => {
+                                    const height = (day.revenue / maxRevenue) * 100
+                                    const isToday = i === chartData.data.length - 1
+                                    const date = new Date(day.date)
+                                    return (
+                                        <div
+                                            key={day.date}
+                                            className={`flex-1 rounded-t transition-all hover:opacity-80 cursor-pointer group relative ${
+                                                isToday ? 'bg-emerald-500' : day.revenue > 0 ? 'bg-emerald-500/50' : 'bg-zinc-700/30'
+                                            }`}
+                                            style={{ height: `${Math.max(height, 2)}%` }}
+                                        >
+                                            {/* Tooltip */}
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                                                <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-xs whitespace-nowrap">
+                                                    <div className="text-white font-medium">{day.revenue.toLocaleString('ru-RU')} ₽</div>
+                                                    <div className="text-zinc-400">{date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>
+                                                    <div className="text-zinc-500">{day.orders_count} заказов</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })
+                            })()}
+                        </div>
+                        <div className="flex justify-between mt-2 text-[10px] text-zinc-500">
+                            <span>{chartData.data[0] ? new Date(chartData.data[0].date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : ''}</span>
+                            <span>{chartData.data[Math.floor(chartData.data.length / 2)] ? new Date(chartData.data[Math.floor(chartData.data.length / 2)].date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : ''}</span>
+                            <span>Сегодня</span>
+                        </div>
+                    </>
+                ) : (
+                    <div className="h-48 flex items-center justify-center text-zinc-500">
+                        Нет данных о выручке за этот период
+                    </div>
+                )}
             </motion.div>
         </div>
     )

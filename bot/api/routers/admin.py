@@ -17,7 +17,7 @@ from bot.api.schemas import (
     AdminSqlRequest, AdminSqlResponse, AdminUserResponse,
     AdminStatsResponse, OrderResponse, AdminOrderUpdate, AdminPriceUpdate,
     AdminMessageRequest, AdminProgressUpdate, RecentActivityItem,
-    ClientProfileResponse, ClientOrderSummary
+    ClientProfileResponse, ClientOrderSummary, RevenueChartResponse, DailyRevenueItem
 )
 from bot.bot_instance import get_bot
 
@@ -294,6 +294,64 @@ async def get_admin_stats(
         revenue_last_week=float(revenue_last_week),
         average_order_value=float(average_order_value),
         recent_activity=recent_activity
+    )
+
+@router.get("/admin/revenue-chart", response_model=RevenueChartResponse)
+async def get_revenue_chart(
+    days: int = 30,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get daily revenue data for chart"""
+    if not is_admin(tg_user.id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if days > 90:
+        days = 90  # Limit to 90 days max
+
+    now = datetime.utcnow()
+    start_date = (now - timedelta(days=days)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Get all completed orders in the period
+    query = select(Order).where(
+        and_(
+            Order.status == OrderStatus.COMPLETED.value,
+            Order.completed_at >= start_date
+        )
+    ).order_by(Order.completed_at)
+
+    result = await session.execute(query)
+    orders = result.scalars().all()
+
+    # Group by date
+    daily_data: dict[str, dict] = {}
+    for i in range(days):
+        date = (start_date + timedelta(days=i)).strftime('%Y-%m-%d')
+        daily_data[date] = {'revenue': 0.0, 'count': 0}
+
+    for order in orders:
+        if order.completed_at:
+            date_key = order.completed_at.strftime('%Y-%m-%d')
+            if date_key in daily_data:
+                daily_data[date_key]['revenue'] += float(order.paid_amount or 0)
+                daily_data[date_key]['count'] += 1
+
+    # Convert to list
+    chart_data = [
+        DailyRevenueItem(
+            date=date,
+            revenue=data['revenue'],
+            orders_count=data['count']
+        )
+        for date, data in sorted(daily_data.items())
+    ]
+
+    total_revenue = sum(d['revenue'] for d in daily_data.values())
+
+    return RevenueChartResponse(
+        data=chart_data,
+        total=total_revenue,
+        period_days=days
     )
 
 @router.get('/admin/orders', response_model=List[OrderResponse])

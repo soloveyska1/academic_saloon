@@ -310,6 +310,16 @@ class AdminStatsResponse(BaseModel):
     average_order_value: Optional[float] = None
     recent_activity: Optional[List[RecentActivityItem]] = None
 
+class DailyRevenueItem(BaseModel):
+    date: str
+    revenue: float
+    orders_count: int
+
+class RevenueChartResponse(BaseModel):
+    data: List[DailyRevenueItem]
+    total: float
+    period_days: int
+
 class AdminUserResponse(BaseModel):
     internal_id: int
     telegram_id: int

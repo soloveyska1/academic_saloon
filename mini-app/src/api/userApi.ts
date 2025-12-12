@@ -313,6 +313,10 @@ export async function fetchAdminStats(): Promise<AdminStats> {
   return apiFetch<AdminStats>('/admin/stats')
 }
 
+export async function fetchRevenueChart(days: number = 30): Promise<import('../types').RevenueChartData> {
+  return apiFetch<import('../types').RevenueChartData>(`/admin/revenue-chart?days=${days}`)
+}
+
 export async function fetchClientProfile(userId: number): Promise<import('../types').ClientProfile> {
   return apiFetch<import('../types').ClientProfile>(`/admin/clients/${userId}`)
 }
