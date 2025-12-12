@@ -802,8 +802,9 @@ const StickyActionBar = memo(function StickyActionBar({
   const config = variantConfig[variant]
   const ButtonIcon = config.buttonIcon
 
-  // Don't show for cancelled/rejected
-  if (variant === 'cancelled') return null
+  // Don't show for cancelled/rejected and statuses without real CTA
+  // Only show for: payment, verification, review, completed
+  if (['cancelled', 'work'].includes(variant)) return null
 
   return (
     <motion.div
