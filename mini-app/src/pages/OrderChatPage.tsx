@@ -328,8 +328,8 @@ export function OrderChatPage() {
     }
   }
 
-  // Audio playback
-  const handlePlayAudio = useCallback((messageId: number, url: string) => {
+  // Audio playback with error handling for Telegram WebView
+  const handlePlayAudio = useCallback(async (messageId: number, url: string) => {
     if (playingAudioId === messageId) {
       audioRef.current?.pause()
       setPlayingAudioId(null)
@@ -340,13 +340,31 @@ export function OrderChatPage() {
       audioRef.current.pause()
     }
 
-    const audio = new Audio(url)
-    audioRef.current = audio
-    audio.play()
-    setPlayingAudioId(messageId)
+    try {
+      const audio = new Audio()
+      audioRef.current = audio
 
-    audio.onended = () => {
+      // Set up event handlers before setting src
+      audio.onended = () => {
+        setPlayingAudioId(null)
+      }
+
+      audio.onerror = () => {
+        setPlayingAudioId(null)
+        // Fallback: open in new tab if playback fails
+        window.open(url, '_blank')
+      }
+
+      audio.src = url
+      audio.load()
+
+      await audio.play()
+      setPlayingAudioId(messageId)
+    } catch (err) {
+      console.error('Audio playback error:', err)
       setPlayingAudioId(null)
+      // Fallback: open audio in new tab/window
+      window.open(url, '_blank')
     }
   }, [playingAudioId])
 
