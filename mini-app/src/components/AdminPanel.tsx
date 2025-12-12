@@ -6,7 +6,6 @@ import {
   UserPlus,
   Infinity,
   Eye,
-  CreditCard,
   RotateCcw,
   ChevronDown,
   ChevronUp,
@@ -313,15 +312,6 @@ export function AdminPanel() {
                     enabled={admin.showDebugInfo}
                     onToggle={admin.toggleShowDebugInfo}
                     color="#a855f7"
-                  />
-
-                  <ToggleItem
-                    icon={CreditCard}
-                    label="Bypass Payments"
-                    description="Пропустить оплату"
-                    enabled={admin.bypassPayments}
-                    onToggle={admin.toggleBypassPayments}
-                    color="#f59e0b"
                   />
 
                   {/* Admin Dashboard Button */}

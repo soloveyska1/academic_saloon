@@ -1,21 +1,41 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { useHapticFeedback } from '../hooks/useHapticFeedback'
 import { useUserData } from '../hooks/useUserData'
 import {
-    AdminUser, AdminStats, AdminSqlResponse, Order
+    AdminUser, AdminStats, AdminSqlResponse, Order, ChatMessage
 } from '../types'
 import {
     fetchAdminUsers, fetchAdminStats, executeAdminSql, fetchAdminOrders,
-    updateAdminOrderStatus, updateAdminOrderPrice, sendAdminMessage, updateAdminOrderProgress
+    updateAdminOrderStatus, updateAdminOrderPrice, sendAdminMessage, updateAdminOrderProgress,
+    confirmGodPayment, rejectGodPayment, fetchOrderMessages, uploadOrderFiles
 } from '../api/userApi'
 import {
     Lock, Terminal, Users, Activity, DollarSign,
-    FileText, Send, XCircle
+    FileText, Send, XCircle, CheckCircle, X, Upload, Truck,
+    Clock, CreditCard, AlertTriangle, Package, ChevronDown
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+
+// All available order statuses
+const ORDER_STATUSES = [
+    { value: 'draft', label: 'Черновик', color: 'gray' },
+    { value: 'pending', label: 'Ожидает', color: 'red' },
+    { value: 'waiting_estimation', label: 'Оценка', color: 'orange' },
+    { value: 'waiting_payment', label: 'Ожидает оплаты', color: 'yellow' },
+    { value: 'verification_pending', label: 'Проверка оплаты', color: 'purple' },
+    { value: 'confirmed', label: 'Подтвержден', color: 'cyan' },
+    { value: 'paid', label: 'Оплачен (50%)', color: 'blue' },
+    { value: 'paid_full', label: 'Оплачен (100%)', color: 'blue' },
+    { value: 'in_progress', label: 'В работе', color: 'blue' },
+    { value: 'review', label: 'На проверке', color: 'indigo' },
+    { value: 'revision', label: 'Доработка', color: 'amber' },
+    { value: 'completed', label: 'Завершен', color: 'green' },
+    { value: 'cancelled', label: 'Отменен', color: 'gray' },
+    { value: 'rejected', label: 'Отклонен', color: 'red' },
+]
 
 // Access code should be validated on the server in production
 // This is a client-side gate for quick access; actual permissions are server-enforced
@@ -49,6 +69,20 @@ export const AdminPage: React.FC = () => {
     const [priceInput, setPriceInput] = useState('')
     const [messageInput, setMessageInput] = useState('')
     const [progressInput, setProgressInput] = useState('')
+    const [rejectReason, setRejectReason] = useState('')
+
+    // Chat State
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+    const [chatLoading, setChatLoading] = useState(false)
+
+    // File Upload State
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    // Status dropdown
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
 
     // Auto-login logic REMOVED for security/drama as requested
     // useEffect(() => { ... }, [])
@@ -151,6 +185,98 @@ export const AdminPage: React.FC = () => {
             alert('Прогресс обновлен')
         } catch {
             alert('Ошибка обновления прогресса')
+        }
+    }
+
+    // Load chat messages when opening chat tab
+    const loadChatMessages = useCallback(async (orderId: number) => {
+        setChatLoading(true)
+        try {
+            const response = await fetchOrderMessages(orderId)
+            setChatMessages(response.messages || [])
+        } catch {
+            setChatMessages([])
+        } finally {
+            setChatLoading(false)
+        }
+    }, [])
+
+    // Load chat when switching to chat tab
+    useEffect(() => {
+        if (selectedOrder && orderModalTab === 'chat') {
+            loadChatMessages(selectedOrder.id)
+        }
+    }, [selectedOrder, orderModalTab, loadChatMessages])
+
+    // PAYMENT ACTIONS
+    const handleConfirmPayment = async (isFull: boolean) => {
+        if (!selectedOrder) return
+        try {
+            await confirmGodPayment(selectedOrder.id, undefined, isFull)
+            trigger('success')
+            alert(isFull ? 'Полная оплата подтверждена!' : 'Предоплата подтверждена!')
+            loadData()
+            setSelectedOrder(prev => prev ? {
+                ...prev,
+                status: isFull ? 'paid_full' : 'paid',
+                paid_amount: isFull ? prev.final_price : Math.ceil((prev.final_price || 0) / 2)
+            } : null)
+        } catch {
+            alert('Ошибка подтверждения оплаты')
+        }
+    }
+
+    const handleRejectPayment = async () => {
+        if (!selectedOrder) return
+        try {
+            await rejectGodPayment(selectedOrder.id, rejectReason || 'Платеж не найден')
+            trigger('failure')
+            alert('Оплата отклонена')
+            setRejectReason('')
+            loadData()
+            setSelectedOrder(prev => prev ? { ...prev, status: 'waiting_payment' } : null)
+        } catch {
+            alert('Ошибка отклонения оплаты')
+        }
+    }
+
+    // FILE UPLOAD
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        setSelectedFiles(files)
+    }
+
+    const handleFileUpload = async () => {
+        if (!selectedOrder || selectedFiles.length === 0) return
+        setIsUploading(true)
+        setUploadProgress(0)
+        try {
+            await uploadOrderFiles(selectedOrder.id, selectedFiles, (percent) => {
+                setUploadProgress(percent)
+            })
+            trigger('success')
+            alert('Файлы успешно загружены!')
+            setSelectedFiles([])
+            setUploadProgress(0)
+            loadData()
+        } catch {
+            alert('Ошибка загрузки файлов')
+        } finally {
+            setIsUploading(false)
+        }
+    }
+
+    // MARK AS DELIVERED
+    const handleMarkDelivered = async () => {
+        if (!selectedOrder) return
+        try {
+            await updateAdminOrderStatus(selectedOrder.id, 'review')
+            trigger('success')
+            alert('Заказ отправлен клиенту на проверку!')
+            loadData()
+            setSelectedOrder(prev => prev ? { ...prev, status: 'review' } : null)
+        } catch {
+            alert('Ошибка отправки заказа')
         }
     }
 
@@ -512,8 +638,50 @@ export const AdminPage: React.FC = () => {
                             {/* TAB: CHAT */}
                             {orderModalTab === 'chat' && (
                                 <div className="space-y-4">
-                                    <div className="h-40 bg-green-900/10 rounded p-4 text-xs text-green-500/50 flex items-center justify-center border border-green-900">
-                                        ИСТОРИЯ СООБЩЕНИЙ ПОКА НЕ ПОДГРУЖЕНА...
+                                    {/* Chat messages */}
+                                    <div className="h-64 bg-green-900/10 rounded p-3 border border-green-900 overflow-y-auto">
+                                        {chatLoading ? (
+                                            <div className="flex items-center justify-center h-full text-green-500/50 text-xs">
+                                                ЗАГРУЗКА СООБЩЕНИЙ...
+                                            </div>
+                                        ) : chatMessages.length === 0 ? (
+                                            <div className="flex items-center justify-center h-full text-green-500/50 text-xs">
+                                                НЕТ СООБЩЕНИЙ
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {chatMessages.map((msg, idx) => (
+                                                    <div
+                                                        key={msg.id || idx}
+                                                        className={`p-2 rounded text-xs ${
+                                                            msg.is_admin
+                                                                ? 'bg-green-900/30 border border-green-500/30 ml-6'
+                                                                : 'bg-gray-900/50 border border-gray-700/50 mr-6'
+                                                        }`}
+                                                    >
+                                                        <div className="flex justify-between items-center mb-1">
+                                                            <span className={msg.is_admin ? 'text-green-400 font-bold' : 'text-gray-400'}>
+                                                                {msg.is_admin ? '👨‍💼 АДМИН' : '👤 КЛИЕНТ'}
+                                                            </span>
+                                                            <span className="text-gray-600 text-[10px]">
+                                                                {new Date(msg.created_at).toLocaleString('ru-RU')}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-gray-300">{msg.text}</div>
+                                                        {msg.file_url && (
+                                                            <a
+                                                                href={msg.file_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-400 underline text-[10px] mt-1 block"
+                                                            >
+                                                                📎 Прикрепленный файл
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex gap-2">
                                         <input
@@ -521,6 +689,7 @@ export const AdminPage: React.FC = () => {
                                             onChange={e => setMessageInput(e.target.value)}
                                             placeholder="Сообщение клиенту..."
                                             className="flex-1 bg-black border border-green-500/50 rounded px-3 py-2 text-sm text-green-400 focus:outline-none"
+                                            onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                                         />
                                         <Button onClick={handleSendMessage} size="icon" className="bg-green-600 text-black">
                                             <Send className="w-4 h-4" />
@@ -532,6 +701,123 @@ export const AdminPage: React.FC = () => {
                             {/* TAB: ACTIONS */}
                             {orderModalTab === 'actions' && (
                                 <div className="space-y-6">
+
+                                    {/* PAYMENT VERIFICATION - show when status is verification_pending */}
+                                    {selectedOrder.status === 'verification_pending' && (
+                                        <div className="p-4 border-2 border-purple-500/50 rounded bg-purple-900/20 space-y-3">
+                                            <h3 className="font-bold text-purple-400 flex items-center gap-2">
+                                                <CreditCard className="w-4 h-4" /> 💳 ПРОВЕРКА ОПЛАТЫ
+                                            </h3>
+                                            <div className="text-xs text-purple-300 mb-2">
+                                                Клиент ожидает подтверждения оплаты. Проверьте поступление средств.
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <Button
+                                                    onClick={() => handleConfirmPayment(false)}
+                                                    size="sm"
+                                                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold"
+                                                >
+                                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                                    ПРЕДОПЛАТА 50%
+                                                </Button>
+                                                <Button
+                                                    onClick={() => handleConfirmPayment(true)}
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-500 text-white font-bold"
+                                                >
+                                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                                    ПОЛНАЯ 100%
+                                                </Button>
+                                            </div>
+                                            <div className="mt-3">
+                                                <input
+                                                    value={rejectReason}
+                                                    onChange={e => setRejectReason(e.target.value)}
+                                                    placeholder="Причина отклонения..."
+                                                    className="w-full bg-black border border-red-500/30 rounded px-3 py-2 text-sm text-red-400 focus:outline-none mb-2"
+                                                />
+                                                <Button
+                                                    onClick={handleRejectPayment}
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="w-full border-red-500/50 text-red-400 hover:bg-red-900/20"
+                                                >
+                                                    <X className="w-4 h-4 mr-1" />
+                                                    ОТКЛОНИТЬ ОПЛАТУ
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* FILE UPLOAD / DELIVERY */}
+                                    {['in_progress', 'paid', 'paid_full'].includes(selectedOrder.status) && (
+                                        <div className="p-4 border border-cyan-500/50 rounded bg-cyan-900/10 space-y-3">
+                                            <h3 className="font-bold text-cyan-400 flex items-center gap-2">
+                                                <Upload className="w-4 h-4" /> 📁 ЗАГРУЗКА ФАЙЛОВ
+                                            </h3>
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                onChange={handleFileSelect}
+                                                multiple
+                                                className="hidden"
+                                            />
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="border-cyan-500/50 text-cyan-400"
+                                                >
+                                                    ВЫБРАТЬ ФАЙЛЫ
+                                                </Button>
+                                                {selectedFiles.length > 0 && (
+                                                    <span className="text-xs text-cyan-300 self-center">
+                                                        {selectedFiles.length} файл(ов)
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {selectedFiles.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <div className="text-[10px] text-cyan-500/70">
+                                                        {selectedFiles.map(f => f.name).join(', ')}
+                                                    </div>
+                                                    {isUploading && (
+                                                        <div className="w-full bg-gray-800 rounded h-2">
+                                                            <div
+                                                                className="bg-cyan-500 h-2 rounded transition-all"
+                                                                style={{ width: `${uploadProgress}%` }}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <Button
+                                                        onClick={handleFileUpload}
+                                                        disabled={isUploading}
+                                                        size="sm"
+                                                        className="w-full bg-cyan-600 hover:bg-cyan-500 text-black font-bold"
+                                                    >
+                                                        {isUploading ? `ЗАГРУЗКА ${uploadProgress}%...` : 'ЗАГРУЗИТЬ'}
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {/* Mark as delivered */}
+                                            <div className="border-t border-cyan-900 pt-3 mt-3">
+                                                <Button
+                                                    onClick={handleMarkDelivered}
+                                                    size="sm"
+                                                    className="w-full bg-green-600 hover:bg-green-500 text-black font-bold"
+                                                >
+                                                    <Truck className="w-4 h-4 mr-1" />
+                                                    ОТПРАВИТЬ КЛИЕНТУ
+                                                </Button>
+                                                <div className="text-[10px] text-green-500/50 mt-1">
+                                                    Переводит заказ в статус "На проверке" и уведомляет клиента
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Set Price */}
                                     <div className="p-4 border border-green-900 rounded bg-green-900/5 space-y-3">
                                         <h3 className="font-bold text-green-400 flex items-center gap-2">
@@ -574,14 +860,48 @@ export const AdminPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Status Overrides */}
+                                    {/* Status Dropdown - All statuses */}
                                     <div className="p-4 border border-green-900 rounded bg-green-900/5 space-y-3">
                                         <h3 className="font-bold text-green-400">РУЧНОЕ УПРАВЛЕНИЕ СТАТУСОМ</h3>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <Button onClick={() => handleSetStatus('pending')} size="sm" variant="outline" className="border-red-500/50 text-red-400">PENDING</Button>
-                                            <Button onClick={() => handleSetStatus('in_progress')} size="sm" variant="outline" className="border-blue-500/50 text-blue-400">IN_PROGRESS</Button>
-                                            <Button onClick={() => handleSetStatus('completed')} size="sm" variant="outline" className="border-green-500/50 text-green-400">COMPLETED</Button>
-                                            <Button onClick={() => handleSetStatus('cancelled')} size="sm" variant="outline" className="border-gray-500/50 text-gray-400">CANCELLED</Button>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                                                className="w-full flex items-center justify-between bg-black border border-green-500/50 rounded px-3 py-2 text-sm text-green-400"
+                                            >
+                                                <span>
+                                                    {ORDER_STATUSES.find(s => s.value === selectedOrder.status)?.label || selectedOrder.status}
+                                                </span>
+                                                <ChevronDown className={`w-4 h-4 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            <AnimatePresence>
+                                                {statusDropdownOpen && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -10 }}
+                                                        className="absolute z-50 w-full mt-1 bg-black border border-green-500/50 rounded max-h-60 overflow-y-auto"
+                                                    >
+                                                        {ORDER_STATUSES.map(status => (
+                                                            <button
+                                                                key={status.value}
+                                                                onClick={() => {
+                                                                    handleSetStatus(status.value)
+                                                                    setStatusDropdownOpen(false)
+                                                                }}
+                                                                className={`w-full text-left px-3 py-2 text-xs hover:bg-green-900/30 border-b border-green-900/30 last:border-0 ${
+                                                                    selectedOrder.status === status.value ? 'bg-green-900/50 text-green-300' : 'text-gray-400'
+                                                                }`}
+                                                            >
+                                                                <span className={`inline-block w-2 h-2 rounded-full mr-2 bg-${status.color}-500`} />
+                                                                {status.label}
+                                                            </button>
+                                                        ))}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                        <div className="text-[10px] text-green-500/50">
+                                            Выберите статус из списка для ручного изменения
                                         </div>
                                     </div>
                                 </div>
