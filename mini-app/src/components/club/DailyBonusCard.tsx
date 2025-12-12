@@ -7,6 +7,7 @@ import { LEVEL_BONUS_MULTIPLIER, DAILY_BONUS_CYCLE } from './clubData'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  DAILY BONUS CARD - Check-in with 7-day streak calendar
+//  Реальный таймер обновляется каждую секунду
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface DailyBonusCardProps {
@@ -17,7 +18,7 @@ interface DailyBonusCardProps {
 }
 
 function formatTimeRemaining(nextClaimAt: string | null): string {
-  if (!nextClaimAt) return '00:00'
+  if (!nextClaimAt) return '00:00:00'
 
   const now = new Date().getTime()
   const next = new Date(nextClaimAt).getTime()
@@ -25,8 +26,9 @@ function formatTimeRemaining(nextClaimAt: string | null): string {
 
   const hours = Math.floor(diff / (1000 * 60 * 60))
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 }
 
 export const DailyBonusCard = memo(function DailyBonusCard({
@@ -42,13 +44,24 @@ export const DailyBonusCard = memo(function DailyBonusCard({
   const todayBonus = DAILY_BONUS_CYCLE[bonusState.streakDay - 1] || DAILY_BONUS_CYCLE[0]
   const todayPoints = Math.round(todayBonus.points * multiplier)
 
-  // Update timer every minute
+  // Update timer every second for real-time countdown
   useEffect(() => {
-    if (bonusState.status !== 'cooldown') return
+    // Update immediately
+    setTimeRemaining(formatTimeRemaining(bonusState.nextClaimAt))
+
+    // Only run timer if bonus is claimed/cooldown
+    if (bonusState.status !== 'cooldown' && bonusState.status !== 'claimed') return
 
     const interval = setInterval(() => {
-      setTimeRemaining(formatTimeRemaining(bonusState.nextClaimAt))
-    }, 60000)
+      const remaining = formatTimeRemaining(bonusState.nextClaimAt)
+      setTimeRemaining(remaining)
+
+      // Check if timer reached zero (bonus available again)
+      if (remaining === '00:00:00' && bonusState.nextClaimAt) {
+        // Reload the page to refresh state (or could emit an event)
+        window.location.reload()
+      }
+    }, 1000)
 
     return () => clearInterval(interval)
   }, [bonusState.nextClaimAt, bonusState.status])

@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, memo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Crown } from 'lucide-react'
-import { UserData, UserClubState, DailyBonusState, Mission, Reward } from '../types'
+import { UserData, Mission, Reward, DailyBonusState } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
+import { useClub } from '../contexts/ClubContext'
 
 import {
   MembershipCard,
@@ -12,16 +13,14 @@ import {
   RewardsPreviewRow,
   ClubFooter,
   ClubRulesSheet,
-  CLUB_LEVELS,
   AVAILABLE_REWARDS,
-  MOCK_MISSIONS,
 } from '../components/club'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  CLUB PAGE - Premium Privileges Hub
+//  CLUB PAGE - Premium Privileges Hub (Реальные данные)
 //  Features:
 //  - Membership card with level progress
-//  - Daily bonus with 7-day streak
+//  - Daily bonus with real 7-day streak & timer
 //  - Missions for earning points
 //  - Rewards preview
 //  - Quick access to vouchers, rules, history
@@ -29,33 +28,6 @@ import {
 
 interface ClubPageProps {
   user: UserData | null
-}
-
-// Mock data generator for demo
-function generateMockClubState(user: UserData | null): UserClubState {
-  return {
-    xp: 350,
-    levelId: 'silver',
-    streakDays: 4,
-    lastClaimAt: null,
-    pointsBalance: 180,
-    activeMissions: MOCK_MISSIONS,
-    activeVouchers: [],
-  }
-}
-
-function generateMockBonusState(streakDays: number, claimed: boolean): DailyBonusState {
-  const now = new Date()
-  const tomorrow = new Date(now)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(0, 0, 0, 0)
-
-  return {
-    status: claimed ? 'claimed' : 'available',
-    nextClaimAt: claimed ? tomorrow.toISOString() : null,
-    streakDay: streakDays,
-    weekRewards: [10, 15, 20, 25, 30, 40, 50],
-  }
 }
 
 // Club Header component
@@ -121,17 +93,34 @@ const ClubHeader = memo(function ClubHeader({ onBack }: { onBack: () => void }) 
 
 function ClubPage({ user }: ClubPageProps) {
   const navigate = useNavigate()
+  const club = useClub()
 
-  // State
-  const [clubState, setClubState] = useState<UserClubState>(() => generateMockClubState(user))
-  const [bonusState, setBonusState] = useState<DailyBonusState>(() =>
-    generateMockBonusState(clubState.streakDays, false)
-  )
+  // UI State
   const [showRules, setShowRules] = useState(false)
   const [isClaimingBonus, setIsClaimingBonus] = useState(false)
+  const [bonusClaimResult, setBonusClaimResult] = useState<{ success: boolean; points: number } | null>(null)
 
   // User name
   const userName = user?.fullname?.split(' ')[0] || 'Участник'
+
+  // Map club state to UserClubState format for MembershipCard
+  const clubStateForCard = useMemo(() => ({
+    xp: club.xp,
+    levelId: club.level,
+    streakDays: club.dailyBonus.streakDay,
+    lastClaimAt: null,
+    pointsBalance: club.points,
+    activeMissions: club.missions,
+    activeVouchers: club.activeVouchers,
+  }), [club.xp, club.level, club.dailyBonus.streakDay, club.points, club.missions, club.activeVouchers])
+
+  // Convert dailyBonus state for DailyBonusCard (it expects 'claimed' instead of 'cooldown')
+  const bonusStateForCard: DailyBonusState = useMemo(() => ({
+    status: club.dailyBonus.status === 'cooldown' ? 'claimed' : club.dailyBonus.status,
+    nextClaimAt: club.dailyBonus.nextClaimAt,
+    streakDay: club.dailyBonus.streakDay,
+    weekRewards: club.dailyBonus.weekRewards,
+  }), [club.dailyBonus])
 
   // Handlers
   const handleBack = useCallback(() => {
@@ -139,30 +128,32 @@ function ClubPage({ user }: ClubPageProps) {
   }, [navigate])
 
   const handleClaimBonus = useCallback(async () => {
-    if (isClaimingBonus || bonusState.status !== 'available') return
+    if (isClaimingBonus || club.dailyBonus.status !== 'available') return
 
     setIsClaimingBonus(true)
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Small delay for UX
+    await new Promise(resolve => setTimeout(resolve, 300))
 
-    // Update bonus state
-    setBonusState(prev => ({
-      ...prev,
-      status: 'claimed',
-      nextClaimAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    }))
+    // Claim using real hook
+    const result = club.claimDailyBonus()
 
-    // Update club state (add points based on day)
-    const dayBonus = [10, 15, 20, 25, 30, 40, 50][bonusState.streakDay - 1] || 10
-    setClubState(prev => ({
-      ...prev,
-      pointsBalance: prev.pointsBalance + dayBonus,
-      streakDays: prev.streakDays < 7 ? prev.streakDays + 1 : 1,
-    }))
+    setBonusClaimResult({ success: result.success, points: result.points })
+
+    // Haptic feedback
+    try {
+      if (result.success) {
+        window.Telegram?.WebApp.HapticFeedback.notificationOccurred('success')
+      } else {
+        window.Telegram?.WebApp.HapticFeedback.notificationOccurred('error')
+      }
+    } catch {}
 
     setIsClaimingBonus(false)
-  }, [isClaimingBonus, bonusState])
+
+    // Clear result after 3 seconds
+    setTimeout(() => setBonusClaimResult(null), 3000)
+  }, [isClaimingBonus, club])
 
   const handleViewPrivileges = useCallback(() => {
     navigate('/club/privileges')
@@ -181,19 +172,28 @@ function ClubPage({ user }: ClubPageProps) {
   }, [navigate])
 
   const handleExchangeReward = useCallback((reward: Reward) => {
-    // Would open confirmation modal in real app
-    console.log('Exchange reward:', reward)
     navigate('/club/rewards')
   }, [navigate])
 
   const handleMissionClick = useCallback((mission: Mission) => {
+    // Try to complete the mission if it's completable
+    if (mission.status === 'pending') {
+      const result = club.completeMission(mission.id)
+      if (result.success) {
+        try {
+          window.Telegram?.WebApp.HapticFeedback.notificationOccurred('success')
+        } catch {}
+      }
+    }
+
+    // Navigate if there's a deep link
     if (mission.deepLinkTarget) {
       navigate(mission.deepLinkTarget)
     }
-  }, [navigate])
+  }, [navigate, club])
 
   // Active vouchers count
-  const activeVouchersCount = clubState.activeVouchers.filter(v => v.status === 'active').length
+  const activeVouchersCount = club.activeVouchers.length
 
   return (
     <div
@@ -222,7 +222,7 @@ function ClubPage({ user }: ClubPageProps) {
         <div style={{ marginBottom: 16 }}>
           <MembershipCard
             userName={userName}
-            clubState={clubState}
+            clubState={clubStateForCard}
             onViewPrivileges={handleViewPrivileges}
           />
         </div>
@@ -230,8 +230,8 @@ function ClubPage({ user }: ClubPageProps) {
         {/* Daily Bonus */}
         <div style={{ marginBottom: 16 }}>
           <DailyBonusCard
-            bonusState={bonusState}
-            levelId={clubState.levelId}
+            bonusState={bonusStateForCard}
+            levelId={club.level}
             onClaimBonus={handleClaimBonus}
             isLoading={isClaimingBonus}
           />
@@ -240,7 +240,7 @@ function ClubPage({ user }: ClubPageProps) {
         {/* Missions */}
         <div style={{ marginBottom: 16 }}>
           <MissionsList
-            missions={clubState.activeMissions}
+            missions={club.missions}
             onMissionClick={handleMissionClick}
           />
         </div>
@@ -249,7 +249,7 @@ function ClubPage({ user }: ClubPageProps) {
         <div style={{ marginBottom: 16 }}>
           <RewardsPreviewRow
             rewards={AVAILABLE_REWARDS}
-            userPoints={clubState.pointsBalance}
+            userPoints={club.points}
             onViewAll={handleViewRewards}
             onExchange={handleExchangeReward}
           />
