@@ -211,14 +211,21 @@ export function Navigation() {
   const { scrollY } = useScroll()
   const lastScrollY = useRef(0)
 
+  // Hide immediately for wizard/order pages on mount
+  useEffect(() => {
+    if (location.pathname.startsWith('/order/') || location.pathname === '/create-order') {
+      setIsVisible(false)
+    }
+  }, [location.pathname])
+
   useMotionValueEvent(scrollY, "change", (latest) => {
     const currentScrollY = latest
     const diff = currentScrollY - lastScrollY.current
 
     // Hide when scrolling down > 10px, Show when scrolling up
     // Always show if near top (< 50px)
-    // Also hide if on order page (chat mode)
-    if (location.pathname.startsWith('/order/')) {
+    // Also hide if on order page (chat mode) or create-order wizard
+    if (location.pathname.startsWith('/order/') || location.pathname === '/create-order') {
       setIsVisible(false)
     } else if (currentScrollY < 50) {
       setIsVisible(true)
