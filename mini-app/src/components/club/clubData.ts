@@ -217,7 +217,7 @@ export const AVAILABLE_REWARDS: Reward[] = [
 //  DAILY MISSIONS - Examples
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export const MOCK_MISSIONS: Mission[] = [
+export const INITIAL_MISSIONS: Mission[] = [
   {
     id: 'mission-requirements',
     title: 'Уточнить требования',

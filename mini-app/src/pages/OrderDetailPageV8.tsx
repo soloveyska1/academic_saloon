@@ -777,7 +777,7 @@ const StickyActionBar = memo(function StickyActionBar({
       buttonColor: '#0a0a0c',
       buttonBg: `linear-gradient(135deg, ${DS.colors.purple}, #7c3aed)`,
       disabled: false,
-      onClick: onContactManager, // TODO: scroll to review section
+      onClick: onContactManager,
     },
     completed: {
       showAmount: false,
@@ -3533,10 +3533,9 @@ export function OrderDetailPageV8() {
   }, [order, haptic, showToast])
 
   const handleContactManager = useCallback(() => {
-    haptic?.('light')
-    // TODO: Open chat
-    showToast({ type: 'info', title: 'Чат', message: 'Открываем чат с менеджером...' })
-  }, [haptic, showToast])
+    haptic?.('medium')
+    navigate('/support')
+  }, [haptic, navigate])
 
   const handleOpenFAQ = useCallback(() => {
     haptic?.('light')

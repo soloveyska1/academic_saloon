@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Voucher, VoucherStatus, Reward, ClubHistoryEntry, DailyBonusState, Mission } from '../types'
-import { AVAILABLE_REWARDS, DAILY_BONUS_CYCLE, MOCK_MISSIONS } from '../components/club/clubData'
+import { AVAILABLE_REWARDS, DAILY_BONUS_CYCLE, INITIAL_MISSIONS } from '../components/club/clubData'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  useClubState - Полноценное управление Клубом Привилегий
@@ -40,7 +40,7 @@ const getDefaultState = (): ClubState => ({
     streakDay: 1,
     weekRewards: DAILY_BONUS_CYCLE.map(d => d.points),
   },
-  missions: MOCK_MISSIONS,
+  missions: INITIAL_MISSIONS,
   lastUpdated: new Date().toISOString(),
 })
 
