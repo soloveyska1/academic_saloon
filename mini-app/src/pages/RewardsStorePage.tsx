@@ -1,9 +1,10 @@
 import { useState, useCallback, useMemo, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ShoppingBag, Check, Sparkles } from 'lucide-react'
-import { Reward, RewardCategory, UserClubState, Voucher } from '../types'
+import { ArrowLeft, ShoppingBag, Check, Sparkles, AlertCircle, Ticket } from 'lucide-react'
+import { Reward, RewardCategory, Voucher } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
+import { useClub } from '../contexts/ClubContext'
 
 import {
   RewardCard,
@@ -12,12 +13,8 @@ import {
 } from '../components/club'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  REWARDS STORE PAGE - Exchange points for rewards
+//  REWARDS STORE PAGE - Обмен баллов на награды (с реальной логикой)
 // ═══════════════════════════════════════════════════════════════════════════════
-
-interface RewardsStorePageProps {
-  user?: { pointsBalance: number } | null
-}
 
 // Header component
 const StoreHeader = memo(function StoreHeader({
@@ -84,7 +81,10 @@ const StoreHeader = memo(function StoreHeader({
       </div>
 
       {/* Points balance */}
-      <div
+      <motion.div
+        key={pointsBalance}
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
         style={{
           padding: '8px 14px',
           borderRadius: 10,
@@ -95,7 +95,7 @@ const StoreHeader = memo(function StoreHeader({
         <span style={{ fontSize: 14, fontWeight: 700, color: '#D4AF37' }}>
           {pointsBalance} баллов
         </span>
-      </div>
+      </motion.div>
     </motion.div>
   )
 })
@@ -103,11 +103,22 @@ const StoreHeader = memo(function StoreHeader({
 // Success modal
 const ExchangeSuccessModal = memo(function ExchangeSuccessModal({
   reward,
+  voucher,
   onClose,
+  onViewVouchers,
 }: {
   reward: Reward
+  voucher?: Voucher
   onClose: () => void
+  onViewVouchers: () => void
 }) {
+  const expiresAt = voucher ? new Date(voucher.expiresAt) : null
+  const expiresFormatted = expiresAt?.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -116,7 +127,8 @@ const ExchangeSuccessModal = memo(function ExchangeSuccessModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0, 0, 0, 0.8)',
+        background: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -126,91 +138,198 @@ const ExchangeSuccessModal = memo(function ExchangeSuccessModal({
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+        initial={{ scale: 0.8, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0 }}
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: 320,
-          padding: 24,
+          maxWidth: 340,
+          padding: 28,
           borderRadius: 24,
-          background: '#121215',
-          border: '1px solid rgba(212, 175, 55, 0.2)',
+          background: 'linear-gradient(145deg, #18181c 0%, #121215 100%)',
+          border: '1px solid rgba(212, 175, 55, 0.25)',
           textAlign: 'center',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
         }}
       >
+        {/* Premium accent bar */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 3,
+            borderRadius: '24px 24px 0 0',
+            background: 'linear-gradient(90deg, #BF953F 0%, #FCF6BA 50%, #D4AF37 100%)',
+          }}
+        />
+
         {/* Success icon */}
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.1, type: 'spring' }}
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
           style={{
-            width: 72,
-            height: 72,
-            borderRadius: 20,
+            width: 80,
+            height: 80,
+            borderRadius: 24,
             background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 20px',
+            margin: '0 auto 24px',
           }}
         >
-          <Check size={36} color="#22c55e" strokeWidth={3} />
+          <Check size={40} color="#22c55e" strokeWidth={3} />
         </motion.div>
 
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
-          Награда получена!
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
+            Награда получена!
+          </div>
 
-        <div style={{ fontSize: 15, color: 'rgba(255, 255, 255, 0.6)', marginBottom: 20 }}>
-          {reward.title} добавлен в ваши ваучеры
-        </div>
+          <div style={{ fontSize: 15, color: 'rgba(255, 255, 255, 0.6)', marginBottom: 24 }}>
+            «{reward.title}» добавлен в ваши ваучеры
+          </div>
+        </motion.div>
 
-        <div
+        {/* Voucher info */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
           style={{
-            padding: 12,
-            borderRadius: 12,
-            background: 'rgba(255, 255, 255, 0.05)',
-            marginBottom: 20,
+            padding: 16,
+            borderRadius: 14,
+            background: 'rgba(212, 175, 55, 0.08)',
+            border: '1px solid rgba(212, 175, 55, 0.15)',
+            marginBottom: 24,
           }}
         >
-          <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)', marginBottom: 4 }}>
-            Срок действия
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: 'rgba(212, 175, 55, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ticket size={22} color="#D4AF37" />
+            </div>
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>
+                Действует до
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#D4AF37' }}>
+                {expiresFormatted || `${reward.constraints.validDays} дней`}
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
-            {reward.constraints.validDays} дней
-          </div>
-        </div>
+        </motion.div>
 
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={onClose}
-          style={{
-            width: '100%',
-            padding: '14px 20px',
-            borderRadius: 12,
-            border: 'none',
-            background: 'linear-gradient(135deg, #D4AF37 0%, #F5D061 50%, #B48E26 100%)',
-            cursor: 'pointer',
-          }}
+        {/* Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
         >
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1d' }}>
-            Отлично!
-          </span>
-        </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={onViewVouchers}
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              borderRadius: 12,
+              border: 'none',
+              background: 'linear-gradient(135deg, #D4AF37 0%, #F5D061 50%, #B48E26 100%)',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1d' }}>
+              Посмотреть ваучеры
+            </span>
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={onClose}
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              borderRadius: 12,
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'transparent',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255, 255, 255, 0.7)' }}>
+              Продолжить покупки
+            </span>
+          </motion.button>
+        </motion.div>
       </motion.div>
     </motion.div>
   )
 })
 
-function RewardsStorePage({ user }: RewardsStorePageProps) {
+// Error toast
+const ErrorToast = memo(function ErrorToast({
+  message,
+  onClose,
+}: {
+  message: string
+  onClose: () => void
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+      style={{
+        position: 'fixed',
+        bottom: 100,
+        left: 20,
+        right: 20,
+        padding: '14px 16px',
+        borderRadius: 14,
+        background: 'rgba(239, 68, 68, 0.15)',
+        border: '1px solid rgba(239, 68, 68, 0.3)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <AlertCircle size={20} color="#ef4444" />
+      <span style={{ fontSize: 14, color: '#ef4444', flex: 1 }}>
+        {message}
+      </span>
+    </motion.div>
+  )
+})
+
+function RewardsStorePage() {
   const navigate = useNavigate()
+  const club = useClub()
 
   // State
   const [activeTab, setActiveTab] = useState<RewardCategory | 'all'>('all')
-  const [pointsBalance, setPointsBalance] = useState(180)
   const [exchangedReward, setExchangedReward] = useState<Reward | null>(null)
+  const [lastVoucher, setLastVoucher] = useState<Voucher | undefined>()
+  const [error, setError] = useState<string | null>(null)
 
   // Filter rewards by category
   const filteredRewards = useMemo(() => {
@@ -233,23 +352,47 @@ function RewardsStorePage({ user }: RewardsStorePageProps) {
   }, [navigate])
 
   const handleExchange = useCallback((reward: Reward) => {
-    if (pointsBalance < reward.costPoints) return
+    // Проверка баланса
+    if (club.points < reward.costPoints) {
+      setError(`Недостаточно баллов. Нужно: ${reward.costPoints}, у вас: ${club.points}`)
+      setTimeout(() => setError(null), 3000)
+      return
+    }
 
-    // Haptic feedback
+    // Пробуем обменять
+    const result = club.redeemReward(reward)
+
+    if (!result.success) {
+      // Haptic feedback - error
+      try {
+        window.Telegram?.WebApp.HapticFeedback.notificationOccurred('error')
+      } catch {}
+
+      setError(result.message)
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    // Haptic feedback - success
     try {
       window.Telegram?.WebApp.HapticFeedback.notificationOccurred('success')
     } catch {}
 
-    // Deduct points
-    setPointsBalance(prev => prev - reward.costPoints)
-
-    // Show success modal
+    // Показываем модалку успеха
+    setLastVoucher(result.voucher)
     setExchangedReward(reward)
-  }, [pointsBalance])
+  }, [club])
 
   const handleCloseSuccess = useCallback(() => {
     setExchangedReward(null)
+    setLastVoucher(undefined)
   }, [])
+
+  const handleViewVouchers = useCallback(() => {
+    setExchangedReward(null)
+    setLastVoucher(undefined)
+    navigate('/club/vouchers')
+  }, [navigate])
 
   return (
     <div
@@ -272,7 +415,7 @@ function RewardsStorePage({ user }: RewardsStorePageProps) {
         }}
       >
         {/* Header */}
-        <StoreHeader onBack={handleBack} pointsBalance={pointsBalance} />
+        <StoreHeader onBack={handleBack} pointsBalance={club.points} />
 
         {/* Filter tabs */}
         <div style={{ marginBottom: 20 }}>
@@ -304,7 +447,7 @@ function RewardsStorePage({ user }: RewardsStorePageProps) {
               >
                 <RewardCard
                   reward={reward}
-                  userPoints={pointsBalance}
+                  userPoints={club.points}
                   onExchange={handleExchange}
                 />
               </motion.div>
@@ -351,8 +494,17 @@ function RewardsStorePage({ user }: RewardsStorePageProps) {
         {exchangedReward && (
           <ExchangeSuccessModal
             reward={exchangedReward}
+            voucher={lastVoucher}
             onClose={handleCloseSuccess}
+            onViewVouchers={handleViewVouchers}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Error toast */}
+      <AnimatePresence>
+        {error && (
+          <ErrorToast message={error} onClose={() => setError(null)} />
         )}
       </AnimatePresence>
     </div>
