@@ -31,7 +31,12 @@ import { motion } from 'framer-motion'
 const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })))
 const OrdersPage = lazy(() => import('./pages/OrdersPage').then(module => ({ default: module.OrdersPage })))
 const OrderDetailPageV8 = lazy(() => import('./pages/OrderDetailPageV8').then(module => ({ default: module.OrderDetailPageV8 })))
-const RoulettePage = lazy(() => import('./pages/RoulettePage').then(module => ({ default: module.RoulettePage })))
+// Club Pages (replacing old RoulettePage)
+const ClubPage = lazy(() => import('./pages/ClubPage'))
+const RewardsStorePage = lazy(() => import('./pages/RewardsStorePage'))
+const MyVouchersPage = lazy(() => import('./pages/MyVouchersPage'))
+const PrivilegesPage = lazy(() => import('./pages/PrivilegesPage'))
+const ClubHistoryPage = lazy(() => import('./pages/ClubHistoryPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then(module => ({ default: module.ProfilePage })))
 const CreateOrderPage = lazy(() => import('./pages/CreateOrderPage').then(module => ({ default: module.CreateOrderPage })))
 const ReferralPage = lazy(() => import('./pages/ReferralPage').then(module => ({ default: module.ReferralPage })))
@@ -452,11 +457,12 @@ function AppContent() {
                       <Route path="/" element={<HomePage user={userData} />} />
                       <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
                       <Route path="/order/:id" element={<OrderDetailPageV8 />} />
-                      <Route path="/roulette" element={
-                        <ErrorBoundary>
-                          <RoulettePage user={userData} />
-                        </ErrorBoundary>
-                      } />
+                      {/* Club Routes */}
+                      <Route path="/club" element={<ClubPage user={userData} />} />
+                      <Route path="/club/rewards" element={<RewardsStorePage />} />
+                      <Route path="/club/vouchers" element={<MyVouchersPage />} />
+                      <Route path="/club/privileges" element={<PrivilegesPage />} />
+                      <Route path="/club/history" element={<ClubHistoryPage />} />
                       <Route path="/profile" element={<ProfilePage user={userData} />} />
                       <Route path="/create-order" element={<CreateOrderPage />} />
                       <Route path="/referral" element={<ReferralPage user={userData} />} />

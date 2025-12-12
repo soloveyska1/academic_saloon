@@ -1,8 +1,15 @@
 import {
-  UserData, PromoResult, RouletteResult, Order,
-  OrderCreateRequest, OrderCreateResponse, ChatMessagesResponse,
+  UserData, PromoResult, Order,
+  OrderCreateRequest, ChatMessagesResponse,
   SendMessageResponse, AdminUser, AdminStats, AdminSqlResponse
 } from '../types'
+
+// Response type for order creation
+export interface OrderCreateResponse {
+  success: boolean
+  order_id: number
+  message: string
+}
 
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
@@ -157,17 +164,6 @@ export async function fetchDailyBonusInfo(): Promise<DailyBonusInfo> {
 export async function claimDailyBonus(): Promise<DailyBonusClaimResult> {
   if (!hasTelegramContext() && IS_DEV) return { success: true, won: true, bonus: 10, streak: 1, message: 'Won', next_claim_at: null }
   return await apiFetch<DailyBonusClaimResult>('/daily-bonus/claim', { method: 'POST' })
-}
-
-export async function spinRoulette(): Promise<RouletteResult> {
-  if (!hasTelegramContext() && IS_DEV) return { prize: 'Dev Prize', type: 'bonus', value: 100, message: 'Won' }
-  const result = await apiFetch<any>('/roulette/spin', { method: 'POST' })
-  return {
-    prize: result.prize || result.message,
-    type: result.type || 'nothing',
-    value: result.value || 0,
-    message: result.message
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
