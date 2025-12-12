@@ -52,6 +52,15 @@ import {
   Phone,
   Send,
   Award,
+  RotateCcw,
+  CalendarCheck,
+  Banknote,
+  CircleDot,
+  CircleCheck,
+  Circle,
+  Package,
+  FileCheck,
+  Sparkles,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
 import { fetchOrderDetail, fetchPaymentInfo, PaymentInfo } from '../api/userApi'
@@ -2785,6 +2794,454 @@ const ManagerCard = memo(function ManagerCard({
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//                              GUARANTEES ROW
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface Guarantee {
+  id: string
+  icon: typeof Shield
+  title: string
+  description: string
+  color: string
+}
+
+const GUARANTEES: Guarantee[] = [
+  {
+    id: 'refund',
+    icon: Banknote,
+    title: 'Возврат',
+    description: 'Полный возврат, если работа не соответствует требованиям',
+    color: DS.colors.success,
+  },
+  {
+    id: 'revisions',
+    icon: RotateCcw,
+    title: 'Правки',
+    description: 'Бесплатные доработки до полного соответствия ТЗ',
+    color: DS.colors.info,
+  },
+  {
+    id: 'deadline',
+    icon: CalendarCheck,
+    title: 'Сроки',
+    description: 'Гарантируем выполнение точно в указанный срок',
+    color: DS.colors.purple,
+  },
+]
+
+const GuaranteesRow = memo(function GuaranteesRow() {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const { haptic } = useTelegram()
+
+  return (
+    <div
+      style={{
+        margin: `0 ${DS.space.lg}px`,
+        marginBottom: DS.space.lg,
+      }}
+    >
+      {/* Section Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: DS.space.sm,
+          marginBottom: DS.space.md,
+        }}
+      >
+        <Award size={18} color={DS.colors.gold} />
+        <span
+          style={{
+            fontSize: DS.fontSize.lg,
+            fontWeight: 700,
+            color: DS.colors.textPrimary,
+          }}
+        >
+          Гарантии
+        </span>
+      </div>
+
+      {/* Guarantees Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: DS.space.sm,
+        }}
+      >
+        {GUARANTEES.map((g) => {
+          const Icon = g.icon
+          const isExpanded = expandedId === g.id
+
+          return (
+            <motion.button
+              key={g.id}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                haptic?.('light')
+                setExpandedId(isExpanded ? null : g.id)
+              }}
+              style={{
+                padding: DS.space.md,
+                borderRadius: DS.radius.lg,
+                background: isExpanded ? `${g.color}15` : DS.colors.bgCard,
+                border: `1px solid ${isExpanded ? `${g.color}40` : DS.colors.border}`,
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: DS.space.xs,
+                textAlign: 'center',
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: DS.radius.md,
+                  background: `${g.color}15`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon size={18} color={g.color} />
+              </div>
+              <span
+                style={{
+                  fontSize: DS.fontSize.sm,
+                  fontWeight: 600,
+                  color: DS.colors.textPrimary,
+                }}
+              >
+                {g.title}
+              </span>
+            </motion.button>
+          )
+        })}
+      </div>
+
+      {/* Expanded Description */}
+      <AnimatePresence>
+        {expandedId && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            {GUARANTEES.filter((g) => g.id === expandedId).map((g) => (
+              <div
+                key={g.id}
+                style={{
+                  marginTop: DS.space.md,
+                  padding: DS.space.lg,
+                  borderRadius: DS.radius.lg,
+                  background: `${g.color}10`,
+                  border: `1px solid ${g.color}25`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: DS.space.md }}>
+                  <Info size={16} color={g.color} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <p
+                    style={{
+                      fontSize: DS.fontSize.sm,
+                      color: DS.colors.textSecondary,
+                      lineHeight: 1.5,
+                      margin: 0,
+                    }}
+                  >
+                    {g.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//                              ORDER TIMELINE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface TimelineStep {
+  id: string
+  label: string
+  icon: typeof Circle
+  status: 'completed' | 'current' | 'upcoming'
+  date?: string
+  description?: string
+}
+
+const getTimelineSteps = (order: Order): TimelineStep[] => {
+  const statusStep = STATUS_CONFIG[order.status]?.step || 0
+
+  const steps: TimelineStep[] = [
+    {
+      id: 'created',
+      label: 'Заказ создан',
+      icon: Package,
+      status: statusStep >= 0 ? 'completed' : 'upcoming',
+      date: order.created_at ? new Date(order.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : undefined,
+    },
+    {
+      id: 'estimated',
+      label: 'Оценка',
+      icon: Sparkles,
+      status: statusStep >= 1 ? (statusStep === 1 ? 'current' : 'completed') : 'upcoming',
+      description: statusStep === 1 ? 'Рассчитываем стоимость' : undefined,
+    },
+    {
+      id: 'payment',
+      label: 'Оплата',
+      icon: CreditCard,
+      status: statusStep >= 2 ? (statusStep === 2 ? 'current' : 'completed') : 'upcoming',
+      description: statusStep === 2 ? 'Ожидаем оплату' : undefined,
+    },
+    {
+      id: 'work',
+      label: 'В работе',
+      icon: Loader2,
+      status: statusStep >= 3 ? (statusStep === 3 ? 'current' : 'completed') : 'upcoming',
+      description: statusStep === 3 ? 'Выполняем заказ' : undefined,
+    },
+    {
+      id: 'review',
+      label: 'Проверка',
+      icon: FileCheck,
+      status: statusStep >= 4 ? (statusStep === 4 ? 'current' : 'completed') : 'upcoming',
+      description: statusStep === 4 ? 'Проверьте работу' : undefined,
+    },
+    {
+      id: 'completed',
+      label: 'Готово',
+      icon: CheckCircle2,
+      status: statusStep >= 5 ? 'completed' : 'upcoming',
+      date: order.status === 'completed' ? 'Завершён' : undefined,
+    },
+  ]
+
+  // Handle cancelled/rejected
+  if (['cancelled', 'rejected'].includes(order.status)) {
+    return steps.map((step) => ({
+      ...step,
+      status: step.status === 'completed' ? 'completed' : 'upcoming' as const,
+    }))
+  }
+
+  return steps
+}
+
+interface OrderTimelineProps {
+  order: Order
+}
+
+const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps) {
+  const steps = getTimelineSteps(order)
+  const isCancelled = ['cancelled', 'rejected'].includes(order.status)
+
+  return (
+    <div
+      style={{
+        margin: `0 ${DS.space.lg}px`,
+        marginBottom: DS.space.lg,
+      }}
+    >
+      {/* Section Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: DS.space.sm,
+          marginBottom: DS.space.md,
+        }}
+      >
+        <Clock size={18} color={DS.colors.gold} />
+        <span
+          style={{
+            fontSize: DS.fontSize.lg,
+            fontWeight: 700,
+            color: DS.colors.textPrimary,
+          }}
+        >
+          Ход выполнения
+        </span>
+      </div>
+
+      {/* Timeline Card */}
+      <div
+        style={{
+          padding: DS.space.lg,
+          borderRadius: DS.radius.xl,
+          background: DS.colors.bgCard,
+          border: `1px solid ${DS.colors.border}`,
+        }}
+      >
+        {/* Cancelled Banner */}
+        {isCancelled && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: DS.space.sm,
+              padding: DS.space.md,
+              marginBottom: DS.space.lg,
+              borderRadius: DS.radius.md,
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.2)',
+            }}
+          >
+            <XCircle size={16} color={DS.colors.error} />
+            <span style={{ fontSize: DS.fontSize.sm, color: DS.colors.error, fontWeight: 600 }}>
+              Заказ {order.status === 'cancelled' ? 'отменён' : 'отклонён'}
+            </span>
+          </div>
+        )}
+
+        {/* Steps */}
+        <div style={{ position: 'relative' }}>
+          {steps.map((step, index) => {
+            const StepIcon = step.icon
+            const isLast = index === steps.length - 1
+
+            // Colors based on status
+            const getColors = () => {
+              switch (step.status) {
+                case 'completed':
+                  return {
+                    bg: DS.colors.success,
+                    border: DS.colors.success,
+                    text: DS.colors.textPrimary,
+                    line: DS.colors.success,
+                  }
+                case 'current':
+                  return {
+                    bg: DS.colors.gold,
+                    border: DS.colors.gold,
+                    text: DS.colors.textPrimary,
+                    line: DS.colors.border,
+                  }
+                default:
+                  return {
+                    bg: 'transparent',
+                    border: DS.colors.textMuted,
+                    text: DS.colors.textMuted,
+                    line: DS.colors.border,
+                  }
+              }
+            }
+
+            const colors = getColors()
+
+            return (
+              <div
+                key={step.id}
+                style={{
+                  display: 'flex',
+                  gap: DS.space.md,
+                  position: 'relative',
+                  paddingBottom: isLast ? 0 : DS.space.lg,
+                }}
+              >
+                {/* Vertical Line */}
+                {!isLast && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 15,
+                      top: 32,
+                      width: 2,
+                      height: 'calc(100% - 32px)',
+                      background: colors.line,
+                    }}
+                  />
+                )}
+
+                {/* Icon Circle */}
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: DS.radius.full,
+                    background: step.status === 'upcoming' ? DS.colors.bgElevated : colors.bg,
+                    border: `2px solid ${colors.border}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    zIndex: 1,
+                  }}
+                >
+                  {step.status === 'completed' ? (
+                    <Check size={16} color={DS.colors.white} />
+                  ) : step.status === 'current' ? (
+                    <StepIcon
+                      size={16}
+                      color="#0a0a0c"
+                      className={step.icon === Loader2 ? 'animate-spin' : ''}
+                    />
+                  ) : (
+                    <Circle size={12} color={colors.border} />
+                  )}
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1, paddingTop: 4 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: DS.space.sm,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: DS.fontSize.base,
+                        fontWeight: step.status === 'current' ? 700 : 500,
+                        color: colors.text,
+                      }}
+                    >
+                      {step.label}
+                    </span>
+                    {step.date && (
+                      <span
+                        style={{
+                          fontSize: DS.fontSize.xs,
+                          color: DS.colors.textMuted,
+                        }}
+                      >
+                        {step.date}
+                      </span>
+                    )}
+                  </div>
+                  {step.description && (
+                    <p
+                      style={{
+                        fontSize: DS.fontSize.sm,
+                        color: DS.colors.textSecondary,
+                        margin: 0,
+                        marginTop: 2,
+                      }}
+                    >
+                      {step.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //                              LOADING & ERROR STATES
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -3101,22 +3558,11 @@ export function OrderDetailPageV8() {
         onContactManager={handleContactManager}
       />
 
-      {/* Placeholder for next components */}
-      <div
-        style={{
-          margin: `0 ${DS.space.lg}px`,
-          padding: DS.space.xl,
-          borderRadius: DS.radius.lg,
-          background: DS.colors.bgCard,
-          border: `1px dashed ${DS.colors.border}`,
-          textAlign: 'center',
-        }}
-      >
-        <p style={{ color: DS.colors.textMuted, fontSize: DS.fontSize.sm, margin: 0 }}>
-          Этап 5 завершён<br />
-          Далее: Guarantees + Timeline...
-        </p>
-      </div>
+      {/* Guarantees Row */}
+      <GuaranteesRow />
+
+      {/* Order Timeline */}
+      <OrderTimeline order={order} />
 
       {/* Payment Sheet */}
       <PaymentSheet
