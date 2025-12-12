@@ -26,7 +26,8 @@ import {
   Loader2,
   AlertTriangle,
   Flame,
-  X,
+  Download,
+  ChevronRight,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
 import { fetchOrderDetail, fetchPaymentInfo, PaymentInfo } from '../api/userApi'
@@ -613,6 +614,211 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
 })
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//                              STICKY ACTION BAR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type ActionBarVariant = 'payment' | 'verification' | 'work' | 'review' | 'completed' | 'cancelled'
+
+interface StickyActionBarProps {
+  order: Order
+  paymentScheme: 'full' | 'half'
+  onPaymentClick: () => void
+  onContactManager: () => void
+  onDownloadFiles: () => void
+}
+
+const StickyActionBar = memo(function StickyActionBar({
+  order,
+  paymentScheme,
+  onPaymentClick,
+  onContactManager,
+  onDownloadFiles,
+}: StickyActionBarProps) {
+  // Determine variant based on order status
+  const getVariant = (): ActionBarVariant => {
+    if (['cancelled', 'rejected'].includes(order.status)) return 'cancelled'
+    if (['waiting_payment', 'confirmed'].includes(order.status)) return 'payment'
+    if (order.status === 'verification_pending') return 'verification'
+    if (['paid', 'paid_full', 'in_progress', 'revision'].includes(order.status)) return 'work'
+    if (order.status === 'review') return 'review'
+    if (order.status === 'completed') return 'completed'
+    return 'work'
+  }
+
+  const variant = getVariant()
+
+  // Calculate amount to pay today
+  const calculateTodayAmount = (): number => {
+    if (!order.final_price) return 0
+    const remaining = order.final_price - (order.paid_amount || 0)
+    if (remaining <= 0) return 0
+
+    if (paymentScheme === 'half' && (order.paid_amount || 0) === 0) {
+      return Math.ceil(order.final_price / 2)
+    }
+    return remaining
+  }
+
+  const todayAmount = calculateTodayAmount()
+
+  // Config for each variant
+  const variantConfig: Record<ActionBarVariant, {
+    showAmount: boolean
+    buttonText: string
+    buttonIcon: typeof CreditCard
+    buttonColor: string
+    buttonBg: string
+    disabled: boolean
+    onClick: () => void
+  }> = {
+    payment: {
+      showAmount: true,
+      buttonText: 'Перейти к оплате',
+      buttonIcon: ChevronRight,
+      buttonColor: '#0a0a0c',
+      buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
+      disabled: false,
+      onClick: onPaymentClick,
+    },
+    verification: {
+      showAmount: false,
+      buttonText: 'Проверяем оплату...',
+      buttonIcon: Loader2,
+      buttonColor: DS.colors.cyan,
+      buttonBg: 'rgba(6,182,212,0.15)',
+      disabled: true,
+      onClick: () => {},
+    },
+    work: {
+      showAmount: false,
+      buttonText: 'Написать менеджеру',
+      buttonIcon: MessageCircle,
+      buttonColor: DS.colors.textPrimary,
+      buttonBg: DS.colors.bgElevated,
+      disabled: false,
+      onClick: onContactManager,
+    },
+    review: {
+      showAmount: false,
+      buttonText: 'Проверить работу',
+      buttonIcon: CheckCircle2,
+      buttonColor: '#0a0a0c',
+      buttonBg: `linear-gradient(135deg, ${DS.colors.purple}, #7c3aed)`,
+      disabled: false,
+      onClick: onContactManager, // TODO: scroll to review section
+    },
+    completed: {
+      showAmount: false,
+      buttonText: 'Скачать файлы',
+      buttonIcon: Download,
+      buttonColor: '#0a0a0c',
+      buttonBg: `linear-gradient(135deg, #4ade80, ${DS.colors.success})`,
+      disabled: !order.files_url,
+      onClick: onDownloadFiles,
+    },
+    cancelled: {
+      showAmount: false,
+      buttonText: 'Заказ отменён',
+      buttonIcon: XCircle,
+      buttonColor: DS.colors.error,
+      buttonBg: 'rgba(239,68,68,0.15)',
+      disabled: true,
+      onClick: () => {},
+    },
+  }
+
+  const config = variantConfig[variant]
+  const ButtonIcon = config.buttonIcon
+
+  // Don't show for cancelled/rejected
+  if (variant === 'cancelled') return null
+
+  return (
+    <motion.div
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 90,
+        // Safe area padding for iOS
+        paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
+        paddingTop: DS.space.lg,
+        paddingLeft: DS.space.lg,
+        paddingRight: DS.space.lg,
+        background: 'linear-gradient(180deg, transparent 0%, rgba(5,5,7,0.95) 20%, rgba(5,5,7,0.99) 100%)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: DS.space.lg,
+          maxWidth: 480,
+          margin: '0 auto',
+        }}
+      >
+        {/* Left: Amount to pay */}
+        {config.showAmount && todayAmount > 0 && (
+          <div style={{ flex: '0 0 auto' }}>
+            <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted, marginBottom: 2 }}>
+              К оплате сегодня
+            </div>
+            <div
+              style={{
+                fontSize: DS.fontSize['2xl'],
+                fontWeight: 700,
+                fontFamily: 'var(--font-mono)',
+                color: DS.colors.gold,
+              }}
+            >
+              {formatPrice(todayAmount)} ₽
+            </div>
+          </div>
+        )}
+
+        {/* Right: Action Button */}
+        <motion.button
+          whileTap={config.disabled ? undefined : { scale: 0.97 }}
+          onClick={config.onClick}
+          disabled={config.disabled}
+          style={{
+            flex: config.showAmount ? '1 1 auto' : '1 1 100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: DS.space.sm,
+            padding: `${DS.space.lg}px ${DS.space.xl}px`,
+            borderRadius: DS.radius.lg,
+            background: config.buttonBg,
+            border: variant === 'work' ? `1px solid ${DS.colors.borderLight}` : 'none',
+            color: config.buttonColor,
+            fontSize: DS.fontSize.lg,
+            fontWeight: 700,
+            cursor: config.disabled ? 'not-allowed' : 'pointer',
+            opacity: config.disabled ? 0.6 : 1,
+            minHeight: 52,
+            boxShadow: variant === 'payment' ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
+          }}
+        >
+          <ButtonIcon
+            size={20}
+            className={variant === 'verification' ? 'animate-spin' : ''}
+          />
+          {config.buttonText}
+        </motion.button>
+      </div>
+    </motion.div>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //                              LOADING & ERROR STATES
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -715,6 +921,8 @@ export function OrderDetailPageV8() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
+  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false)
 
   // Parse order ID
   const orderId = id ? parseInt(id, 10) : NaN
@@ -796,6 +1004,18 @@ export function OrderDetailPageV8() {
     navigate('/support')
   }, [haptic, navigate])
 
+  const handlePaymentClick = useCallback(() => {
+    haptic?.('medium')
+    setPaymentSheetOpen(true)
+  }, [haptic])
+
+  const handleDownloadFiles = useCallback(() => {
+    if (!order?.files_url) return
+    haptic?.('medium')
+    window.open(order.files_url, '_blank', 'noopener,noreferrer')
+    showToast({ type: 'success', title: 'Открываем файлы', message: 'Загрузка началась' })
+  }, [order, haptic, showToast])
+
   // Render
   if (loading) {
     return (
@@ -827,7 +1047,7 @@ export function OrderDetailPageV8() {
       {/* Hero Summary */}
       <HeroSummary order={order} countdown={countdown} />
 
-      {/* Placeholder for next components */}
+      {/* Placeholder for PaymentSheet and other components */}
       <div
         style={{
           margin: `0 ${DS.space.lg}px`,
@@ -839,10 +1059,42 @@ export function OrderDetailPageV8() {
         }}
       >
         <p style={{ color: DS.colors.textMuted, fontSize: DS.fontSize.sm, margin: 0 }}>
-          Этап 1 завершён<br />
-          Далее: StickyActionBar, PaymentSheet...
+          Этап 2 завершён<br />
+          Далее: PaymentSheet, Files, Manager...
         </p>
+        {paymentSheetOpen && (
+          <div style={{ marginTop: DS.space.lg }}>
+            <p style={{ color: DS.colors.gold, fontSize: DS.fontSize.sm }}>
+              PaymentSheet будет здесь (Этап 3)
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setPaymentSheetOpen(false)}
+              style={{
+                marginTop: DS.space.md,
+                padding: `${DS.space.sm}px ${DS.space.lg}px`,
+                borderRadius: DS.radius.sm,
+                background: DS.colors.bgElevated,
+                border: `1px solid ${DS.colors.border}`,
+                color: DS.colors.textSecondary,
+                fontSize: DS.fontSize.sm,
+                cursor: 'pointer',
+              }}
+            >
+              Закрыть
+            </motion.button>
+          </div>
+        )}
       </div>
+
+      {/* Sticky Action Bar */}
+      <StickyActionBar
+        order={order}
+        paymentScheme={paymentScheme}
+        onPaymentClick={handlePaymentClick}
+        onContactManager={handleContactManager}
+        onDownloadFiles={handleDownloadFiles}
+      />
     </div>
   )
 }
