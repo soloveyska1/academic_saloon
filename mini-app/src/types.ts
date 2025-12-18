@@ -303,6 +303,20 @@ export interface OrderCreateRequest {
   promo_code?: string  // Optional promo code to apply
 }
 
+// Work type literals matching SERVICE_TYPES in order-wizard/constants.ts
+export type WorkType =
+  | 'masters'
+  | 'diploma'
+  | 'coursework'
+  | 'practice'
+  | 'essay'
+  | 'presentation'
+  | 'control'
+  | 'independent'
+  | 'report'
+  | 'photo_task'
+  | 'other'
+
 export interface WorkTypeOption {
   value: WorkType
   label: string
