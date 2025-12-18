@@ -14,6 +14,10 @@ export interface OrderCreateResponse {
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
 
+// Demo mode - enables mock data fallback when API is unavailable
+// Set VITE_DEMO_MODE=true in .env to enable
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || IS_DEV
+
 // API base URL — normalized to ensure /api suffix is always present
 function normalizeApiBase(rawUrl?: string): string {
   const fallback = IS_DEV ? 'http://localhost:8000/api' : 'https://academic-saloon.duckdns.org/api'
@@ -114,11 +118,23 @@ export async function fetchConfig(): Promise<{ bot_username: string; support_use
 }
 
 export async function fetchUserData(): Promise<UserData> {
+  // In demo mode without Telegram context, return mock data
   if (!hasTelegramContext()) {
-    if (IS_DEV) return getMockUserData()
+    if (DEMO_MODE) return getMockUserData()
     throw new Error('Откройте приложение через Telegram')
   }
-  return await apiFetch<UserData>('/user')
+
+  // Try to fetch from API, fallback to mock in demo mode
+  try {
+    return await apiFetch<UserData>('/user')
+  } catch (err) {
+    // If network error and demo mode enabled, use mock data
+    if (DEMO_MODE && err instanceof Error && err.message.includes('сети')) {
+      console.warn('[DEMO MODE] API unavailable, using mock data')
+      return getMockUserData()
+    }
+    throw err
+  }
 }
 
 export async function fetchOrders(status?: string): Promise<Order[]> {
