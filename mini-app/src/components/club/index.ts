@@ -11,4 +11,4 @@ export { ClubRulesSheet } from './ClubRulesSheet'
 export { ClubFooter } from './ClubFooter'
 
 // Constants
-export { CLUB_LEVELS, AVAILABLE_REWARDS, MOCK_MISSIONS } from './clubData'
+export { CLUB_LEVELS, AVAILABLE_REWARDS, INITIAL_MISSIONS } from './clubData'
