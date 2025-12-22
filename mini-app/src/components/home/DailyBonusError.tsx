@@ -25,6 +25,7 @@ export function DailyBonusError({ onRetry }: DailyBonusErrorProps) {
           whileHover={{ scale: 1.05 }}
           style={{
             minWidth: 200,
+            maxWidth: 'calc(100vw - 40px)',
             padding: '12px 16px',
             borderRadius: 16,
             background: 'linear-gradient(135deg, rgba(239,68,68,0.95) 0%, rgba(220,38,38,0.9) 100%)',

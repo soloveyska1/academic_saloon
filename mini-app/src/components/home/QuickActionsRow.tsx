@@ -39,9 +39,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
 
   return (
     <div
+      className="quick-actions-container"
       style={{
-        margin: '0 -20px 20px',
-        padding: '8px 20px',
         overflowX: 'auto',
         overflowY: 'hidden',
         WebkitOverflowScrolling: 'touch',

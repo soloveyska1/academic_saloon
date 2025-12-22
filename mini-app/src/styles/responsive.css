@@ -160,3 +160,29 @@
     max-width: 700px;
   }
 }
+
+/* Quick actions horizontal scroll - needs to bleed to edges */
+.quick-actions-container {
+  margin: 0 -20px 20px;
+  padding: 8px 20px;
+}
+
+@media (min-width: 768px) {
+  .quick-actions-container {
+    margin: 0 -32px 20px;
+    padding: 8px 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .quick-actions-container {
+    margin: 0 -40px 20px;
+    padding: 8px 40px;
+  }
+}
+
+/* Prevent horizontal overflow on main containers */
+.no-overflow-x {
+  overflow-x: hidden;
+  max-width: 100vw;
+}

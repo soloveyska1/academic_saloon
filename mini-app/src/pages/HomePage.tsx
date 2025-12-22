@@ -202,12 +202,11 @@ export function HomePage({ user }: Props) {
   return (
     <main
       role="main"
-      className="spacing-mobile center-large"
+      className="spacing-mobile center-large no-overflow-x"
       style={{
         minHeight: '100vh',
         background: 'var(--bg-main)',
         position: 'relative',
-        overflow: 'hidden',
       }}>
       {/* Premium Background */}
       <div aria-hidden="true">
