@@ -97,24 +97,14 @@ class RateLimiter:
         now = time.time()
         window_start = now - self.window
 
-        # Use Redis pipeline for atomic operations
+        # First pipeline: clean old entries and count current
         pipe = redis.pipeline()
-
-        # Remove old entries outside the window
         pipe.zremrangebyscore(key, 0, window_start)
-
-        # Count current requests in window
         pipe.zcard(key)
-
-        # Add current request
-        pipe.zadd(key, {str(now): now})
-
-        # Set expiry on the key
-        pipe.expire(key, self.window + 1)
-
         results = await pipe.execute()
-        request_count = results[1]  # zcard result
+        request_count = results[1]  # zcard result (count BEFORE adding new request)
 
+        # Check limit BEFORE adding the new request
         if request_count >= self.requests:
             # Calculate retry-after
             oldest = await redis.zrange(key, 0, 0, withscores=True)
@@ -128,6 +118,12 @@ class RateLimiter:
                 detail="Слишком много запросов. Попробуйте позже.",
                 headers={"Retry-After": str(retry_after)}
             )
+
+        # Limit not exceeded - add current request and set expiry
+        pipe = redis.pipeline()
+        pipe.zadd(key, {str(now): now})
+        pipe.expire(key, self.window + 1)
+        await pipe.execute()
 
         return True
 

@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 from typing import Dict, Set, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from starlette.websockets import WebSocketState
@@ -35,7 +35,7 @@ class ConnectionManager:
             if telegram_id not in self.active_connections:
                 self.active_connections[telegram_id] = set()
             self.active_connections[telegram_id].add(websocket)
-            self.last_activity[telegram_id] = datetime.utcnow()
+            self.last_activity[telegram_id] = datetime.now(timezone.utc)
 
         logger.info(f"[WS] User {telegram_id} connected. Total connections: {self._total_connections()}")
 
@@ -123,7 +123,7 @@ async def websocket_endpoint(
         await websocket.send_json({
             "type": "connected",
             "telegram_id": telegram_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
 
         # Keep connection alive and listen for messages
@@ -144,7 +144,7 @@ async def websocket_endpoint(
                         # Respond to ping
                         await websocket.send_json({
                             "type": "pong",
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now(timezone.utc).isoformat()
                         })
                     elif msg_type == "subscribe":
                         # Client wants to subscribe to specific updates
@@ -161,7 +161,7 @@ async def websocket_endpoint(
                 try:
                     await websocket.send_json({
                         "type": "ping",
-                        "timestamp": datetime.utcnow().isoformat()
+                        "timestamp": datetime.now(timezone.utc).isoformat()
                     })
                 except Exception:
                     break  # Connection dead
@@ -186,7 +186,7 @@ async def notify_order_update(telegram_id: int, order_id: int, new_status: str, 
         "order_id": order_id,
         "status": new_status,
         "data": order_data,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     await manager.send_to_user(telegram_id, message)
     logger.info(f"[WS] Sent order update to user {telegram_id}: order #{order_id} -> {new_status}")
@@ -201,7 +201,7 @@ async def notify_balance_update(telegram_id: int, new_balance: float, change: fl
         "balance": new_balance,
         "change": change,
         "reason": reason,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     await manager.send_to_user(telegram_id, message)
     logger.info(f"[WS] Sent balance update to user {telegram_id}: {change:+.2f} ({reason})")
@@ -217,7 +217,7 @@ async def notify_user(telegram_id: int, title: str, message: str, notification_t
         "notification_type": notification_type,
         "title": title,
         "message": message,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     await manager.send_to_user(telegram_id, payload)
     logger.info(f"[WS] Sent notification to user {telegram_id}: {title}")
@@ -231,7 +231,7 @@ async def notify_data_refresh(telegram_id: int, refresh_type: str = "all"):
     message = {
         "type": "refresh",
         "refresh_type": refresh_type,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     await manager.send_to_user(telegram_id, message)
 
@@ -265,7 +265,7 @@ async def notify_admin_new_order(order_data: dict):
     message = {
         "type": "admin_new_order",
         "order": order_data,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     sent_to = []
     for admin_id in _admin_ids:
@@ -285,7 +285,7 @@ async def notify_admin_payment_pending(order_id: int, user_fullname: str, amount
         "user_fullname": user_fullname,
         "amount": amount,
         "payment_method": payment_method,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     sent_to = []
     for admin_id in _admin_ids:
@@ -303,7 +303,7 @@ async def notify_admin_event(event_type: str, data: dict):
     message = {
         "type": f"admin_{event_type}",
         "data": data,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     sent_to = []
     for admin_id in _admin_ids:
@@ -326,7 +326,7 @@ async def notify_file_delivery(telegram_id: int, order_id: int, file_count: int,
         "icon": "download",
         "color": "#22c55e",
         "priority": "high",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     success = await manager.send_to_user(telegram_id, message)
     if success:

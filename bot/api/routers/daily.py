@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db import get_session
@@ -65,11 +65,21 @@ async def spin_roulette(
             break
 
     if selected["type"] in ("bonus", "jackpot") and selected["value"] > 0:
-        user.balance = (user.balance or 0) + selected["value"]
-        user.last_bonus_at = datetime.now(ZoneInfo("Europe/Moscow"))
-        user.bonus_expiry_notified = False
-
-    await session.commit()
+        # Use atomic update to prevent race condition
+        await session.execute(
+            update(User)
+            .where(User.telegram_id == user.telegram_id)
+            .values(
+                balance=User.balance + selected["value"],
+                last_bonus_at=datetime.now(ZoneInfo("Europe/Moscow")),
+                bonus_expiry_notified=False
+            )
+        )
+        await session.commit()
+        # Refresh user to get updated balance
+        await session.refresh(user)
+    else:
+        await session.commit()
 
     if selected["type"] != "nothing":
         try:

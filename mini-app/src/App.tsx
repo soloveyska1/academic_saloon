@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
 import { PremiumSplashScreen } from './components/PremiumSplashScreen'
@@ -99,6 +99,33 @@ function AdminAwareWSIndicator() {
   return <WSStatusIndicator showDebug={admin.showDebugInfo} />
 }
 
+// Smart notification wrapper with React Router navigation
+interface NotificationHandlerProps {
+  notification: SmartNotificationData | null
+  onDismiss: () => void
+}
+
+function NotificationHandler({ notification, onDismiss }: NotificationHandlerProps) {
+  const navigate = useNavigate()
+
+  const handleAction = useCallback((action: string, data: Record<string, unknown>) => {
+    if (action === 'view_order') {
+      const orderId = data.order_id || data.orderId
+      if (orderId) {
+        navigate(`/order/${orderId}`)
+      }
+    }
+  }, [navigate])
+
+  return (
+    <SmartNotification
+      notification={notification}
+      onDismiss={onDismiss}
+      onAction={handleAction}
+    />
+  )
+}
+
 function AppContent() {
   const { userData, loading: userDataLoading, error, refetch } = useUserData()
   const [isReady, setIsReady] = useState(false)
@@ -188,16 +215,6 @@ function AppContent() {
     refetch()
   }, [refetch])
 
-  // Handle notification action (e.g., navigate to order)
-  const handleNotificationAction = useCallback((action: string, data: Record<string, unknown>) => {
-    if (action === 'view_order') {
-      const orderId = data.order_id || data.orderId
-      if (orderId) {
-        // Navigate to order page
-        window.location.href = `/order/${orderId}`
-      }
-    }
-  }, [])
 
   useEffect(() => {
     // Mark ready after minimum time
@@ -247,11 +264,10 @@ function AppContent() {
             onNotification={handleNotification}
             onRefresh={handleRefresh}
           >
-            {/* Always show notifications even on error screen */}
+            {/* Always show notifications even on error screen - no navigation action needed */}
             <SmartNotification
               notification={notification}
               onDismiss={() => setNotification(null)}
-              onAction={handleNotificationAction}
             />
             {/* ═══════════════════════════════════════════════════════════════════
                 PREMIUM ERROR SCREEN — Elegant, not alarming
@@ -437,11 +453,10 @@ function AppContent() {
             >
               <BrowserRouter>
                 <div className="app">
-                  {/* Smart Realtime Notifications */}
-                  <SmartNotification
+                  {/* Smart Realtime Notifications with React Router navigation */}
+                  <NotificationHandler
                     notification={notification}
                     onDismiss={() => setNotification(null)}
-                    onAction={handleNotificationAction}
                   />
 
                   <Suspense fallback={<LoadingScreen />}>
