@@ -91,8 +91,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
         >
           Новая задача
         </div>
-        <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)', fontWeight: 500 }}>
-          Персональный менеджер • Гарантия сдачи
+        <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.55)', fontWeight: 500, lineHeight: 1.4 }}>
+          <span>Персональный менеджер</span>
+          <span style={{ display: 'block', marginTop: 1 }}>Гарантия сдачи</span>
         </div>
       </div>
 

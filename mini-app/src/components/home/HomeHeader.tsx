@@ -173,18 +173,8 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           </div>
         </div>
 
-        {/* Greeting + Name + Streak */}
+        {/* Greeting + Name */}
         <div>
-          <div
-            style={{
-              fontSize: 11,
-              color: 'var(--text-muted)',
-              marginBottom: 3,
-              fontWeight: 500,
-            }}
-          >
-            {greeting},
-          </div>
           <div
             style={{
               fontSize: 20,
@@ -197,11 +187,20 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: user.rank.is_max ? 'transparent' : 'var(--text-main)',
               filter: user.rank.is_max ? 'drop-shadow(0 0 8px rgba(212,175,55,0.3))' : 'none',
+              marginBottom: 2,
             }}
           >
             {user.fullname?.split(' ')[0] || 'Гость'}
           </div>
-          {/* Streak Badge - MOVED to DailyBonusBanner to reduce header clutter */}
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--text-secondary)',
+              fontWeight: 500,
+            }}
+          >
+            {greeting}
+          </div>
         </div>
       </div>
 
