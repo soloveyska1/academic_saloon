@@ -13,7 +13,8 @@ from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
     DailyBonusInfoResponse, DailyBonusClaimResponse, RouletteResponse
 )
-from bot.api.rate_limit import rate_limit_roulette
+# Rate limiting temporarily disabled - uncomment when slowapi is installed on server
+# from bot.api.rate_limit import rate_limit_roulette
 from bot.services.bonus import BonusService, BonusReason
 from bot.services.mini_app_logger import log_roulette_spin
 from bot.bot_instance import get_bot
@@ -37,7 +38,7 @@ async def spin_roulette(
     БЕЗ ЛИМИТА - крутить можно сколько угодно
     Шанс выигрыша крайне низкий - это элитный клуб!
     """
-    await rate_limit_roulette.check(request)
+    # await rate_limit_roulette.check(request)  # Rate limiting disabled
 
     result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = result.scalar_one_or_none()
@@ -178,7 +179,7 @@ async def claim_daily_bonus(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    await rate_limit_roulette.check(request)
+    # await rate_limit_roulette.check(request)  # Rate limiting disabled
     result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = result.scalar_one_or_none()
     if not user:
