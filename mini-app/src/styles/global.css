@@ -45,6 +45,53 @@ button,
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY — Focus-visible styles for keyboard navigation
+   Premium gold focus rings that match the design system
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Default focus-visible for all interactive elements */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.6);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+}
+
+/* Card-style focus for larger interactive containers */
+.focus-card:focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.5);
+  outline-offset: 0;
+  box-shadow:
+    0 0 0 4px rgba(212, 175, 55, 0.1),
+    inset 0 0 0 1px rgba(212, 175, 55, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION — Respect user preferences
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep essential state transitions */
+  .essential-transition {
+    transition-duration: 150ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    THE ROYAL PALETTE — ULTRA-PREMIUM CSS VARIABLES
    Rule #1: NO FLAT COLORS — Gold must always be gradient or glow
    Rule #2: NO BLACK SHADOWS — Shadows must be colored (Gold/Bronze tint)

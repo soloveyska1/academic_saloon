@@ -33,7 +33,6 @@ import {
   UrgentHubSheet,
   OrderStatsCard,
   SaloonFooter,
-  DailyBonusButton,
   CompactAchievements,
   ReputationCard,
   LevelProgressCard,
@@ -241,12 +240,7 @@ export function HomePage({ user }: Props) {
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          SOCIAL PROOF STRIP — Trust signals (6 years, 99% success, etc.)
-          ═══════════════════════════════════════════════════════════════════ */}
-      <SocialProofStrip />
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          DAILY BONUS BANNER — Prominent banner when bonus is available
+          DAILY BONUS BANNER — Above fold for maximum visibility
           ═══════════════════════════════════════════════════════════════════ */}
       <DailyBonusBanner
         canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
@@ -274,11 +268,10 @@ export function HomePage({ user }: Props) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          NEW USER FLOW — Show CTA immediately for users with 0 orders
+          PRIMARY CTA — Single consolidated "New Task" button
+          Always visible, always above fold
           ═══════════════════════════════════════════════════════════════════ */}
-      {user.orders_count === 0 && (
-        <NewTaskCTA onClick={handleNewOrder} />
-      )}
+      <NewTaskCTA onClick={handleNewOrder} />
 
       {/* ═══════════════════════════════════════════════════════════════════
           QUICK ACTIONS — Replaces TipsCarousel + Panic Button
@@ -320,11 +313,10 @@ export function HomePage({ user }: Props) {
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          NEW TASK CTA — Primary action button (for returning users)
+          SOCIAL PROOF STRIP — Trust signals (6 years, 99% success, etc.)
+          Moved below fold to prioritize actions above
           ═══════════════════════════════════════════════════════════════════ */}
-      {user.orders_count > 0 && (
-        <NewTaskCTA onClick={handleNewOrder} />
-      )}
+      <SocialProofStrip />
 
       {/* ═══════════════════════════════════════════════════════════════════
           QUICK REORDER — One-click reorder for repeat customers
@@ -407,14 +399,6 @@ export function HomePage({ user }: Props) {
           ELEGANT FOOTER
           ═══════════════════════════════════════════════════════════════════ */}
       <SaloonFooter />
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          DAILY BONUS FLOATING BUTTON OR ERROR
-          ═══════════════════════════════════════════════════════════════════ */}
-      <DailyBonusButton
-        visible={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
-        onClick={() => { actions.openModal('dailyBonus'); haptic('medium') }}
-      />
 
       {/* Show error UI when daily bonus fails to load */}
       {state.dailyBonus.error && !state.dailyBonus.loading && (
