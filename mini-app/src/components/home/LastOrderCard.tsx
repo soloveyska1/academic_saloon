@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, FileText, GraduationCap, Zap, Camera } from 'lucide-react'
 import { ORDER_STATUS_MAP, WORK_TYPE_ICONS } from './constants'
 
@@ -23,6 +23,7 @@ interface LastOrderCardProps {
 }
 
 export const LastOrderCard = memo(function LastOrderCard({ order, onClick, haptic }: LastOrderCardProps) {
+  const shouldReduceMotion = useReducedMotion()
   const status = ORDER_STATUS_MAP[order.status] || {
     label: order.status,
     color: '#888',
@@ -33,8 +34,8 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
   const title = order.subject || order.work_type_label || `Заказ #${order.id}`
   const WorkTypeIcon = WORK_TYPE_ICONS[order.work_type_label] || FileText
 
-  // Check if order is in active/pulsing state
-  const isActive = ['pending', 'in_progress', 'review', 'waiting_payment'].includes(order.status)
+  // Check if order is in active/pulsing state (disabled for reduced motion)
+  const isActive = !shouldReduceMotion && ['pending', 'in_progress', 'review', 'waiting_payment'].includes(order.status)
 
   return (
     <motion.div
