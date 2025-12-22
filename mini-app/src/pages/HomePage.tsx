@@ -20,10 +20,12 @@ import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
 // New Home Components
 import {
   HomeHeader,
+  SocialProofStrip,
   QuickActionsRow,
   NextActionCard,
   NewTaskCTA,
   LastOrderCard,
+  QuickReorderCard,
   BenefitsCard,
   UrgentHubSheet,
   OrderStatsCard,
@@ -236,6 +238,18 @@ export function HomePage({ user }: Props) {
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
+          SOCIAL PROOF STRIP — Trust signals (6 years, 99% success, etc.)
+          ═══════════════════════════════════════════════════════════════════ */}
+      <SocialProofStrip />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          NEW USER FLOW — Show CTA immediately for users with 0 orders
+          ═══════════════════════════════════════════════════════════════════ */}
+      {user.orders_count === 0 && (
+        <NewTaskCTA onClick={handleNewOrder} />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
           QUICK ACTIONS — Replaces TipsCarousel + Panic Button
           Single "Срочно" entry that opens UrgentHubSheet
           ═══════════════════════════════════════════════════════════════════ */}
@@ -275,9 +289,22 @@ export function HomePage({ user }: Props) {
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          NEW TASK CTA — Primary action button
+          NEW TASK CTA — Primary action button (for returning users)
           ═══════════════════════════════════════════════════════════════════ */}
-      <NewTaskCTA onClick={handleNewOrder} />
+      {user.orders_count > 0 && (
+        <NewTaskCTA onClick={handleNewOrder} />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          QUICK REORDER — One-click reorder for repeat customers
+          ═══════════════════════════════════════════════════════════════════ */}
+      {user.orders.length > 0 && user.orders[0].status === 'completed' && (
+        <QuickReorderCard
+          lastOrder={user.orders[0]}
+          onReorder={(orderId) => navigate(`/create-order?template=${orderId}`)}
+          haptic={haptic}
+        />
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           LAST ORDER CARD — Quick access to recent order
