@@ -20,14 +20,15 @@ from bot.api.dependencies import (
     get_rank_levels, get_loyalty_levels, get_rank_info, get_loyalty_info, order_to_response
 )
 from bot.services.qr_generator import generate_premium_qr_card, generate_simple_qr
-from bot.api.rate_limit import limiter
+# Rate limiting temporarily disabled - uncomment when slowapi is installed on server
+# from bot.api.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Auth & User"])
 
 @router.get("/config", response_model=ConfigResponse)
-@limiter.limit("60/minute")
+# @limiter.limit("60/minute")  # Rate limiting disabled
 async def get_config(request: Request):
     """Get public configuration"""
     return ConfigResponse(
@@ -37,7 +38,7 @@ async def get_config(request: Request):
     )
 
 @router.get("/user", response_model=UserResponse)
-@limiter.limit("30/minute")
+# @limiter.limit("30/minute")  # Rate limiting disabled
 async def get_user_profile(
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),

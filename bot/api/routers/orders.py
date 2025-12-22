@@ -171,7 +171,7 @@ async def confirm_batch_payment(
     session: AsyncSession = Depends(get_session)
 ):
     """Confirm payment for multiple orders at once"""
-    await rate_limit_payment.check(request)
+    # await rate_limit_payment.check(request)  # Rate limiting disabled
 
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
@@ -333,7 +333,8 @@ async def apply_promo_code(
 #  ORDER CREATION
 # ═══════════════════════════════════════════════════════════════════════════
 
-from bot.api.rate_limit import rate_limit_create, rate_limit_payment
+# Rate limiting temporarily disabled - uncomment when slowapi is installed on server
+# from bot.api.rate_limit import rate_limit_create, rate_limit_payment
 
 @router.post("/orders/create", response_model=OrderCreateResponse)
 async def create_order(
@@ -343,7 +344,7 @@ async def create_order(
     session: AsyncSession = Depends(get_session)
 ):
     """Create a new order from Mini App."""
-    await rate_limit_create.check(request)
+    # await rate_limit_create.check(request)  # Rate limiting disabled
 
     logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}, promo_code={data.promo_code}")
 
@@ -703,7 +704,7 @@ async def confirm_payment(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    await rate_limit_payment.check(request)
+    # await rate_limit_payment.check(request)  # Rate limiting disabled
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
 
