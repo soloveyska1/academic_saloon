@@ -1,11 +1,12 @@
 import { useState, memo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HOME HEADER — Premium compact header
 //  Features:
-//  - Avatar with subtle gold border (NO spinning - premium = restraint)
+//  - Avatar with spinning gold ring (VIP glow for max rank)
 //  - Greeting with user name
+//  - Streak chip
 //  - Compact "Club" button (secret admin access)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -85,6 +86,7 @@ function getSmartGreeting(ctx: GreetingContext): string {
 
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
+  const shouldReduceMotion = useReducedMotion()
 
   // Smart greeting based on context
   const greeting = getSmartGreeting({
@@ -96,9 +98,8 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -16 }}
+      initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -107,29 +108,31 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        {/* User Avatar - Static premium border, NO spinning */}
+        {/* User Avatar with Spinning Gold Ring + VIP Glow */}
         <div style={{ position: 'relative' }}>
-          {/* Subtle VIP glow for max rank - STATIC, no animation */}
-          {user.rank.is_max && (
-            <div
+          {/* VIP Glow Effect for Max Rank */}
+          {user.rank.is_max && !shouldReduceMotion && (
+            <motion.div
+              animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
               style={{
                 position: 'absolute',
-                inset: -4,
+                inset: -8,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle at 50% 40%, rgba(212,175,55,0.15) 0%, transparent 70%)',
-                filter: 'blur(2px)',
-                pointerEvents: 'none',
+                background: 'radial-gradient(circle, rgba(212,175,55,0.4) 0%, transparent 70%)',
+                filter: 'blur(4px)',
               }}
             />
           )}
-          {/* Static gold border - premium = restraint, no spinning */}
-          <div
+          <motion.div
+            animate={shouldReduceMotion ? {} : { rotate: 360 }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
             style={{
               position: 'absolute',
-              inset: -2,
+              inset: -3,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #D4AF37 0%, #B8932E 100%)',
-              opacity: 0.7,
+              background:
+                'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
             }}
           />
           <div
@@ -156,10 +159,12 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
             ) : (
               <span
                 style={{
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                  fontWeight: 600,
+                  fontFamily: "var(--font-serif)",
+                  fontWeight: 700,
                   fontSize: 18,
-                  color: '#D4AF37',
+                  background: 'var(--gold-metallic)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
                 }}
               >
                 {user.fullname?.charAt(0) || 'U'}
@@ -168,58 +173,65 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           </div>
         </div>
 
-        {/* Greeting + Name */}
+        {/* Greeting + Name + Streak */}
         <div>
           <div
             style={{
-              fontSize: 12,
-              color: 'rgba(255,255,255,0.45)',
-              marginBottom: 4,
-              fontWeight: 400,
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              marginBottom: 3,
+              fontWeight: 500,
             }}
           >
-            {greeting}
+            {greeting},
           </div>
           <div
             style={{
-              fontSize: 18,
-              fontWeight: 600,
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              letterSpacing: '-0.01em',
-              color: user.rank.is_max ? '#D4AF37' : 'var(--text-main)',
+              fontSize: 20,
+              fontWeight: 700,
+              fontFamily: "var(--font-serif)",
+              letterSpacing: '0.02em',
+              background: user.rank.is_max
+                ? 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #BF953F 100%)'
+                : 'var(--text-main)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: user.rank.is_max ? 'transparent' : 'var(--text-main)',
+              filter: user.rank.is_max ? 'drop-shadow(0 0 8px rgba(212,175,55,0.3))' : 'none',
             }}
           >
             {user.fullname?.split(' ')[0] || 'Гость'}
           </div>
+          {/* Streak Badge - MOVED to DailyBonusBanner to reduce header clutter */}
         </div>
       </div>
 
-      {/* Compact Club Badge - flat, minimal, NO shimmer */}
-      <motion.button
+      {/* Compact Club Badge with shimmer */}
+      <motion.div
         onClick={onSecretTap}
-        whileTap={{ scale: 0.96 }}
+        whileTap={{ scale: 0.97 }}
+        className="border-shimmer"
         style={{
-          padding: '9px 14px',
-          background: 'rgba(212, 175, 55, 0.08)',
-          borderRadius: 10,
-          border: '1px solid rgba(212, 175, 55, 0.2)',
+          position: 'relative',
+          padding: '8px 14px',
+          background: 'linear-gradient(145deg, rgba(20,18,14,0.98), rgba(12,11,8,0.98))',
+          borderRadius: 8,
+          border: '1px solid rgba(212,175,55,0.5)',
           cursor: 'default',
           userSelect: 'none',
+          boxShadow: '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)',
         }}
       >
-        <span
+        <span className="gold-shimmer"
           style={{
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            fontWeight: 600,
-            fontSize: 11,
-            letterSpacing: '0.06em',
-            color: 'rgba(212, 175, 55, 0.85)',
-            textTransform: 'uppercase',
+            fontFamily: "var(--font-serif)",
+            fontWeight: 700,
+            fontSize: 10,
+            letterSpacing: '0.12em',
           }}
         >
           КЛУБ
         </span>
-      </motion.button>
+      </motion.div>
     </motion.div>
   )
 }, (prevProps, nextProps) => {

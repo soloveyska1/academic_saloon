@@ -29,7 +29,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
     id: 'guarantees',
     icon: Shield,
     title: 'Гарантии',
-    subtitle: 'Возврат',
+    subtitle: '100%',
     action: 'modal',
     modal: 'guarantees',
   },
