@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './styles/global.css'
+import './styles/responsive.css'
 
 // Development mode flag
 const IS_DEV = import.meta.env.DEV

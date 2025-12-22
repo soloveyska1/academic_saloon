@@ -9,11 +9,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 
 
 
 logger = logging.getLogger(__name__)
 from .websocket import router as ws_router
+from .rate_limit import limiter, rate_limit_exceeded_handler
 
 
 # Production origins only
@@ -70,6 +72,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
 
+    # Add rate limiter to app state
+    app.state.limiter = limiter
+
     # CORS for Mini App
     # Note: Cannot use "*" with credentials=True, must specify origins explicitly
     # Using allow_origin_regex to support Vercel preview deployments
@@ -98,6 +103,11 @@ def create_app() -> FastAPI:
     @app.get("/api/health")
     async def health_check():
         return {"status": "ok", "service": "mini-app-api"}
+
+    # Rate limit exceeded handler
+    @app.exception_handler(RateLimitExceeded)
+    async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
+        return await rate_limit_exceeded_handler(request, exc)
 
     # Validation error handler with logging
     @app.exception_handler(RequestValidationError)

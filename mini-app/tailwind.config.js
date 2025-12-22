@@ -5,6 +5,13 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    screens: {
+      'xs': '375px',   // Small phones
+      'sm': '640px',   // Large phones
+      'md': '768px',   // Tablets
+      'lg': '1024px',  // Laptops
+      'xl': '1280px',  // Desktops
+    },
     extend: {
       colors: {
         // === THE VOID (Deepest Onyx/Charcoal) ===

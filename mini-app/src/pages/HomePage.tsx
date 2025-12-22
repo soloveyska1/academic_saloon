@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, memo } from 'react'
+import { useEffect, useCallback, useRef, useMemo, lazy, Suspense, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -7,7 +7,8 @@ import {
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { fetchDailyBonusInfo, claimDailyBonus, DailyBonusInfo } from '../api/userApi'
+import { fetchDailyBonusInfo, claimDailyBonus } from '../api/userApi'
+import { useHomePageState } from '../hooks/useHomePageState'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
 import { usePromo } from '../contexts/PromoContext'
 import { Confetti } from '../components/ui/Confetti'
@@ -45,11 +46,10 @@ interface Props {
 //  GLASS CARD STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Note: borderRadius and padding are now responsive via CSS classes
 const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
-  borderRadius: 24,
-  padding: 20,
   background: 'var(--bg-card)',
   backdropFilter: 'blur(24px) saturate(130%)',
   WebkitBackdropFilter: 'blur(24px) saturate(130%)',
@@ -60,8 +60,6 @@ const glassStyle: React.CSSProperties = {
 const glassGoldStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
-  borderRadius: 24,
-  padding: 20,
   background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
   backdropFilter: 'blur(24px) saturate(130%)',
   WebkitBackdropFilter: 'blur(24px) saturate(130%)',
@@ -72,7 +70,9 @@ const glassGoldStyle: React.CSSProperties = {
 // Inner shine effect component for cards - memoized
 const CardInnerShine = memo(function CardInnerShine() {
   return (
-    <div style={{
+    <div
+      aria-hidden="true"
+      style={{
       position: 'absolute',
       inset: 0,
       background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%)',
@@ -85,7 +85,9 @@ const CardInnerShine = memo(function CardInnerShine() {
 // Modal loading fallback
 const ModalLoadingFallback = memo(function ModalLoadingFallback() {
   return (
-    <div style={{
+    <div
+      aria-hidden="true"
+      style={{
       position: 'fixed',
       inset: 0,
       background: 'rgba(0,0,0,0.6)',
@@ -94,7 +96,9 @@ const ModalLoadingFallback = memo(function ModalLoadingFallback() {
       justifyContent: 'center',
       zIndex: 1000,
     }}>
-      <div style={{
+      <div
+                aria-hidden="true"
+                style={{
         width: 40,
         height: 40,
         borderRadius: '50%',
@@ -126,6 +130,10 @@ function CompactAchievements({ achievements, onViewAll }: {
       whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
       onClick={onViewAll}
+      role="button"
+      tabIndex={0}
+      aria-label={`Достижения: разблокировано ${unlockedCount} из ${achievements.length}. Нажмите для просмотра всех достижений`}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onViewAll() }}}
       style={{
         ...glassStyle,
         marginBottom: 16,
@@ -134,16 +142,22 @@ function CompactAchievements({ achievements, onViewAll }: {
       }}
     >
       <CardInnerShine />
-      <div style={{
+      <div
+                aria-hidden="true"
+                style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         position: 'relative',
         zIndex: 1,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div
+                aria-hidden="true"
+                style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {/* Achievement icons stack */}
-          <div style={{ position: 'relative', width: 52, height: 44 }}>
+          <div
+                aria-hidden="true"
+                style={{ position: 'relative', width: 52, height: 44 }}>
             {/* Last unlocked (main) */}
             <motion.div
               animate={lastUnlocked?.glow ? {
@@ -174,7 +188,7 @@ function CompactAchievements({ achievements, onViewAll }: {
               }}
             >
               {lastUnlocked ? (
-                <lastUnlocked.icon size={22} color="#D4AF37" strokeWidth={2} fill="rgba(212,175,55,0.2)" />
+                <lastUnlocked.icon size={22} color="#D4AF37" strokeWidth={2} fill="rgba(212,175,55,0.2)"  aria-hidden="true"/>
               ) : (
                 <Star size={22} color="rgba(100,100,100,0.5)" strokeWidth={1.5} />
               )}
@@ -199,31 +213,41 @@ function CompactAchievements({ achievements, onViewAll }: {
                   zIndex: 3,
                 }}
               >
-                <nextToUnlock.icon size={12} color="rgba(212,175,55,0.5)" strokeWidth={1.5} />
+                <nextToUnlock.icon size={12} color="rgba(212,175,55,0.5)" strokeWidth={1.5}  aria-hidden="true"/>
               </motion.div>
             )}
           </div>
           <div>
-            <div style={{
+            <div
+                aria-hidden="true"
+                style={{
               fontSize: 10,
               fontWeight: 700,
               color: 'var(--text-muted)',
               letterSpacing: '0.1em',
               marginBottom: 4,
             }}>ДОСТИЖЕНИЯ</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>
+            <div
+                aria-hidden="true"
+                style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>
               {lastUnlocked ? lastUnlocked.label : 'Начните путь'}
             </div>
             {nextToUnlock && (
-              <div style={{ fontSize: 10, color: 'rgba(212,175,55,0.6)', marginTop: 2 }}>
+              <div
+                aria-hidden="true"
+                style={{ fontSize: 10, color: 'rgba(212,175,55,0.6)', marginTop: 2 }}>
                 Далее: {nextToUnlock.label}
               </div>
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+                aria-hidden="true"
+                style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Progress dots */}
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div
+                aria-hidden="true"
+                style={{ display: 'flex', gap: 4 }}>
             {achievements.map((a, i) => (
               <motion.div
                 key={i}
@@ -264,24 +288,8 @@ export function HomePage({ user }: Props) {
   const { activePromo } = usePromo()
   const capability = useCapability()
 
-  // UI State
-  const [copied, setCopied] = useState(false)
-  const [showQR, setShowQR] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [showDailyBonus, setShowDailyBonus] = useState(false)
-  const [dailyBonusInfo, setDailyBonusInfo] = useState<DailyBonusInfo | null>(null)
-  const [dailyBonusError, setDailyBonusError] = useState(false)
-  const [isLoadingBonus, setIsLoadingBonus] = useState(true)
-
-  // Modals
-  const [showCashbackModal, setShowCashbackModal] = useState(false)
-  const [showGuaranteesModal, setShowGuaranteesModal] = useState(false)
-  const [showTransactionsModal, setShowTransactionsModal] = useState(false)
-  const [showRanksModal, setShowRanksModal] = useState(false)
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
-
-  // NEW: UrgentHubSheet state (fixes duplicate "Urgent" issue)
-  const [showUrgentSheet, setShowUrgentSheet] = useState(false)
+  // State management via reducer
+  const { state, actions } = useHomePageState()
 
   // Fetch daily bonus info
   useEffect(() => {
@@ -289,25 +297,25 @@ export function HomePage({ user }: Props) {
     const maxRetries = 3
 
     const loadDailyBonus = async () => {
-      setIsLoadingBonus(true)
+      actions.setDailyBonusLoading(true)
       try {
         const info = await fetchDailyBonusInfo()
-        setDailyBonusInfo(info)
-        setDailyBonusError(false)
+        actions.setDailyBonusInfo(info)
+        actions.setDailyBonusError(false)
       } catch {
         retryCount++
         if (retryCount < maxRetries) {
           setTimeout(loadDailyBonus, 1000 * retryCount)
         } else {
-          setDailyBonusError(true)
+          actions.setDailyBonusError(true)
         }
       } finally {
-        setIsLoadingBonus(false)
+        actions.setDailyBonusLoading(false)
       }
     }
 
     loadDailyBonus()
-  }, [])
+  }, [actions])
 
   // Secret admin activation (5 quick taps on logo badge)
   const tapCountRef = useRef(0)
@@ -331,8 +339,8 @@ export function HomePage({ user }: Props) {
   }, [admin.isAdmin, haptic])
 
   // Daily bonus data
-  const canClaimBonus = dailyBonusInfo?.can_claim ?? false
-  const dailyStreak = dailyBonusInfo?.streak ?? 1
+  const canClaimBonus = state.dailyBonus.info?.can_claim ?? false
+  const dailyStreak = state.dailyBonus.info?.streak ?? 1
 
   // Welcome promo modal for new users
   const WELCOME_MODAL_SHOWN_KEY = 'academic_saloon_welcome_shown'
@@ -348,14 +356,14 @@ export function HomePage({ user }: Props) {
 
     if (shouldShow) {
       const timer = setTimeout(() => {
-        setShowWelcomeModal(true)
+        actions.openModal('welcome')
         if (!isSimulatingNewUser) {
           localStorage.setItem(WELCOME_MODAL_SHOWN_KEY, 'true')
         }
       }, 1500)
       return () => clearTimeout(timer)
     }
-  }, [user, admin.simulateNewUser])
+  }, [user, admin.simulateNewUser, actions])
 
   // Memoized calculations
   const activeOrders = useMemo(
@@ -400,26 +408,32 @@ export function HomePage({ user }: Props) {
 
   const copyReferralCode = () => {
     navigator.clipboard.writeText(user.referral_code)
-    setCopied(true)
+    actions.setCopied(true)
     hapticSuccess()
-    setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => actions.setCopied(false), 2000)
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      padding: '24px 20px 100px',
-      background: 'var(--bg-main)',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <main
+      role="main"
+      className="spacing-mobile center-large"
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg-main)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
       {/* Premium Background */}
-      <PremiumBackground
+      <div aria-hidden="true">
+        <PremiumBackground
         variant="gold"
         intensity="subtle"
         interactive={capability.tier >= 3}
       />
-      <FloatingGoldParticles count={capability.getParticleCount(8)} />
+      </div>
+      <div aria-hidden="true">
+        <FloatingGoldParticles count={capability.getParticleCount(8)} />
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER — New compact component
@@ -441,12 +455,12 @@ export function HomePage({ user }: Props) {
       <QuickActionsRow
         onNavigate={navigate}
         onOpenModal={(modal) => {
-          if (modal === 'cashback') setShowCashbackModal(true)
-          else if (modal === 'guarantees') setShowGuaranteesModal(true)
+          if (modal === 'cashback') actions.openModal('cashback')
+          else if (modal === 'guarantees') actions.openModal('guarantees')
         }}
         onOpenUrgentSheet={() => {
           haptic('medium')
-          setShowUrgentSheet(true)
+          actions.openModal('urgentSheet')
         }}
         haptic={haptic}
       />
@@ -467,8 +481,8 @@ export function HomePage({ user }: Props) {
       <BenefitsCard
         balance={user.balance}
         rank={user.rank}
-        onBalanceClick={() => setShowTransactionsModal(true)}
-        onRankClick={() => setShowRanksModal(true)}
+        onBalanceClick={() => actions.openModal('transactions')}
+        onRankClick={() => actions.openModal('ranks')}
         haptic={haptic}
       />
 
@@ -519,10 +533,15 @@ export function HomePage({ user }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.32 }}
         whileHover={{ scale: 1.005 }}
+        className="card-padding card-radius"
         style={{ ...glassGoldStyle, marginBottom: 16, transition: 'transform 0.2s ease-out' }}
       >
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <div
+                aria-hidden="true"
+                style={{ position: 'relative', zIndex: 1 }}>
+          <div
+                aria-hidden="true"
+                style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <Star size={14} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
             <span style={{
               fontSize: 11,
@@ -544,10 +563,13 @@ export function HomePage({ user }: Props) {
             }}>5% роялти</span>{' '}
             с каждого заказа.
           </p>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div
+                aria-hidden="true"
+                style={{ display: 'flex', gap: 10 }}>
             <motion.button
               onClick={(e) => { e.stopPropagation(); copyReferralCode() }}
               whileTap={{ scale: 0.97 }}
+              aria-label={state.copied ? "Реферальный код скопирован" : `Скопировать реферальный код ${user.referral_code}`}
               style={{
                 flex: 1,
                 padding: '14px 18px',
@@ -573,15 +595,16 @@ export function HomePage({ user }: Props) {
               }}>
                 {user.referral_code}
               </code>
-              {copied ? (
+              {state.copied ? (
                 <Check size={18} color="var(--success-text)" strokeWidth={2} />
               ) : (
                 <Copy size={18} color="var(--text-muted)" strokeWidth={1.5} />
               )}
             </motion.button>
             <motion.button
-              onClick={(e) => { e.stopPropagation(); setShowQR(true); haptic('light') }}
+              onClick={(e) => { e.stopPropagation(); actions.openModal('qr'); haptic('light') }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Показать QR-код реферальной ссылки"
               style={{
                 width: 52,
                 height: 52,
@@ -599,7 +622,9 @@ export function HomePage({ user }: Props) {
             </motion.button>
           </div>
           {user.referrals_count > 0 && (
-            <div style={{
+            <div
+                aria-hidden="true"
+                style={{
               marginTop: 12,
               display: 'inline-flex',
               alignItems: 'center',
@@ -625,11 +650,18 @@ export function HomePage({ user }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
+          className="card-padding card-radius"
           style={{ ...glassStyle, marginBottom: 16 }}
         >
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
-              <div style={{
+          <div
+                aria-hidden="true"
+                style={{ position: 'relative', zIndex: 1 }}>
+            <div
+                aria-hidden="true"
+                style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+              <div
+                aria-hidden="true"
+                style={{
                 width: 48,
                 height: 48,
                 borderRadius: 14,
@@ -642,9 +674,15 @@ export function HomePage({ user }: Props) {
               }}>
                 <TrendingUp size={22} color="var(--gold-400)" strokeWidth={1.5} />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>Следующий уровень</div>
-                <div style={{
+              <div
+                aria-hidden="true"
+                style={{ flex: 1 }}>
+                <div
+                aria-hidden="true"
+                style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>Следующий уровень</div>
+                <div
+                aria-hidden="true"
+                style={{
                   fontSize: 12,
                   fontWeight: 600,
                   fontFamily: 'var(--font-serif)',
@@ -663,7 +701,13 @@ export function HomePage({ user }: Props) {
                 WebkitTextFillColor: 'transparent',
               }}>{user.rank.progress}%</span>
             </div>
-            <div style={{
+            <div
+              role="progressbar"
+              aria-valuenow={user.rank.progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Прогресс до следующего уровня ${displayNextRank}: ${user.rank.progress}%`}
+              style={{
               height: 10,
               background: 'var(--bg-glass)',
               borderRadius: 100,
@@ -676,6 +720,7 @@ export function HomePage({ user }: Props) {
                 animate={{ width: `${Math.max(user.rank.progress, 3)}%` }}
                 transition={{ duration: 1, delay: 0.5 }}
                 className="progress-shimmer"
+                aria-hidden="true"
                 style={{
                   height: '100%',
                   borderRadius: 100,
@@ -683,7 +728,9 @@ export function HomePage({ user }: Props) {
                 }}
               />
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
+            <div
+                aria-hidden="true"
+                style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
               Осталось{' '}
               <span style={{
                 background: 'var(--gold-text-shine)',
@@ -706,25 +753,33 @@ export function HomePage({ user }: Props) {
         whileHover={{ scale: 1.01, y: -1 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => { haptic('light'); navigate('/orders') }}
+        className="card-padding card-radius"
         style={{
           ...glassStyle,
           cursor: 'pointer',
-          padding: '20px 24px',
           border: '1px solid rgba(212,175,55,0.2)',
           background: 'linear-gradient(145deg, rgba(25,25,28,0.95) 0%, rgba(18,18,20,0.98) 100%)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.05)',
         }}
       >
         <CardInnerShine />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{
+        <div
+                aria-hidden="true"
+                style={{ position: 'relative', zIndex: 1 }}>
+          <div
+                aria-hidden="true"
+                style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             marginBottom: 20,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
+            <div
+                aria-hidden="true"
+                style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                aria-hidden="true"
+                style={{
                 width: 42,
                 height: 42,
                 borderRadius: 12,
@@ -793,6 +848,8 @@ export function HomePage({ user }: Props) {
                 {activeOrders > 0 && (
                   <motion.div
                     animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    aria-hidden="true", opacity: [0.6, 1, 0.6] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                     style={{
                       width: 6,
@@ -889,14 +946,15 @@ export function HomePage({ user }: Props) {
           DAILY BONUS FLOATING BUTTON
           ═══════════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {canClaimBonus && !dailyBonusError && !isLoadingBonus && (
+        {canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading && (
           <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ delay: 1, type: 'spring' }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => { setShowDailyBonus(true); haptic('medium') }}
+            onClick={() => { actions.openModal('dailyBonus'); haptic('medium') }}
+            aria-label="Получить ежедневный бонус"
             style={{
               position: 'fixed',
               bottom: 110,
@@ -917,6 +975,8 @@ export function HomePage({ user }: Props) {
             <Gift size={26} color="#09090b" strokeWidth={2} />
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              aria-hidden="true" }}
               transition={{ duration: 1.5, repeat: Infinity }}
               title="Ежедневный бонус доступен!"
               style={{
@@ -945,8 +1005,8 @@ export function HomePage({ user }: Props) {
           Fixes the duplicate "Urgent" issue
           ═══════════════════════════════════════════════════════════════════ */}
       <UrgentHubSheet
-        isOpen={showUrgentSheet}
-        onClose={() => setShowUrgentSheet(false)}
+        isOpen={state.modals.urgentSheet}
+        onClose={() => actions.closeModal('urgentSheet')}
         onNavigate={navigate}
         haptic={haptic}
       />
@@ -956,76 +1016,76 @@ export function HomePage({ user }: Props) {
           ═══════════════════════════════════════════════════════════════════ */}
       <Suspense fallback={<ModalLoadingFallback />}>
         <AnimatePresence>
-          {showQR && (
-            <QRCodeModal value={user.referral_code} onClose={() => setShowQR(false)} />
+          {state.modals.qr && (
+            <QRCodeModal value={user.referral_code} onClose={() => actions.closeModal('qr')} />
           )}
         </AnimatePresence>
 
         <AnimatePresence>
-          {showDailyBonus && dailyBonusInfo && (
+          {state.modals.dailyBonus && state.dailyBonus.info && (
             <DailyBonusModal
               streak={dailyStreak}
               canClaim={canClaimBonus}
-              bonuses={dailyBonusInfo.bonuses}
-              cooldownRemaining={dailyBonusInfo.cooldown_remaining}
+              bonuses={state.dailyBonus.info.bonuses}
+              cooldownRemaining={state.dailyBonus.info.cooldown_remaining}
               onClaim={async () => {
                 const result = await claimDailyBonus()
                 if (result.won) {
-                  setShowConfetti(true)
+                  actions.setConfetti(true)
                 }
-                setDailyBonusInfo(prev => prev ? { ...prev, can_claim: false, cooldown_remaining: '24ч' } : null)
+                actions.updateDailyBonusAfterClaim('24ч')
                 return result
               }}
-              onClose={() => setShowDailyBonus(false)}
+              onClose={() => actions.closeModal('dailyBonus')}
             />
           )}
         </AnimatePresence>
 
         <Confetti
-          active={showConfetti}
-          onComplete={() => setShowConfetti(false)}
+          active={state.showConfetti}
+          onComplete={() => actions.setConfetti(false)}
           intensity={capability.tier === 3 ? 'medium' : 'low'}
         />
 
-        {showCashbackModal && (
+        {state.modals.cashback && (
           <CashbackModal
-            isOpen={showCashbackModal}
-            onClose={() => setShowCashbackModal(false)}
+            isOpen={state.modals.cashback}
+            onClose={() => actions.closeModal('cashback')}
             user={user}
           />
         )}
-        {showGuaranteesModal && (
+        {state.modals.guarantees && (
           <GuaranteesModal
-            isOpen={showGuaranteesModal}
-            onClose={() => setShowGuaranteesModal(false)}
+            isOpen={state.modals.guarantees}
+            onClose={() => actions.closeModal('guarantees')}
           />
         )}
-        {showTransactionsModal && (
+        {state.modals.transactions && (
           <TransactionsModal
-            isOpen={showTransactionsModal}
-            onClose={() => setShowTransactionsModal(false)}
+            isOpen={state.modals.transactions}
+            onClose={() => actions.closeModal('transactions')}
             transactions={user.transactions}
             balance={user.balance}
             onViewAll={() => navigate('/profile')}
           />
         )}
-        {showRanksModal && (
+        {state.modals.ranks && (
           <RanksModal
-            isOpen={showRanksModal}
-            onClose={() => setShowRanksModal(false)}
+            isOpen={state.modals.ranks}
+            onClose={() => actions.closeModal('ranks')}
             user={user}
           />
         )}
-        {showWelcomeModal && (
+        {state.modals.welcome && (
           <WelcomePromoModal
-            isOpen={showWelcomeModal}
-            onClose={() => setShowWelcomeModal(false)}
+            isOpen={state.modals.welcome}
+            onClose={() => actions.closeModal('welcome')}
             promoCode="WELCOME10"
             discount={10}
             onApplyPromo={() => navigate('/create-order')}
           />
         )}
       </Suspense>
-    </div>
+    </main>
   )
 }

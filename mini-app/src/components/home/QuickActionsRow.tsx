@@ -65,6 +65,7 @@ export function QuickActionsRow({
             key={action.id}
             type="button"
             onClick={() => handleClick(action)}
+            aria-label={`${action.title}: ${action.subtitle}`}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + index * 0.06 }}
@@ -97,6 +98,7 @@ export function QuickActionsRow({
           >
             {/* Subtle top highlight */}
             <div
+              aria-hidden="true"
               style={{
                 position: 'absolute',
                 top: 0,
@@ -122,6 +124,7 @@ export function QuickActionsRow({
                   size={24}
                   color={action.id === 'urgent' ? '#f87171' : '#D4AF37'}
                   strokeWidth={1.5}
+                  aria-hidden="true"
                   style={{
                     filter:
                       action.id === 'urgent'

@@ -20,6 +20,7 @@ export function NewTaskCTA({ onClick }: NewTaskCTAProps) {
       whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
+      aria-label="Создать новую задачу с персональным менеджером"
       style={{
         position: 'relative',
         width: '100%',
@@ -37,6 +38,7 @@ export function NewTaskCTA({ onClick }: NewTaskCTAProps) {
     >
       {/* Subtle gold accent line at top */}
       <div
+        aria-hidden="true"
         style={{
           position: 'absolute',
           top: 0,
@@ -62,7 +64,7 @@ export function NewTaskCTA({ onClick }: NewTaskCTAProps) {
           }}
         >
           Новая задача
-          <ArrowUpRight size={14} color="rgba(212,175,55,0.6)" strokeWidth={2} />
+          <ArrowUpRight size={14} color="rgba(212,175,55,0.6)" strokeWidth={2} aria-hidden="true" />
         </div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
           Персональный менеджер
@@ -70,6 +72,7 @@ export function NewTaskCTA({ onClick }: NewTaskCTAProps) {
       </div>
 
       <div
+        aria-hidden="true"
         style={{
           width: 44,
           height: 44,
