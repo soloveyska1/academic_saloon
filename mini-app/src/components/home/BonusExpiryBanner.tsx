@@ -117,9 +117,9 @@ export const BonusExpiryBanner = memo(function BonusExpiryBanner({
                 }}
               >
                 {isCritical ? (
-                  <Flame size={20} color="#f87171" strokeWidth={2} />
+                  <Flame size={20} color="#f87171" strokeWidth={1.5} />
                 ) : (
-                  <AlertTriangle size={20} color="#fb923c" strokeWidth={2} />
+                  <AlertTriangle size={20} color="#fb923c" strokeWidth={1.5} />
                 )}
               </motion.div>
 
@@ -194,7 +194,7 @@ export const BonusExpiryBanner = memo(function BonusExpiryBanner({
               <ArrowRight
                 size={14}
                 color={isCritical ? '#fca5a5' : '#fdba74'}
-                strokeWidth={2}
+                strokeWidth={1.5}
               />
             </motion.div>
           </div>

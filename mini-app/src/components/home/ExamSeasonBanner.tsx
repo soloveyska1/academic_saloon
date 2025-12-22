@@ -195,9 +195,9 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
               }}
             >
               {isPeak ? (
-                <Zap size={22} color={season.iconColor} strokeWidth={2} fill={`${season.iconColor}40`} />
+                <Zap size={22} color={season.iconColor} strokeWidth={1.5} fill={`${season.iconColor}40`} />
               ) : (
-                <IconComponent size={22} color={season.iconColor} strokeWidth={2} />
+                <IconComponent size={22} color={season.iconColor} strokeWidth={1.5} />
               )}
             </motion.div>
 
@@ -211,7 +211,7 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
                   marginBottom: 4,
                 }}
               >
-                <GraduationCap size={14} color={season.iconColor} strokeWidth={2} />
+                <GraduationCap size={14} color={season.iconColor} strokeWidth={1.5} />
                 <span
                   style={{
                     fontSize: 14,
@@ -231,7 +231,7 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
                   gap: 4,
                 }}
               >
-                <Clock size={11} color="var(--text-muted)" strokeWidth={2} />
+                <Clock size={11} color="var(--text-muted)" strokeWidth={1.5} />
                 {season.subtitle}
               </div>
             </div>
@@ -262,7 +262,7 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
             >
               Заказать
             </span>
-            <ArrowRight size={14} color={season.iconColor} strokeWidth={2} />
+            <ArrowRight size={14} color={season.iconColor} strokeWidth={1.5} />
           </motion.div>
         </div>
 

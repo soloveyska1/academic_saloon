@@ -97,7 +97,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
                 justifyContent: 'center',
               }}
             >
-              <Copy size={14} color="var(--gold-400)" strokeWidth={2} />
+              <Copy size={14} color="var(--gold-400)" strokeWidth={1.5} />
             </div>
             <span
               style={{
@@ -134,7 +134,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             >
               Повторить
             </span>
-            <ArrowRight size={12} color="var(--gold-400)" strokeWidth={2} />
+            <ArrowRight size={12} color="var(--gold-400)" strokeWidth={1.5} />
           </motion.div>
         </div>
 
@@ -173,7 +173,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             color: 'var(--text-muted)',
           }}
         >
-          <Clock size={10} strokeWidth={2} />
+          <Clock size={10} strokeWidth={1.5} />
           <span>Создать похожий заказ в 1 клик</span>
         </div>
       </div>
