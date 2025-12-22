@@ -3,14 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.models.levels import RankLevel, LoyaltyLevel
 from database.models.orders import Order
 from .schemas import RankInfo, LoyaltyInfo, OrderResponse
+from .cache import get_cached_rank_levels, get_cached_loyalty_levels
 
 async def get_rank_levels(session: AsyncSession) -> list[RankLevel]:
-    result = await session.execute(select(RankLevel).order_by(RankLevel.min_spent))
-    return result.scalars().all()
+    """Get rank levels with caching (5 minute TTL)"""
+    return await get_cached_rank_levels(session)
 
 async def get_loyalty_levels(session: AsyncSession) -> list[LoyaltyLevel]:
-    result = await session.execute(select(LoyaltyLevel).order_by(LoyaltyLevel.min_orders))
-    return result.scalars().all()
+    """Get loyalty levels with caching (5 minute TTL)"""
+    return await get_cached_loyalty_levels(session)
 
 def get_rank_info(total_spent: float, rank_levels: list[RankLevel]) -> RankInfo:
     """Calculate user rank based on total spent"""

@@ -60,6 +60,7 @@ const AnimatedCounter = memo(function AnimatedCounter({
 const CardInnerShine = memo(function CardInnerShine() {
   return (
     <div
+      aria-hidden="true"
       style={{
         position: 'absolute',
         inset: 0,
@@ -125,6 +126,10 @@ export function BenefitsCard({
           haptic('light')
           onBalanceClick()
         }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Баланс: ${balance.toLocaleString('ru-RU')} рублей, кешбэк ${rank.cashback}%. Нажмите для просмотра транзакций`}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); haptic('light'); onBalanceClick() }}}
         style={{
           ...glassGoldStyle,
           cursor: 'pointer',
@@ -142,7 +147,7 @@ export function BenefitsCard({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <CreditCard size={12} color="var(--gold-400)" strokeWidth={1.5} />
+              <CreditCard size={12} color="var(--gold-400)" strokeWidth={1.5} aria-hidden="true" />
               <span
                 style={{
                   fontSize: 9,
@@ -156,7 +161,7 @@ export function BenefitsCard({
                 СЧЁТ
               </span>
             </div>
-            <ChevronRight size={14} color="var(--gold-400)" strokeWidth={1.5} />
+            <ChevronRight size={14} color="var(--gold-400)" strokeWidth={1.5} aria-hidden="true" />
           </div>
 
           {/* Balance */}
@@ -231,6 +236,10 @@ export function BenefitsCard({
           haptic('light')
           onRankClick()
         }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Уровень: ${displayRankName}${rank.is_max ? ', максимальный уровень' : `, прогресс ${rank.progress}%`}. Нажмите для просмотра информации о рангах`}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); haptic('light'); onRankClick() }}}
         style={{
           ...glassStyle,
           cursor: 'pointer',
@@ -249,12 +258,12 @@ export function BenefitsCard({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Crown size={12} strokeWidth={1.5} />
+              <Crown size={12} strokeWidth={1.5} aria-hidden="true" />
               <span style={{ fontSize: 9, letterSpacing: '0.15em', fontWeight: 700 }}>
                 УРОВЕНЬ
               </span>
             </div>
-            <ChevronRight size={14} color="var(--text-muted)" strokeWidth={1.5} />
+            <ChevronRight size={14} color="var(--text-muted)" strokeWidth={1.5} aria-hidden="true" />
           </div>
 
           {/* Rank Name */}
@@ -303,6 +312,11 @@ export function BenefitsCard({
             </div>
           ) : (
             <div
+              role="progressbar"
+              aria-valuenow={rank.progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Прогресс до следующего уровня: ${rank.progress}%`}
               style={{
                 height: 5,
                 background: 'var(--bg-glass)',
@@ -316,6 +330,7 @@ export function BenefitsCard({
                 animate={{ width: `${Math.max(rank.progress, 5)}%` }}
                 transition={{ duration: 1, delay: 0.5 }}
                 className="progress-shimmer"
+                aria-hidden="true"
                 style={{
                   height: '100%',
                   borderRadius: 100,

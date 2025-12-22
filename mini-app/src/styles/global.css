@@ -2541,3 +2541,28 @@ h4 {
   0% { background-position: 0 -100vh; }
   100% { background-position: 0 100vh; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE DESIGN — TABLET AND DESKTOP IMPROVEMENTS
+   Mobile-first approach: base styles for mobile, enhancements for larger screens
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Tablet and Desktop improvements */
+@media (min-width: 768px) {
+  .home-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  .glass-card {
+    padding: 24px;
+    border-radius: 28px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-container {
+    max-width: 700px;
+  }
+}

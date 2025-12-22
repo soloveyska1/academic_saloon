@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,13 +20,15 @@ from bot.api.dependencies import (
     get_rank_levels, get_loyalty_levels, get_rank_info, get_loyalty_info, order_to_response
 )
 from bot.services.qr_generator import generate_premium_qr_card, generate_simple_qr
+from bot.api.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Auth & User"])
 
 @router.get("/config", response_model=ConfigResponse)
-async def get_config():
+@limiter.limit("60/minute")
+async def get_config(request: Request):
     """Get public configuration"""
     return ConfigResponse(
         bot_username=settings.BOT_USERNAME,
@@ -35,7 +37,9 @@ async def get_config():
     )
 
 @router.get("/user", response_model=UserResponse)
+@limiter.limit("30/minute")
 async def get_user_profile(
+    request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
@@ -72,27 +76,22 @@ async def get_user_profile(
     )
     orders = orders_result.scalars().all()
 
-    # Calculate orders counts from DB
-    order_count_query = select(func.count(Order.id)).where(Order.user_id == user.telegram_id)
-    total_orders_result = await session.execute(order_count_query)
-    total_orders_count = total_orders_result.scalar() or 0
+    # OPTIMIZED: Single query for all order statistics (was 3 separate queries)
+    # Combines: total_orders count, completed_orders count, and total_spent sum
+    stats_query = select(
+        func.count(Order.id).label('total_orders'),
+        func.count(Order.id).filter(Order.status == OrderStatus.COMPLETED.value).label('completed_orders'),
+        func.coalesce(func.sum(Order.paid_amount).filter(Order.status == OrderStatus.COMPLETED.value), 0).label('total_spent')
+    ).where(Order.user_id == user.telegram_id)
 
-    # Calculate completed orders count
-    completed_query = select(func.count(Order.id)).where(
-        Order.user_id == user.telegram_id,
-        Order.status == OrderStatus.COMPLETED.value
-    )
-    completed_result = await session.execute(completed_query)
-    completed_orders = completed_result.scalar() or 0
+    stats_result = await session.execute(stats_query)
+    stats = stats_result.one()
 
-    # Calculate total spent from DB (sum paid_amount for completed orders)
-    spent_query = select(func.sum(Order.paid_amount)).where(
-        Order.user_id == user.telegram_id,
-        Order.status == OrderStatus.COMPLETED.value
-    )
-    spent_result = await session.execute(spent_query)
-    actual_total_spent = float(spent_result.scalar() or 0)
+    total_orders_count = stats.total_orders or 0
+    completed_orders = stats.completed_orders or 0
+    actual_total_spent = float(stats.total_spent or 0)
 
+    # OPTIMIZED: rank_levels and loyalty_levels now use 5-minute cache
     rank_levels = await get_rank_levels(session)
     loyalty_levels = await get_loyalty_levels(session)
     rank_info = get_rank_info(actual_total_spent, rank_levels)
