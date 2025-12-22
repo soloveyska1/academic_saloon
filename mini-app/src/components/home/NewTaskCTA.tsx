@@ -9,18 +9,24 @@ import { Plus, ArrowUpRight } from 'lucide-react'
 
 interface NewTaskCTAProps {
   onClick: () => void
+  haptic?: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-export const NewTaskCTA = memo(function NewTaskCTA({ onClick }: NewTaskCTAProps) {
+export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskCTAProps) {
+  const handleClick = () => {
+    haptic?.('medium')
+    onClick()
+  }
+
   return (
     <motion.button
       type="button"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.16 }}
-      whileHover={{ scale: 1.01, y: -1 }}
-      whileTap={{ scale: 0.97 }}
-      onClick={onClick}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.12 }}
+      whileHover={{ scale: 1.01, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={handleClick}
       aria-label="Создать новую задачу с персональным менеджером"
       style={{
         position: 'relative',
@@ -34,7 +40,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick }: NewTaskCTAProps)
         justifyContent: 'space-between',
         background: 'linear-gradient(135deg, #D4AF37 0%, #b48e26 50%, #D4AF37 100%)',
         boxShadow: '0 8px 24px -8px rgba(212,175,55,0.4), 0 4px 12px rgba(0,0,0,0.2)',
-        marginBottom: 16,
+        marginBottom: 20,
       }}
     >
       {/* Shine accent line at top */}

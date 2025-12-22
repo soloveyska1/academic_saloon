@@ -69,8 +69,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.20 + index * 0.04 }}
-            whileHover={{ scale: 1.05, y: -3 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             style={{
               flexShrink: 0,
               width: 100,
@@ -150,7 +150,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               {/* Subtitle */}
               <div
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   color: action.id === 'urgent' ? 'rgba(248,113,113,0.7)' : 'rgba(212,175,55,0.7)',
                   fontWeight: 600,
                   letterSpacing: '0.02em',

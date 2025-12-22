@@ -160,6 +160,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
             textAlign: 'left',
             position: 'relative',
             overflow: 'hidden',
+            boxShadow: 'var(--card-shadow)',
           }}
         >
           {/* Static glow effect */}
@@ -211,7 +212,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
             >
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 700,
                   color: nextAction.color,
                   letterSpacing: '0.1em',

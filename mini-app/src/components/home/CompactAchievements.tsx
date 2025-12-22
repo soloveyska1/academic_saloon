@@ -7,27 +7,11 @@ const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   background: 'var(--bg-card)',
-  backdropFilter: 'blur(24px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+  backdropFilter: 'blur(12px) saturate(130%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
   border: '1px solid var(--card-border)',
   boxShadow: 'var(--card-shadow)',
 }
-
-// Inner shine effect component for cards - memoized
-const CardInnerShine = memo(function CardInnerShine() {
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%)',
-        pointerEvents: 'none',
-        borderRadius: 'inherit',
-      }}
-    />
-  )
-})
 
 interface Achievement {
   icon: typeof Star
@@ -40,11 +24,13 @@ interface Achievement {
 interface CompactAchievementsProps {
   achievements: Achievement[]
   onViewAll: () => void
+  haptic?: (style: 'light' | 'medium' | 'heavy') => void
 }
 
 export const CompactAchievements = memo(function CompactAchievements({
   achievements,
   onViewAll,
+  haptic,
 }: CompactAchievementsProps) {
   // Memoized calculations
   const unlockedCount = useMemo(
@@ -69,13 +55,14 @@ export const CompactAchievements = memo(function CompactAchievements({
       transition={{ delay: 0.28 }}
       whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
-      onClick={onViewAll}
+      onClick={() => { haptic?.('light'); onViewAll() }}
       role="button"
       tabIndex={0}
       aria-label={`Достижения: разблокировано ${unlockedCount} из ${achievements.length}. Нажмите для просмотра всех достижений`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
+          haptic?.('light')
           onViewAll()
         }
       }}
@@ -86,7 +73,6 @@ export const CompactAchievements = memo(function CompactAchievements({
         padding: '16px 18px',
       }}
     >
-      <CardInnerShine />
       <div
         aria-hidden="true"
         style={{
@@ -166,7 +152,7 @@ export const CompactAchievements = memo(function CompactAchievements({
             <div
               aria-hidden="true"
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
                 color: 'var(--text-muted)',
                 letterSpacing: '0.1em',
@@ -184,7 +170,7 @@ export const CompactAchievements = memo(function CompactAchievements({
             {nextToUnlock && (
               <div
                 aria-hidden="true"
-                style={{ fontSize: 10, color: 'rgba(212,175,55,0.6)', marginTop: 2 }}
+                style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', marginTop: 2 }}
               >
                 Далее: {nextToUnlock.label}
               </div>

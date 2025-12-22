@@ -47,7 +47,7 @@ export const SocialProofStrip = memo(function SocialProofStrip({
 }: SocialProofStripProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -10 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08 }}
       style={{
@@ -124,7 +124,7 @@ export const SocialProofStrip = memo(function SocialProofStrip({
 
           <span
             style={{
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: 500,
               color: 'var(--text-muted)',
               letterSpacing: '0.03em',

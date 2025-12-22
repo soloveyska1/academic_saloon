@@ -56,7 +56,7 @@ export function DailyBonusError({ onRetry }: DailyBonusErrorProps) {
                 Ошибка загрузки
               </div>
               <div style={{
-                fontSize: 10,
+                fontSize: 11,
                 color: 'rgba(255,255,255,0.8)',
               }}>
                 Не удалось загрузить бонус

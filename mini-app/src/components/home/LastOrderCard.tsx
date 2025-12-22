@@ -19,24 +19,10 @@ interface Order {
 interface LastOrderCardProps {
   order: Order
   onClick: () => void
+  haptic?: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-// Inner shine effect
-const CardInnerShine = memo(function CardInnerShine() {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%)',
-        pointerEvents: 'none',
-        borderRadius: 'inherit',
-      }}
-    />
-  )
-})
-
-export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: LastOrderCardProps) {
+export const LastOrderCard = memo(function LastOrderCard({ order, onClick, haptic }: LastOrderCardProps) {
   const status = ORDER_STATUS_MAP[order.status] || {
     label: order.status,
     color: '#888',
@@ -57,7 +43,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: Las
       transition={{ delay: 0.24 }}
       whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
-      onClick={onClick}
+      onClick={() => { haptic?.('light'); onClick() }}
       style={{
         position: 'relative',
         overflow: 'hidden',
@@ -72,7 +58,6 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: Las
         boxShadow: 'var(--card-shadow)',
       }}
     >
-      <CardInnerShine />
       <div
         style={{
           display: 'flex',
@@ -123,7 +108,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: Las
           >
             <span
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
                 color: 'var(--text-muted)',
                 letterSpacing: '0.1em',
@@ -173,7 +158,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: Las
             />
             <span
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 600,
                 color: status.color,
               }}

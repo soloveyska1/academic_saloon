@@ -20,21 +20,6 @@ const glassStyle: React.CSSProperties = {
   boxShadow: 'var(--card-shadow)',
 }
 
-// Inner shine effect component
-const CardInnerShine = memo(function CardInnerShine() {
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%)',
-        pointerEvents: 'none',
-        borderRadius: 'inherit',
-      }} />
-  )
-})
-
 export const OrderStatsCard = memo(function OrderStatsCard({
   activeOrders,
   completedOrders,
@@ -58,7 +43,6 @@ export const OrderStatsCard = memo(function OrderStatsCard({
         boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.05)',
       }}
     >
-      <CardInnerShine />
       <div
         aria-hidden="true"
         style={{ position: 'relative', zIndex: 1 }}>
@@ -131,7 +115,7 @@ export const OrderStatsCard = memo(function OrderStatsCard({
               {activeOrders}
             </div>
             <div style={{
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 700,
               color: activeOrders > 0 ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.35)',
               display: 'flex',
@@ -179,7 +163,7 @@ export const OrderStatsCard = memo(function OrderStatsCard({
               {completedOrders}
             </div>
             <div style={{
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 700,
               color: 'rgba(34,197,94,0.7)',
               display: 'flex',

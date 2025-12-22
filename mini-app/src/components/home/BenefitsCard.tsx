@@ -64,22 +64,6 @@ const AnimatedCounter = memo(function AnimatedCounter({
   return <span>{displayValue}</span>
 })
 
-// Inner shine effect component
-const CardInnerShine = memo(function CardInnerShine() {
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%)',
-        pointerEvents: 'none',
-        borderRadius: 'inherit',
-      }}
-    />
-  )
-})
-
 // Helper to get expiry warning text
 function getExpiryText(days: number): string {
   if (days === 0) return 'Сгорают сегодня!'
@@ -143,7 +127,7 @@ export const BenefitsCard = memo(function BenefitsCard({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
-        whileHover={{ scale: 1.03, y: -3 }}
+        whileHover={{ scale: 1.02, y: -2 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => {
           haptic('light')
@@ -159,7 +143,6 @@ export const BenefitsCard = memo(function BenefitsCard({
           transition: 'transform 0.2s ease-out',
         }}
       >
-        <CardInnerShine />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div
             style={{
@@ -173,8 +156,8 @@ export const BenefitsCard = memo(function BenefitsCard({
               <CreditCard size={12} color="var(--gold-400)" strokeWidth={1.5} aria-hidden="true" />
               <span
                 style={{
-                  fontSize: 9,
-                  letterSpacing: '0.15em',
+                  fontSize: 11,
+                  letterSpacing: '0.1em',
                   fontWeight: 700,
                   background: 'var(--gold-text-shine)',
                   WebkitBackgroundClip: 'text',
@@ -233,7 +216,7 @@ export const BenefitsCard = memo(function BenefitsCard({
             {rank.is_max && <span style={{ fontSize: 10 }}>&#x1F451;</span>}
             <span
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
                 letterSpacing: '0.03em',
                 background: rank.is_max ? 'var(--gold-metallic)' : 'none',
@@ -276,7 +259,7 @@ export const BenefitsCard = memo(function BenefitsCard({
               </motion.span>
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 600,
                   color: bonusExpiry.days_left <= 2 ? '#f87171' : '#fb923c',
                   letterSpacing: '0.02em',
@@ -294,7 +277,7 @@ export const BenefitsCard = memo(function BenefitsCard({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.16 }}
-        whileHover={{ scale: 1.03, y: -3 }}
+        whileHover={{ scale: 1.02, y: -2 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => {
           haptic('light')
@@ -310,7 +293,6 @@ export const BenefitsCard = memo(function BenefitsCard({
           transition: 'transform 0.2s ease-out',
         }}
       >
-        <CardInnerShine />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div
             style={{
@@ -323,7 +305,7 @@ export const BenefitsCard = memo(function BenefitsCard({
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Crown size={12} strokeWidth={1.5} aria-hidden="true" />
-              <span style={{ fontSize: 9, letterSpacing: '0.15em', fontWeight: 700 }}>
+              <span style={{ fontSize: 11, letterSpacing: '0.1em', fontWeight: 700 }}>
                 УРОВЕНЬ
               </span>
             </div>
@@ -363,7 +345,7 @@ export const BenefitsCard = memo(function BenefitsCard({
             >
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   background: 'linear-gradient(135deg, #FCF6BA, #D4AF37, #BF953F)',
@@ -407,7 +389,7 @@ export const BenefitsCard = memo(function BenefitsCard({
           {/* Bonus info */}
           <div
             style={{
-              fontSize: 9,
+              fontSize: 11,
               color: 'var(--text-muted)',
               marginTop: 8,
               fontWeight: 500,

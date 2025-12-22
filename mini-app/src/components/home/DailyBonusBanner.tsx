@@ -127,7 +127,7 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
                     background: 'rgba(74, 222, 128, 0.1)',
                     border: '1px solid rgba(74, 222, 128, 0.2)',
                     borderRadius: 100,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: '#22c55e',
                   }}
