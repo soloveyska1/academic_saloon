@@ -8,8 +8,8 @@ const glassGoldStyle: React.CSSProperties = {
   overflow: 'hidden',
   background:
     'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-  backdropFilter: 'blur(24px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+  backdropFilter: 'blur(12px) saturate(130%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
   border: '1px solid var(--border-gold)',
   boxShadow: 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)',
 }
@@ -95,8 +95,8 @@ export const ReputationCard = memo(function ReputationCard({
                   borderRadius: 100,
                 }}
               >
-                <Users size={10} color="#4ade80" strokeWidth={2} />
-                <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 600 }}>
+                <Users size={10} color="#22c55e" strokeWidth={2} />
+                <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 600 }}>
                   {referralsCount}
                 </span>
               </div>

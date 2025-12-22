@@ -119,7 +119,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
               gap: 4,
               padding: '4px 10px',
               background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-              borderRadius: 20,
+              borderRadius: 16,
               border: '1px solid rgba(212,175,55,0.3)',
             }}
           >

@@ -14,8 +14,8 @@ const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   background: 'var(--bg-card)',
-  backdropFilter: 'blur(24px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+  backdropFilter: 'blur(12px) saturate(130%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
   border: '1px solid var(--card-border)',
   boxShadow: 'var(--card-shadow)',
 }
