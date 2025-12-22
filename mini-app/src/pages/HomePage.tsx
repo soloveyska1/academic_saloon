@@ -849,8 +849,7 @@ export function HomePage({ user }: Props) {
                   <motion.div
                     animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
-                    aria-hidden="true", opacity: [0.6, 1, 0.6] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
+                    aria-hidden="true"
                     style={{
                       width: 6,
                       height: 6,
@@ -972,12 +971,11 @@ export function HomePage({ user }: Props) {
               zIndex: 100,
             }}
           >
-            <Gift size={26} color="#09090b" strokeWidth={2} />
+            <Gift size={26} color="#09090b" strokeWidth={2} aria-hidden="true" />
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
-              aria-hidden="true" }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+              aria-hidden="true"
               title="Ежедневный бонус доступен!"
               style={{
                 position: 'absolute',
