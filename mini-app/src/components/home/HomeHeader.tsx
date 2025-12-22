@@ -1,5 +1,5 @@
 import { useState, memo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HOME HEADER — Premium compact header
@@ -92,6 +92,7 @@ function getStreakText(days: number): string {
 
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
+  const shouldReduceMotion = useReducedMotion()
 
   // Smart greeting based on context
   const greeting = getSmartGreeting({
@@ -116,7 +117,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         {/* User Avatar with Spinning Gold Ring + VIP Glow */}
         <div style={{ position: 'relative' }}>
           {/* VIP Glow Effect for Max Rank */}
-          {user.rank.is_max && (
+          {user.rank.is_max && !shouldReduceMotion && (
             <motion.div
               animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.1, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
@@ -130,7 +131,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
             />
           )}
           <motion.div
-            animate={{ rotate: 360 }}
+            animate={shouldReduceMotion ? {} : { rotate: 360 }}
             transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
             style={{
               position: 'absolute',

@@ -21,7 +21,6 @@ import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
 import {
   HomeHeader,
   SocialProofStrip,
-  BonusExpiryBanner,
   ExamSeasonBanner,
   DailyBonusBanner,
   QuickActionsRow,
@@ -256,19 +255,8 @@ export function HomePage({ user }: Props) {
       <ExamSeasonBanner onCreateOrder={handleNewOrder} haptic={haptic} />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          BONUS EXPIRY BANNER — Urgency when bonus is about to expire
-          ═══════════════════════════════════════════════════════════════════ */}
-      {user.bonus_expiry?.has_expiry && user.bonus_expiry.days_left !== undefined && (
-        <BonusExpiryBanner
-          daysLeft={user.bonus_expiry.days_left}
-          balance={user.bonus_expiry.balance}
-          onCreateOrder={handleNewOrder}
-          haptic={haptic}
-        />
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════════
           PRIMARY CTA — Single consolidated "New Task" button
+          Note: Bonus expiry warning is now shown inline in BenefitsCard
           Always visible, always above fold
           ═══════════════════════════════════════════════════════════════════ */}
       <NewTaskCTA onClick={handleNewOrder} />

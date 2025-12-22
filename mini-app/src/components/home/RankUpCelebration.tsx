@@ -1,5 +1,5 @@
 import { memo, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Crown, Sparkles, X } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -44,6 +44,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
   previousRank,
   haptic,
 }: RankUpCelebrationProps) {
+  const shouldReduceMotion = useReducedMotion()
   const displayName = RANK_DISPLAY_NAMES[newRank.name] || newRank.displayName || newRank.name
   const prevDisplayName = previousRank ? (RANK_DISPLAY_NAMES[previousRank] || previousRank) : null
   const perks = RANK_PERKS[newRank.level] || []
@@ -79,45 +80,47 @@ export const RankUpCelebration = memo(function RankUpCelebration({
             padding: 20,
           }}
         >
-          {/* Confetti particles */}
-          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-            {Array.from({ length: 30 }).map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{
-                  x: '50vw',
-                  y: '30vh',
-                  scale: 0,
-                  rotate: 0,
-                }}
-                animate={{
-                  x: `${Math.random() * 100}vw`,
-                  y: `${Math.random() * 100}vh`,
-                  scale: [0, 1, 0.5],
-                  rotate: Math.random() * 720 - 360,
-                }}
-                transition={{
-                  duration: 2 + Math.random() * 2,
-                  delay: Math.random() * 0.5,
-                  ease: 'easeOut',
-                }}
-                style={{
-                  position: 'absolute',
-                  width: 8 + Math.random() * 8,
-                  height: 8 + Math.random() * 8,
-                  borderRadius: Math.random() > 0.5 ? '50%' : 2,
-                  background: [
-                    '#D4AF37',
-                    '#FCF6BA',
-                    '#BF953F',
-                    '#f59e0b',
-                    '#fbbf24',
-                  ][Math.floor(Math.random() * 5)],
-                  boxShadow: '0 0 10px rgba(212,175,55,0.5)',
-                }}
-              />
-            ))}
-          </div>
+          {/* Confetti particles - disabled for reduced motion preference */}
+          {!shouldReduceMotion && (
+            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+              {Array.from({ length: 30 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{
+                    x: '50vw',
+                    y: '30vh',
+                    scale: 0,
+                    rotate: 0,
+                  }}
+                  animate={{
+                    x: `${Math.random() * 100}vw`,
+                    y: `${Math.random() * 100}vh`,
+                    scale: [0, 1, 0.5],
+                    rotate: Math.random() * 720 - 360,
+                  }}
+                  transition={{
+                    duration: 2 + Math.random() * 2,
+                    delay: Math.random() * 0.5,
+                    ease: 'easeOut',
+                  }}
+                  style={{
+                    position: 'absolute',
+                    width: 8 + Math.random() * 8,
+                    height: 8 + Math.random() * 8,
+                    borderRadius: Math.random() > 0.5 ? '50%' : 2,
+                    background: [
+                      '#D4AF37',
+                      '#FCF6BA',
+                      '#BF953F',
+                      '#f59e0b',
+                      '#fbbf24',
+                    ][Math.floor(Math.random() * 5)],
+                    boxShadow: '0 0 10px rgba(212,175,55,0.5)',
+                  }}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Modal content */}
           <motion.div
