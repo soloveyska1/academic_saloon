@@ -1,19 +1,20 @@
 import { memo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SKELETON LOADERS — Premium loading states for homepage cards
 //  Gold shimmer animation maintains luxury feel during load
+//  Fixed: shimmer direction, duration, reduced motion support
 // ═══════════════════════════════════════════════════════════════════════════
 
 const shimmerAnimation = {
-  initial: { backgroundPosition: '-200% 0' },
-  animate: { backgroundPosition: '200% 0' },
-  transition: { duration: 2, repeat: Infinity, ease: 'linear' },
+  initial: { backgroundPosition: '200% 0' },
+  animate: { backgroundPosition: '-200% 0' },
+  transition: { duration: 1.2, repeat: Infinity, ease: 'linear' },
 }
 
 const skeletonBaseStyle: React.CSSProperties = {
-  background: 'linear-gradient(90deg, var(--bg-card) 0%, rgba(212,175,55,0.08) 50%, var(--bg-card) 100%)',
+  background: 'linear-gradient(90deg, var(--bg-card) 0%, rgba(212,175,55,0.1) 50%, var(--bg-card) 100%)',
   backgroundSize: '200% 100%',
   borderRadius: 8,
 }
@@ -55,8 +56,8 @@ export const BenefitsCardSkeleton = memo(function BenefitsCardSkeleton() {
       {/* Balance Card */}
       <div
         style={{
-          borderRadius: 20,
-          padding: 18,
+          borderRadius: 16,
+          padding: 16,
           background: 'var(--bg-card)',
           border: '1px solid rgba(212,175,55,0.1)',
         }}
@@ -72,8 +73,8 @@ export const BenefitsCardSkeleton = memo(function BenefitsCardSkeleton() {
       {/* Level Card */}
       <div
         style={{
-          borderRadius: 20,
-          padding: 18,
+          borderRadius: 16,
+          padding: 16,
           background: 'var(--bg-card)',
           border: '1px solid var(--card-border)',
         }}
@@ -95,8 +96,8 @@ export const OrderStatsCardSkeleton = memo(function OrderStatsCardSkeleton() {
   return (
     <div
       style={{
-        borderRadius: 20,
-        padding: 20,
+        borderRadius: 16,
+        padding: 16,
         marginBottom: 16,
         background: 'var(--bg-card)',
         border: '1px solid var(--card-border)',
@@ -125,15 +126,15 @@ export const LastOrderCardSkeleton = memo(function LastOrderCardSkeleton() {
   return (
     <div
       style={{
-        borderRadius: 20,
-        padding: 18,
+        borderRadius: 16,
+        padding: 16,
         marginBottom: 16,
         background: 'var(--bg-card)',
         border: '1px solid var(--card-border)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <SkeletonBar width={48} height={48} style={{ borderRadius: 14, flexShrink: 0 }} />
+        <SkeletonBar width={48} height={48} style={{ borderRadius: 12, flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
           <SkeletonBar width="60%" height={14} style={{ marginBottom: 8 }} />
           <SkeletonBar width="40%" height={11} style={{ marginBottom: 6 }} />

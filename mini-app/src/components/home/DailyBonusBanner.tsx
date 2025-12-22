@@ -109,7 +109,7 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
                   gap: 4,
                 }}
               >
-                <Coins size={12} color="var(--gold-400)" strokeWidth={2} />
+                <Coins size={12} color="var(--gold-400)" strokeWidth={1.5} />
                 <span
                   style={{
                     fontSize: 12,
@@ -162,7 +162,7 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
           >
             Забрать
           </span>
-          <ChevronRight size={14} color="var(--gold-400)" strokeWidth={2} />
+          <ChevronRight size={14} color="var(--gold-400)" strokeWidth={1.5} />
         </motion.div>
       </div>
     </motion.div>

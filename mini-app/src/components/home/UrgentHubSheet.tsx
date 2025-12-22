@@ -98,7 +98,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                     justifyContent: 'center',
                   }}
                 >
-                  <Zap size={22} color="#f87171" strokeWidth={2} />
+                  <Zap size={22} color="#f87171" strokeWidth={1.5} />
                 </div>
                 <div>
                   <div
@@ -185,7 +185,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                     <option.icon
                       size={22}
                       color={option.variant === 'primary' ? '#fca5a5' : 'rgba(255,255,255,0.7)'}
-                      strokeWidth={2}
+                      strokeWidth={1.5}
                     />
                   </div>
 
@@ -242,7 +242,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                   <ChevronRight
                     size={18}
                     color={option.variant === 'primary' ? '#f87171' : 'rgba(255,255,255,0.4)'}
-                    strokeWidth={2}
+                    strokeWidth={1.5}
                   />
                 </motion.button>
               ))}

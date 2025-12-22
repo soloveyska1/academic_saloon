@@ -66,7 +66,7 @@ export const CompactAchievements = memo(function CompactAchievements({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
+      transition={{ delay: 0.28 }}
       whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
       onClick={onViewAll}
@@ -101,20 +101,9 @@ export const CompactAchievements = memo(function CompactAchievements({
           {/* Achievement icons stack */}
           <div aria-hidden="true" style={{ position: 'relative', width: 52, height: 44 }}>
             {/* Last unlocked (main) */}
-            <motion.div
-              animate={
-                lastUnlocked?.glow
-                  ? {
-                      boxShadow: [
-                        '0 0 12px rgba(212,175,55,0.3)',
-                        '0 0 20px rgba(212,175,55,0.5)',
-                        '0 0 12px rgba(212,175,55,0.3)',
-                      ],
-                    }
-                  : {}
-              }
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            <div
               style={{
+                boxShadow: lastUnlocked?.glow ? '0 0 16px rgba(212,175,55,0.4)' : 'none',
                 position: 'absolute',
                 left: 0,
                 top: 0,
@@ -137,19 +126,17 @@ export const CompactAchievements = memo(function CompactAchievements({
                 <lastUnlocked.icon
                   size={22}
                   color="#D4AF37"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   fill="rgba(212,175,55,0.2)"
                   aria-hidden="true"
                 />
               ) : (
                 <Star size={22} color="rgba(100,100,100,0.5)" strokeWidth={1.5} />
               )}
-            </motion.div>
+            </div>
             {/* Next to unlock (preview) */}
             {nextToUnlock && (
-              <motion.div
-                animate={{ opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              <div
                 style={{
                   position: 'absolute',
                   right: 0,
@@ -163,6 +150,7 @@ export const CompactAchievements = memo(function CompactAchievements({
                   alignItems: 'center',
                   justifyContent: 'center',
                   zIndex: 3,
+                  opacity: 0.7,
                 }}
               >
                 <nextToUnlock.icon
@@ -171,7 +159,7 @@ export const CompactAchievements = memo(function CompactAchievements({
                   strokeWidth={1.5}
                   aria-hidden="true"
                 />
-              </motion.div>
+              </div>
             )}
           </div>
           <div>
@@ -207,17 +195,8 @@ export const CompactAchievements = memo(function CompactAchievements({
           {/* Progress dots */}
           <div aria-hidden="true" style={{ display: 'flex', gap: 4 }}>
             {achievements.map((a, i) => (
-              <motion.div
+              <div
                 key={i}
-                animate={
-                  !a.unlocked && i === unlockedCount
-                    ? {
-                        scale: [1, 1.2, 1],
-                        opacity: [0.4, 0.8, 0.4],
-                      }
-                    : {}
-                }
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
                   width: 8,
                   height: 8,

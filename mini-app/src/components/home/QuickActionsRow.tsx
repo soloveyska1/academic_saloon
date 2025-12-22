@@ -53,7 +53,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
         className="quick-actions-scroll"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.15 }}
+        transition={{ delay: 0.16 }}
         style={{
           display: 'flex',
           gap: 12,
@@ -68,7 +68,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             aria-label={`${action.title}: ${action.subtitle}`}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + index * 0.06 }}
+            transition={{ delay: 0.20 + index * 0.04 }}
             whileHover={{ scale: 1.05, y: -3 }}
             whileTap={{ scale: 0.95 }}
             style={{

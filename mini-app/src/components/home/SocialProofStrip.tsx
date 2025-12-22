@@ -49,7 +49,7 @@ export const SocialProofStrip = memo(function SocialProofStrip({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.05 }}
+      transition={{ delay: 0.08 }}
       style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -67,7 +67,7 @@ export const SocialProofStrip = memo(function SocialProofStrip({
           key={item.label}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 + index * 0.05 }}
+          transition={{ delay: 0.12 + index * 0.04 }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -100,7 +100,7 @@ export const SocialProofStrip = memo(function SocialProofStrip({
           >
             <item.icon
               size={12}
-              strokeWidth={2}
+              strokeWidth={1.5}
               style={{
                 color: item.highlight ? 'var(--gold-400)' : 'var(--text-muted)',
               }}

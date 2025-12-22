@@ -95,7 +95,7 @@ export const ReputationCard = memo(function ReputationCard({
                   borderRadius: 100,
                 }}
               >
-                <Users size={10} color="#22c55e" strokeWidth={2} />
+                <Users size={10} color="#22c55e" strokeWidth={1.5} />
                 <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 600 }}>
                   {referralsCount}
                 </span>
@@ -113,7 +113,7 @@ export const ReputationCard = memo(function ReputationCard({
                   borderRadius: 100,
                 }}
               >
-                <Coins size={10} color="var(--gold-400)" strokeWidth={2} />
+                <Coins size={10} color="var(--gold-400)" strokeWidth={1.5} />
                 <span
                   style={{
                     fontSize: 10,
@@ -195,7 +195,7 @@ export const ReputationCard = memo(function ReputationCard({
               {referralCode}
             </code>
             {copied ? (
-              <Check size={16} color="var(--success-text)" strokeWidth={2} />
+              <Check size={16} color="var(--success-text)" strokeWidth={1.5} />
             ) : (
               <Copy size={16} color="var(--text-muted)" strokeWidth={1.5} />
             )}
@@ -222,7 +222,7 @@ export const ReputationCard = memo(function ReputationCard({
               boxShadow: '0 4px 12px rgba(0, 136, 204, 0.3)',
             }}
           >
-            <Send size={16} color="white" strokeWidth={2} />
+            <Send size={16} color="white" strokeWidth={1.5} />
             <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>
               Telegram
             </span>

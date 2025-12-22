@@ -162,13 +162,8 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
             overflow: 'hidden',
           }}
         >
-          {/* Pulsing glow effect */}
-          <motion.div
-            animate={{
-              opacity: [0.3, 0.6, 0.3],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          {/* Static glow effect */}
+          <div
             style={{
               position: 'absolute',
               left: 20,
@@ -177,28 +172,22 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
               width: 60,
               height: 60,
               borderRadius: '50%',
-              background: `radial-gradient(circle, ${nextAction.color}30 0%, transparent 70%)`,
+              background: `radial-gradient(circle, ${nextAction.color}25 0%, transparent 70%)`,
               filter: 'blur(10px)',
               pointerEvents: 'none',
+              opacity: 0.5,
             }}
           />
 
           {/* Icon */}
-          <motion.div
-            animate={{
-              boxShadow: [
-                `0 0 12px ${nextAction.color}40`,
-                `0 0 20px ${nextAction.color}60`,
-                `0 0 12px ${nextAction.color}40`,
-              ],
-            }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          <div
             style={{
               width: 48,
               height: 48,
               borderRadius: 12,
               background: `linear-gradient(145deg, ${nextAction.color}25, ${nextAction.color}15)`,
               border: `1px solid ${nextAction.borderColor}`,
+              boxShadow: `0 0 16px ${nextAction.color}50`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -207,8 +196,8 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
               flexShrink: 0,
             }}
           >
-            <Icon size={22} color={nextAction.color} strokeWidth={2} />
-          </motion.div>
+            <Icon size={22} color={nextAction.color} strokeWidth={1.5} />
+          </div>
 
           {/* Content */}
           <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
@@ -270,7 +259,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
           <ChevronRight
             size={20}
             color={nextAction.color}
-            strokeWidth={2}
+            strokeWidth={1.5}
             style={{ position: 'relative', zIndex: 1, flexShrink: 0 }}
           />
         </motion.button>

@@ -142,7 +142,7 @@ export const BenefitsCard = memo(function BenefitsCard({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={{ delay: 0.08 }}
         whileHover={{ scale: 1.03, y: -3 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => {
@@ -293,7 +293,7 @@ export const BenefitsCard = memo(function BenefitsCard({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
+        transition={{ delay: 0.16 }}
         whileHover={{ scale: 1.03, y: -3 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => {

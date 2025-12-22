@@ -54,7 +54,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: Las
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.26 }}
+      transition={{ delay: 0.24 }}
       whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
