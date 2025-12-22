@@ -1,14 +1,15 @@
 import { memo, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { GraduationCap, Clock, Zap, ArrowRight, Snowflake, Sun } from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { GraduationCap, Clock, Zap, Snowflake, Sun } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  EXAM SEASON BANNER — Contextual banner during exam periods
+//  EXAM SEASON BANNER — Contextual info banner during exam periods
 //  Shows urgency messaging during winter (Jan) and summer (May-Jun) sessions
+//  INFO ONLY — No competing CTAs, just awareness
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface ExamSeasonBannerProps {
-  onCreateOrder: () => void
+  onCreateOrder?: () => void  // Deprecated, kept for backwards compatibility
   haptic?: (style: 'light' | 'medium' | 'heavy') => void
 }
 
@@ -117,10 +118,11 @@ function getExamSeason(): SeasonConfig | null {
 }
 
 export const ExamSeasonBanner = memo(function ExamSeasonBanner({
-  onCreateOrder,
-  haptic,
+  // onCreateOrder is deprecated - kept for backwards compatibility
+  haptic: _haptic,
 }: ExamSeasonBannerProps) {
   const season = useMemo(() => getExamSeason(), [])
+  const shouldReduceMotion = useReducedMotion()
 
   // Don't show if not exam season
   if (!season) return null
@@ -128,172 +130,95 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
   const isPeak = season.urgencyLevel === 'peak'
   const IconComponent = season.icon
 
-  const handleClick = () => {
-    haptic?.('medium')
-    onCreateOrder()
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1 }}
-      onClick={handleClick}
       style={{
         position: 'relative',
         marginBottom: 16,
-        padding: '16px 18px',
-        borderRadius: 16,
-        cursor: 'pointer',
+        padding: '14px 16px',
+        borderRadius: 14,
         background: season.gradient,
         border: `1px solid ${season.borderColor}`,
         boxShadow: isPeak
-          ? '0 4px 20px rgba(239, 68, 68, 0.15)'
-          : '0 4px 16px rgba(0, 0, 0, 0.1)',
+          ? '0 4px 16px rgba(239, 68, 68, 0.12)'
+          : '0 2px 12px rgba(0, 0, 0, 0.08)',
         overflow: 'hidden',
       }}
     >
-      {/* Animated background for peak urgency */}
-      {isPeak && (
+      {/* Animated background for peak urgency - respects reduced motion */}
+      {isPeak && !shouldReduceMotion && (
         <motion.div
-          animate={{
-            opacity: [0.05, 0.15, 0.05],
-          }}
-          transition={{ duration: 2, repeat: Infinity }}
+          animate={{ opacity: [0.05, 0.12, 0.05] }}
+          transition={{ duration: 3, repeat: Infinity }}
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'radial-gradient(circle at 30% 50%, rgba(239, 68, 68, 0.2), transparent 60%)',
+            background: 'radial-gradient(circle at 30% 50%, rgba(239, 68, 68, 0.15), transparent 60%)',
             pointerEvents: 'none',
           }}
         />
       )}
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      {/* Content row - info only, no CTA */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Icon */}
         <div
           style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: `${season.iconColor}15`,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
+            border: `1px solid ${season.iconColor}30`,
+            flexShrink: 0,
           }}
         >
-          {/* Left side - Content */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Icon */}
-            <motion.div
-              animate={isPeak ? { scale: [1, 1.1, 1] } : {}}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: `${season.iconColor}20`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: `1px solid ${season.iconColor}40`,
-              }}
-            >
-              {isPeak ? (
-                <Zap size={22} color={season.iconColor} strokeWidth={1.5} fill={`${season.iconColor}40`} />
-              ) : (
-                <IconComponent size={22} color={season.iconColor} strokeWidth={1.5} />
-              )}
-            </motion.div>
+          {isPeak ? (
+            <Zap size={20} color={season.iconColor} strokeWidth={1.5} fill={`${season.iconColor}30`} />
+          ) : (
+            <IconComponent size={20} color={season.iconColor} strokeWidth={1.5} />
+          )}
+        </div>
 
-            {/* Text */}
-            <div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  marginBottom: 4,
-                }}
-              >
-                <GraduationCap size={14} color={season.iconColor} strokeWidth={1.5} />
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: season.iconColor,
-                  }}
-                >
-                  {season.title}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                <Clock size={11} color="var(--text-muted)" strokeWidth={1.5} />
-                {season.subtitle}
-              </div>
-            </div>
-          </div>
-
-          {/* Right side - CTA */}
-          <motion.div
-            whileHover={{ x: 3 }}
-            whileTap={{ scale: 0.97 }}
+        {/* Text */}
+        <div style={{ flex: 1 }}>
+          <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '10px 14px',
-              background: isPeak
-                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%)'
-                : `${season.iconColor}20`,
-              borderRadius: 10,
-              border: `1px solid ${isPeak ? 'rgba(239, 68, 68, 0.3)' : `${season.iconColor}40`}`,
+              gap: 5,
+              marginBottom: 2,
             }}
           >
+            <GraduationCap size={13} color={season.iconColor} strokeWidth={1.5} />
             <span
               style={{
-                fontSize: 12,
-                fontWeight: 600,
+                fontSize: 13,
+                fontWeight: 700,
                 color: season.iconColor,
               }}
             >
-              Заказать
+              {season.title}
             </span>
-            <ArrowRight size={14} color={season.iconColor} strokeWidth={1.5} />
-          </motion.div>
-        </div>
-
-        {/* Stats row for peak urgency */}
-        {isPeak && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            transition={{ delay: 0.3 }}
+          </div>
+          <div
             style={{
-              marginTop: 14,
-              paddingTop: 14,
-              borderTop: '1px solid rgba(239, 68, 68, 0.15)',
+              fontSize: 11,
+              color: 'var(--text-secondary)',
               display: 'flex',
-              gap: 16,
+              alignItems: 'center',
+              gap: 4,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16 }}>⚡</span>
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                Срочные работы от <strong style={{ color: '#fca5a5' }}>24ч</strong>
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16 }}>🎯</span>
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                Гарантия <strong style={{ color: '#fca5a5' }}>сдачи</strong>
-              </span>
-            </div>
-          </motion.div>
-        )}
+            <Clock size={10} color="var(--text-muted)" strokeWidth={1.5} />
+            {season.subtitle}
+          </div>
+        </div>
       </div>
     </motion.div>
   )
