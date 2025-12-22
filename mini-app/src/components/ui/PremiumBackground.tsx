@@ -12,7 +12,7 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 
 interface PremiumBackgroundProps {
-  variant?: 'default' | 'gold' | 'dark' | 'aurora'
+  variant?: 'default' | 'gold' | 'dark' | 'aurora' | 'time'
   intensity?: 'subtle' | 'medium' | 'intense'
   interactive?: boolean // Respond to mouse/touch
   children?: React.ReactNode
@@ -52,6 +52,48 @@ const GRADIENT_CONFIGS = {
     ],
     accent: 'rgba(167, 139, 250, 0.2)',
   },
+  // Time-based variants
+  morning: {
+    colors: [
+      'rgba(251, 191, 36, 0.15)',  // Warm amber
+      'rgba(253, 224, 71, 0.12)',  // Soft yellow
+      'rgba(212, 175, 55, 0.1)',   // Gold
+    ],
+    accent: 'rgba(251, 191, 36, 0.25)',
+  },
+  afternoon: {
+    colors: [
+      'rgba(212, 175, 55, 0.2)',   // Rich gold
+      'rgba(251, 245, 183, 0.15)', // Light gold
+      'rgba(179, 135, 40, 0.18)',  // Deep gold
+    ],
+    accent: 'rgba(252, 246, 186, 0.4)',
+  },
+  evening: {
+    colors: [
+      'rgba(249, 115, 22, 0.12)',  // Warm orange
+      'rgba(212, 175, 55, 0.15)', // Gold
+      'rgba(180, 83, 9, 0.1)',    // Deep amber
+    ],
+    accent: 'rgba(249, 115, 22, 0.2)',
+  },
+  night: {
+    colors: [
+      'rgba(99, 102, 241, 0.1)',  // Indigo
+      'rgba(139, 92, 246, 0.08)', // Purple
+      'rgba(212, 175, 55, 0.12)', // Gold accent
+    ],
+    accent: 'rgba(139, 92, 246, 0.15)',
+  },
+}
+
+// Get time-based config
+function getTimeConfig() {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return GRADIENT_CONFIGS.morning
+  if (hour >= 12 && hour < 17) return GRADIENT_CONFIGS.afternoon
+  if (hour >= 17 && hour < 21) return GRADIENT_CONFIGS.evening
+  return GRADIENT_CONFIGS.night
 }
 
 const INTENSITY_SCALE = {
@@ -197,7 +239,15 @@ export const PremiumBackground = memo(function PremiumBackground({
   children,
 }: PremiumBackgroundProps) {
   const capability = useCapability()
-  const config = GRADIENT_CONFIGS[variant]
+
+  // Get config - use time-based if variant is 'time'
+  const config = useMemo(() => {
+    if (variant === 'time') {
+      return getTimeConfig()
+    }
+    return GRADIENT_CONFIGS[variant] || GRADIENT_CONFIGS.default
+  }, [variant])
+
   const intensityValue = INTENSITY_SCALE[intensity]
 
   // Determine what to render based on tier

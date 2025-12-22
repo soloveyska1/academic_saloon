@@ -7,6 +7,13 @@ import { CreditCard, Crown, ChevronRight } from 'lucide-react'
 //  Premium bento grid with glass morphism
 // ═══════════════════════════════════════════════════════════════════════════
 
+interface BonusExpiryInfo {
+  has_expiry: boolean
+  days_left?: number
+  balance: number
+  expiry_date?: string
+}
+
 interface BenefitsCardProps {
   balance: number
   rank: {
@@ -17,6 +24,7 @@ interface BenefitsCardProps {
     is_max: boolean
     bonus?: string
   }
+  bonusExpiry?: BonusExpiryInfo
   onBalanceClick: () => void
   onRankClick: () => void
   haptic: (style: 'light' | 'medium' | 'heavy') => void
@@ -72,14 +80,29 @@ const CardInnerShine = memo(function CardInnerShine() {
   )
 })
 
+// Helper to get expiry warning text
+function getExpiryText(days: number): string {
+  if (days === 0) return 'Сгорают сегодня!'
+  if (days === 1) return 'Сгорают завтра!'
+  if (days < 5) return `Сгорают через ${days} дня`
+  return `Сгорают через ${days} дней`
+}
+
 export const BenefitsCard = memo(function BenefitsCard({
   balance,
   rank,
+  bonusExpiry,
   onBalanceClick,
   onRankClick,
   haptic,
 }: BenefitsCardProps) {
   const displayRankName = RANK_DISPLAY_NAMES[rank.name] || rank.name
+
+  // Show warning if bonus expires within 7 days and balance > 0
+  const showExpiryWarning = bonusExpiry?.has_expiry &&
+    bonusExpiry.days_left !== undefined &&
+    bonusExpiry.days_left <= 7 &&
+    bonusExpiry.balance > 0
 
   const glassGoldStyle: React.CSSProperties = {
     position: 'relative',
@@ -222,6 +245,47 @@ export const BenefitsCard = memo(function BenefitsCard({
               Кешбэк {rank.cashback}%
             </span>
           </div>
+
+          {/* Bonus Expiry Warning */}
+          {showExpiryWarning && bonusExpiry?.days_left !== undefined && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              transition={{ duration: 0.3 }}
+              style={{
+                marginTop: 8,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 10px',
+                background: bonusExpiry.days_left <= 2
+                  ? 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.1) 100%)'
+                  : 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.1) 100%)',
+                border: bonusExpiry.days_left <= 2
+                  ? '1px solid rgba(239,68,68,0.4)'
+                  : '1px solid rgba(249,115,22,0.4)',
+                borderRadius: 10,
+              }}
+            >
+              <motion.span
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                style={{ fontSize: 12 }}
+              >
+                {bonusExpiry.days_left <= 2 ? '🔥' : '⏰'}
+              </motion.span>
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  color: bonusExpiry.days_left <= 2 ? '#f87171' : '#fb923c',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                {getExpiryText(bonusExpiry.days_left)}
+              </span>
+            </motion.div>
+          )}
         </div>
       </motion.div>
 
@@ -362,5 +426,8 @@ export const BenefitsCard = memo(function BenefitsCard({
     prevProps.rank.cashback === nextProps.rank.cashback &&
     prevProps.rank.progress === nextProps.rank.progress &&
     prevProps.rank.is_max === nextProps.rank.is_max &&
-    prevProps.rank.bonus === nextProps.rank.bonus
+    prevProps.rank.bonus === nextProps.rank.bonus &&
+    prevProps.bonusExpiry?.has_expiry === nextProps.bonusExpiry?.has_expiry &&
+    prevProps.bonusExpiry?.days_left === nextProps.bonusExpiry?.days_left &&
+    prevProps.bonusExpiry?.balance === nextProps.bonusExpiry?.balance
 })

@@ -208,13 +208,13 @@ export function HomePage({ user }: Props) {
         background: 'var(--bg-main)',
         position: 'relative',
       }}>
-      {/* Premium Background */}
+      {/* Premium Background - Time-based gradient */}
       <div aria-hidden="true">
         <PremiumBackground
-        variant="gold"
-        intensity="subtle"
-        interactive={capability.tier >= 3}
-      />
+          variant="time"
+          intensity="subtle"
+          interactive={capability.tier >= 3}
+        />
       </div>
       <div aria-hidden="true">
         <FloatingGoldParticles count={capability.getParticleCount(8)} />
@@ -228,6 +228,8 @@ export function HomePage({ user }: Props) {
           fullname: user.fullname,
           rank: { is_max: user.rank.is_max },
           daily_bonus_streak: user.daily_bonus_streak,
+          orders_count: user.orders_count,
+          has_active_orders: activeOrders > 0,
         }}
         userPhoto={userPhoto}
         onSecretTap={handleSecretTap}
@@ -266,6 +268,7 @@ export function HomePage({ user }: Props) {
       <BenefitsCard
         balance={user.balance}
         rank={user.rank}
+        bonusExpiry={user.bonus_expiry}
         onBalanceClick={() => actions.openModal('transactions')}
         onRankClick={() => actions.openModal('ranks')}
         haptic={haptic}

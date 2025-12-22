@@ -15,17 +15,73 @@ interface HomeHeaderProps {
     fullname?: string
     rank: { is_max: boolean }
     daily_bonus_streak: number
+    orders_count?: number
+    has_active_orders?: boolean
   }
   userPhoto?: string
   onSecretTap: () => void
 }
 
-function getTimeGreeting(): string {
+interface GreetingContext {
+  isVIP: boolean
+  streak: number
+  ordersCount: number
+  hasActiveOrders: boolean
+}
+
+function getSmartGreeting(ctx: GreetingContext): string {
   const hour = new Date().getHours()
-  if (hour >= 5 && hour < 12) return 'Доброе утро'
-  if (hour >= 12 && hour < 17) return 'Добрый день'
-  if (hour >= 17 && hour < 22) return 'Добрый вечер'
-  return 'Доброй ночи'
+  const day = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
+
+  // Time-based base greeting
+  let timeGreeting: string
+  if (hour >= 5 && hour < 12) timeGreeting = 'Доброе утро'
+  else if (hour >= 12 && hour < 17) timeGreeting = 'Добрый день'
+  else if (hour >= 17 && hour < 22) timeGreeting = 'Добрый вечер'
+  else timeGreeting = 'Доброй ночи'
+
+  // VIP users get special greetings
+  if (ctx.isVIP) {
+    if (hour >= 22 || hour < 5) return 'Поздняя ночь, VIP на связи'
+    if (day === 1) return 'Продуктивной недели, легенда'
+    if (day === 5) return 'Отличных выходных, легенда'
+    return `${timeGreeting}, легенда`
+  }
+
+  // 7-day streak special greeting
+  if (ctx.streak >= 7) {
+    return 'Ты на огне! Неделя подряд'
+  }
+
+  // First-time user welcome
+  if (ctx.ordersCount === 0) {
+    return 'Добро пожаловать в Салон'
+  }
+
+  // Has active orders - encouraging greeting
+  if (ctx.hasActiveOrders) {
+    if (hour >= 5 && hour < 12) return 'Утро продуктивности!'
+    if (hour >= 22 || hour < 5) return 'Работаем даже ночью'
+    return 'Работа кипит'
+  }
+
+  // Weekend special
+  if (day === 0 || day === 6) {
+    return 'Отличных выходных'
+  }
+
+  // Monday motivation
+  if (day === 1 && hour < 12) {
+    return 'Продуктивной недели'
+  }
+
+  // Friday celebration
+  if (day === 5 && hour >= 17) {
+    return 'Пятница, наконец!'
+  }
+
+  // Default time-based greeting
+  return timeGreeting
 }
 
 function getStreakText(days: number): string {
@@ -36,6 +92,14 @@ function getStreakText(days: number): string {
 
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
+
+  // Smart greeting based on context
+  const greeting = getSmartGreeting({
+    isVIP: user.rank.is_max,
+    streak: user.daily_bonus_streak,
+    ordersCount: user.orders_count ?? 0,
+    hasActiveOrders: user.has_active_orders ?? false,
+  })
 
   return (
     <motion.div
@@ -124,7 +188,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               fontWeight: 500,
             }}
           >
-            {getTimeGreeting()},
+            {greeting},
           </div>
           <div
             style={{
@@ -173,23 +237,11 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         </div>
       </div>
 
-      {/* Compact Club Badge */}
+      {/* Compact Club Badge with shimmer */}
       <motion.div
         onClick={onSecretTap}
         whileTap={{ scale: 0.97 }}
-        animate={{
-          borderColor: [
-            'rgba(212,175,55,0.4)',
-            'rgba(212,175,55,0.7)',
-            'rgba(212,175,55,0.4)',
-          ],
-          boxShadow: [
-            '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)',
-            '0 0 20px rgba(212,175,55,0.3), inset 0 0 30px rgba(212,175,55,0.06)',
-            '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)',
-          ],
-        }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+        className="border-shimmer"
         style={{
           position: 'relative',
           padding: '8px 14px',
@@ -198,17 +250,15 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           border: '1px solid rgba(212,175,55,0.5)',
           cursor: 'default',
           userSelect: 'none',
+          boxShadow: '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)',
         }}
       >
-        <span
+        <span className="gold-shimmer"
           style={{
             fontFamily: "var(--font-serif)",
             fontWeight: 700,
             fontSize: 10,
             letterSpacing: '0.12em',
-            background: 'linear-gradient(135deg, #f5d485 0%, #D4AF37 50%, #b48e26 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
           }}
         >
           КЛУБ
@@ -220,5 +270,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
   return prevProps.userPhoto === nextProps.userPhoto &&
     prevProps.user.fullname === nextProps.user.fullname &&
     prevProps.user.rank.is_max === nextProps.user.rank.is_max &&
-    prevProps.user.daily_bonus_streak === nextProps.user.daily_bonus_streak
+    prevProps.user.daily_bonus_streak === nextProps.user.daily_bonus_streak &&
+    prevProps.user.orders_count === nextProps.user.orders_count &&
+    prevProps.user.has_active_orders === nextProps.user.has_active_orders
 })
