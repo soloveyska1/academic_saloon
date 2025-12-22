@@ -29,8 +29,11 @@ VERCEL_PREVIEW_ORIGINS = [
 ]
 
 # Regex pattern for ALL Vercel preview deployments from this project
-# Matches: https://academic-saloon-*-soloveyska1s-projects.vercel.app
-VERCEL_ORIGIN_REGEX = r"https://academic-saloon.*\.vercel\.app"
+# Matches all patterns:
+# - https://academic-saloon*.vercel.app
+# - https://mini-app-*.vercel.app (git branch previews)
+# - https://*-soloveyska1s-projects.vercel.app (all user's projects)
+VERCEL_ORIGIN_REGEX = r"https://.*\.vercel\.app"
 
 # Dev origins (only added when DEBUG=true)
 DEV_ORIGINS = [
