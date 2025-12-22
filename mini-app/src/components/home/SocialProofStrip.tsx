@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { Shield, Clock, Award, Users } from 'lucide-react'
+import { Clock, Award, Users } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SOCIAL PROOF STRIP — Trust signals for new users
@@ -35,11 +35,7 @@ const PROOF_ITEMS: ProofItem[] = [
     value: '1 на 1',
     label: 'подход',
   },
-  {
-    icon: Shield,
-    value: '100%',
-    label: 'гарантия',
-  },
+  // REMOVED: "100% гарантия" - duplicate info (exists in QuickActionsRow)
 ]
 
 export const SocialProofStrip = memo(function SocialProofStrip({
@@ -55,7 +51,7 @@ export const SocialProofStrip = memo(function SocialProofStrip({
         justifyContent: 'space-between',
         alignItems: 'center',
         gap: 8,
-        marginBottom: 20,
+        marginBottom: 24,
         padding: variant === 'full' ? '12px 16px' : '8px 12px',
         background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(20,20,23,0.4) 50%, rgba(212,175,55,0.04) 100%)',
         borderRadius: 12,

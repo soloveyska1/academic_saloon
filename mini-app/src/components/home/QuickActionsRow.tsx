@@ -46,6 +46,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
+        marginBottom: 24,
       }}
     >
       <style>{`.quick-actions-scroll::-webkit-scrollbar { display: none; }`}</style>

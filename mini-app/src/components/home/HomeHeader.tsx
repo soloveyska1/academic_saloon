@@ -84,12 +84,6 @@ function getSmartGreeting(ctx: GreetingContext): string {
   return timeGreeting
 }
 
-function getStreakText(days: number): string {
-  if (days === 1) return '1 день подряд'
-  if (days < 5) return `${days} дня подряд`
-  return `${days} дней подряд`
-}
-
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
   const shouldReduceMotion = useReducedMotion()
@@ -110,7 +104,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 32,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -207,34 +201,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           >
             {user.fullname?.split(' ')[0] || 'Гость'}
           </div>
-          {/* Streak Badge */}
-          {user.daily_bonus_streak > 0 && (
-            <div
-              style={{
-                marginTop: 5,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '2px 8px',
-                background:
-                  'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.1) 100%)',
-                border: '1px solid rgba(249,115,22,0.3)',
-                borderRadius: 100,
-              }}
-            >
-              <span style={{ fontSize: 10 }}>&#x1F525;</span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#fb923c',
-                  letterSpacing: '0.03em',
-                }}
-              >
-                {getStreakText(user.daily_bonus_streak)}
-              </span>
-            </div>
-          )}
+          {/* Streak Badge - MOVED to DailyBonusBanner to reduce header clutter */}
         </div>
       </div>
 
