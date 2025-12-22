@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { Star, Copy, Check, QrCode } from 'lucide-react'
+import { Star, Copy, Check, QrCode, Send, Users, Coins } from 'lucide-react'
 
 // Glass gold style
 const glassGoldStyle: React.CSSProperties = {
@@ -17,18 +17,34 @@ const glassGoldStyle: React.CSSProperties = {
 interface ReputationCardProps {
   referralCode: string
   referralsCount: number
+  referralEarnings?: number // Total earned from referrals
   copied: boolean
   onCopy: () => void
   onShowQR: () => void
+  onTelegramShare?: () => void
 }
 
 export const ReputationCard = memo(function ReputationCard({
   referralCode,
   referralsCount,
+  referralEarnings = 0,
   copied,
   onCopy,
   onShowQR,
+  onTelegramShare,
 }: ReputationCardProps) {
+  // Default Telegram share handler
+  const handleTelegramShare = () => {
+    if (onTelegramShare) {
+      onTelegramShare()
+    } else {
+      // Use Telegram WebApp share if available
+      const shareText = `Привет! Я пользуюсь Academic Saloon для учебных работ. Мой код: ${referralCode} — получишь скидку, а я 5% с твоих заказов 📚`
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/AcademicSaloonBot')}&text=${encodeURIComponent(shareText)}`
+      window.open(shareUrl, '_blank')
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -43,34 +59,87 @@ export const ReputationCard = memo(function ReputationCard({
       }}
     >
       <div aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+        {/* Header */}
         <div
           aria-hidden="true"
-          style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}
         >
-          <Star size={14} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              fontFamily: 'var(--font-serif)',
-              background: 'var(--gold-text-shine)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '0.1em',
-            }}
-          >
-            РЕПУТАЦИЯ
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Star size={14} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: 'var(--font-serif)',
+                background: 'var(--gold-text-shine)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '0.1em',
+              }}
+            >
+              ПАРТНЁРКА
+            </span>
+          </div>
+
+          {/* Stats badges */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {referralsCount > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 8px',
+                  background: 'rgba(74, 222, 128, 0.1)',
+                  border: '1px solid rgba(74, 222, 128, 0.3)',
+                  borderRadius: 100,
+                }}
+              >
+                <Users size={10} color="#4ade80" strokeWidth={2} />
+                <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 600 }}>
+                  {referralsCount}
+                </span>
+              </div>
+            )}
+            {referralEarnings > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 8px',
+                  background: 'rgba(212, 175, 55, 0.15)',
+                  border: '1px solid rgba(212, 175, 55, 0.3)',
+                  borderRadius: 100,
+                }}
+              >
+                <Coins size={10} color="var(--gold-400)" strokeWidth={2} />
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    background: 'var(--gold-metallic)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  +{referralEarnings.toLocaleString('ru-RU')}₽
+                </span>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Description */}
         <p
           style={{
             fontSize: 12,
             color: 'var(--text-secondary)',
-            marginBottom: 16,
-            lineHeight: 1.6,
+            marginBottom: 14,
+            lineHeight: 1.5,
           }}
         >
-          Пригласите партнёра и получайте{' '}
+          Приглашай друзей →{' '}
           <span
             style={{
               background: 'var(--gold-text-shine)',
@@ -79,11 +148,14 @@ export const ReputationCard = memo(function ReputationCard({
               fontWeight: 700,
             }}
           >
-            5% роялти
+            5% с каждого заказа
           </span>{' '}
-          с каждого заказа.
+          навсегда
         </p>
-        <div aria-hidden="true" style={{ display: 'flex', gap: 10 }}>
+
+        {/* Action buttons row */}
+        <div aria-hidden="true" style={{ display: 'flex', gap: 8 }}>
+          {/* Copy code button */}
           <motion.button
             onClick={(e) => {
               e.stopPropagation()
@@ -97,10 +169,10 @@ export const ReputationCard = memo(function ReputationCard({
             }
             style={{
               flex: 1,
-              padding: '14px 18px',
+              padding: '12px 14px',
               background: 'var(--bg-glass)',
               border: '1px solid var(--border-gold)',
-              borderRadius: 14,
+              borderRadius: 12,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -112,9 +184,9 @@ export const ReputationCard = memo(function ReputationCard({
             <code
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 700,
-                letterSpacing: '0.12em',
+                letterSpacing: '0.1em',
                 background: 'var(--gold-metallic)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -123,11 +195,40 @@ export const ReputationCard = memo(function ReputationCard({
               {referralCode}
             </code>
             {copied ? (
-              <Check size={18} color="var(--success-text)" strokeWidth={2} />
+              <Check size={16} color="var(--success-text)" strokeWidth={2} />
             ) : (
-              <Copy size={18} color="var(--text-muted)" strokeWidth={1.5} />
+              <Copy size={16} color="var(--text-muted)" strokeWidth={1.5} />
             )}
           </motion.button>
+
+          {/* Telegram Share button - PRIMARY */}
+          <motion.button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleTelegramShare()
+            }}
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            aria-label="Поделиться в Telegram"
+            style={{
+              padding: '12px 16px',
+              background: 'linear-gradient(135deg, #0088cc 0%, #0077b5 100%)',
+              border: 'none',
+              borderRadius: 12,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: '0 4px 12px rgba(0, 136, 204, 0.3)',
+            }}
+          >
+            <Send size={16} color="white" strokeWidth={2} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>
+              Telegram
+            </span>
+          </motion.button>
+
+          {/* QR button */}
           <motion.button
             onClick={(e) => {
               e.stopPropagation()
@@ -136,39 +237,41 @@ export const ReputationCard = memo(function ReputationCard({
             whileTap={{ scale: 0.95 }}
             aria-label="Показать QR-код реферальной ссылки"
             style={{
-              width: 52,
-              height: 52,
+              width: 46,
+              height: 46,
               background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
               border: '1px solid var(--border-gold)',
-              borderRadius: 14,
+              borderRadius: 12,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 20px -5px rgba(212,175,55,0.2)',
+              flexShrink: 0,
             }}
           >
-            <QrCode size={22} color="var(--gold-400)" strokeWidth={1.5} />
+            <QrCode size={20} color="var(--gold-400)" strokeWidth={1.5} />
           </motion.button>
         </div>
-        {referralsCount > 0 && (
-          <div
-            aria-hidden="true"
+
+        {/* Motivation hint for users with 0 referrals */}
+        {referralsCount === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
             style={{
               marginTop: 12,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              background: 'var(--success-glass)',
-              border: '1px solid var(--success-border)',
-              borderRadius: 100,
+              padding: '10px 12px',
+              background: 'rgba(212, 175, 55, 0.06)',
+              borderRadius: 10,
+              border: '1px solid rgba(212, 175, 55, 0.1)',
             }}
           >
-            <span style={{ fontSize: 10, color: 'var(--success-text)', fontWeight: 600 }}>
-              Приглашено: {referralsCount}
-            </span>
-          </div>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+              💡 <strong style={{ color: 'var(--text-secondary)' }}>Пример:</strong> Пригласи 3 друзей с заказами по 5000₽ → заработай{' '}
+              <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>750₽</span> пассивно
+            </p>
+          </motion.div>
         )}
       </div>
     </motion.div>

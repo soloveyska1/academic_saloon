@@ -21,6 +21,7 @@ import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
 import {
   HomeHeader,
   SocialProofStrip,
+  BonusExpiryBanner,
   QuickActionsRow,
   NextActionCard,
   NewTaskCTA,
@@ -241,6 +242,18 @@ export function HomePage({ user }: Props) {
           SOCIAL PROOF STRIP — Trust signals (6 years, 99% success, etc.)
           ═══════════════════════════════════════════════════════════════════ */}
       <SocialProofStrip />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          BONUS EXPIRY BANNER — Urgency when bonus is about to expire
+          ═══════════════════════════════════════════════════════════════════ */}
+      {user.bonus_expiry?.has_expiry && user.bonus_expiry.days_left !== undefined && (
+        <BonusExpiryBanner
+          daysLeft={user.bonus_expiry.days_left}
+          balance={user.bonus_expiry.balance}
+          onCreateOrder={handleNewOrder}
+          haptic={haptic}
+        />
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           NEW USER FLOW — Show CTA immediately for users with 0 orders
