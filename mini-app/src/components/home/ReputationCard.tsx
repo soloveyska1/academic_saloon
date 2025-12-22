@@ -96,7 +96,7 @@ export const ReputationCard = memo(function ReputationCard({
                 }}
               >
                 <Users size={10} color="#22c55e" strokeWidth={1.5} />
-                <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 600 }}>
+                <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>
                   {referralsCount}
                 </span>
               </div>
@@ -116,7 +116,7 @@ export const ReputationCard = memo(function ReputationCard({
                 <Coins size={10} color="var(--gold-400)" strokeWidth={1.5} />
                 <span
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     background: 'var(--gold-metallic)',
                     WebkitBackgroundClip: 'text',

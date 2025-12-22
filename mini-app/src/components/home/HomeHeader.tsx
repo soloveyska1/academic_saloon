@@ -224,7 +224,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               <span style={{ fontSize: 10 }}>&#x1F525;</span>
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 600,
                   color: '#fb923c',
                   letterSpacing: '0.03em',

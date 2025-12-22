@@ -16,7 +16,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
           background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3))',
         }} />
         <span style={{
-          fontSize: 10,
+          fontSize: 11,
           fontFamily: "var(--font-serif, 'Playfair Display', serif)",
           color: 'rgba(212,175,55,0.5)',
           letterSpacing: '0.15em',
@@ -26,7 +26,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
         </span>
         <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.4)' }}>&#x2726;</span>
         <span style={{
-          fontSize: 9,
+          fontSize: 11,
           color: 'rgba(255,255,255,0.3)',
           letterSpacing: '0.08em',
         }}>

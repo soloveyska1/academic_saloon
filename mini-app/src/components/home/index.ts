@@ -35,7 +35,6 @@ export {
 export {
   glassStyle,
   glassGoldStyle,
-  CardInnerShine,
   ModalLoadingFallback,
 } from './shared'
 

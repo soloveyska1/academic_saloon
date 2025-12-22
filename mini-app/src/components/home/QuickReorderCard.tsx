@@ -125,7 +125,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
           >
             <span
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 600,
                 background: 'var(--gold-metallic)',
                 WebkitBackgroundClip: 'text',
@@ -169,11 +169,11 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            fontSize: 10,
+            fontSize: 11,
             color: 'var(--text-muted)',
           }}
         >
-          <Clock size={10} strokeWidth={1.5} />
+          <Clock size={11} strokeWidth={1.5} />
           <span>Создать похожий заказ в 1 клик</span>
         </div>
       </div>

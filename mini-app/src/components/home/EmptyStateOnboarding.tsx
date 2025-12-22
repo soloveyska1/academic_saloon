@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { FileText, UserCheck, Clock, CheckCircle, Sparkles } from 'lucide-react'
-import { glassGoldStyle, CardInnerShine } from './shared'
+import { glassGoldStyle } from './shared'
 
 interface EmptyStateOnboardingProps {
   onCreateOrder: () => void
@@ -46,8 +46,6 @@ export function EmptyStateOnboarding({ onCreateOrder }: EmptyStateOnboardingProp
         background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, var(--bg-card) 60%, rgba(212,175,55,0.06) 100%)',
       }}
     >
-      <CardInnerShine />
-
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Welcome Header */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
