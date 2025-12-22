@@ -8,8 +8,16 @@ from uuid import uuid4
 from typing import Optional
 from dataclasses import dataclass
 
-from yookassa import Configuration, Payment
-from yookassa.domain.response import PaymentResponse
+# Lazy import to avoid crash if yookassa is not installed
+try:
+    from yookassa import Configuration, Payment
+    from yookassa.domain.response import PaymentResponse
+    YOOKASSA_AVAILABLE = True
+except ImportError:
+    YOOKASSA_AVAILABLE = False
+    Configuration = None
+    Payment = None
+    PaymentResponse = None
 
 from core.config import settings
 
@@ -34,6 +42,10 @@ class YooKassaService:
 
     def _configure(self):
         """Настройка SDK"""
+        if not YOOKASSA_AVAILABLE:
+            logger.warning("YooKassa not available: package not installed")
+            return
+
         if settings.YOOKASSA_SHOP_ID and settings.YOOKASSA_SECRET_KEY:
             Configuration.account_id = settings.YOOKASSA_SHOP_ID
             Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
@@ -45,7 +57,7 @@ class YooKassaService:
     @property
     def is_available(self) -> bool:
         """Доступна ли онлайн-оплата"""
-        return self._configured
+        return YOOKASSA_AVAILABLE and self._configured
 
     async def create_payment(
         self,
