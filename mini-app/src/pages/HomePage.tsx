@@ -22,6 +22,8 @@ import {
   HomeHeader,
   SocialProofStrip,
   BonusExpiryBanner,
+  ExamSeasonBanner,
+  DailyBonusBanner,
   QuickActionsRow,
   NextActionCard,
   NewTaskCTA,
@@ -242,6 +244,22 @@ export function HomePage({ user }: Props) {
           SOCIAL PROOF STRIP — Trust signals (6 years, 99% success, etc.)
           ═══════════════════════════════════════════════════════════════════ */}
       <SocialProofStrip />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          DAILY BONUS BANNER — Prominent banner when bonus is available
+          ═══════════════════════════════════════════════════════════════════ */}
+      <DailyBonusBanner
+        canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
+        currentStreak={dailyStreak}
+        potentialBonus={state.dailyBonus.info?.bonuses?.[0]?.amount ?? 100}
+        onClaim={() => { actions.openModal('dailyBonus'); haptic('medium') }}
+        haptic={haptic}
+      />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          EXAM SEASON BANNER — Contextual during exam periods
+          ═══════════════════════════════════════════════════════════════════ */}
+      <ExamSeasonBanner onCreateOrder={handleNewOrder} haptic={haptic} />
 
       {/* ═══════════════════════════════════════════════════════════════════
           BONUS EXPIRY BANNER — Urgency when bonus is about to expire
