@@ -131,7 +131,7 @@ async def get_user_profile(
         username=user.username,
         fullname=user.fullname or tg_user.first_name,
         balance=round(float(user.balance or 0), 2),
-        bonus_balance=round(float(user.balance or 0), 2),
+        bonus_balance=round(float(user.bonus_balance or 0), 2),
         orders_count=total_orders_count,  # Use actual count from orders table
         total_spent=actual_total_spent,   # Use actual sum from completed orders
         discount=loyalty_info.discount,
