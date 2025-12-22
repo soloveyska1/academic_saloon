@@ -5,7 +5,7 @@ Pydantic schemas for Mini App API responses
 import re
 from datetime import datetime
 from typing import Optional, List, Any, Dict
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class RankInfo(BaseModel):
@@ -52,8 +52,7 @@ class BalanceTransactionResponse(BaseModel):
     description: Optional[str] = None
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderResponse(BaseModel):
@@ -80,8 +79,7 @@ class OrderResponse(BaseModel):
     created_at: str
     completed_at: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserResponse(BaseModel):
@@ -104,8 +102,7 @@ class UserResponse(BaseModel):
     transactions: List[BalanceTransactionResponse]
     orders: List[OrderResponse]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrdersListResponse(BaseModel):
