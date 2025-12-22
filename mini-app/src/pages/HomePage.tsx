@@ -2,8 +2,7 @@ import { useEffect, useCallback, useRef, useMemo, lazy, Suspense, memo } from 'r
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Copy, Check, ChevronRight, TrendingUp, Gift, QrCode,
-  Star, Crown, Briefcase, Sparkles, Flame, Gem, Target, Medal, Zap
+  Star, Crown, Sparkles, Flame, Gem, Target, Medal, Zap
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
@@ -27,6 +26,15 @@ import {
   LastOrderCard,
   BenefitsCard,
   UrgentHubSheet,
+  OrderStatsCard,
+  SaloonFooter,
+  DailyBonusButton,
+  CompactAchievements,
+  ReputationCard,
+  LevelProgressCard,
+  EmptyStateOnboarding,
+  DailyBonusError,
+  ModalLoadingFallback,
 } from '../components/home'
 
 // Lazy load heavy modal components (reduces initial bundle by ~45KB)
@@ -42,240 +50,6 @@ interface Props {
   user: UserData | null
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  GLASS CARD STYLES
-// ═══════════════════════════════════════════════════════════════════════════
-
-// Note: borderRadius and padding are now responsive via CSS classes
-const glassStyle: React.CSSProperties = {
-  position: 'relative',
-  overflow: 'hidden',
-  background: 'var(--bg-card)',
-  backdropFilter: 'blur(24px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(130%)',
-  border: '1px solid var(--card-border)',
-  boxShadow: 'var(--card-shadow)',
-}
-
-const glassGoldStyle: React.CSSProperties = {
-  position: 'relative',
-  overflow: 'hidden',
-  background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-  backdropFilter: 'blur(24px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(130%)',
-  border: '1px solid var(--border-gold)',
-  boxShadow: 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)',
-}
-
-// Inner shine effect component for cards - memoized
-const CardInnerShine = memo(function CardInnerShine() {
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-      position: 'absolute',
-      inset: 0,
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%)',
-      pointerEvents: 'none',
-      borderRadius: 'inherit',
-    }} />
-  )
-})
-
-// Modal loading fallback
-const ModalLoadingFallback = memo(function ModalLoadingFallback() {
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.6)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-    }}>
-      <div
-                aria-hidden="true"
-                style={{
-        width: 40,
-        height: 40,
-        borderRadius: '50%',
-        border: '2px solid transparent',
-        borderTopColor: 'rgba(212,175,55,0.8)',
-        animation: 'spin 1s linear infinite',
-      }} />
-    </div>
-  )
-})
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPACT ACHIEVEMENTS ROW
-// ═══════════════════════════════════════════════════════════════════════════
-
-function CompactAchievements({ achievements, onViewAll }: {
-  achievements: { icon: typeof Star; label: string; unlocked: boolean; glow?: boolean; description?: string }[]
-  onViewAll: () => void
-}) {
-  const unlockedCount = achievements.filter(a => a.unlocked).length
-  const lastUnlocked = [...achievements].reverse().find(a => a.unlocked)
-  const nextToUnlock = achievements.find(a => !a.unlocked)
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
-      whileHover={{ scale: 1.01, y: -1 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onViewAll}
-      role="button"
-      tabIndex={0}
-      aria-label={`Достижения: разблокировано ${unlockedCount} из ${achievements.length}. Нажмите для просмотра всех достижений`}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onViewAll() }}}
-      style={{
-        ...glassStyle,
-        marginBottom: 16,
-        cursor: 'pointer',
-        padding: '16px 18px',
-      }}
-    >
-      <CardInnerShine />
-      <div
-                aria-hidden="true"
-                style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'relative',
-        zIndex: 1,
-      }}>
-        <div
-                aria-hidden="true"
-                style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Achievement icons stack */}
-          <div
-                aria-hidden="true"
-                style={{ position: 'relative', width: 52, height: 44 }}>
-            {/* Last unlocked (main) */}
-            <motion.div
-              animate={lastUnlocked?.glow ? {
-                boxShadow: [
-                  '0 0 12px rgba(212,175,55,0.3)',
-                  '0 0 20px rgba(212,175,55,0.5)',
-                  '0 0 12px rgba(212,175,55,0.3)'
-                ]
-              } : {}}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: lastUnlocked
-                  ? 'linear-gradient(145deg, rgba(212,175,55,0.25) 0%, rgba(180,140,40,0.15) 100%)'
-                  : 'rgba(40,40,40,0.5)',
-                border: lastUnlocked
-                  ? '1.5px solid rgba(212,175,55,0.6)'
-                  : '1px solid rgba(80,80,80,0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 2,
-              }}
-            >
-              {lastUnlocked ? (
-                <lastUnlocked.icon size={22} color="#D4AF37" strokeWidth={2} fill="rgba(212,175,55,0.2)"  aria-hidden="true"/>
-              ) : (
-                <Star size={22} color="rgba(100,100,100,0.5)" strokeWidth={1.5} />
-              )}
-            </motion.div>
-            {/* Next to unlock (preview) */}
-            {nextToUnlock && (
-              <motion.div
-                animate={{ opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  bottom: 0,
-                  width: 24,
-                  height: 24,
-                  borderRadius: 8,
-                  background: 'rgba(40,40,40,0.8)',
-                  border: '1px dashed rgba(212,175,55,0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 3,
-                }}
-              >
-                <nextToUnlock.icon size={12} color="rgba(212,175,55,0.5)" strokeWidth={1.5}  aria-hidden="true"/>
-              </motion.div>
-            )}
-          </div>
-          <div>
-            <div
-                aria-hidden="true"
-                style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: 'var(--text-muted)',
-              letterSpacing: '0.1em',
-              marginBottom: 4,
-            }}>ДОСТИЖЕНИЯ</div>
-            <div
-                aria-hidden="true"
-                style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>
-              {lastUnlocked ? lastUnlocked.label : 'Начните путь'}
-            </div>
-            {nextToUnlock && (
-              <div
-                aria-hidden="true"
-                style={{ fontSize: 10, color: 'rgba(212,175,55,0.6)', marginTop: 2 }}>
-                Далее: {nextToUnlock.label}
-              </div>
-            )}
-          </div>
-        </div>
-        <div
-                aria-hidden="true"
-                style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Progress dots */}
-          <div
-                aria-hidden="true"
-                style={{ display: 'flex', gap: 4 }}>
-            {achievements.map((a, i) => (
-              <motion.div
-                key={i}
-                animate={!a.unlocked && i === unlockedCount ? {
-                  scale: [1, 1.2, 1],
-                  opacity: [0.4, 0.8, 0.4],
-                } : {}}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: a.unlocked ? 'var(--gold-metallic)' : 'rgba(80,80,80,0.4)',
-                  boxShadow: a.unlocked ? '0 0 8px rgba(212,175,55,0.5)' : 'none',
-                  border: !a.unlocked && i === unlockedCount ? '1px solid rgba(212,175,55,0.4)' : 'none',
-                }}
-              />
-            ))}
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
-            {unlockedCount}/{achievements.length}
-          </span>
-          <ChevronRight size={18} color="var(--text-muted)" strokeWidth={1.5} />
-        </div>
-      </div>
-    </motion.div>
-  )
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  MAIN HOMEPAGE
@@ -401,17 +175,29 @@ export function HomePage({ user }: Props) {
   const displayNextRank = user.rank.next_rank ? (rankNameMap[user.rank.next_rank] || user.rank.next_rank) : null
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
 
-  const handleNewOrder = () => {
+  const handleNewOrder = useCallback(() => {
     haptic('heavy')
     navigate('/create-order')
-  }
+  }, [haptic, navigate])
 
-  const copyReferralCode = () => {
+  const copyReferralCode = useCallback(() => {
     navigator.clipboard.writeText(user.referral_code)
     actions.setCopied(true)
     hapticSuccess()
     setTimeout(() => actions.setCopied(false), 2000)
-  }
+  }, [user.referral_code, actions, hapticSuccess])
+
+  const retryDailyBonus = useCallback(() => {
+    actions.setDailyBonusError(false)
+    actions.setDailyBonusLoading(true)
+    fetchDailyBonusInfo()
+      .then(info => {
+        actions.setDailyBonusInfo(info)
+        actions.setDailyBonusError(false)
+      })
+      .catch(() => actions.setDailyBonusError(true))
+      .finally(() => actions.setDailyBonusLoading(false))
+  }, [actions])
 
   return (
     <main
@@ -493,12 +279,15 @@ export function HomePage({ user }: Props) {
 
       {/* ═══════════════════════════════════════════════════════════════════
           LAST ORDER CARD — Quick access to recent order
+          OR EMPTY STATE — For new users with 0 orders
           ═══════════════════════════════════════════════════════════════════ */}
-      {user.orders.length > 0 && (
+      {user.orders.length > 0 ? (
         <LastOrderCard
           order={user.orders[0]}
           onClick={() => navigate(`/order/${user.orders[0].id}`)}
         />
+      ) : (
+        <EmptyStateOnboarding onCreateOrder={handleNewOrder} />
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -528,475 +317,49 @@ export function HomePage({ user }: Props) {
       {/* ═══════════════════════════════════════════════════════════════════
           REPUTATION (Referral) — Premium Gold Card
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.32 }}
-        whileHover={{ scale: 1.005 }}
-        className="card-padding card-radius"
-        style={{ ...glassGoldStyle, marginBottom: 16, transition: 'transform 0.2s ease-out' }}
-      >
-        <div
-                aria-hidden="true"
-                style={{ position: 'relative', zIndex: 1 }}>
-          <div
-                aria-hidden="true"
-                style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <Star size={14} color="var(--gold-400)" fill="var(--gold-400)" strokeWidth={1.5} />
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              fontFamily: 'var(--font-serif)',
-              background: 'var(--gold-text-shine)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '0.1em',
-            }}>РЕПУТАЦИЯ</span>
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
-            Пригласите партнёра и получайте{' '}
-            <span style={{
-              background: 'var(--gold-text-shine)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: 700,
-            }}>5% роялти</span>{' '}
-            с каждого заказа.
-          </p>
-          <div
-                aria-hidden="true"
-                style={{ display: 'flex', gap: 10 }}>
-            <motion.button
-              onClick={(e) => { e.stopPropagation(); copyReferralCode() }}
-              whileTap={{ scale: 0.97 }}
-              aria-label={state.copied ? "Реферальный код скопирован" : `Скопировать реферальный код ${user.referral_code}`}
-              style={{
-                flex: 1,
-                padding: '14px 18px',
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--border-gold)',
-                borderRadius: 14,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-              }}
-            >
-              <code style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 15,
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                background: 'var(--gold-metallic)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>
-                {user.referral_code}
-              </code>
-              {state.copied ? (
-                <Check size={18} color="var(--success-text)" strokeWidth={2} />
-              ) : (
-                <Copy size={18} color="var(--text-muted)" strokeWidth={1.5} />
-              )}
-            </motion.button>
-            <motion.button
-              onClick={(e) => { e.stopPropagation(); actions.openModal('qr'); haptic('light') }}
-              whileTap={{ scale: 0.95 }}
-              aria-label="Показать QR-код реферальной ссылки"
-              style={{
-                width: 52,
-                height: 52,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
-                border: '1px solid var(--border-gold)',
-                borderRadius: 14,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 20px -5px rgba(212,175,55,0.2)',
-              }}
-            >
-              <QrCode size={22} color="var(--gold-400)" strokeWidth={1.5} />
-            </motion.button>
-          </div>
-          {user.referrals_count > 0 && (
-            <div
-                aria-hidden="true"
-                style={{
-              marginTop: 12,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              background: 'var(--success-glass)',
-              border: '1px solid var(--success-border)',
-              borderRadius: 100,
-            }}>
-              <span style={{ fontSize: 10, color: 'var(--success-text)', fontWeight: 600 }}>
-                Приглашено: {user.referrals_count}
-              </span>
-            </div>
-          )}
-        </div>
-      </motion.div>
+      <ReputationCard
+        referralCode={user.referral_code}
+        referralsCount={user.referrals_count}
+        copied={state.copied}
+        onCopy={copyReferralCode}
+        onShowQR={() => {
+          actions.openModal('qr')
+          haptic('light')
+        }}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
           PROGRESS TO NEXT LEVEL
           ═══════════════════════════════════════════════════════════════════ */}
-      {displayNextRank && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="card-padding card-radius"
-          style={{ ...glassStyle, marginBottom: 16 }}
-        >
-          <div
-                aria-hidden="true"
-                style={{ position: 'relative', zIndex: 1 }}>
-            <div
-                aria-hidden="true"
-                style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
-              <div
-                aria-hidden="true"
-                style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
-                border: '1px solid var(--border-gold)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 15px -5px rgba(212,175,55,0.2)',
-              }}>
-                <TrendingUp size={22} color="var(--gold-400)" strokeWidth={1.5} />
-              </div>
-              <div
-                aria-hidden="true"
-                style={{ flex: 1 }}>
-                <div
-                aria-hidden="true"
-                style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>Следующий уровень</div>
-                <div
-                aria-hidden="true"
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  fontFamily: 'var(--font-serif)',
-                  background: 'var(--gold-text-shine)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  marginTop: 2,
-                }}>{displayNextRank}</div>
-              </div>
-              <span style={{
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 700,
-                fontSize: 16,
-                background: 'var(--gold-metallic)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>{user.rank.progress}%</span>
-            </div>
-            <div
-              role="progressbar"
-              aria-valuenow={user.rank.progress}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={`Прогресс до следующего уровня ${displayNextRank}: ${user.rank.progress}%`}
-              style={{
-              height: 10,
-              background: 'var(--bg-glass)',
-              borderRadius: 100,
-              overflow: 'hidden',
-              marginBottom: 12,
-              border: '1px solid var(--border-subtle)',
-            }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.max(user.rank.progress, 3)}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="progress-shimmer"
-                aria-hidden="true"
-                style={{
-                  height: '100%',
-                  borderRadius: 100,
-                  boxShadow: '0 0 15px rgba(212,175,55,0.5)',
-                }}
-              />
-            </div>
-            <div
-                aria-hidden="true"
-                style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
-              Осталось{' '}
-              <span style={{
-                background: 'var(--gold-text-shine)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontWeight: 700,
-              }}>{user.rank.spent_to_next.toLocaleString('ru-RU')} ₽</span>
-            </div>
-          </div>
-        </motion.div>
-      )}
+      <LevelProgressCard rank={user.rank} displayNextRank={displayNextRank} />
 
       {/* ═══════════════════════════════════════════════════════════════════
           QUICK STATS — My Orders Dashboard
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        whileHover={{ scale: 1.01, y: -1 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => { haptic('light'); navigate('/orders') }}
-        className="card-padding card-radius"
-        style={{
-          ...glassStyle,
-          cursor: 'pointer',
-          border: '1px solid rgba(212,175,55,0.2)',
-          background: 'linear-gradient(145deg, rgba(25,25,28,0.95) 0%, rgba(18,18,20,0.98) 100%)',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.05)',
-        }}
-      >
-        <CardInnerShine />
-        <div
-                aria-hidden="true"
-                style={{ position: 'relative', zIndex: 1 }}>
-          <div
-                aria-hidden="true"
-                style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 20,
-          }}>
-            <div
-                aria-hidden="true"
-                style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                aria-hidden="true"
-                style={{
-                width: 42,
-                height: 42,
-                borderRadius: 12,
-                background: 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
-                border: '1px solid rgba(212,175,55,0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Briefcase size={20} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
-              </div>
-              <div>
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'rgba(212,175,55,0.7)',
-                  letterSpacing: '0.1em',
-                }}>МОИ ЗАКАЗЫ</div>
-                <div style={{
-                  fontSize: 12,
-                  color: 'rgba(255,255,255,0.4)',
-                  marginTop: 3,
-                  fontStyle: 'italic',
-                }}>Статус выполнения</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color="rgba(212,175,55,0.4)" strokeWidth={1.5} />
-          </div>
-
-          {/* Stats Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            {/* Active */}
-            <div style={{
-              padding: 16,
-              borderRadius: 14,
-              background: activeOrders > 0
-                ? 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
-                : 'linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
-              border: `1px solid ${activeOrders > 0 ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`,
-              textAlign: 'center',
-            }}>
-              <div style={{
-                fontSize: 38,
-                fontWeight: 800,
-                fontFamily: 'var(--font-serif)',
-                background: activeOrders > 0
-                  ? 'linear-gradient(180deg, #f5d485, #D4AF37)'
-                  : 'linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2))',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                marginBottom: 6,
-              }}>
-                {activeOrders}
-              </div>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: activeOrders > 0 ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.35)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 5,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-              }}>
-                {activeOrders > 0 && (
-                  <motion.div
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    aria-hidden="true"
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: '#D4AF37',
-                      boxShadow: '0 0 8px rgba(212,175,55,0.6)',
-                    }}
-                  />
-                )}
-                Активных
-              </div>
-            </div>
-
-            {/* Completed */}
-            <div style={{
-              padding: 16,
-              borderRadius: 14,
-              background: 'linear-gradient(145deg, rgba(34,197,94,0.1), rgba(34,197,94,0.03))',
-              border: '1px solid rgba(34,197,94,0.2)',
-              textAlign: 'center',
-            }}>
-              <div style={{
-                fontSize: 38,
-                fontWeight: 800,
-                fontFamily: 'var(--font-serif)',
-                background: 'linear-gradient(180deg, rgba(74,222,128,0.9), rgba(34,197,94,0.8))',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                marginBottom: 6,
-              }}>
-                {completedOrders}
-              </div>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: 'rgba(34,197,94,0.7)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 5,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-              }}>
-                <Check size={12} strokeWidth={2.5} />
-                Выполнено
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+      <OrderStatsCard
+        activeOrders={activeOrders}
+        completedOrders={completedOrders}
+        onClick={() => navigate('/orders')}
+        haptic={haptic}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
           ELEGANT FOOTER
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        style={{ textAlign: 'center', padding: '20px 0 12px' }}
-      >
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 24,
-            height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3))',
-          }} />
-          <span style={{
-            fontSize: 10,
-            fontFamily: "var(--font-serif, 'Playfair Display', serif)",
-            color: 'rgba(212,175,55,0.5)',
-            letterSpacing: '0.15em',
-            fontWeight: 500,
-          }}>
-            САЛУН
-          </span>
-          <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.4)' }}>&#x2726;</span>
-          <span style={{
-            fontSize: 9,
-            color: 'rgba(255,255,255,0.3)',
-            letterSpacing: '0.08em',
-          }}>
-            EST. 2024
-          </span>
-          <div style={{
-            width: 24,
-            height: 1,
-            background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)',
-          }} />
-        </div>
-      </motion.div>
+      <SaloonFooter />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          DAILY BONUS FLOATING BUTTON
+          DAILY BONUS FLOATING BUTTON OR ERROR
           ═══════════════════════════════════════════════════════════════════ */}
-      <AnimatePresence>
-        {canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ delay: 1, type: 'spring' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => { actions.openModal('dailyBonus'); haptic('medium') }}
-            aria-label="Получить ежедневный бонус"
-            style={{
-              position: 'fixed',
-              bottom: 110,
-              right: 20,
-              width: 60,
-              height: 60,
-              borderRadius: '50%',
-              background: 'var(--gold-metallic)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 40px rgba(212,175,55,0.6), 0 10px 30px -10px rgba(0,0,0,0.4)',
-              zIndex: 100,
-            }}
-          >
-            <Gift size={26} color="#09090b" strokeWidth={2} aria-hidden="true" />
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              aria-hidden="true"
-              title="Ежедневный бонус доступен!"
-              style={{
-                position: 'absolute',
-                top: -4,
-                right: -4,
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 15px rgba(239,68,68,0.5)',
-                border: '2px solid var(--bg-main)',
-              }}
-            >
-              <Flame size={12} color="#fff" />
-            </motion.div>
-          </motion.button>
-        )}
-      </AnimatePresence>
+      <DailyBonusButton
+        visible={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
+        onClick={() => { actions.openModal('dailyBonus'); haptic('medium') }}
+      />
+
+      {/* Show error UI when daily bonus fails to load */}
+      {state.dailyBonus.error && !state.dailyBonus.loading && (
+        <DailyBonusError onRetry={retryDailyBonus} />
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           URGENT HUB SHEET — Bottom sheet with 2 urgent options

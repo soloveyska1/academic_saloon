@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { QUICK_ACTIONS } from './constants'
 
@@ -16,7 +17,7 @@ interface QuickActionsRowProps {
   haptic: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-export function QuickActionsRow({
+export const QuickActionsRow = memo(function QuickActionsRow({
   onNavigate,
   onOpenModal,
   onOpenUrgentSheet,
@@ -164,4 +165,4 @@ export function QuickActionsRow({
       </motion.div>
     </div>
   )
-}
+})

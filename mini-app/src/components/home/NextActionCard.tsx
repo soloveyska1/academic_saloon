@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, CreditCard, FileText, RotateCcw, CheckCircle2, MessageCircle } from 'lucide-react'
 import { NextAction } from './types'
@@ -122,7 +122,7 @@ function getNextAction(orders: Order[]): NextAction | null {
   return null
 }
 
-export function NextActionCard({ orders, onNavigate, haptic }: NextActionCardProps) {
+export const NextActionCard = memo(function NextActionCard({ orders, onNavigate, haptic }: NextActionCardProps) {
   const nextAction = useMemo(() => getNextAction(orders), [orders])
 
   if (!nextAction) return null
@@ -277,4 +277,19 @@ export function NextActionCard({ orders, onNavigate, haptic }: NextActionCardPro
       </motion.div>
     </AnimatePresence>
   )
-}
+}, (prevProps, nextProps) => {
+  // Compare orders array by checking length and each order's key properties
+  if (prevProps.orders.length !== nextProps.orders.length) return false
+
+  for (let i = 0; i < prevProps.orders.length; i++) {
+    const prev = prevProps.orders[i]
+    const next = nextProps.orders[i]
+    if (prev.id !== next.id ||
+        prev.status !== next.status ||
+        prev.has_unread_messages !== next.has_unread_messages) {
+      return false
+    }
+  }
+
+  return true
+})

@@ -36,7 +36,7 @@ const CardInnerShine = memo(function CardInnerShine() {
   )
 })
 
-export function LastOrderCard({ order, onClick }: LastOrderCardProps) {
+export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: LastOrderCardProps) {
   const status = ORDER_STATUS_MAP[order.status] || {
     label: order.status,
     color: '#888',
@@ -187,4 +187,10 @@ export function LastOrderCard({ order, onClick }: LastOrderCardProps) {
       </div>
     </motion.div>
   )
-}
+}, (prevProps, nextProps) => {
+  return prevProps.order.id === nextProps.order.id &&
+    prevProps.order.work_type_label === nextProps.order.work_type_label &&
+    prevProps.order.subject === nextProps.order.subject &&
+    prevProps.order.status === nextProps.order.status &&
+    prevProps.order.created_at === nextProps.order.created_at
+})

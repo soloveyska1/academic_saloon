@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, ArrowUpRight } from 'lucide-react'
 
@@ -10,7 +11,7 @@ interface NewTaskCTAProps {
   onClick: () => void
 }
 
-export function NewTaskCTA({ onClick }: NewTaskCTAProps) {
+export const NewTaskCTA = memo(function NewTaskCTA({ onClick }: NewTaskCTAProps) {
   return (
     <motion.button
       type="button"
@@ -88,4 +89,4 @@ export function NewTaskCTA({ onClick }: NewTaskCTAProps) {
       </div>
     </motion.button>
   )
-}
+})
