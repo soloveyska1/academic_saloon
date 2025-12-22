@@ -7,8 +7,8 @@ const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   background: 'var(--bg-card)',
-  backdropFilter: 'blur(24px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+  backdropFilter: 'blur(12px) saturate(130%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
   border: '1px solid var(--card-border)',
   boxShadow: 'var(--card-shadow)',
 }
@@ -50,7 +50,7 @@ export const LevelProgressCard = memo(function LevelProgressCard({
             style={{
               width: 48,
               height: 48,
-              borderRadius: 14,
+              borderRadius: 12,
               background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
               border: '1px solid var(--border-gold)',
               display: 'flex',

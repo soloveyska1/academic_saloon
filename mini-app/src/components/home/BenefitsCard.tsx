@@ -107,12 +107,12 @@ export const BenefitsCard = memo(function BenefitsCard({
   const glassGoldStyle: React.CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 16,
+    padding: 16,
     background:
       'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-    backdropFilter: 'blur(24px) saturate(130%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+    backdropFilter: 'blur(12px) saturate(130%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(130%)',
     border: '1px solid var(--border-gold)',
     boxShadow: 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)',
   }
@@ -120,11 +120,11 @@ export const BenefitsCard = memo(function BenefitsCard({
   const glassStyle: React.CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 16,
+    padding: 16,
     background: 'var(--bg-card)',
-    backdropFilter: 'blur(24px) saturate(130%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+    backdropFilter: 'blur(12px) saturate(130%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(130%)',
     border: '1px solid var(--card-border)',
     boxShadow: 'var(--card-shadow)',
   }

@@ -59,7 +59,7 @@ export const BonusExpiryBanner = memo(function BonusExpiryBanner({
           position: 'relative',
           marginBottom: 16,
           padding: '14px 16px',
-          borderRadius: 14,
+          borderRadius: 12,
           cursor: 'pointer',
           background: isCritical
             ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%)'

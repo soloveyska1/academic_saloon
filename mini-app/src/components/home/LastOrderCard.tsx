@@ -61,13 +61,13 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: Las
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 20,
-        padding: 18,
+        borderRadius: 16,
+        padding: 16,
         marginBottom: 16,
         cursor: 'pointer',
         background: `linear-gradient(135deg, ${status.bg} 0%, var(--bg-card) 50%)`,
-        backdropFilter: 'blur(24px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+        backdropFilter: 'blur(12px) saturate(130%)',
+        WebkitBackdropFilter: 'blur(12px) saturate(130%)',
         border: `1px solid ${status.border}`,
         boxShadow: 'var(--card-shadow)',
       }}
@@ -99,7 +99,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick }: Las
           style={{
             width: 48,
             height: 48,
-            borderRadius: 14,
+            borderRadius: 12,
             background: status.bg,
             border: `1px solid ${status.border}`,
             display: 'flex',
