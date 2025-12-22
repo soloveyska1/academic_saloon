@@ -1,4 +1,4 @@
-import { useReducer, Dispatch } from 'react'
+import { useReducer, Dispatch, useMemo } from 'react'
 import { DailyBonusInfo } from '../api/userApi'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -202,8 +202,8 @@ export interface UseHomePageStateReturn {
 export function useHomePageState(): UseHomePageStateReturn {
   const [state, dispatch] = useReducer(homePageReducer, initialHomePageState)
 
-  // Convenience action creators
-  const actions = {
+  // Memoized action creators to prevent infinite loops in useEffect
+  const actions = useMemo(() => ({
     setCopied: (value: boolean) => {
       dispatch({ type: 'SET_COPIED', payload: value })
     },
@@ -246,7 +246,7 @@ export function useHomePageState(): UseHomePageStateReturn {
         payload: { cooldownRemaining }
       })
     },
-  }
+  }), []) // Empty deps - dispatch is stable from useReducer
 
   return { state, dispatch, actions }
 }
