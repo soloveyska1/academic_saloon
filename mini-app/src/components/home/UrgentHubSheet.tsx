@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Zap, ChevronRight } from 'lucide-react'
 import { URGENT_OPTIONS } from './constants'
@@ -15,7 +16,7 @@ interface UrgentHubSheetProps {
   haptic: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-export function UrgentHubSheet({ isOpen, onClose, onNavigate, haptic }: UrgentHubSheetProps) {
+export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, onNavigate, haptic }: UrgentHubSheetProps) {
   const handleOptionClick = (route: string) => {
     haptic('medium')
     onClose()
@@ -281,4 +282,6 @@ export function UrgentHubSheet({ isOpen, onClose, onNavigate, haptic }: UrgentHu
       )}
     </AnimatePresence>
   )
-}
+}, (prevProps, nextProps) => {
+  return prevProps.isOpen === nextProps.isOpen
+})

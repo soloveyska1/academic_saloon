@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { motion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -34,7 +34,7 @@ function getStreakText(days: number): string {
   return `${days} дней подряд`
 }
 
-export function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
+export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
 
   return (
@@ -216,4 +216,9 @@ export function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
       </motion.div>
     </motion.div>
   )
-}
+}, (prevProps, nextProps) => {
+  return prevProps.userPhoto === nextProps.userPhoto &&
+    prevProps.user.fullname === nextProps.user.fullname &&
+    prevProps.user.rank.is_max === nextProps.user.rank.is_max &&
+    prevProps.user.daily_bonus_streak === nextProps.user.daily_bonus_streak
+})

@@ -72,7 +72,7 @@ const CardInnerShine = memo(function CardInnerShine() {
   )
 })
 
-export function BenefitsCard({
+export const BenefitsCard = memo(function BenefitsCard({
   balance,
   rank,
   onBalanceClick,
@@ -355,4 +355,12 @@ export function BenefitsCard({
       </motion.div>
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  return prevProps.balance === nextProps.balance &&
+    prevProps.rank.name === nextProps.rank.name &&
+    prevProps.rank.level === nextProps.rank.level &&
+    prevProps.rank.cashback === nextProps.rank.cashback &&
+    prevProps.rank.progress === nextProps.rank.progress &&
+    prevProps.rank.is_max === nextProps.rank.is_max &&
+    prevProps.rank.bonus === nextProps.rank.bonus
+})
