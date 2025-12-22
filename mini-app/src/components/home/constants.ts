@@ -1,6 +1,6 @@
 import {
   GraduationCap, Clock, Percent, Shield, Zap, Camera, FileText,
-  CreditCard, MessageCircle, AlertCircle, RotateCcw, CheckCircle2
+  CreditCard, MessageCircle, RotateCcw, CheckCircle2
 } from 'lucide-react'
 import { QuickAction, UrgentOption, OrderStatusInfo } from './types'
 
@@ -9,14 +9,6 @@ import { QuickAction, UrgentOption, OrderStatusInfo } from './types'
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  {
-    id: 'coursework',
-    icon: GraduationCap,
-    title: 'Курсовые',
-    subtitle: 'от 14 000 ₽',
-    action: 'navigate',
-    route: '/create-order?type=coursework',
-  },
   {
     id: 'urgent',
     icon: Zap,

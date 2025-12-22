@@ -1,9 +1,6 @@
-import { useEffect, useCallback, useRef, useMemo, lazy, Suspense, memo } from 'react'
+import { useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Star, Crown, Sparkles, Flame, Gem, Target, Medal, Zap
-} from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { fetchDailyBonusInfo, claimDailyBonus } from '../api/userApi'
@@ -27,14 +24,8 @@ import {
   NextActionCard,
   NewTaskCTA,
   LastOrderCard,
-  QuickReorderCard,
-  BenefitsCard,
   UrgentHubSheet,
-  OrderStatsCard,
   SaloonFooter,
-  CompactAchievements,
-  ReputationCard,
-  LevelProgressCard,
   EmptyStateOnboarding,
   DailyBonusError,
   ModalLoadingFallback,
@@ -60,7 +51,7 @@ interface Props {
 
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
-  const { haptic, hapticSuccess, tg } = useTelegram()
+  const { haptic, tg } = useTelegram()
   const admin = useAdmin()
   const { activePromo } = usePromo()
   const capability = useCapability()
@@ -148,47 +139,16 @@ export function HomePage({ user }: Props) {
     [user?.orders]
   )
 
-  const completedOrders = useMemo(
-    () => user?.orders.filter(o => o.status === 'completed').length ?? 0,
-    [user?.orders]
-  )
-
-  // Achievement badges
-  const achievements = useMemo(() => user ? [
-    { icon: Star, label: 'Первый шаг', unlocked: user.orders_count >= 1, description: 'Первый заказ' },
-    { icon: Medal, label: 'Постоянный', unlocked: user.orders_count >= 5, description: '5 заказов' },
-    { icon: Crown, label: 'VIP статус', unlocked: user.rank.level >= 3, description: 'VIP уровень' },
-    { icon: Zap, label: 'Молниеносный', unlocked: user.orders_count >= 1, description: 'Быстрый заказ' },
-    { icon: Gem, label: 'Щедрая душа', unlocked: user.total_spent >= 10000, description: '10 000₽ потрачено' },
-    { icon: Target, label: 'Рефералы', unlocked: user.referrals_count >= 3, description: '3+ приглашённых' },
-    { icon: Flame, label: 'Джекпот', unlocked: false, description: 'Выигрыш в рулетке', glow: true },
-    { icon: Sparkles, label: 'Легенда', unlocked: user.rank.level >= 4, description: 'Макс. уровень', glow: true },
-  ] : [], [user])
-
-  // Display rank name mapping
-  const rankNameMap: Record<string, string> = {
-    'Салага': 'Резидент',
-    'Ковбой': 'Партнёр',
-    'Головорез': 'VIP-Клиент',
-    'Легенда Запада': 'Премиум',
-  }
-
   if (!user) return null
 
-  const displayNextRank = user.rank.next_rank ? (rankNameMap[user.rank.next_rank] || user.rank.next_rank) : null
+  // User type detection for progressive disclosure
+  const isNewUser = user.orders_count === 0 || admin.simulateNewUser
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
 
   const handleNewOrder = useCallback(() => {
     haptic('heavy')
     navigate('/create-order')
   }, [haptic, navigate])
-
-  const copyReferralCode = useCallback(() => {
-    navigator.clipboard.writeText(user.referral_code)
-    actions.setCopied(true)
-    hapticSuccess()
-    setTimeout(() => actions.setCopied(false), 2000)
-  }, [user.referral_code, actions, hapticSuccess])
 
   const retryDailyBonus = useCallback(() => {
     actions.setDailyBonusError(false)
@@ -239,95 +199,88 @@ export function HomePage({ user }: Props) {
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          DAILY BONUS BANNER — Above fold for maximum visibility
+          NEW USER FLOW — Streamlined, trust-first experience
           ═══════════════════════════════════════════════════════════════════ */}
-      <DailyBonusBanner
-        canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
-        currentStreak={dailyStreak}
-        potentialBonus={state.dailyBonus.info?.bonuses?.[0]?.amount ?? 100}
-        onClaim={() => { actions.openModal('dailyBonus'); haptic('medium') }}
-        haptic={haptic}
-      />
+      {isNewUser ? (
+        <>
+          {/* Trust signals FIRST for new users */}
+          <SocialProofStrip />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          EXAM SEASON BANNER — Contextual during exam periods
-          ═══════════════════════════════════════════════════════════════════ */}
-      <ExamSeasonBanner onCreateOrder={handleNewOrder} haptic={haptic} />
+          {/* Exam season info (contextual) */}
+          <ExamSeasonBanner haptic={haptic} />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          PRIMARY CTA — Single consolidated "New Task" button
-          Note: Bonus expiry warning is now shown inline in BenefitsCard
-          Always visible, always above fold
-          ═══════════════════════════════════════════════════════════════════ */}
-      <NewTaskCTA onClick={handleNewOrder} />
+          {/* PRIMARY CTA — Big, unmissable */}
+          <NewTaskCTA onClick={handleNewOrder} />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          QUICK ACTIONS — Replaces TipsCarousel + Panic Button
-          Single "Срочно" entry that opens UrgentHubSheet
-          ═══════════════════════════════════════════════════════════════════ */}
-      <QuickActionsRow
-        onNavigate={navigate}
-        onOpenModal={(modal) => {
-          if (modal === 'cashback') actions.openModal('cashback')
-          else if (modal === 'guarantees') actions.openModal('guarantees')
-        }}
-        onOpenUrgentSheet={() => {
-          haptic('medium')
-          actions.openModal('urgentSheet')
-        }}
-        haptic={haptic}
-      />
+          {/* Quick info badges (Срочно, Кешбэк, Гарантии) */}
+          <QuickActionsRow
+            onNavigate={navigate}
+            onOpenModal={(modal) => {
+              if (modal === 'cashback') actions.openModal('cashback')
+              else if (modal === 'guarantees') actions.openModal('guarantees')
+            }}
+            onOpenUrgentSheet={() => {
+              haptic('medium')
+              actions.openModal('urgentSheet')
+            }}
+            haptic={haptic}
+          />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          NEXT ACTION CARD — Dynamic priority-based actions
-          Shows payment needed, files needed, revision, etc.
-          ═══════════════════════════════════════════════════════════════════ */}
-      <NextActionCard
-        orders={user.orders}
-        onNavigate={navigate}
-        haptic={haptic}
-      />
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          BENEFITS CARD — Combined Balance + Level (Bento Grid)
-          ═══════════════════════════════════════════════════════════════════ */}
-      <BenefitsCard
-        balance={user.balance}
-        rank={user.rank}
-        bonusExpiry={user.bonus_expiry}
-        onBalanceClick={() => actions.openModal('transactions')}
-        onRankClick={() => actions.openModal('ranks')}
-        haptic={haptic}
-      />
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SOCIAL PROOF STRIP — Trust signals (6 years, 99% success, etc.)
-          Moved below fold to prioritize actions above
-          ═══════════════════════════════════════════════════════════════════ */}
-      <SocialProofStrip />
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          QUICK REORDER — One-click reorder for repeat customers
-          ═══════════════════════════════════════════════════════════════════ */}
-      {user.orders.length > 0 && user.orders[0].status === 'completed' && (
-        <QuickReorderCard
-          lastOrder={user.orders[0]}
-          onReorder={(orderId) => navigate(`/create-order?template=${orderId}`)}
-          haptic={haptic}
-        />
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          LAST ORDER CARD — Quick access to recent order
-          OR EMPTY STATE — For new users with 0 orders
-          ═══════════════════════════════════════════════════════════════════ */}
-      {user.orders.length > 0 ? (
-        <LastOrderCard
-          order={user.orders[0]}
-          onClick={() => navigate(`/order/${user.orders[0].id}`)}
-        />
+          {/* Welcome onboarding for new users */}
+          <EmptyStateOnboarding onCreateOrder={handleNewOrder} />
+        </>
       ) : (
-        <EmptyStateOnboarding onCreateOrder={handleNewOrder} />
+        /* ═══════════════════════════════════════════════════════════════════
+           RETURNING USER FLOW — Full feature set
+           ═══════════════════════════════════════════════════════════════════ */
+        <>
+          {/* Daily bonus for engaged users */}
+          <DailyBonusBanner
+            canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
+            currentStreak={dailyStreak}
+            potentialBonus={state.dailyBonus.info?.bonuses?.[0]?.amount ?? 100}
+            onClaim={() => { actions.openModal('dailyBonus'); haptic('medium') }}
+            haptic={haptic}
+          />
+
+          {/* Exam season info (contextual) */}
+          <ExamSeasonBanner haptic={haptic} />
+
+          {/* PRIMARY CTA — Always visible, always above fold */}
+          <NewTaskCTA onClick={handleNewOrder} />
+
+          {/* Quick info badges */}
+          <QuickActionsRow
+            onNavigate={navigate}
+            onOpenModal={(modal) => {
+              if (modal === 'cashback') actions.openModal('cashback')
+              else if (modal === 'guarantees') actions.openModal('guarantees')
+            }}
+            onOpenUrgentSheet={() => {
+              haptic('medium')
+              actions.openModal('urgentSheet')
+            }}
+            haptic={haptic}
+          />
+
+          {/* Next action card for active orders */}
+          <NextActionCard
+            orders={user.orders}
+            onNavigate={navigate}
+            haptic={haptic}
+          />
+
+          {/* Trust signals */}
+          <SocialProofStrip />
+
+          {/* Last order quick access */}
+          {user.orders.length > 0 && (
+            <LastOrderCard
+              order={user.orders[0]}
+              onClick={() => navigate(`/order/${user.orders[0].id}`)}
+            />
+          )}
+        </>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -345,43 +298,6 @@ export function HomePage({ user }: Props) {
           defaultExpanded={!!activePromo}
         />
       </motion.div>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          ACHIEVEMENTS — Compact Single Line
-          ═══════════════════════════════════════════════════════════════════ */}
-      <CompactAchievements
-        achievements={achievements}
-        onViewAll={() => navigate('/achievements')}
-      />
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          REPUTATION (Referral) — Premium Gold Card
-          ═══════════════════════════════════════════════════════════════════ */}
-      <ReputationCard
-        referralCode={user.referral_code}
-        referralsCount={user.referrals_count}
-        copied={state.copied}
-        onCopy={copyReferralCode}
-        onShowQR={() => {
-          actions.openModal('qr')
-          haptic('light')
-        }}
-      />
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          PROGRESS TO NEXT LEVEL
-          ═══════════════════════════════════════════════════════════════════ */}
-      <LevelProgressCard rank={user.rank} displayNextRank={displayNextRank} />
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          QUICK STATS — My Orders Dashboard
-          ═══════════════════════════════════════════════════════════════════ */}
-      <OrderStatsCard
-        activeOrders={activeOrders}
-        completedOrders={completedOrders}
-        onClick={() => navigate('/orders')}
-        haptic={haptic}
-      />
 
       {/* ═══════════════════════════════════════════════════════════════════
           ELEGANT FOOTER
