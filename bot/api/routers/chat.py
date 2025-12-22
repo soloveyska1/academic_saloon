@@ -225,17 +225,34 @@ async def upload_voice_message(
 # ═══════════════════════════════════════════════════════════════════════════
 
 async def get_or_create_support_order(session: AsyncSession, user: User) -> Order:
-    result = await session.execute(select(Order).where(Order.user_id == user.telegram_id, Order.work_type == 'support_chat').limit(1))
+    """Get or create support chat order with race condition protection."""
+    result = await session.execute(
+        select(Order)
+        .where(Order.user_id == user.telegram_id, Order.work_type == 'support_chat')
+        .limit(1)
+    )
     order = result.scalar_one_or_none()
     if not order:
-        order = Order(
-            user_id=user.telegram_id, work_type='support_chat', subject='Техническая Поддержка',
-            topic='Чат с поддержкой из Mini App', description='Автоматически созданный диалог для поддержки',
-            status=str(OrderStatus.DRAFT), price=0, paid_amount=0, discount=0
-        )
-        session.add(order)
-        await session.commit()
-        await session.refresh(order)
+        try:
+            order = Order(
+                user_id=user.telegram_id, work_type='support_chat', subject='Техническая Поддержка',
+                topic='Чат с поддержкой из Mini App', description='Автоматически созданный диалог для поддержки',
+                status=str(OrderStatus.DRAFT), price=0, paid_amount=0, discount=0
+            )
+            session.add(order)
+            await session.commit()
+            await session.refresh(order)
+        except Exception:
+            # Race condition: another request created the order, rollback and fetch it
+            await session.rollback()
+            result = await session.execute(
+                select(Order)
+                .where(Order.user_id == user.telegram_id, Order.work_type == 'support_chat')
+                .limit(1)
+            )
+            order = result.scalar_one_or_none()
+            if not order:
+                raise HTTPException(status_code=500, detail="Failed to create support chat")
     return order
 
 @router.get("/support/messages", response_model=ChatMessagesResponse)

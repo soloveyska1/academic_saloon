@@ -67,9 +67,10 @@ def validate_init_data(init_data: str, bot_token: str) -> Optional[TelegramUser]
         data_check_string = '\n'.join(data_check_parts)
 
         # Compute secret key: HMAC-SHA256(bot_token, "WebAppData")
+        # Note: hmac.new(key, msg, digestmod) - key is bot_token, msg is "WebAppData"
         secret_key = hmac.new(
-            b"WebAppData",
             bot_token.encode(),
+            b"WebAppData",
             hashlib.sha256
         ).digest()
 

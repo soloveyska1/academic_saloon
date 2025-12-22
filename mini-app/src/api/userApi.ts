@@ -217,8 +217,15 @@ export async function uploadOrderFiles(orderId: number, files: File[], onProgres
       if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
     })
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText))
-      else reject(new Error('Upload failed'))
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText))
+        } catch {
+          reject(new Error('Invalid server response'))
+        }
+      } else {
+        reject(new Error('Upload failed'))
+      }
     }
     xhr.onerror = () => reject(new Error('Network error'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/upload-files`)
@@ -282,7 +289,17 @@ export async function uploadChatFile(orderId: number, file: File, onProgress?: (
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.upload.onprogress = e => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)) }
-    xhr.onload = () => resolve(JSON.parse(xhr.responseText))
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText))
+        } catch {
+          reject(new Error('Invalid server response'))
+        }
+      } else {
+        reject(new Error('Upload failed'))
+      }
+    }
     xhr.onerror = () => reject(new Error('Error'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/file`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
@@ -294,11 +311,20 @@ export async function uploadVoiceMessage(orderId: number, audioBlob: Blob, onPro
   const formData = new FormData()
   formData.append('file', audioBlob, 'voice.ogg')
   const initData = getInitData()
-  // Similar implementation to uploadChatFile but omitted for brevity as it's identical logic
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.upload.onprogress = e => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)) }
-    xhr.onload = () => resolve(JSON.parse(xhr.responseText))
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText))
+        } catch {
+          reject(new Error('Invalid server response'))
+        }
+      } else {
+        reject(new Error('Upload failed'))
+      }
+    }
     xhr.onerror = () => reject(new Error('Error'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/voice`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)

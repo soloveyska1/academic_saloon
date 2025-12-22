@@ -6,7 +6,7 @@ from core.config import settings
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,  # Отключено для production
-    future=True,
+    # future=True removed - deprecated in SQLAlchemy 2.0+ (always enabled)
     # === ОПТИМИЗАЦИЯ: настройки пула соединений ===
     pool_size=10,           # Базовый размер пула
     max_overflow=20,        # Дополнительные соединения при нагрузке
