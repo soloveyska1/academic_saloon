@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { Plus, Sparkles } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  NEW TASK CTA — THE Primary action button (2x larger, unmissable)
@@ -34,15 +34,15 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       style={{
         position: 'relative',
         width: '100%',
-        padding: '28px 28px',
-        borderRadius: 20,
-        border: '2px solid rgba(212,175,55,0.6)',
+        padding: '22px 24px',
+        borderRadius: 16,
+        border: '1px solid rgba(212,175,55,0.5)',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: 'linear-gradient(135deg, #D4AF37 0%, #c9a430 40%, #b48e26 70%, #D4AF37 100%)',
-        boxShadow: '0 12px 40px -12px rgba(212,175,55,0.5), 0 6px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
+        background: 'linear-gradient(135deg, #D4AF37 0%, #c9a430 50%, #D4AF37 100%)',
+        boxShadow: '0 8px 32px -8px rgba(212,175,55,0.45), 0 4px 16px rgba(0,0,0,0.2)',
         marginBottom: 24,
         overflow: 'hidden',
       }}
@@ -80,22 +80,18 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
         <div
           style={{
-            fontSize: 20,
-            fontWeight: 800,
+            fontSize: 17,
+            fontWeight: 700,
             color: '#1a1a1a',
             fontFamily: "var(--font-serif)",
-            letterSpacing: '0.04em',
+            letterSpacing: '0.05em',
             textTransform: 'uppercase',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            marginBottom: 6,
+            marginBottom: 4,
           }}
         >
-          <Sparkles size={18} color="rgba(0,0,0,0.6)" strokeWidth={2} aria-hidden="true" />
           Новая задача
         </div>
-        <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.65)', fontWeight: 500 }}>
+        <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.6)', fontWeight: 500 }}>
           Персональный менеджер • Гарантия сдачи
         </div>
       </div>
@@ -103,19 +99,18 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       <div
         aria-hidden="true"
         style={{
-          width: 56,
-          height: 56,
+          width: 48,
+          height: 48,
           borderRadius: '50%',
-          background: 'rgba(0,0,0,0.18)',
-          border: '2px solid rgba(0,0,0,0.12)',
+          background: 'rgba(0,0,0,0.15)',
+          border: '1px solid rgba(0,0,0,0.1)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
           flexShrink: 0,
         }}
       >
-        <Plus size={28} color="#1a1a1a" strokeWidth={2.5} />
+        <Plus size={24} color="#1a1a1a" strokeWidth={2.5} />
       </div>
     </motion.button>
   )
