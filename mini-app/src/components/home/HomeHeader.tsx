@@ -1,12 +1,11 @@
 import { useState, memo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  HOME HEADER — Premium compact header
+//  HOME HEADER — Premium minimalist header
 //  Features:
-//  - Avatar with spinning gold ring (VIP glow for max rank)
-//  - Greeting with user name
-//  - Streak chip
+//  - Avatar with static gold ring (subtle VIP glow for max rank)
+//  - Simple time-based greetings (no gamification)
 //  - Compact "Club" button (secret admin access)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -33,60 +32,33 @@ function getSmartGreeting(ctx: GreetingContext): string {
   const hour = new Date().getHours()
   const day = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
 
-  // Time-based base greeting
-  let timeGreeting: string
-  if (hour >= 5 && hour < 12) timeGreeting = 'Доброе утро'
-  else if (hour >= 12 && hour < 17) timeGreeting = 'Добрый день'
-  else if (hour >= 17 && hour < 22) timeGreeting = 'Добрый вечер'
-  else timeGreeting = 'Доброй ночи'
-
-  // VIP users get special greetings
-  if (ctx.isVIP) {
-    if (hour >= 22 || hour < 5) return 'Поздняя ночь, VIP на связи'
-    if (day === 1) return 'Продуктивной недели, легенда'
-    if (day === 5) return 'Отличных выходных, легенда'
-    return `${timeGreeting}, легенда`
-  }
-
-  // 7-day streak special greeting
-  if (ctx.streak >= 7) {
-    return 'Ты на огне! Неделя подряд'
-  }
-
   // First-time user welcome
   if (ctx.ordersCount === 0) {
-    return 'Добро пожаловать в Салон'
+    return 'Добро пожаловать'
   }
 
-  // Has active orders - encouraging greeting
-  if (ctx.hasActiveOrders) {
-    if (hour >= 5 && hour < 12) return 'Утро продуктивности!'
-    if (hour >= 22 || hour < 5) return 'Работаем даже ночью'
-    return 'Работа кипит'
-  }
-
-  // Weekend special
-  if (day === 0 || day === 6) {
-    return 'Отличных выходных'
-  }
-
-  // Monday motivation
+  // Monday motivation (before noon)
   if (day === 1 && hour < 12) {
     return 'Продуктивной недели'
   }
 
-  // Friday celebration
+  // Friday/Weekend
   if (day === 5 && hour >= 17) {
-    return 'Пятница, наконец!'
+    return 'Отличных выходных'
+  }
+  if (day === 0 || day === 6) {
+    return 'Отличных выходных'
   }
 
-  // Default time-based greeting
-  return timeGreeting
+  // Simple time-based greeting (same for everyone, including VIP)
+  if (hour >= 5 && hour < 12) return 'Доброе утро'
+  if (hour >= 12 && hour < 17) return 'Добрый день'
+  if (hour >= 17 && hour < 23) return 'Добрый вечер'
+  return 'Доброй ночи'
 }
 
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
-  const shouldReduceMotion = useReducedMotion()
 
   // Smart greeting based on context
   const greeting = getSmartGreeting({
@@ -108,31 +80,29 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        {/* User Avatar with Spinning Gold Ring + VIP Glow */}
+        {/* User Avatar with static gold ring */}
         <div style={{ position: 'relative' }}>
-          {/* VIP Glow Effect for Max Rank */}
-          {user.rank.is_max && !shouldReduceMotion && (
-            <motion.div
-              animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          {/* VIP Glow - Static subtle halo (no animation) */}
+          {user.rank.is_max && (
+            <div
               style={{
                 position: 'absolute',
-                inset: -8,
+                inset: -6,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(212,175,55,0.4) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
                 filter: 'blur(4px)',
+                pointerEvents: 'none',
               }}
             />
           )}
-          <motion.div
-            animate={shouldReduceMotion ? {} : { rotate: 360 }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+          {/* Static gold ring - no spinning (premium = restraint) */}
+          <div
             style={{
               position: 'absolute',
-              inset: -3,
+              inset: -2,
               borderRadius: '50%',
-              background:
-                'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
+              background: 'linear-gradient(135deg, #D4AF37 0%, #FCF6BA 50%, #BF953F 100%)',
+              opacity: 0.8,
             }}
           />
           <div
@@ -186,7 +156,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
                 : 'var(--text-main)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: user.rank.is_max ? 'transparent' : 'var(--text-main)',
-              filter: user.rank.is_max ? 'drop-shadow(0 0 8px rgba(212,175,55,0.3))' : 'none',
+              // No drop-shadow - luxury typography is crisp
               marginBottom: 2,
             }}
           >
@@ -204,33 +174,31 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         </div>
       </div>
 
-      {/* Compact Club Badge with shimmer */}
-      <motion.div
+      {/* Club Badge - clean, no shimmer */}
+      <div
         onClick={onSecretTap}
-        whileTap={{ scale: 0.97 }}
-        className="border-shimmer"
         style={{
-          position: 'relative',
           padding: '8px 14px',
-          background: 'linear-gradient(145deg, rgba(20,18,14,0.98), rgba(12,11,8,0.98))',
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           borderRadius: 8,
-          border: '1px solid rgba(212,175,55,0.5)',
+          border: '1px solid rgba(212,175,55,0.3)',
           cursor: 'default',
           userSelect: 'none',
-          boxShadow: '0 0 12px rgba(212,175,55,0.15), inset 0 0 20px rgba(212,175,55,0.03)',
         }}
       >
-        <span className="gold-shimmer"
+        <span
           style={{
-            fontFamily: "var(--font-serif)",
-            fontWeight: 700,
-            fontSize: 10,
-            letterSpacing: '0.12em',
+            fontWeight: 600,
+            fontSize: 11,
+            letterSpacing: '0.05em',
+            color: '#D4AF37',
           }}
         >
-          КЛУБ
+          Клуб
         </span>
-      </motion.div>
+      </div>
     </motion.div>
   )
 }, (prevProps, nextProps) => {
