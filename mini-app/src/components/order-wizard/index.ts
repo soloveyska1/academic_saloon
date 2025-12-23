@@ -5,6 +5,14 @@ export { VoucherSelector } from './VoucherSelector'
 
 // Hooks
 export { useDrafts } from './useDrafts'
+export {
+  useSocialProof,
+  useSocialProofBatch,
+  useAnimatedNumber,
+  formatOrderCount,
+  generateStaticProof,
+} from './useSocialProof'
+export type { SocialProofData, ServiceMetaForProof } from './useSocialProof'
 
 // Types
 export type {
