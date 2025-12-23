@@ -1,57 +1,30 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Sparkles, ChevronRight, Check, X, Crown, Flame, Star,
-  Users, Clock, Zap, GraduationCap, BookOpen, FileText, ArrowRight,
-  HelpCircle, Eye
+  Search, ChevronRight, Check, X, Crown, Flame, Star,
+  Zap, GraduationCap, BookOpen, FileText, ArrowRight,
+  Sparkles
 } from 'lucide-react'
 import { ServiceType, ServiceCategory } from './types'
 import { SERVICE_TYPES } from './constants'
 import {
   useSocialProofBatch,
-  useAnimatedNumber,
   formatOrderCount,
   SocialProofData
 } from './useSocialProof'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SERVICE TYPE STEP v2.0 — Полностью переработанный каталог услуг
+//  SERVICE TYPE STEP v3.0 — LUXURY EDITION
 //
-//  Улучшения:
-//  - Визуальная категоризация (острова)
-//  - Social Proof с динамическими метриками
-//  - "Горит дедлайн" CTA
-//  - Sticky category pills (фильтры)
-//  - Progressive disclosure для Premium
-//  - Интерактивный Quiz
+//  Design Philosophy (Jony Ive + Dieter Rams):
+//  - "Less but better" — убран визуальный шум
+//  - "Breathing cards" — больше воздуха
+//  - "Layered glass" — глубина через тени и blur
+//  - "Cinematic motion" — каскадные анимации
+//  - Premium Hero Cards — выделенный дизайн для VIP-услуг
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Категории с метаданными
-const CATEGORY_CONFIG = {
-  premium: {
-    title: 'Выпускные работы',
-    icon: Crown,
-    color: 'var(--gold-400)',
-    gradient: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
-    border: 'var(--border-gold)',
-  },
-  standard: {
-    title: 'Учебные работы',
-    icon: BookOpen,
-    color: 'var(--text-main)',
-    gradient: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
-    border: 'var(--border-default)',
-  },
-  express: {
-    title: 'Экспресс',
-    icon: Zap,
-    color: '#22c55e',
-    gradient: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))',
-    border: 'rgba(34,197,94,0.3)',
-  },
-}
-
-type FilterType = 'all' | 'popular' | 'premium' | 'express'
+type FilterType = 'all' | 'graduation' | 'study' | 'express'
 
 interface ServiceTypeStepProps {
   selected: string | null
@@ -69,18 +42,16 @@ export function ServiceTypeStep({
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [showQuiz, setShowQuiz] = useState(false)
-  const [expandedPremium, setExpandedPremium] = useState<string | null>(null)
 
-  // Social proof для всех услуг
+  // Social proof
   const socialProofMap = useSocialProofBatch(
     SERVICE_TYPES.map(s => ({ id: s.id, category: s.category, popular: s.popular }))
   )
 
-  // Фильтрация услуг
+  // Фильтрация
   const filteredServices = useMemo(() => {
     let services = SERVICE_TYPES
 
-    // Поиск
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       services = services.filter(
@@ -89,11 +60,10 @@ export function ServiceTypeStep({
       )
     }
 
-    // Фильтр по категории
-    if (activeFilter === 'popular') {
-      services = services.filter(s => s.popular)
-    } else if (activeFilter === 'premium') {
+    if (activeFilter === 'graduation') {
       services = services.filter(s => s.category === 'premium')
+    } else if (activeFilter === 'study') {
+      services = services.filter(s => s.category === 'standard')
     } else if (activeFilter === 'express') {
       services = services.filter(s => s.category === 'express')
     }
@@ -101,11 +71,9 @@ export function ServiceTypeStep({
     return services
   }, [searchQuery, activeFilter])
 
-  // Группировка по категориям
+  // Группировка
   const groupedServices = useMemo(() => {
-    if (searchQuery.trim() || activeFilter !== 'all') {
-      return null // Плоский список при поиске/фильтрации
-    }
+    if (searchQuery.trim() || activeFilter !== 'all') return null
 
     return {
       premium: SERVICE_TYPES.filter(s => s.category === 'premium'),
@@ -115,30 +83,24 @@ export function ServiceTypeStep({
   }, [searchQuery, activeFilter])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Urgent CTA */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Urgent CTA — Refined */}
       <UrgentCTA onPress={onUrgentRequest || onAssistRequest} />
 
-      {/* Search */}
+      {/* Search — Minimal */}
       <SearchBar
         value={searchQuery}
         onChange={setSearchQuery}
         onClear={() => setSearchQuery('')}
       />
 
-      {/* Category Pills */}
-      <CategoryPills
+      {/* Category Tabs — Underline Style */}
+      <CategoryTabs
         active={activeFilter}
         onChange={setActiveFilter}
-        counts={{
-          all: SERVICE_TYPES.length,
-          popular: SERVICE_TYPES.filter(s => s.popular).length,
-          premium: SERVICE_TYPES.filter(s => s.category === 'premium').length,
-          express: SERVICE_TYPES.filter(s => s.category === 'express').length,
-        }}
       />
 
-      {/* Quiz Prompt */}
+      {/* Quiz Prompt — Subtle */}
       {!searchQuery && activeFilter === 'all' && (
         <QuizPrompt onStart={() => setShowQuiz(true)} />
       )}
@@ -156,44 +118,70 @@ export function ServiceTypeStep({
         )}
       </AnimatePresence>
 
-      {/* Services List */}
+      {/* Services */}
       {groupedServices ? (
-        // Grouped view (острова)
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {(['premium', 'standard', 'express'] as ServiceCategory[]).map(category => (
-            <CategoryIsland
-              key={category}
-              category={category}
-              services={groupedServices[category]}
-              selected={selected}
-              onSelect={onSelect}
-              socialProofMap={socialProofMap}
-              expandedPremium={expandedPremium}
-              onExpandPremium={setExpandedPremium}
-            />
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+          {/* Premium Section — Hero Cards */}
+          <CategorySection
+            category="premium"
+            title="Выпускные работы"
+            services={groupedServices.premium}
+            selected={selected}
+            onSelect={onSelect}
+            socialProofMap={socialProofMap}
+          />
+
+          {/* Standard Section */}
+          <CategorySection
+            category="standard"
+            title="Учебные работы"
+            services={groupedServices.standard}
+            selected={selected}
+            onSelect={onSelect}
+            socialProofMap={socialProofMap}
+          />
+
+          {/* Express Section — Compact Grid */}
+          <CategorySection
+            category="express"
+            title="Экспресс"
+            services={groupedServices.express}
+            selected={selected}
+            onSelect={onSelect}
+            socialProofMap={socialProofMap}
+          />
         </div>
       ) : (
-        // Flat filtered view
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <AnimatePresence mode="popLayout">
             {filteredServices.map((service, index) => (
-              <ServiceCard
+              <motion.div
                 key={service.id}
-                service={service}
-                selected={selected === service.id}
-                onSelect={() => onSelect(service.id)}
-                index={index}
-                socialProof={socialProofMap.get(service.id)!}
-                expanded={expandedPremium === service.id}
-                onExpand={(show) => setExpandedPremium(show ? service.id : null)}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                {service.category === 'premium' ? (
+                  <PremiumHeroCard
+                    service={service}
+                    selected={selected === service.id}
+                    onSelect={() => onSelect(service.id)}
+                    socialProof={socialProofMap.get(service.id)!}
+                  />
+                ) : (
+                  <StandardCard
+                    service={service}
+                    selected={selected === service.id}
+                    onSelect={() => onSelect(service.id)}
+                    socialProof={socialProofMap.get(service.id)!}
+                  />
+                )}
+              </motion.div>
             ))}
           </AnimatePresence>
 
-          {filteredServices.length === 0 && (
-            <EmptyState onReset={() => { setSearchQuery(''); setActiveFilter('all') }} />
-          )}
+          {filteredServices.length === 0 && <EmptyState onReset={() => { setSearchQuery(''); setActiveFilter('all') }} />}
         </div>
       )}
     </div>
@@ -201,129 +189,108 @@ export function ServiceTypeStep({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  URGENT CTA — "Горит дедлайн?"
+//  URGENT CTA — Refined, Less Aggressive
 // ═══════════════════════════════════════════════════════════════════════════
 
 function UrgentCTA({ onPress }: { onPress?: () => void }) {
-  const [pulse, setPulse] = useState(false)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPulse(p => !p)
-    }, 2000)
-    return () => clearInterval(interval)
-  }, [])
-
   return (
     <motion.button
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
       onClick={onPress}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 14,
-        padding: '14px 18px',
-        background: 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(249,115,22,0.08))',
-        border: '1px solid rgba(239,68,68,0.3)',
-        borderRadius: 14,
+        gap: 16,
+        padding: '18px 20px',
+        background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(249,115,22,0.04) 100%)',
+        border: '1px solid rgba(239,68,68,0.2)',
+        borderRadius: 16,
         cursor: 'pointer',
         textAlign: 'left',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Animated glow */}
-      <motion.div
-        animate={{
-          opacity: pulse ? 0.6 : 0.2,
-          scale: pulse ? 1.05 : 1,
-        }}
-        transition={{ duration: 1 }}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(circle at 10% 50%, rgba(239,68,68,0.2) 0%, transparent 50%)',
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Subtle glow */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: 80,
+        height: '100%',
+        background: 'radial-gradient(circle at left, rgba(239,68,68,0.1) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
 
-      <motion.div
-        animate={{ rotate: pulse ? [0, -10, 10, 0] : 0 }}
-        transition={{ duration: 0.5 }}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: 'linear-gradient(135deg, #ef4444, #f97316)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
+      <div style={{
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: 'linear-gradient(135deg, #ef4444, #f97316)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        boxShadow: '0 4px 16px rgba(239,68,68,0.3)',
+      }}>
         <Flame size={22} color="white" />
-      </motion.div>
+      </div>
 
       <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: '#ef4444',
-          marginBottom: 2,
+          fontSize: 15,
+          fontWeight: 600,
+          color: 'var(--text-main)',
+          marginBottom: 3,
         }}>
-          Горит дедлайн?
+          Срочный заказ
         </div>
         <div style={{
-          fontSize: 12,
+          fontSize: 13,
           color: 'var(--text-muted)',
         }}>
-          Опишите задачу — подберём решение за 2 минуты
+          Опишите задачу — подберём решение
         </div>
       </div>
 
-      <ArrowRight size={18} color="#ef4444" />
+      <ArrowRight size={18} color="var(--text-muted)" />
     </motion.button>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SEARCH BAR
+//  SEARCH BAR — Minimal
 // ═══════════════════════════════════════════════════════════════════════════
 
-function SearchBar({
-  value,
-  onChange,
-  onClear
-}: {
+function SearchBar({ value, onChange, onClear }: {
   value: string
   onChange: (v: string) => void
   onClear: () => void
 }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 16px',
-        background: 'var(--bg-card-solid)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 12,
-      }}
-    >
-      <Search size={18} color="var(--text-muted)" />
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      padding: '14px 18px',
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border-default)',
+      borderRadius: 14,
+      transition: 'border-color 0.2s',
+    }}>
+      <Search size={18} color="var(--text-muted)" style={{ opacity: 0.6 }} />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Поиск услуги..."
+        placeholder="Найти услугу..."
         style={{
           flex: 1,
           fontSize: 15,
-          fontFamily: "'Inter', 'Manrope', sans-serif",
+          fontFamily: "'Inter', sans-serif",
           color: 'var(--text-main)',
           background: 'transparent',
           border: 'none',
@@ -356,74 +323,49 @@ function SearchBar({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  CATEGORY PILLS
+//  CATEGORY TABS — Clean Underline Style
 // ═══════════════════════════════════════════════════════════════════════════
 
-function CategoryPills({
-  active,
-  onChange,
-  counts
-}: {
+function CategoryTabs({ active, onChange }: {
   active: FilterType
   onChange: (f: FilterType) => void
-  counts: Record<FilterType, number>
 }) {
-  const pills: { id: FilterType; label: string; icon?: any; color?: string }[] = [
+  const tabs: { id: FilterType; label: string }[] = [
     { id: 'all', label: 'Все' },
-    { id: 'popular', label: 'Топ', icon: Flame, color: '#f97316' },
-    { id: 'express', label: 'Экспресс', icon: Zap, color: '#22c55e' },
-    { id: 'premium', label: 'Premium', icon: Crown, color: 'var(--gold-400)' },
+    { id: 'graduation', label: 'Выпускные' },
+    { id: 'study', label: 'Учебные' },
+    { id: 'express', label: 'Быстрые' },
   ]
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: 8,
-        overflowX: 'auto',
-        paddingBottom: 4,
-        WebkitOverflowScrolling: 'touch',
-        scrollbarWidth: 'none',
-      }}
-    >
-      {pills.map(pill => {
-        const isActive = active === pill.id
-        const Icon = pill.icon
+    <div style={{
+      display: 'flex',
+      gap: 4,
+      borderBottom: '1px solid var(--border-default)',
+      marginBottom: 4,
+    }}>
+      {tabs.map(tab => {
+        const isActive = active === tab.id
 
         return (
           <motion.button
-            key={pill.id}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onChange(pill.id)}
+            key={tab.id}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => onChange(tab.id)}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 14px',
-              fontSize: 13,
-              fontWeight: 600,
-              color: isActive ? (pill.color || 'var(--text-main)') : 'var(--text-muted)',
-              background: isActive
-                ? pill.color
-                  ? `${pill.color}15`
-                  : 'var(--bg-glass)'
-                : 'transparent',
-              border: `1px solid ${isActive ? (pill.color || 'var(--border-default)') : 'var(--border-default)'}`,
-              borderRadius: 20,
+              padding: '12px 16px',
+              fontSize: 14,
+              fontWeight: isActive ? 600 : 500,
+              color: isActive ? 'var(--gold-400)' : 'var(--text-muted)',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: isActive ? '2px solid var(--gold-400)' : '2px solid transparent',
+              marginBottom: -1,
               cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
+              transition: 'color 0.2s',
             }}
           >
-            {Icon && <Icon size={14} color={isActive ? pill.color : 'var(--text-muted)'} />}
-            {pill.label}
-            <span style={{
-              fontSize: 11,
-              opacity: 0.7,
-              fontWeight: 500,
-            }}>
-              {counts[pill.id]}
-            </span>
+            {tab.label}
           </motion.button>
         )
       })}
@@ -432,58 +374,47 @@ function CategoryPills({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  QUIZ PROMPT & MODAL
+//  QUIZ PROMPT — Subtle & Elegant
 // ═══════════════════════════════════════════════════════════════════════════
 
 function QuizPrompt({ onStart }: { onStart: () => void }) {
   return (
     <motion.button
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.01 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.3 }}
+      whileHover={{ backgroundColor: 'rgba(139,92,246,0.08)' }}
       whileTap={{ scale: 0.98 }}
       onClick={onStart}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
-        padding: '12px 16px',
-        background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.04))',
-        border: '1px solid rgba(139,92,246,0.25)',
+        justifyContent: 'center',
+        gap: 8,
+        padding: '14px 20px',
+        background: 'transparent',
+        border: '1px dashed rgba(139,92,246,0.3)',
         borderRadius: 12,
         cursor: 'pointer',
-        textAlign: 'left',
       }}
     >
-      <div style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(139,92,246,0.1))',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
+      <Sparkles size={16} color="#8b5cf6" />
+      <span style={{
+        fontSize: 14,
+        fontWeight: 500,
+        color: '#8b5cf6',
       }}>
-        <HelpCircle size={20} color="#8b5cf6" />
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-main)', marginBottom: 1 }}>
-          Не знаете, что выбрать?
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-          Ответьте на 2 вопроса — подберём услугу
-        </div>
-      </div>
-      <ChevronRight size={18} color="#8b5cf6" />
+        Не знаете, что выбрать? Поможем подобрать
+      </span>
     </motion.button>
   )
 }
 
-function ServiceQuiz({
-  onClose,
-  onResult
-}: {
+// ═══════════════════════════════════════════════════════════════════════════
+//  SERVICE QUIZ — Modal
+// ═══════════════════════════════════════════════════════════════════════════
+
+function ServiceQuiz({ onClose, onResult }: {
   onClose: () => void
   onResult: (serviceId: string) => void
 }) {
@@ -492,38 +423,20 @@ function ServiceQuiz({
 
   const typeOptions = [
     { id: 'graduation', label: 'Выпускная работа', desc: 'Диплом, магистерская', icon: GraduationCap },
-    { id: 'semester', label: 'Семестровая работа', desc: 'Курсовая, практика', icon: BookOpen },
-    { id: 'quick', label: 'Что-то небольшое', desc: 'Эссе, реферат, задача', icon: FileText },
+    { id: 'semester', label: 'Семестровая', desc: 'Курсовая, практика', icon: BookOpen },
+    { id: 'quick', label: 'Небольшая работа', desc: 'Эссе, реферат, задача', icon: FileText },
   ]
 
   const urgencyOptions = [
-    { id: 'urgent', label: 'Срочно (до 3 дней)', color: '#ef4444' },
-    { id: 'week', label: 'Есть неделя', color: '#eab308' },
+    { id: 'urgent', label: 'До 3 дней', color: '#ef4444' },
+    { id: 'week', label: 'Неделя', color: '#eab308' },
     { id: 'plenty', label: '2+ недели', color: '#22c55e' },
   ]
 
   const getRecommendation = (): string => {
-    if (answers.type === 'graduation') {
-      return answers.urgency === 'urgent' ? 'diploma' : 'masters'
-    }
-    if (answers.type === 'semester') {
-      return answers.urgency === 'urgent' ? 'practice' : 'coursework'
-    }
-    // quick
-    if (answers.urgency === 'urgent') return 'control'
-    return 'essay'
-  }
-
-  const handleTypeSelect = (type: string) => {
-    setAnswers(a => ({ ...a, type }))
-    setStep(2)
-  }
-
-  const handleUrgencySelect = (urgency: string) => {
-    setAnswers(a => ({ ...a, urgency }))
-    setTimeout(() => {
-      onResult(getRecommendation())
-    }, 300)
+    if (answers.type === 'graduation') return answers.urgency === 'urgent' ? 'diploma' : 'masters'
+    if (answers.type === 'semester') return answers.urgency === 'urgent' ? 'practice' : 'coursework'
+    return answers.urgency === 'urgent' ? 'control' : 'essay'
   }
 
   return (
@@ -534,8 +447,8 @@ function ServiceQuiz({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.8)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(0,0,0,0.85)',
+        backdropFilter: 'blur(12px)',
         zIndex: 1000,
         display: 'flex',
         alignItems: 'center',
@@ -551,30 +464,37 @@ function ServiceQuiz({
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: 360,
-          background: 'var(--bg-surface)',
-          borderRadius: 20,
-          padding: 24,
+          maxWidth: 380,
+          background: 'var(--bg-elevated)',
+          borderRadius: 24,
+          padding: 28,
           border: '1px solid var(--border-default)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)' }}>
-              {step === 1 ? 'Что нужно сделать?' : 'Когда дедлайн?'}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'var(--gold-400)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginBottom: 8,
+            }}>
               Шаг {step} из 2
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-main)' }}>
+              {step === 1 ? 'Что нужно сделать?' : 'Когда дедлайн?'}
             </div>
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
+              width: 36,
+              height: 36,
+              borderRadius: 10,
               background: 'var(--bg-glass)',
               border: 'none',
               cursor: 'pointer',
@@ -588,13 +508,8 @@ function ServiceQuiz({
         </div>
 
         {/* Progress */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-          <div style={{
-            flex: 1,
-            height: 3,
-            borderRadius: 2,
-            background: 'var(--gold-400)',
-          }} />
+        <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
+          <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'var(--gold-400)' }} />
           <div style={{
             flex: 1,
             height: 3,
@@ -604,7 +519,6 @@ function ServiceQuiz({
           }} />
         </div>
 
-        {/* Options */}
         <AnimatePresence mode="wait">
           {step === 1 ? (
             <motion.div
@@ -612,45 +526,47 @@ function ServiceQuiz({
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
             >
-              {typeOptions.map(opt => {
+              {typeOptions.map((opt, i) => {
                 const Icon = opt.icon
                 return (
                   <motion.button
                     key={opt.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    whileHover={{ backgroundColor: 'var(--bg-glass)' }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => handleTypeSelect(opt.id)}
+                    onClick={() => { setAnswers(a => ({ ...a, type: opt.id })); setStep(2) }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 14,
-                      padding: '14px 16px',
-                      background: 'var(--bg-card-solid)',
+                      gap: 16,
+                      padding: '18px 20px',
+                      background: 'var(--bg-surface)',
                       border: '1px solid var(--border-default)',
-                      borderRadius: 12,
+                      borderRadius: 14,
                       cursor: 'pointer',
                       textAlign: 'left',
                     }}
                   >
                     <div style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 10,
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
                       background: 'var(--bg-glass)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}>
-                      <Icon size={20} color="var(--text-muted)" />
+                      <Icon size={22} color="var(--text-muted)" />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)', marginBottom: 2 }}>
                         {opt.label}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        {opt.desc}
-                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{opt.desc}</div>
                     </div>
                     <ChevronRight size={18} color="var(--text-muted)" />
                   </motion.button>
@@ -663,21 +579,27 @@ function ServiceQuiz({
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
             >
-              {urgencyOptions.map(opt => (
+              {urgencyOptions.map((opt, i) => (
                 <motion.button
                   key={opt.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleUrgencySelect(opt.id)}
+                  onClick={() => {
+                    setAnswers(a => ({ ...a, urgency: opt.id }))
+                    setTimeout(() => onResult(getRecommendation()), 200)
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 14,
-                    padding: '16px 18px',
-                    background: `${opt.color}10`,
-                    border: `1px solid ${opt.color}40`,
-                    borderRadius: 12,
+                    padding: '18px 20px',
+                    background: `${opt.color}08`,
+                    border: `1px solid ${opt.color}30`,
+                    borderRadius: 14,
                     cursor: 'pointer',
                     textAlign: 'left',
                   }}
@@ -687,8 +609,9 @@ function ServiceQuiz({
                     height: 12,
                     borderRadius: '50%',
                     background: opt.color,
+                    boxShadow: `0 0 12px ${opt.color}40`,
                   }} />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-main)' }}>
                     {opt.label}
                   </span>
                 </motion.button>
@@ -702,423 +625,109 @@ function ServiceQuiz({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  CATEGORY ISLAND — Визуальная группа услуг
+//  CATEGORY SECTION
 // ═══════════════════════════════════════════════════════════════════════════
 
-function CategoryIsland({
+function CategorySection({
   category,
+  title,
   services,
   selected,
   onSelect,
   socialProofMap,
-  expandedPremium,
-  onExpandPremium,
 }: {
   category: ServiceCategory
+  title: string
   services: ServiceType[]
   selected: string | null
   onSelect: (id: string) => void
   socialProofMap: Map<string, SocialProofData>
-  expandedPremium: string | null
-  onExpandPremium: (id: string | null) => void
 }) {
-  const config = CATEGORY_CONFIG[category]
-  const Icon = config.icon
+  const isPremium = category === 'premium'
+  const isExpress = category === 'express'
 
   return (
-    <motion.div
+    <motion.section
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{
-        background: config.gradient,
-        border: `1px solid ${config.border}`,
-        borderRadius: 18,
-        padding: 16,
-      }}
     >
-      {/* Header */}
+      {/* Section Header — Cinzel for Premium */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        marginBottom: 14,
+        marginBottom: 16,
       }}>
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: 8,
-          background: `${config.color}15`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <Icon size={18} color={config.color} />
-        </div>
-        <span style={{
-          fontSize: 14,
+        {isPremium && (
+          <Crown size={16} color="var(--gold-400)" />
+        )}
+        {isExpress && (
+          <Zap size={16} color="#22c55e" />
+        )}
+        <h3 style={{
+          fontSize: isPremium ? 14 : 13,
           fontWeight: 700,
-          color: config.color,
+          fontFamily: isPremium ? "'Cinzel', serif" : "'Inter', sans-serif",
+          letterSpacing: isPremium ? '0.12em' : '0.05em',
           textTransform: 'uppercase',
-          letterSpacing: '0.03em',
+          color: isPremium ? 'var(--gold-400)' : 'var(--text-muted)',
+          margin: 0,
+          background: isPremium ? 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)' : 'none',
+          WebkitBackgroundClip: isPremium ? 'text' : 'initial',
+          WebkitTextFillColor: isPremium ? 'transparent' : 'initial',
         }}>
-          {config.title}
-        </span>
+          {title}
+        </h3>
       </div>
 
-      {/* Services */}
+      {/* Cards */}
       <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: category === 'express' ? 8 : 10,
+        display: isExpress ? 'grid' : 'flex',
+        gridTemplateColumns: isExpress ? 'repeat(2, 1fr)' : undefined,
+        flexDirection: isExpress ? undefined : 'column',
+        gap: isExpress ? 10 : 14,
       }}>
-        {category === 'express' ? (
-          // Compact grid for express
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 8,
-          }}>
-            {services.map((service, index) => (
-              <CompactServiceCard
-                key={service.id}
+        {services.map((service, index) => (
+          <motion.div
+            key={service.id}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.06, type: 'spring', stiffness: 300, damping: 25 }}
+          >
+            {isPremium ? (
+              <PremiumHeroCard
                 service={service}
                 selected={selected === service.id}
                 onSelect={() => onSelect(service.id)}
                 socialProof={socialProofMap.get(service.id)!}
               />
-            ))}
-          </div>
-        ) : (
-          // Full cards for premium/standard
-          services.map((service, index) => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              selected={selected === service.id}
-              onSelect={() => onSelect(service.id)}
-              index={index}
-              socialProof={socialProofMap.get(service.id)!}
-              expanded={expandedPremium === service.id}
-              onExpand={(show) => onExpandPremium(show ? service.id : null)}
-            />
-          ))
-        )}
+            ) : isExpress ? (
+              <ExpressCard
+                service={service}
+                selected={selected === service.id}
+                onSelect={() => onSelect(service.id)}
+                socialProof={socialProofMap.get(service.id)!}
+              />
+            ) : (
+              <StandardCard
+                service={service}
+                selected={selected === service.id}
+                onSelect={() => onSelect(service.id)}
+                socialProof={socialProofMap.get(service.id)!}
+              />
+            )}
+          </motion.div>
+        ))}
       </div>
-    </motion.div>
+    </motion.section>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SERVICE CARD — Полная карточка услуги
+//  PREMIUM HERO CARD — Luxury Design
 // ═══════════════════════════════════════════════════════════════════════════
 
-function ServiceCard({
-  service,
-  selected,
-  onSelect,
-  index,
-  socialProof,
-  expanded,
-  onExpand,
-}: {
-  service: ServiceType
-  selected: boolean
-  onSelect: () => void
-  index: number
-  socialProof: SocialProofData
-  expanded: boolean
-  onExpand: (show: boolean) => void
-}) {
-  const Icon = service.icon
-  const isPremium = service.category === 'premium'
-
-  // Animated viewers count
-  const animatedViewers = useAnimatedNumber(socialProof.viewersNow)
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-      transition={{ delay: index * 0.03 }}
-    >
-      <motion.button
-        type="button"
-        whileTap={{ scale: 0.98 }}
-        onClick={onSelect}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          padding: 0,
-          background: selected
-            ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
-            : 'var(--bg-card-solid)',
-          border: selected
-            ? '2px solid var(--border-gold-strong)'
-            : '1px solid var(--border-default)',
-          borderRadius: 14,
-          cursor: 'pointer',
-          textAlign: 'left',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: selected ? '0 0 20px -5px rgba(212,175,55,0.3)' : 'none',
-          WebkitTapHighlightColor: 'transparent',
-        }}
-      >
-        {/* Main content */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 14,
-          padding: '14px 16px',
-        }}>
-          {/* Icon */}
-          <div
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: 12,
-              background: selected
-                ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))'
-                : 'var(--bg-glass)',
-              border: `1px solid ${selected ? 'var(--border-gold)' : 'var(--border-default)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <Icon
-              size={22}
-              color={selected ? 'var(--gold-300)' : 'var(--text-muted)'}
-              strokeWidth={1.5}
-            />
-          </div>
-
-          {/* Content */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Title row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-              <span style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: selected ? 'var(--text-main)' : 'var(--text-secondary)',
-              }}>
-                {service.label}
-              </span>
-
-              {isPremium && (
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 3,
-                  padding: '2px 6px',
-                  fontSize: 9,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.03em',
-                  color: '#050505',
-                  background: 'var(--gold-metallic)',
-                  borderRadius: 4,
-                }}>
-                  <Crown size={9} />
-                  Premium
-                </span>
-              )}
-
-              {service.popular && !isPremium && (
-                <span style={{
-                  padding: '2px 6px',
-                  fontSize: 9,
-                  fontWeight: 600,
-                  color: '#f97316',
-                  background: 'rgba(249,115,22,0.12)',
-                  border: '1px solid rgba(249,115,22,0.25)',
-                  borderRadius: 4,
-                }}>
-                  Топ
-                </span>
-              )}
-            </div>
-
-            {/* Social proof row */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              marginBottom: 6,
-              fontSize: 11,
-            }}>
-              <span style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 3,
-                color: '#eab308',
-                fontWeight: 600,
-              }}>
-                <Star size={12} fill="#eab308" />
-                {socialProof.rating}
-              </span>
-              <span style={{ color: 'var(--text-muted)' }}>
-                {formatOrderCount(socialProof.totalOrders)} заказов
-              </span>
-              {socialProof.viewersNow > 1 && (
-                <span style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 3,
-                  color: '#22c55e',
-                }}>
-                  <Eye size={11} />
-                  {animatedViewers} смотрят
-                </span>
-              )}
-            </div>
-
-            {/* Price & duration */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 12,
-            }}>
-              <span style={{
-                fontWeight: 600,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: selected ? 'var(--gold-300)' : 'var(--text-muted)',
-              }}>
-                {service.price}
-              </span>
-              <span style={{ color: 'var(--border-default)' }}>•</span>
-              <span style={{ color: 'var(--text-muted)' }}>
-                {service.duration}
-              </span>
-            </div>
-          </div>
-
-          {/* Checkmark / Chevron */}
-          <div style={{ flexShrink: 0, marginTop: 4 }}>
-            <AnimatePresence mode="wait">
-              {selected ? (
-                <motion.div
-                  key="check"
-                  initial={{ scale: 0, rotate: -90 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  exit={{ scale: 0, rotate: 90 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: 'var(--gold-metallic)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 0 12px rgba(212,175,55,0.4)',
-                  }}
-                >
-                  <Check size={14} color="#050505" strokeWidth={3} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="chevron"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <ChevronRight size={18} color="var(--text-muted)" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Premium benefits (progressive disclosure) */}
-        {isPremium && (
-          <div
-            style={{
-              borderTop: '1px solid var(--border-default)',
-              padding: '10px 16px',
-              background: 'rgba(212,175,55,0.03)',
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              onExpand(!expanded)
-            }}
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                fontSize: 11,
-                color: 'var(--text-muted)',
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Check size={12} color="var(--gold-400)" />
-                  Консультант
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Check size={12} color="var(--gold-400)" />
-                  Правки
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Check size={12} color="var(--gold-400)" />
-                  Защита
-                </span>
-              </div>
-              <motion.div
-                animate={{ rotate: expanded ? 90 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronRight size={14} color="var(--gold-400)" />
-              </motion.div>
-            </div>
-
-            <AnimatePresence>
-              {expanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  style={{ overflow: 'hidden' }}
-                >
-                  <ul style={{
-                    margin: 0,
-                    marginTop: 10,
-                    padding: 0,
-                    paddingLeft: 16,
-                    fontSize: 11,
-                    color: 'var(--text-secondary)',
-                    lineHeight: 1.8,
-                  }}>
-                    <li>Персональный консультант на связи</li>
-                    <li>Приоритетная поддержка 24/7</li>
-                    <li>Бесплатные доработки до защиты</li>
-                    <li>Подготовка к защите и речь</li>
-                    <li>Гарантия уникальности от 85%</li>
-                  </ul>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
-      </motion.button>
-    </motion.div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  COMPACT SERVICE CARD — Для express-услуг
-// ═══════════════════════════════════════════════════════════════════════════
-
-function CompactServiceCard({
+function PremiumHeroCard({
   service,
   selected,
   onSelect,
@@ -1133,24 +742,382 @@ function CompactServiceCard({
 
   return (
     <motion.button
+      type="button"
+      whileHover={{
+        y: -2,
+        boxShadow: '0 12px 40px rgba(212,175,55,0.15)',
+      }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onSelect}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        padding: 0,
+        background: selected
+          ? 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 50%, rgba(212,175,55,0.08) 100%)'
+          : 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+        border: 'none',
+        borderRadius: 20,
+        cursor: 'pointer',
+        textAlign: 'left',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: selected
+          ? '0 8px 32px rgba(212,175,55,0.2), inset 0 1px 0 rgba(212,175,55,0.2)'
+          : '0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
+      }}
+    >
+      {/* Gold accent line */}
+      <div style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: selected ? 4 : 0,
+        background: 'linear-gradient(180deg, #FCF6BA, #D4AF37, #8E6E27)',
+        borderRadius: '20px 0 0 20px',
+        transition: 'width 0.3s',
+      }} />
+
+      {/* Content */}
+      <div style={{ padding: '24px 24px 20px' }}>
+        {/* Header Row */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: 20,
+        }}>
+          {/* Icon */}
+          <div style={{
+            width: 56,
+            height: 56,
+            borderRadius: 16,
+            background: selected
+              ? 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.1))'
+              : 'var(--bg-glass)',
+            border: `1px solid ${selected ? 'rgba(212,175,55,0.4)' : 'var(--border-default)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: selected ? '0 4px 16px rgba(212,175,55,0.2)' : 'none',
+          }}>
+            <Icon
+              size={26}
+              color={selected ? 'var(--gold-300)' : 'var(--text-muted)'}
+              strokeWidth={1.5}
+            />
+          </div>
+
+          {/* Check / Badge */}
+          <AnimatePresence mode="wait">
+            {selected ? (
+              <motion.div
+                key="check"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 16px rgba(212,175,55,0.4)',
+                }}
+              >
+                <Check size={18} color="#050505" strokeWidth={3} />
+              </motion.div>
+            ) : (
+              <motion.span
+                key="badge"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  padding: '5px 10px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#050505',
+                  background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                  borderRadius: 6,
+                }}
+              >
+                Premium
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Title */}
+        <h4 style={{
+          fontSize: 18,
+          fontWeight: 700,
+          color: 'var(--text-main)',
+          margin: '0 0 8px',
+          fontFamily: "'Manrope', sans-serif",
+        }}>
+          {service.label}
+        </h4>
+
+        {/* Benefits — Always visible for Premium */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+          marginBottom: 20,
+        }}>
+          {['Консультант', 'Правки', 'Защита'].map((benefit) => (
+            <span
+              key={benefit}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '4px 10px',
+                fontSize: 11,
+                fontWeight: 500,
+                color: 'var(--gold-400)',
+                background: 'rgba(212,175,55,0.08)',
+                borderRadius: 6,
+              }}
+            >
+              <Check size={10} color="var(--gold-400)" />
+              {benefit}
+            </span>
+          ))}
+        </div>
+
+        {/* Footer: Rating & Price */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+        }}>
+          {/* Rating */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 13,
+            color: 'var(--text-muted)',
+          }}>
+            <Star size={14} fill="#eab308" color="#eab308" />
+            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{socialProof.rating}</span>
+            <span>·</span>
+            <span>{formatOrderCount(socialProof.totalOrders)} выполнено</span>
+          </div>
+
+          {/* Price */}
+          <div style={{ textAlign: 'right' }}>
+            <div style={{
+              fontSize: 20,
+              fontWeight: 700,
+              fontFamily: "'JetBrains Mono', monospace",
+              background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
+              {service.price}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              {service.duration}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.button>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STANDARD CARD — Clean & Elegant
+// ═══════════════════════════════════════════════════════════════════════════
+
+function StandardCard({
+  service,
+  selected,
+  onSelect,
+  socialProof,
+}: {
+  service: ServiceType
+  selected: boolean
+  onSelect: () => void
+  socialProof: SocialProofData
+}) {
+  const Icon = service.icon
+
+  return (
+    <motion.button
+      type="button"
+      whileHover={{ y: -1, backgroundColor: 'rgba(255,255,255,0.02)' }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onSelect}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        width: '100%',
+        padding: '18px 20px',
+        background: selected
+          ? 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.02))'
+          : 'var(--bg-surface)',
+        border: 'none',
+        borderRadius: 16,
+        cursor: 'pointer',
+        textAlign: 'left',
+        position: 'relative',
+        boxShadow: selected
+          ? '0 4px 20px rgba(212,175,55,0.15), inset 0 0 0 1px rgba(212,175,55,0.3)'
+          : '0 2px 12px rgba(0,0,0,0.1), inset 0 0 0 1px var(--border-default)',
+      }}
+    >
+      {/* Selection indicator */}
+      <div style={{
+        position: 'absolute',
+        left: 0,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: selected ? 3 : 0,
+        height: '60%',
+        background: 'var(--gold-400)',
+        borderRadius: '0 3px 3px 0',
+        transition: 'width 0.2s',
+      }} />
+
+      {/* Icon */}
+      <div style={{
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        background: selected ? 'rgba(212,175,55,0.1)' : 'var(--bg-glass)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon
+          size={22}
+          color={selected ? 'var(--gold-300)' : 'var(--text-muted)'}
+          strokeWidth={1.5}
+        />
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 4,
+        }}>
+          <span style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: 'var(--text-main)',
+          }}>
+            {service.label}
+          </span>
+          {service.popular && (
+            <span style={{
+              padding: '2px 6px',
+              fontSize: 9,
+              fontWeight: 600,
+              color: '#f97316',
+              background: 'rgba(249,115,22,0.1)',
+              borderRadius: 4,
+            }}>
+              Топ
+            </span>
+          )}
+        </div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          fontSize: 13,
+          color: 'var(--text-muted)',
+        }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Star size={12} fill="#eab308" color="#eab308" />
+            {socialProof.rating}
+          </span>
+          <span>·</span>
+          <span>{service.price}</span>
+          <span>·</span>
+          <span>{service.duration}</span>
+        </div>
+      </div>
+
+      {/* Check */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: 'var(--gold-400)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Check size={16} color="#050505" strokeWidth={3} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.button>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  EXPRESS CARD — Compact Grid Style
+// ═══════════════════════════════════════════════════════════════════════════
+
+function ExpressCard({
+  service,
+  selected,
+  onSelect,
+  socialProof,
+}: {
+  service: ServiceType
+  selected: boolean
+  onSelect: () => void
+  socialProof: SocialProofData
+}) {
+  const Icon = service.icon
+
+  return (
+    <motion.button
+      whileHover={{ y: -2 }}
       whileTap={{ scale: 0.96 }}
       onClick={onSelect}
       style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 8,
-        padding: '14px 10px',
+        gap: 10,
+        padding: '20px 12px',
         background: selected
-          ? 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04))'
-          : 'var(--bg-card-solid)',
-        border: selected
-          ? '2px solid rgba(34,197,94,0.5)'
-          : '1px solid var(--border-default)',
-        borderRadius: 12,
+          ? 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(34,197,94,0.03))'
+          : 'var(--bg-surface)',
+        border: 'none',
+        borderRadius: 14,
         cursor: 'pointer',
         textAlign: 'center',
         position: 'relative',
+        boxShadow: selected
+          ? '0 4px 20px rgba(34,197,94,0.15), inset 0 0 0 1.5px rgba(34,197,94,0.4)'
+          : '0 2px 10px rgba(0,0,0,0.1), inset 0 0 0 1px var(--border-default)',
       }}
     >
       {/* Selected indicator */}
@@ -1160,10 +1127,10 @@ function CompactServiceCard({
           animate={{ scale: 1 }}
           style={{
             position: 'absolute',
-            top: 6,
-            right: 6,
-            width: 18,
-            height: 18,
+            top: 8,
+            right: 8,
+            width: 20,
+            height: 20,
             borderRadius: '50%',
             background: '#22c55e',
             display: 'flex',
@@ -1171,21 +1138,21 @@ function CompactServiceCard({
             justifyContent: 'center',
           }}
         >
-          <Check size={11} color="white" strokeWidth={3} />
+          <Check size={12} color="white" strokeWidth={3} />
         </motion.div>
       )}
 
       <div style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        background: selected ? 'rgba(34,197,94,0.15)' : 'var(--bg-glass)',
+        width: 42,
+        height: 42,
+        borderRadius: 12,
+        background: selected ? 'rgba(34,197,94,0.12)' : 'var(--bg-glass)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
       }}>
         <Icon
-          size={18}
+          size={20}
           color={selected ? '#22c55e' : 'var(--text-muted)'}
           strokeWidth={1.5}
         />
@@ -1193,29 +1160,28 @@ function CompactServiceCard({
 
       <div>
         <div style={{
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 600,
-          color: selected ? 'var(--text-main)' : 'var(--text-secondary)',
-          marginBottom: 2,
+          color: 'var(--text-main)',
+          marginBottom: 4,
         }}>
           {service.label}
         </div>
-
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 4,
-          fontSize: 10,
+          fontSize: 11,
           color: 'var(--text-muted)',
         }}>
           <Star size={10} fill="#eab308" color="#eab308" />
-          <span>{socialProof.rating}</span>
+          {socialProof.rating}
         </div>
       </div>
 
       <div style={{
-        fontSize: 11,
+        fontSize: 13,
         fontWeight: 600,
         fontFamily: "'JetBrains Mono', monospace",
         color: selected ? '#22c55e' : 'var(--text-muted)',
@@ -1235,31 +1201,28 @@ function EmptyState({ onReset }: { onReset: () => void }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      style={{
-        padding: '40px 20px',
-        textAlign: 'center',
-      }}
+      style={{ padding: '48px 20px', textAlign: 'center' }}
     >
-      <Search size={32} color="var(--text-muted)" style={{ opacity: 0.5, marginBottom: 12 }} />
-      <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 4 }}>
+      <Search size={36} color="var(--text-muted)" style={{ opacity: 0.4, marginBottom: 16 }} />
+      <div style={{ fontSize: 15, color: 'var(--text-muted)', marginBottom: 6 }}>
         Ничего не найдено
       </div>
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={onReset}
         style={{
-          marginTop: 12,
-          padding: '8px 16px',
-          fontSize: 12,
+          marginTop: 16,
+          padding: '10px 20px',
+          fontSize: 13,
           fontWeight: 600,
           color: 'var(--gold-400)',
           background: 'transparent',
           border: '1px solid var(--border-gold)',
-          borderRadius: 8,
+          borderRadius: 10,
           cursor: 'pointer',
         }}
       >
-        Сбросить фильтры
+        Показать все услуги
       </motion.button>
     </motion.div>
   )
