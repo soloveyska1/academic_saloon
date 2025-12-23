@@ -17,7 +17,6 @@ import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
 // New Home Components
 import {
   HomeHeader,
-  SocialProofStrip,
   ExamSeasonBanner,
   DailyBonusBanner,
   QuickActionsRow,
@@ -25,7 +24,6 @@ import {
   NewTaskCTA,
   LastOrderCard,
   UrgentHubSheet,
-  SaloonFooter,
   EmptyStateOnboarding,
   DailyBonusError,
   ModalLoadingFallback,
@@ -203,9 +201,6 @@ export function HomePage({ user }: Props) {
           ═══════════════════════════════════════════════════════════════════ */}
       {isNewUser ? (
         <>
-          {/* Trust signals FIRST for new users */}
-          <SocialProofStrip />
-
           {/* Exam season info (contextual) */}
           <ExamSeasonBanner haptic={haptic} />
 
@@ -270,9 +265,6 @@ export function HomePage({ user }: Props) {
             haptic={haptic}
           />
 
-          {/* Trust signals */}
-          <SocialProofStrip />
-
           {/* Last order quick access */}
           {user.orders.length > 0 && (
             <LastOrderCard
@@ -298,11 +290,6 @@ export function HomePage({ user }: Props) {
           defaultExpanded={!!activePromo}
         />
       </motion.div>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          ELEGANT FOOTER
-          ═══════════════════════════════════════════════════════════════════ */}
-      <SaloonFooter />
 
       {/* Show error UI when daily bonus fails to load */}
       {state.dailyBonus.error && !state.dailyBonus.loading && (
