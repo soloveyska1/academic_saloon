@@ -41,25 +41,38 @@ BLOCKED_SQL_KEYWORDS = [
 
 def validate_sql_query(query: str) -> tuple[bool, str]:
     """Validate SQL query for security"""
-    normalized = query.strip().upper()
+    # Remove leading/trailing whitespace and normalize
+    cleaned = query.strip()
+    normalized = cleaned.upper()
 
-    # Only allow SELECT queries
-    if not normalized.startswith('SELECT'):
+    # Block empty queries
+    if not cleaned:
+        return False, "Пустой запрос"
+
+    # Block comment attacks FIRST (before other checks to prevent bypass)
+    if '--' in query or '/*' in query or '*/' in query:
+        return False, "SQL комментарии запрещены"
+
+    # Only allow SELECT queries (must start with SELECT after optional whitespace)
+    if not re.match(r'^\s*SELECT\b', normalized):
         return False, "Разрешены только SELECT запросы"
 
-    # Check for dangerous keywords
+    # Check for dangerous keywords with word boundaries
     for keyword in BLOCKED_SQL_KEYWORDS:
-        # Use word boundary to avoid false positives
         if re.search(rf'\b{keyword}\b', normalized):
             return False, f"Запрещённое ключевое слово: {keyword}"
 
     # Block subqueries with write operations (injection attempts)
-    if re.search(r'\(\s*DELETE|\(\s*INSERT|\(\s*UPDATE|\(\s*DROP', normalized):
+    if re.search(r'\(\s*(DELETE|INSERT|UPDATE|DROP|ALTER|CREATE)\b', normalized):
         return False, "Запрещённые подзапросы"
 
-    # Block comment attacks
-    if '--' in query or '/*' in query:
-        return False, "SQL комментарии запрещены"
+    # Block semicolons (prevent multiple statements)
+    if ';' in cleaned:
+        return False, "Точка с запятой запрещена (только один запрос)"
+
+    # Block UNION-based injection attempts in suspicious contexts
+    if re.search(r'UNION\s+(ALL\s+)?SELECT.*FROM\s+PG_', normalized):
+        return False, "Подозрительный UNION запрос"
 
     return True, ""
 

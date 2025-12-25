@@ -5,11 +5,14 @@
 
 import asyncio
 import json
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 import pytz
 
 from aiogram import Bot
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select, func, and_
 
 from core.config import settings
@@ -132,8 +135,7 @@ class DailyStatsService:
             )
 
         except Exception as e:
-            import logging
-            logging.error(f"Failed to send daily stats: {e}")
+            logger.error(f"Failed to send daily stats: {e}")
 
     async def _wait_until_report_time(self):
         """Ждать до времени отправки отчёта"""
@@ -157,8 +159,7 @@ class DailyStatsService:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                import logging
-                logging.error(f"Error in daily stats loop: {e}")
+                logger.error(f"Error in daily stats loop: {e}")
                 # Ждём минуту перед следующей попыткой
                 await asyncio.sleep(60)
 

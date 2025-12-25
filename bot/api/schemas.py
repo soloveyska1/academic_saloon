@@ -514,3 +514,179 @@ class LiveFeedResponse(BaseModel):
     counters: Dict[str, int]  # pending_orders, pending_payments, unread_messages
     last_update: str
     has_critical: bool = False  # True if there are critical events
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  GOD MODE SCHEMAS (Admin Panel API)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class GodOrderStatusRequest(BaseModel):
+    """Request to update order status"""
+    status: str = Field(..., min_length=1, max_length=50)
+
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        valid_statuses = [
+            'draft', 'pending', 'waiting_estimation', 'waiting_payment',
+            'verification_pending', 'confirmed', 'paid', 'paid_full',
+            'in_progress', 'review', 'revision', 'completed', 'cancelled', 'rejected'
+        ]
+        if v not in valid_statuses:
+            raise ValueError(f'Некорректный статус: {v}')
+        return v
+
+
+class GodOrderPriceRequest(BaseModel):
+    """Request to set order price"""
+    price: float = Field(..., ge=0)
+
+    @field_validator('price')
+    @classmethod
+    def validate_price(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError('Цена не может быть отрицательной')
+        if v > 10_000_000:
+            raise ValueError('Слишком большая цена')
+        return v
+
+
+class GodOrderProgressRequest(BaseModel):
+    """Request to update order progress"""
+    progress: int = Field(..., ge=0, le=100)
+    status_text: Optional[str] = Field(None, max_length=500)
+
+
+class GodPaymentConfirmRequest(BaseModel):
+    """Request to confirm order payment"""
+    amount: Optional[float] = Field(None, ge=0)
+    is_full: bool = True
+
+
+class GodPaymentRejectRequest(BaseModel):
+    """Request to reject order payment"""
+    reason: str = Field(default="Платёж не найден", max_length=500)
+
+
+class GodOrderMessageRequest(BaseModel):
+    """Request to send message about order"""
+    text: str = Field(..., min_length=1, max_length=5000)
+
+    @field_validator('text')
+    @classmethod
+    def validate_text(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError('Текст сообщения не может быть пустым')
+        return v
+
+
+class GodOrderNotesRequest(BaseModel):
+    """Request to update order admin notes"""
+    notes: str = Field(default="", max_length=5000)
+
+
+class GodUserBalanceRequest(BaseModel):
+    """Request to modify user balance"""
+    amount: float = Field(...)
+    reason: str = Field(default="Admin adjustment", max_length=500)
+    notify: bool = True
+
+    @field_validator('amount')
+    @classmethod
+    def validate_amount(cls, v: float) -> float:
+        if v == 0:
+            raise ValueError('Сумма не может быть нулевой')
+        if abs(v) > 10_000_000:
+            raise ValueError('Слишком большая сумма')
+        return v
+
+
+class GodUserBanRequest(BaseModel):
+    """Request to ban/unban user"""
+    ban: bool = True
+    reason: str = Field(default="", max_length=500)
+
+
+class GodUserWatchRequest(BaseModel):
+    """Request to toggle user watch mode"""
+    watch: bool = True
+
+
+class GodUserNotesRequest(BaseModel):
+    """Request to update user admin notes"""
+    notes: str = Field(default="", max_length=5000)
+
+
+class GodPromoCreateRequest(BaseModel):
+    """Request to create promo code"""
+    code: str = Field(..., min_length=3, max_length=50)
+    discount_percent: float = Field(default=10, gt=0, le=100)
+    max_uses: int = Field(default=0, ge=0)
+    valid_until: Optional[str] = None
+    new_users_only: bool = False
+
+    @field_validator('code')
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        v = v.strip().upper()
+        if len(v) < 3:
+            raise ValueError('Код должен содержать минимум 3 символа')
+        # Allow alphanumeric characters only
+        if not re.match(r'^[A-Z0-9]+$', v):
+            raise ValueError('Код может содержать только буквы и цифры')
+        return v
+
+    @field_validator('valid_until')
+    @classmethod
+    def validate_valid_until(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        try:
+            datetime.fromisoformat(v)
+        except (ValueError, TypeError):
+            raise ValueError('Некорректный формат даты (используйте ISO формат)')
+        return v
+
+
+class GodActivityUpdateRequest(BaseModel):
+    """Request to update user activity tracking"""
+    page: Optional[str] = Field(None, max_length=100)
+    action: Optional[str] = Field(None, max_length=100)
+    order_id: Optional[int] = None
+    platform: Optional[str] = Field(None, max_length=50)
+
+
+class GodSqlRequest(BaseModel):
+    """Request to execute safe SQL query"""
+    query: str = Field(..., min_length=1, max_length=10000)
+
+    @field_validator('query')
+    @classmethod
+    def validate_query(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError('Запрос не может быть пустым')
+        return v
+
+
+class GodBroadcastRequest(BaseModel):
+    """Request to send broadcast message"""
+    text: str = Field(..., min_length=1, max_length=4000)
+    target: str = Field(default="all")
+
+    @field_validator('text')
+    @classmethod
+    def validate_text(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError('Текст сообщения не может быть пустым')
+        return v
+
+    @field_validator('target')
+    @classmethod
+    def validate_target(cls, v: str) -> str:
+        valid_targets = ['all', 'active', 'with_orders']
+        if v not in valid_targets:
+            raise ValueError(f'Некорректная целевая группа: {v}')
+        return v

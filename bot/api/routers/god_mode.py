@@ -34,7 +34,13 @@ from database.models.promocodes import PromoCode, PromoCodeUsage
 from database.models.admin_logs import AdminActionLog, AdminActionType, UserActivity
 from core.config import settings
 from bot.api.auth import TelegramUser, get_current_user
-from bot.api.schemas import OrderResponse
+from bot.api.schemas import (
+    OrderResponse, GodOrderStatusRequest, GodOrderPriceRequest, GodOrderProgressRequest,
+    GodPaymentConfirmRequest, GodPaymentRejectRequest, GodOrderMessageRequest,
+    GodOrderNotesRequest, GodUserBalanceRequest, GodUserBanRequest, GodUserWatchRequest,
+    GodUserNotesRequest, GodPromoCreateRequest, GodActivityUpdateRequest, GodSqlRequest,
+    GodBroadcastRequest
+)
 from bot.api.dependencies import order_to_response
 from bot.bot_instance import get_bot
 from bot.services.bonus import BonusService, BonusReason
@@ -463,7 +469,7 @@ async def get_order_details(
 @router.post("/orders/{order_id}/status")
 async def update_order_status(
     order_id: int,
-    data: dict,
+    data: GodOrderStatusRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -476,9 +482,7 @@ async def update_order_status(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    new_status = data.get("status")
-    if not new_status:
-        raise HTTPException(status_code=400, detail="Status required")
+    new_status = data.status
 
     old_status = order.status
     order.status = new_status
@@ -549,7 +553,7 @@ async def update_order_status(
 @router.post("/orders/{order_id}/price")
 async def update_order_price(
     order_id: int,
-    data: dict,
+    data: GodOrderPriceRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -562,17 +566,7 @@ async def update_order_price(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    new_price = data.get("price")
-    if new_price is None:
-        raise HTTPException(status_code=400, detail="Price is required")
-
-    try:
-        new_price = float(new_price)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Price must be a valid number")
-
-    if new_price < 0:
-        raise HTTPException(status_code=400, detail="Price cannot be negative")
+    new_price = data.price
 
     old_price = order.price
     order.price = new_price
@@ -729,7 +723,7 @@ async def update_order_price(
 @router.post("/orders/{order_id}/progress")
 async def update_order_progress(
     order_id: int,
-    data: dict,
+    data: GodOrderProgressRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -742,16 +736,8 @@ async def update_order_progress(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    new_progress = data.get("progress", 0)
-    try:
-        new_progress = int(new_progress)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Progress must be a valid integer")
-
-    new_progress = max(0, min(100, new_progress))
-    status_text = data.get("status_text")
-    if status_text and not isinstance(status_text, str):
-        raise HTTPException(status_code=400, detail="Status text must be a string")
+    new_progress = data.progress
+    status_text = data.status_text
 
     old_progress = order.progress
     order.progress = new_progress
@@ -786,7 +772,7 @@ async def update_order_progress(
 @router.post("/orders/{order_id}/confirm-payment")
 async def confirm_order_payment(
     order_id: int,
-    data: dict,
+    data: GodPaymentConfirmRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -799,16 +785,11 @@ async def confirm_order_payment(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    amount = data.get("amount", order.final_price)
-    try:
-        amount = float(amount)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Amount must be a valid number")
-
+    amount = data.amount if data.amount is not None else order.final_price
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be positive")
 
-    is_full = data.get("is_full", True)
+    is_full = data.is_full
 
     old_status = order.status
     old_paid = order.paid_amount or 0.0
@@ -880,7 +861,7 @@ async def confirm_order_payment(
 @router.post("/orders/{order_id}/reject-payment")
 async def reject_order_payment(
     order_id: int,
-    data: dict,
+    data: GodPaymentRejectRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -893,9 +874,7 @@ async def reject_order_payment(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    reason = data.get("reason", "Платёж не найден")
-    if not isinstance(reason, str):
-        raise HTTPException(status_code=400, detail="Reason must be a string")
+    reason = data.reason
 
     old_status = order.status
     order.status = OrderStatus.WAITING_PAYMENT.value
@@ -945,7 +924,7 @@ async def reject_order_payment(
 @router.post("/orders/{order_id}/message")
 async def send_order_message(
     order_id: int,
-    data: dict,
+    data: GodOrderMessageRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -958,13 +937,7 @@ async def send_order_message(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    text = data.get("text", "")
-    if not isinstance(text, str):
-        raise HTTPException(status_code=400, detail="Message text must be a string")
-
-    text = text.strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="Message text required")
+    text = data.text
 
     # Save message to DB
     message = OrderMessage(
@@ -1012,7 +985,7 @@ async def send_order_message(
 @router.post("/orders/{order_id}/notes")
 async def update_order_notes(
     order_id: int,
-    data: dict,
+    data: GodOrderNotesRequest,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -1023,11 +996,7 @@ async def update_order_notes(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    notes = data.get("notes", "")
-    if notes and not isinstance(notes, str):
-        raise HTTPException(status_code=400, detail="Notes must be a string")
-
-    order.admin_notes = notes
+    order.admin_notes = data.notes
     await session.commit()
 
     return {"success": True}
@@ -1194,7 +1163,7 @@ async def get_user_details(
 @router.post("/users/{user_id}/balance")
 async def modify_user_balance(
     user_id: int,
-    data: dict,
+    data: GodUserBalanceRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -1209,20 +1178,9 @@ async def modify_user_balance(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    amount = data.get("amount")
-    if amount is None:
-        raise HTTPException(status_code=400, detail="Amount is required")
-
-    try:
-        amount = float(amount)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Amount must be a valid number")
-
-    if amount == 0:
-        raise HTTPException(status_code=400, detail="Amount cannot be zero")
-
-    reason = data.get("reason", "Admin adjustment")
-    notify = data.get("notify", True)
+    amount = data.amount
+    reason = data.reason
+    notify = data.notify
 
     old_balance = user.balance
 
@@ -1276,7 +1234,7 @@ async def modify_user_balance(
 @router.post("/users/{user_id}/ban")
 async def ban_user(
     user_id: int,
-    data: dict,
+    data: GodUserBanRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -1291,10 +1249,8 @@ async def ban_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    ban = data.get("ban", True)
-    reason = data.get("reason", "")
-    if reason and not isinstance(reason, str):
-        raise HTTPException(status_code=400, detail="Reason must be a string")
+    ban = data.ban
+    reason = data.reason
 
     old_banned = user.is_banned
     user.is_banned = ban
@@ -1337,7 +1293,7 @@ async def ban_user(
 @router.post("/users/{user_id}/watch")
 async def toggle_watch_user(
     user_id: int,
-    data: dict,
+    data: GodUserWatchRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -1351,7 +1307,7 @@ async def toggle_watch_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    watch = data.get("watch", True)
+    watch = data.watch
 
     old_watched = user.is_watched
     user.is_watched = watch
@@ -1374,7 +1330,7 @@ async def toggle_watch_user(
 @router.post("/users/{user_id}/notes")
 async def update_user_notes(
     user_id: int,
-    data: dict,
+    data: GodUserNotesRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -1388,12 +1344,8 @@ async def update_user_notes(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    notes = data.get("notes", "")
-    if notes and not isinstance(notes, str):
-        raise HTTPException(status_code=400, detail="Notes must be a string")
-
     old_notes = user.admin_notes
-    user.admin_notes = notes
+    user.admin_notes = data.notes
 
     await log_admin_action(
         session, tg_user, AdminActionType.USER_NOTE_UPDATE,
@@ -1512,7 +1464,7 @@ async def get_promos(
 
 @router.post("/promos")
 async def create_promo(
-    data: dict,
+    data: GodPromoCreateRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -1520,16 +1472,7 @@ async def create_promo(
     """Create new promo code"""
     require_god_mode(tg_user)
 
-    code = data.get("code")
-    if not code:
-        raise HTTPException(status_code=400, detail="Code is required")
-
-    if not isinstance(code, str):
-        raise HTTPException(status_code=400, detail="Code must be a string")
-
-    code = code.strip().upper()
-    if len(code) < 3:
-        raise HTTPException(status_code=400, detail="Code must be at least 3 characters")
+    code = data.code
 
     # Check if exists
     existing = await session.scalar(
@@ -1538,44 +1481,17 @@ async def create_promo(
     if existing:
         raise HTTPException(status_code=400, detail="Promo code already exists")
 
-    discount = data.get("discount_percent", 10)
-    try:
-        discount = float(discount)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Discount must be a valid number")
-
-    if discount <= 0 or discount > 100:
-        raise HTTPException(status_code=400, detail="Discount must be between 0 and 100")
-
-    max_uses = data.get("max_uses", 0)
-    try:
-        max_uses = int(max_uses)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Max uses must be a valid integer")
-
-    if max_uses < 0:
-        raise HTTPException(status_code=400, detail="Max uses cannot be negative")
-
-    valid_until = data.get("valid_until")
     valid_until_dt = None
-    if valid_until:
-        try:
-            valid_until_dt = datetime.fromisoformat(valid_until)
-        except (ValueError, TypeError):
-            raise HTTPException(status_code=400, detail="Invalid datetime format for valid_until")
-
-    # New users only flag
-    new_users_only = data.get("new_users_only", False)
-    if not isinstance(new_users_only, bool):
-        new_users_only = str(new_users_only).lower() in ("true", "1", "yes")
+    if data.valid_until:
+        valid_until_dt = datetime.fromisoformat(data.valid_until)
 
     promo = PromoCode(
         code=code,
-        discount_percent=discount,
-        max_uses=max_uses,
+        discount_percent=data.discount_percent,
+        max_uses=data.max_uses,
         valid_until=valid_until_dt,
         is_active=True,
-        new_users_only=new_users_only,
+        new_users_only=data.new_users_only,
         created_by=tg_user.id,
     )
     session.add(promo)
@@ -1583,8 +1499,8 @@ async def create_promo(
     await log_admin_action(
         session, tg_user, AdminActionType.PROMO_CREATE,
         target_type="promo",
-        details=f"Created promo: {code} ({discount}%)",
-        new_value={"code": code, "discount": discount, "max_uses": max_uses},
+        details=f"Created promo: {code} ({data.discount_percent}%)",
+        new_value={"code": code, "discount": data.discount_percent, "max_uses": data.max_uses},
         request=request,
     )
 
@@ -1695,7 +1611,7 @@ async def get_live_activity(
 
 @router.post("/activity")
 async def update_user_activity(
-    data: dict,
+    data: GodActivityUpdateRequest,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -1718,30 +1634,11 @@ async def update_user_activity(
         )
         session.add(activity)
 
-    page = data.get("page")
-    if page and not isinstance(page, str):
-        page = None
-
-    action = data.get("action")
-    if action and not isinstance(action, str):
-        action = None
-
-    order_id = data.get("order_id")
-    if order_id is not None:
-        try:
-            order_id = int(order_id)
-        except (ValueError, TypeError):
-            order_id = None
-
-    platform = data.get("platform")
-    if platform and not isinstance(platform, str):
-        platform = None
-
-    activity.current_page = page
-    activity.current_action = action
-    activity.current_order_id = order_id
+    activity.current_page = data.page
+    activity.current_action = data.action
+    activity.current_order_id = data.order_id
     activity.is_online = True
-    activity.platform = platform
+    activity.platform = data.platform
     activity.last_activity_at = now
 
     await session.commit()
@@ -1802,7 +1699,7 @@ async def get_admin_logs(
 
 @router.post("/sql")
 async def execute_safe_sql(
-    data: dict,
+    data: GodSqlRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -1810,13 +1707,7 @@ async def execute_safe_sql(
     """Execute SQL query (SELECT only for safety)"""
     require_god_mode(tg_user)
 
-    query = data.get("query", "")
-    if not isinstance(query, str):
-        raise HTTPException(status_code=400, detail="Query must be a string")
-
-    query = query.strip()
-    if not query:
-        raise HTTPException(status_code=400, detail="Query required")
+    query = data.query
 
     # Security: Only allow SELECT queries
     query_upper = query.upper()
@@ -1871,7 +1762,7 @@ async def execute_safe_sql(
 
 @router.post("/broadcast")
 async def send_broadcast(
-    data: dict,
+    data: GodBroadcastRequest,
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -1880,15 +1771,8 @@ async def send_broadcast(
     """Send broadcast message to users"""
     require_god_mode(tg_user)
 
-    text = data.get("text", "")
-    if not isinstance(text, str):
-        raise HTTPException(status_code=400, detail="Message text must be a string")
-
-    text = text.strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="Message text required")
-
-    target = data.get("target", "all")  # all, active, with_orders
+    text = data.text
+    target = data.target
 
     # Get target users
     query = select(User.telegram_id).where(User.is_banned == False)
