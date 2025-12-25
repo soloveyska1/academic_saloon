@@ -5,8 +5,10 @@ Adds:
 - Indexes on PromoCodeUsage FK columns
 - CHECK constraints on progress, discount, balance fields
 
+This is a merge migration that consolidates two branches.
+
 Revision ID: add_indexes_constraints
-Revises: promo_usage_soft_delete
+Revises: promo_usage_soft_delete, t8u9v0w1x2
 Create Date: 2024-12-25
 """
 
@@ -15,7 +17,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'add_indexes_constraints'
-down_revision = 'promo_usage_soft_delete'
+down_revision = ('promo_usage_soft_delete', 't8u9v0w1x2')  # Merge both heads
 branch_labels = None
 depends_on = None
 
