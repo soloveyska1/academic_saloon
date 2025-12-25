@@ -940,7 +940,7 @@ async def backup_chat_to_yadisk(
             return True
 
         work_type = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
-        price_str = f"{int(order.price):,}₽".replace(",", " ") if order.price > 0 else "не установлена"
+        price_str = f"{int(order.price):,}₽".replace(",", " ") if order.price and order.price > 0 else "не установлена"
         deadline_str = order.deadline if order.deadline else "не указаны"
 
         chat_lines = [
