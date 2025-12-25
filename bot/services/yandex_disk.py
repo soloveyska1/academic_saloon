@@ -119,7 +119,8 @@ class YandexDiskService:
                 # Папка не существует — создаём родительскую, потом текущую
                 parent = str(Path(path).parent)
                 if parent != "/":
-                    await self._ensure_folder_exists(client, parent)
+                    if not await self._ensure_folder_exists(client, parent):
+                        return False
 
                 # Создаём текущую папку
                 create_resp = await client.put(
