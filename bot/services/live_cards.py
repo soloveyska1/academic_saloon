@@ -570,6 +570,8 @@ def get_card_keyboard(
 
     elif stage_name == "revision":
         # ═══ ПРАВКИ ЗАПРОШЕНЫ ═══
+        progress = getattr(order, 'progress', 0) or 0
+
         # Прогресс
         buttons.append([
             InlineKeyboardButton(
