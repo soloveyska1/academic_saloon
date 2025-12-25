@@ -68,7 +68,10 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
 
     await callback.answer("💳")
 
-    price = int(order.price)
+    price = int(order.price or 0)
+    if price <= 0:
+        await callback.message.answer("❌ Цена заказа не установлена")
+        return
     advance = price // 2  # 50% advance
 
     # Payment details from config — clean design
