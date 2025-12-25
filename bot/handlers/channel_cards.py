@@ -34,6 +34,7 @@ from bot.services.unified_hub import (
 )
 from core.config import settings
 from bot.handlers.order_chat import get_or_create_topic, format_order_info
+from bot.utils import parse_order_id
 from core.media_cache import send_cached_photo
 
 # Изображение для счёта/инвойса
@@ -47,19 +48,6 @@ router = Router()
 # ══════════════════════════════════════════════════════════════
 #           ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ══════════════════════════════════════════════════════════════
-
-def parse_order_id(callback_data: str) -> int:
-    """Извлекает order_id из callback_data, игнорируя суффиксы вроде _confirmed"""
-    # card_reject:123 или card_reject:123_confirmed
-    parts = callback_data.split(":")
-    if len(parts) < 2:
-        raise ValueError(f"Invalid callback_data: {callback_data}")
-
-    order_part = parts[1]
-    # Убираем суффиксы (_confirmed, _yes, etc.)
-    order_id_str = order_part.split("_")[0]
-    return int(order_id_str)
-
 
 async def get_order_with_user(session: AsyncSession, order_id: int) -> tuple[Order | None, User | None]:
     """Получает заказ и пользователя"""
