@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.types import BufferedInputFile
 
@@ -242,7 +243,7 @@ async def get_or_create_support_order(session: AsyncSession, user: User) -> Orde
             session.add(order)
             await session.commit()
             await session.refresh(order)
-        except Exception:
+        except IntegrityError:
             # Race condition: another request created the order, rollback and fetch it
             await session.rollback()
             result = await session.execute(

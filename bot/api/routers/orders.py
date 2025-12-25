@@ -36,6 +36,40 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Orders"])
 
+# Allowed file extensions for upload (whitelist)
+ALLOWED_EXTENSIONS = {
+    # Documents
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.odt', '.ods', '.odp', '.rtf', '.txt', '.csv',
+    # Images
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg',
+    # Archives
+    '.zip', '.rar', '.7z', '.tar', '.gz',
+    # Code/Data
+    '.py', '.js', '.ts', '.html', '.css', '.json', '.xml', '.sql',
+    # Other
+    '.mp3', '.mp4', '.avi', '.mov', '.wav',
+}
+
+# Blocked file extensions (dangerous)
+BLOCKED_EXTENSIONS = {
+    '.exe', '.bat', '.cmd', '.sh', '.ps1', '.vbs', '.js',
+    '.msi', '.dll', '.scr', '.com', '.pif',
+}
+
+
+def is_allowed_file(filename: str) -> bool:
+    """Check if file extension is allowed"""
+    if not filename:
+        return False
+    ext = '.' + filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if ext in BLOCKED_EXTENSIONS:
+        return False
+    # If whitelist is defined, only allow those extensions
+    # Otherwise, allow anything except blocked
+    return ext in ALLOWED_EXTENSIONS or ext == ''
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  ORDER LIST & DETAIL
 # ═══════════════════════════════════════════════════════════════════════════
@@ -641,11 +675,25 @@ async def upload_order_files(
         return FileUploadResponse(success=False, message="Файловое хранилище временно недоступно")
 
     file_data = []
+    blocked_files = []
     for file in files:
+        # Check file extension
+        if not is_allowed_file(file.filename):
+            blocked_files.append(file.filename)
+            logger.warning(f"Blocked file upload: {file.filename} (order_id={order_id})")
+            continue
+
         content = await file.read()
         if len(content) > 50 * 1024 * 1024:
             continue
         file_data.append((content, file.filename))
+
+    if blocked_files and not file_data:
+        return FileUploadResponse(
+            success=False,
+            message=f"Недопустимый тип файла: {', '.join(blocked_files)}",
+            uploaded_count=0
+        )
 
     if not file_data:
         return FileUploadResponse(success=False, message="Нет файлов для загрузки", uploaded_count=0)
