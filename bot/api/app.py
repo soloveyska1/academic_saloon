@@ -11,9 +11,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 logger = logging.getLogger(__name__)
 from .websocket import router as ws_router
-# Rate limiting temporarily disabled - uncomment when slowapi is installed on server
-# from slowapi.errors import RateLimitExceeded
-# from .rate_limit import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from .rate_limit import limiter, rate_limit_exceeded_handler
 
 
 # Production origins only
@@ -70,8 +69,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
 
-    # Rate limiting temporarily disabled - uncomment when slowapi is installed on server
-    # app.state.limiter = limiter
+    # Rate limiting
+    app.state.limiter = limiter
 
     # CORS for Mini App
     # Note: Cannot use "*" with credentials=True, must specify origins explicitly
@@ -82,8 +81,18 @@ def create_app() -> FastAPI:
         allow_origin_regex=VERCEL_ORIGIN_REGEX,  # Allow all Vercel preview URLs
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-        expose_headers=["*"],
+        allow_headers=[
+            "Content-Type",
+            "Authorization",
+            "X-Telegram-Init-Data",
+            "X-Requested-With",
+        ],
+        expose_headers=[
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+            "Retry-After",
+        ],
     )
 
     # Include routers
@@ -102,20 +111,14 @@ def create_app() -> FastAPI:
     async def health_check():
         return {"status": "ok", "service": "mini-app-api"}
 
-    # Rate limit exceeded handler - temporarily disabled
-    # @app.exception_handler(RateLimitExceeded)
-    # async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    #     return await rate_limit_exceeded_handler(request, exc)
+    # Rate limit exceeded handler
+    @app.exception_handler(RateLimitExceeded)
+    async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
+        return await rate_limit_exceeded_handler(request, exc)
 
     # Validation error handler with logging
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
-        body = None
-        try:
-            body = await request.json()
-        except Exception:
-            pass
-
         # Make errors JSON-serializable
         errors = []
         for err in exc.errors():
@@ -123,17 +126,16 @@ def create_app() -> FastAPI:
                 "type": err.get("type", "unknown"),
                 "loc": err.get("loc", []),
                 "msg": str(err.get("msg", "Validation error")),
-                "input": err.get("input")
             }
-            # Remove non-serializable ctx
+            # Don't log input values - may contain sensitive data
             errors.append(clean_err)
 
-        logger.error(f"[422 Validation Error] URL: {request.url}")
-        logger.error(f"[422 Validation Error] Body: {body}")
-        logger.error(f"[422 Validation Error] Errors: {errors}")
+        # Log only URL and error types, NOT body content (may contain auth tokens)
+        logger.warning(f"[422 Validation Error] URL: {request.url.path} | Errors: {[e['loc'] for e in errors]}")
+
         return JSONResponse(
             status_code=422,
-            content={"detail": errors, "body": body}
+            content={"detail": errors}
         )
 
     return app

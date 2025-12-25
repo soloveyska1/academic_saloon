@@ -4,6 +4,7 @@
 """
 
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 import pytz
@@ -14,6 +15,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from core.config import settings
 from bot.services.logger import BotLogger, LogEvent, LogLevel
+
+logger = logging.getLogger(__name__)
 
 MSK = pytz.timezone("Europe/Moscow")
 
@@ -116,8 +119,7 @@ class AbandonedOrderTracker:
                     await redis.hset(key, "notified", "true")
 
             except Exception as e:
-                import logging
-                logging.error(f"Error checking abandoned order: {e}")
+                logger.error(f"Error checking abandoned order: {e}")
 
     async def _notify_abandoned(self, data: dict):
         """Отправить уведомление о брошенном заказе"""
@@ -170,20 +172,24 @@ class AbandonedOrderTracker:
                 disable_notification=False,  # Со звуком!
             )
         except Exception as e:
-            import logging
-            logging.error(f"Failed to send abandoned order notification: {e}")
+            logger.error(f"Failed to send abandoned order notification: {e}")
 
     async def _check_loop(self):
         """Цикл проверки брошенных заказов"""
         while self._running:
             try:
                 await self.check_abandoned()
+            except asyncio.CancelledError:
+                # Task was cancelled, exit gracefully
+                break
             except Exception as e:
-                import logging
-                logging.error(f"Error in abandoned check loop: {e}")
+                logger.error(f"Error in abandoned check loop: {e}")
 
-            # Проверяем каждые 5 минут
-            await asyncio.sleep(300)
+            try:
+                # Проверяем каждые 5 минут
+                await asyncio.sleep(300)
+            except asyncio.CancelledError:
+                break
 
     def start(self):
         """Запустить фоновую проверку"""

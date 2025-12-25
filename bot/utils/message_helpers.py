@@ -150,3 +150,35 @@ async def safe_delete_message(message: Message | None) -> bool:
     except Exception as e:
         logger.debug(f"Failed to delete message: {e}")
         return False
+
+
+def parse_order_id(callback_data: str) -> int:
+    """
+    Извлекает order_id из callback_data.
+
+    Поддерживает форматы:
+    - "card_reject:123"
+    - "card_reject:123_confirmed"
+    - "prefix:123_any_suffix"
+
+    Args:
+        callback_data: Строка callback_data
+
+    Returns:
+        order_id как int
+
+    Raises:
+        ValueError: Если формат невалидный
+    """
+    parts = callback_data.split(":")
+    if len(parts) < 2:
+        raise ValueError(f"Invalid callback_data format: {callback_data}")
+
+    order_part = parts[1]
+    # Убираем суффиксы (_confirmed, _yes, etc.)
+    order_id_str = order_part.split("_")[0]
+
+    try:
+        return int(order_id_str)
+    except ValueError:
+        raise ValueError(f"Invalid order_id in callback_data: {callback_data}")

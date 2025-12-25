@@ -2,10 +2,12 @@
 Сервис для работы с Яндекс Диском.
 Автоматическая загрузка файлов заказов в организованные папки.
 """
+import asyncio
 import logging
 import httpx
 from datetime import datetime
-from typing import Optional
+from functools import wraps
+from typing import Optional, TypeVar, Callable, Any
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -13,6 +15,39 @@ import re
 from core.config import settings
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar('T')
+
+
+def async_retry(max_attempts: int = 3, delay: float = 1.0, backoff: float = 2.0):
+    """
+    Retry decorator for async functions with exponential backoff.
+    Retries on httpx.HTTPError and httpx.TimeoutException.
+    """
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @wraps(func)
+        async def wrapper(*args: Any, **kwargs: Any) -> T:
+            last_exception = None
+            current_delay = delay
+
+            for attempt in range(max_attempts):
+                try:
+                    return await func(*args, **kwargs)
+                except (httpx.HTTPError, httpx.TimeoutException) as e:
+                    last_exception = e
+                    if attempt < max_attempts - 1:
+                        logger.warning(
+                            f"[YaDisk] {func.__name__} attempt {attempt + 1} failed: {e}. "
+                            f"Retrying in {current_delay:.1f}s..."
+                        )
+                        await asyncio.sleep(current_delay)
+                        current_delay *= backoff
+                    else:
+                        logger.error(f"[YaDisk] {func.__name__} failed after {max_attempts} attempts: {e}")
+
+            raise last_exception
+        return wrapper
+    return decorator
 
 # Yandex Disk API endpoints
 YADISK_API_BASE = "https://cloud-api.yandex.net/v1/disk"

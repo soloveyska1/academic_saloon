@@ -8,6 +8,7 @@ UNIFIED HUB - Единый админский хаб на базе Forum Topics.
 - Авто-переименование по статусу
 - Авто-закрытие при завершении
 """
+import asyncio
 import logging
 from datetime import datetime
 from typing import Optional
@@ -71,6 +72,7 @@ STATUS_EMOJI = {
 
 # Кэш ID служебных топиков (загружается при старте)
 _service_topic_ids: dict[str, int] = {}
+_service_topic_ids_lock = asyncio.Lock()
 
 
 # ══════════════════════════════════════════════════════════════
