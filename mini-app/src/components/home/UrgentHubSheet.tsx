@@ -50,10 +50,10 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0,0,0,0.7)', // Darker backdrop
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              zIndex: 1000,
+              background: 'rgba(0,0,0,0.8)', // Darker backdrop for focus
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              zIndex: 2000, // Higher than Navigation (usually 50-100)
             }}
           />
 
@@ -73,13 +73,13 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
               bottom: 0,
               left: 0,
               right: 0,
-              background: 'linear-gradient(180deg, #18181b 0%, #09090b 100%)', // Premium Deep Dark
+              background: '#09090b', // Solid deep black for contrast
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
               padding: '12px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
-              zIndex: 1001,
-              borderTop: '1px solid rgba(212,175,55,0.2)', // Top gold border
-              boxShadow: '0 -10px 50px rgba(0,0,0,0.8)',
+              zIndex: 2001,
+              borderTop: '1px solid rgba(212,175,55,0.3)', // Sharper gold border
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.9)',
             }}
           >
             {/* Drag Handle */}
@@ -88,7 +88,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                 width: 40,
                 height: 4,
                 borderRadius: 2,
-                background: 'rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.15)',
                 margin: '0 auto 20px',
               }}
             />
@@ -108,12 +108,12 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                     width: 48,
                     height: 48,
                     borderRadius: 14,
-                    background: 'linear-gradient(145deg, rgba(39,39,42,0.6), rgba(24,24,27,0.8))',
-                    border: '1px solid rgba(239,68,68,0.2)', // Subtle red tint for urgency
+                    background: 'linear-gradient(145deg, rgba(24,24,27,1), rgba(9,9,11,1))',
+                    border: '1px solid rgba(239,68,68,0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)'
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                   }}
                 >
                   <Zap size={24} color="#fca5a5" strokeWidth={1.5} />
@@ -144,7 +144,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                   width: 36,
                   height: 36,
                   borderRadius: 12,
-                  background: 'rgba(255,255,255,0.05)',
+                  background: 'rgba(255,255,255,0.03)',
                   border: '1px solid rgba(255,255,255,0.08)',
                   cursor: 'pointer',
                   display: 'flex',
@@ -170,52 +170,50 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16,
-                  padding: '20px',
-                  borderRadius: 20,
-                  background: 'linear-gradient(135deg, rgba(80, 20, 20, 0.4) 0%, rgba(40, 10, 10, 0.4) 100%)', // Red tint glassy
-                  border: '1px solid rgba(239,68,68,0.3)',
+                  padding: '18px',
+                  borderRadius: 18,
+                  background: 'linear-gradient(135deg, rgba(60, 10, 10, 0.4) 0%, rgba(20, 5, 5, 0.4) 100%)',
+                  border: '1px solid rgba(239,68,68,0.25)',
                   cursor: 'pointer',
                   position: 'relative',
                   overflow: 'hidden'
                 }}
               >
-                {/* Icon Container */}
                 <div style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 14,
-                  background: 'linear-gradient(145deg, #7f1d1d, #450a0a)',
-                  border: '1px solid rgba(239,68,68,0.4)',
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.2)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0
                 }}>
-                  <Clock size={24} color="#fca5a5" />
+                  <Clock size={22} color="#fca5a5" />
                 </div>
 
                 <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fca5a5', marginBottom: 4 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fca5a5', marginBottom: 3 }}>
                     Срочный заказ
                   </div>
-                  <div style={{ fontSize: 13, color: 'rgba(252, 165, 165, 0.7)' }}>
+                  <div style={{ fontSize: 13, color: 'rgba(252, 165, 165, 0.6)' }}>
                     Выполним за 24 часа
                   </div>
                 </div>
 
-                {/* Badge */}
                 <div style={{
-                  padding: '6px 10px',
+                  padding: '5px 9px',
                   borderRadius: 8,
-                  background: 'rgba(239,68,68,0.2)',
-                  border: '1px solid rgba(239,68,68,0.3)',
+                  background: 'rgba(239,68,68,0.15)',
+                  border: '1px solid rgba(239,68,68,0.2)',
                 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fca5a5' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5' }}>
                     24ч
                   </span>
                 </div>
 
-                <ChevronRight size={18} color="rgba(239,68,68,0.5)" />
+                <ChevronRight size={18} color="rgba(239,68,68,0.4)" />
               </motion.button>
 
               {/* Option 2: Photo 5 min */}
@@ -230,18 +228,17 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16,
-                  padding: '20px',
-                  borderRadius: 20,
-                  background: 'linear-gradient(135deg, rgba(30,30,35,0.6) 0%, rgba(20,20,22,0.6) 100%)', // Dark glassy
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  padding: '18px',
+                  borderRadius: 18,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
                   cursor: 'pointer',
                 }}
               >
-                {/* Icon Container */}
                 <div style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 14,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.1)',
                   display: 'flex',
@@ -249,31 +246,30 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                   justifyContent: 'center',
                   flexShrink: 0
                 }}>
-                  <Camera size={24} color="#e5e5e5" />
+                  <Camera size={22} color="#e5e5e5" />
                 </div>
 
                 <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#f2f2f2', marginBottom: 4 }}>
-                    Скинь фото
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#f2f2f2', marginBottom: 3 }}>
+                    Скинуть фото
                   </div>
                   <div style={{ fontSize: 13, color: '#a1a1aa' }}>
                     Оценим за 5 минут
                   </div>
                 </div>
 
-                {/* Badge */}
                 <div style={{
-                  padding: '6px 10px',
+                  padding: '5px 9px',
                   borderRadius: 8,
-                  background: 'rgba(212,175,55,0.15)',
-                  border: '1px solid rgba(212,175,55,0.25)',
+                  background: 'rgba(212,175,55,0.1)',
+                  border: '1px solid rgba(212,175,55,0.15)',
                 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fcd34d' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#fcd34d' }}>
                     5 мин
                   </span>
                 </div>
 
-                <ChevronRight size={18} color="rgba(255,255,255,0.3)" />
+                <ChevronRight size={18} color="rgba(255,255,255,0.2)" />
               </motion.button>
 
             </div>
@@ -281,19 +277,17 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
             {/* Footer hint */}
             <div style={{
               marginTop: 20,
-              padding: '12px 16px',
-              background: 'linear-gradient(90deg, rgba(212,175,55,0.05) 0%, transparent 100%)',
-              borderLeft: '2px solid #d4af37',
-              borderRadius: 8,
               display: 'flex',
               alignItems: 'center',
-              gap: 12
+              justifyContent: 'center',
+              gap: 8,
+              opacity: 0.7
             }}>
               <div style={{
-                width: 8, height: 8, borderRadius: '50%', background: '#d4af37', boxShadow: '0 0 10px #d4af37'
+                width: 6, height: 6, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e'
               }} />
-              <span style={{ fontSize: 12, color: '#d4af37', fontWeight: 600 }}>
-                Менеджеры на связи (Online)
+              <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 500 }}>
+                Менеджеры онлайн
               </span>
             </div>
 
