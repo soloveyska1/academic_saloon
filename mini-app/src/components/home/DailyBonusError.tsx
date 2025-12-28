@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertCircle, RotateCw } from 'lucide-react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 
 interface DailyBonusErrorProps {
   onRetry: () => void
@@ -9,116 +9,103 @@ export function DailyBonusError({ onRetry }: DailyBonusErrorProps) {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 20, opacity: 0 }}
         style={{
           position: 'fixed',
-          bottom: 110,
+          bottom: 100,
           right: 20,
           zIndex: 100,
         }}
       >
-        {/* Error Badge */}
         <motion.div
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.02 }}
           style={{
-            minWidth: 200,
-            maxWidth: 'calc(100vw - 40px)',
-            padding: '12px 16px',
-            borderRadius: 16,
-            background: 'linear-gradient(135deg, rgba(239,68,68,0.95) 0%, rgba(220,38,38,0.9) 100%)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1.5px solid rgba(239,68,68,0.6)',
-            boxShadow: '0 8px 32px rgba(239,68,68,0.4), 0 0 60px rgba(239,68,68,0.2)',
+            minWidth: 280,
+            padding: '16px 20px',
+            borderRadius: 20,
+            background: 'linear-gradient(145deg, rgba(20, 20, 24, 0.95), rgba(10, 10, 12, 0.98))',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(212, 175, 55, 0.2)',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(212,175,55,0.05)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 12,
+            position: 'relative',
+            overflow: 'hidden'
           }}
         >
-          {/* Error message */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 10, 0] }}
-              transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
-            >
-              <AlertCircle size={20} color="#fff" strokeWidth={2} />
-            </motion.div>
+          {/* Accent Line */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 20,
+            right: 20,
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent)'
+          }} />
+
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <AlertCircle size={18} color="#ef4444" />
+            </div>
+
             <div style={{ flex: 1 }}>
               <div style={{
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: 700,
-                color: '#fff',
-                marginBottom: 2,
+                color: '#f2f2f2',
+                fontFamily: "'Manrope', sans-serif"
               }}>
                 Ошибка загрузки
               </div>
               <div style={{
-                fontSize: 11,
-                color: 'rgba(255,255,255,0.8)',
+                fontSize: 12,
+                color: '#a1a1aa',
+                marginTop: 2
               }}>
-                Не удалось загрузить бонус
+                Не удалось обновить бонусы
               </div>
             </div>
           </div>
 
-          {/* Retry button */}
+          {/* Action */}
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.96 }}
             onClick={onRetry}
             style={{
               width: '100%',
-              padding: '8px 12px',
-              borderRadius: 10,
-              background: 'rgba(255,255,255,0.2)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
+              padding: '10px',
+              borderRadius: 12,
+              background: 'rgba(212, 175, 55, 0.1)',
+              border: '1px solid rgba(212, 175, 55, 0.2)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
+              transition: 'all 0.2s'
             }}
           >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-            >
-              <RotateCw size={14} color="#fff" strokeWidth={2.5} />
-            </motion.div>
-            <span style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#fff',
-            }}>
-              Повторить
+            <RefreshCw size={14} color="#d4af37" />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#d4af37' }}>
+              Повторить попытку
             </span>
           </motion.button>
-        </motion.div>
 
-        {/* Pulsing error indicator dot */}
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.8, 1, 0.8],
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            top: -6,
-            right: -6,
-            width: 16,
-            height: 16,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #fca5a5, #ef4444)',
-            border: '2px solid #fff',
-            boxShadow: '0 0 20px rgba(239,68,68,0.6)',
-          }}
-        />
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   )

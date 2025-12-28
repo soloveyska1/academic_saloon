@@ -21,7 +21,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error in development
     if (import.meta.env.DEV) {
       console.error('ErrorBoundary caught:', error, errorInfo)
     }
@@ -40,91 +39,119 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div style={{
           minHeight: '100vh',
-          background: '#0a0a0c',
+          background: '#09090b', // Darker black
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           padding: 24,
-          gap: 24,
+          gap: 32,
+          fontFamily: "'Manrope', sans-serif"
         }}>
           {/* Error Icon */}
           <div style={{
-            width: 80,
-            height: 80,
-            borderRadius: 20,
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.3)',
+            position: 'relative',
+            width: 100,
+            height: 100,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'center'
           }}>
-            <AlertTriangle size={40} color="#ef4444" />
+            {/* Glow */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%)',
+              zIndex: 0
+            }} />
+
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: 24,
+              background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
+              border: '1px solid rgba(212,175,55,0.3)',
+              boxShadow: '0 0 30px rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1
+            }}>
+              <AlertTriangle size={40} color="#d4af37" strokeWidth={1.5} />
+            </div>
           </div>
 
           {/* Error Message */}
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: 320, zIndex: 1 }}>
             <h2 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 24,
+              fontFamily: "'Cinzel', serif",
+              fontSize: 28,
               fontWeight: 700,
-              color: '#f2f2f2',
-              margin: 0,
-              marginBottom: 12,
+              background: 'linear-gradient(180deg, #FFFFFF 0%, #d4af37 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              margin: '0 0 16px 0',
             }}>
-              Что-то пошло не так
+              Ошибка
             </h2>
             <p style={{
-              fontSize: 14,
-              color: '#71717a',
+              fontSize: 15,
+              color: '#a1a1aa',
               margin: 0,
               lineHeight: 1.6,
             }}>
-              Произошла ошибка в приложении.<br />
-              Попробуйте обновить страницу.
+              К сожалению, произошла непредвиденная ошибка. Мы уже работаем над исправлением.
             </p>
           </div>
 
           {/* Action Buttons */}
           <div style={{
             display: 'flex',
+            flexDirection: 'column',
             gap: 12,
-            flexWrap: 'wrap',
-            justifyContent: 'center',
+            width: '100%',
+            maxWidth: 280,
+            zIndex: 1
           }}>
             <button
               onClick={this.handleReload}
               style={{
-                padding: '14px 24px',
-                fontSize: 15,
-                fontWeight: 600,
-                color: '#050505',
-                background: 'linear-gradient(180deg, #f5d061, #d4af37)',
+                width: '100%',
+                padding: '16px',
+                fontSize: 16,
+                fontWeight: 700,
+                color: '#09090b',
+                background: 'linear-gradient(90deg, #d4af37 0%, #fcd34d 50%, #d4af37 100%)',
+                backgroundSize: '200% auto',
                 border: 'none',
-                borderRadius: 12,
+                borderRadius: 14,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: 8,
+                boxShadow: '0 4px 20px rgba(212,175,55,0.2)'
               }}
             >
               <RefreshCw size={18} />
-              Обновить
+              Обновить страницу
             </button>
 
             <button
               onClick={this.handleGoHome}
               style={{
-                padding: '14px 24px',
-                fontSize: 15,
+                width: '100%',
+                padding: '16px',
+                fontSize: 16,
                 fontWeight: 600,
-                color: '#f2f2f2',
-                background: '#14141a',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 12,
+                color: '#a1a1aa',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: 14,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: 8,
               }}
             >
@@ -133,15 +160,16 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
           </div>
 
-          {/* Error Details (dev only) */}
+          {/* Dev Details */}
           {import.meta.env.DEV && this.state.error && (
             <div style={{
               marginTop: 24,
               padding: 16,
-              background: 'rgba(239,68,68,0.05)',
-              border: '1px solid rgba(239,68,68,0.2)',
+              background: 'rgba(0,0,0,0.5)',
+              border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 12,
               maxWidth: '100%',
+              width: '100%',
               overflow: 'auto',
             }}>
               <p style={{
