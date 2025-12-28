@@ -150,18 +150,18 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 'var(--gap-md)',
+            gap: 14,
             width: '100%',
-            padding: 'var(--card-padding)',
-            marginBottom: 'var(--gap-md)',
+            padding: '16px 18px',
+            marginBottom: 12,
             background: nextAction.bgColor,
             border: `1.5px solid ${nextAction.borderColor}`,
-            borderRadius: 'var(--radius-responsive-lg)',
+            borderRadius: 14,
             cursor: 'pointer',
             textAlign: 'left',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: 'var(--card-shadow)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
           }}
         >
           {/* Static glow effect */}

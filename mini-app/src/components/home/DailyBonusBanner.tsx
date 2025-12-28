@@ -48,13 +48,13 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
       aria-label={`Забрать ежедневный бонус до ${bonusWithStreak} рублей`}
       style={{
         position: 'relative',
-        marginBottom: 16,
-        padding: '14px 16px',
-        borderRadius: 12,
+        marginBottom: 12,
+        padding: '16px 18px',
+        borderRadius: 14,
         cursor: 'pointer',
-        background: 'var(--bg-card)',
-        border: '1px solid rgba(212,175,55,0.25)',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        background: 'linear-gradient(145deg, rgba(28,28,32,0.95) 0%, rgba(18,18,20,0.98) 100%)',
+        border: '1px solid rgba(212,175,55,0.35)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.2), 0 0 0 1px rgba(212,175,55,0.1)',
         outline: 'none',
       }}
     >
@@ -70,26 +70,26 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
           {/* Gift icon - static, no animation */}
           <div
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 10,
-              background: 'rgba(212,175,55,0.1)',
-              border: '1px solid rgba(212,175,55,0.2)',
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              background: 'rgba(212,175,55,0.15)',
+              border: '1px solid rgba(212,175,55,0.25)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Gift size={22} color="var(--gold-400)" strokeWidth={1.5} />
+            <Gift size={24} color="var(--gold-400)" strokeWidth={1.5} />
           </div>
 
           {/* Text content */}
           <div>
             <div
               style={{
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 600,
-                marginBottom: 2,
+                marginBottom: 3,
                 color: 'var(--text-main)',
               }}
             >
@@ -106,13 +106,13 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 5,
                 }}
               >
-                <Coins size={12} color="var(--gold-400)" strokeWidth={1.5} />
+                <Coins size={14} color="var(--gold-400)" strokeWidth={1.5} />
                 <span
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 500,
                     color: 'var(--text-secondary)',
                   }}
@@ -123,11 +123,11 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
               {currentStreak > 0 && (
                 <div
                   style={{
-                    padding: '2px 6px',
+                    padding: '3px 8px',
                     background: 'rgba(74, 222, 128, 0.1)',
                     border: '1px solid rgba(74, 222, 128, 0.2)',
                     borderRadius: 100,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 600,
                     color: '#22c55e',
                   }}
@@ -146,23 +146,23 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 4,
-            padding: '8px 12px',
-            background: 'rgba(212,175,55,0.1)',
-            border: '1px solid rgba(212,175,55,0.2)',
-            borderRadius: 8,
+            gap: 5,
+            padding: '10px 14px',
+            background: 'rgba(212,175,55,0.15)',
+            border: '1px solid rgba(212,175,55,0.3)',
+            borderRadius: 10,
           }}
         >
           <span
             style={{
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 600,
               color: 'var(--gold-400)',
             }}
           >
             Забрать
           </span>
-          <ChevronRight size={14} color="var(--gold-400)" strokeWidth={1.5} />
+          <ChevronRight size={16} color="var(--gold-400)" strokeWidth={1.5} />
         </motion.div>
       </div>
     </motion.div>

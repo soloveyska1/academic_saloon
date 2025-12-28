@@ -35,8 +35,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       style={{
         position: 'relative',
         width: '100%',
-        padding: 'var(--card-padding-lg) var(--card-padding)',
-        borderRadius: 'var(--radius-responsive-lg)',
+        padding: '20px 18px',
+        borderRadius: 16,
         border: '1px solid rgba(212,175,55,0.5)',
         cursor: 'pointer',
         display: 'flex',
@@ -44,9 +44,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
         justifyContent: 'space-between',
         background: 'linear-gradient(135deg, #D4AF37 0%, #c9a430 50%, #D4AF37 100%)',
         boxShadow: '0 8px 32px -8px rgba(212,175,55,0.45), 0 4px 16px rgba(0,0,0,0.2)',
-        marginBottom: 'var(--gap-lg)',
+        marginBottom: 12,
         overflow: 'hidden',
-        minHeight: 'var(--touch-target-comfortable)',
+        minHeight: 80,
       }}
     >
       {/* Animated shimmer effect */}
@@ -82,28 +82,28 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
         <div
           style={{
-            fontSize: 'var(--text-md)',
+            fontSize: 17,
             fontWeight: 700,
             color: '#1a1a1a',
             fontFamily: "var(--font-serif)",
             letterSpacing: '0.05em',
             textTransform: 'uppercase',
-            marginBottom: 'var(--gap-xs)',
+            marginBottom: 4,
           }}
         >
           Новая задача
         </div>
-        <div style={{ fontSize: 'var(--text-sm)', color: 'rgba(0,0,0,0.55)', fontWeight: 500, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.55)', fontWeight: 500, lineHeight: 1.5 }}>
           <span>Персональный менеджер</span>
-          <span style={{ display: 'block', marginTop: 1 }}>Гарантия сдачи</span>
+          <span style={{ display: 'block', marginTop: 2 }}>Гарантия сдачи</span>
         </div>
       </div>
 
       <div
         aria-hidden="true"
         style={{
-          width: 'var(--touch-target-comfortable)',
-          height: 'var(--touch-target-comfortable)',
+          width: 48,
+          height: 48,
           borderRadius: '50%',
           background: 'rgba(0,0,0,0.15)',
           border: '1px solid rgba(0,0,0,0.1)',
@@ -113,7 +113,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
           flexShrink: 0,
         }}
       >
-        <Plus size="var(--icon-md)" color="#1a1a1a" strokeWidth={2.5} style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
+        <Plus size={24} color="#1a1a1a" strokeWidth={2.5} />
       </div>
     </motion.button>
   )
