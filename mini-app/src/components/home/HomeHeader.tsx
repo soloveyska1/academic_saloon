@@ -33,35 +33,48 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       {/* LEFT: Identity */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div className={s.avatarContainer} onClick={onSecretTap}>
-          <div className={s.avatar}>
-            {userPhoto && !avatarError ? (
+          <div className={s.avatar} style={{ position: 'relative', background: '#121214' }}>
+            {/* 1. Fallback Layer (Always visible underneath) */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
+              zIndex: 1
+            }}>
+              <span style={{
+                color: '#d4af37',
+                fontWeight: 700,
+                fontFamily: "'Cormorant Garamond', 'Times New Roman', serif",
+                fontSize: '18px',
+                lineHeight: 1,
+                textTransform: 'uppercase'
+              }}>
+                {(firstName && firstName.trim().length > 0 ? firstName : 'A').charAt(0)}
+              </span>
+            </div>
+
+            {/* 2. Image Layer (On top) */}
+            {userPhoto && !avatarError && (
               <img
                 src={userPhoto}
-                alt=""
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                onError={() => setAvatarError(true)}
+                alt={firstName}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  zIndex: 2,
+                  borderRadius: '50%'
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                  setAvatarError(true)
+                }}
               />
-            ) : (
-              <div style={{
-                width: '100%',
-                height: '100%',
-                background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '50%',
-                border: '1px solid rgba(212,175,55,0.2)'
-              }}>
-                <span style={{
-                  color: '#d4af37',
-                  fontWeight: 700,
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: '16px',
-                  paddingTop: '2px' // Visual center correction
-                }}>
-                  {(firstName || 'A').charAt(0).toUpperCase()}
-                </span>
-              </div>
             )}
           </div>
         </div>
