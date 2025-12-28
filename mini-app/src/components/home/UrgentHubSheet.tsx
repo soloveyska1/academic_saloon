@@ -182,6 +182,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-y', // Explicitly allow vertical scrolling
                 padding: '0 20px',
                 paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
               }}

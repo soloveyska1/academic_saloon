@@ -273,6 +273,7 @@ export const RulesSheet = memo(function RulesSheet({
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-y',
                 padding: 20,
                 paddingBottom: 'max(40px, calc(20px + env(safe-area-inset-bottom)))',
               }}
