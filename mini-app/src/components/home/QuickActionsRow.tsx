@@ -46,7 +46,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
-        marginBottom: 24,
+        marginBottom: 'var(--gap-lg)',
       }}
     >
       <style>{`.quick-actions-scroll::-webkit-scrollbar { display: none; }`}</style>
@@ -57,8 +57,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
         transition={{ delay: 0.16 }}
         style={{
           display: 'flex',
-          gap: 12,
-          paddingBottom: 8,
+          gap: 'var(--gap-sm)',
+          paddingBottom: 'var(--gap-sm)',
         }}
       >
         {QUICK_ACTIONS.map((action, index) => (
@@ -74,9 +74,9 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             whileTap={{ scale: 0.98 }}
             style={{
               flexShrink: 0,
-              width: 100,
-              padding: '16px 12px',
-              borderRadius: 16,
+              width: 'clamp(85px, 22vw, 110px)',
+              padding: 'var(--card-padding-sm)',
+              borderRadius: 'var(--radius-responsive-md)',
               cursor: 'pointer',
               position: 'relative',
               // Dark glass background with subtle gradient
@@ -119,14 +119,16 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               <motion.div
                 whileHover={{ y: -2, scale: 1.1 }}
                 transition={{ type: 'spring', stiffness: 300 }}
-                style={{ marginBottom: 10, display: 'inline-block' }}
+                style={{ marginBottom: 'var(--gap-sm)', display: 'inline-block' }}
               >
                 <action.icon
-                  size={24}
+                  size="var(--icon-md)"
                   color={action.id === 'urgent' ? '#f87171' : '#D4AF37'}
                   strokeWidth={1.5}
                   aria-hidden="true"
                   style={{
+                    width: 'var(--icon-md)',
+                    height: 'var(--icon-md)',
                     filter:
                       action.id === 'urgent'
                         ? 'drop-shadow(0 2px 8px rgba(239,68,68,0.4))'
@@ -138,10 +140,10 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               {/* Title */}
               <div
                 style={{
-                  fontSize: 12,
+                  fontSize: 'var(--text-sm)',
                   fontWeight: 700,
                   color: action.id === 'urgent' ? '#f87171' : '#fff',
-                  marginBottom: 3,
+                  marginBottom: 'var(--gap-xs)',
                   letterSpacing: '0.01em',
                 }}
               >
@@ -151,7 +153,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               {/* Subtitle */}
               <div
                 style={{
-                  fontSize: 11,
+                  fontSize: 'var(--text-xs)',
                   color: action.id === 'urgent' ? 'rgba(248,113,113,0.7)' : 'rgba(212,175,55,0.7)',
                   fontWeight: 600,
                   letterSpacing: '0.02em',

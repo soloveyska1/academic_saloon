@@ -31,11 +31,12 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       whileTap={{ scale: 0.97 }}
       onClick={handleClick}
       aria-label="Создать новую задачу с персональным менеджером"
+      className="cta-responsive"
       style={{
         position: 'relative',
         width: '100%',
-        padding: '22px 24px',
-        borderRadius: 16,
+        padding: 'var(--card-padding-lg) var(--card-padding)',
+        borderRadius: 'var(--radius-responsive-lg)',
         border: '1px solid rgba(212,175,55,0.5)',
         cursor: 'pointer',
         display: 'flex',
@@ -43,8 +44,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
         justifyContent: 'space-between',
         background: 'linear-gradient(135deg, #D4AF37 0%, #c9a430 50%, #D4AF37 100%)',
         boxShadow: '0 8px 32px -8px rgba(212,175,55,0.45), 0 4px 16px rgba(0,0,0,0.2)',
-        marginBottom: 24,
+        marginBottom: 'var(--gap-lg)',
         overflow: 'hidden',
+        minHeight: 'var(--touch-target-comfortable)',
       }}
     >
       {/* Animated shimmer effect */}
@@ -70,8 +72,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
         style={{
           position: 'absolute',
           top: 0,
-          left: 24,
-          right: 24,
+          left: 'var(--card-padding)',
+          right: 'var(--card-padding)',
           height: '1px',
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
         }}
@@ -80,18 +82,18 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
         <div
           style={{
-            fontSize: 17,
+            fontSize: 'var(--text-md)',
             fontWeight: 700,
             color: '#1a1a1a',
             fontFamily: "var(--font-serif)",
             letterSpacing: '0.05em',
             textTransform: 'uppercase',
-            marginBottom: 4,
+            marginBottom: 'var(--gap-xs)',
           }}
         >
           Новая задача
         </div>
-        <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.55)', fontWeight: 500, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 'var(--text-sm)', color: 'rgba(0,0,0,0.55)', fontWeight: 500, lineHeight: 1.4 }}>
           <span>Персональный менеджер</span>
           <span style={{ display: 'block', marginTop: 1 }}>Гарантия сдачи</span>
         </div>
@@ -100,8 +102,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       <div
         aria-hidden="true"
         style={{
-          width: 48,
-          height: 48,
+          width: 'var(--touch-target-comfortable)',
+          height: 'var(--touch-target-comfortable)',
           borderRadius: '50%',
           background: 'rgba(0,0,0,0.15)',
           border: '1px solid rgba(0,0,0,0.1)',
@@ -111,7 +113,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
           flexShrink: 0,
         }}
       >
-        <Plus size={24} color="#1a1a1a" strokeWidth={2.5} />
+        <Plus size="var(--icon-md)" color="#1a1a1a" strokeWidth={2.5} style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
       </div>
     </motion.button>
   )

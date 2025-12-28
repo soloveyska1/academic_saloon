@@ -120,10 +120,12 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
         }}
       >
         <Icon
-          size={20}
+          size="var(--nav-icon-size)"
           strokeWidth={isActive ? 2.5 : 2}
           color={isActive ? colors.gold : inactiveColor}
           style={{
+            width: 'var(--nav-icon-size)',
+            height: 'var(--nav-icon-size)',
             filter: isActive
               ? `drop-shadow(0 0 8px ${isDark ? 'rgba(212,175,55,0.5)' : 'rgba(180,142,38,0.4)'})`
               : 'none',
@@ -140,7 +142,7 @@ function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
           y: isActive ? 0 : 2,
         }}
         style={{
-          fontSize: 9,
+          fontSize: 'var(--nav-label-size)',
           fontWeight: isActive ? 700 : 500,
           fontFamily: "'Manrope', sans-serif",
           letterSpacing: '0.02em',
@@ -265,7 +267,7 @@ export function Navigation() {
           }}
           style={{
             position: 'fixed',
-            bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+            bottom: 'calc(var(--nav-bottom-offset) + env(safe-area-inset-bottom, 0px))',
             left: 0,
             right: 0,
             zIndex: 1000,
@@ -281,11 +283,10 @@ export function Navigation() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              width: 'auto',
-              minWidth: 280,
-              maxWidth: 320,
-              padding: '6px',
-              borderRadius: 24,
+              width: 'var(--nav-width)',
+              maxWidth: 'calc(100vw - 32px)',
+              padding: 'clamp(4px, 1.5vw, 8px)',
+              borderRadius: 'var(--radius-responsive-xl)',
               background: colors.dockBg,
               backdropFilter: 'blur(25px) saturate(180%)',
               WebkitBackdropFilter: 'blur(25px) saturate(180%)',
