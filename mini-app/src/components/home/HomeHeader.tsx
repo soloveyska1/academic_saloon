@@ -76,7 +76,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 'var(--gap-xl)',
+        marginBottom: 12,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-md)' }}>
