@@ -655,7 +655,7 @@ export function AdminPanel() {
                     }}
                   >
                     <div style={{ color: '#a855f7', marginBottom: 8, fontWeight: 600 }}>
-                      DEBUG INFO:
+                      DEBUG INFO (v2025.12.28-0705):
                     </div>
                     <div>TG User ID: {window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'N/A'}</div>
                     <div>Username: @{window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'N/A'}</div>
