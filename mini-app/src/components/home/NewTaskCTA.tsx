@@ -70,10 +70,17 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
             НОВЫЙ ЗАКАЗ
           </div>
           <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
             color: '#71717a',
-            fontSize: '13px',
-            fontWeight: 500
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: '11px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
           }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
             Безопасная сделка
           </div>
         </div>

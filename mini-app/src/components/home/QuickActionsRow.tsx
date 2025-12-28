@@ -83,11 +83,11 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             {action.title}
           </div>
           <div style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: '10px',
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: '11px',
+            fontWeight: 600,
             color: '#a1a1aa',
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase'
+            lineHeight: '1.2'
           }}>
             {action.subtitle}
           </div>

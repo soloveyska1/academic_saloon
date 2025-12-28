@@ -61,6 +61,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               <img
                 src={userPhoto}
                 alt={firstName}
+                referrerPolicy="no-referrer"
                 style={{
                   position: 'absolute',
                   inset: 0,
