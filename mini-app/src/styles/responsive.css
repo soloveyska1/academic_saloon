@@ -197,25 +197,36 @@
 /* Full-width page wrapper - for edge-to-edge backgrounds */
 .page-full-width {
   width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* Content wrapper with padding - use inside page-full-width */
 .page-content {
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: var(--page-padding-top) var(--page-padding-x) var(--page-padding-bottom);
 }
 
 /* Background wrapper - full width, positioned behind content */
 .page-background {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
   z-index: 0;
   pointer-events: none;
+  overflow: hidden;
 }
 
 /* Alternative: page with safe area insets for notched phones */
