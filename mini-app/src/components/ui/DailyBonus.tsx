@@ -13,30 +13,37 @@ interface Props {
 }
 
 export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, onClaim, onClose }: Props) {
-  const [claiming, setClaiming] = useState(false)
-  const [result, setResult] = useState<DailyBonusClaimResult | null>(null)
+  const [isClaiming, setIsClaiming] = useState(false)
+  const [claimResult, setClaimResult] = useState<DailyBonusClaimResult | null>(null)
 
-  // Current day index (0-6)
-  // If can claim: streak % 7 (e.g. 0 days streak -> 0 index)
-  // If claimed today: (streak - 1) % 7 (e.g. 1 day streak -> 0 index)
+  // Calculate dynamic week days based on today
+  const weekDays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+  const today = new Date()
+  const todayDayIndex = today.getDay() // 0 = Sunday, ...
+
+  // Active day calculation
   const activeDayIndex = canClaim ? (streak % 7) : ((streak - 1) % 7)
   const currentBonusAmount = bonuses[activeDayIndex] || 10
 
-  const handleClaim = async () => {
-    if (!canClaim || claiming) return
-    setClaiming(true)
-    try {
-      const claimResult = await onClaim()
-      // Artificial delay for animation
-      await new Promise(r => setTimeout(r, 1500))
-      setResult(claimResult)
-    } catch {
-      setClaiming(false)
-    }
+  const getDayLabel = (index: number) => {
+    const offset = index - activeDayIndex
+    let dayIndex = (todayDayIndex + offset) % 7
+    if (dayIndex < 0) dayIndex += 7
+    return weekDays[dayIndex]
   }
 
-  // Week days for display
-  const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+  const handleClaim = async () => {
+    if (!canClaim || isClaiming) return
+    setIsClaiming(true)
+    try {
+      // Direct call, no fake delay
+      const result = await onClaim()
+      setClaimResult(result)
+    } catch (e) {
+      console.error("Claim failed", e)
+      setIsClaiming(false)
+    }
+  }
 
   return (
     <motion.div
@@ -75,7 +82,7 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
           overflow: 'hidden'
         }}
       >
-        {/* Glow Effects */}
+        {/* Ambient Glow */}
         <div style={{
           position: 'absolute',
           top: -50,
@@ -83,15 +90,6 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
           width: 150,
           height: 150,
           background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: -50,
-          right: -50,
-          width: 150,
-          height: 150,
-          background: 'radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%)',
           pointerEvents: 'none'
         }} />
 
@@ -119,14 +117,14 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
         </button>
 
         <AnimatePresence mode="wait">
-          {!result ? (
+          {!claimResult ? (
             <motion.div
-              key="claim-state"
+              key="claim-view"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Header Icon */}
+              {/* Main Icon */}
               <div style={{
                 width: 80,
                 height: 80,
@@ -136,25 +134,15 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <motion.div
-                  animate={{
-                    boxShadow: ['0 0 20px rgba(212,175,55,0.2)', '0 0 40px rgba(212,175,55,0.5)', '0 0 20px rgba(212,175,55,0.2)']
-                  }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: 24,
-                    background: 'linear-gradient(135deg, #d4af37 0%, #b38728 100%)',
-                    opacity: 0.2
-                  }}
-                />
-                <motion.div
-                  animate={claiming ? { rotate: 360 } : { y: [-5, 5, -5] }}
-                  transition={claiming ? { duration: 1, repeat: Infinity, ease: 'linear' } : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <Gift size={48} color="#d4af37" strokeWidth={1.5} />
-                </motion.div>
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: 24,
+                  background: 'linear-gradient(135deg, #d4af37 0%, #b38728 100%)',
+                  opacity: 0.2,
+                  boxShadow: '0 0 30px rgba(212,175,55,0.3)'
+                }} />
+                <Gift size={48} color="#d4af37" strokeWidth={1.5} />
               </div>
 
               <h2 style={{
@@ -168,6 +156,7 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                 Ежедневный бонус
               </h2>
 
+              {/* Streak Badge */}
               <div style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -192,12 +181,7 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                 marginBottom: 32
               }}>
                 {bonuses.map((amount, index) => {
-                  const dayLabel = weekDays[index % 7]
-                  // State Logic:
-                  // Passed: index < activeDayIndex (or if !canClaim and index == active)
-                  // Active: index == activeDayIndex && canClaim
-                  // Locked: index > activeDayIndex
-
+                  const dayLabel = getDayLabel(index)
                   let state: 'passed' | 'active' | 'locked' = 'locked'
 
                   if (canClaim) {
@@ -217,7 +201,7 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                     }}>
                       <div style={{
                         width: 40,
-                        height: 48, // Taller boxes
+                        height: 48,
                         borderRadius: 12,
                         background: state === 'active'
                           ? 'rgba(212,175,55,0.1)'
@@ -236,21 +220,6 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                         {state === 'passed' && <Check size={16} color="#09090b" strokeWidth={3} />}
                         {state === 'active' && <span style={{ fontSize: 13, fontWeight: 700, color: '#d4af37' }}>{amount}</span>}
                         {state === 'locked' && <span style={{ fontSize: 12, color: '#52525b', fontWeight: 500 }}>{amount}</span>}
-
-                        {state === 'active' && (
-                          <motion.div
-                            layoutId="active-glow"
-                            style={{
-                              position: 'absolute',
-                              inset: -2,
-                              border: '2px solid #d4af37',
-                              borderRadius: 13,
-                              opacity: 0.5
-                            }}
-                            animate={{ opacity: [0.3, 0.6, 0.3] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          />
-                        )}
                       </div>
                       <span style={{
                         fontSize: 10,
@@ -264,7 +233,7 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                 })}
               </div>
 
-              {/* Main Reward Display */}
+              {/* Reward Info */}
               <div style={{ marginBottom: 32 }}>
                 <div style={{ fontSize: 13, color: '#a1a1aa', marginBottom: 4 }}>Награда сегодня</div>
                 <div style={{
@@ -277,17 +246,14 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                 }}>
                   +{currentBonusAmount} ₽
                 </div>
-                <div style={{ fontSize: 13, color: '#22c55e', marginTop: 4 }}>
-                  Шанс выигрыша: 100%
-                </div>
               </div>
 
-              {/* CTA Button */}
+              {/* Submit Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleClaim}
-                disabled={!canClaim || claiming}
+                disabled={!canClaim || isClaiming}
                 style={{
                   width: '100%',
                   height: 56,
@@ -310,10 +276,10 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                 animate={canClaim ? { backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] } : {}}
                 transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
               >
-                {claiming ? (
-                  <>Крутим...</>
+                {isClaiming ? (
+                  <>Забираем...</>
                 ) : canClaim ? (
-                  <>Испытать удачу <ChevronRight size={18} /></>
+                  <>Забрать бонус <ChevronRight size={18} /></>
                 ) : (
                   <>Доступно через {cooldownRemaining || '24ч'}</>
                 )}
@@ -328,29 +294,26 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
             </motion.div>
           ) : (
             <motion.div
-              key="success-state"
-              initial={{ opacity: 0, scale: 0.8 }}
+              key="success-view"
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               style={{ paddingTop: 20, paddingBottom: 20 }}
             >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
-                transition={{ type: 'spring', delay: 0.2 }}
-                style={{
-                  width: 100,
-                  height: 100,
-                  margin: '0 auto 24px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 0 50px rgba(34,197,94,0.4)'
-                }}
+              <div style={{
+                width: 100,
+                height: 100,
+                margin: '0 auto 24px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 50px rgba(34,197,94,0.4)',
+                border: '4px solid rgba(255,255,255,0.2)'
+              }}
               >
                 <Check size={50} color="#fff" strokeWidth={4} />
-              </motion.div>
+              </div>
 
               <h2 style={{
                 fontSize: 28,
@@ -359,12 +322,8 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                 marginBottom: 8,
                 fontFamily: "'Cinzel', serif"
               }}>
-                Отлично!
+                Получено!
               </h2>
-
-              <div style={{ fontSize: 15, color: '#d4d4d8', marginBottom: 32 }}>
-                Вы получили ежедневный бонус
-              </div>
 
               <div style={{
                 fontSize: 56,
@@ -373,7 +332,7 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                 marginBottom: 40,
                 textShadow: '0 0 30px rgba(34,197,94,0.3)'
               }}>
-                +{result.bonus} ₽
+                +{claimResult.bonus} ₽
               </div>
 
               <motion.button
@@ -391,7 +350,7 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
                   cursor: 'pointer'
                 }}
               >
-                Супер
+                Отлично
               </motion.button>
             </motion.div>
           )}

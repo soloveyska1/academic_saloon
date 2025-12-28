@@ -92,12 +92,15 @@ jobs:
                 fi
             done
             
-            # 3. Final Verification
+            # 3. Final Verification and Wait
             if fuser 8000/tcp >/dev/null 2>&1; then
-                echo "❌ CRITICAL: Port 8000 is still in use after kill attempts. Aborting."
-                fuser -v 8000/tcp
-                exit 1
+                echo "❌ CRITICAL: Port 8000 still in use. Force killing again..."
+                fuser -k -9 8000/tcp || true
             fi
+            
+            # FORCE WAIT so socket can clear TIME_WAIT
+            echo "Waiting 10s for socket cleanup..."
+            sleep 10
 
             # 4. Start systemd service
             echo "Starting systemd service..."
