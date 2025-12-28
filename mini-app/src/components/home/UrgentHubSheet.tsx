@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { motion, AnimatePresence, PanInfo } from 'framer-motion'
+import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion'
 import { X, Zap, ChevronRight, Clock, Camera } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -15,8 +15,10 @@ interface UrgentHubSheetProps {
 }
 
 export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, onNavigate, haptic }: UrgentHubSheetProps) {
+  const dragControls = useDragControls()
 
   const handleOptionClick = (type: 'urgent' | 'photo') => {
+    // ... (same logic)
     haptic('medium')
     onClose()
 
@@ -42,6 +44,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
         <>
           {/* Backdrop */}
           <motion.div
+            // ... (same implementation)
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -53,14 +56,15 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
               background: 'rgba(0,0,0,0.8)', // Darker backdrop for focus
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)',
-              zIndex: 2000, // Higher than Navigation (usually 50-100)
+              zIndex: 2000,
             }}
           />
 
           {/* Sheet */}
           <motion.div
             drag="y"
-            dragControls={undefined}
+            dragControls={dragControls}
+            dragListener={false}
             dragConstraints={{ top: 0 }}
             dragElastic={0.05}
             onDragEnd={handleDragEnd}
@@ -73,33 +77,39 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
               bottom: 0,
               left: 0,
               right: 0,
-              background: '#09090b', // Solid deep black for contrast
+              background: '#09090b',
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
               padding: '12px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
               zIndex: 2001,
-              borderTop: '1px solid rgba(212,175,55,0.3)', // Sharper gold border
+              borderTop: '1px solid rgba(212,175,55,0.3)',
               boxShadow: '0 -10px 40px rgba(0,0,0,0.9)',
             }}
           >
-            {/* Drag Handle */}
+            {/* Drag Handle - Active Zone */}
             <div
+              onPointerDown={(e) => dragControls.start(e)}
               style={{
                 width: 40,
                 height: 4,
                 borderRadius: 2,
                 background: 'rgba(255,255,255,0.15)',
                 margin: '0 auto 20px',
+                cursor: 'grab',
+                touchAction: 'none'
               }}
             />
 
-            {/* Header */}
+            {/* Header - Active Zone */}
             <div
+              onPointerDown={(e) => dragControls.start(e)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginBottom: 24,
+                cursor: 'grab',
+                touchAction: 'none'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
