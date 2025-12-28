@@ -11,6 +11,7 @@ import { Confetti } from '../components/ui/Confetti'
 import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
 import { useCapability } from '../contexts/DeviceCapabilityContext'
+import { useNavigation } from '../contexts/NavigationContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
 
@@ -28,7 +29,7 @@ import {
   ModalLoadingFallback,
 } from '../components/home'
 
-// Lazy load heavy modal components (reduces initial bundle by ~45KB)
+// Lazy load heavy modal components
 const QRCodeModal = lazy(() => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal })))
 const DailyBonusModal = lazy(() => import('../components/ui/DailyBonus').then(m => ({ default: m.DailyBonusModal })))
 const CashbackModal = lazy(() => import('../components/ui/HomeModals').then(m => ({ default: m.CashbackModal })))
@@ -41,14 +42,7 @@ interface Props {
   user: UserData | null
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  MAIN HOMEPAGE
-// ═══════════════════════════════════════════════════════════════════════════
-
 import s from './HomePage.module.css'
-
-// ... imports remain the same ...
 
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
@@ -56,9 +50,16 @@ export function HomePage({ user }: Props) {
   const admin = useAdmin()
   const { activePromo } = usePromo()
   const capability = useCapability()
+  const { setModalOpen } = useNavigation()
 
   // State management via reducer
   const { state, actions } = useHomePageState()
+
+  // Sync modal state to Navigation Context (Auto-hide Nav)
+  const isAnyModalOpen = Object.values(state.modals).some(isOpen => isOpen)
+  useEffect(() => {
+    setModalOpen(isAnyModalOpen)
+  }, [isAnyModalOpen, setModalOpen])
 
   // Fetch daily bonus info
   useEffect(() => {
