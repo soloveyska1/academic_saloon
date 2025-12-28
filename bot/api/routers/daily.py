@@ -175,12 +175,24 @@ async def get_daily_bonus_info(
     Получение информации о ежедневном бонусе.
     Показывает текущий стрик, доступность бонуса и размер следующей награды.
     """
+    # Eager load not needed for properties
     result = await session.execute(
-        select(User).where(User.telegram_id == tg_user.id)
+        select(User)
+        .where(User.telegram_id == tg_user.id)
     )
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # VIP Check
+    is_vip = False
+    try:
+        # Check if user reached max rank (has_next=False means Max)
+        rank_prog = user.rank_progress
+        if rank_prog and not rank_prog.get("has_next", True):
+             is_vip = True
+    except Exception:
+        pass
 
     # ═══ MSK TIMEZONE LOGIC ═══
     msk_tz = ZoneInfo("Europe/Moscow")
@@ -282,8 +294,9 @@ async def claim_daily_bonus(
     # VIP Check
     is_vip = False
     try:
-        if hasattr(user, 'rank') and user.rank:
-            is_vip = getattr(user.rank, 'is_max', False)
+         rank_prog = user.rank_progress
+         if rank_prog and not rank_prog.get("has_next", True):
+             is_vip = True
     except Exception:
         pass
 
