@@ -719,8 +719,8 @@ const GUARANTEES_GRID = [
   },
   {
     icon: RefreshCw,
-    title: 'Правки 0₽',
-    desc: 'Бесплатно до самой защиты',
+    title: '3 правки',
+    desc: 'Включены в стоимость заказа',
     accent: '#22c55e'
   },
   {
@@ -732,7 +732,7 @@ const GUARANTEES_GRID = [
   {
     icon: Clock,
     title: 'Точно в срок',
-    desc: 'Или вернем деньги за задержку',
+    desc: 'Бонус или скидка за задержку',
     accent: '#f59e0b'
   }
 ]
@@ -758,7 +758,7 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
             }}
           >
             <Shield size={14} color="#D4AF37" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#D4AF37', letterSpacing: '0.05em' }}>PREMIUM GUARANTEE</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#D4AF37', letterSpacing: '0.05em' }}>ВЫСШИЙ СТАНДАРТ</span>
           </motion.div>
 
           <motion.h2

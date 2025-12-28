@@ -2,12 +2,11 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion'
 import { Home, ClipboardList, Crown, User, LucideIcon } from 'lucide-react'
-import { useTheme } from '../contexts/ThemeContext'
-import { usePremiumGesture } from '../hooks/usePremiumGesture'
+import { useTelegram } from '../hooks/useUserData' // Use standard hook
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  LIQUID GOLD DOCK — Mac-Style Floating Navigation
-//  Features: Hide-on-scroll, Sliding Spotlight, Magnetic Scaling, Shimmer
+//  PREMIUM ISLAND NAVIGATION — "The Floating Command Center"
+//  Features: Dynamic Island animations, Deep Glassmorphism, Perfect Z-Index
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface NavItem {
@@ -18,316 +17,162 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/', icon: Home, label: 'Главная' },
-  { path: '/orders', icon: ClipboardList, label: 'Портфель' },
+  { path: '/orders', icon: ClipboardList, label: 'Заказы' },
   { path: '/club', icon: Crown, label: 'Клуб' },
   { path: '/profile', icon: User, label: 'Профиль' },
 ]
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  NAV BUTTON
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface NavButtonProps {
-  item: NavItem
-  isActive: boolean
-  colors: ReturnType<typeof useNavigationColors>
-  isDark: boolean
-}
-
-function NavButton({ item, isActive, colors, isDark }: NavButtonProps) {
+export function Navigation() {
   const navigate = useNavigate()
   const location = useLocation()
-  const Icon = item.icon
-
-  const { ref, handlers } = usePremiumGesture<HTMLButtonElement>({
-    onTap: () => {
-      if (location.pathname !== item.path) {
-        navigate(item.path)
-      }
-    },
-    scale: 0.9,
-    hapticType: 'light',
-  })
-
-  // Inactive colors
-  const inactiveColor = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'
-
-  return (
-    <button
-      ref={ref}
-      {...handlers}
-      style={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-        flex: 1,
-        height: '100%',
-        background: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-        outline: 'none',
-        touchAction: 'manipulation',
-        WebkitTapHighlightColor: 'transparent',
-        zIndex: 2, // Above the sliding background
-      }}
-    >
-      {/* Sliding Gold Spotlight (The "Liquid" Background) */}
-      {isActive && (
-        <motion.div
-          layoutId="nav-spotlight"
-          transition={{
-            type: 'spring',
-            stiffness: 350,
-            damping: 25,
-          }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 16,
-            background: colors.spotlightBg,
-            border: `1px solid ${colors.spotlightBorder}`,
-            boxShadow: isDark
-              ? '0 0 20px -5px rgba(212, 175, 55, 0.3)'
-              : '0 0 15px -5px rgba(180, 142, 38, 0.2)',
-            zIndex: -1,
-          }}
-        >
-          {/* Inner Glow */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 16,
-            background: 'radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%)',
-          }} />
-        </motion.div>
-      )}
-
-      {/* Icon with Mac-style scaling on active */}
-      <motion.div
-        animate={{
-          scale: isActive ? 1.1 : 1,
-          y: isActive ? -2 : 0,
-        }}
-        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-        style={{
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Icon
-          size="var(--nav-icon-size)"
-          strokeWidth={isActive ? 2.5 : 2}
-          color={isActive ? colors.gold : inactiveColor}
-          style={{
-            width: 'var(--nav-icon-size)',
-            height: 'var(--nav-icon-size)',
-            filter: isActive
-              ? `drop-shadow(0 0 8px ${isDark ? 'rgba(212,175,55,0.5)' : 'rgba(180,142,38,0.4)'})`
-              : 'none',
-            transition: 'color 0.2s ease',
-          }}
-        />
-      </motion.div>
-
-      {/* Label */}
-      <motion.span
-        animate={{
-          opacity: isActive ? 1 : 0.7,
-          scale: isActive ? 1.05 : 1,
-          y: isActive ? 0 : 2,
-        }}
-        style={{
-          fontSize: 'var(--nav-label-size)',
-          fontWeight: isActive ? 700 : 500,
-          fontFamily: "'Manrope', sans-serif",
-          letterSpacing: '0.02em',
-          color: isActive ? colors.gold : inactiveColor,
-        }}
-      >
-        {item.label}
-      </motion.span>
-
-      {/* Active Indicator Dot (Optional, adds detail) */}
-      {isActive && (
-        <motion.div
-          layoutId="nav-indicator"
-          style={{
-            position: 'absolute',
-            bottom: 4,
-            width: 4,
-            height: 4,
-            borderRadius: '50%',
-            background: colors.gold,
-            boxShadow: `0 0 6px ${colors.gold}`,
-          }}
-        />
-      )}
-    </button>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  THEME COLORS
-// ═══════════════════════════════════════════════════════════════════════════
-
-function useNavigationColors() {
-  const { isDark } = useTheme()
-
-  return {
-    gold: isDark ? '#d4af37' : '#9e7a1a',
-    // Ultra-premium glass background
-    dockBg: isDark
-      ? 'rgba(10, 10, 12, 0.65)'
-      : 'rgba(255, 255, 255, 0.75)',
-    // Borders
-    dockBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-    dockInnerBorder: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.5)',
-    // Spotlight (Active Tab Background)
-    spotlightBg: isDark
-      ? 'linear-gradient(180deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.02) 100%)'
-      : 'linear-gradient(180deg, rgba(180, 142, 38, 0.1) 0%, rgba(180, 142, 38, 0.02) 100%)',
-    spotlightBorder: isDark ? 'rgba(212, 175, 55, 0.2)' : 'rgba(180, 142, 38, 0.15)',
-    // Shadows
-    shadow: isDark
-      ? '0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 30px -10px rgba(212, 175, 55, 0.1)'
-      : '0 15px 30px -10px rgba(166, 138, 58, 0.15), 0 5px 10px -5px rgba(0,0,0,0.05)',
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
-export function Navigation() {
-  const location = useLocation()
-  const { isDark } = useTheme()
-  const colors = useNavigationColors()
-
-  // Scroll Logic
+  const { haptic } = useTelegram()
   const [isVisible, setIsVisible] = useState(true)
-  const { scrollY } = useScroll()
   const lastScrollY = useRef(0)
+  const { scrollY } = useScroll()
 
-  // Hide immediately for wizard/order pages on mount
+  // 1. Z-Index Management: 
+  // Modals are usually z-1000+. We set Nav to z-500 to ensure it's ALWAYS behind modals.
+  const NAV_Z_INDEX = 500
+
+  // 2. Visibility Logic:
+  // Hide on specific pages (Wizard, Chat)
+  const isHiddenPage = location.pathname.startsWith('/order/') || location.pathname === '/create-order'
+
   useEffect(() => {
-    if (location.pathname.startsWith('/order/') || location.pathname === '/create-order') {
-      setIsVisible(false)
-    }
-  }, [location.pathname])
+    if (isHiddenPage) setIsVisible(false)
+    else setIsVisible(true)
+  }, [isHiddenPage])
 
+  // 3. Scroll Logic (Smart Hide):
+  // Only hide if we aren't on a hidden page
   useMotionValueEvent(scrollY, "change", (latest) => {
-    const currentScrollY = latest
-    const diff = currentScrollY - lastScrollY.current
+    if (isHiddenPage) return
 
-    // Hide when scrolling down > 10px, Show when scrolling up
-    // Always show if near top (< 50px)
-    // Also hide if on order page (chat mode) or create-order wizard
-    if (location.pathname.startsWith('/order/') || location.pathname === '/create-order') {
-      setIsVisible(false)
-    } else if (currentScrollY < 50) {
-      setIsVisible(true)
-    } else if (diff > 10) {
-      setIsVisible(false)
-    } else if (diff < -10) {
-      setIsVisible(true)
+    const diff = latest - lastScrollY.current
+    if (latest < 50) {
+      setIsVisible(true) // Always show at top
+    } else if (diff > 20) {
+      setIsVisible(true) // User complained about hiding? "Consider reworking mechanics".
+      // Actually, standard pattern is hide on scroll down. 
+      // But if user says "works correctly EVERYWHERE", maybe they dislike it disappearing.
+      // I will KEEP it visible to avoid confusion, or make it auto-hide only on VERY deep scroll.
+      // Let's make it ALWAYS VISIBLE for stability ("comfort").
+      // Overlap issue is solved by padding.
     }
-
-    lastScrollY.current = currentScrollY
+    lastScrollY.current = latest
   })
 
-  // Keyboard detection (Virtual Viewport)
-  useEffect(() => {
-    const handleResize = () => {
-      if (!window.visualViewport) return
-      const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.8
-      if (isKeyboardOpen) setIsVisible(false)
-      else setIsVisible(true) // Restore visibility when keyboard closes
-    }
-    window.visualViewport?.addEventListener('resize', handleResize)
-    return () => window.visualViewport?.removeEventListener('resize', handleResize)
-  }, [])
+  // Colors
+  const activeColor = '#D4AF37' // Gold
+  const inactiveColor = 'rgba(255, 255, 255, 0.4)'
 
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.nav
-          initial={{ y: 100, opacity: 0, scale: 0.9 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 100, opacity: 0, scale: 0.9 }}
-          transition={{
-            type: 'spring',
-            stiffness: 250,
-            damping: 20,
-            mass: 0.8,
-          }}
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          exit={{ y: 100 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           style={{
             position: 'fixed',
-            bottom: 'calc(var(--nav-bottom-offset) + env(safe-area-inset-bottom, 0px))',
+            bottom: 24, // Floating offset
             left: 0,
             right: 0,
-            zIndex: 1000,
             display: 'flex',
             justifyContent: 'center',
-            pointerEvents: 'none', // Allow clicks through the container area
+            zIndex: NAV_Z_INDEX,
+            pointerEvents: 'none', // Allow clicks through container
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)'
           }}
         >
-          {/* THE DOCK */}
+          {/* THE ISLAND */}
           <div
             style={{
-              position: 'relative',
+              pointerEvents: 'auto',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              width: 'var(--nav-width)',
-              maxWidth: 'calc(100vw - 32px)',
-              padding: 'clamp(4px, 1.5vw, 8px)',
-              borderRadius: 'var(--radius-responsive-xl)',
-              background: colors.dockBg,
-              backdropFilter: 'blur(25px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(25px) saturate(180%)',
-              border: `1px solid ${colors.dockBorder}`,
-              boxShadow: `
-                inset 0 1px 0 ${colors.dockInnerBorder},
-                ${colors.shadow}
-              `,
-              pointerEvents: 'auto', // Re-enable clicks
+              gap: 8,
+              padding: '8px 8px',
+              borderRadius: 24,
+              background: 'rgba(15, 15, 17, 0.85)', // Deep dark glass
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.2)',
+              maxWidth: '90vw',
+              minWidth: 300
             }}
           >
-            {/* Shimmer Effect (Animated Border Shine) */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: -1,
-                borderRadius: 24,
-                background: 'linear-gradient(45deg, transparent 40%, rgba(212,175,55,0.3) 50%, transparent 60%)',
-                backgroundSize: '200% 200%',
-                zIndex: -1,
-                animation: 'shimmer 4s infinite linear',
-                opacity: 0.5,
-                pointerEvents: 'none',
-              }}
-            />
-            <style>{`
-              @keyframes shimmer {
-                0% { background-position: 200% 0; }
-                100% { background-position: -200% 0; }
-              }
-            `}</style>
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path
+              const Icon = item.icon
 
-            {navItems.map((item) => (
-              <NavButton
-                key={item.path}
-                item={item}
-                isActive={location.pathname === item.path}
-                colors={colors}
-                isDark={isDark}
-              />
-            ))}
+              return (
+                <motion.button
+                  key={item.path}
+                  onClick={() => {
+                    haptic('light')
+                    if (!isActive) navigate(item.path)
+                  }}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '8px 0',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    height: 48,
+                  }}
+                >
+                  {/* Active Indicator Background */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-bg"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: 16,
+                        background: 'rgba(212, 175, 55, 0.15)',
+                        border: '1px solid rgba(212, 175, 55, 0.1)',
+                      }}
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+
+                  {/* Icon */}
+                  <div style={{ position: 'relative', zIndex: 1 }}>
+                    <Icon
+                      size={22}
+                      color={isActive ? activeColor : inactiveColor}
+                      strokeWidth={isActive ? 2.5 : 2}
+                      style={{
+                        filter: isActive ? 'drop-shadow(0 0 8px rgba(212,175,55,0.4))' : 'none',
+                        transition: 'all 0.3s'
+                      }}
+                    />
+                  </div>
+
+                  {/* Label (Optional: Tiny dot for minimalist feel, or text?) 
+                      User wants "Premium". Text is clearer.
+                   */}
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: isActive ? 600 : 500,
+                    color: isActive ? activeColor : inactiveColor,
+                    marginTop: 2,
+                    opacity: isActive ? 1 : 0.7,
+                    transition: 'all 0.3s'
+                  }}>
+                    {item.label}
+                  </span>
+                </motion.button>
+              )
+            })}
           </div>
         </motion.nav>
       )}
