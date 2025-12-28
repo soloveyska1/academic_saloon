@@ -7,13 +7,15 @@ import {
   Infinity,
   Eye,
   RotateCcw,
-  ChevronDown,
-  ChevronUp,
   Shield,
   RefreshCw,
-  LayoutDashboard
+  LayoutDashboard,
+  Gift,
+  Zap,
+  Trophy
 } from 'lucide-react'
 import { useAdmin } from '../contexts/AdminContext'
+import { resetDailyBonusCooldown, resetDailyBonusFull, setDailyBonusStreak } from '../api/userApi'
 
 interface ToggleItemProps {
   icon: React.ElementType
@@ -151,11 +153,65 @@ export function AdminPanel() {
   const admin = useAdmin()
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
+  const [bonusStatus, setBonusStatus] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Register this panel's opener globally
   useEffect(() => {
     setAdminPanelOpener(() => setIsOpen(true))
     return () => { openAdminPanelFn = null }
+  }, [])
+
+  // Daily bonus testing handlers
+  const handleResetCooldown = useCallback(async () => {
+    setIsLoading(true)
+    setBonusStatus(null)
+    try {
+      const result = await resetDailyBonusCooldown()
+      setBonusStatus(result.success ? `✓ ${result.message}` : `✗ Ошибка`)
+      if (result.success) {
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+      }
+    } catch (e) {
+      setBonusStatus('✗ Ошибка запроса')
+    }
+    setIsLoading(false)
+    setTimeout(() => setBonusStatus(null), 3000)
+  }, [])
+
+  const handleResetFull = useCallback(async () => {
+    setIsLoading(true)
+    setBonusStatus(null)
+    try {
+      const result = await resetDailyBonusFull()
+      setBonusStatus(result.success ? `✓ Стрик сброшен на 0` : `✗ Ошибка`)
+      if (result.success) {
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+      }
+    } catch (e) {
+      setBonusStatus('✗ Ошибка запроса')
+    }
+    setIsLoading(false)
+    setTimeout(() => setBonusStatus(null), 3000)
+  }, [])
+
+  const handleSetStreak = useCallback(async (streak: number) => {
+    setIsLoading(true)
+    setBonusStatus(null)
+    try {
+      const result = await setDailyBonusStreak(streak)
+      const milestoneInfo = result.next_milestone
+        ? ` → Следующий milestone: ${result.next_milestone.day}д (+${result.next_milestone.reward}₽)`
+        : ''
+      setBonusStatus(result.success ? `✓ Streak = ${streak}${milestoneInfo}` : `✗ Ошибка`)
+      if (result.success) {
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+      }
+    } catch (e) {
+      setBonusStatus('✗ Ошибка запроса')
+    }
+    setIsLoading(false)
+    setTimeout(() => setBonusStatus(null), 4000)
   }, [])
 
   // Don't render if not admin
@@ -313,6 +369,138 @@ export function AdminPanel() {
                     onToggle={admin.toggleShowDebugInfo}
                     color="#a855f7"
                   />
+
+                  {/* Daily Bonus Testing Section */}
+                  <div
+                    style={{
+                      marginTop: 16,
+                      padding: 12,
+                      background: 'rgba(34, 197, 94, 0.05)',
+                      border: '1px solid rgba(34, 197, 94, 0.2)',
+                      borderRadius: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        marginBottom: 12,
+                      }}
+                    >
+                      <Gift size={16} color="#22c55e" />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#22c55e' }}>
+                        ТЕСТ ЕЖЕДНЕВНОГО БОНУСА
+                      </span>
+                    </div>
+
+                    {/* Status message */}
+                    {bonusStatus && (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          padding: '6px 10px',
+                          marginBottom: 10,
+                          borderRadius: 6,
+                          background: bonusStatus.startsWith('✓')
+                            ? 'rgba(34, 197, 94, 0.15)'
+                            : 'rgba(239, 68, 68, 0.15)',
+                          color: bonusStatus.startsWith('✓') ? '#22c55e' : '#ef4444',
+                        }}
+                      >
+                        {bonusStatus}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {/* Reset cooldown only */}
+                      <motion.button
+                        onClick={handleResetCooldown}
+                        disabled={isLoading}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          padding: '8px 12px',
+                          background: 'rgba(34, 197, 94, 0.1)',
+                          border: '1px solid rgba(34, 197, 94, 0.3)',
+                          borderRadius: 8,
+                          cursor: isLoading ? 'wait' : 'pointer',
+                          color: '#22c55e',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          opacity: isLoading ? 0.6 : 1,
+                        }}
+                      >
+                        <Zap size={14} />
+                        Сбросить cooldown
+                      </motion.button>
+
+                      {/* Full reset */}
+                      <motion.button
+                        onClick={handleResetFull}
+                        disabled={isLoading}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          padding: '8px 12px',
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.2)',
+                          borderRadius: 8,
+                          cursor: isLoading ? 'wait' : 'pointer',
+                          color: '#ef4444',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          opacity: isLoading ? 0.6 : 1,
+                        }}
+                      >
+                        <RotateCcw size={14} />
+                        Полный сброс (streak = 0)
+                      </motion.button>
+
+                      {/* Set streak presets */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 6,
+                          marginTop: 4,
+                        }}
+                      >
+                        <span style={{ fontSize: 10, color: '#71717a', alignSelf: 'center' }}>
+                          Streak:
+                        </span>
+                        {[6, 13, 29, 59, 89].map(streak => (
+                          <motion.button
+                            key={streak}
+                            onClick={() => handleSetStreak(streak)}
+                            disabled={isLoading}
+                            whileTap={{ scale: 0.95 }}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'rgba(212, 175, 55, 0.1)',
+                              border: '1px solid rgba(212, 175, 55, 0.2)',
+                              borderRadius: 6,
+                              cursor: isLoading ? 'wait' : 'pointer',
+                              color: '#d4af37',
+                              fontSize: 11,
+                              fontWeight: 500,
+                              opacity: isLoading ? 0.6 : 1,
+                            }}
+                          >
+                            {streak}
+                          </motion.button>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: 9, color: '#52525b', marginTop: 2 }}>
+                        Установите streak перед milestone для теста (7, 14, 30, 60, 90)
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Admin Dashboard Button */}
                   <motion.button

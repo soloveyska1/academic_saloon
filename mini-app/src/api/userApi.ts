@@ -199,6 +199,31 @@ export async function claimDailyBonus(): Promise<DailyBonusClaimResult> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  ADMIN: Daily Bonus Testing
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface DailyBonusResetResult {
+  success: boolean
+  message: string
+  streak?: number
+  old_streak?: number
+  new_streak?: number
+  next_milestone?: { day: number; reward: number } | null
+}
+
+export async function resetDailyBonusCooldown(): Promise<DailyBonusResetResult> {
+  return await apiFetch<DailyBonusResetResult>('/daily-bonus/reset', { method: 'POST' })
+}
+
+export async function resetDailyBonusFull(): Promise<DailyBonusResetResult> {
+  return await apiFetch<DailyBonusResetResult>('/daily-bonus/reset-streak', { method: 'POST' })
+}
+
+export async function setDailyBonusStreak(streak: number): Promise<DailyBonusResetResult> {
+  return await apiFetch<DailyBonusResetResult>(`/daily-bonus/set-streak?streak=${streak}`, { method: 'POST' })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  FILES & ORDERS
 // ═══════════════════════════════════════════════════════════════════════════
 
