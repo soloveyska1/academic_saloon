@@ -10,8 +10,8 @@ import s from '../../pages/HomePage.module.css'
 
 interface Order {
   id: number
-  work_type_label: string
-  subject: string
+  work_type_label?: string
+  subject: string | null
   status: string
   created_at: string
 }
@@ -32,7 +32,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
   }
 
   const title = order.subject || order.work_type_label || `Заказ #${order.id}`
-  const WorkTypeIcon = WORK_TYPE_ICONS[order.work_type_label] || FileText
+  const WorkTypeIcon = (order.work_type_label && WORK_TYPE_ICONS[order.work_type_label]) || FileText
   const isActive = !shouldReduceMotion && ['pending', 'in_progress', 'review', 'waiting_payment'].includes(order.status)
 
   return (

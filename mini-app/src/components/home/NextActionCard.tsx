@@ -12,8 +12,8 @@ import s from '../../pages/HomePage.module.css'
 interface Order {
   id: number
   status: string
-  work_type_label: string
-  subject: string
+  work_type_label?: string
+  subject: string | null
   has_unread_messages?: boolean
 }
 
