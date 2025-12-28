@@ -2654,3 +2654,151 @@ h4 {
     max-width: 700px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GESTURE GUARD — Premium Scroll & Swipe Protection System
+   Prevents accidental back-swipe, improves scroll behavior on iOS/Android
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Horizontal scroll containers — smooth, native-like scrolling */
+.horizontal-scroll-container,
+[data-horizontal-scroll] {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+
+  /* Prevent vertical scroll interference */
+  touch-action: pan-x;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar,
+[data-horizontal-scroll]::-webkit-scrollbar {
+  display: none;
+}
+
+/* Vertical scroll containers — protected from overscroll issues */
+.vertical-scroll-container,
+[data-scroll-container] {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+}
+
+/* Safe scrollable area — prevents touch events from leaking */
+.safe-scroll-area {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Drag handle zones — clear visual and touch cues */
+.drag-handle,
+[data-drag-handle] {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drag-handle:active,
+[data-drag-handle]:active {
+  cursor: grabbing;
+}
+
+/* Sheet/Modal backdrop — blocks all touch events */
+.sheet-backdrop,
+.modal-backdrop {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Sheet content — allows internal scrolling but prevents propagation */
+.sheet-content {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDGE PROTECTION — Prevents accidental browser back/forward navigation
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Left edge protection zone */
+.edge-protection-left {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 15px;
+  z-index: 9999;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* Right edge protection zone */
+.edge-protection-right {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 15px;
+  z-index: 9999;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM SHEET ANIMATIONS — Unified spring physics
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sheet-enter {
+  animation: sheetSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.sheet-exit {
+  animation: sheetSlideDown 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheetSlideDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* Backdrop fade animation */
+.backdrop-fade-enter {
+  animation: backdropFadeIn 0.2s ease-out;
+}
+
+.backdrop-fade-exit {
+  animation: backdropFadeOut 0.2s ease-in;
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes backdropFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

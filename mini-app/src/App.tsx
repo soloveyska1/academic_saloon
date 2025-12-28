@@ -11,6 +11,7 @@ import { PromoProvider } from './contexts/PromoContext'
 import { ClubProvider } from './contexts/ClubContext'
 import { DeviceCapabilityProvider } from './contexts/DeviceCapabilityContext'
 import { NavigationProvider } from './contexts/NavigationContext'
+import { GestureGuardProvider } from './components/ui/GestureGuard'
 import { AdminPanel } from './components/AdminPanel'
 import { useUserData } from './hooks/useUserData'
 import {
@@ -444,7 +445,8 @@ function AppContent() {
             <AdminProvider>
               <ClubProvider userId={telegramId || undefined}>
                 <NavigationProvider>
-                  <ToastProvider>
+                  <GestureGuardProvider>
+                    <ToastProvider>
                     <WebSocketProvider
                       telegramId={telegramId}
                       onOrderUpdate={handleOrderUpdate}
@@ -493,6 +495,7 @@ function AppContent() {
                       </BrowserRouter>
                     </WebSocketProvider>
                   </ToastProvider>
+                  </GestureGuardProvider>
                 </NavigationProvider>
               </ClubProvider>
             </AdminProvider>
