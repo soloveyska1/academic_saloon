@@ -157,25 +157,14 @@ function ClubPage({ user }: ClubPageProps) {
   const activeVouchersCount = club.activeVouchers.length
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        minHeight: '100vh',
-        background: '#0a0a0c',
-      }}
-    >
-      {/* Premium background */}
-      <PremiumBackground />
+    <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
+      {/* Premium background - full width */}
+      <div className="page-background">
+        <PremiumBackground />
+      </div>
 
-      {/* Content */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          padding: '0 16px',
-          paddingBottom: 120,
-        }}
-      >
+      {/* Content with padding */}
+      <div className="page-content">
         {/* Header */}
         <ClubHeader onBack={handleBack} />
 
