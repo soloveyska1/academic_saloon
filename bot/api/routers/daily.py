@@ -195,7 +195,11 @@ async def get_daily_bonus_info(
         pass
 
     # ═══ MSK TIMEZONE LOGIC ═══
-    msk_tz = ZoneInfo("Europe/Moscow")
+    try:
+        msk_tz = ZoneInfo("Europe/Moscow")
+    except Exception:
+        msk_tz = timezone.utc # Fallback
+        
     now_msk = datetime.now(msk_tz)
     today_msk = now_msk.date()
     
@@ -228,19 +232,19 @@ async def get_daily_bonus_info(
         )
 
     # 2. Check streak continuity
-    # If last claim was yesterday -> streak continues
-    # If last claim was before yesterday -> streak resets to 0 (will become 1 upon claim)
     current_streak = user.daily_bonus_streak
     
     if last_claim_date:
         yesterday_msk = today_msk - timedelta(days=1)
         if last_claim_date < yesterday_msk:
-             # Streak valid only if claimed yesterday
-             # Actually, let's allow "broken" streak to show as 0 here, 
-             # but UI might want to know what the *next* claim will be.
-             # If broken, next claim is Day 1.
+             # Streak broken
              current_streak = 0
+    elif current_streak > 0:
+        # Admin reset case: last_claim is None but streak exists.
+        # Treat as valid continuation.
+        pass
     else:
+        # New user
         current_streak = 0
 
     # Next claim will be (current_streak + 1)
@@ -278,7 +282,11 @@ async def claim_daily_bonus(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    msk_tz = ZoneInfo("Europe/Moscow")
+    try:
+        msk_tz = ZoneInfo("Europe/Moscow")
+    except Exception:
+        msk_tz = timezone.utc
+
     now_msk = datetime.now(msk_tz)
     today_msk = now_msk.date()
     
@@ -325,8 +333,11 @@ async def claim_daily_bonus(
             new_streak = 1
             logger.info(f"[DailyBonus] Streak reset for {tg_user.id}. Missed day.")
         else:
-            # Should not happen (claim in future?), treat as increment
+            # Future claim?!
             new_streak = current_streak + 1
+    elif current_streak > 0:
+        # Admin reset: has streak but no date -> Continue streak
+        new_streak = current_streak + 1
     else:
         # First ever claim
         new_streak = 1
