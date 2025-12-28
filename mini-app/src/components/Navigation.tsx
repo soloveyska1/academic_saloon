@@ -44,23 +44,41 @@ export function Navigation() {
   }, [isHiddenPage])
 
   // 3. Scroll Logic (Smart Hide):
-  // Only hide if we aren't on a hidden page
+  // "Flexible": Hides on scroll down to maximize view, Shows on scroll up for access.
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (isHiddenPage) return
 
     const diff = latest - lastScrollY.current
-    if (latest < 50) {
-      setIsVisible(true) // Always show at top
-    } else if (diff > 20) {
-      setIsVisible(true) // User complained about hiding? "Consider reworking mechanics".
-      // Actually, standard pattern is hide on scroll down. 
-      // But if user says "works correctly EVERYWHERE", maybe they dislike it disappearing.
-      // I will KEEP it visible to avoid confusion, or make it auto-hide only on VERY deep scroll.
-      // Let's make it ALWAYS VISIBLE for stability ("comfort").
-      // Overlap issue is solved by padding.
+    const isScrollingDown = diff > 10
+    const isScrollingUp = diff < -10
+    const isAtTop = latest < 50
+
+    // Logic:
+    // 1. Always show at very top.
+    // 2. Hide when scrolling down significantly.
+    // 3. Show when scrolling up significantly.
+    if (isAtTop) {
+      setIsVisible(true)
+    } else if (isScrollingDown && isVisible) {
+      setIsVisible(false)
+    } else if (isScrollingUp && !isVisible) {
+      setIsVisible(true)
     }
+
     lastScrollY.current = latest
   })
+
+  // Keyboard detection (Virtual Viewport)
+  useEffect(() => {
+    const handleResize = () => {
+      if (!window.visualViewport) return
+      const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.75 // Adjusted threshold
+      if (isKeyboardOpen) setIsVisible(false) // Force hide on keyboard
+      else if (!isHiddenPage) setIsVisible(true) // Restore if not on hidden page
+    }
+    window.visualViewport?.addEventListener('resize', handleResize)
+    return () => window.visualViewport?.removeEventListener('resize', handleResize)
+  }, [isHiddenPage])
 
   // Colors
   const activeColor = '#D4AF37' // Gold
@@ -70,10 +88,10 @@ export function Navigation() {
     <AnimatePresence>
       {isVisible && (
         <motion.nav
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          exit={{ y: 100 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          initial={{ y: 200, opacity: 0 }} // Start lower
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 200, opacity: 0 }} // Slide down fully
+          transition={{ type: 'spring', damping: 20, stiffness: 300, mass: 0.8 }}
           style={{
             position: 'fixed',
             bottom: 24, // Floating offset
