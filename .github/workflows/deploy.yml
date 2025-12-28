@@ -75,13 +75,16 @@ jobs:
             # ============================================
             echo "=== Restarting bot service ==="
 
-            # Kill any orphan python processes on port 8000
-            fuser -k 8000/tcp 2>/dev/null || true
-            sleep 2
+            # 1. Stop the service first
+            systemctl stop saloon-bot || true
+            
+            # 2. Force kill any remaining processes on port 8000
+            fuser -k -9 8000/tcp 2>/dev/null || true
+            sleep 5
 
-            # Restart systemd service
-            systemctl restart saloon-bot
-            sleep 3
+            # 3. Start systemd service
+            systemctl start saloon-bot
+            sleep 5
 
             # Verify bot is running
             if systemctl is-active --quiet saloon-bot; then
