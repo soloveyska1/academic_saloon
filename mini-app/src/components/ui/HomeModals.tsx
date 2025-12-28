@@ -72,6 +72,22 @@ interface ModalWrapperProps {
 function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', showParticles = true }: ModalWrapperProps) {
   const dragControls = useDragControls()
 
+  // Scroll Lock Effect
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      // Prevent background touchmove to stop iOS rubbber banding behind modal usually
+      // const preventDefault = (e: Event) => e.preventDefault()
+      // We might not want to preventDefault everywhere because it breaks internal scrolling
+      // But locking overflow is usually enough in modern browsers
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -92,6 +108,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             alignItems: 'flex-end',
             justifyContent: 'center',
             padding: 12,
+            touchAction: 'none' // Prevent touches passing through to body
           }}
         >
           {/* Ambient glow behind modal */}
@@ -117,7 +134,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             dragControls={dragControls}
             dragListener={false}
             dragConstraints={{ top: 0 }}
-            dragElastic={0.1}
+            dragElastic={0.15} // Slightly heavier
             onDragEnd={(_, info) => {
               if (info.offset.y > 100 || info.velocity.y > 200) {
                 onClose()
@@ -134,6 +151,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               maxHeight: '90vh',
               overflowY: 'auto',
               overflowX: 'hidden',
+              overscrollBehavior: 'contain', // CRITICAL: Stop propagation
               // Ultra-premium glass background
               background: `
                 linear-gradient(180deg,
@@ -215,7 +233,10 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
 
             {/* Header with handle bar and close button - DRAG AREA */}
             <div
-              onPointerDown={(e) => dragControls.start(e)}
+              onPointerDown={(e) => {
+                e.stopPropagation(); // Make sure this doesn't bubble if nested
+                dragControls.start(e);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
