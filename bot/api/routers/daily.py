@@ -182,53 +182,69 @@ async def get_daily_bonus_info(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    now = datetime.now(timezone.utc)
-    streak = getattr(user, 'daily_bonus_streak', 0) or 0
+    # ═══ MSK TIMEZONE LOGIC ═══
+    msk_tz = ZoneInfo("Europe/Moscow")
+    now_msk = datetime.now(msk_tz)
+    today_msk = now_msk.date()
+    
+    # Calculate next midnight MSK
+    next_midnight = (now_msk + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
     last_claim = user.last_daily_bonus_at
-    is_vip = getattr(user, 'rank', None) and getattr(user.rank, 'is_max', False) if hasattr(user, 'rank') else False
-
-    can_claim = True
-    cooldown_remaining = None
-
+    last_claim_date = None
+    
     if last_claim:
         if last_claim.tzinfo is None:
             last_claim = last_claim.replace(tzinfo=timezone.utc)
+        # Convert to MSK for date comparison
+        last_claim_msk = last_claim.astimezone(msk_tz)
+        last_claim_date = last_claim_msk.date()
 
-        next_claim = last_claim + timedelta(hours=DAILY_COOLDOWN_HOURS)
-        streak_expires = last_claim + timedelta(hours=DAILY_COOLDOWN_HOURS + STREAK_GRACE_PERIOD_HOURS)
+    # 1. Check if already claimed today
+    if last_claim_date == today_msk:
+        remaining = next_midnight - now_msk
+        hours = int(remaining.total_seconds() // 3600)
+        minutes = int((remaining.total_seconds() % 3600) // 60)
+        cooldown_text = f"{hours}ч {minutes}мин" if hours > 0 else f"{minutes}мин"
+        
+        return DailyBonusInfoResponse(
+            can_claim=False,
+            streak=user.daily_bonus_streak,
+            next_bonus=0, # Hidden when claimed
+            cooldown_remaining=cooldown_text,
+            bonuses=[_calculate_bonus_amount(b, is_vip) for b in DAILY_BONUS_AMOUNTS]
+        )
 
-        if now < next_claim:
-            can_claim = False
-            remaining = next_claim - now
-            hours = int(remaining.total_seconds() // 3600)
-            minutes = int((remaining.total_seconds() % 3600) // 60)
-            cooldown_remaining = f"{hours}ч {minutes}мин" if hours > 0 else f"{minutes}мин"
-
-        # Стрик сбрасывается если прошло больше grace period
-        if now > streak_expires:
-            streak = 0
-
-    # Текущий день в 7-дневном цикле
-    if can_claim:
-        current_day = (streak % 7) + 1
+    # 2. Check streak continuity
+    # If last claim was yesterday -> streak continues
+    # If last claim was before yesterday -> streak resets to 0 (will become 1 upon claim)
+    current_streak = user.daily_bonus_streak
+    
+    if last_claim_date:
+        yesterday_msk = today_msk - timedelta(days=1)
+        if last_claim_date < yesterday_msk:
+             # Streak valid only if claimed yesterday
+             # Actually, let's allow "broken" streak to show as 0 here, 
+             # but UI might want to know what the *next* claim will be.
+             # If broken, next claim is Day 1.
+             current_streak = 0
     else:
-        current_day = ((streak - 1) % 7) + 1 if streak > 0 else 1
+        current_streak = 0
 
-    # Базовый бонус
-    base_bonus = DAILY_BONUS_AMOUNTS[current_day - 1] if can_claim else (
-        DAILY_BONUS_AMOUNTS[current_day % 7] if streak > 0 else DAILY_BONUS_AMOUNTS[0]
-    )
-
-    # Применяем VIP множитель
+    # Next claim will be (current_streak + 1)
+    next_streak = current_streak + 1
+    current_day_index = (next_streak - 1) % 7
+    base_bonus = DAILY_BONUS_AMOUNTS[current_day_index]
     next_bonus = _calculate_bonus_amount(base_bonus, is_vip)
-
+    
     return DailyBonusInfoResponse(
-        can_claim=can_claim,
-        streak=streak,  # Теперь возвращаем общий стрик, а не день цикла
+        can_claim=True,
+        streak=current_streak,
         next_bonus=next_bonus,
-        cooldown_remaining=cooldown_remaining,
+        cooldown_remaining=None,
         bonuses=[_calculate_bonus_amount(b, is_vip) for b in DAILY_BONUS_AMOUNTS]
     )
+
 
 @router.post("/daily-bonus/claim", response_model=DailyBonusClaimResponse)
 async def claim_daily_bonus(
@@ -237,165 +253,134 @@ async def claim_daily_bonus(
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Получение ежедневного бонуса.
-
-    ГАРАНТИРОВАННЫЙ бонус - если cooldown прошёл, бонус будет начислен 100%.
-
-    Защита от абьюза:
-    - FOR UPDATE блокировка для предотвращения race condition
-    - Строгая проверка cooldown на стороне сервера
-    - Атомарное обновление стрика и баланса
-
-    Бонусные механики:
-    - VIP множитель x1.5 для пользователей с максимальным рангом
-    - Milestone бонусы за длинные стрики (7, 14, 30, 60, 90, 180, 365 дней)
-    - 7-дневный цикл с возрастающими наградами
+    Получение ежедневного бонуса (Calendar Day Logic).
+    Сброс происходит в 00:00 по МСК.
     """
-    # ═══ ЗАЩИТА: FOR UPDATE блокировка для предотвращения параллельных запросов ═══
+    # ═══ ЗАЩИТА: FOR UPDATE ═══
     result = await session.execute(
         select(User)
         .where(User.telegram_id == tg_user.id)
-        .with_for_update()  # Блокируем запись на время транзакции
+        .with_for_update()
     )
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    now = datetime.now(timezone.utc)
-    streak = getattr(user, 'daily_bonus_streak', 0) or 0
+    msk_tz = ZoneInfo("Europe/Moscow")
+    now_msk = datetime.now(msk_tz)
+    today_msk = now_msk.date()
+    
     last_claim = user.last_daily_bonus_at
-
-    # Определяем VIP статус для множителя
-    is_vip = False
-    try:
-        # Пытаемся получить информацию о ранге
-        if hasattr(user, 'rank') and user.rank:
-            is_vip = getattr(user.rank, 'is_max', False)
-    except Exception:
-        pass  # Если rank не загружен, просто игнорируем
-
-    # ═══ ПРОВЕРКА COOLDOWN ═══
+    last_claim_date = None
+    
     if last_claim:
         if last_claim.tzinfo is None:
             last_claim = last_claim.replace(tzinfo=timezone.utc)
+        last_claim_msk = last_claim.astimezone(msk_tz)
+        last_claim_date = last_claim_msk.date()
 
-        next_claim_time = last_claim + timedelta(hours=DAILY_COOLDOWN_HOURS)
-        streak_expires = last_claim + timedelta(hours=DAILY_COOLDOWN_HOURS + STREAK_GRACE_PERIOD_HOURS)
+    # VIP Check
+    is_vip = False
+    try:
+        if hasattr(user, 'rank') and user.rank:
+            is_vip = getattr(user.rank, 'is_max', False)
+    except Exception:
+        pass
 
-        # Cooldown ещё не прошёл
-        if now < next_claim_time:
-            remaining = next_claim_time - now
-            hours = int(remaining.total_seconds() // 3600)
-            minutes = int((remaining.total_seconds() % 3600) // 60)
-            cooldown_text = f"{hours}ч {minutes}мин" if hours > 0 else f"{minutes}мин"
+    # 1. Check if already claimed
+    if last_claim_date == today_msk:
+        next_midnight = (now_msk + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return DailyBonusClaimResponse(
+            success=False,
+            won=False,
+            bonus=0,
+            streak=user.daily_bonus_streak,
+            message="Бонус уже получен сегодня.",
+            next_claim_at=next_midnight.isoformat()
+        )
 
-            logger.warning(
-                f"[DailyBonus] Cooldown not passed for user {tg_user.id}. "
-                f"Last claim: {last_claim}, Next: {next_claim_time}"
-            )
+    # 2. Calculate Streak
+    current_streak = user.daily_bonus_streak
+    
+    if last_claim_date:
+        yesterday_msk = today_msk - timedelta(days=1)
+        if last_claim_date == yesterday_msk:
+            # Perfect streak
+            new_streak = current_streak + 1
+        elif last_claim_date < yesterday_msk:
+            # Streak broken
+            new_streak = 1
+            logger.info(f"[DailyBonus] Streak reset for {tg_user.id}. Missed day.")
+        else:
+            # Should not happen (claim in future?), treat as increment
+            new_streak = current_streak + 1
+    else:
+        # First ever claim
+        new_streak = 1
 
-            return DailyBonusClaimResponse(
-                success=False,
-                won=False,
-                bonus=0,
-                streak=streak,
-                message=f"Бонус уже получен. Следующий через {cooldown_text}",
-                next_claim_at=next_claim_time.isoformat()
-            )
-
-        # Проверяем, не истёк ли стрик
-        if now > streak_expires:
-            logger.info(f"[DailyBonus] Streak reset for user {tg_user.id}. Was {streak}, now 0")
-            streak = 0
-
-    # ═══ РАСЧЁТ БОНУСА ═══
-    current_day_index = streak % 7
-    base_bonus = DAILY_BONUS_AMOUNTS[current_day_index]
+    # 3. Calculate Reward
+    day_index = (new_streak - 1) % 7
+    base_bonus = DAILY_BONUS_AMOUNTS[day_index]
     bonus_amount = _calculate_bonus_amount(base_bonus, is_vip)
-
-    new_streak = streak + 1
     total_bonus = bonus_amount
     milestone_reached = None
 
-    # ═══ ПРОВЕРКА MILESTONE ═══
+    # Milestone check
     milestone = _check_milestone_reached(new_streak)
     if milestone:
-        milestone_day, milestone_reward = milestone
-        # VIP множитель применяется и к milestone бонусам
-        milestone_bonus = _calculate_bonus_amount(milestone_reward, is_vip)
-        total_bonus += milestone_bonus
-        milestone_reached = {
-            "day": milestone_day,
-            "reward": milestone_bonus
-        }
-        logger.info(
-            f"[DailyBonus] User {tg_user.id} reached milestone {milestone_day} days! "
-            f"Extra bonus: {milestone_bonus}₽"
-        )
+        m_day, m_reward = milestone
+        m_bonus = _calculate_bonus_amount(m_reward, is_vip)
+        total_bonus += m_bonus
+        milestone_reached = {"day": m_day, "reward": m_bonus}
 
-    # ═══ АТОМАРНОЕ ОБНОВЛЕНИЕ СТРИКА ═══
+    # 4. Commit
     user.daily_bonus_streak = new_streak
-    user.last_daily_bonus_at = now
+    user.last_daily_bonus_at = now_msk # Store as TZ-aware
 
-    # ═══ НАЧИСЛЕНИЕ БОНУСА (ГАРАНТИРОВАННОЕ) ═══
     try:
-        # Основной дневной бонус
         await BonusService.add_bonus(
             session=session,
             user_id=tg_user.id,
             amount=bonus_amount,
             reason=BonusReason.DAILY_LUCK,
-            description=f"Ежедневный бонус (день {new_streak})" + (" 👑 VIP x1.5" if is_vip else ""),
+            description=f"Ежедневный бонус (день {new_streak})" + (" 👑 VIP" if is_vip else ""),
             bot=None,
             auto_commit=False,
         )
 
-        # Milestone бонус если достигнут
         if milestone_reached:
             await BonusService.add_bonus(
                 session=session,
                 user_id=tg_user.id,
                 amount=milestone_reached["reward"],
                 reason=BonusReason.DAILY_LUCK,
-                description=f"🏆 Milestone бонус: {milestone_reached['day']} дней подряд!",
+                description=f"🏆 Milestone: {milestone_reached['day']} дней!",
                 bot=None,
                 auto_commit=False,
             )
 
         await session.commit()
 
-        logger.info(
-            f"[DailyBonus] User {tg_user.id} claimed daily bonus: "
-            f"{bonus_amount}₽ (day {current_day_index + 1}/7), streak: {new_streak}, "
-            f"VIP: {is_vip}, milestone: {milestone_reached}"
-        )
-
     except Exception as e:
         await session.rollback()
-        logger.error(f"[DailyBonus] Failed to claim bonus for user {tg_user.id}: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Ошибка при начислении бонуса. Попробуйте ещё раз."
-        )
+        logger.error(f"[DailyBonus] Error: {e}")
+        raise HTTPException(500, "Ошибка начисления бонуса")
 
-    next_claim_at = (now + timedelta(hours=DAILY_COOLDOWN_HOURS)).isoformat()
+    # Next claim at midnight
+    next_midnight = (now_msk + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # Формируем сообщение
-    message_parts = [f"🎁 +{bonus_amount}₽ — ежедневный бонус!"]
-    if is_vip:
-        message_parts.append("👑 VIP бонус x1.5")
+    # Message
+    msg = f"🎁 +{bonus_amount}₽ (День {new_streak})"
     if milestone_reached:
-        message_parts.append(f"🏆 +{milestone_reached['reward']}₽ — {milestone_reached['day']} дней подряд!")
-
-    message = " ".join(message_parts)
+        msg += f"\n🏆 +{milestone_reached['reward']}₽ за стрик!"
 
     return DailyBonusClaimResponse(
         success=True,
-        won=True,  # Теперь всегда True - бонус гарантирован
+        won=True,
         bonus=total_bonus,
         streak=new_streak,
-        message=message,
-        next_claim_at=next_claim_at
+        message=msg,
+        next_claim_at=next_midnight.isoformat()
     )
 
 

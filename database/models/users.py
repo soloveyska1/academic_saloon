@@ -235,47 +235,53 @@ class User(Base):
 
     @property
     def can_claim_daily_bonus(self) -> bool:
-        """Проверяет, может ли пользователь получить ежедневный бонус"""
+        """Проверяет, может ли пользователь получить ежедневный бонус (Calendar Day Logic)"""
         try:
             last_bonus = self.last_daily_bonus_at
             if last_bonus is None:
                 return True
 
-            now = datetime.now(MSK_TZ)
-            if last_bonus.tzinfo is None:
-                last_bonus = last_bonus.replace(tzinfo=MSK_TZ)
+            msk_tz = ZoneInfo("Europe/Moscow")
+            now_msk = datetime.now(msk_tz)
+            today = now_msk.date()
 
-            return (now - last_bonus) >= timedelta(hours=24)
+            if last_bonus.tzinfo is None:
+                last_bonus = last_bonus.replace(tzinfo=msk_tz)
+            else:
+                last_bonus = last_bonus.astimezone(msk_tz)
+
+            return last_bonus.date() < today
         except Exception:
-            # Если колонка не существует в БД - разрешаем бонус
             return True
 
     @property
     def daily_bonus_cooldown(self) -> dict:
-        """Возвращает информацию о кулдауне ежедневного бонуса"""
+        """Возвращает информацию о кулдауне ежедневного бонуса (до 00:00 МСК)"""
         try:
             last_bonus = self.last_daily_bonus_at
             if last_bonus is None:
                 return {"available": True, "remaining_text": None}
 
-            now = datetime.now(MSK_TZ)
+            msk_tz = ZoneInfo("Europe/Moscow")
+            now_msk = datetime.now(msk_tz)
+            today = now_msk.date()
+
             if last_bonus.tzinfo is None:
-                last_bonus = last_bonus.replace(tzinfo=MSK_TZ)
+                last_bonus = last_bonus.replace(tzinfo=msk_tz)
+            else:
+                last_bonus = last_bonus.astimezone(msk_tz)
 
-            time_passed = now - last_bonus
-            cooldown = timedelta(hours=24)
-
-            if time_passed >= cooldown:
+            if last_bonus.date() < today:
                 return {"available": True, "remaining_text": None}
 
-            remaining = cooldown - time_passed
+            # Считаем время до полуночи
+            next_midnight = (now_msk + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            remaining = next_midnight - now_msk
+            
             hours = int(remaining.total_seconds() // 3600)
             minutes = int((remaining.total_seconds() % 3600) // 60)
-
-            if hours > 0:
-                remaining_text = f"{hours}ч {minutes}мин"
-            else:
-                remaining_text = f"{minutes}мин"
+            
+            remaining_text = f"{hours}ч {minutes}мин" if hours > 0 else f"{minutes}мин"
 
             return {
                 "available": False,
@@ -284,7 +290,6 @@ class User(Base):
                 "remaining_minutes": minutes,
             }
         except Exception:
-            # Если колонка не существует в БД - разрешаем бонус
             return {"available": True, "remaining_text": None}
 
     # ══════════════════════════════════════════════════════════════
