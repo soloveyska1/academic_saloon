@@ -350,4 +350,131 @@ export const SafeScrollContainer = memo(function SafeScrollContainer({
   )
 })
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  USE SWIPE TO CLOSE — Native touch gesture detection for sheets
+// ═══════════════════════════════════════════════════════════════════════════
+//
+//  Replaces framer-motion drag="y" which conflicts with iOS native scroll.
+//  Uses native touch events and only triggers close when:
+//  1. User drags from the handle/header area (not scroll content)
+//  2. Drag distance exceeds threshold OR velocity is high enough
+//
+//  Usage:
+//    const { handleTouchStart, handleTouchMove, handleTouchEnd, dragOffset } = useSwipeToClose({
+//      onClose,
+//      offsetThreshold: 120,
+//      velocityThreshold: 400,
+//    })
+//
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface SwipeToCloseConfig {
+  onClose: () => void
+  offsetThreshold?: number   // Distance in px to trigger close (default: 120)
+  velocityThreshold?: number // Velocity in px/ms to trigger instant close (default: 0.4)
+  onDragStart?: () => void
+  onDragEnd?: (closed: boolean) => void
+}
+
+interface SwipeToCloseResult {
+  // Attach these to the drag handle element
+  handleTouchStart: (e: React.TouchEvent) => void
+  handleTouchMove: (e: React.TouchEvent) => void
+  handleTouchEnd: (e: React.TouchEvent) => void
+  // Current drag offset for animations
+  dragOffset: number
+  // Is currently dragging
+  isDragging: boolean
+}
+
+export function useSwipeToClose({
+  onClose,
+  offsetThreshold = 120,
+  velocityThreshold = 0.4,
+  onDragStart,
+  onDragEnd,
+}: SwipeToCloseConfig): SwipeToCloseResult {
+  const [dragOffset, setDragOffset] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const touchStartRef = useRef<{ y: number; time: number } | null>(null)
+  const lastTouchRef = useRef<{ y: number; time: number } | null>(null)
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    if (!touch) return
+
+    touchStartRef.current = { y: touch.clientY, time: Date.now() }
+    lastTouchRef.current = { y: touch.clientY, time: Date.now() }
+    setIsDragging(true)
+    onDragStart?.()
+  }, [onDragStart])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+
+    const touch = e.touches[0]
+    if (!touch) return
+
+    lastTouchRef.current = { y: touch.clientY, time: Date.now() }
+
+    // Calculate offset (only allow downward drag)
+    const offset = Math.max(0, touch.clientY - touchStartRef.current.y)
+    setDragOffset(offset)
+  }, [])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current || !lastTouchRef.current) {
+      setIsDragging(false)
+      setDragOffset(0)
+      return
+    }
+
+    const touch = e.changedTouches[0]
+    if (!touch) {
+      setIsDragging(false)
+      setDragOffset(0)
+      return
+    }
+
+    const totalOffset = touch.clientY - touchStartRef.current.y
+    const timeDelta = Date.now() - touchStartRef.current.time
+    const velocity = timeDelta > 0 ? totalOffset / timeDelta : 0
+
+    // Determine if we should close
+    const shouldClose = totalOffset > offsetThreshold || velocity > velocityThreshold
+
+    if (shouldClose) {
+      // Trigger haptic feedback
+      try {
+        const tg = (window as any).Telegram?.WebApp
+        if (tg?.HapticFeedback) {
+          tg.HapticFeedback.impactOccurred('light')
+        } else if (navigator.vibrate) {
+          navigator.vibrate(10)
+        }
+      } catch (e) {}
+
+      onClose()
+      onDragEnd?.(true)
+    } else {
+      // Snap back
+      setDragOffset(0)
+      onDragEnd?.(false)
+    }
+
+    setIsDragging(false)
+    touchStartRef.current = null
+    lastTouchRef.current = null
+  }, [onClose, offsetThreshold, velocityThreshold, onDragEnd])
+
+  return {
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    dragOffset,
+    isDragging,
+  }
+}
+
 export default GestureGuardProvider
