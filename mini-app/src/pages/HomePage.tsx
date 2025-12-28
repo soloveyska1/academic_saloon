@@ -170,7 +170,8 @@ export function HomePage({ user }: Props) {
       style={{
         background: '#09090b', // Deepest Onyx (Void)
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        paddingBottom: 140, // Ensure content clears the floating navigation
       }}>
       {/* Premium Background - Full width, fixed position */}
       <div className="page-background" aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>

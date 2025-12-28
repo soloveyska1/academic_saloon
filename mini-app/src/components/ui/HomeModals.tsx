@@ -782,7 +782,7 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
             transition={{ delay: 0.15 }}
             style={{ fontSize: 13, color: '#a1a1aa', maxWidth: 280, margin: '0 auto' }}
           >
-            Мы несём полную финансовую ответственность за результат
+            Гарантируем строгий контроль качества на всех этапах
           </motion.p>
         </div>
 
