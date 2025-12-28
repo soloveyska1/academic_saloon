@@ -1,19 +1,18 @@
-import { memo, useCallback, useEffect, useRef, ReactNode } from 'react'
-import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
+import { memo, useCallback, useRef, ReactNode } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
-import { useScrollLock, useSheetRegistration } from './GestureGuard'
+import { useScrollLock, useSheetRegistration, useSwipeToClose } from './GestureGuard'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PREMIUM SHEET — Unified Bottom Sheet Component
+//  PREMIUM SHEET — Unified Bottom Sheet Component (v2 - Native Gestures)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-//  Особенности:
-//  1. Плавный drag-to-close с умными порогами
-//  2. Полная блокировка фонового скролла
-//  3. Защита от случайного закрытия при скролле контента
-//  4. Safe-area поддержка для всех устройств
-//  5. Интеграция с GestureGuard системой
-//  6. Премиальные анимации и haptic feedback
+//  Особенности v2:
+//  1. Native touch gestures for drag-to-close (no framer-motion drag)
+//  2. Smooth scrolling on iOS without gesture conflicts
+//  3. Smart detection: only drags from handle/header area
+//  4. Full integration with GestureGuard system
+//  5. Premium animations and haptic feedback
 //
 //  Режимы:
 //  - default: стандартный sheet с drag-to-close
@@ -21,23 +20,14 @@ import { useScrollLock, useSheetRegistration } from './GestureGuard'
 //  - expandable: может расширяться на весь экран
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Unified drag configuration - одинаковые пороги везде
-const DRAG_CONFIG = {
-  // Offset threshold - сколько пикселей нужно свайпнуть для закрытия
+// Unified configuration
+const SHEET_CONFIG = {
   offsetThreshold: 120,
-  // Velocity threshold - скорость свайпа для мгновенного закрытия
-  velocityThreshold: 400,
-  // Elasticity - насколько "резиновый" drag
-  dragElastic: 0.08,
-  // Constraints - ограничения движения
-  dragConstraints: { top: 0 },
-  // Spring animation config
+  velocityThreshold: 0.4,
   spring: { damping: 32, stiffness: 380 },
-  // Exit animation
-  exitSpring: { damping: 28, stiffness: 350 }
 } as const
 
-// Утилита для haptic feedback
+// Utility for haptic feedback
 const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'medium') => {
   try {
     const tg = (window as any).Telegram?.WebApp
@@ -60,14 +50,14 @@ interface PremiumSheetProps {
   onClose: () => void
   children: ReactNode
 
-  // Конфигурация
+  // Configuration
   mode?: 'default' | 'persistent' | 'expandable'
   maxHeight?: string // default: '90vh'
-  showHandle?: boolean // показывать drag handle
-  showCloseButton?: boolean // показывать X кнопку
-  closeOnBackdrop?: boolean // закрывать при клике на backdrop
+  showHandle?: boolean // show drag handle
+  showCloseButton?: boolean // show X button
+  closeOnBackdrop?: boolean // close on backdrop click
 
-  // Стилизация
+  // Styling
   accentColor?: string
   className?: string
   contentStyle?: React.CSSProperties
@@ -77,10 +67,6 @@ interface PremiumSheetProps {
   subtitle?: string
   headerIcon?: ReactNode
   headerRight?: ReactNode
-
-  // Callbacks
-  onDragStart?: () => void
-  onDragEnd?: () => void
 }
 
 export const PremiumSheet = memo(function PremiumSheet({
@@ -99,45 +85,25 @@ export const PremiumSheet = memo(function PremiumSheet({
   subtitle,
   headerIcon,
   headerRight,
-  onDragStart,
-  onDragEnd: onDragEndCallback
 }: PremiumSheetProps) {
-  const dragControls = useDragControls()
   const contentRef = useRef<HTMLDivElement>(null)
-  const isDraggingRef = useRef(false)
 
-  // Интеграция с GestureGuard
+  // GestureGuard integration
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
 
-  // Handle drag end with smart thresholds
-  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
-    isDraggingRef.current = false
-    onDragEndCallback?.()
-
-    const { offset, velocity } = info
-    const shouldClose =
-      offset.y > DRAG_CONFIG.offsetThreshold ||
-      velocity.y > DRAG_CONFIG.velocityThreshold
-
-    if (shouldClose) {
-      triggerHaptic('light')
-      onClose()
-    }
-  }, [onClose, onDragEndCallback])
-
-  // Handle drag start
-  const handleDragStart = useCallback(() => {
-    isDraggingRef.current = true
-    onDragStart?.()
-  }, [onDragStart])
-
-  // Pointer down for drag controls
-  const startDrag = useCallback((e: React.PointerEvent) => {
-    if (mode === 'persistent') return
-    e.stopPropagation()
-    dragControls.start(e)
-  }, [dragControls, mode])
+  // Native touch gesture for drag-to-close
+  const {
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    dragOffset,
+    isDragging,
+  } = useSwipeToClose({
+    onClose,
+    offsetThreshold: SHEET_CONFIG.offsetThreshold,
+    velocityThreshold: SHEET_CONFIG.velocityThreshold,
+  })
 
   // Backdrop click handler
   const handleBackdropClick = useCallback(() => {
@@ -147,12 +113,15 @@ export const PremiumSheet = memo(function PremiumSheet({
     }
   }, [closeOnBackdrop, onClose])
 
-  // Prevent scroll propagation from content
-  const handleContentScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget
-    // If at top and trying to scroll up - might conflict with drag
-    // This is handled by overscrollBehavior: contain
-  }, [])
+  // Close button handler
+  const handleCloseClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    triggerHaptic('light')
+    onClose()
+  }, [onClose])
+
+  // Determine if drag is enabled
+  const isDragEnabled = mode !== 'persistent'
 
   return (
     <AnimatePresence>
@@ -175,29 +144,24 @@ export const PremiumSheet = memo(function PremiumSheet({
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               zIndex: 2000,
-              // Prevent any touch actions on backdrop
               touchAction: 'none',
             }}
           />
 
           {/* ═══════════════════════════════════════════════════════════════
-              SHEET — Main container with drag support
+              SHEET — Main container with native touch gestures
               ═══════════════════════════════════════════════════════════════ */}
           <motion.div
             key="sheet"
-            drag={mode !== 'persistent' ? 'y' : false}
-            dragControls={dragControls}
-            dragListener={false} // Only drag from handle/header
-            dragConstraints={DRAG_CONFIG.dragConstraints}
-            dragElastic={DRAG_CONFIG.dragElastic}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
             initial={{ y: '100%' }}
-            animate={{ y: 0 }}
+            animate={{
+              y: dragOffset,
+              opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
+            }}
             exit={{ y: '100%' }}
-            transition={{
+            transition={isDragging ? { duration: 0 } : {
               type: 'spring',
-              ...DRAG_CONFIG.spring
+              ...SHEET_CONFIG.spring
             }}
             className={className}
             style={{
@@ -226,11 +190,13 @@ export const PremiumSheet = memo(function PremiumSheet({
             }}
           >
             {/* ═══════════════════════════════════════════════════════════
-                DRAG HANDLE — Область для свайпа
+                DRAG HANDLE — Native touch area for swipe-to-close
                 ═══════════════════════════════════════════════════════════ */}
-            {showHandle && mode !== 'persistent' && (
+            {showHandle && isDragEnabled && (
               <div
-                onPointerDown={startDrag}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 style={{
                   display: 'flex',
                   justifyContent: 'center',
@@ -241,31 +207,32 @@ export const PremiumSheet = memo(function PremiumSheet({
                 }}
               >
                 <motion.div
-                  whileHover={{ opacity: 0.5 }}
                   style={{
                     width: 40,
                     height: 4,
                     borderRadius: 2,
-                    background: 'rgba(255,255,255,0.2)',
+                    background: isDragging ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
                   }}
                 />
               </div>
             )}
 
             {/* ═══════════════════════════════════════════════════════════
-                HEADER — Title, subtitle, close button
+                HEADER — Title, subtitle, close button (also draggable)
                 ═══════════════════════════════════════════════════════════ */}
             {(title || showCloseButton || headerRight) && (
               <div
-                onPointerDown={mode !== 'persistent' ? startDrag : undefined}
+                onTouchStart={isDragEnabled ? handleTouchStart : undefined}
+                onTouchMove={isDragEnabled ? handleTouchMove : undefined}
+                onTouchEnd={isDragEnabled ? handleTouchEnd : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: showHandle ? '4px 20px 16px' : '20px 20px 16px',
                   borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  cursor: mode !== 'persistent' ? 'grab' : 'default',
-                  touchAction: mode !== 'persistent' ? 'none' : 'auto',
+                  cursor: isDragEnabled ? 'grab' : 'default',
+                  touchAction: isDragEnabled ? 'none' : 'auto',
                 }}
               >
                 {/* Left side: Icon + Title */}
@@ -319,10 +286,8 @@ export const PremiumSheet = memo(function PremiumSheet({
                   {showCloseButton && (
                     <motion.button
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => {
-                        triggerHaptic('light')
-                        onClose()
-                      }}
+                      onClick={handleCloseClick}
+                      onTouchStart={(e) => e.stopPropagation()}
                       style={{
                         width: 36,
                         height: 36,
@@ -343,12 +308,11 @@ export const PremiumSheet = memo(function PremiumSheet({
             )}
 
             {/* ═══════════════════════════════════════════════════════════
-                CONTENT — Scrollable content area
+                CONTENT — Scrollable content area (native scroll)
                 ═══════════════════════════════════════════════════════════ */}
             <div
               ref={contentRef}
               data-scroll-container="true"
-              onScroll={handleContentScroll}
               style={{
                 flex: 1,
                 overflowY: 'auto',
@@ -356,7 +320,6 @@ export const PremiumSheet = memo(function PremiumSheet({
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
                 touchAction: 'pan-y',
-                // Safe area padding at bottom
                 paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
                 ...contentStyle,
               }}
@@ -371,7 +334,7 @@ export const PremiumSheet = memo(function PremiumSheet({
 })
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SIMPLE SHEET — Минимальный sheet без header
+//  SIMPLE SHEET — Minimal sheet without header
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface SimpleSheetProps {
@@ -405,7 +368,7 @@ export const SimpleSheet = memo(function SimpleSheet({
 })
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  FULL SHEET — Sheet на весь экран (expandable)
+//  FULL SHEET — Full screen expandable sheet
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface FullSheetProps {

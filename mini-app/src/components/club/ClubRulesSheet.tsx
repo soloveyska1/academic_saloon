@@ -1,19 +1,19 @@
 import { memo, useCallback } from 'react'
-import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { X, Shield, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
-import { useScrollLock, useSheetRegistration } from '../ui/GestureGuard'
+import { useScrollLock, useSheetRegistration, useSwipeToClose } from '../ui/GestureGuard'
 import { useModalRegistration } from '../../contexts/NavigationContext'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  CLUB RULES SHEET - Bottom sheet with club terms
-//  Enhanced with GestureGuard integration and drag-to-close
+//  v2: Native touch gestures for smooth iOS scrolling
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Unified drag configuration
-const DRAG_CONFIG = {
+// Unified configuration
+const SHEET_CONFIG = {
   offsetThreshold: 120,
-  velocityThreshold: 400,
-  dragElastic: 0.08,
+  velocityThreshold: 0.4,
+  spring: { damping: 32, stiffness: 380 },
 } as const
 
 // Haptic feedback utility
@@ -60,28 +60,23 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
   isOpen,
   onClose,
 }: ClubRulesSheetProps) {
-  const dragControls = useDragControls()
-
   // GestureGuard integration
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
   useModalRegistration(isOpen, 'club-rules-sheet')
 
-  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
-    const shouldClose =
-      info.offset.y > DRAG_CONFIG.offsetThreshold ||
-      info.velocity.y > DRAG_CONFIG.velocityThreshold
-
-    if (shouldClose) {
-      triggerHaptic('light')
-      onClose()
-    }
-  }, [onClose])
-
-  const startDrag = useCallback((e: React.PointerEvent) => {
-    e.stopPropagation()
-    dragControls.start(e)
-  }, [dragControls])
+  // Native touch gesture for drag-to-close
+  const {
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    dragOffset,
+    isDragging,
+  } = useSwipeToClose({
+    onClose,
+    offsetThreshold: SHEET_CONFIG.offsetThreshold,
+    velocityThreshold: SHEET_CONFIG.velocityThreshold,
+  })
 
   const handleClose = useCallback(() => {
     triggerHaptic('light')
@@ -113,16 +108,16 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
           {/* Sheet */}
           <motion.div
             key="club-rules-sheet"
-            drag="y"
-            dragControls={dragControls}
-            dragListener={false}
-            dragConstraints={{ top: 0 }}
-            dragElastic={DRAG_CONFIG.dragElastic}
-            onDragEnd={handleDragEnd}
             initial={{ y: '100%' }}
-            animate={{ y: 0 }}
+            animate={{
+              y: dragOffset,
+              opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
+            }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
+            transition={isDragging ? { duration: 0 } : {
+              type: 'spring',
+              ...SHEET_CONFIG.spring
+            }}
             style={{
               position: 'fixed',
               bottom: 0,
@@ -141,7 +136,9 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
           >
             {/* Drag Handle */}
             <div
-              onPointerDown={startDrag}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               style={{
                 padding: '12px 0',
                 display: 'flex',
@@ -155,14 +152,16 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
                   width: 40,
                   height: 4,
                   borderRadius: 2,
-                  background: 'rgba(255, 255, 255, 0.2)',
+                  background: isDragging ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.2)',
                 }}
               />
             </div>
 
             {/* Header */}
             <div
-              onPointerDown={startDrag}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -170,6 +169,7 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
                 padding: '8px 20px 16px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
                 cursor: 'grab',
+                touchAction: 'none',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -194,6 +194,7 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={handleClose}
+                onTouchStart={(e) => e.stopPropagation()}
                 style={{
                   width: 36,
                   height: 36,
@@ -210,7 +211,7 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
               </motion.button>
             </div>
 
-            {/* Content - Scrollable */}
+            {/* Content - Scrollable (native scroll) */}
             <div
               data-scroll-container="true"
               style={{

@@ -1,26 +1,25 @@
 import { memo, useCallback } from 'react'
-import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { X, Zap, ChevronRight, Clock, Camera } from 'lucide-react'
-import { useScrollLock, useSheetRegistration } from '../ui/GestureGuard'
+import { useScrollLock, useSheetRegistration, useSwipeToClose } from '../ui/GestureGuard'
 import { useModalRegistration } from '../../contexts/NavigationContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  URGENT HUB SHEET — Premium Bottom Sheet with Robust Gesture Handling
+//  URGENT HUB SHEET — Premium Bottom Sheet (v2 - Native Gestures)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-//  Улучшения v2:
-//  1. Интеграция с GestureGuard для блокировки скролла
-//  2. Унифицированные пороги drag-to-close
-//  3. Регистрация в NavigationContext
-//  4. Защита от случайного закрытия
-//  5. Haptic feedback
+//  v2 Improvements:
+//  1. Native touch gestures for drag-to-close (no framer-motion drag)
+//  2. Smooth scrolling on iOS without gesture conflicts
+//  3. Full GestureGuard integration
+//  4. Haptic feedback
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Unified drag configuration (same as PremiumSheet)
-const DRAG_CONFIG = {
+// Unified configuration
+const SHEET_CONFIG = {
   offsetThreshold: 120,
-  velocityThreshold: 400,
-  dragElastic: 0.08,
+  velocityThreshold: 0.4,
+  spring: { damping: 32, stiffness: 380 },
 } as const
 
 // Haptic feedback utility
@@ -50,12 +49,23 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
   onNavigate,
   haptic = triggerHaptic
 }: UrgentHubSheetProps) {
-  const dragControls = useDragControls()
-
-  // Интеграция с GestureGuard и NavigationContext
+  // GestureGuard and NavigationContext integration
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
   useModalRegistration(isOpen, 'urgent-hub-sheet')
+
+  // Native touch gesture for drag-to-close
+  const {
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    dragOffset,
+    isDragging,
+  } = useSwipeToClose({
+    onClose,
+    offsetThreshold: SHEET_CONFIG.offsetThreshold,
+    velocityThreshold: SHEET_CONFIG.velocityThreshold,
+  })
 
   const handleOptionClick = useCallback((type: 'urgent' | 'photo') => {
     haptic('medium')
@@ -70,22 +80,6 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
       }
     }, 200)
   }, [haptic, onClose, onNavigate])
-
-  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
-    const shouldClose =
-      info.offset.y > DRAG_CONFIG.offsetThreshold ||
-      info.velocity.y > DRAG_CONFIG.velocityThreshold
-
-    if (shouldClose) {
-      haptic('light')
-      onClose()
-    }
-  }, [haptic, onClose])
-
-  const startDrag = useCallback((e: React.PointerEvent) => {
-    e.stopPropagation()
-    dragControls.start(e)
-  }, [dragControls])
 
   const handleClose = useCallback(() => {
     haptic('light')
@@ -113,25 +107,25 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               zIndex: 2000,
-              touchAction: 'none', // Prevent touch events passing through
+              touchAction: 'none',
             }}
           />
 
           {/* ═══════════════════════════════════════════════════════════════
-              SHEET — Main container with drag support
+              SHEET — Main container with native touch gestures
               ═══════════════════════════════════════════════════════════════ */}
           <motion.div
             key="urgent-sheet"
-            drag="y"
-            dragControls={dragControls}
-            dragListener={false}
-            dragConstraints={{ top: 0 }}
-            dragElastic={DRAG_CONFIG.dragElastic}
-            onDragEnd={handleDragEnd}
             initial={{ y: '100%' }}
-            animate={{ y: 0 }}
+            animate={{
+              y: dragOffset,
+              opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
+            }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
+            transition={isDragging ? { duration: 0 } : {
+              type: 'spring',
+              ...SHEET_CONFIG.spring
+            }}
             style={{
               position: 'fixed',
               bottom: 0,
@@ -149,10 +143,12 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
             }}
           >
             {/* ═══════════════════════════════════════════════════════════
-                DRAG HANDLE — Active Zone (only this has touchAction: none)
+                DRAG HANDLE — Native touch area for swipe-to-close
                 ═══════════════════════════════════════════════════════════ */}
             <div
-              onPointerDown={startDrag}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               style={{
                 padding: '12px 20px 0',
                 cursor: 'grab',
@@ -165,14 +161,14 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
                   width: 40,
                   height: 4,
                   borderRadius: 2,
-                  background: 'rgba(255,255,255,0.15)',
+                  background: isDragging ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)',
                   margin: '0 auto 16px',
                 }}
               />
             </div>
 
             {/* ═══════════════════════════════════════════════════════════
-                SCROLLABLE CONTENT AREA
+                SCROLLABLE CONTENT AREA (native scroll)
                 ═══════════════════════════════════════════════════════════ */}
             <div
               data-scroll-container="true"
@@ -182,7 +178,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-y', // Explicitly allow vertical scrolling
+                touchAction: 'pan-y',
                 padding: '0 20px',
                 paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
               }}
@@ -236,6 +232,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={handleClose}
+                onTouchStart={(e) => e.stopPropagation()}
                 style={{
                   width: 36,
                   height: 36,
