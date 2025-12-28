@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import React, { useEffect, useState } from 'react'
 import {
   X, Percent, Shield, CheckCircle, TrendingUp, Crown, Star,
-  ArrowRight, Clock, RefreshCw, Lock, Eye, Zap, Award,
+  ArrowRight, Clock, RefreshCw, Lock, Zap,
   Gem, CreditCard, ArrowUpRight, ArrowDownRight,
   Gift
 } from 'lucide-react'
@@ -709,189 +709,171 @@ interface GuaranteesModalProps {
   onClose: () => void
 }
 
-const GUARANTEES = [
-  {
-    icon: RefreshCw,
-    title: 'Бесплатные доработки',
-    description: 'Исправим любые замечания без доплат до полной сдачи',
-  },
+// Redefined for Grid Layout
+const GUARANTEES_GRID = [
   {
     icon: Shield,
-    title: 'Гарантия уникальности',
-    description: 'Пишем с нуля. Проходим проверки на Антиплагиат.ВУЗ',
+    title: 'Уникальность',
+    desc: 'Проходим любой Антиплагиат',
+    accent: '#D4AF37'
+  },
+  {
+    icon: RefreshCw,
+    title: 'Правки 0₽',
+    desc: 'Бесплатно до самой защиты',
+    accent: '#22c55e'
   },
   {
     icon: Lock,
-    title: 'Полная анонимность',
-    description: 'Ваши личные данные и детали заказа строго конфиденциальны',
+    title: 'Анонимно',
+    desc: 'Строгая конфиденциальность',
+    accent: '#3b82f6'
   },
   {
     icon: Clock,
-    title: 'Соблюдение сроков',
-    description: 'Сдаем работу вовремя или возвращаем деньги за задержку',
-  },
-  {
-    icon: Eye,
-    title: 'Контроль качества',
-    description: 'Двойная проверка каждой работы отделом контроля',
-  },
+    title: 'Точно в срок',
+    desc: 'Или вернем деньги за задержку',
+    accent: '#f59e0b'
+  }
 ]
 
 export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
   return (
-    <ModalWrapper isOpen={isOpen} onClose={onClose} accentColor="#D4AF37" showParticles={false}>
-      <div style={{ padding: '8px 24px 40px' }}>
-        {/* Hero Section */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            width: 64, height: 64,
-            margin: '0 auto 16px',
-            borderRadius: 20,
-            background: 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
-            border: '1px solid rgba(212,175,55,0.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)'
-          }}>
-            <Shield size={28} color="#D4AF37" strokeWidth={1.5} />
-          </div>
+    <ModalWrapper isOpen={isOpen} onClose={onClose} accentColor="#D4AF37" showParticles={true}>
+      <div style={{ padding: '8px 20px 40px' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 14px',
+              borderRadius: 20,
+              background: 'rgba(212,175,55,0.1)',
+              border: '1px solid rgba(212,175,55,0.2)',
+              marginBottom: 16
+            }}
+          >
+            <Shield size={14} color="#D4AF37" />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#D4AF37', letterSpacing: '0.05em' }}>PREMIUM GUARANTEE</span>
+          </motion.div>
 
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
+            transition={{ delay: 0.1 }}
             style={{
               fontFamily: "var(--font-serif)",
-              fontSize: 26,
+              fontSize: 28,
               fontWeight: 700,
-              marginBottom: 8,
               color: '#f2f2f2',
+              marginBottom: 8,
             }}
           >
-            Гарантии Салуна
+            Гарантии
           </motion.h2>
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            style={{ fontSize: 13, color: '#a1a1aa' }}
+            transition={{ delay: 0.15 }}
+            style={{ fontSize: 13, color: '#a1a1aa', maxWidth: 280, margin: '0 auto' }}
           >
-            Абсолютная защита ваших интересов на всех этапах
+            Мы несём полную финансовую ответственность за результат
           </motion.p>
         </div>
 
-        {/* Guarantees List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-          {GUARANTEES.map((item, index) => {
-            const Icon = item.icon
-            const isTop = index < 2 // First 2 highlighted
-
-            return (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.25 + index * 0.05 }}
-              >
+        {/* GRID LAYOUT */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 12,
+          marginBottom: 24
+        }}>
+          {GUARANTEES_GRID.map((item, index) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + index * 0.05 }}
+            >
+              <div style={{
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+                border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: 20,
+                padding: '20px 16px',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
                 <div style={{
-                  padding: '16px',
+                  position: 'absolute',
+                  top: 0, left: 0, width: '100%', height: '3px',
+                  background: `linear-gradient(90deg, transparent, ${item.accent}, transparent)`,
+                  opacity: 0.5
+                }} />
+
+                <div style={{
+                  width: 48, height: 48,
                   borderRadius: 16,
-                  background: isTop ? 'linear-gradient(145deg, rgba(212,175,55,0.1), rgba(212,175,55,0.03))' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${isTop ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.05)'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14
+                  background: `${item.accent}15`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 12,
+                  boxShadow: `0 0 20px ${item.accent}10`
                 }}>
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 12,
-                    background: isTop ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.05)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <Icon size={18} color={isTop ? '#D4AF37' : '#52525b'} strokeWidth={1.5} />
-                  </div>
-
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: isTop ? '#f2f2f2' : '#d4d4d8',
-                      marginBottom: 3,
-                    }}>{item.title}</div>
-                    <div style={{
-                      fontSize: 12,
-                      color: '#71717a',
-                      lineHeight: 1.4,
-                    }}>{item.description}</div>
-                  </div>
-
-                  {isTop && (
-                    <CheckCircle size={18} color="#D4AF37" />
-                  )}
+                  <item.icon size={22} color={item.accent} strokeWidth={1.5} />
                 </div>
-              </motion.div>
-            )
-          })}
+
+                <div style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: '#f2f2f2',
+                  marginBottom: 6
+                }}>
+                  {item.title}
+                </div>
+
+                <div style={{
+                  fontSize: 11,
+                  color: '#a1a1aa',
+                  lineHeight: 1.35
+                }}>
+                  {item.desc}
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Social Proof Footer */}
+        {/* Bottom Note */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          style={{
+            textAlign: 'center',
+            padding: '12px',
+            borderRadius: 12,
+            background: 'rgba(212,175,55,0.05)',
+            border: '1px dashed rgba(212,175,55,0.2)',
+            fontSize: 11,
+            color: '#a1a1aa'
+          }}
         >
-          <LuxuryCard
-            borderColor="rgba(212,175,55,0.2)"
-            style={{ padding: 16 }}
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: 'rgba(212,175,55,0.1)',
-                  border: '1px solid rgba(212,175,55,0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Award size={18} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <div style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.9)',
-                  }}>1 200+ заказов</div>
-                  <div style={{
-                    fontSize: 10,
-                    color: 'rgba(255,255,255,0.4)',
-                  }}>выполнено без нареканий</div>
-                </div>
-              </div>
-              <div style={{
-                display: 'flex',
-                gap: 2,
-              }}>
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Star key={i} size={12} color="rgba(212,175,55,0.8)" fill="rgba(212,175,55,0.8)" />
-                ))}
-              </div>
-            </div>
-          </LuxuryCard>
+          <span style={{ color: '#D4AF37', fontWeight: 600 }}>Официальный договор</span> оферты при оформлении каждого заказа
         </motion.div>
       </div>
     </ModalWrapper>
   )
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  TRANSACTIONS MODAL — Ultra-Premium Balance Display
