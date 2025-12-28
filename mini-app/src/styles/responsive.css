@@ -1,147 +1,202 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   RESPONSIVE UTILITIES — ACADEMIC SALOON
-   Mobile-first approach for optimal UX across all device sizes
+   RESPONSIVE SYSTEM — ACADEMIC SALOON
+   Universal adaptive system for all devices
+   Mobile-first with fluid typography and spacing
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Responsive container utility */
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 1: CSS CUSTOM PROPERTIES — Responsive Variables
+   Using clamp() for fluid scaling between breakpoints
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────────────
+     VIEWPORT BREAKPOINTS (for reference)
+     xs: 320px  - Small phones (iPhone SE, older Android)
+     sm: 375px  - Standard phones (iPhone X/11/12/13/14)
+     md: 428px  - Large phones (iPhone Pro Max, large Android)
+     lg: 768px  - Tablets
+     xl: 1024px - Desktop/Laptop
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     FLUID SPACING — Scales smoothly from mobile to desktop
+     Formula: clamp(min, preferred, max)
+     ───────────────────────────────────────────────────────────────────────── */
+  --space-responsive-xs: clamp(4px, 1vw, 8px);
+  --space-responsive-sm: clamp(8px, 2vw, 12px);
+  --space-responsive-md: clamp(12px, 3vw, 16px);
+  --space-responsive-lg: clamp(16px, 4vw, 24px);
+  --space-responsive-xl: clamp(20px, 5vw, 32px);
+  --space-responsive-2xl: clamp(24px, 6vw, 48px);
+
+  /* Page padding - critical for mobile */
+  --page-padding-x: clamp(16px, 4vw, 40px);
+  --page-padding-top: clamp(16px, 4vw, 32px);
+  --page-padding-bottom: clamp(100px, 15vh, 140px);
+
+  /* Card padding */
+  --card-padding: clamp(14px, 3.5vw, 24px);
+  --card-padding-sm: clamp(10px, 2.5vw, 16px);
+  --card-padding-lg: clamp(18px, 4.5vw, 32px);
+
+  /* Gap between elements */
+  --gap-xs: clamp(4px, 1vw, 6px);
+  --gap-sm: clamp(8px, 2vw, 12px);
+  --gap-md: clamp(12px, 3vw, 16px);
+  --gap-lg: clamp(16px, 4vw, 24px);
+  --gap-xl: clamp(20px, 5vw, 32px);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     FLUID TYPOGRAPHY — Scales based on viewport
+     ───────────────────────────────────────────────────────────────────────── */
+  --text-xs: clamp(10px, 2.5vw, 12px);
+  --text-sm: clamp(12px, 3vw, 14px);
+  --text-base: clamp(14px, 3.5vw, 16px);
+  --text-md: clamp(15px, 3.75vw, 18px);
+  --text-lg: clamp(16px, 4vw, 20px);
+  --text-xl: clamp(18px, 4.5vw, 24px);
+  --text-2xl: clamp(20px, 5vw, 28px);
+  --text-3xl: clamp(24px, 6vw, 36px);
+  --text-4xl: clamp(28px, 7vw, 48px);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     FLUID BORDER RADIUS — Scales proportionally
+     ───────────────────────────────────────────────────────────────────────── */
+  --radius-responsive-sm: clamp(6px, 1.5vw, 10px);
+  --radius-responsive-md: clamp(10px, 2.5vw, 16px);
+  --radius-responsive-lg: clamp(14px, 3.5vw, 24px);
+  --radius-responsive-xl: clamp(18px, 4.5vw, 32px);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     CONTAINER MAX WIDTHS
+     ───────────────────────────────────────────────────────────────────────── */
+  --container-xs: 100%;
+  --container-sm: 100%;
+  --container-md: 600px;
+  --container-lg: 700px;
+  --container-xl: 800px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     NAVIGATION SIZES
+     ───────────────────────────────────────────────────────────────────────── */
+  --nav-height: clamp(56px, 14vw, 72px);
+  --nav-width: clamp(280px, 85vw, 360px);
+  --nav-bottom-offset: clamp(16px, 4vw, 24px);
+  --nav-icon-size: clamp(18px, 4.5vw, 24px);
+  --nav-label-size: clamp(9px, 2.25vw, 11px);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     TOUCH TARGETS — Minimum 44px for accessibility
+     ───────────────────────────────────────────────────────────────────────── */
+  --touch-target-min: 44px;
+  --touch-target-comfortable: clamp(44px, 11vw, 56px);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     ICON SIZES
+     ───────────────────────────────────────────────────────────────────────── */
+  --icon-xs: clamp(14px, 3.5vw, 18px);
+  --icon-sm: clamp(16px, 4vw, 20px);
+  --icon-md: clamp(20px, 5vw, 24px);
+  --icon-lg: clamp(24px, 6vw, 32px);
+  --icon-xl: clamp(32px, 8vw, 48px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 2: BREAKPOINT-SPECIFIC OVERRIDES
+   Fine-tune values at specific breakpoints
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Extra small phones (320px - 374px) */
+@media (max-width: 374px) {
+  :root {
+    --page-padding-x: 12px;
+    --card-padding: 12px;
+    --gap-md: 10px;
+    --text-base: 13px;
+    --text-lg: 15px;
+    --text-xl: 17px;
+    --nav-width: min(280px, 90vw);
+  }
+}
+
+/* Small phones (375px - 427px) */
+@media (min-width: 375px) and (max-width: 427px) {
+  :root {
+    --page-padding-x: 16px;
+    --card-padding: 14px;
+    --nav-width: min(300px, 85vw);
+  }
+}
+
+/* Large phones (428px - 767px) */
+@media (min-width: 428px) and (max-width: 767px) {
+  :root {
+    --page-padding-x: 20px;
+    --card-padding: 16px;
+    --nav-width: min(320px, 80vw);
+  }
+}
+
+/* Tablets (768px - 1023px) */
+@media (min-width: 768px) {
+  :root {
+    --page-padding-x: 32px;
+    --page-padding-top: 24px;
+    --card-padding: 20px;
+    --nav-width: 340px;
+    --nav-bottom-offset: 20px;
+  }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+  :root {
+    --page-padding-x: 40px;
+    --page-padding-top: 32px;
+    --card-padding: 24px;
+    --nav-width: 360px;
+    --nav-bottom-offset: 24px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 3: UTILITY CLASSES — Layout Containers
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Main responsive container - centers content on larger screens */
 .container-responsive {
   width: 100%;
   max-width: 100%;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-left: var(--page-padding-x);
+  padding-right: var(--page-padding-x);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 @media (min-width: 768px) {
   .container-responsive {
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 32px;
-    padding-right: 32px;
+    max-width: var(--container-md);
   }
 }
 
 @media (min-width: 1024px) {
   .container-responsive {
-    max-width: 700px;
+    max-width: var(--container-lg);
   }
 }
 
-/* Responsive spacing utilities */
+/* Page spacing - includes safe area for navigation */
 .spacing-mobile {
-  padding: 24px 20px 100px;
+  padding: var(--page-padding-top) var(--page-padding-x) var(--page-padding-bottom);
 }
 
-@media (min-width: 768px) {
-  .spacing-mobile {
-    padding: 32px 32px 120px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .spacing-mobile {
-    padding: 40px 40px 120px;
-  }
-}
-
-/* Responsive card padding */
-.card-padding {
-  padding: 20px;
-}
-
-@media (min-width: 768px) {
-  .card-padding {
-    padding: 24px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .card-padding {
-    padding: 28px;
-  }
-}
-
-/* Responsive border radius */
-.card-radius {
-  border-radius: 24px;
-}
-
-@media (min-width: 768px) {
-  .card-radius {
-    border-radius: 28px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .card-radius {
-    border-radius: 32px;
-  }
-}
-
-/* Responsive text sizes */
-.text-responsive-lg {
-  font-size: 24px;
-}
-
-@media (min-width: 768px) {
-  .text-responsive-lg {
-    font-size: 28px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .text-responsive-lg {
-    font-size: 32px;
-  }
-}
-
-.text-responsive-md {
-  font-size: 16px;
-}
-
-@media (min-width: 768px) {
-  .text-responsive-md {
-    font-size: 18px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .text-responsive-md {
-    font-size: 20px;
-  }
-}
-
-.text-responsive-sm {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  .text-responsive-sm {
-    font-size: 15px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .text-responsive-sm {
-    font-size: 16px;
-  }
-}
-
-/* Responsive gap utilities */
-.gap-responsive {
-  gap: 12px;
-}
-
-@media (min-width: 768px) {
-  .gap-responsive {
-    gap: 16px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .gap-responsive {
-    gap: 20px;
-  }
+/* Alternative: page with safe area insets for notched phones */
+.spacing-safe {
+  padding-top: max(var(--page-padding-top), env(safe-area-inset-top, 16px));
+  padding-left: max(var(--page-padding-x), env(safe-area-inset-left, 16px));
+  padding-right: max(var(--page-padding-x), env(safe-area-inset-right, 16px));
+  padding-bottom: calc(var(--page-padding-bottom) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Center content on large screens */
@@ -151,44 +206,308 @@
 
 @media (min-width: 768px) {
   .center-large {
-    max-width: 600px;
+    max-width: var(--container-md);
   }
 }
 
 @media (min-width: 1024px) {
   .center-large {
-    max-width: 700px;
+    max-width: var(--container-lg);
   }
 }
 
-/* Quick actions horizontal scroll - needs to bleed to edges */
-.quick-actions-container {
-  margin: 0 -20px 20px;
-  padding: 8px 20px;
-}
-
-@media (min-width: 768px) {
-  .quick-actions-container {
-    margin: 0 -32px 20px;
-    padding: 8px 32px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .quick-actions-container {
-    margin: 0 -40px 20px;
-    padding: 8px 40px;
-  }
-}
-
-/* Prevent horizontal overflow on main containers */
+/* Prevent horizontal overflow */
 .no-overflow-x {
   overflow-x: hidden;
   max-width: 100vw;
 }
 
+/* Full viewport height with safe areas */
+.min-h-screen-safe {
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   SHIMMER EFFECTS — Gold shimmer animation for premium elements
+   SECTION 4: UTILITY CLASSES — Card Styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.card-padding {
+  padding: var(--card-padding);
+}
+
+.card-padding-sm {
+  padding: var(--card-padding-sm);
+}
+
+.card-padding-lg {
+  padding: var(--card-padding-lg);
+}
+
+.card-radius {
+  border-radius: var(--radius-responsive-lg);
+}
+
+.card-radius-sm {
+  border-radius: var(--radius-responsive-sm);
+}
+
+.card-radius-md {
+  border-radius: var(--radius-responsive-md);
+}
+
+.card-radius-xl {
+  border-radius: var(--radius-responsive-xl);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 5: UTILITY CLASSES — Typography
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.text-responsive-xs {
+  font-size: var(--text-xs);
+}
+
+.text-responsive-sm {
+  font-size: var(--text-sm);
+}
+
+.text-responsive-base {
+  font-size: var(--text-base);
+}
+
+.text-responsive-md {
+  font-size: var(--text-md);
+}
+
+.text-responsive-lg {
+  font-size: var(--text-lg);
+}
+
+.text-responsive-xl {
+  font-size: var(--text-xl);
+}
+
+.text-responsive-2xl {
+  font-size: var(--text-2xl);
+}
+
+.text-responsive-3xl {
+  font-size: var(--text-3xl);
+}
+
+.text-responsive-4xl {
+  font-size: var(--text-4xl);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 6: UTILITY CLASSES — Spacing
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gap-responsive-xs { gap: var(--gap-xs); }
+.gap-responsive-sm { gap: var(--gap-sm); }
+.gap-responsive { gap: var(--gap-md); }
+.gap-responsive-md { gap: var(--gap-md); }
+.gap-responsive-lg { gap: var(--gap-lg); }
+.gap-responsive-xl { gap: var(--gap-xl); }
+
+.p-responsive-xs { padding: var(--space-responsive-xs); }
+.p-responsive-sm { padding: var(--space-responsive-sm); }
+.p-responsive { padding: var(--space-responsive-md); }
+.p-responsive-md { padding: var(--space-responsive-md); }
+.p-responsive-lg { padding: var(--space-responsive-lg); }
+.p-responsive-xl { padding: var(--space-responsive-xl); }
+
+.px-responsive { padding-left: var(--page-padding-x); padding-right: var(--page-padding-x); }
+.py-responsive { padding-top: var(--space-responsive-lg); padding-bottom: var(--space-responsive-lg); }
+
+.mb-responsive-xs { margin-bottom: var(--space-responsive-xs); }
+.mb-responsive-sm { margin-bottom: var(--space-responsive-sm); }
+.mb-responsive { margin-bottom: var(--space-responsive-md); }
+.mb-responsive-md { margin-bottom: var(--space-responsive-md); }
+.mb-responsive-lg { margin-bottom: var(--space-responsive-lg); }
+.mb-responsive-xl { margin-bottom: var(--space-responsive-xl); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 7: UTILITY CLASSES — Grid & Flexbox
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Responsive grid that adapts columns */
+.grid-responsive {
+  display: grid;
+  gap: var(--gap-md);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 375px) {
+  .grid-responsive-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 428px) {
+  .grid-responsive-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .grid-responsive-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Auto-fit grid - items wrap automatically */
+.grid-auto-fit {
+  display: grid;
+  gap: var(--gap-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+}
+
+.grid-auto-fit-lg {
+  display: grid;
+  gap: var(--gap-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+}
+
+/* Flex responsive */
+.flex-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-md);
+}
+
+/* Stack on mobile, row on larger screens */
+.stack-to-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+@media (min-width: 428px) {
+  .stack-to-row {
+    flex-direction: row;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 8: HORIZONTAL SCROLL CONTAINERS
+   For elements that should scroll horizontally on mobile
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Quick actions horizontal scroll - bleeds to edges */
+.quick-actions-container {
+  margin: 0 calc(var(--page-padding-x) * -1) var(--gap-lg);
+  padding: var(--gap-sm) var(--page-padding-x);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.quick-actions-container::-webkit-scrollbar {
+  display: none;
+}
+
+.quick-actions-content {
+  display: flex;
+  gap: var(--gap-sm);
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Horizontal scroll wrapper */
+.scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 9: TOUCH-FRIENDLY ELEMENTS
+   Ensuring minimum touch targets for accessibility
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.touch-target {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+}
+
+.touch-target-comfortable {
+  min-height: var(--touch-target-comfortable);
+  min-width: var(--touch-target-comfortable);
+}
+
+/* Button with proper touch target */
+.btn-responsive {
+  min-height: var(--touch-target-min);
+  padding: var(--space-responsive-sm) var(--space-responsive-lg);
+  font-size: var(--text-base);
+  border-radius: var(--radius-responsive-md);
+}
+
+/* Large CTA button */
+.btn-responsive-lg {
+  min-height: var(--touch-target-comfortable);
+  padding: var(--space-responsive-md) var(--space-responsive-xl);
+  font-size: var(--text-lg);
+  border-radius: var(--radius-responsive-lg);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 10: ICON SIZES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.icon-xs { width: var(--icon-xs); height: var(--icon-xs); }
+.icon-sm { width: var(--icon-sm); height: var(--icon-sm); }
+.icon-md { width: var(--icon-md); height: var(--icon-md); }
+.icon-lg { width: var(--icon-lg); height: var(--icon-lg); }
+.icon-xl { width: var(--icon-xl); height: var(--icon-xl); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 11: VISIBILITY UTILITIES
+   Show/hide elements at different breakpoints
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Hide on mobile, show on tablet+ */
+.hide-mobile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hide-mobile {
+    display: block;
+  }
+}
+
+/* Show on mobile, hide on tablet+ */
+.show-mobile {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .show-mobile {
+    display: none;
+  }
+}
+
+/* Hide on small phones only */
+@media (max-width: 374px) {
+  .hide-xs {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 12: SHIMMER EFFECTS
+   Gold shimmer animation for premium elements
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @keyframes gold-shimmer {
@@ -211,7 +530,7 @@
   }
 }
 
-/* Shimmer on gold text - applies to elements with gold gradient text */
+/* Shimmer on gold text */
 .gold-shimmer {
   background: linear-gradient(
     90deg,
@@ -224,6 +543,7 @@
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   animation: gold-shimmer 3s ease-in-out infinite;
 }
 
@@ -260,7 +580,11 @@
   animation: border-shimmer 2s ease-in-out infinite;
 }
 
-/* Respect reduced motion preference */
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 13: REDUCED MOTION
+   Respect user preferences
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
   .gold-shimmer,
   .progress-shimmer,
@@ -268,4 +592,226 @@
   .border-shimmer {
     animation: none;
   }
+
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 14: SAFE AREA INSETS
+   For devices with notches, home indicators, etc.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.safe-area-all {
+  padding:
+    env(safe-area-inset-top, 0px)
+    env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 15: ASPECT RATIO UTILITIES
+   For maintaining proportions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.aspect-square { aspect-ratio: 1 / 1; }
+.aspect-video { aspect-ratio: 16 / 9; }
+.aspect-portrait { aspect-ratio: 3 / 4; }
+.aspect-card { aspect-ratio: 4 / 3; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 16: TEXT UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Truncate text with ellipsis */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Line clamp */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Break long words */
+.break-words {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 17: TELEGRAM MINI APP SPECIFIC
+   Fixes for Telegram's WebView
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Prevent pull-to-refresh on iOS Telegram */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
+/* Fix for 100vh on mobile Safari/Telegram */
+.h-screen-telegram {
+  height: 100vh;
+  height: 100dvh;
+  height: -webkit-fill-available;
+}
+
+/* Fix viewport on Telegram iOS */
+@supports (-webkit-touch-callout: none) {
+  .h-screen-telegram {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION 18: COMPONENT-SPECIFIC RESPONSIVE STYLES
+   Applied via data attributes or classes
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Header component */
+.header-responsive {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  padding: var(--card-padding);
+  margin-bottom: var(--gap-lg);
+}
+
+/* Avatar responsive */
+.avatar-responsive {
+  width: clamp(48px, 12vw, 72px);
+  height: clamp(48px, 12vw, 72px);
+  flex-shrink: 0;
+}
+
+/* Quick action buttons */
+.quick-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-xs);
+  padding: var(--card-padding-sm);
+  min-width: clamp(80px, 20vw, 100px);
+  border-radius: var(--radius-responsive-md);
+}
+
+.quick-action-btn .icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+}
+
+.quick-action-btn .label {
+  font-size: var(--text-xs);
+}
+
+/* Stats grid - always 3 columns but responsive sizing */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap-sm);
+}
+
+.stat-card {
+  padding: var(--card-padding-sm);
+  text-align: center;
+  border-radius: var(--radius-responsive-md);
+}
+
+.stat-value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: var(--text-xs);
+  margin-top: var(--gap-xs);
+}
+
+/* CTA button - full width on mobile */
+.cta-responsive {
+  width: 100%;
+  padding: var(--space-responsive-md) var(--space-responsive-lg);
+  font-size: var(--text-md);
+  border-radius: var(--radius-responsive-lg);
+  min-height: var(--touch-target-comfortable);
+}
+
+/* Order card */
+.order-card-responsive {
+  padding: var(--card-padding);
+  border-radius: var(--radius-responsive-lg);
+  margin-bottom: var(--gap-md);
+}
+
+.order-card-title {
+  font-size: var(--text-md);
+  margin-bottom: var(--gap-xs);
+}
+
+.order-card-subtitle {
+  font-size: var(--text-sm);
+}
+
+/* Section spacing */
+.section-responsive {
+  margin-bottom: var(--gap-xl);
+}
+
+.section-title-responsive {
+  font-size: var(--text-lg);
+  margin-bottom: var(--gap-md);
+}
+
+/* Modal responsive */
+.modal-responsive {
+  width: min(calc(100vw - 32px), 500px);
+  max-height: calc(100vh - 100px);
+  max-height: calc(100dvh - 100px);
+  padding: var(--card-padding-lg);
+  border-radius: var(--radius-responsive-xl);
+}
+
+/* Bottom sheet */
+.bottom-sheet-responsive {
+  width: 100%;
+  max-width: var(--container-md);
+  max-height: 90vh;
+  max-height: 90dvh;
+  padding: var(--card-padding-lg);
+  padding-bottom: calc(var(--card-padding-lg) + env(safe-area-inset-bottom, 0px));
+  border-radius: var(--radius-responsive-xl) var(--radius-responsive-xl) 0 0;
 }

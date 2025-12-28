@@ -146,16 +146,17 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
             haptic('medium')
             onNavigate(nextAction.route)
           }}
+          className="order-card-responsive"
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
+            gap: 'var(--gap-md)',
             width: '100%',
-            padding: '16px 18px',
-            marginBottom: 16,
+            padding: 'var(--card-padding)',
+            marginBottom: 'var(--gap-md)',
             background: nextAction.bgColor,
             border: `1.5px solid ${nextAction.borderColor}`,
-            borderRadius: 16,
+            borderRadius: 'var(--radius-responsive-lg)',
             cursor: 'pointer',
             textAlign: 'left',
             position: 'relative',
@@ -183,9 +184,9 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
           {/* Icon */}
           <div
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
+              width: 'var(--touch-target-min)',
+              height: 'var(--touch-target-min)',
+              borderRadius: 'var(--radius-responsive-md)',
               background: `linear-gradient(145deg, ${nextAction.color}25, ${nextAction.color}15)`,
               border: `1px solid ${nextAction.borderColor}`,
               boxShadow: `0 0 16px ${nextAction.color}50`,
@@ -197,7 +198,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
               flexShrink: 0,
             }}
           >
-            <Icon size={22} color={nextAction.color} strokeWidth={1.5} />
+            <Icon size="var(--icon-md)" color={nextAction.color} strokeWidth={1.5} style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
           </div>
 
           {/* Content */}
@@ -206,13 +207,13 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                marginBottom: 3,
+                gap: 'var(--gap-sm)',
+                marginBottom: 'var(--gap-xs)',
               }}
             >
               <span
                 style={{
-                  fontSize: 11,
+                  fontSize: 'var(--text-xs)',
                   fontWeight: 700,
                   color: nextAction.color,
                   letterSpacing: '0.1em',
@@ -235,7 +236,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
             </div>
             <div
               style={{
-                fontSize: 15,
+                fontSize: 'var(--text-md)',
                 fontWeight: 600,
                 color: '#fff',
                 marginBottom: 2,
@@ -244,8 +245,9 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
               {nextAction.title}
             </div>
             <div
+              className="order-card-subtitle truncate"
               style={{
-                fontSize: 12,
+                fontSize: 'var(--text-sm)',
                 color: 'rgba(255,255,255,0.5)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -258,10 +260,10 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
 
           {/* Arrow */}
           <ChevronRight
-            size={20}
+            size="var(--icon-sm)"
             color={nextAction.color}
             strokeWidth={1.5}
-            style={{ position: 'relative', zIndex: 1, flexShrink: 0 }}
+            style={{ position: 'relative', zIndex: 1, flexShrink: 0, width: 'var(--icon-sm)', height: 'var(--icon-sm)' }}
           />
         </motion.button>
       </motion.div>

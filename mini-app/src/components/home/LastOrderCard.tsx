@@ -45,12 +45,13 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
       whileHover={{ scale: 1.01, y: -1 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => { haptic?.('light'); onClick() }}
+      className="order-card-responsive"
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
+        borderRadius: 'var(--radius-responsive-lg)',
+        padding: 'var(--card-padding)',
+        marginBottom: 'var(--gap-md)',
         cursor: 'pointer',
         background: `linear-gradient(135deg, ${status.bg} 0%, var(--bg-card) 50%)`,
         backdropFilter: 'blur(12px) saturate(130%)',
@@ -63,7 +64,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 14,
+          gap: 'var(--gap-md)',
           position: 'relative',
           zIndex: 1,
         }}
@@ -83,9 +84,9 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
           }
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
+            width: 'var(--touch-target-min)',
+            height: 'var(--touch-target-min)',
+            borderRadius: 'var(--radius-responsive-md)',
             background: status.bg,
             border: `1px solid ${status.border}`,
             display: 'flex',
@@ -94,7 +95,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
             flexShrink: 0,
           }}
         >
-          <WorkTypeIcon size={22} color={status.color} strokeWidth={1.5} />
+          <WorkTypeIcon size="var(--icon-md)" color={status.color} strokeWidth={1.5} style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
         </motion.div>
 
         {/* Content */}
@@ -103,13 +104,13 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              marginBottom: 4,
+              gap: 'var(--gap-sm)',
+              marginBottom: 'var(--gap-xs)',
             }}
           >
             <span
               style={{
-                fontSize: 11,
+                fontSize: 'var(--text-xs)',
                 fontWeight: 700,
                 color: 'var(--text-muted)',
                 letterSpacing: '0.1em',
@@ -119,8 +120,9 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
             </span>
           </div>
           <div
+            className="order-card-title truncate"
             style={{
-              fontSize: 14,
+              fontSize: 'var(--text-base)',
               fontWeight: 600,
               color: 'var(--text-main)',
               whiteSpace: 'nowrap',
@@ -134,11 +136,11 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
           {/* Status Badge */}
           <div
             style={{
-              marginTop: 6,
+              marginTop: 'var(--gap-xs)',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 5,
-              padding: '3px 8px',
+              gap: 'var(--gap-xs)',
+              padding: '3px var(--gap-sm)',
               background: status.bg,
               border: `1px solid ${status.border}`,
               borderRadius: 100,
@@ -159,7 +161,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
             />
             <span
               style={{
-                fontSize: 11,
+                fontSize: 'var(--text-xs)',
                 fontWeight: 600,
                 color: status.color,
               }}
@@ -169,7 +171,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
           </div>
         </div>
 
-        <ArrowRight size={20} color="var(--text-muted)" strokeWidth={1.5} />
+        <ArrowRight size="var(--icon-sm)" color="var(--text-muted)" strokeWidth={1.5} style={{ width: 'var(--icon-sm)', height: 'var(--icon-sm)' }} />
       </div>
     </motion.div>
   )

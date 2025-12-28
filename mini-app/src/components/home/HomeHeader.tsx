@@ -76,10 +76,10 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: 'var(--gap-xl)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-md)' }}>
         {/* User Avatar with static gold ring */}
         <div style={{ position: 'relative' }}>
           {/* VIP Glow - Static subtle halo (no animation) */}
@@ -106,10 +106,11 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
             }}
           />
           <div
+            className="avatar-responsive"
             style={{
               position: 'relative',
-              width: 48,
-              height: 48,
+              width: 'clamp(44px, 11vw, 56px)',
+              height: 'clamp(44px, 11vw, 56px)',
               borderRadius: '50%',
               background: 'var(--bg-main)',
               display: 'flex',
@@ -131,7 +132,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
                 style={{
                   fontFamily: "var(--font-serif)",
                   fontWeight: 700,
-                  fontSize: 18,
+                  fontSize: 'var(--text-lg)',
                   background: 'var(--gold-metallic)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -147,7 +148,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         <div>
           <div
             style={{
-              fontSize: 20,
+              fontSize: 'var(--text-xl)',
               fontWeight: 700,
               fontFamily: "var(--font-serif)",
               letterSpacing: '0.02em',
@@ -164,7 +165,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           </div>
           <div
             style={{
-              fontSize: 13,
+              fontSize: 'var(--text-sm)',
               color: 'var(--text-secondary)',
               fontWeight: 500,
             }}
@@ -178,11 +179,11 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       <div
         onClick={onSecretTap}
         style={{
-          padding: '8px 14px',
+          padding: 'var(--space-responsive-sm) var(--space-responsive-md)',
           background: 'rgba(0, 0, 0, 0.4)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
-          borderRadius: 8,
+          borderRadius: 'var(--radius-responsive-sm)',
           border: '1px solid rgba(212,175,55,0.3)',
           cursor: 'default',
           userSelect: 'none',
@@ -191,7 +192,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         <span
           style={{
             fontWeight: 600,
-            fontSize: 11,
+            fontSize: 'var(--text-xs)',
             letterSpacing: '0.05em',
             color: '#D4AF37',
           }}
