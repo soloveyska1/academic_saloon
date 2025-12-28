@@ -75,12 +75,13 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             {action.title}
           </div>
           <div style={{
-            fontFamily: "'Cinzel', serif",
-            fontSize: '9px',
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '10px',
             color: '#a1a1aa',
-            letterSpacing: '0.05em'
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase'
           }}>
-            {index === 0 ? 'FAST' : index === 1 ? 'REWARDS' : 'SAFE'}
+            {index === 0 ? 'БЫСТРО' : index === 1 ? 'КЕШБЭК' : 'НАДЕЖНО'}
           </div>
         </motion.button>
       ))}

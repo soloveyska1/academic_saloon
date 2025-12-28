@@ -81,13 +81,14 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
 
           <div>
             <div style={{
-              fontFamily: "'Cinzel', serif",
-              fontSize: '12px',
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '13px',
               color: '#a1a1aa',
               letterSpacing: '0.05em',
-              marginBottom: '4px'
+              marginBottom: '4px',
+              textTransform: 'uppercase'
             }}>
-              DAILY REWARD
+              ЕЖЕДНЕВНЫЙ БОНУС
             </div>
             <div style={{
               fontSize: '16px',
@@ -95,7 +96,7 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
               color: '#f2f2f2',
               fontFamily: "'Manrope', sans-serif"
             }}>
-              CLAIM <span style={{ color: '#d4af37' }}>{bonusWithStreak}₽</span>
+              ЗАБРАТЬ <span style={{ color: '#d4af37' }}>{bonusWithStreak}₽</span>
             </div>
           </div>
         </div>

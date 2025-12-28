@@ -37,7 +37,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
 
   return (
     <div style={{ paddingBottom: '30px' }}>
-      <div className={s.sectionTitle}>LAST ACTIVITY</div>
+      <div className={s.sectionTitle}>ПОСЛЕДНЯЯ АКТИВНОСТЬ</div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

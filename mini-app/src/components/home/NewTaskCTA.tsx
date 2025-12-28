@@ -51,14 +51,14 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start' }}>
         <div>
           <div style={{
-            fontFamily: "'Cinzel', serif",
+            fontFamily: "'Cormorant Garamond', serif",
             fontSize: '11px',
             letterSpacing: '0.1em',
             color: '#d4af37',
             marginBottom: '8px',
             textTransform: 'uppercase'
           }}>
-            Priority Access
+            ПРИОРИТЕТНЫЙ ДОСТУП
           </div>
           <div className={s.goldAccent} style={{
             fontFamily: "'Manrope', sans-serif",
@@ -67,14 +67,14 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
             lineHeight: '1.2',
             marginBottom: '4px'
           }}>
-            NEW ORDER
+            НОВЫЙ ЗАКАЗ
           </div>
           <div style={{
             color: '#71717a',
             fontSize: '13px',
             fontWeight: 500
           }}>
-            Guaranteed A+ Result
+            Гарантия результата
           </div>
         </div>
 

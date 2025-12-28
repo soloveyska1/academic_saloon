@@ -33,7 +33,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       {/* LEFT: Identity */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div className={s.avatarContainer} onClick={onSecretTap}>
-           <div className={s.avatar}>
+          <div className={s.avatar}>
             {userPhoto && !avatarError ? (
               <img
                 src={userPhoto}
@@ -46,14 +46,14 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
                 <span style={{ color: '#d4af37', fontWeight: 700 }}>{firstName.charAt(0)}</span>
               </div>
             )}
-           </div>
+          </div>
         </div>
 
         <div className={s.userInfo}>
           <div className={s.userName}>{firstName.toUpperCase()}</div>
           <div className={s.userStatus}>
             <div className={s.statusDot} />
-            {isVIP ? 'VIP CLIENT' : 'ACADEMIC CLUB'}
+            {isVIP ? 'VIP КЛИЕНТ' : 'КЛУБ ACADEMIC'}
           </div>
         </div>
       </div>
@@ -69,19 +69,22 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           borderRadius: '12px',
           padding: '8px 16px',
           color: '#d4af37',
-          fontFamily: "'Cinzel', serif",
-          fontSize: '11px',
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: '12px',
           fontWeight: 600,
           letterSpacing: '0.05em',
           backdropFilter: 'blur(10px)',
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
         }}
       >
-        LOUNGE
+        ЛАУНЖ
       </motion.button>
     </motion.header>
   )
-}, (prev, next) => {
+  return prev.userPhoto === next.userPhoto &&
+    prev.user.fullname === next.user.fullname &&
+    prev.user.rank.is_max === next.user.rank.is_max
+}, (prev: Readonly<HomeHeaderProps>, next: Readonly<HomeHeaderProps>) => {
   return prev.userPhoto === next.userPhoto &&
     prev.user.fullname === next.user.fullname &&
     prev.user.rank.is_max === next.user.rank.is_max

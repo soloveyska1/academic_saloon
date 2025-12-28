@@ -126,7 +126,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <div className={s.sectionTitle}>REQUIRE ATTENTION</div>
+      <div className={s.sectionTitle}>ТРЕБУЕТ ВНИМАНИЯ</div>
       <AnimatePresence mode="wait">
         <motion.div
           key={nextAction.id}
@@ -176,7 +176,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
                   fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', color: nextAction.color,
                   textTransform: 'uppercase'
                 }}>
-                  URGENT
+                  ВАЖНО
                 </span>
               </div>
               <div style={{ fontSize: '15px', fontWeight: 600, color: '#f2f2f2', marginBottom: '2px' }}>
