@@ -1,12 +1,10 @@
 import { memo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Zap, ChevronRight } from 'lucide-react'
-import { URGENT_OPTIONS } from './constants'
+import { motion, AnimatePresence, PanInfo } from 'framer-motion'
+import { X, Zap, ChevronRight, Clock, Camera } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  URGENT HUB SHEET — Bottom sheet with 2 urgent options
-//  Solves: duplicate "Urgent" entries (TipsCarousel + Panic Button)
-//  Now: single "Срочно" button opens this sheet with 2 options
+//  Full Redesign: Elite Gold Theme, Swipe-to-close, Premium Animations
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface UrgentHubSheetProps {
@@ -17,10 +15,25 @@ interface UrgentHubSheetProps {
 }
 
 export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, onNavigate, haptic }: UrgentHubSheetProps) {
-  const handleOptionClick = (route: string) => {
+
+  const handleOptionClick = (type: 'urgent' | 'photo') => {
     haptic('medium')
     onClose()
-    onNavigate(route)
+
+    // Slight delay to allow sheet to close before navigation
+    setTimeout(() => {
+      if (type === 'urgent') {
+        onNavigate('/create-order?urgent=true')
+      } else {
+        onNavigate('/create-order?mode=photo')
+      }
+    }, 200)
+  }
+
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 500) {
+      onClose()
+    }
   }
 
   return (
@@ -37,42 +50,46 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0,0,0,0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
+              background: 'rgba(0,0,0,0.7)', // Darker backdrop
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
               zIndex: 1000,
             }}
           />
 
           {/* Sheet */}
           <motion.div
+            drag="y"
+            dragControls={undefined}
+            dragConstraints={{ top: 0 }}
+            dragElastic={0.05}
+            onDragEnd={handleDragEnd}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 380 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
             style={{
               position: 'fixed',
               bottom: 0,
               left: 0,
               right: 0,
-              background: 'linear-gradient(180deg, rgba(22,22,26,0.98) 0%, rgba(14,14,16,0.99) 100%)',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              padding: '12px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
+              background: 'linear-gradient(180deg, #18181b 0%, #09090b 100%)', // Premium Deep Dark
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              padding: '12px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
               zIndex: 1001,
-              border: '1px solid rgba(212,175,55,0.15)',
-              borderBottom: 'none',
-              boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
+              borderTop: '1px solid rgba(212,175,55,0.2)', // Top gold border
+              boxShadow: '0 -10px 50px rgba(0,0,0,0.8)',
             }}
           >
             {/* Drag Handle */}
             <div
               style={{
-                width: 36,
+                width: 40,
                 height: 4,
                 borderRadius: 2,
                 background: 'rgba(255,255,255,0.2)',
-                margin: '0 auto 16px',
+                margin: '0 auto 20px',
               }}
             />
 
@@ -82,201 +99,204 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: 20,
+                marginBottom: 24,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    background: 'linear-gradient(145deg, rgba(239,68,68,0.2), rgba(185,28,28,0.15))',
-                    border: '1px solid rgba(239,68,68,0.3)',
+                    width: 48,
+                    height: 48,
+                    borderRadius: 14,
+                    background: 'linear-gradient(145deg, rgba(39,39,42,0.6), rgba(24,24,27,0.8))',
+                    border: '1px solid rgba(239,68,68,0.2)', // Subtle red tint for urgency
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)'
                   }}
                 >
-                  <Zap size={22} color="#f87171" strokeWidth={1.5} />
+                  <Zap size={24} color="#fca5a5" strokeWidth={1.5} />
                 </div>
                 <div>
                   <div
                     style={{
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: 700,
-                      color: '#fff',
-                      fontFamily: "var(--font-serif)",
+                      color: '#f2f2f2',
+                      fontFamily: "'Manrope', sans-serif",
+                      lineHeight: 1.2
                     }}
                   >
                     Срочная помощь
                   </div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
-                    Выберите способ
+                  <div style={{ fontSize: 13, color: '#a1a1aa', marginTop: 2 }}>
+                    Выберите способ заказа
                   </div>
                 </div>
               </div>
 
+              {/* Close Button */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
                 style={{
                   width: 36,
                   height: 36,
-                  borderRadius: 10,
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 12,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <X size={18} color="rgba(255,255,255,0.6)" />
+                <X size={18} color="rgba(255,255,255,0.5)" />
               </motion.button>
             </div>
 
-            {/* Options */}
+            {/* Options Panel */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {URGENT_OPTIONS.map((option, index) => (
-                <motion.button
-                  key={option.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + index * 0.08 }}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleOptionClick(option.route)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                    padding: '18px 16px',
-                    background:
-                      option.variant === 'primary'
-                        ? 'linear-gradient(145deg, rgba(185,28,28,0.2), rgba(127,29,29,0.15))'
-                        : 'linear-gradient(145deg, rgba(30,30,34,0.95), rgba(22,22,26,0.95))',
-                    border:
-                      option.variant === 'primary'
-                        ? '1px solid rgba(239,68,68,0.35)'
-                        : '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                  }}
-                >
-                  {/* Icon */}
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      background:
-                        option.variant === 'primary'
-                          ? 'linear-gradient(145deg, #991b1b, #7f1d1d)'
-                          : 'rgba(255,255,255,0.08)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <option.icon
-                      size={22}
-                      color={option.variant === 'primary' ? '#fca5a5' : 'rgba(255,255,255,0.7)'}
-                      strokeWidth={1.5}
-                    />
+
+              {/* Option 1: Urgent 24h */}
+              <motion.button
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleOptionClick('urgent')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '20px',
+                  borderRadius: 20,
+                  background: 'linear-gradient(135deg, rgba(80, 20, 20, 0.4) 0%, rgba(40, 10, 10, 0.4) 100%)', // Red tint glassy
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Icon Container */}
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
+                  background: 'linear-gradient(145deg, #7f1d1d, #450a0a)',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Clock size={24} color="#fca5a5" />
+                </div>
+
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fca5a5', marginBottom: 4 }}>
+                    Срочный заказ
                   </div>
-
-                  {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 600,
-                        color: option.variant === 'primary' ? '#f87171' : '#fff',
-                        marginBottom: 3,
-                      }}
-                    >
-                      {option.title}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: 'rgba(255,255,255,0.5)',
-                      }}
-                    >
-                      {option.subtitle}
-                    </div>
+                  <div style={{ fontSize: 13, color: 'rgba(252, 165, 165, 0.7)' }}>
+                    Выполним за 24 часа
                   </div>
+                </div>
 
-                  {/* Badge */}
-                  {option.badge && (
-                    <div
-                      style={{
-                        padding: '6px 10px',
-                        background:
-                          option.variant === 'primary'
-                            ? 'rgba(185,28,28,0.3)'
-                            : 'rgba(212,175,55,0.15)',
-                        border:
-                          option.variant === 'primary'
-                            ? '1px solid rgba(239,68,68,0.3)'
-                            : '1px solid rgba(212,175,55,0.3)',
-                        borderRadius: 8,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: option.variant === 'primary' ? '#f87171' : 'var(--gold-400)',
-                        }}
-                      >
-                        {option.badge}
-                      </span>
-                    </div>
-                  )}
+                {/* Badge */}
+                <div style={{
+                  padding: '6px 10px',
+                  borderRadius: 8,
+                  background: 'rgba(239,68,68,0.2)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fca5a5' }}>
+                    24ч
+                  </span>
+                </div>
 
-                  <ChevronRight
-                    size={18}
-                    color={option.variant === 'primary' ? '#f87171' : 'rgba(255,255,255,0.4)'}
-                    strokeWidth={1.5}
-                  />
-                </motion.button>
-              ))}
+                <ChevronRight size={18} color="rgba(239,68,68,0.5)" />
+              </motion.button>
+
+              {/* Option 2: Photo 5 min */}
+              <motion.button
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleOptionClick('photo')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '20px',
+                  borderRadius: 20,
+                  background: 'linear-gradient(135deg, rgba(30,30,35,0.6) 0%, rgba(20,20,22,0.6) 100%)', // Dark glassy
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  cursor: 'pointer',
+                }}
+              >
+                {/* Icon Container */}
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Camera size={24} color="#e5e5e5" />
+                </div>
+
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#f2f2f2', marginBottom: 4 }}>
+                    Скинь фото
+                  </div>
+                  <div style={{ fontSize: 13, color: '#a1a1aa' }}>
+                    Оценим за 5 минут
+                  </div>
+                </div>
+
+                {/* Badge */}
+                <div style={{
+                  padding: '6px 10px',
+                  borderRadius: 8,
+                  background: 'rgba(212,175,55,0.15)',
+                  border: '1px solid rgba(212,175,55,0.25)',
+                }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fcd34d' }}>
+                    5 мин
+                  </span>
+                </div>
+
+                <ChevronRight size={18} color="rgba(255,255,255,0.3)" />
+              </motion.button>
+
             </div>
 
             {/* Footer hint */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              style={{
-                marginTop: 16,
-                padding: '12px 16px',
-                background: 'rgba(212,175,55,0.06)',
-                border: '1px solid rgba(212,175,55,0.15)',
-                borderRadius: 12,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: 'var(--gold-400)',
-                  boxShadow: '0 0 8px rgba(212,175,55,0.5)',
-                }}
-              />
-              <span style={{ fontSize: 11, color: 'rgba(212,175,55,0.8)', fontWeight: 500 }}>
-                Менеджер ответит в течение 5 минут
+            <div style={{
+              marginTop: 20,
+              padding: '12px 16px',
+              background: 'linear-gradient(90deg, rgba(212,175,55,0.05) 0%, transparent 100%)',
+              borderLeft: '2px solid #d4af37',
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12
+            }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%', background: '#d4af37', boxShadow: '0 0 10px #d4af37'
+              }} />
+              <span style={{ fontSize: 12, color: '#d4af37', fontWeight: 600 }}>
+                Менеджеры на связи (Online)
               </span>
-            </motion.div>
+            </div>
+
           </motion.div>
         </>
       )}
