@@ -1,14 +1,13 @@
-import { useState, useEffect, useMemo, memo, useCallback } from 'react'
+import { useState, useMemo, memo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Crown } from 'lucide-react'
-import { UserData, Mission, Reward, DailyBonusState } from '../types'
+import { UserData, Mission, Reward } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { useClub } from '../contexts/ClubContext'
 
 import {
   MembershipCard,
-  DailyBonusCard,
   MissionsList,
   RewardsPreviewRow,
   ClubFooter,
@@ -17,13 +16,13 @@ import {
 } from '../components/club'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  CLUB PAGE - Premium Privileges Hub (Реальные данные)
+//  CLUB PAGE - Premium Privileges Hub (Клубные баллы)
 //  Features:
 //  - Membership card with level progress
-//  - Daily bonus with real 7-day streak & timer
-//  - Missions for earning points
-//  - Rewards preview
+//  - Missions for earning club points
+//  - Rewards preview (exchange points for vouchers)
 //  - Quick access to vouchers, rules, history
+//  NOTE: Daily bonus (₽) is ONLY on HomePage - this page uses separate club points
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface ClubPageProps {
@@ -97,8 +96,6 @@ function ClubPage({ user }: ClubPageProps) {
 
   // UI State
   const [showRules, setShowRules] = useState(false)
-  const [isClaimingBonus, setIsClaimingBonus] = useState(false)
-  const [bonusClaimResult, setBonusClaimResult] = useState<{ success: boolean; points: number } | null>(null)
 
   // User name
   const userName = user?.fullname?.split(' ')[0] || 'Участник'
@@ -114,46 +111,10 @@ function ClubPage({ user }: ClubPageProps) {
     activeVouchers: club.activeVouchers,
   }), [club.xp, club.level, club.dailyBonus.streakDay, club.points, club.missions, club.activeVouchers])
 
-  // Convert dailyBonus state for DailyBonusCard (it expects 'claimed' instead of 'cooldown')
-  const bonusStateForCard: DailyBonusState = useMemo(() => ({
-    status: club.dailyBonus.status === 'cooldown' ? 'claimed' : club.dailyBonus.status,
-    nextClaimAt: club.dailyBonus.nextClaimAt,
-    streakDay: club.dailyBonus.streakDay,
-    weekRewards: club.dailyBonus.weekRewards,
-  }), [club.dailyBonus])
-
   // Handlers
   const handleBack = useCallback(() => {
     navigate('/')
   }, [navigate])
-
-  const handleClaimBonus = useCallback(async () => {
-    if (isClaimingBonus || club.dailyBonus.status !== 'available') return
-
-    setIsClaimingBonus(true)
-
-    // Small delay for UX
-    await new Promise(resolve => setTimeout(resolve, 300))
-
-    // Claim using real hook
-    const result = club.claimDailyBonus()
-
-    setBonusClaimResult({ success: result.success, points: result.points })
-
-    // Haptic feedback
-    try {
-      if (result.success) {
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
-      } else {
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error')
-      }
-    } catch {}
-
-    setIsClaimingBonus(false)
-
-    // Clear result after 3 seconds
-    setTimeout(() => setBonusClaimResult(null), 3000)
-  }, [isClaimingBonus, club])
 
   const handleViewPrivileges = useCallback(() => {
     navigate('/club/privileges')
@@ -224,16 +185,6 @@ function ClubPage({ user }: ClubPageProps) {
             userName={userName}
             clubState={clubStateForCard}
             onViewPrivileges={handleViewPrivileges}
-          />
-        </div>
-
-        {/* Daily Bonus */}
-        <div style={{ marginBottom: 16 }}>
-          <DailyBonusCard
-            bonusState={bonusStateForCard}
-            levelId={club.level}
-            onClaimBonus={handleClaimBonus}
-            isLoading={isClaimingBonus}
           />
         </div>
 

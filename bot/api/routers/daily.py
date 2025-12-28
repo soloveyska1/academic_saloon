@@ -397,3 +397,143 @@ async def claim_daily_bonus(
         message=message,
         next_claim_at=next_claim_at
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ADMIN: Reset Daily Bonus for Testing
+# ═══════════════════════════════════════════════════════════════════════════
+
+from core.config import settings
+
+def _require_admin(tg_user: TelegramUser) -> None:
+    """Check if user is admin"""
+    if tg_user.id not in settings.ADMIN_IDS:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+@router.post("/daily-bonus/reset")
+async def reset_daily_bonus(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    [ADMIN ONLY] Сбросить cooldown ежедневного бонуса.
+
+    Используется для тестирования функциональности бонусов.
+    Сбрасывает last_daily_bonus_at, позволяя получить бонус повторно.
+    """
+    _require_admin(tg_user)
+
+    result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Reset cooldown by setting last_daily_bonus_at to None
+    # Keep streak intact so user can test milestone bonuses
+    old_claim_time = user.last_daily_bonus_at
+    user.last_daily_bonus_at = None
+
+    await session.commit()
+
+    logger.info(
+        f"[DailyBonus] Admin {tg_user.id} reset daily bonus cooldown. "
+        f"Old claim time: {old_claim_time}, Streak preserved: {user.daily_bonus_streak}"
+    )
+
+    return {
+        "success": True,
+        "message": "Daily bonus cooldown reset. You can claim again.",
+        "streak": user.daily_bonus_streak,
+    }
+
+
+@router.post("/daily-bonus/reset-streak")
+async def reset_daily_bonus_streak(
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    [ADMIN ONLY] Полный сброс ежедневного бонуса (cooldown + streak).
+
+    Используется для полного тестирования с нуля.
+    """
+    _require_admin(tg_user)
+
+    result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    old_streak = user.daily_bonus_streak
+    user.last_daily_bonus_at = None
+    user.daily_bonus_streak = 0
+
+    await session.commit()
+
+    logger.info(
+        f"[DailyBonus] Admin {tg_user.id} fully reset daily bonus. "
+        f"Old streak: {old_streak}, now 0"
+    )
+
+    return {
+        "success": True,
+        "message": "Daily bonus fully reset (cooldown + streak = 0).",
+        "old_streak": old_streak,
+        "new_streak": 0,
+    }
+
+
+@router.post("/daily-bonus/set-streak")
+async def set_daily_bonus_streak(
+    streak: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    [ADMIN ONLY] Установить произвольный стрик для тестирования milestone бонусов.
+
+    Например, установите streak=6, чтобы протестировать получение
+    milestone бонуса на 7-й день.
+    """
+    _require_admin(tg_user)
+
+    if streak < 0 or streak > 400:
+        raise HTTPException(status_code=400, detail="Streak must be between 0 and 400")
+
+    result = await session.execute(
+        select(User).where(User.telegram_id == tg_user.id)
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    old_streak = user.daily_bonus_streak
+    user.daily_bonus_streak = streak
+    user.last_daily_bonus_at = None  # Reset cooldown too
+
+    await session.commit()
+
+    logger.info(
+        f"[DailyBonus] Admin {tg_user.id} set streak to {streak}. "
+        f"Old: {old_streak}"
+    )
+
+    # Calculate next milestone
+    next_milestone = None
+    for day, reward in sorted(MILESTONE_BONUSES.items()):
+        if streak < day:
+            next_milestone = {"day": day, "reward": reward}
+            break
+
+    return {
+        "success": True,
+        "message": f"Streak set to {streak}. Cooldown reset.",
+        "old_streak": old_streak,
+        "new_streak": streak,
+        "next_milestone": next_milestone,
+    }
