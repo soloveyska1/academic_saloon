@@ -17,7 +17,6 @@ import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
 // New Home Components
 import {
   HomeHeader,
-  ExamSeasonBanner,
   DailyBonusBanner,
   QuickActionsRow,
   NextActionCard,
@@ -200,10 +199,7 @@ export function HomePage({ user }: Props) {
           ═══════════════════════════════════════════════════════════════════ */}
       {isNewUser ? (
         <>
-          {/* Exam season info (contextual) */}
-          <ExamSeasonBanner haptic={haptic} />
-
-          {/* PRIMARY CTA — Big, unmissable */}
+          {/* PRIMARY CTA */}
           <NewTaskCTA onClick={handleNewOrder} />
 
           {/* Quick info badges (Срочно, Кешбэк, Гарантии) */}
@@ -237,10 +233,7 @@ export function HomePage({ user }: Props) {
             haptic={haptic}
           />
 
-          {/* Exam season info (contextual) */}
-          <ExamSeasonBanner haptic={haptic} />
-
-          {/* PRIMARY CTA — Always visible, always above fold */}
+          {/* PRIMARY CTA */}
           <NewTaskCTA onClick={handleNewOrder} />
 
           {/* Quick info badges */}

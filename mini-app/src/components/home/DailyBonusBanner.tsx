@@ -1,10 +1,12 @@
 import { memo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
-import { Gift, ChevronRight, Coins } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Gift, ChevronRight } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  DAILY BONUS BANNER — Secondary action banner (subtle, not competing)
-//  Cleaned up: removed excessive animations per design review
+//  DAILY BONUS BANNER — Compact, elegant secondary action
+//  Premium "old money" design:
+//  - Single line, minimal footprint
+//  - Subtle but noticeable
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface DailyBonusBannerProps {
@@ -22,8 +24,6 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
   onClaim,
   haptic,
 }: DailyBonusBannerProps) {
-  const shouldReduceMotion = useReducedMotion()
-
   // Don't show if already claimed today
   if (!canClaim) return null
 
@@ -37,134 +37,68 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
   const bonusWithStreak = Math.round(potentialBonus * streakMultiplier)
 
   return (
-    <motion.div
-      initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+    <motion.button
+      type="button"
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.25 }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
       onClick={handleClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
       aria-label={`Забрать ежедневный бонус до ${bonusWithStreak} рублей`}
       style={{
-        position: 'relative',
+        width: '100%',
         marginBottom: 12,
-        padding: '16px 18px',
-        borderRadius: 14,
+        padding: '12px 16px',
+        borderRadius: 12,
         cursor: 'pointer',
-        background: 'linear-gradient(145deg, rgba(28,28,32,0.95) 0%, rgba(18,18,20,0.98) 100%)',
-        border: '1px solid rgba(212,175,55,0.35)',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.2), 0 0 0 1px rgba(212,175,55,0.1)',
-        outline: 'none',
+        background: 'rgba(212,175,55,0.08)',
+        border: '1px solid rgba(212,175,55,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        {/* Left side - Icon and text */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Gift icon - static, no animation */}
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: 'rgba(212,175,55,0.15)',
-              border: '1px solid rgba(212,175,55,0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Gift size={24} color="var(--gold-400)" strokeWidth={1.5} />
-          </div>
-
-          {/* Text content */}
-          <div>
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                marginBottom: 3,
-                color: 'var(--text-main)',
-              }}
-            >
-              Ежедневный бонус
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <Coins size={14} color="var(--gold-400)" strokeWidth={1.5} />
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  до {bonusWithStreak}₽
-                </span>
-              </div>
-              {currentStreak > 0 && (
-                <div
-                  style={{
-                    padding: '3px 8px',
-                    background: 'rgba(74, 222, 128, 0.1)',
-                    border: '1px solid rgba(74, 222, 128, 0.2)',
-                    borderRadius: 100,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: '#22c55e',
-                  }}
-                >
-                  🔥 {currentStreak}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right side - Subtle CTA */}
-        <motion.div
-          whileHover={shouldReduceMotion ? {} : { x: 2 }}
-          whileTap={{ scale: 0.97 }}
+      {/* Left side */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Gift size={18} color="var(--gold-400)" strokeWidth={1.5} style={{ opacity: 0.9 }} />
+        <span
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '10px 14px',
-            background: 'rgba(212,175,55,0.15)',
-            border: '1px solid rgba(212,175,55,0.3)',
-            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'var(--text-secondary)',
           }}
         >
+          Бонус дня
+        </span>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--gold-400)',
+          }}
+        >
+          до {bonusWithStreak}₽
+        </span>
+        {currentStreak > 1 && (
           <span
             style={{
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: 600,
-              color: 'var(--gold-400)',
+              color: 'var(--text-tertiary)',
+              padding: '2px 6px',
+              background: 'rgba(255,255,255,0.05)',
+              borderRadius: 6,
             }}
           >
-            Забрать
+            {currentStreak} дн.
           </span>
-          <ChevronRight size={16} color="var(--gold-400)" strokeWidth={1.5} />
-        </motion.div>
+        )}
       </div>
-    </motion.div>
+
+      {/* Right side */}
+      <ChevronRight size={16} color="var(--gold-400)" strokeWidth={1.5} style={{ opacity: 0.7 }} />
+    </motion.button>
   )
 })
