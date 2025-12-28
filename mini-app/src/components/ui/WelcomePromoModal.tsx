@@ -342,6 +342,7 @@ export function WelcomePromoModal({
               overflowX: 'hidden',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
               zIndex: 2001,
               background: `
                 linear-gradient(180deg,

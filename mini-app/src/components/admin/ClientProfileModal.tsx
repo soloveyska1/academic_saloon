@@ -131,6 +131,7 @@ export const ClientProfileModal: React.FC<ClientProfileModalProps> = ({
                             style={{
                                 overscrollBehavior: 'contain',
                                 WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y',
                                 paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
                             }}
                         >

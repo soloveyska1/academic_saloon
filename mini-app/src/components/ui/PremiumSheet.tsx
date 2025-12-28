@@ -355,6 +355,7 @@ export const PremiumSheet = memo(function PremiumSheet({
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-y',
                 // Safe area padding at bottom
                 paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
                 ...contentStyle,

@@ -335,6 +335,7 @@ export const SafeScrollContainer = memo(function SafeScrollContainer({
     overflowX: direction === 'vertical' ? 'hidden' : 'auto',
     overscrollBehavior: 'contain',
     WebkitOverflowScrolling: 'touch',
+    touchAction: direction === 'horizontal' ? 'pan-x' : 'pan-y',
     ...style
   }
 
