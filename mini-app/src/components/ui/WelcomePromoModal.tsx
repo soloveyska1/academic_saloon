@@ -16,6 +16,24 @@ import {
   X, Gift, Sparkles, Copy, Check, Crown, Star,
   ArrowRight, Zap, PartyPopper
 } from 'lucide-react'
+import { useScrollLock } from './GestureGuard'
+import { useModalRegistration } from '../../contexts/NavigationContext'
+
+// Haptic feedback utility
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' | 'success' = 'light') => {
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    if (tg?.HapticFeedback) {
+      if (style === 'success') {
+        tg.HapticFeedback.notificationOccurred('success')
+      } else {
+        tg.HapticFeedback.impactOccurred(style)
+      }
+    } else if (navigator.vibrate) {
+      navigator.vibrate(style === 'light' ? 10 : 20)
+    }
+  } catch (e) {}
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  CONFETTI PARTICLES — Celebration Effect
@@ -235,6 +253,10 @@ export function WelcomePromoModal({
   const [copied, setCopied] = useState(false)
   const [showContent, setShowContent] = useState(false)
 
+  // GestureGuard integration
+  useScrollLock(isOpen)
+  useModalRegistration(isOpen, 'welcome-promo-modal')
+
   // Delayed content reveal for dramatic effect
   useEffect(() => {
     if (isOpen) {
@@ -248,21 +270,22 @@ export function WelcomePromoModal({
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(promoCode)
     setCopied(true)
-
-    // Haptic feedback
-    try {
-      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
-    } catch {}
-
+    triggerHaptic('success')
     setTimeout(() => setCopied(false), 2000)
   }, [promoCode])
 
   const handleApply = useCallback(() => {
+    triggerHaptic('medium')
     if (onApplyPromo) {
       onApplyPromo(promoCode)
     }
     onClose()
   }, [onApplyPromo, promoCode, onClose])
+
+  const handleClose = useCallback(() => {
+    triggerHaptic('light')
+    onClose()
+  }, [onClose])
 
   return (
     <AnimatePresence>
@@ -272,14 +295,15 @@ export function WelcomePromoModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          onClick={onClose}
+          onClick={handleClose}
           style={{
             position: 'fixed',
             inset: 0,
             background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.98) 100%)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            zIndex: 1000,
+            zIndex: 2000,
+            touchAction: 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -309,11 +333,16 @@ export function WelcomePromoModal({
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
+            data-scroll-container="true"
             style={{
               width: '100%',
               maxWidth: 400,
               maxHeight: '90vh',
               overflowY: 'auto',
+              overflowX: 'hidden',
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
+              zIndex: 2001,
               background: `
                 linear-gradient(180deg,
                   rgba(25,25,30,0.98) 0%,
@@ -355,7 +384,7 @@ export function WelcomePromoModal({
 
             {/* Close button */}
             <motion.button
-              onClick={onClose}
+              onClick={handleClose}
               whileTap={{ scale: 0.9 }}
               style={{
                 position: 'absolute',
@@ -377,7 +406,7 @@ export function WelcomePromoModal({
             </motion.button>
 
             {/* Content */}
-            <div style={{ padding: '48px 28px 36px', textAlign: 'center', position: 'relative', zIndex: 2 }}>
+            <div style={{ padding: '48px 28px', paddingBottom: 'max(36px, calc(20px + env(safe-area-inset-bottom)))', textAlign: 'center', position: 'relative', zIndex: 2 }}>
               {/* Gift Icon with Animation */}
               <motion.div
                 initial={{ scale: 0, rotate: -20 }}

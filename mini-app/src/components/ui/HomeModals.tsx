@@ -290,7 +290,11 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
 
               {/* Close button */}
               <motion.button
-                onClick={handleClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleClose()
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
                 whileTap={{ scale: 0.9 }}
                 style={{
                   width: 32,

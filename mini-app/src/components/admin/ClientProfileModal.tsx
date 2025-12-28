@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     X, User, Calendar, DollarSign, Package, Star,
@@ -6,6 +6,20 @@ import {
 } from 'lucide-react'
 import { ClientProfile } from '../../types'
 import { fetchClientProfile } from '../../api/userApi'
+import { useScrollLock } from '../ui/GestureGuard'
+import { useModalRegistration } from '../../contexts/NavigationContext'
+
+// Haptic feedback utility
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+    try {
+        const tg = (window as any).Telegram?.WebApp
+        if (tg?.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred(style)
+        } else if (navigator.vibrate) {
+            navigator.vibrate(style === 'light' ? 10 : 20)
+        }
+    } catch (e) {}
+}
 
 interface ClientProfileModalProps {
     isOpen: boolean
@@ -42,11 +56,20 @@ export const ClientProfileModal: React.FC<ClientProfileModalProps> = ({
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    // GestureGuard integration
+    useScrollLock(isOpen)
+    useModalRegistration(isOpen, 'client-profile-modal')
+
     useEffect(() => {
         if (isOpen && userId) {
             loadProfile(userId)
         }
     }, [isOpen, userId])
+
+    const handleClose = useCallback(() => {
+        triggerHaptic('light')
+        onClose()
+    }, [onClose])
 
     const loadProfile = async (id: number) => {
         setIsLoading(true)
@@ -72,8 +95,9 @@ export const ClientProfileModal: React.FC<ClientProfileModalProps> = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/70 z-50"
-                        onClick={onClose}
+                        className="fixed inset-0 bg-black/80 backdrop-blur-md"
+                        style={{ zIndex: 2000, touchAction: 'none' }}
+                        onClick={handleClose}
                     />
 
                     {/* Modal */}
@@ -81,7 +105,8 @@ export const ClientProfileModal: React.FC<ClientProfileModalProps> = ({
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[90vh] bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[90vh] bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden"
+                        style={{ zIndex: 2001 }}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
@@ -92,7 +117,7 @@ export const ClientProfileModal: React.FC<ClientProfileModalProps> = ({
                                 <h2 className="text-lg font-bold text-white">Профиль клиента</h2>
                             </div>
                             <button
-                                onClick={onClose}
+                                onClick={handleClose}
                                 className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                             >
                                 <X className="w-5 h-5" />
@@ -100,7 +125,15 @@ export const ClientProfileModal: React.FC<ClientProfileModalProps> = ({
                         </div>
 
                         {/* Content */}
-                        <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+                        <div
+                            data-scroll-container="true"
+                            className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]"
+                            style={{
+                                overscrollBehavior: 'contain',
+                                WebkitOverflowScrolling: 'touch',
+                                paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+                            }}
+                        >
                             {isLoading ? (
                                 <div className="flex items-center justify-center py-12">
                                     <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />

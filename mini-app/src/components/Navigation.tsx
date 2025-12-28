@@ -267,6 +267,7 @@ export const Navigation = () => {
                     <AnimatePresence>
                       {isActive && (
                         <motion.span
+                          key={`${item.id}-label`}
                           initial={{ opacity: 0, scale: 0.5, y: 5 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.5, y: 5 }}
