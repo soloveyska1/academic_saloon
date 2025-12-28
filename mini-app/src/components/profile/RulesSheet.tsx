@@ -1,10 +1,32 @@
-import { memo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { memo, useCallback } from 'react'
+import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
 import { X, Percent, Gift, Crown, TrendingUp, Star, Check } from 'lucide-react'
+import { useScrollLock, useSheetRegistration } from '../ui/GestureGuard'
+import { useModalRegistration } from '../../contexts/NavigationContext'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  RULES SHEET - Bottom sheet explaining how the loyalty program works
+//  Enhanced with GestureGuard integration and drag-to-close
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// Unified drag configuration
+const DRAG_CONFIG = {
+  offsetThreshold: 120,
+  velocityThreshold: 400,
+  dragElastic: 0.08,
+} as const
+
+// Haptic feedback utility
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(style)
+    } else if (navigator.vibrate) {
+      navigator.vibrate(style === 'light' ? 10 : 20)
+    }
+  } catch (e) {}
+}
 
 interface RulesSheetProps {
   isOpen: boolean
@@ -65,6 +87,34 @@ export const RulesSheet = memo(function RulesSheet({
   isOpen,
   onClose,
 }: RulesSheetProps) {
+  const dragControls = useDragControls()
+
+  // GestureGuard integration
+  useScrollLock(isOpen)
+  useSheetRegistration(isOpen)
+  useModalRegistration(isOpen, 'rules-sheet')
+
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    const shouldClose =
+      info.offset.y > DRAG_CONFIG.offsetThreshold ||
+      info.velocity.y > DRAG_CONFIG.velocityThreshold
+
+    if (shouldClose) {
+      triggerHaptic('light')
+      onClose()
+    }
+  }, [onClose])
+
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation()
+    dragControls.start(e)
+  }, [dragControls])
+
+  const handleClose = useCallback(() => {
+    triggerHaptic('light')
+    onClose()
+  }, [onClose])
+
   const rules = [
     {
       icon: <Percent size={20} />,
@@ -109,43 +159,65 @@ export const RulesSheet = memo(function RulesSheet({
         <>
           {/* Backdrop */}
           <motion.div
+            key="rules-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0, 0, 0, 0.6)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 100,
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              zIndex: 2000,
+              touchAction: 'none',
             }}
           />
 
           {/* Sheet */}
           <motion.div
+            key="rules-sheet"
+            drag="y"
+            dragControls={dragControls}
+            dragListener={false}
+            dragConstraints={{ top: 0 }}
+            dragElastic={DRAG_CONFIG.dragElastic}
+            onDragEnd={handleDragEnd}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
             style={{
               position: 'fixed',
               bottom: 0,
               left: 0,
               right: 0,
               background: '#0f0f12',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              zIndex: 101,
-              maxHeight: '85vh',
-              overflow: 'auto',
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              zIndex: 2001,
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.7)',
+              borderTop: '1px solid rgba(212,175,55,0.2)',
             }}
           >
-            {/* Handle */}
-            <div style={{ padding: '12px 0', display: 'flex', justifyContent: 'center' }}>
+            {/* Drag Handle */}
+            <div
+              onPointerDown={startDrag}
+              style={{
+                padding: '12px 0',
+                display: 'flex',
+                justifyContent: 'center',
+                cursor: 'grab',
+                touchAction: 'none',
+              }}
+            >
               <div
                 style={{
-                  width: 36,
+                  width: 40,
                   height: 4,
                   borderRadius: 2,
                   background: 'rgba(255, 255, 255, 0.2)',
@@ -155,12 +227,15 @@ export const RulesSheet = memo(function RulesSheet({
 
             {/* Header */}
             <div
+              onPointerDown={startDrag}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '0 20px 20px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                cursor: 'grab',
+                touchAction: 'none',
               }}
             >
               <div>
@@ -173,11 +248,11 @@ export const RulesSheet = memo(function RulesSheet({
               </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                   width: 36,
                   height: 36,
-                  borderRadius: 10,
+                  borderRadius: 12,
                   border: 'none',
                   background: 'rgba(255, 255, 255, 0.06)',
                   display: 'flex',
@@ -190,8 +265,19 @@ export const RulesSheet = memo(function RulesSheet({
               </motion.button>
             </div>
 
-            {/* Content */}
-            <div style={{ padding: 20 }}>
+            {/* Content - Scrollable */}
+            <div
+              data-scroll-container="true"
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+                padding: 20,
+                paddingBottom: 'max(40px, calc(20px + env(safe-area-inset-bottom)))',
+              }}
+            >
               {/* Rules list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                 {rules.map((rule, idx) => (
@@ -241,9 +327,6 @@ export const RulesSheet = memo(function RulesSheet({
                   ))}
                 </div>
               </div>
-
-              {/* Bottom padding */}
-              <div style={{ height: 20 }} />
             </div>
           </motion.div>
         </>

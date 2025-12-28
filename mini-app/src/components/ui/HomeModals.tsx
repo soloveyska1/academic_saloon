@@ -1,5 +1,5 @@
-import { motion, AnimatePresence, useDragControls } from 'framer-motion'
-import React, { useEffect, useState } from 'react'
+import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
   X, Shield, CheckCircle, TrendingUp, Crown, Star,
   ArrowRight, Clock, RefreshCw, Lock, Zap,
@@ -8,6 +8,29 @@ import {
 } from 'lucide-react'
 import { UserData, Transaction } from '../../types'
 import { useAdmin } from '../../contexts/AdminContext'
+import { useScrollLock, useSheetRegistration } from './GestureGuard'
+import { useModalRegistration } from '../../contexts/NavigationContext'
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  UNIFIED DRAG CONFIGURATION — Same across all sheets
+// ═══════════════════════════════════════════════════════════════════════════
+const DRAG_CONFIG = {
+  offsetThreshold: 120,
+  velocityThreshold: 400,
+  dragElastic: 0.08,
+} as const
+
+// Haptic feedback utility
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(style)
+    } else if (navigator.vibrate) {
+      navigator.vibrate(style === 'light' ? 10 : 20)
+    }
+  } catch (e) {}
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  FLOATING PARTICLES — Luxury Background Effect
@@ -72,21 +95,34 @@ interface ModalWrapperProps {
 function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', showParticles = true }: ModalWrapperProps) {
   const dragControls = useDragControls()
 
-  // Scroll Lock Effect
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      // Prevent background touchmove to stop iOS rubbber banding behind modal usually
-      // const preventDefault = (e: Event) => e.preventDefault()
-      // We might not want to preventDefault everywhere because it breaks internal scrolling
-      // But locking overflow is usually enough in modern browsers
-    } else {
-      document.body.style.overflow = ''
+  // GestureGuard integration - unified scroll lock and modal registration
+  useScrollLock(isOpen)
+  useSheetRegistration(isOpen)
+  useModalRegistration(isOpen)
+
+  // Handle drag end with unified thresholds
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    const shouldClose =
+      info.offset.y > DRAG_CONFIG.offsetThreshold ||
+      info.velocity.y > DRAG_CONFIG.velocityThreshold
+
+    if (shouldClose) {
+      triggerHaptic('light')
+      onClose()
     }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  }, [onClose])
+
+  // Start drag with event propagation control
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation()
+    dragControls.start(e)
+  }, [dragControls])
+
+  // Close with haptic
+  const handleClose = useCallback(() => {
+    triggerHaptic('light')
+    onClose()
+  }, [onClose])
 
   return (
     <AnimatePresence>
@@ -96,14 +132,14 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          onClick={onClose}
+          onClick={handleClose}
           style={{
             position: 'fixed',
             inset: 0,
             background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            zIndex: 1000,
+            zIndex: 2000,
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',
@@ -134,16 +170,12 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             dragControls={dragControls}
             dragListener={false}
             dragConstraints={{ top: 0 }}
-            dragElastic={0.15} // Slightly heavier
-            onDragEnd={(_, info) => {
-              if (info.offset.y > 100 || info.velocity.y > 200) {
-                onClose()
-              }
-            }}
+            dragElastic={DRAG_CONFIG.dragElastic}
+            onDragEnd={handleDragEnd}
             initial={{ opacity: 0, y: '100%' }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
@@ -233,10 +265,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
 
             {/* Header with handle bar and close button - DRAG AREA */}
             <div
-              onPointerDown={(e) => {
-                e.stopPropagation(); // Make sure this doesn't bubble if nested
-                dragControls.start(e);
-              }}
+              onPointerDown={startDrag}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -261,7 +290,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
 
               {/* Close button */}
               <motion.button
-                onClick={onClose}
+                onClick={handleClose}
                 whileTap={{ scale: 0.9 }}
                 style={{
                   width: 32,

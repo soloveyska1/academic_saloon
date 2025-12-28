@@ -1,24 +1,63 @@
-import { memo } from 'react'
+import { memo, useCallback } from 'react'
 import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion'
 import { X, Zap, ChevronRight, Clock, Camera } from 'lucide-react'
+import { useScrollLock, useSheetRegistration } from '../ui/GestureGuard'
+import { useModalRegistration } from '../../contexts/NavigationContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  URGENT HUB SHEET — Bottom sheet with 2 urgent options
-//  Full Redesign: Elite Gold Theme, Swipe-to-close, Premium Animations
+//  URGENT HUB SHEET — Premium Bottom Sheet with Robust Gesture Handling
 // ═══════════════════════════════════════════════════════════════════════════
+//
+//  Улучшения v2:
+//  1. Интеграция с GestureGuard для блокировки скролла
+//  2. Унифицированные пороги drag-to-close
+//  3. Регистрация в NavigationContext
+//  4. Защита от случайного закрытия
+//  5. Haptic feedback
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Unified drag configuration (same as PremiumSheet)
+const DRAG_CONFIG = {
+  offsetThreshold: 120,
+  velocityThreshold: 400,
+  dragElastic: 0.08,
+} as const
+
+// Haptic feedback utility
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'medium') => {
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(style)
+    } else if (navigator.vibrate) {
+      navigator.vibrate(style === 'light' ? 10 : style === 'medium' ? 20 : 35)
+    }
+  } catch (e) {
+    // Ignore haptic errors
+  }
+}
 
 interface UrgentHubSheetProps {
   isOpen: boolean
   onClose: () => void
   onNavigate: (route: string) => void
-  haptic: (style: 'light' | 'medium' | 'heavy') => void
+  haptic?: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, onNavigate, haptic }: UrgentHubSheetProps) {
+export const UrgentHubSheet = memo(function UrgentHubSheet({
+  isOpen,
+  onClose,
+  onNavigate,
+  haptic = triggerHaptic
+}: UrgentHubSheetProps) {
   const dragControls = useDragControls()
 
-  const handleOptionClick = (type: 'urgent' | 'photo') => {
-    // ... (same logic)
+  // Интеграция с GestureGuard и NavigationContext
+  useScrollLock(isOpen)
+  useSheetRegistration(isOpen)
+  useModalRegistration(isOpen, 'urgent-hub-sheet')
+
+  const handleOptionClick = useCallback((type: 'urgent' | 'photo') => {
     haptic('medium')
     onClose()
 
@@ -30,48 +69,69 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
         onNavigate('/create-order?mode=photo')
       }
     }, 200)
-  }
+  }, [haptic, onClose, onNavigate])
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
-    if (info.offset.y > 100 || info.velocity.y > 500) {
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    const shouldClose =
+      info.offset.y > DRAG_CONFIG.offsetThreshold ||
+      info.velocity.y > DRAG_CONFIG.velocityThreshold
+
+    if (shouldClose) {
+      haptic('light')
       onClose()
     }
-  }
+  }, [haptic, onClose])
+
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation()
+    dragControls.start(e)
+  }, [dragControls])
+
+  const handleClose = useCallback(() => {
+    haptic('light')
+    onClose()
+  }, [haptic, onClose])
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* ═══════════════════════════════════════════════════════════════
+              BACKDROP — Dark overlay with blur
+              ═══════════════════════════════════════════════════════════════ */}
           <motion.div
-            // ... (same implementation)
+            key="urgent-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0,0,0,0.8)', // Darker backdrop for focus
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
+              background: 'rgba(0,0,0,0.85)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
               zIndex: 2000,
+              touchAction: 'none', // Prevent touch events passing through
             }}
           />
 
-          {/* Sheet */}
+          {/* ═══════════════════════════════════════════════════════════════
+              SHEET — Main container with drag support
+              ═══════════════════════════════════════════════════════════════ */}
           <motion.div
+            key="urgent-sheet"
             drag="y"
             dragControls={dragControls}
             dragListener={false}
             dragConstraints={{ top: 0 }}
-            dragElastic={0.05}
+            dragElastic={DRAG_CONFIG.dragElastic}
             onDragEnd={handleDragEnd}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
             style={{
               position: 'fixed',
               bottom: 0,
@@ -84,11 +144,15 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
               zIndex: 2001,
               borderTop: '1px solid rgba(212,175,55,0.3)',
               boxShadow: '0 -10px 40px rgba(0,0,0,0.9)',
+              // Prevent overscroll
+              overscrollBehavior: 'contain',
             }}
           >
-            {/* Drag Handle - Active Zone */}
+            {/* ═══════════════════════════════════════════════════════════
+                DRAG HANDLE — Active Zone
+                ═══════════════════════════════════════════════════════════ */}
             <div
-              onPointerDown={(e) => dragControls.start(e)}
+              onPointerDown={startDrag}
               style={{
                 width: 40,
                 height: 4,
@@ -96,20 +160,22 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                 background: 'rgba(255,255,255,0.15)',
                 margin: '0 auto 20px',
                 cursor: 'grab',
-                touchAction: 'none'
+                touchAction: 'none',
               }}
             />
 
-            {/* Header - Active Zone */}
+            {/* ═══════════════════════════════════════════════════════════
+                HEADER — Title and close button (also draggable)
+                ═══════════════════════════════════════════════════════════ */}
             <div
-              onPointerDown={(e) => dragControls.start(e)}
+              onPointerDown={startDrag}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginBottom: 24,
                 cursor: 'grab',
-                touchAction: 'none'
+                touchAction: 'none',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -123,7 +189,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                   }}
                 >
                   <Zap size={24} color="#fca5a5" strokeWidth={1.5} />
@@ -135,7 +201,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                       fontWeight: 700,
                       color: '#f2f2f2',
                       fontFamily: "'Manrope', sans-serif",
-                      lineHeight: 1.2
+                      lineHeight: 1.2,
                     }}
                   >
                     Срочная помощь
@@ -149,7 +215,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
               {/* Close Button */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                   width: 36,
                   height: 36,
@@ -166,7 +232,9 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
               </motion.button>
             </div>
 
-            {/* Options Panel */}
+            {/* ═══════════════════════════════════════════════════════════
+                OPTIONS — Action buttons
+                ═══════════════════════════════════════════════════════════ */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               {/* Option 1: Urgent 24h */}
@@ -186,7 +254,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                   border: '1px solid rgba(239,68,68,0.25)',
                   cursor: 'pointer',
                   position: 'relative',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
                 }}
               >
                 <div style={{
@@ -198,7 +266,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0
+                  flexShrink: 0,
                 }}>
                   <Clock size={22} color="#fca5a5" />
                 </div>
@@ -254,7 +322,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0
+                  flexShrink: 0,
                 }}>
                   <Camera size={22} color="#e5e5e5" />
                 </div>
@@ -284,17 +352,23 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
 
             </div>
 
-            {/* Footer hint */}
+            {/* ═══════════════════════════════════════════════════════════
+                FOOTER — Status indicator
+                ═══════════════════════════════════════════════════════════ */}
             <div style={{
               marginTop: 20,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              opacity: 0.7
+              opacity: 0.7,
             }}>
               <div style={{
-                width: 6, height: 6, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e'
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: '#22c55e',
+                boxShadow: '0 0 8px #22c55e',
               }} />
               <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 500 }}>
                 Менеджеры онлайн
@@ -309,3 +383,5 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({ isOpen, onClose, on
 }, (prevProps, nextProps) => {
   return prevProps.isOpen === nextProps.isOpen
 })
+
+export default UrgentHubSheet

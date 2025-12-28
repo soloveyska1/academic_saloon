@@ -1,11 +1,33 @@
-import { memo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { memo, useCallback } from 'react'
+import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
 import { X, ArrowUpRight, ArrowDownLeft, Gift, Percent, Users, Settings, FileText, Calendar, MessageSquare } from 'lucide-react'
 import { ProfileTransaction, TransactionCategory } from '../../types'
+import { useScrollLock, useSheetRegistration } from '../ui/GestureGuard'
+import { useModalRegistration } from '../../contexts/NavigationContext'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  TRANSACTION DETAILS SHEET - Bottom sheet with full transaction details
+//  Enhanced with GestureGuard integration and drag-to-close
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// Unified drag configuration
+const DRAG_CONFIG = {
+  offsetThreshold: 120,
+  velocityThreshold: 400,
+  dragElastic: 0.08,
+} as const
+
+// Haptic feedback utility
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(style)
+    } else if (navigator.vibrate) {
+      navigator.vibrate(style === 'light' ? 10 : 20)
+    }
+  } catch (e) {}
+}
 
 interface TransactionDetailsSheetProps {
   transaction: ProfileTransaction | null
@@ -81,6 +103,34 @@ export const TransactionDetailsSheet = memo(function TransactionDetailsSheet({
   onClose,
   onViewOrder,
 }: TransactionDetailsSheetProps) {
+  const dragControls = useDragControls()
+
+  // GestureGuard integration
+  useScrollLock(isOpen)
+  useSheetRegistration(isOpen)
+  useModalRegistration(isOpen, 'transaction-details-sheet')
+
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    const shouldClose =
+      info.offset.y > DRAG_CONFIG.offsetThreshold ||
+      info.velocity.y > DRAG_CONFIG.velocityThreshold
+
+    if (shouldClose) {
+      triggerHaptic('light')
+      onClose()
+    }
+  }, [onClose])
+
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation()
+    dragControls.start(e)
+  }, [dragControls])
+
+  const handleClose = useCallback(() => {
+    triggerHaptic('light')
+    onClose()
+  }, [onClose])
+
   if (!transaction) return null
 
   const isCredit = transaction.type === 'credit'
@@ -92,43 +142,65 @@ export const TransactionDetailsSheet = memo(function TransactionDetailsSheet({
         <>
           {/* Backdrop */}
           <motion.div
+            key="transaction-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0, 0, 0, 0.6)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 100,
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              zIndex: 2000,
+              touchAction: 'none',
             }}
           />
 
           {/* Sheet */}
           <motion.div
+            key="transaction-sheet"
+            drag="y"
+            dragControls={dragControls}
+            dragListener={false}
+            dragConstraints={{ top: 0 }}
+            dragElastic={DRAG_CONFIG.dragElastic}
+            onDragEnd={handleDragEnd}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
             style={{
               position: 'fixed',
               bottom: 0,
               left: 0,
               right: 0,
               background: '#0f0f12',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              zIndex: 101,
-              maxHeight: '80vh',
-              overflow: 'auto',
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              zIndex: 2001,
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.7)',
+              borderTop: `1px solid ${color}40`,
             }}
           >
-            {/* Handle */}
-            <div style={{ padding: '12px 0', display: 'flex', justifyContent: 'center' }}>
+            {/* Drag Handle */}
+            <div
+              onPointerDown={startDrag}
+              style={{
+                padding: '12px 0',
+                display: 'flex',
+                justifyContent: 'center',
+                cursor: 'grab',
+                touchAction: 'none',
+              }}
+            >
               <div
                 style={{
-                  width: 36,
+                  width: 40,
                   height: 4,
                   borderRadius: 2,
                   background: 'rgba(255, 255, 255, 0.2)',
@@ -138,12 +210,15 @@ export const TransactionDetailsSheet = memo(function TransactionDetailsSheet({
 
             {/* Header */}
             <div
+              onPointerDown={startDrag}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '0 20px 16px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                cursor: 'grab',
+                touchAction: 'none',
               }}
             >
               <span style={{ fontSize: 18, fontWeight: 600, color: '#fff' }}>
@@ -151,11 +226,11 @@ export const TransactionDetailsSheet = memo(function TransactionDetailsSheet({
               </span>
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                   width: 36,
                   height: 36,
-                  borderRadius: 10,
+                  borderRadius: 12,
                   border: 'none',
                   background: 'rgba(255, 255, 255, 0.06)',
                   display: 'flex',
@@ -168,8 +243,19 @@ export const TransactionDetailsSheet = memo(function TransactionDetailsSheet({
               </motion.button>
             </div>
 
-            {/* Content */}
-            <div style={{ padding: 20 }}>
+            {/* Content - Scrollable */}
+            <div
+              data-scroll-container="true"
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+                padding: 20,
+                paddingBottom: 'max(40px, calc(20px + env(safe-area-inset-bottom)))',
+              }}
+            >
               {/* Main info card */}
               <div
                 style={{
@@ -322,7 +408,10 @@ export const TransactionDetailsSheet = memo(function TransactionDetailsSheet({
                 {transaction.orderId && onViewOrder && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => onViewOrder(transaction.orderId!)}
+                    onClick={() => {
+                      triggerHaptic('medium')
+                      onViewOrder(transaction.orderId!)
+                    }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -342,9 +431,6 @@ export const TransactionDetailsSheet = memo(function TransactionDetailsSheet({
                   </motion.button>
                 )}
               </div>
-
-              {/* Bottom padding for safe area */}
-              <div style={{ height: 20 }} />
             </div>
           </motion.div>
         </>

@@ -1,10 +1,32 @@
-import { memo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { memo, useCallback } from 'react'
+import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
 import { X, Shield, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { useScrollLock, useSheetRegistration } from '../ui/GestureGuard'
+import { useModalRegistration } from '../../contexts/NavigationContext'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  CLUB RULES SHEET - Bottom sheet with club terms
+//  Enhanced with GestureGuard integration and drag-to-close
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// Unified drag configuration
+const DRAG_CONFIG = {
+  offsetThreshold: 120,
+  velocityThreshold: 400,
+  dragElastic: 0.08,
+} as const
+
+// Haptic feedback utility
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(style)
+    } else if (navigator.vibrate) {
+      navigator.vibrate(style === 'light' ? 10 : 20)
+    }
+  } catch (e) {}
+}
 
 interface ClubRulesSheetProps {
   isOpen: boolean
@@ -38,90 +60,145 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
   isOpen,
   onClose,
 }: ClubRulesSheetProps) {
+  const dragControls = useDragControls()
+
+  // GestureGuard integration
+  useScrollLock(isOpen)
+  useSheetRegistration(isOpen)
+  useModalRegistration(isOpen, 'club-rules-sheet')
+
+  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+    const shouldClose =
+      info.offset.y > DRAG_CONFIG.offsetThreshold ||
+      info.velocity.y > DRAG_CONFIG.velocityThreshold
+
+    if (shouldClose) {
+      triggerHaptic('light')
+      onClose()
+    }
+  }, [onClose])
+
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation()
+    dragControls.start(e)
+  }, [dragControls])
+
+  const handleClose = useCallback(() => {
+    triggerHaptic('light')
+    onClose()
+  }, [onClose])
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
           {/* Backdrop */}
           <motion.div
+            key="club-rules-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0, 0, 0, 0.6)',
-              zIndex: 1000,
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              zIndex: 2000,
+              touchAction: 'none',
             }}
           />
 
           {/* Sheet */}
           <motion.div
+            key="club-rules-sheet"
+            drag="y"
+            dragControls={dragControls}
+            dragListener={false}
+            dragConstraints={{ top: 0 }}
+            dragElastic={DRAG_CONFIG.dragElastic}
+            onDragEnd={handleDragEnd}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
             style={{
               position: 'fixed',
               bottom: 0,
               left: 0,
               right: 0,
-              maxHeight: '85vh',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
+              maxHeight: '90vh',
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
               background: '#121215',
-              zIndex: 1001,
-              overflow: 'hidden',
+              zIndex: 2001,
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.7)',
+              borderTop: '1px solid rgba(212,175,55,0.2)',
             }}
           >
-            {/* Handle */}
+            {/* Drag Handle */}
             <div
+              onPointerDown={startDrag}
               style={{
-                width: 40,
-                height: 4,
-                borderRadius: 2,
-                background: 'rgba(255, 255, 255, 0.2)',
-                margin: '12px auto',
+                padding: '12px 0',
+                display: 'flex',
+                justifyContent: 'center',
+                cursor: 'grab',
+                touchAction: 'none',
               }}
-            />
+            >
+              <div
+                style={{
+                  width: 40,
+                  height: 4,
+                  borderRadius: 2,
+                  background: 'rgba(255, 255, 255, 0.2)',
+                }}
+              />
+            </div>
 
             {/* Header */}
             <div
+              onPointerDown={startDrag}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '8px 20px 16px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                cursor: 'grab',
+                touchAction: 'none',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
                     background: 'rgba(212, 175, 55, 0.15)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Shield size={18} color="#D4AF37" />
+                  <Shield size={20} color="#D4AF37" />
                 </div>
-                <div style={{ fontSize: 17, fontWeight: 600, color: '#fff' }}>
+                <div style={{ fontSize: 18, fontWeight: 600, color: '#fff' }}>
                   Правила клуба
                 </div>
               </div>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
                   border: 'none',
                   background: 'rgba(255, 255, 255, 0.06)',
                   display: 'flex',
@@ -134,12 +211,17 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
               </motion.button>
             </div>
 
-            {/* Content */}
+            {/* Content - Scrollable */}
             <div
+              data-scroll-container="true"
               style={{
-                padding: '20px',
+                flex: 1,
                 overflowY: 'auto',
-                maxHeight: 'calc(85vh - 100px)',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+                padding: 20,
+                paddingBottom: 'max(60px, calc(20px + env(safe-area-inset-bottom)))',
               }}
             >
               {rules.map((rule, idx) => (
@@ -160,9 +242,9 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
                 >
                   <div
                     style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
                       background: 'rgba(255, 255, 255, 0.05)',
                       display: 'flex',
                       alignItems: 'center',
@@ -175,7 +257,7 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
                   <div style={{ flex: 1 }}>
                     <div
                       style={{
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: 600,
                         color: '#fff',
                         marginBottom: 6,
@@ -201,7 +283,7 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
                 style={{
                   marginTop: 20,
                   padding: 16,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   background: 'rgba(212, 175, 55, 0.08)',
                   border: '1px solid rgba(212, 175, 55, 0.15)',
                 }}
@@ -216,9 +298,6 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
                   Условия клуба могут изменяться. Накопленные баллы и ваучеры сохраняются при изменении условий.
                 </div>
               </div>
-
-              {/* Safe area padding */}
-              <div style={{ height: 40 }} />
             </div>
           </motion.div>
         </>
