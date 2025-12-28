@@ -111,10 +111,18 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
           />
 
           <motion.div
-            initial={{ opacity: 0, y: 150, scale: 0.9, rotateX: 10 }}
-            animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
-            exit={{ opacity: 0, y: 100, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
+            drag="y"
+            dragConstraints={{ top: 0 }}
+            dragElastic={0.1}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 100 || info.velocity.y > 200) {
+                onClose()
+              }
+            }}
+            initial={{ opacity: 0, y: '100%' }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
