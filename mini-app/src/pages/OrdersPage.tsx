@@ -1402,18 +1402,18 @@ export function OrdersPage({ orders }: Props) {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      padding: '20px 16px 120px',
-      background: 'var(--bg-main)',
-      position: 'relative',
-    }}>
-      {/* Premium Background */}
-      <PremiumBackground
-        variant="gold"
-        intensity="subtle"
-        interactive={capability.tier >= 3}
-      />
+    <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
+      {/* Premium Background - full width */}
+      <div className="page-background">
+        <PremiumBackground
+          variant="gold"
+          intensity="subtle"
+          interactive={capability.tier >= 3}
+        />
+      </div>
+
+      {/* Content with padding */}
+      <div className="page-content">
 
       {/* Header */}
       <motion.div
@@ -1526,9 +1526,7 @@ export function OrdersPage({ orders }: Props) {
 
       {/* Floating Create Button */}
       <FloatingCreateButton onClick={handleCreateOrder} />
-
-      {/* Footer spacing */}
-      <div style={{ height: 80 }} />
+      </div>{/* End page-content */}
     </div>
   )
 }

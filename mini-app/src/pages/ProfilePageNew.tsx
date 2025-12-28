@@ -297,24 +297,14 @@ export function ProfilePageNew({ user }: Props) {
   const referralLink = botUsername ? `https://t.me/${botUsername}/app?startapp=ref_${user.telegram_id}` : ''
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        minHeight: '100vh',
-        background: '#0a0a0c',
-      }}
-    >
-      {/* Premium background */}
-      <PremiumBackground />
+    <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
+      {/* Premium background - full width */}
+      <div className="page-background">
+        <PremiumBackground />
+      </div>
 
-      {/* Content */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          padding: '0 16px',
-        }}
-      >
+      {/* Content with padding */}
+      <div className="page-content">
         {/* Header */}
         <ProfileHeader
           user={profileUser}

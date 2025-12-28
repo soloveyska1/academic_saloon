@@ -163,23 +163,22 @@ export function HomePage({ user }: Props) {
   return (
     <main
       role="main"
-      className="spacing-mobile center-large no-overflow-x"
+      className="page-full-width"
       style={{
-        minHeight: '100vh',
         background: 'var(--bg-main)',
-        position: 'relative',
       }}>
-      {/* Premium Background - Time-based gradient */}
-      <div aria-hidden="true">
+      {/* Premium Background - Full width, fixed position */}
+      <div className="page-background" aria-hidden="true">
         <PremiumBackground
           variant="time"
           intensity="subtle"
           interactive={capability.tier >= 3}
         />
-      </div>
-      <div aria-hidden="true">
         <FloatingGoldParticles count={capability.getParticleCount(8)} />
       </div>
+
+      {/* Content with padding */}
+      <div className="page-content">
 
       {/* ═══════════════════════════════════════════════════════════════════
           HEADER — New compact component
@@ -295,6 +294,7 @@ export function HomePage({ user }: Props) {
       {state.dailyBonus.error && !state.dailyBonus.loading && (
         <DailyBonusError onRetry={retryDailyBonus} />
       )}
+      </div>{/* End page-content */}
 
       {/* ═══════════════════════════════════════════════════════════════════
           URGENT HUB SHEET — Bottom sheet with 2 urgent options
