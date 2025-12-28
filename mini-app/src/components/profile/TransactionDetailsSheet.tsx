@@ -218,7 +218,6 @@ export const TransactionDetailsSheet = memo(function TransactionDetailsSheet({
                 padding: '0 20px 16px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
                 cursor: 'grab',
-                touchAction: 'none',
               }}
             >
               <span style={{ fontSize: 18, fontWeight: 600, color: '#fff' }}>

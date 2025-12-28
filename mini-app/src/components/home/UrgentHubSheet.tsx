@@ -137,47 +137,66 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               bottom: 0,
               left: 0,
               right: 0,
+              maxHeight: '85vh',
               background: '#09090b',
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
-              padding: '12px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
               zIndex: 2001,
               borderTop: '1px solid rgba(212,175,55,0.3)',
               boxShadow: '0 -10px 40px rgba(0,0,0,0.9)',
-              // Prevent overscroll
-              overscrollBehavior: 'contain',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             {/* ═══════════════════════════════════════════════════════════
-                DRAG HANDLE — Active Zone
+                DRAG HANDLE — Active Zone (only this has touchAction: none)
                 ═══════════════════════════════════════════════════════════ */}
             <div
               onPointerDown={startDrag}
               style={{
-                width: 40,
-                height: 4,
-                borderRadius: 2,
-                background: 'rgba(255,255,255,0.15)',
-                margin: '0 auto 20px',
+                padding: '12px 20px 0',
                 cursor: 'grab',
                 touchAction: 'none',
-              }}
-            />
-
-            {/* ═══════════════════════════════════════════════════════════
-                HEADER — Title and close button (also draggable)
-                ═══════════════════════════════════════════════════════════ */}
-            <div
-              onPointerDown={startDrag}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 24,
-                cursor: 'grab',
-                touchAction: 'none',
+                flexShrink: 0,
               }}
             >
+              <div
+                style={{
+                  width: 40,
+                  height: 4,
+                  borderRadius: 2,
+                  background: 'rgba(255,255,255,0.15)',
+                  margin: '0 auto 16px',
+                }}
+              />
+            </div>
+
+            {/* ═══════════════════════════════════════════════════════════
+                SCROLLABLE CONTENT AREA
+                ═══════════════════════════════════════════════════════════ */}
+            <div
+              data-scroll-container="true"
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+                padding: '0 20px',
+                paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+              }}
+            >
+              {/* ═══════════════════════════════════════════════════════════
+                  HEADER — Title and close button
+                  ═══════════════════════════════════════════════════════════ */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 24,
+                }}
+              >
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div
                   style={{
@@ -352,28 +371,31 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
 
             </div>
 
-            {/* ═══════════════════════════════════════════════════════════
-                FOOTER — Status indicator
-                ═══════════════════════════════════════════════════════════ */}
-            <div style={{
-              marginTop: 20,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              opacity: 0.7,
-            }}>
+              {/* ═══════════════════════════════════════════════════════════
+                  FOOTER — Status indicator
+                  ═══════════════════════════════════════════════════════════ */}
               <div style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: '#22c55e',
-                boxShadow: '0 0 8px #22c55e',
-              }} />
-              <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 500 }}>
-                Менеджеры онлайн
-              </span>
+                marginTop: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                opacity: 0.7,
+              }}>
+                <div style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: '#22c55e',
+                  boxShadow: '0 0 8px #22c55e',
+                }} />
+                <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 500 }}>
+                  Менеджеры онлайн
+                </span>
+              </div>
+
             </div>
+            {/* End of scrollable content area */}
 
           </motion.div>
         </>

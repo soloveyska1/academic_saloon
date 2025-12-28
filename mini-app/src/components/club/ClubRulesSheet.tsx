@@ -170,7 +170,6 @@ export const ClubRulesSheet = memo(function ClubRulesSheet({
                 padding: '8px 20px 16px',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
                 cursor: 'grab',
-                touchAction: 'none',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

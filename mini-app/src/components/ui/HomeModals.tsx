@@ -273,7 +273,6 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 padding: '16px 20px 10px',
                 position: 'relative',
                 zIndex: 2,
-                touchAction: 'none', // Critical for drag
                 cursor: 'grab',
               }}
             >
