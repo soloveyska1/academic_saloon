@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import React, { useEffect, useState } from 'react'
 import {
   X, Percent, Shield, CheckCircle, TrendingUp, Crown, Star,
@@ -70,6 +70,8 @@ interface ModalWrapperProps {
 }
 
 function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', showParticles = true }: ModalWrapperProps) {
+  const dragControls = useDragControls()
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -112,6 +114,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
 
           <motion.div
             drag="y"
+            dragControls={dragControls}
+            dragListener={false}
             dragConstraints={{ top: 0 }}
             dragElastic={0.1}
             onDragEnd={(_, info) => {
@@ -209,15 +213,20 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             {/* Floating particles */}
             {showParticles && <FloatingParticles color={accentColor} />}
 
-            {/* Header with handle bar and close button */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '16px 20px 10px',
-              position: 'relative',
-              zIndex: 2,
-            }}>
+            {/* Header with handle bar and close button - DRAG AREA */}
+            <div
+              onPointerDown={(e) => dragControls.start(e)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px 10px',
+                position: 'relative',
+                zIndex: 2,
+                touchAction: 'none', // Critical for drag
+                cursor: 'grab',
+              }}
+            >
               {/* Spacer for centering */}
               <div style={{ width: 32 }} />
 
