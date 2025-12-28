@@ -581,6 +581,64 @@ export function AdminPanel() {
                   </motion.button>
                 </div>
 
+                {/* Rank Simulation Section */}
+                <div
+                  style={{
+                    marginTop: 16,
+                    padding: 12,
+                    background: 'rgba(212, 175, 55, 0.05)',
+                    border: '1px solid rgba(212, 175, 55, 0.2)',
+                    borderRadius: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Trophy size={16} color="#d4af37" />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#d4af37' }}>
+                      СИМУЛЯЦИЯ УРОВНЯ
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {[
+                      { label: 'Резидент (3%)', val: 3 },
+                      { label: 'Партнёр (5%)', val: 5 },
+                      { label: 'VIP (7%)', val: 7 },
+                      { label: 'Премиум (10%)', val: 10 },
+                    ].map((item) => {
+                      const isActive = admin.simulatedRank === item.val
+                      return (
+                        <motion.button
+                          key={item.val}
+                          onClick={() => admin.setSimulatedRank(isActive ? null : item.val)}
+                          whileTap={{ scale: 0.96 }}
+                          style={{
+                            padding: '8px',
+                            background: isActive ? 'rgba(212, 175, 55, 0.2)' : 'rgba(212, 175, 55, 0.05)',
+                            border: `1px solid ${isActive ? 'rgba(212, 175, 55, 0.4)' : 'rgba(212, 175, 55, 0.1)'}`,
+                            borderRadius: 8,
+                            color: isActive ? '#f2f2f2' : '#a1a1aa',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {item.label}
+                        </motion.button>
+                      )
+                    })}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#71717a', marginTop: 8, textAlign: 'center' }}>
+                    {admin.simulatedRank ? `Активна симуляция: ${admin.simulatedRank}%` : 'Симуляция отключена (реальные данные)'}
+                  </div>
+                </div>
+
                 {/* Debug Info Section */}
                 {admin.showDebugInfo && (
                   <div

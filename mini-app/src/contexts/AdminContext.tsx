@@ -21,6 +21,8 @@ interface AdminContextType extends AdminSettings {
   toggleUnlimitedRoulette: () => void
   toggleShowDebugInfo: () => void
   resetAllSettings: () => void
+  simulatedRank: number | null
+  setSimulatedRank: (rank: number | null) => void
 }
 
 const defaultSettings: AdminSettings = {
@@ -64,6 +66,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
     return defaultSettings
   })
+
+  const [simulatedRank, setSimulatedRank] = useState<number | null>(null)
 
   // Check if current user is admin with retry logic
   useEffect(() => {
@@ -144,6 +148,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         toggleUnlimitedRoulette,
         toggleShowDebugInfo,
         resetAllSettings,
+        simulatedRank,
+        setSimulatedRank,
       }}
     >
       {children}

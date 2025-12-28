@@ -7,6 +7,7 @@ import {
   Gift
 } from 'lucide-react'
 import { UserData, Transaction } from '../../types'
+import { useAdmin } from '../../contexts/AdminContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  FLOATING PARTICLES — Luxury Background Effect
@@ -444,28 +445,78 @@ const RANKS_DATA = [
   },
 ]
 
-export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
-  const currentRankIndex = RANKS_DATA.findIndex(r => r.cashback === user.rank.cashback)
+export function CashbackModal({ isOpen, onClose, user: realUser }: CashbackModalProps) {
+  const admin = useAdmin()
+
+  // Simulation Logic
+  const effectiveCashback = admin.simulatedRank !== null ? admin.simulatedRank : realUser.rank.cashback
+
+  // Find rank based on effective cashback
+  const currentRankIndex = RANKS_DATA.findIndex(r => r.cashback === effectiveCashback)
   const currentRank = RANKS_DATA[currentRankIndex] || RANKS_DATA[0]
+
+  // Next rank logic
+  const nextRank = RANKS_DATA[currentRankIndex + 1]
+  const isMax = !nextRank
+
+  // Progress calculation (simulated or real)
+  let progress = 0
+  let spentToNext = 0
+
+  if (admin.simulatedRank !== null) {
+    // In simulation, we fake the progress styling
+    progress = 45
+    spentToNext = nextRank ? (nextRank.minSpent - currentRank.minSpent) * 0.55 : 0
+  } else {
+    progress = realUser.rank.progress
+    spentToNext = realUser.rank.spent_to_next
+  }
 
   return (
     <ModalWrapper isOpen={isOpen} onClose={onClose} accentColor="#D4AF37" showParticles={false}>
       <div style={{ padding: '8px 24px 40px' }}>
-        {/* Hero Section */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <HeroIcon icon={Percent} />
+
+        {/* Simulation Badge */}
+        {admin.simulatedRank !== null && (
+          <div style={{
+            position: 'absolute',
+            top: 20, right: 20,
+            background: 'rgba(239, 68, 68, 0.2)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            color: '#fca5a5',
+            fontSize: 10,
+            fontWeight: 700,
+            padding: '4px 8px',
+            borderRadius: 6,
+            pointerEvents: 'none'
+          }}>
+            SIMULATION
+          </div>
+        )}
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{
+            width: 64, height: 64,
+            margin: '0 auto 16px',
+            borderRadius: 20,
+            background: 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+            border: '1px solid rgba(212,175,55,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)'
+          }}>
+            <Percent size={28} color="#D4AF37" strokeWidth={1.5} />
+          </div>
 
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
             style={{
               fontFamily: "var(--font-serif)",
-              fontSize: 24,
+              fontSize: 26,
               fontWeight: 700,
-              marginTop: 20,
-              marginBottom: 8,
-              color: 'rgba(255,255,255,0.9)',
+              marginBottom: 6,
+              color: '#f2f2f2',
             }}
           >
             Система лояльности
@@ -473,229 +524,169 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}
+            style={{ fontSize: 13, color: '#a1a1aa' }}
           >
             Возврат с каждого заказа на ваш баланс
           </motion.p>
         </div>
 
-        {/* Current Cashback */}
+        {/* Main Card */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          style={{
+            background: 'linear-gradient(160deg, rgba(20,20,23,0.9), rgba(10,10,12,0.95))',
+            border: '1px solid rgba(212,175,55,0.25)',
+            borderRadius: 24,
+            padding: '32px 20px',
+            textAlign: 'center',
+            marginBottom: 24,
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: '0 20px 50px -20px rgba(0,0,0,0.7)'
+          }}
         >
-          <LuxuryCard
-            borderColor="rgba(212,175,55,0.3)"
-            style={{ marginBottom: 24, padding: 24, textAlign: 'center' }}
-          >
-            <div style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'rgba(255,255,255,0.4)',
-              letterSpacing: '0.15em',
-              marginBottom: 12,
-            }}>
-              ВАШ ТЕКУЩИЙ КЕШБЭК
-            </div>
+          {/* Background Glow */}
+          <div style={{
+            position: 'absolute',
+            top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '120%', height: '120%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%)',
+            pointerEvents: 'none'
+          }} />
 
-            <motion.div
-              animate={{ opacity: [0.85, 1, 0.85] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              style={{
-                fontSize: 48,
-                fontWeight: 700,
-                fontFamily: "var(--font-serif)",
-                color: 'rgba(212,175,55,0.9)',
-                lineHeight: 1,
-                marginBottom: 14,
-              }}
-            >
-              {user.rank.cashback}%
-            </motion.div>
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: 'rgba(212,175,55,0.6)', textTransform: 'uppercase', marginBottom: 16
+          }}>
+            Ваш текущий кешбэк
+          </div>
 
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 14px',
-              background: 'rgba(212,175,55,0.1)',
-              borderRadius: 100,
-              border: '1px solid rgba(212,175,55,0.2)',
-            }}>
-              <currentRank.icon size={14} color="rgba(212,175,55,0.7)" strokeWidth={1.5} />
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'rgba(212,175,55,0.8)',
-              }}>
-                {currentRank.name}
-              </span>
-            </div>
-          </LuxuryCard>
+          <div style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 64,
+            fontWeight: 700,
+            color: '#D4AF37',
+            lineHeight: 1,
+            marginBottom: 20,
+            textShadow: '0 4px 20px rgba(212,175,55,0.3)'
+          }}>
+            {effectiveCashback}%
+          </div>
+
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '8px 16px',
+            background: 'rgba(212,175,55,0.1)',
+            border: '1px solid rgba(212,175,55,0.25)',
+            borderRadius: 12,
+          }}>
+            <currentRank.icon size={14} color="#D4AF37" fill="#D4AF37" fillOpacity={0.2} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#D4AF37' }}>
+              {currentRank.name}
+            </span>
+          </div>
         </motion.div>
 
-        {/* Ranks List */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: 'rgba(255,255,255,0.35)',
-            letterSpacing: '0.12em',
-            marginBottom: 14,
-            paddingLeft: 4,
-          }}>УРОВНИ ПРОГРАММЫ</div>
+        {/* Levels List */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#52525b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12, paddingLeft: 4 }}>
+            Уровни программы
+          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {RANKS_DATA.map((rank, index) => {
-              const isActive = index === currentRankIndex
-              const isPassed = index < currentRankIndex
-              const Icon = rank.icon
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {RANKS_DATA.map((rank, i) => {
+              const isActive = i === currentRankIndex
+              const isPassed = i < currentRankIndex
 
               return (
-                <motion.div
-                  key={rank.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + index * 0.06 }}
-                >
-                  <LuxuryCard
-                    borderColor={isActive ? 'rgba(212,175,55,0.35)' : 'rgba(255,255,255,0.06)'}
-                    style={{ padding: 14 }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      {/* Icon */}
-                      <div style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 12,
-                        background: 'rgba(212,175,55,0.08)',
-                        border: `1px solid ${isActive ? 'rgba(212,175,55,0.3)' : 'rgba(212,175,55,0.1)'}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                        {isPassed ? (
-                          <CheckCircle size={18} color="rgba(212,175,55,0.7)" strokeWidth={1.5} />
-                        ) : (
-                          <Icon size={18} color={isActive ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.25)'} strokeWidth={1.5} />
-                        )}
-                      </div>
+                <div key={rank.name} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '16px',
+                  background: isActive ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${isActive ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                  borderRadius: 16,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{
+                      width: 36, height: 36,
+                      borderRadius: 10,
+                      background: isActive ? 'rgba(212,175,55,0.2)' : isPassed ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      {isPassed ? (
+                        <CheckCircle size={18} color="#D4AF37" />
+                      ) : (
+                        <rank.icon size={18} color={isActive ? '#D4AF37' : '#52525b'} />
+                      )}
+                    </div>
 
-                      {/* Info */}
-                      <div style={{ flex: 1 }}>
-                        <div style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: isActive ? 'rgba(255,255,255,0.9)' : isPassed ? 'rgba(212,175,55,0.7)' : 'rgba(255,255,255,0.4)',
-                          marginBottom: 2,
-                        }}>{rank.name}</div>
-                        <div style={{
-                          fontSize: 11,
-                          color: 'rgba(255,255,255,0.35)',
-                        }}>
-                          от {rank.minSpent.toLocaleString('ru-RU')} ₽
-                        </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: isActive ? '#f2f2f2' : isPassed ? '#a1a1aa' : '#52525b' }}>
+                        {rank.name}
                       </div>
-
-                      {/* Cashback */}
-                      <div style={{
-                        fontSize: 18,
-                        fontWeight: 700,
-                        fontFamily: "var(--font-mono)",
-                        color: isActive ? 'rgba(212,175,55,0.9)' : isPassed ? 'rgba(212,175,55,0.6)' : 'rgba(255,255,255,0.25)',
-                      }}>
-                        {rank.cashback}%
+                      <div style={{ fontSize: 11, color: '#52525b' }}>
+                        от {rank.minSpent.toLocaleString('ru-RU')} ₽
                       </div>
                     </div>
-                  </LuxuryCard>
-                </motion.div>
+                  </div>
+
+                  <div style={{ fontSize: 16, fontWeight: 700, color: isActive ? '#D4AF37' : isPassed ? '#D4AF37' : '#52525b' }}>
+                    {rank.cashback}%
+                  </div>
+                </div>
               )
             })}
           </div>
         </div>
 
-        {/* Progress to Next Level */}
-        {!user.rank.is_max && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 }}
-            style={{ marginBottom: 24 }}
-          >
-            <LuxuryCard borderColor="rgba(212,175,55,0.2)" style={{ padding: 16 }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 10,
-              }}>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                  До следующего уровня
-                </span>
-                <span style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: 'rgba(212,175,55,0.8)',
-                }}>
-                  {user.rank.spent_to_next.toLocaleString('ru-RU')} ₽
+        {/* Next Level Progress */}
+        {!isMax && (
+          <div style={{
+            marginTop: 24,
+            padding: '20px',
+            background: 'linear-gradient(145deg, rgba(20,20,23,1), rgba(15,15,18,1))',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 20,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Zap size={16} color="#fbbf24" fill="#fbbf24" fillOpacity={0.2} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#f2f2f2' }}>
+                  До уровня «{nextRank?.name}»
                 </span>
               </div>
-              <div style={{
-                height: 6,
-                background: 'rgba(255,255,255,0.06)',
-                borderRadius: 3,
-                overflow: 'hidden',
-              }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(user.rank.progress, 3)}%` }}
-                  transition={{ delay: 0.7, duration: 0.8, ease: 'easeOut' }}
-                  style={{
-                    height: '100%',
-                    background: 'linear-gradient(90deg, rgba(212,175,55,0.6), rgba(212,175,55,0.9))',
-                    borderRadius: 3,
-                  }}
-                />
-              </div>
-            </LuxuryCard>
-          </motion.div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#fbbf24' }}>
+                {spentToNext.toLocaleString('ru-RU')} ₽
+              </span>
+            </div>
+
+            {/* Progress Bar */}
+            <div style={{
+              height: 8, width: '100%',
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: 4,
+              overflow: 'hidden'
+            }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 1, ease: 'easeOut' }}
+                style={{
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #D4AF37, #fbbf24)',
+                  borderRadius: 4,
+                  boxShadow: '0 0 10px rgba(212,175,55,0.4)'
+                }}
+              />
+            </div>
+            <div style={{ marginTop: 8, textAlign: 'right', fontSize: 10, color: '#52525b' }}>
+              Прогресс: {Math.round(progress)}%
+            </div>
+          </div>
         )}
 
-        {/* How It Works */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.65 }}
-        >
-          <LuxuryCard style={{ padding: 16 }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: 12,
-            }}>
-              <Zap size={14} color="rgba(212,175,55,0.7)" strokeWidth={1.5} />
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'rgba(212,175,55,0.8)',
-              }}>Как это работает</span>
-            </div>
-            <ul style={{
-              fontSize: 12,
-              color: 'rgba(255,255,255,0.5)',
-              lineHeight: 1.9,
-              margin: 0,
-              paddingLeft: 18,
-            }}>
-              <li>Кешбэк начисляется после завершения заказа</li>
-              <li>Баланс можно использовать для оплаты</li>
-              <li>Чем выше уровень — тем больше возврат</li>
-            </ul>
-          </LuxuryCard>
-        </motion.div>
       </div>
     </ModalWrapper>
   )
