@@ -1,12 +1,9 @@
 import { useState, memo } from 'react'
 import { motion } from 'framer-motion'
+import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  HOME HEADER — Ultra-minimal single-line header
-//  Premium "old money" design:
-//  - Just name + Club button
-//  - No greeting, no avatar clutter
-//  - Quiet, understated luxury
+//  HOME HEADER — Elite Gold Edition
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface HomeHeaderProps {
@@ -23,108 +20,69 @@ interface HomeHeaderProps {
 
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
-  const firstName = user.fullname?.split(' ')[0] || 'Гость'
+  const firstName = user.fullname?.split(' ')[0] || 'GUEST'
   const isVIP = user.rank.is_max
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-        paddingTop: 4,
-      }}
+    <motion.header
+      className={s.header}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
     >
-      {/* Left: Avatar + Name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {/* Compact avatar */}
-        <div
-          style={{
-            position: 'relative',
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            overflow: 'hidden',
-            border: isVIP ? '1.5px solid rgba(212,175,55,0.5)' : '1px solid rgba(255,255,255,0.1)',
-          }}
-        >
-          {userPhoto && !avatarError ? (
-            <img
-              src={userPhoto}
-              alt=""
-              loading="lazy"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              onError={() => setAvatarError(true)}
-            />
-          ) : (
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                background: 'rgba(255,255,255,0.05)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: isVIP ? 'var(--gold-400)' : 'var(--text-secondary)',
-                }}
-              >
-                {firstName.charAt(0)}
-              </span>
-            </div>
-          )}
+      {/* LEFT: Identity */}
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div className={s.avatarContainer} onClick={onSecretTap}>
+           <div className={s.avatar}>
+            {userPhoto && !avatarError ? (
+              <img
+                src={userPhoto}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', background: '#09090b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: '#d4af37', fontWeight: 700 }}>{firstName.charAt(0)}</span>
+              </div>
+            )}
+           </div>
         </div>
 
-        {/* Name only */}
-        <span
-          style={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: isVIP ? 'var(--gold-400)' : 'var(--text-main)',
-            letterSpacing: '0.01em',
-          }}
-        >
-          {firstName}
-        </span>
+        <div className={s.userInfo}>
+          <div className={s.userName}>{firstName.toUpperCase()}</div>
+          <div className={s.userStatus}>
+            <div className={s.statusDot} />
+            {isVIP ? 'VIP CLIENT' : 'ACADEMIC CLUB'}
+          </div>
+        </div>
       </div>
 
-      {/* Right: Club button */}
-      <button
+      {/* RIGHT: Club Access / Settings */}
+      <motion.button
         type="button"
+        whileTap={{ scale: 0.95 }}
         onClick={onSecretTap}
         style={{
-          padding: '8px 14px',
           background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 8,
-          cursor: 'pointer',
+          border: '1px solid rgba(212,175,55,0.2)',
+          borderRadius: '12px',
+          padding: '8px 16px',
+          color: '#d4af37',
+          fontFamily: "'Cinzel', serif",
+          fontSize: '11px',
+          fontWeight: 600,
+          letterSpacing: '0.05em',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
         }}
       >
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            color: 'var(--gold-400)',
-            opacity: 0.9,
-          }}
-        >
-          Клуб
-        </span>
-      </button>
-    </motion.div>
+        LOUNGE
+      </motion.button>
+    </motion.header>
   )
-}, (prevProps, nextProps) => {
-  return prevProps.userPhoto === nextProps.userPhoto &&
-    prevProps.user.fullname === nextProps.user.fullname &&
-    prevProps.user.rank.is_max === nextProps.user.rank.is_max
+}, (prev, next) => {
+  return prev.userPhoto === next.userPhoto &&
+    prev.user.fullname === next.user.fullname &&
+    prev.user.rank.is_max === next.user.rank.is_max
 })

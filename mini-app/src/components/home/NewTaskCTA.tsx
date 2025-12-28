@@ -1,13 +1,10 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Plus } from 'lucide-react'
+import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  NEW TASK CTA — Primary action button
-//  Premium "old money" design:
-//  - Dark background with subtle gold border
-//  - Gold text accent
-//  - Elegant, understated luxury
+//  NEW TASK CTA — The "Black Card"
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface NewTaskCTAProps {
@@ -23,82 +20,73 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
 
   return (
     <motion.button
-      type="button"
-      initial={{ opacity: 0, y: 15 }}
+      className={s.voidGlass}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.08, duration: 0.3 }}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={handleClick}
-      aria-label="Оформить заказ"
       style={{
         position: 'relative',
         width: '100%',
-        padding: '18px 20px',
-        borderRadius: 14,
-        border: '1px solid rgba(212,175,55,0.25)',
-        cursor: 'pointer',
+        padding: '24px',
+        borderRadius: '24px',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: 'linear-gradient(145deg, rgba(28,28,32,0.98) 0%, rgba(18,18,20,0.99) 100%)',
-        boxShadow: '0 4px 20px -4px rgba(0,0,0,0.4)',
-        marginBottom: 12,
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        cursor: 'pointer',
+        marginBottom: '24px',
         overflow: 'hidden',
+        border: '1px solid rgba(212,175,55,0.15)'
       }}
     >
-      {/* Subtle top highlight */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: '10%',
-          right: '10%',
-          height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
-        }}
-      />
+      {/* Shiny animated border via pseudo-element simulation or inner shadow */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
+        pointerEvents: 'none'
+      }} />
 
-      <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
-        <div
-          style={{
-            fontSize: 16,
-            fontWeight: 600,
-            color: 'var(--gold-400)',
-            fontFamily: 'var(--font-serif)',
-            letterSpacing: '0.03em',
-            marginBottom: 4,
-          }}
-        >
-          Оформить заказ
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: '11px',
+            letterSpacing: '0.1em',
+            color: '#d4af37',
+            marginBottom: '8px',
+            textTransform: 'uppercase'
+          }}>
+            Priority Access
+          </div>
+          <div className={s.goldAccent} style={{
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: '24px',
+            fontWeight: 800,
+            lineHeight: '1.2',
+            marginBottom: '4px'
+          }}>
+            NEW ORDER
+          </div>
+          <div style={{
+            color: '#71717a',
+            fontSize: '13px',
+            fontWeight: 500
+          }}>
+            Guaranteed A+ Result
+          </div>
         </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--text-tertiary)',
-            fontWeight: 500,
-          }}
-        >
-          Персональный менеджер · Гарантия сдачи
-        </div>
-      </div>
 
-      <div
-        aria-hidden="true"
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: 'rgba(212,175,55,0.1)',
-          border: '1px solid rgba(212,175,55,0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <ArrowRight size={20} color="var(--gold-400)" strokeWidth={1.5} />
+        <div style={{
+          width: 44, height: 44,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #d4af37 0%, #b48e26 100%)',
+          boxShadow: '0 4px 20px rgba(212,175,55,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <Plus size={24} color="#09090b" strokeWidth={3} />
+        </div>
       </div>
     </motion.button>
   )

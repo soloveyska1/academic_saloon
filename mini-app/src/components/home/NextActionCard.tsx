@@ -3,15 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, CreditCard, FileText, RotateCcw, CheckCircle2, MessageCircle } from 'lucide-react'
 import { NextAction } from './types'
 import { NEXT_ACTION_CONFIG } from './constants'
+import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  NEXT ACTION CARD — Dynamic priority-based action card
-//  Shows the most important action user needs to take:
-//  1. Payment required (waiting_payment)
-//  2. Files needed (pending info)
-//  3. Revision needed
-//  4. Review ready
-//  5. New message
+//  NEXT ACTION CARD — Priority Dossier
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface Order {
@@ -130,158 +125,84 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
   const Icon = nextAction.icon
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={nextAction.id}
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-        transition={{ duration: 0.3 }}
-      >
-        <motion.button
-          type="button"
-          whileHover={{ scale: 1.01, y: -2 }}
-          whileTap={{ scale: 0.98 }}
+    <div style={{ marginBottom: 24 }}>
+      <div className={s.sectionTitle}>REQUIRE ATTENTION</div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={nextAction.id}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          className={s.voidGlass}
           onClick={() => {
             haptic('medium')
             onNavigate(nextAction.route)
           }}
-          className="order-card-responsive"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            width: '100%',
-            padding: '16px 18px',
-            marginBottom: 12,
-            background: nextAction.bgColor,
-            border: `1.5px solid ${nextAction.borderColor}`,
-            borderRadius: 14,
+            borderRadius: '16px',
+            padding: '2px', // For gradient border effect
             cursor: 'pointer',
-            textAlign: 'left',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+            background: `linear-gradient(135deg, ${nextAction.color}40, rgba(255,255,255,0.05))`,
+            position: 'relative'
           }}
         >
-          {/* Static glow effect */}
-          <div
-            style={{
-              position: 'absolute',
-              left: 20,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: 60,
-              height: 60,
-              borderRadius: '50%',
-              background: `radial-gradient(circle, ${nextAction.color}25 0%, transparent 70%)`,
-              filter: 'blur(10px)',
-              pointerEvents: 'none',
-              opacity: 0.5,
-            }}
-          />
+          <div style={{
+            background: '#0c0c0e',
+            borderRadius: '14px',
+            padding: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: '12px',
+              background: `${nextAction.color}20`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: `1px solid ${nextAction.color}40`,
+              boxShadow: `0 0 20px ${nextAction.color}20`
+            }}>
+              <Icon size={24} color={nextAction.color} />
+            </div>
 
-          {/* Icon */}
-          <div
-            style={{
-              width: 'var(--touch-target-min)',
-              height: 'var(--touch-target-min)',
-              borderRadius: 'var(--radius-responsive-md)',
-              background: `linear-gradient(145deg, ${nextAction.color}25, ${nextAction.color}15)`,
-              border: `1px solid ${nextAction.borderColor}`,
-              boxShadow: `0 0 16px ${nextAction.color}50`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              zIndex: 1,
-              flexShrink: 0,
-            }}
-          >
-            <Icon size="var(--icon-md)" color={nextAction.color} strokeWidth={1.5} style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4
+              }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: '50%', background: nextAction.color,
+                  boxShadow: `0 0 8px ${nextAction.color}`
+                }} />
+                <span style={{
+                  fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', color: nextAction.color,
+                  textTransform: 'uppercase'
+                }}>
+                  URGENT
+                </span>
+              </div>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: '#f2f2f2', marginBottom: '2px' }}>
+                {nextAction.title}
+              </div>
+              <div style={{ fontSize: '13px', color: '#71717a' }} className="truncate">
+                {nextAction.subtitle}
+              </div>
+            </div>
+
+            <ChevronRight size={20} color="#52525b" />
           </div>
-
-          {/* Content */}
-          <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--gap-sm)',
-                marginBottom: 'var(--gap-xs)',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 'var(--text-xs)',
-                  fontWeight: 700,
-                  color: nextAction.color,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                СЛЕДУЮЩИЙ ШАГ
-              </span>
-              <motion.div
-                animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: nextAction.color,
-                  boxShadow: `0 0 8px ${nextAction.color}`,
-                }}
-              />
-            </div>
-            <div
-              style={{
-                fontSize: 'var(--text-md)',
-                fontWeight: 600,
-                color: '#fff',
-                marginBottom: 2,
-              }}
-            >
-              {nextAction.title}
-            </div>
-            <div
-              className="order-card-subtitle truncate"
-              style={{
-                fontSize: 'var(--text-sm)',
-                color: 'rgba(255,255,255,0.5)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {nextAction.subtitle}
-            </div>
-          </div>
-
-          {/* Arrow */}
-          <ChevronRight
-            size="var(--icon-sm)"
-            color={nextAction.color}
-            strokeWidth={1.5}
-            style={{ position: 'relative', zIndex: 1, flexShrink: 0, width: 'var(--icon-sm)', height: 'var(--icon-sm)' }}
-          />
-        </motion.button>
-      </motion.div>
-    </AnimatePresence>
+        </motion.div>
+      </AnimatePresence>
+    </div>
   )
 }, (prevProps, nextProps) => {
-  // Compare orders array by checking length and each order's key properties
   if (prevProps.orders.length !== nextProps.orders.length) return false
-
   for (let i = 0; i < prevProps.orders.length; i++) {
     const prev = prevProps.orders[i]
     const next = nextProps.orders[i]
     if (prev.id !== next.id ||
-        prev.status !== next.status ||
-        prev.has_unread_messages !== next.has_unread_messages) {
+      prev.status !== next.status ||
+      prev.has_unread_messages !== next.has_unread_messages) {
       return false
     }
   }
-
   return true
 })

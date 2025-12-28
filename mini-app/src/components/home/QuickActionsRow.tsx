@@ -1,13 +1,10 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { QUICK_ACTIONS } from './constants'
+import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  QUICK ACTIONS ROW — CSS Grid layout (3 equal columns)
-//  Premium "old money" design:
-//  - Unified gold accent for all cards
-//  - Subtle glass morphism
-//  - No horizontal scroll — clean grid
+//  QUICK ACTIONS ROW — Elite Edition
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface QuickActionsRowProps {
@@ -38,94 +35,55 @@ export const QuickActionsRow = memo(function QuickActionsRow({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.16, duration: 0.3 }}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 8,
-        marginBottom: 16,
-      }}
-    >
+    <div className={s.scrollRow} style={{ marginBottom: 24, paddingLeft: 0, paddingRight: 0 }}>
       {QUICK_ACTIONS.map((action, index) => (
         <motion.button
           key={action.id}
-          type="button"
-          onClick={() => handleClick(action)}
-          aria-label={`${action.title}: ${action.subtitle}`}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 + index * 0.03 }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
+          transition={{ delay: 0.1 + index * 0.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => handleClick(action)}
+          className={s.voidGlass}
           style={{
-            padding: '14px 8px',
-            borderRadius: 12,
+            minWidth: '100px',
+            flex: 1,
+            padding: '16px 12px',
+            borderRadius: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
             cursor: 'pointer',
             position: 'relative',
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            overflow: 'hidden',
-            textAlign: 'center',
+            border: '1px solid rgba(255,255,255,0.05)'
           }}
         >
-          {/* Subtle top highlight */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: '20%',
-              right: '20%',
-              height: '1px',
-              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
-            }}
-          />
-
-          {/* Content */}
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            {/* Icon */}
-            <div style={{ marginBottom: 8 }}>
-              <action.icon
-                size={22}
-                color="var(--gold-400)"
-                strokeWidth={1.5}
-                aria-hidden="true"
-                style={{
-                  opacity: 0.9,
-                }}
-              />
-            </div>
-
-            {/* Title */}
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--text-main)',
-                marginBottom: 2,
-                letterSpacing: '0.01em',
-              }}
-            >
-              {action.title}
-            </div>
-
-            {/* Subtitle */}
-            <div
-              style={{
-                fontSize: 10,
-                color: 'var(--text-tertiary)',
-                fontWeight: 500,
-                letterSpacing: '0.02em',
-              }}
-            >
-              {action.subtitle}
-            </div>
+          <div style={{
+            marginBottom: '10px',
+            filter: "drop-shadow(0 0 8px rgba(212,175,55,0.3))"
+          }}>
+            <action.icon size={24} color="#d4af37" strokeWidth={1.5} />
+          </div>
+          <div style={{
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: '12px',
+            fontWeight: 600,
+            color: '#f2f2f2',
+            marginBottom: '2px'
+          }}>
+            {action.title}
+          </div>
+          <div style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: '9px',
+            color: '#a1a1aa',
+            letterSpacing: '0.05em'
+          }}>
+            {index === 0 ? 'FAST' : index === 1 ? 'REWARDS' : 'SAFE'}
           </div>
         </motion.button>
       ))}
-    </motion.div>
+    </div>
   )
 })

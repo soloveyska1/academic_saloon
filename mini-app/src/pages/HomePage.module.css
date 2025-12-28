@@ -1,676 +1,261 @@
-/* 🤠 HomePage — Skeuomorphic Western Saloon Style */
+/* 🏛️ ELITE GOLD EDITION — "The Void & The Gold" */
+/* Design Philosophy: Unobtrusive Luxury, Deepest Black, Liquid Metal */
 
 .container {
-  padding: 20px 16px;
-  animation: fadeIn 0.4s ease-out;
+  padding: 16px;
+  min-height: 100vh;
+  /* Complex entering animation sequence */
+  animation: pageEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+/* ==================== GLOBAL UTILS FOR THIS PAGE ==================== */
+
+/* The "Void Glass" Material */
+.voidGlass {
+  background: rgba(9, 9, 11, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow:
+    0 20px 40px -10px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* The "Liquid Gold" Accent */
+.goldAccent {
+  background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 4s linear infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
 }
 
 /* ==================== HEADER ==================== */
 .header {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 20px;
-  background:
-    repeating-radial-gradient(
-      circle at 1px 1px,
-      transparent 0px,
-      transparent 1px,
-      rgba(0,0,0,0.03) 1px,
-      rgba(0,0,0,0.03) 2px
-    ),
-    linear-gradient(145deg, #7a4f3d 0%, #5c3a2e 50%, #3d2317 100%);
-  border-radius: 16px;
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    inset 0 -2px 4px rgba(0,0,0,0.2);
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding: 12px 0;
+}
+
+.avatarContainer {
   position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  padding: 2px;
+  /* Spinning gold border ring */
+  background: conic-gradient(from 0deg, transparent 0%, #d4af37 20%, transparent 40%);
+  animation: rotateBorder 4s linear infinite;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
 }
 
-/* Stitching effect */
-.header::before {
-  content: '';
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  border: 2px dashed #c4a574;
-  border-radius: 12px;
-  opacity: 0.5;
-  pointer-events: none;
-}
-
+/* The actual image container inside the spinning ring, obscured by mask above so we need a sibling */
 .avatar {
-  width: 72px;
-  height: 72px;
-  background:
-    radial-gradient(circle at 35% 35%,
-      #ffeaa7 0%,
-      #c9a227 30%,
-      #8b6914 100%);
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 6px 20px rgba(0,0,0,0.4),
-    inset 0 2px 4px rgba(255,255,255,0.3),
-    inset 0 -3px 6px rgba(0,0,0,0.3);
+  border: 2px solid rgba(212, 175, 55, 0.1);
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
-/* Brass ring around avatar */
-.avatar::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border: 3px solid #8b6914;
-  border-radius: 50%;
-  box-shadow:
-    inset 0 1px 2px rgba(255,255,255,0.2),
-    0 2px 4px rgba(0,0,0,0.3);
-}
+@keyframes rotateBorder {
+  from {
+    transform: rotate(0deg);
+  }
 
-.avatarEmoji {
-  font-size: 36px;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .userInfo {
   flex: 1;
-  position: relative;
-  z-index: 1;
+  margin-left: 14px;
+  display: flex;
+  flex-direction: column;
 }
 
-.name {
+.userName {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: #f2f2f2;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.userStatus {
   font-family: 'Cinzel', serif;
-  font-size: 22px;
-  color: #f5efe0;
-  margin-bottom: 6px;
-  text-shadow:
-    0 2px 4px rgba(0,0,0,0.5),
-    0 0 20px rgba(212,168,83,0.2);
-  letter-spacing: 0.03em;
+  font-size: 11px;
+  color: #d4af37;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.rank {
-  font-family: 'IM Fell English', serif;
-  font-size: 14px;
-  color: #d4a853;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+.statusDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #d4af37;
+  box-shadow: 0 0 8px #d4af37;
+  animation: pulse 2s infinite;
 }
 
-/* ==================== STATS ==================== */
-.stats {
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+/* ==================== STATS GRID ==================== */
+.statsGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
 }
 
 .statCard {
-  background:
-    linear-gradient(180deg,
-      #e6c547 0%,
-      #c9a227 15%,
-      #8b6914 85%,
-      #c9a227 100%);
-  border-radius: 8px;
-  padding: 14px 6px;
-  text-align: center;
-  box-shadow:
-    0 6px 16px rgba(0,0,0,0.4),
-    inset 0 2px 4px rgba(255,255,255,0.3),
-    inset 0 -2px 4px rgba(0,0,0,0.2);
+  background: linear-gradient(180deg, rgba(20, 20, 23, 0.6) 0%, rgba(12, 12, 14, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
   position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  /* Interactive glow on hover is handled in JS/Framer usually, but here's a CSS fallback */
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 
-/* Corner rivets on stat cards */
-.statCard::before,
-.statCard::after {
-  content: '';
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  background:
-    radial-gradient(circle at 30% 30%,
-      #ffeaa7 0%,
-      #c9a227 50%,
-      #5c4a14 100%);
-  border-radius: 50%;
-  box-shadow:
-    inset 0 -1px 1px rgba(0,0,0,0.4),
-    0 1px 2px rgba(0,0,0,0.3);
+.statCard:active {
+  transform: scale(0.98);
 }
 
-.statCard::before { top: 5px; left: 5px; }
-.statCard::after { top: 5px; right: 5px; }
-
-.statValue {
-  display: block;
-  font-family: 'Rye', cursive;
-  font-size: 15px;
-  color: #1a0f05;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
-  margin-bottom: 4px;
-}
-
-.statLabel {
-  font-family: 'IM Fell English', serif;
-  font-size: 9px;
-  color: #3d2317;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* ==================== SECTIONS ==================== */
-.section {
-  margin-bottom: 24px;
-}
-
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.sectionTitle {
-  font-family: 'Cinzel', serif;
-  font-size: 18px;
-  color: #d4a853;
-  margin-bottom: 12px;
-  text-shadow:
-    0 2px 4px rgba(0,0,0,0.5),
-    0 0 15px rgba(212,168,83,0.3);
-  letter-spacing: 0.05em;
-}
-
-.sectionHeader .sectionTitle {
-  margin-bottom: 0;
-}
-
-.seeAll {
-  background: none;
-  border: none;
-  font-family: 'IM Fell English', serif;
-  font-size: 14px;
-  color: #c9a227;
-  cursor: pointer;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-
-/* ==================== RANK CARD ==================== */
-.rankCard {
-  background:
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E"),
-    linear-gradient(180deg,
-      #f5efe0 0%,
-      #e8dcc4 10%,
-      #e8dcc4 90%,
-      #c4a574 100%);
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow:
-    0 8px 24px rgba(0,0,0,0.4),
-    inset 0 0 30px rgba(139,105,20,0.1);
-  position: relative;
-}
-
-/* Burnt edge effect */
-.rankCard::before {
+/* Premium top highlight */
+.statCard::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  border-radius: 8px;
-  box-shadow: inset 0 0 25px rgba(139,69,19,0.25);
-  pointer-events: none;
-}
-
-.rankHeader {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.rankEmoji {
-  font-size: 40px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-.rankInfo {
-  display: flex;
-  flex-direction: column;
-}
-
-.rankName {
-  font-family: 'Rye', cursive;
-  font-size: 20px;
-  color: #1a0f05;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
-}
-
-.rankNext {
-  font-family: 'IM Fell English', serif;
-  font-size: 14px;
-  color: #8b6914;
-  font-style: italic;
-}
-
-.progressBar {
-  height: 16px;
-  background: #3d2317;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 10px;
-  box-shadow:
-    inset 0 3px 6px rgba(0,0,0,0.4),
-    0 1px 0 rgba(255,255,255,0.2);
-  position: relative;
-  z-index: 1;
-}
-
-.progressFill {
-  height: 100%;
-  background:
-    linear-gradient(180deg,
-      #e6c547 0%,
-      #c9a227 50%,
-      #8b6914 100%);
-  border-radius: 10px;
-  transition: width 0.5s ease;
-  box-shadow:
-    inset 0 2px 4px rgba(255,255,255,0.3),
-    0 0 12px rgba(201,162,39,0.5);
-}
-
-.progressHint {
-  font-family: 'IM Fell English', serif;
-  font-size: 12px;
-  color: #5c3a2e;
-  font-style: italic;
-  position: relative;
-  z-index: 1;
-}
-
-/* ==================== ORDERS ==================== */
-.ordersList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.orderCard {
-  background:
-    repeating-radial-gradient(
-      circle at 1px 1px,
-      transparent 0px,
-      transparent 1px,
-      rgba(0,0,0,0.02) 1px,
-      rgba(0,0,0,0.02) 2px
-    ),
-    linear-gradient(145deg, #7a4f3d 0%, #5c3a2e 50%, #3d2317 100%);
-  border-radius: 12px;
-  padding: 16px;
-  cursor: pointer;
-  box-shadow:
-    0 6px 20px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    inset 0 -2px 4px rgba(0,0,0,0.2);
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-/* Stitching */
-.orderCard::before {
-  content: '';
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  border: 1px dashed #c4a574;
-  border-radius: 8px;
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.orderCard:active {
-  transform: scale(0.98);
-  box-shadow:
-    0 3px 10px rgba(0,0,0,0.4),
-    inset 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.orderHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  position: relative;
-  z-index: 1;
-}
-
-.orderId {
-  font-family: 'IM Fell English', serif;
-  font-size: 12px;
-  color: #c4a574;
-}
-
-.orderStatus {
-  font-family: 'IM Fell English', serif;
-  font-size: 11px;
-  color: #1a0f05;
-  background:
-    linear-gradient(180deg,
-      #e6c547 0%,
-      #c9a227 50%,
-      #8b6914 100%);
-  padding: 3px 10px;
-  border-radius: 12px;
-  box-shadow:
-    0 2px 4px rgba(0,0,0,0.3),
-    inset 0 1px 1px rgba(255,255,255,0.3);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
-}
-
-.orderTitle {
-  font-family: 'Cinzel', serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: #f5efe0;
-  margin-bottom: 4px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  position: relative;
-  z-index: 1;
-}
-
-.orderSubject {
-  font-family: 'IM Fell English', serif;
-  font-size: 14px;
-  color: #c4a574;
-  position: relative;
-  z-index: 1;
-}
-
-.orderProgress {
-  height: 6px;
-  background: #2d1810;
-  border-radius: 3px;
-  margin-top: 12px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
-  position: relative;
-  z-index: 1;
-}
-
-.orderProgressFill {
-  height: 100%;
-  background:
-    linear-gradient(180deg,
-      #e6c547 0%,
-      #c9a227 50%,
-      #8b6914 100%);
-  border-radius: 3px;
-  box-shadow: 0 0 8px rgba(201,162,39,0.4);
-}
-
-/* ==================== PROMO ==================== */
-.promoCard {
-  display: flex;
-  gap: 12px;
-}
-
-.promoInput {
-  flex: 1;
-  background: #e8dcc4;
-  border: 2px solid #5c3a2e;
-  border-radius: 8px;
-  padding: 14px 16px;
-  font-family: 'Rye', cursive;
-  font-size: 14px;
-  color: #1a0f05;
-  outline: none;
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  box-shadow:
-    inset 0 2px 4px rgba(0,0,0,0.1),
-    0 2px 4px rgba(0,0,0,0.2);
-  transition: border-color 0.2s;
-}
-
-.promoInput::placeholder {
-  font-family: 'IM Fell English', serif;
-  color: #8b6914;
-  text-transform: none;
-  letter-spacing: normal;
-  opacity: 0.7;
-}
-
-.promoInput:focus {
-  border-color: #c9a227;
-  box-shadow:
-    inset 0 2px 4px rgba(0,0,0,0.1),
-    0 0 0 3px rgba(201,162,39,0.2);
-}
-
-.promoButton {
-  background:
-    linear-gradient(180deg,
-      #e6c547 0%,
-      #c9a227 30%,
-      #8b6914 70%,
-      #c9a227 100%);
-  border: none;
-  border-radius: 8px;
-  padding: 14px 28px;
-  font-family: 'Cinzel', serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a0f05;
-  cursor: pointer;
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.4),
-    inset 0 2px 4px rgba(255,255,255,0.3),
-    inset 0 -2px 4px rgba(0,0,0,0.2);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
-  transition: all 0.2s ease;
-}
-
-.promoButton:disabled {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
   opacity: 0.5;
 }
 
-.promoButton:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow:
-    0 2px 6px rgba(0,0,0,0.4),
-    inset 0 1px 2px rgba(0,0,0,0.2);
+.statLabel {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #71717a;
+  /* text-muted */
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
 }
 
-.promoResult {
-  margin-top: 12px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-family: 'IM Fell English', serif;
-  font-size: 14px;
-  text-align: center;
+.statValue {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #f2f2f2;
+  letter-spacing: 0.02em;
 }
 
-.promoResult.success {
-  background: rgba(74, 124, 63, 0.2);
-  color: #5cb85c;
-  border: 1px solid rgba(74, 124, 63, 0.3);
+/* ==================== HERO / DAILY BONUS ==================== */
+.dailyBonusWrapper {
+  margin-bottom: 32px;
+  position: relative;
 }
 
-.promoResult.error {
-  background: rgba(139, 58, 58, 0.2);
-  color: #d9534f;
-  border: 1px solid rgba(139, 58, 58, 0.3);
+/* The Glow Behind */
+.heroGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* ==================== ACTIONS ==================== */
-.actions {
+/* ==================== SECTIONS ==================== */
+.sectionTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: #52525b;
+  /* deep muted */
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 16px;
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionTitle::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(82, 82, 91, 0.3), transparent);
+}
+
+/* ==================== SCROLL CONTAINER FOR HORIZONTAL ITEMS ==================== */
+.scrollRow {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  /* Space for scrollbar if any */
+  margin: 0 -16px;
+  padding: 0 16px;
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.actionPrimary {
-  flex: 1;
-  background:
-    linear-gradient(180deg,
-      #e6c547 0%,
-      #c9a227 25%,
-      #8b6914 75%,
-      #c9a227 100%);
-  border: none;
-  border-radius: 12px;
-  padding: 18px;
-  font-family: 'Cinzel', serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: #1a0f05;
-  cursor: pointer;
-  box-shadow:
-    0 6px 20px rgba(0,0,0,0.4),
-    inset 0 2px 4px rgba(255,255,255,0.3),
-    inset 0 -2px 4px rgba(0,0,0,0.2);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
-  transition: all 0.2s ease;
-  letter-spacing: 0.03em;
-}
-
-.actionPrimary:active {
-  transform: translateY(2px);
-  box-shadow:
-    0 3px 10px rgba(0,0,0,0.4),
-    inset 0 1px 2px rgba(0,0,0,0.2);
-}
-
-.actionSecondary {
-  flex: 1;
-  background:
-    repeating-radial-gradient(
-      circle at 1px 1px,
-      transparent 0px,
-      transparent 1px,
-      rgba(0,0,0,0.02) 1px,
-      rgba(0,0,0,0.02) 2px
-    ),
-    linear-gradient(145deg, #7a4f3d 0%, #5c3a2e 50%, #3d2317 100%);
-  border: none;
-  border-radius: 12px;
-  padding: 18px;
-  font-family: 'Cinzel', serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: #f5efe0;
-  cursor: pointer;
-  box-shadow:
-    0 6px 20px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    inset 0 -2px 4px rgba(0,0,0,0.2);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  transition: all 0.2s ease;
-  letter-spacing: 0.03em;
-  position: relative;
-}
-
-/* Leather stitching */
-.actionSecondary::before {
-  content: '';
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  right: 5px;
-  bottom: 5px;
-  border: 1px dashed #c4a574;
-  border-radius: 9px;
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.actionSecondary:active {
-  transform: translateY(2px);
-  box-shadow:
-    0 3px 10px rgba(0,0,0,0.4),
-    inset 0 2px 4px rgba(0,0,0,0.2);
-}
-
-/* ==================== REFERRAL ==================== */
-.referral {
-  background:
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E"),
-    linear-gradient(180deg,
-      #f5efe0 0%,
-      #e8dcc4 10%,
-      #e8dcc4 90%,
-      #c4a574 100%);
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  box-shadow:
-    0 8px 24px rgba(0,0,0,0.4),
-    inset 0 0 30px rgba(139,105,20,0.1);
-  position: relative;
-}
-
-/* Burnt edges */
-.referral::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 12px;
-  box-shadow: inset 0 0 25px rgba(139,69,19,0.25);
-  pointer-events: none;
-}
-
-.referralLabel {
-  font-family: 'IM Fell English', serif;
-  font-size: 12px;
-  color: #5c3a2e;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  z-index: 1;
-}
-
-.referralCode {
-  font-family: 'Rye', cursive;
-  font-size: 22px;
-  color: #1a0f05;
-  letter-spacing: 4px;
-  margin-bottom: 10px;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
-  position: relative;
-  z-index: 1;
-}
-
-.referralHint {
-  font-family: 'IM Fell English', serif;
-  font-size: 12px;
-  color: #8b6914;
-  font-style: italic;
-  position: relative;
-  z-index: 1;
+.scrollRow::-webkit-scrollbar {
+  display: none;
 }

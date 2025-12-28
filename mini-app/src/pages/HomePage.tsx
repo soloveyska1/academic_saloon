@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { fetchDailyBonusInfo, claimDailyBonus } from '../api/userApi'
-import { useHomePageState } from '../hooks/useHomePageState'
+import { useHomePageState, ModalName } from '../hooks/useHomePageState'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
 import { usePromo } from '../contexts/PromoContext'
 import { Confetti } from '../components/ui/Confetti'
@@ -45,6 +45,10 @@ interface Props {
 // ═══════════════════════════════════════════════════════════════════════════
 //  MAIN HOMEPAGE
 // ═══════════════════════════════════════════════════════════════════════════
+
+import s from './HomePage.module.css'
+
+// ... imports remain the same ...
 
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
@@ -162,132 +166,134 @@ export function HomePage({ user }: Props) {
   return (
     <main
       role="main"
-      className="page-full-width"
+      className={s.container}
       style={{
-        background: 'var(--bg-main)',
+        background: '#09090b', // Deepest Onyx (Void)
+        position: 'relative',
+        overflow: 'hidden'
       }}>
       {/* Premium Background - Full width, fixed position */}
-      <div className="page-background" aria-hidden="true">
+      <div className="page-background" aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
         <PremiumBackground
-          variant="time"
-          intensity="subtle"
+          variant="gold" // Force gold variant for this theme
+          intensity="medium"
           interactive={capability.tier >= 3}
         />
-        <FloatingGoldParticles count={capability.getParticleCount(8)} />
+        <FloatingGoldParticles count={capability.getParticleCount(12)} />
       </div>
 
       {/* Content with padding */}
-      <div className="page-content">
+      <div style={{ position: 'relative', zIndex: 1 }}>
 
-      {/* ═══════════════════════════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════════════════════════
           HEADER — New compact component
           ═══════════════════════════════════════════════════════════════════ */}
-      <HomeHeader
-        user={{
-          fullname: user.fullname,
-          rank: { is_max: user.rank.is_max },
-          daily_bonus_streak: user.daily_bonus_streak,
-          orders_count: user.orders_count,
-          has_active_orders: activeOrders > 0,
-        }}
-        userPhoto={userPhoto}
-        onSecretTap={handleSecretTap}
-      />
+        <HomeHeader
+          user={{
+            fullname: user.fullname,
+            rank: { is_max: user.rank.is_max },
+            daily_bonus_streak: user.daily_bonus_streak,
+            orders_count: user.orders_count,
+            has_active_orders: activeOrders > 0,
+          }}
+          userPhoto={userPhoto}
+          onSecretTap={handleSecretTap}
+        />
 
-      {/* ═══════════════════════════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════════════════════════
           NEW USER FLOW — Streamlined, trust-first experience
           ═══════════════════════════════════════════════════════════════════ */}
-      {isNewUser ? (
-        <>
-          {/* PRIMARY CTA */}
-          <NewTaskCTA onClick={handleNewOrder} />
+        {isNewUser ? (
+          <>
+            {/* PRIMARY CTA */}
+            <NewTaskCTA onClick={handleNewOrder} />
 
-          {/* Quick info badges (Срочно, Кешбэк, Гарантии) */}
-          <QuickActionsRow
-            onNavigate={navigate}
-            onOpenModal={(modal) => {
-              if (modal === 'cashback') actions.openModal('cashback')
-              else if (modal === 'guarantees') actions.openModal('guarantees')
-            }}
-            onOpenUrgentSheet={() => {
-              haptic('medium')
-              actions.openModal('urgentSheet')
-            }}
-            haptic={haptic}
-          />
-
-          {/* Welcome onboarding for new users */}
-          <EmptyStateOnboarding onCreateOrder={handleNewOrder} />
-        </>
-      ) : (
-        /* ═══════════════════════════════════════════════════════════════════
-           RETURNING USER FLOW — Full feature set
-           ═══════════════════════════════════════════════════════════════════ */
-        <>
-          {/* Daily bonus for engaged users */}
-          <DailyBonusBanner
-            canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
-            currentStreak={dailyStreak}
-            potentialBonus={state.dailyBonus.info?.bonuses?.[0]?.amount ?? 100}
-            onClaim={() => { actions.openModal('dailyBonus'); haptic('medium') }}
-            haptic={haptic}
-          />
-
-          {/* PRIMARY CTA */}
-          <NewTaskCTA onClick={handleNewOrder} />
-
-          {/* Quick info badges */}
-          <QuickActionsRow
-            onNavigate={navigate}
-            onOpenModal={(modal) => {
-              if (modal === 'cashback') actions.openModal('cashback')
-              else if (modal === 'guarantees') actions.openModal('guarantees')
-            }}
-            onOpenUrgentSheet={() => {
-              haptic('medium')
-              actions.openModal('urgentSheet')
-            }}
-            haptic={haptic}
-          />
-
-          {/* Next action card for active orders */}
-          <NextActionCard
-            orders={user.orders}
-            onNavigate={navigate}
-            haptic={haptic}
-          />
-
-          {/* Last order quick access */}
-          {user.orders.length > 0 && (
-            <LastOrderCard
-              order={user.orders[0]}
-              onClick={() => navigate(`/order/${user.orders[0].id}`)}
+            {/* Quick info badges (Срочно, Кешбэк, Гарантии) */}
+            <QuickActionsRow
+              onNavigate={navigate}
+              onOpenModal={(modal: ModalName) => {
+                if (modal === 'cashback') actions.openModal('cashback')
+                else if (modal === 'guarantees') actions.openModal('guarantees')
+              }}
+              onOpenUrgentSheet={() => {
+                haptic('medium')
+                actions.openModal('urgentSheet')
+              }}
+              haptic={haptic}
             />
-          )}
-        </>
-      )}
 
-      {/* ═══════════════════════════════════════════════════════════════════
+            {/* Welcome onboarding for new users */}
+            <EmptyStateOnboarding onCreateOrder={handleNewOrder} />
+          </>
+        ) : (
+          /* ═══════════════════════════════════════════════════════════════════
+             RETURNING USER FLOW — Full feature set
+             ═══════════════════════════════════════════════════════════════════ */
+          <>
+            {/* Daily bonus for engaged users */}
+            <DailyBonusBanner
+              canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
+              currentStreak={dailyStreak}
+              potentialBonus={state.dailyBonus.info?.bonuses?.[0] ?? 100}
+              onClaim={() => { actions.openModal('dailyBonus'); haptic('medium') }}
+              haptic={haptic}
+            />
+
+            {/* PRIMARY CTA */}
+            <NewTaskCTA onClick={handleNewOrder} />
+
+            {/* Quick info badges */}
+            <QuickActionsRow
+              onNavigate={navigate}
+              onOpenModal={(modal: ModalName) => {
+                if (modal === 'cashback') actions.openModal('cashback')
+                else if (modal === 'guarantees') actions.openModal('guarantees')
+              }}
+              onOpenUrgentSheet={() => {
+                haptic('medium')
+                actions.openModal('urgentSheet')
+              }}
+              haptic={haptic}
+            />
+
+            {/* Next action card for active orders */}
+            <NextActionCard
+              orders={user.orders}
+              onNavigate={navigate}
+              haptic={haptic}
+            />
+
+            {/* Last order quick access */}
+            {user.orders.length > 0 && (
+              <LastOrderCard
+                order={user.orders[0]}
+                onClick={() => navigate(`/order/${user.orders[0].id}`)}
+              />
+            )}
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
           PROMO CODE SECTION
           ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.28 }}
-        style={{ marginBottom: 16 }}
-      >
-        <PromoCodeSection
-          variant="full"
-          collapsible={true}
-          defaultExpanded={!!activePromo}
-        />
-      </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28 }}
+          style={{ marginBottom: 16 }}
+        >
+          <PromoCodeSection
+            variant="full"
+            collapsible={true}
+            defaultExpanded={!!activePromo}
+          />
+        </motion.div>
 
-      {/* Show error UI when daily bonus fails to load */}
-      {state.dailyBonus.error && !state.dailyBonus.loading && (
-        <DailyBonusError onRetry={retryDailyBonus} />
-      )}
-      </div>{/* End page-content */}
+        {/* Show error UI when daily bonus fails to load */}
+        {state.dailyBonus.error && !state.dailyBonus.loading && (
+          <DailyBonusError onRetry={retryDailyBonus} />
+        )}
+      </div>{/* End content wrapper */}
 
       {/* ═══════════════════════════════════════════════════════════════════
           URGENT HUB SHEET — Bottom sheet with 2 urgent options

@@ -1,11 +1,11 @@
 import { memo } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, FileText, GraduationCap, Zap, Camera } from 'lucide-react'
+import { ArrowRight, FileText } from 'lucide-react'
 import { ORDER_STATUS_MAP, WORK_TYPE_ICONS } from './constants'
+import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  LAST ORDER CARD — Quick access to recent order
-//  Premium styling with status-based colors and work type icons
+//  LAST ORDER CARD — Elite Edition
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface Order {
@@ -26,159 +26,92 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
   const shouldReduceMotion = useReducedMotion()
   const status = ORDER_STATUS_MAP[order.status] || {
     label: order.status,
-    color: '#888',
-    bg: 'rgba(136,136,136,0.15)',
-    border: 'rgba(136,136,136,0.3)',
+    color: '#a1a1aa',
+    // In elite theme we override this with CSS but keep fallback
+    bg: 'rgba(255,255,255,0.05)',
   }
 
   const title = order.subject || order.work_type_label || `Заказ #${order.id}`
   const WorkTypeIcon = WORK_TYPE_ICONS[order.work_type_label] || FileText
-
-  // Check if order is in active/pulsing state (disabled for reduced motion)
   const isActive = !shouldReduceMotion && ['pending', 'in_progress', 'review', 'waiting_payment'].includes(order.status)
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.24 }}
-      whileHover={{ scale: 1.01, y: -1 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={() => { haptic?.('light'); onClick() }}
-      className="order-card-responsive"
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: 'var(--radius-responsive-lg)',
-        padding: 'var(--card-padding)',
-        marginBottom: 'var(--gap-md)',
-        cursor: 'pointer',
-        background: `linear-gradient(135deg, ${status.bg} 0%, var(--bg-card) 50%)`,
-        backdropFilter: 'blur(12px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(12px) saturate(130%)',
-        border: `1px solid ${status.border}`,
-        boxShadow: 'var(--card-shadow)',
-      }}
-    >
-      <div
+    <div style={{ paddingBottom: '30px' }}>
+      <div className={s.sectionTitle}>LAST ACTIVITY</div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => { haptic?.('light'); onClick() }}
+        className={s.voidGlass}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--gap-md)',
-          position: 'relative',
-          zIndex: 1,
+          borderRadius: '20px',
+          padding: '20px',
+          cursor: 'pointer',
+          border: '1px solid rgba(255,255,255,0.08)',
+          position: 'relative'
         }}
       >
-        {/* Icon with status glow */}
-        <motion.div
-          animate={
-            isActive
-              ? {
-                  boxShadow: [
-                    `0 0 12px ${status.color}40`,
-                    `0 0 20px ${status.color}60`,
-                    `0 0 12px ${status.color}40`,
-                  ],
-                }
-              : {}
-          }
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            width: 'var(--touch-target-min)',
-            height: 'var(--touch-target-min)',
-            borderRadius: 'var(--radius-responsive-md)',
-            background: status.bg,
-            border: `1px solid ${status.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <WorkTypeIcon size="var(--icon-md)" color={status.color} strokeWidth={1.5} style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
-        </motion.div>
-
-        {/* Content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--gap-sm)',
-              marginBottom: 'var(--gap-xs)',
-            }}
-          >
-            <span
-              style={{
-                fontSize: 'var(--text-xs)',
-                fontWeight: 700,
-                color: 'var(--text-muted)',
-                letterSpacing: '0.1em',
-              }}
-            >
-              ПОСЛЕДНИЙ ЗАКАЗ
-            </span>
-          </div>
-          <div
-            className="order-card-title truncate"
-            style={{
-              fontSize: 'var(--text-base)',
-              fontWeight: 600,
-              color: 'var(--text-main)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {title}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Icon Container */}
+          <div style={{
+            width: 50, height: 50, borderRadius: '14px',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: isActive ? '0 0 20px rgba(212,175,55,0.1)' : 'none'
+          }}>
+            <WorkTypeIcon size={24} color={isActive ? '#d4af37' : '#a1a1aa'} />
           </div>
 
-          {/* Status Badge */}
-          <div
-            style={{
-              marginTop: 'var(--gap-xs)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--gap-xs)',
-              padding: '3px var(--gap-sm)',
-              background: status.bg,
-              border: `1px solid ${status.border}`,
-              borderRadius: 100,
-            }}
-          >
-            <motion.div
-              animate={
-                isActive ? { scale: [1, 1.3, 1], opacity: [1, 0.7, 1] } : {}
-              }
-              transition={{ duration: 1.5, repeat: Infinity }}
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: status.color,
-                boxShadow: `0 0 8px ${status.color}`,
-              }}
-            />
-            <span
-              style={{
-                fontSize: 'var(--text-xs)',
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4
+            }}>
+              <span style={{
+                fontSize: '11px',
+                color: isActive ? '#d4af37' : '#71717a',
                 fontWeight: 600,
-                color: status.color,
-              }}
-            >
-              {status.label}
-            </span>
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase'
+              }}>
+                {status.label}
+              </span>
+              {isActive && (
+                <motion.div
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ width: 6, height: 6, borderRadius: '50%', background: '#d4af37' }}
+                />
+              )}
+            </div>
+            <div className="truncate" style={{
+              fontSize: '15px', fontWeight: 600, color: '#f2f2f2'
+            }}>
+              {title}
+            </div>
+          </div>
+
+          {/* Arrow */}
+          <div style={{
+            width: 32, height: 32, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.03)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <ArrowRight size={16} color="#71717a" />
           </div>
         </div>
-
-        <ArrowRight size="var(--icon-sm)" color="var(--text-muted)" strokeWidth={1.5} style={{ width: 'var(--icon-sm)', height: 'var(--icon-sm)' }} />
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
-}, (prevProps, nextProps) => {
+}, (prevProps: Readonly<LastOrderCardProps>, nextProps: Readonly<LastOrderCardProps>) => {
   return prevProps.order.id === nextProps.order.id &&
     prevProps.order.work_type_label === nextProps.order.work_type_label &&
     prevProps.order.subject === nextProps.order.subject &&
     prevProps.order.status === nextProps.order.status &&
     prevProps.order.created_at === nextProps.order.created_at
 })
+

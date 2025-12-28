@@ -1,12 +1,10 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Gift, ChevronRight } from 'lucide-react'
+import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  DAILY BONUS BANNER — Compact, elegant secondary action
-//  Premium "old money" design:
-//  - Single line, minimal footprint
-//  - Subtle but noticeable
+//  DAILY BONUS BANNER — Elite Edition
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface DailyBonusBannerProps {
@@ -24,7 +22,6 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
   onClaim,
   haptic,
 }: DailyBonusBannerProps) {
-  // Don't show if already claimed today
   if (!canClaim) return null
 
   const handleClick = () => {
@@ -37,68 +34,82 @@ export const DailyBonusBanner = memo(function DailyBonusBanner({
   const bonusWithStreak = Math.round(potentialBonus * streakMultiplier)
 
   return (
-    <motion.button
-      type="button"
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={handleClick}
-      aria-label={`Забрать ежедневный бонус до ${bonusWithStreak} рублей`}
-      style={{
-        width: '100%',
-        marginBottom: 12,
-        padding: '12px 16px',
-        borderRadius: 12,
-        cursor: 'pointer',
-        background: 'rgba(212,175,55,0.08)',
-        border: '1px solid rgba(212,175,55,0.15)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-      }}
-    >
-      {/* Left side */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Gift size={18} color="var(--gold-400)" strokeWidth={1.5} style={{ opacity: 0.9 }} />
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-          }}
-        >
-          Бонус дня
-        </span>
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'var(--gold-400)',
-          }}
-        >
-          до {bonusWithStreak}₽
-        </span>
-        {currentStreak > 1 && (
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: 'var(--text-tertiary)',
-              padding: '2px 6px',
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: 6,
-            }}
-          >
-            {currentStreak} дн.
-          </span>
-        )}
-      </div>
+    <div className={s.dailyBonusWrapper}>
+      {/* Background Glow */}
+      <div className={s.heroGlow} />
 
-      {/* Right side */}
-      <ChevronRight size={16} color="var(--gold-400)" strokeWidth={1.5} style={{ opacity: 0.7 }} />
-    </motion.button>
+      <motion.button
+        type="button"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleClick}
+        className={s.voidGlass}
+        style={{
+          position: 'relative',
+          width: '100%',
+          padding: '20px',
+          borderRadius: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          textAlign: 'left',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Animated Gold Sheen */}
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'linear-gradient(135deg, transparent 40%, rgba(212,175,55,0.1) 50%, transparent 60%)',
+          zIndex: 1,
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div style={{
+            width: 48, height: 48,
+            borderRadius: '14px',
+            background: 'linear-gradient(180deg, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.05) 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid rgba(212,175,55,0.3)',
+            boxShadow: '0 0 15px rgba(212,175,55,0.15)'
+          }}>
+            <Gift size={24} color="#d4af37" />
+          </div>
+
+          <div>
+            <div style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: '12px',
+              color: '#a1a1aa',
+              letterSpacing: '0.05em',
+              marginBottom: '4px'
+            }}>
+              DAILY REWARD
+            </div>
+            <div style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: '#f2f2f2',
+              fontFamily: "'Manrope', sans-serif"
+            }}>
+              CLAIM <span style={{ color: '#d4af37' }}>{bonusWithStreak}₽</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          width: 32, height: 32,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.05)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', zIndex: 2
+        }}>
+          <ChevronRight size={18} color="#d4af37" />
+        </div>
+      </motion.button>
+    </div>
   )
 })
