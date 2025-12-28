@@ -38,12 +38,29 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               <img
                 src={userPhoto}
                 alt=""
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                 onError={() => setAvatarError(true)}
               />
             ) : (
-              <div style={{ width: '100%', height: '100%', background: '#09090b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ color: '#d4af37', fontWeight: 700 }}>{firstName.charAt(0)}</span>
+              <div style={{
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                border: '1px solid rgba(212,175,55,0.2)'
+              }}>
+                <span style={{
+                  color: '#d4af37',
+                  fontWeight: 700,
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: '16px',
+                  paddingTop: '2px' // Visual center correction
+                }}>
+                  {(firstName || 'A').charAt(0).toUpperCase()}
+                </span>
               </div>
             )}
           </div>
@@ -81,9 +98,6 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       </motion.button>
     </motion.header>
   )
-  return prev.userPhoto === next.userPhoto &&
-    prev.user.fullname === next.user.fullname &&
-    prev.user.rank.is_max === next.user.rank.is_max
 }, (prev: Readonly<HomeHeaderProps>, next: Readonly<HomeHeaderProps>) => {
   return prev.userPhoto === next.userPhoto &&
     prev.user.fullname === next.user.fullname &&

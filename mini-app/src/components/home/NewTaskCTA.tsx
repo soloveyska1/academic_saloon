@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -74,7 +74,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
             fontSize: '13px',
             fontWeight: 500
           }}>
-            Гарантия результата
+            Безопасная сделка
           </div>
         </div>
 

@@ -35,7 +35,15 @@ export const QuickActionsRow = memo(function QuickActionsRow({
   }
 
   return (
-    <div className={s.scrollRow} style={{ marginBottom: 24, paddingLeft: 0, paddingRight: 0 }}>
+    <div className={s.scrollRow} style={{
+      marginBottom: 24,
+      display: 'flex',
+      gap: 12,
+      overflowX: 'auto',
+      paddingBottom: 4, // Space for scrollbar if visible/touch
+      marginRight: -20, // Negative margin to pull to edge...
+      paddingRight: 20 // ...and padding to keep content visible
+    }}>
       {QUICK_ACTIONS.map((action, index) => (
         <motion.button
           key={action.id}
@@ -81,7 +89,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             letterSpacing: '0.05em',
             textTransform: 'uppercase'
           }}>
-            {index === 0 ? 'БЫСТРО' : index === 1 ? 'КЕШБЭК' : 'НАДЕЖНО'}
+            {action.subtitle}
           </div>
         </motion.button>
       ))}
