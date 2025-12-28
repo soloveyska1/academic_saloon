@@ -3,11 +3,11 @@ import { motion } from 'framer-motion'
 import { QUICK_ACTIONS } from './constants'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  QUICK ACTIONS ROW — Horizontal scroll carousel
-//  Features:
-//  - Single "Срочно" entry that opens UrgentHubSheet
-//  - Premium dark glass cards with gold accents
-//  - Monochrome luxury style
+//  QUICK ACTIONS ROW — CSS Grid layout (3 equal columns)
+//  Premium "old money" design:
+//  - Unified gold accent for all cards
+//  - Subtle glass morphism
+//  - No horizontal scroll — clean grid
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface QuickActionsRowProps {
@@ -38,131 +38,94 @@ export const QuickActionsRow = memo(function QuickActionsRow({
   }
 
   return (
-    <div
-      className="quick-actions-container"
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.16, duration: 0.3 }}
       style={{
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        WebkitOverflowScrolling: 'touch',
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-        marginBottom: 12,
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 8,
+        marginBottom: 16,
       }}
     >
-      <style>{`.quick-actions-scroll::-webkit-scrollbar { display: none; }`}</style>
-      <motion.div
-        className="quick-actions-scroll"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.16 }}
-        style={{
-          display: 'flex',
-          gap: 10,
-          paddingBottom: 8,
-        }}
-      >
-        {QUICK_ACTIONS.map((action, index) => (
-          <motion.button
-            key={action.id}
-            type="button"
-            onClick={() => handleClick(action)}
-            aria-label={`${action.title}: ${action.subtitle}`}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.20 + index * 0.04 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
+      {QUICK_ACTIONS.map((action, index) => (
+        <motion.button
+          key={action.id}
+          type="button"
+          onClick={() => handleClick(action)}
+          aria-label={`${action.title}: ${action.subtitle}`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 + index * 0.03 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            padding: '14px 8px',
+            borderRadius: 12,
+            cursor: 'pointer',
+            position: 'relative',
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            overflow: 'hidden',
+            textAlign: 'center',
+          }}
+        >
+          {/* Subtle top highlight */}
+          <div
+            aria-hidden="true"
             style={{
-              flexShrink: 0,
-              width: 'clamp(100px, 28vw, 120px)',
-              padding: '14px 12px',
-              borderRadius: 14,
-              cursor: 'pointer',
-              position: 'relative',
-              // Dark glass background with subtle gradient
-              background:
-                action.id === 'urgent'
-                  ? 'linear-gradient(145deg, rgba(185,28,28,0.2) 0%, rgba(127,29,29,0.15) 100%)'
-                  : 'linear-gradient(145deg, rgba(28,28,32,0.95) 0%, rgba(18,18,20,0.98) 100%)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              // Border color based on type
-              border:
-                action.id === 'urgent'
-                  ? '1px solid rgba(239,68,68,0.3)'
-                  : '1px solid rgba(212,175,55,0.2)',
-              // Minimal shadow
-              boxShadow: '0 4px 20px -4px rgba(0,0,0,0.5)',
-              overflow: 'hidden',
-              textAlign: 'center',
+              position: 'absolute',
+              top: 0,
+              left: '20%',
+              right: '20%',
+              height: '1px',
+              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
             }}
-          >
-            {/* Subtle top highlight */}
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '1px',
-                background:
-                  action.id === 'urgent'
-                    ? 'linear-gradient(90deg, transparent, rgba(239,68,68,0.3), transparent)'
-                    : 'linear-gradient(90deg, transparent, rgba(212,175,55,0.25), transparent)',
-              }}
-            />
+          />
 
-            {/* Content */}
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              {/* Icon */}
-              <motion.div
-                whileHover={{ y: -2, scale: 1.1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                style={{ marginBottom: 10, display: 'inline-block' }}
-              >
-                <action.icon
-                  size={24}
-                  color={action.id === 'urgent' ? '#f87171' : '#D4AF37'}
-                  strokeWidth={1.5}
-                  aria-hidden="true"
-                  style={{
-                    filter:
-                      action.id === 'urgent'
-                        ? 'drop-shadow(0 2px 8px rgba(239,68,68,0.4))'
-                        : 'drop-shadow(0 2px 8px rgba(212,175,55,0.3))',
-                  }}
-                />
-              </motion.div>
-
-              {/* Title */}
-              <div
+          {/* Content */}
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            {/* Icon */}
+            <div style={{ marginBottom: 8 }}>
+              <action.icon
+                size={22}
+                color="var(--gold-400)"
+                strokeWidth={1.5}
+                aria-hidden="true"
                 style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: action.id === 'urgent' ? '#f87171' : '#fff',
-                  marginBottom: 3,
-                  letterSpacing: '0.01em',
+                  opacity: 0.9,
                 }}
-              >
-                {action.title}
-              </div>
-
-              {/* Subtitle */}
-              <div
-                style={{
-                  fontSize: 11,
-                  color: action.id === 'urgent' ? 'rgba(248,113,113,0.7)' : 'rgba(212,175,55,0.7)',
-                  fontWeight: 600,
-                  letterSpacing: '0.02em',
-                }}
-              >
-                {action.subtitle}
-              </div>
+              />
             </div>
-          </motion.button>
-        ))}
-      </motion.div>
-    </div>
+
+            {/* Title */}
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--text-main)',
+                marginBottom: 2,
+                letterSpacing: '0.01em',
+              }}
+            >
+              {action.title}
+            </div>
+
+            {/* Subtitle */}
+            <div
+              style={{
+                fontSize: 10,
+                color: 'var(--text-tertiary)',
+                fontWeight: 500,
+                letterSpacing: '0.02em',
+              }}
+            >
+              {action.subtitle}
+            </div>
+          </div>
+        </motion.button>
+      ))}
+    </motion.div>
   )
 })

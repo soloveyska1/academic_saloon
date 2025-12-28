@@ -1,11 +1,13 @@
 import { memo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
-import { Plus } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  NEW TASK CTA — THE Primary action button (2x larger, unmissable)
-//  Premium minimalist design with gold accent
-//  This is THE main conversion point — make it impossible to miss
+//  NEW TASK CTA — Primary action button
+//  Premium "old money" design:
+//  - Dark background with subtle gold border
+//  - Gold text accent
+//  - Elegant, understated luxury
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface NewTaskCTAProps {
@@ -14,8 +16,6 @@ interface NewTaskCTAProps {
 }
 
 export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskCTAProps) {
-  const shouldReduceMotion = useReducedMotion()
-
   const handleClick = () => {
     haptic?.('heavy')
     onClick()
@@ -24,96 +24,81 @@ export const NewTaskCTA = memo(function NewTaskCTA({ onClick, haptic }: NewTaskC
   return (
     <motion.button
       type="button"
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: 0.08, type: 'spring', stiffness: 200, damping: 20 }}
-      whileHover={{ scale: 1.02, y: -3 }}
-      whileTap={{ scale: 0.97 }}
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.08, duration: 0.3 }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
       onClick={handleClick}
-      aria-label="Создать новую задачу с персональным менеджером"
-      className="cta-responsive"
+      aria-label="Оформить заказ"
       style={{
         position: 'relative',
         width: '100%',
-        padding: '20px 18px',
-        borderRadius: 16,
-        border: '1px solid rgba(212,175,55,0.5)',
+        padding: '18px 20px',
+        borderRadius: 14,
+        border: '1px solid rgba(212,175,55,0.25)',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: 'linear-gradient(135deg, #D4AF37 0%, #c9a430 50%, #D4AF37 100%)',
-        boxShadow: '0 8px 32px -8px rgba(212,175,55,0.45), 0 4px 16px rgba(0,0,0,0.2)',
+        background: 'linear-gradient(145deg, rgba(28,28,32,0.98) 0%, rgba(18,18,20,0.99) 100%)',
+        boxShadow: '0 4px 20px -4px rgba(0,0,0,0.4)',
         marginBottom: 12,
         overflow: 'hidden',
-        minHeight: 80,
       }}
     >
-      {/* Animated shimmer effect */}
-      {!shouldReduceMotion && (
-        <motion.div
-          animate={{ x: ['-100%', '200%'] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '50%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
-      {/* Shine accent line at top */}
+      {/* Subtle top highlight */}
       <div
         aria-hidden="true"
         style={{
           position: 'absolute',
           top: 0,
-          left: 'var(--card-padding)',
-          right: 'var(--card-padding)',
+          left: '10%',
+          right: '10%',
           height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
         }}
       />
 
       <div style={{ textAlign: 'left', position: 'relative', zIndex: 1 }}>
         <div
           style={{
-            fontSize: 17,
-            fontWeight: 700,
-            color: '#1a1a1a',
-            fontFamily: "var(--font-serif)",
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
+            fontSize: 16,
+            fontWeight: 600,
+            color: 'var(--gold-400)',
+            fontFamily: 'var(--font-serif)',
+            letterSpacing: '0.03em',
             marginBottom: 4,
           }}
         >
-          Новая задача
+          Оформить заказ
         </div>
-        <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.55)', fontWeight: 500, lineHeight: 1.5 }}>
-          <span>Персональный менеджер</span>
-          <span style={{ display: 'block', marginTop: 2 }}>Гарантия сдачи</span>
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--text-tertiary)',
+            fontWeight: 500,
+          }}
+        >
+          Персональный менеджер · Гарантия сдачи
         </div>
       </div>
 
       <div
         aria-hidden="true"
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: '50%',
-          background: 'rgba(0,0,0,0.15)',
-          border: '1px solid rgba(0,0,0,0.1)',
+          width: 40,
+          height: 40,
+          borderRadius: 10,
+          background: 'rgba(212,175,55,0.1)',
+          border: '1px solid rgba(212,175,55,0.2)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
         }}
       >
-        <Plus size={24} color="#1a1a1a" strokeWidth={2.5} />
+        <ArrowRight size={20} color="var(--gold-400)" strokeWidth={1.5} />
       </div>
     </motion.button>
   )
