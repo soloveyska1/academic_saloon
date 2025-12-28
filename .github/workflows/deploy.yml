@@ -75,14 +75,32 @@ jobs:
             # ============================================
             echo "=== Restarting bot service ==="
 
-            # 1. Stop the service first
+            # 1. Stop the service
+            echo "Stopping systemd service..."
             systemctl stop saloon-bot || true
             
-            # 2. Force kill any remaining processes on port 8000
-            fuser -k -9 8000/tcp 2>/dev/null || true
-            sleep 5
+            # 2. Kill loop (Try 5 times to clear port 8000)
+            echo "Killing processes on port 8000..."
+            for i in {1..5}; do
+                if fuser 8000/tcp >/dev/null 2>&1; then
+                    fuser -k -9 8000/tcp >/dev/null 2>&1 || true
+                    echo "  Killed process on port 8000 (attempt $i)"
+                    sleep 2
+                else
+                    echo "  Port 8000 is free."
+                    break
+                fi
+            done
+            
+            # 3. Final Verification
+            if fuser 8000/tcp >/dev/null 2>&1; then
+                echo "❌ CRITICAL: Port 8000 is still in use after kill attempts. Aborting."
+                fuser -v 8000/tcp
+                exit 1
+            fi
 
-            # 3. Start systemd service
+            # 4. Start systemd service
+            echo "Starting systemd service..."
             systemctl start saloon-bot
             sleep 5
 
