@@ -53,17 +53,13 @@ async def run_api_server():
         traceback.print_exc()
         return
 
-    import platform
-    reuse_port = platform.system() != "Windows"
-
     try:
         config = uvicorn.Config(
             api_app,
             host="0.0.0.0",
             port=8000,
             log_level="info",
-            access_log=True,
-            reuse_port=reuse_port
+            access_log=True
         )
         server = uvicorn.Server(config)
         logger.info("🌐 Mini App API starting on http://0.0.0.0:8000")
