@@ -160,7 +160,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               bottom: 0,
               left: 0,
               right: 0,
-              maxHeight: '90vh',
+              height: '85vh',
               borderTopLeftRadius: 32,
               borderTopRightRadius: 32,
               background: `

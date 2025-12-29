@@ -131,8 +131,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               bottom: 0,
               left: 0,
               right: 0,
-              // Simple CSS vh units - works on iOS/Telegram like other working sheets
-              maxHeight: '85vh',
+              height: '70vh',
               background: '#09090b',
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
