@@ -161,8 +161,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               left: 0,
               right: 0,
               // Use dvh for iOS dynamic viewport, fallback to vh
-              height: 'min(85dvh, 85vh)',
-              maxHeight: 'calc(100% - env(safe-area-inset-top, 20px) - 20px)',
+              height: 'min(95dvh, 95vh)',
+              maxHeight: 'calc(100% - env(safe-area-inset-top, 20px) - 10px)',
               borderTopLeftRadius: 32,
               borderTopRightRadius: 32,
               background: `
