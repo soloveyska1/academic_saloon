@@ -286,18 +286,12 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               data-scroll-container="true"
               style={{
                 flex: 1,
-                height: 0, // Force flex child to respect parent bounds on iOS
-                minHeight: 0, // Critical for flex scroll to work
-                overflowY: 'auto', // 'auto' is more stable on iOS than 'scroll'
+                minHeight: 0,
+                overflowY: 'auto',
                 overflowX: 'hidden',
-                overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-y',
                 padding: 20,
                 paddingBottom: 'max(60px, calc(20px + env(safe-area-inset-bottom)))',
-                // Force hardware acceleration to prevent iOS scroll issues
-                transform: 'translateZ(0)',
-                WebkitTransform: 'translateZ(0)',
               }}
             >
               {children}
