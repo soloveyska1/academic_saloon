@@ -176,7 +176,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               style={{
                 flex: '1 1 auto',
                 minHeight: 0, // Important: allows flex item to shrink below content size
-                overflowY: 'auto',
+                overflowY: 'scroll',
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',

@@ -284,7 +284,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               data-scroll-container="true"
               style={{
                 flex: 1,
-                overflowY: 'auto',
+                minHeight: 0, // Critical for flex scroll to work
+                overflowY: 'scroll',
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
