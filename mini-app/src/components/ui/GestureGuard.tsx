@@ -196,9 +196,19 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
         if (deltaY > 10) {
           // Проверяем что это не внутри scrollable container
           const target = e.target as HTMLElement
-          if (!target.closest('[data-scroll-container]')) {
-            e.preventDefault()
+          const scrollContainer = target.closest('[data-scroll-container]') as HTMLElement
+
+          // Если внутри scroll container - разрешаем скролл
+          if (scrollContainer) {
+            // Только блокируем если контейнер уже в самом верху
+            if (scrollContainer.scrollTop <= 0) {
+              // Не блокируем - пусть iOS делает свой bounce внутри контейнера
+              return
+            }
+            return // Разрешаем скролл внутри контейнера
           }
+
+          e.preventDefault()
         }
       }
     }
@@ -241,14 +251,11 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
 
       /* Safe scrollable areas - iOS optimized */
       [data-scroll-container] {
-        overscroll-behavior: contain;
         overscroll-behavior-y: contain;
         -webkit-overflow-scrolling: touch;
         /* Force GPU layer for smooth scrolling on iOS */
         transform: translateZ(0);
         -webkit-transform: translateZ(0);
-        /* Prevent momentum scroll issues */
-        scroll-behavior: smooth;
       }
     `
     document.head.appendChild(style)
