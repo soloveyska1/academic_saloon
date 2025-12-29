@@ -24,7 +24,7 @@ export interface SmartNotificationData {
   message: string
   icon?: string
   color?: string
-  priority?: 'normal' | 'high'
+  priority?: 'normal' | 'high' | 'low'
   action?: string
   celebration?: boolean
   confetti?: boolean

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useRef, useEffect } from 'react'
+import { createContext, useContext, useState, ReactNode, useCallback, useRef, useEffect } from 'react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  NAVIGATION CONTEXT — Enhanced with Modal/Sheet Tracking

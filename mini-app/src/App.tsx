@@ -20,7 +20,6 @@ import {
   BalanceUpdateMessage,
   ProgressUpdateMessage,
   NotificationMessage,
-  RefreshMessage,
   useWebSocketContext,
 } from './hooks/useWebSocket'
 import {
@@ -212,7 +211,7 @@ function AppContent() {
     refetch()
   }, [refetch])
 
-  const handleRefresh = useCallback((msg: RefreshMessage) => {
+  const handleRefresh = useCallback(() => {
     // Trigger data refresh based on refresh_type from server
     refetch()
   }, [refetch])
