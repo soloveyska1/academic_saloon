@@ -170,7 +170,9 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             style={{
               width: '100%',
               maxWidth: 420,
-              maxHeight: '90vh',
+              // Auto height based on content, capped at 90%
+              height: 'auto',
+              maxHeight: '90%',
               display: 'flex',
               flexDirection: 'column',
               // Ultra-premium glass background
@@ -297,7 +299,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             <div
               data-scroll-container="true"
               style={{
-                flex: 1,
+                flex: '1 1 auto',
+                minHeight: 0, // Important: allows flex item to shrink below content size
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',

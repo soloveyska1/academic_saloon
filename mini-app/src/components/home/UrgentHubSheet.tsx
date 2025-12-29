@@ -131,7 +131,9 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               bottom: 0,
               left: 0,
               right: 0,
-              maxHeight: '85vh',
+              // Auto height based on content, capped at 85%
+              height: 'auto',
+              maxHeight: '85%',
               background: '#09090b',
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
@@ -173,7 +175,8 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
             <div
               data-scroll-container="true"
               style={{
-                flex: 1,
+                flex: '1 1 auto',
+                minHeight: 0, // Important: allows flex item to shrink below content size
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',
