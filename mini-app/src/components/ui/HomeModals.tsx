@@ -138,7 +138,6 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               backdropFilter: 'blur(20px) saturate(180%)',
               WebkitBackdropFilter: 'blur(20px) saturate(180%)',
               zIndex: 2000,
-              touchAction: 'none',
             }}
           />
 
