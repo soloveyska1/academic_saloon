@@ -10,6 +10,7 @@ import { UserData, Transaction } from '../../types'
 import { useAdmin } from '../../contexts/AdminContext'
 import { useScrollLock, useSheetRegistration, useSwipeToClose } from './GestureGuard'
 import { useModalRegistration } from '../../contexts/NavigationContext'
+import { useViewportHeight } from '../../hooks/useViewportHeight'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  UNIFIED DRAG CONFIGURATION — Same across all sheets
@@ -93,6 +94,12 @@ interface ModalWrapperProps {
 }
 
 function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', showParticles = true }: ModalWrapperProps) {
+  // Get actual viewport height (works correctly in Telegram WebApp on iOS)
+  const { height: viewportHeight } = useViewportHeight()
+
+  // Calculate max height in pixels (90% of actual viewport)
+  const maxHeightPx = Math.floor(viewportHeight * 0.9)
+
   // GestureGuard integration - unified scroll lock and modal registration
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
@@ -128,7 +135,11 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
           onClick={handleClose}
           style={{
             position: 'fixed',
-            inset: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: viewportHeight,
             background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
@@ -136,8 +147,9 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',
-            padding: 12,
-            touchAction: 'none' // Prevent touches passing through to body
+            padding: '0 12px 12px',
+            touchAction: 'none', // Prevent touches passing through to body
+            overflow: 'hidden',
           }}
         >
           {/* Ambient glow behind modal */}
@@ -159,20 +171,19 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
           />
 
           <motion.div
-            initial={{ opacity: 0, y: '100%' }}
+            initial={{ opacity: 0, y: maxHeightPx }}
             animate={{
               opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
               y: dragOffset,
             }}
-            exit={{ opacity: 0, y: '100%' }}
+            exit={{ opacity: 0, y: maxHeightPx }}
             transition={isDragging ? { duration: 0 } : { type: 'spring', damping: 32, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
               maxWidth: 420,
-              // Auto height based on content, capped at 90%
-              height: 'auto',
-              maxHeight: '90%',
+              // Use calculated pixel height instead of percentage
+              maxHeight: maxHeightPx,
               display: 'flex',
               flexDirection: 'column',
               // Ultra-premium glass background
@@ -268,7 +279,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 width: 40,
                 height: 4,
                 borderRadius: 2,
-                background: 'rgba(255,255,255,0.15)',
+                background: isDragging ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)',
               }} />
 
               {/* Close button */}
@@ -308,6 +319,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 touchAction: 'pan-y', // Allow vertical scroll, block horizontal
                 position: 'relative',
                 zIndex: 2,
+                paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
               }}
             >
               {children}
