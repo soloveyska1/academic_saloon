@@ -289,6 +289,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 minHeight: 0,
                 overflowY: 'auto',
                 overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                touchAction: 'pan-y',
                 WebkitOverflowScrolling: 'touch',
                 padding: 20,
                 paddingBottom: 'max(60px, calc(20px + env(safe-area-inset-bottom)))',

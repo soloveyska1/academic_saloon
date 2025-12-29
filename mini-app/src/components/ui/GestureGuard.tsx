@@ -238,7 +238,7 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
     style.id = 'gesture-guard-styles'
     style.textContent = `
       html, body {
-        overscroll-behavior: none;
+        overscroll-behavior: contain;
         overscroll-behavior-y: contain;
         -webkit-overflow-scrolling: touch;
       }
