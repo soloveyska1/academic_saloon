@@ -2,7 +2,6 @@ import { memo, useCallback, useRef, ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useScrollLock, useSheetRegistration, useSwipeToClose } from './GestureGuard'
-import { useViewportHeight } from '../../hooks/useViewportHeight'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  PREMIUM SHEET — Unified Bottom Sheet Component (v2 - Native Gestures)
@@ -89,24 +88,6 @@ export const PremiumSheet = memo(function PremiumSheet({
 }: PremiumSheetProps) {
   const contentRef = useRef<HTMLDivElement>(null)
 
-  // Get actual viewport height (works correctly in Telegram WebApp on iOS)
-  const { height: viewportHeight } = useViewportHeight()
-
-  // Parse maxHeight and calculate in pixels
-  const maxHeightPx = (() => {
-    if (typeof maxHeight === 'string') {
-      if (maxHeight.endsWith('vh')) {
-        const percentage = parseInt(maxHeight, 10)
-        return Math.floor(viewportHeight * (percentage / 100))
-      }
-      if (maxHeight.endsWith('%')) {
-        const percentage = parseInt(maxHeight, 10)
-        return Math.floor(viewportHeight * (percentage / 100))
-      }
-    }
-    return Math.floor(viewportHeight * 0.9) // Default to 90%
-  })()
-
   // GestureGuard integration
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
@@ -158,11 +139,7 @@ export const PremiumSheet = memo(function PremiumSheet({
             onClick={handleBackdropClick}
             style={{
               position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: viewportHeight,
+              inset: 0,
               background: 'rgba(0,0,0,0.8)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
@@ -176,12 +153,12 @@ export const PremiumSheet = memo(function PremiumSheet({
               ═══════════════════════════════════════════════════════════════ */}
           <motion.div
             key="sheet"
-            initial={{ y: maxHeightPx }}
+            initial={{ y: '100%' }}
             animate={{
               y: dragOffset,
               opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
             }}
-            exit={{ y: maxHeightPx }}
+            exit={{ y: '100%' }}
             transition={isDragging ? { duration: 0 } : {
               type: 'spring',
               ...SHEET_CONFIG.spring
@@ -192,8 +169,8 @@ export const PremiumSheet = memo(function PremiumSheet({
               bottom: 0,
               left: 0,
               right: 0,
-              // Use calculated pixel height instead of vh/percentage
-              maxHeight: maxHeightPx,
+              // Simple CSS vh units - works on iOS/Telegram like other working sheets
+              maxHeight,
               display: 'flex',
               flexDirection: 'column',
               // Premium glass background

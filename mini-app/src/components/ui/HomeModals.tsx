@@ -10,7 +10,6 @@ import { UserData, Transaction } from '../../types'
 import { useAdmin } from '../../contexts/AdminContext'
 import { useScrollLock, useSheetRegistration, useSwipeToClose } from './GestureGuard'
 import { useModalRegistration } from '../../contexts/NavigationContext'
-import { useViewportHeight } from '../../hooks/useViewportHeight'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  UNIFIED DRAG CONFIGURATION — Same across all sheets
@@ -94,12 +93,6 @@ interface ModalWrapperProps {
 }
 
 function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', showParticles = true }: ModalWrapperProps) {
-  // Get actual viewport height (works correctly in Telegram WebApp on iOS)
-  const { height: viewportHeight } = useViewportHeight()
-
-  // Calculate max height in pixels (90% of actual viewport)
-  const maxHeightPx = Math.floor(viewportHeight * 0.9)
-
   // GestureGuard integration - unified scroll lock and modal registration
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
@@ -135,11 +128,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
           onClick={handleClose}
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: viewportHeight,
+            inset: 0,
             background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
@@ -171,19 +160,19 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
           />
 
           <motion.div
-            initial={{ opacity: 0, y: maxHeightPx }}
+            initial={{ opacity: 0, y: '100%' }}
             animate={{
               opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
               y: dragOffset,
             }}
-            exit={{ opacity: 0, y: maxHeightPx }}
+            exit={{ opacity: 0, y: '100%' }}
             transition={isDragging ? { duration: 0 } : { type: 'spring', damping: 32, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
               maxWidth: 420,
-              // Use calculated pixel height instead of percentage
-              maxHeight: maxHeightPx,
+              // Simple CSS vh units - works on iOS/Telegram like other working sheets
+              maxHeight: '90vh',
               display: 'flex',
               flexDirection: 'column',
               // Ultra-premium glass background
