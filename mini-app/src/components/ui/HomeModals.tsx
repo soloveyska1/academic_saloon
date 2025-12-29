@@ -1,4 +1,4 @@
-import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import React, { useEffect, useState, useCallback } from 'react'
 import {
   X, Shield, CheckCircle, TrendingUp, Crown, Star,
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { UserData, Transaction } from '../../types'
 import { useAdmin } from '../../contexts/AdminContext'
-import { useScrollLock, useSheetRegistration } from './GestureGuard'
+import { useScrollLock, useSheetRegistration, useSwipeToClose } from './GestureGuard'
 import { useModalRegistration } from '../../contexts/NavigationContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -93,30 +93,23 @@ interface ModalWrapperProps {
 }
 
 function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', showParticles = true }: ModalWrapperProps) {
-  const dragControls = useDragControls()
-
   // GestureGuard integration - unified scroll lock and modal registration
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
   useModalRegistration(isOpen)
 
-  // Handle drag end with unified thresholds
-  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
-    const shouldClose =
-      info.offset.y > DRAG_CONFIG.offsetThreshold ||
-      info.velocity.y > DRAG_CONFIG.velocityThreshold
-
-    if (shouldClose) {
-      triggerHaptic('light')
-      onClose()
-    }
-  }, [onClose])
-
-  // Start drag with event propagation control
-  const startDrag = useCallback((e: React.PointerEvent) => {
-    e.stopPropagation()
-    dragControls.start(e)
-  }, [dragControls])
+  // Native touch gesture for drag-to-close (replaces framer-motion drag)
+  const {
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    dragOffset,
+    isDragging,
+  } = useSwipeToClose({
+    onClose,
+    offsetThreshold: DRAG_CONFIG.offsetThreshold,
+    velocityThreshold: 0.4, // velocity in px/ms
+  })
 
   // Close with haptic
   const handleClose = useCallback(() => {
@@ -166,24 +159,20 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
           />
 
           <motion.div
-            drag="y"
-            dragControls={dragControls}
-            dragListener={false}
-            dragConstraints={{ top: 0 }}
-            dragElastic={DRAG_CONFIG.dragElastic}
-            onDragEnd={handleDragEnd}
             initial={{ opacity: 0, y: '100%' }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{
+              opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
+              y: dragOffset,
+            }}
             exit={{ opacity: 0, y: '100%' }}
-            transition={{ type: 'spring', damping: 32, stiffness: 380 }}
+            transition={isDragging ? { duration: 0 } : { type: 'spring', damping: 32, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
               maxWidth: 420,
               maxHeight: '90vh',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              overscrollBehavior: 'contain', // CRITICAL: Stop propagation
+              display: 'flex',
+              flexDirection: 'column',
               // Ultra-premium glass background
               background: `
                 linear-gradient(180deg,
@@ -197,6 +186,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               border: '1px solid transparent',
               backgroundClip: 'padding-box',
               position: 'relative',
+              overflow: 'hidden',
               // Heavy luxury shadows
               boxShadow: `
                 0 -30px 100px rgba(0,0,0,0.6),
@@ -263,9 +253,11 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             {/* Floating particles */}
             {showParticles && <FloatingParticles color={accentColor} />}
 
-            {/* Header with handle bar and close button - DRAG AREA */}
+            {/* Header with handle bar and close button - DRAG AREA (native touch) */}
             <div
-              onPointerDown={startDrag}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -274,6 +266,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 position: 'relative',
                 zIndex: 2,
                 cursor: 'grab',
+                touchAction: 'none', // Prevent scroll in drag area
+                flexShrink: 0,
               }}
             >
               {/* Spacer for centering */}
@@ -293,7 +287,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                   e.stopPropagation()
                   handleClose()
                 }}
-                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
                 whileTap={{ scale: 0.9 }}
                 style={{
                   width: 32,
@@ -311,8 +305,20 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               </motion.button>
             </div>
 
-            {/* Content */}
-            <div style={{ position: 'relative', zIndex: 2 }}>
+            {/* Scrollable Content Area (native scroll - no drag conflict) */}
+            <div
+              data-scroll-container="true"
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-y', // Allow vertical scroll, block horizontal
+                position: 'relative',
+                zIndex: 2,
+              }}
+            >
               {children}
             </div>
           </motion.div>
