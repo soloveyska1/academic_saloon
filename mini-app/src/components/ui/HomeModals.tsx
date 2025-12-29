@@ -158,13 +158,11 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             style={{
               position: 'fixed',
               bottom: 0,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'calc(100% - 24px)',
-              maxWidth: 420,
+              left: 0,
+              right: 0,
               maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
               background: `
                 linear-gradient(180deg,
                   rgba(25,25,30,0.97) 0%,
@@ -172,17 +170,16 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                   rgba(10,10,12,0.99) 100%
                 )
               `,
-              borderRadius: '32px 32px 0 0',
               borderTop: `1px solid ${accentColor}50`,
-              overflow: 'hidden',
               boxShadow: `
                 0 -30px 100px rgba(0,0,0,0.6),
                 0 0 0 1px rgba(255,255,255,0.08),
                 0 0 120px -30px ${accentColor}50,
-                inset 0 1px 0 rgba(255,255,255,0.1),
-                inset 0 0 80px rgba(0,0,0,0.3)
+                inset 0 1px 0 rgba(255,255,255,0.1)
               `,
               zIndex: 2001,
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             {/* Top accent line with glow */}
@@ -286,16 +283,14 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
             <div
               data-scroll-container="true"
               style={{
-                flex: '1 1 auto',
-                minHeight: 0, // Important: allows flex item to shrink below content size
+                flex: 1,
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-y', // Allow vertical scroll, block horizontal
-                position: 'relative',
-                zIndex: 2,
-                paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
+                touchAction: 'pan-y',
+                padding: 20,
+                paddingBottom: 'max(60px, calc(20px + env(safe-area-inset-bottom)))',
               }}
             >
               {children}
