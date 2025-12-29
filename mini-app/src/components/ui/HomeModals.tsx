@@ -120,62 +120,51 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          onClick={handleClose}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            padding: '0 12px 12px',
-            touchAction: 'none', // Prevent touches passing through to body
-            overflow: 'hidden',
-          }}
-        >
-          {/* Ambient glow behind modal */}
+        <>
+          {/* ═══════════════════════════════════════════════════════════════
+              BACKDROP — Just an overlay, NOT a flex container
+              ═══════════════════════════════════════════════════════════════ */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.4 }}
+            key="modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={handleClose}
             style={{
-              position: 'absolute',
-              bottom: '10%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '120%',
-              height: '70%',
-              background: `radial-gradient(ellipse at center, ${accentColor}15 0%, transparent 60%)`,
-              pointerEvents: 'none',
+              position: 'fixed',
+              inset: 0,
+              background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              zIndex: 2000,
+              touchAction: 'none',
             }}
           />
 
+          {/* ═══════════════════════════════════════════════════════════════
+              SHEET — Independent fixed element (like working ClubRulesSheet)
+              ═══════════════════════════════════════════════════════════════ */}
           <motion.div
-            initial={{ opacity: 0, y: '100%' }}
+            key="modal-sheet"
+            initial={{ y: '100%' }}
             animate={{
               opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
               y: dragOffset,
             }}
-            exit={{ opacity: 0, y: '100%' }}
+            exit={{ y: '100%' }}
             transition={isDragging ? { duration: 0 } : { type: 'spring', damping: 32, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: '100%',
+              position: 'fixed',
+              bottom: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 'calc(100% - 24px)',
               maxWidth: 420,
-              // Simple CSS vh units - works on iOS/Telegram like other working sheets
               maxHeight: '90vh',
               display: 'flex',
               flexDirection: 'column',
-              // Ultra-premium glass background
               background: `
                 linear-gradient(180deg,
                   rgba(25,25,30,0.97) 0%,
@@ -184,11 +173,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 )
               `,
               borderRadius: '32px 32px 0 0',
-              // Simple gradient border (replaces broken mask approach)
               borderTop: `1px solid ${accentColor}50`,
-              position: 'relative',
               overflow: 'hidden',
-              // Heavy luxury shadows
               boxShadow: `
                 0 -30px 100px rgba(0,0,0,0.6),
                 0 0 0 1px rgba(255,255,255,0.08),
@@ -196,6 +182,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 inset 0 1px 0 rgba(255,255,255,0.1),
                 inset 0 0 80px rgba(0,0,0,0.3)
               `,
+              zIndex: 2001,
             }}
           >
             {/* Top accent line with glow */}
@@ -314,7 +301,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               {children}
             </div>
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   )
