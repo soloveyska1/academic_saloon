@@ -47,7 +47,7 @@ function FloatingParticles({ color = '#D4AF37', count = 12 }: { color?: string; 
   }))
 
   return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+    <div style={{ position: 'absolute', inset: 0, overflow: 'visible', pointerEvents: 'none', zIndex: -1 }}>
       {particles.map(p => (
         <motion.div
           key={p.id}
@@ -182,9 +182,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 )
               `,
               borderRadius: '32px 32px 0 0',
-              // Gradient border simulation
-              border: '1px solid transparent',
-              backgroundClip: 'padding-box',
+              // Simple gradient border (replaces broken mask approach)
+              borderTop: `1px solid ${accentColor}50`,
               position: 'relative',
               overflow: 'hidden',
               // Heavy luxury shadows
@@ -197,19 +196,6 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
               `,
             }}
           >
-            {/* Gradient border overlay */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: '32px 32px 0 0',
-              padding: 1,
-              background: `linear-gradient(180deg, ${accentColor}40 0%, ${accentColor}10 30%, transparent 60%)`,
-              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-              WebkitMaskComposite: 'xor',
-              maskComposite: 'exclude',
-              pointerEvents: 'none',
-            }} />
-
             {/* Top accent line with glow */}
             <motion.div
               animate={{
@@ -230,6 +216,8 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 height: 2,
                 background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
                 borderRadius: 1,
+                zIndex: 0, // Behind content
+                pointerEvents: 'none',
               }}
             />
 
@@ -246,7 +234,7 @@ function ModalWrapper({ isOpen, onClose, children, accentColor = '#D4AF37', show
                 background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent)`,
                 transform: 'skewX(-20deg)',
                 pointerEvents: 'none',
-                zIndex: 1,
+                zIndex: 0, // Behind content (was 1)
               }}
             />
 
