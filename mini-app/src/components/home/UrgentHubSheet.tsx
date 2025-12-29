@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Zap, ChevronRight, Clock, Camera } from 'lucide-react'
 import { useScrollLock, useSheetRegistration, useSwipeToClose } from '../ui/GestureGuard'
 import { useModalRegistration } from '../../contexts/NavigationContext'
+import { useViewportHeight } from '../../hooks/useViewportHeight'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  URGENT HUB SHEET — Premium Bottom Sheet (v2 - Native Gestures)
@@ -49,6 +50,12 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
   onNavigate,
   haptic = triggerHaptic
 }: UrgentHubSheetProps) {
+  // Get actual viewport height (works correctly in Telegram WebApp on iOS)
+  const { height: viewportHeight } = useViewportHeight()
+
+  // Calculate max height in pixels (85% of actual viewport)
+  const maxHeightPx = Math.floor(viewportHeight * 0.85)
+
   // GestureGuard and NavigationContext integration
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
@@ -102,7 +109,11 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
             onClick={handleClose}
             style={{
               position: 'fixed',
-              inset: 0,
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: viewportHeight,
               background: 'rgba(0,0,0,0.85)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
@@ -116,12 +127,12 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               ═══════════════════════════════════════════════════════════════ */}
           <motion.div
             key="urgent-sheet"
-            initial={{ y: '100%' }}
+            initial={{ y: maxHeightPx }}
             animate={{
               y: dragOffset,
               opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
             }}
-            exit={{ y: '100%' }}
+            exit={{ y: maxHeightPx }}
             transition={isDragging ? { duration: 0 } : {
               type: 'spring',
               ...SHEET_CONFIG.spring
@@ -131,9 +142,8 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               bottom: 0,
               left: 0,
               right: 0,
-              // Auto height based on content, capped at 85%
-              height: 'auto',
-              maxHeight: '85%',
+              // Use calculated pixel height instead of percentage
+              maxHeight: maxHeightPx,
               background: '#09090b',
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
@@ -142,6 +152,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               boxShadow: '0 -10px 40px rgba(0,0,0,0.9)',
               display: 'flex',
               flexDirection: 'column',
+              overflow: 'hidden',
             }}
           >
             {/* ═══════════════════════════════════════════════════════════
