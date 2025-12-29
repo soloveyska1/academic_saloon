@@ -239,10 +239,16 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
         -webkit-user-select: none;
       }
 
-      /* Safe scrollable areas */
+      /* Safe scrollable areas - iOS optimized */
       [data-scroll-container] {
         overscroll-behavior: contain;
+        overscroll-behavior-y: contain;
         -webkit-overflow-scrolling: touch;
+        /* Force GPU layer for smooth scrolling on iOS */
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        /* Prevent momentum scroll issues */
+        scroll-behavior: smooth;
       }
     `
     document.head.appendChild(style)
