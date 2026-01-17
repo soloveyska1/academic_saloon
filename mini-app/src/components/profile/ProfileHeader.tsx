@@ -1,7 +1,8 @@
-import { memo, useState, useRef, useCallback } from 'react'
+import { memo, useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, Shield, Sparkles } from 'lucide-react'
 import { ProfileUser, MembershipLevel } from '../../types'
+import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  PROFILE HEADER - Premium avatar, name, membership badge
@@ -12,6 +13,7 @@ interface ProfileHeaderProps {
   user: ProfileUser
   isAdmin?: boolean
   onAdminAccess?: () => void
+  avatarUrl?: string
 }
 
 const LEVEL_CONFIG: Record<MembershipLevel, { label: string; color: string; gradient: string }> = {
@@ -46,14 +48,26 @@ export const ProfileHeader = memo(function ProfileHeader({
   user,
   isAdmin = false,
   onAdminAccess,
+  avatarUrl,
 }: ProfileHeaderProps) {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const [isLongPressing, setIsLongPressing] = useState(false)
   const [longPressProgress, setLongPressProgress] = useState(0)
   const progressInterval = useRef<NodeJS.Timeout | null>(null)
+  const [avatarError, setAvatarError] = useState(false)
 
   const config = LEVEL_CONFIG[user.membershipLevel]
   const firstName = user.name.split(' ')[0]
+  const avatarSrc = useMemo(() => {
+    if (isImageAvatar(user.avatar)) {
+      return normalizeAvatarUrl(user.avatar)
+    }
+    if (isImageAvatar(avatarUrl)) {
+      return normalizeAvatarUrl(avatarUrl)
+    }
+    return undefined
+  }, [avatarUrl, user.avatar])
+  const shouldShowAvatar = Boolean(avatarSrc && !avatarError)
 
   // Format member since date
   const memberSinceDate = new Date(user.memberSince)
@@ -170,14 +184,32 @@ export const ProfileHeader = memo(function ProfileHeader({
               boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.5)',
             }}
           >
-            {/* Emoji avatar or first letter */}
-            <span style={{
-              fontSize: user.avatar && user.avatar.length <= 2 ? 28 : 24,
-              fontWeight: 700,
-              color: config.color,
-            }}>
-              {user.avatar || firstName.charAt(0).toUpperCase()}
-            </span>
+            {shouldShowAvatar ? (
+              <img
+                src={avatarSrc}
+                alt={firstName}
+                loading="eager"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              /* Emoji avatar or first letter */
+              <span style={{
+                fontSize: user.avatar && user.avatar.length <= 2 ? 28 : 24,
+                fontWeight: 700,
+                color: config.color,
+              }}>
+                {user.avatar || firstName.charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
 
           {/* Premium sparkle for max level */}

@@ -123,7 +123,7 @@ const AGENT_EARNINGS: AgentEarning[] = []
 
 export function ProfilePageNew({ user }: Props) {
   const navigate = useNavigate()
-  const { haptic, hapticSuccess, botUsername } = useTelegram()
+  const { haptic, hapticSuccess, botUsername, user: tgUser } = useTelegram()
   const club = useClub()
 
   // Tab state - define tabs based on user role
@@ -152,6 +152,7 @@ export function ProfilePageNew({ user }: Props) {
 
   // Transform user data
   const profileUser = useMemo(() => user ? transformToProfileUser(user) : null, [user])
+  const avatarUrl = tgUser?.photo_url
   const wallet = useMemo(() => user ? transformToWallet(user) : null, [user])
   const transactions = useMemo(() => user ? transformTransactions(user) : [], [user])
 
@@ -310,6 +311,7 @@ export function ProfilePageNew({ user }: Props) {
           user={profileUser}
           isAdmin={isAdmin}
           onAdminAccess={handleAdminAccess}
+          avatarUrl={avatarUrl}
         />
 
         {/* Tabs */}

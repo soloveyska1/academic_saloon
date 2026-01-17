@@ -1,6 +1,7 @@
-import { useState, memo } from 'react'
+import { useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import s from '../../pages/HomePage.module.css'
+import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HOME HEADER — Elite Gold Edition
@@ -22,6 +23,8 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
   const [avatarError, setAvatarError] = useState(false)
   const firstName = user.fullname?.split(' ')[0] || 'GUEST'
   const isVIP = user.rank.is_max
+  const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
+  const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
 
   return (
     <motion.header
@@ -57,10 +60,12 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
             </div>
 
             {/* 2. Image Layer (On top) */}
-            {userPhoto && !avatarError && (
+            {shouldShowAvatar && (
               <img
-                src={userPhoto}
+                src={avatarSrc}
                 alt={firstName}
+                loading="eager"
+                decoding="async"
                 referrerPolicy="no-referrer"
                 style={{
                   position: 'absolute',

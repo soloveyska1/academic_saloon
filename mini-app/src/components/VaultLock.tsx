@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { isImageAvatar, normalizeAvatarUrl } from '../utils/avatar';
 
 interface VaultLockProps {
   state: 'idle' | 'spinning' | 'near-miss' | 'landed' | 'success' | 'failed';
@@ -8,6 +9,14 @@ interface VaultLockProps {
 
 export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [avatarError, setAvatarError] = useState(false);
+  const avatarSrc = useMemo(() => {
+    if (isImageAvatar(userPhotoUrl)) {
+      return normalizeAvatarUrl(userPhotoUrl);
+    }
+    return undefined;
+  }, [userPhotoUrl]);
+  const shouldShowAvatar = Boolean(avatarSrc && !avatarError);
 
   // Parallax Effect (Gyroscope/Mouse) — Subtle 3D tilt
   useEffect(() => {
@@ -168,12 +177,14 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
 
               {/* Hub Content */}
               <div className="absolute inset-1 rounded-full overflow-hidden">
-                {userPhotoUrl ? (
+                {shouldShowAvatar ? (
                   <img
-                    src={userPhotoUrl}
+                    src={avatarSrc}
                     alt="User avatar"
                     loading="lazy"
                     className="w-full h-full object-cover opacity-90 mix-blend-luminosity"
+                    referrerPolicy="no-referrer"
+                    onError={() => setAvatarError(true)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--r-bg-deep)] via-black to-[var(--r-bg-deep)]">
