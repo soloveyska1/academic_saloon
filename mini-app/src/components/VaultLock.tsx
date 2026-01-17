@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { isImageAvatar, normalizeAvatarUrl } from '../utils/avatar';
 
 interface VaultLockProps {
   state: 'idle' | 'spinning' | 'near-miss' | 'landed' | 'success' | 'failed';
@@ -8,6 +9,25 @@ interface VaultLockProps {
 
 export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [avatarError, setAvatarError] = useState(false);
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
+  const hasMountedRef = useRef(false);
+  const avatarSrc = useMemo(() => {
+    if (isImageAvatar(userPhotoUrl)) {
+      return normalizeAvatarUrl(userPhotoUrl);
+    }
+    return undefined;
+  }, [userPhotoUrl]);
+  const shouldShowAvatar = Boolean(avatarSrc && !avatarError);
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    setAvatarLoaded(false);
+    setAvatarError(false);
+  }, [avatarSrc]);
 
   // Parallax Effect (Gyroscope/Mouse) — Subtle 3D tilt
   useEffect(() => {
@@ -168,94 +188,100 @@ export const VaultLock = ({ state, userPhotoUrl }: VaultLockProps) => {
 
               {/* Hub Content */}
               <div className="absolute inset-1 rounded-full overflow-hidden">
-                {userPhotoUrl ? (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--r-bg-deep)] via-black to-[var(--r-bg-deep)]">
+                  {/* Jewel Lock Icon with Refraction */}
+                  <div className="relative jewel-refraction">
+                    {/* Base Glow */}
+                    <div className="absolute inset-0 blur-xl bg-[var(--r-gold-300)] opacity-40" />
+
+                    {/* The Jewel SVG */}
+                    <svg
+                      viewBox="0 0 64 64"
+                      className="relative w-14 h-14 drop-shadow-[0_0_15px_rgba(212,175,55,0.6)]"
+                    >
+                      {/* Diamond Shape */}
+                      <polygon
+                        points="32,4 58,28 32,60 6,28"
+                        fill="none"
+                        stroke="var(--r-gold-300)"
+                        strokeWidth="2"
+                        className="opacity-90"
+                      />
+                      {/* Top Facets */}
+                      <polygon
+                        points="32,4 58,28 32,32 6,28"
+                        fill="url(#jewelGradientTop)"
+                        className="opacity-80"
+                      />
+                      {/* Bottom Facets */}
+                      <polygon
+                        points="32,32 58,28 32,60 6,28"
+                        fill="url(#jewelGradientBottom)"
+                        className="opacity-60"
+                      />
+                      {/* Center Line */}
+                      <line
+                        x1="6"
+                        y1="28"
+                        x2="58"
+                        y2="28"
+                        stroke="var(--r-gold-200)"
+                        strokeWidth="1"
+                        className="opacity-50"
+                      />
+                      {/* Vertical Lines */}
+                      <line
+                        x1="32"
+                        y1="4"
+                        x2="32"
+                        y2="60"
+                        stroke="var(--r-gold-200)"
+                        strokeWidth="0.5"
+                        className="opacity-30"
+                      />
+                      {/* Gradients */}
+                      <defs>
+                        <linearGradient
+                          id="jewelGradientTop"
+                          x1="0%"
+                          y1="0%"
+                          x2="100%"
+                          y2="100%"
+                        >
+                          <stop offset="0%" stopColor="var(--r-gold-100)" />
+                          <stop offset="50%" stopColor="var(--r-gold-300)" />
+                          <stop offset="100%" stopColor="var(--r-gold-500)" />
+                        </linearGradient>
+                        <linearGradient
+                          id="jewelGradientBottom"
+                          x1="0%"
+                          y1="0%"
+                          x2="100%"
+                          y2="100%"
+                        >
+                          <stop offset="0%" stopColor="var(--r-gold-500)" />
+                          <stop offset="50%" stopColor="var(--r-gold-600)" />
+                          <stop offset="100%" stopColor="var(--r-gold-700)" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                </div>
+                {shouldShowAvatar ? (
                   <img
-                    src={userPhotoUrl}
+                    src={avatarSrc}
                     alt="User avatar"
                     loading="lazy"
-                    className="w-full h-full object-cover opacity-90 mix-blend-luminosity"
+                    className="w-full h-full object-cover mix-blend-luminosity"
+                    referrerPolicy="no-referrer"
+                    style={{
+                      opacity: avatarLoaded ? 0.9 : 0,
+                      transition: 'opacity 200ms ease',
+                    }}
+                    onLoad={() => setAvatarLoaded(true)}
+                    onError={() => setAvatarError(true)}
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--r-bg-deep)] via-black to-[var(--r-bg-deep)]">
-                    {/* Jewel Lock Icon with Refraction */}
-                    <div className="relative jewel-refraction">
-                      {/* Base Glow */}
-                      <div className="absolute inset-0 blur-xl bg-[var(--r-gold-300)] opacity-40" />
-
-                      {/* The Jewel SVG */}
-                      <svg
-                        viewBox="0 0 64 64"
-                        className="relative w-14 h-14 drop-shadow-[0_0_15px_rgba(212,175,55,0.6)]"
-                      >
-                        {/* Diamond Shape */}
-                        <polygon
-                          points="32,4 58,28 32,60 6,28"
-                          fill="none"
-                          stroke="var(--r-gold-300)"
-                          strokeWidth="2"
-                          className="opacity-90"
-                        />
-                        {/* Top Facets */}
-                        <polygon
-                          points="32,4 58,28 32,32 6,28"
-                          fill="url(#jewelGradientTop)"
-                          className="opacity-80"
-                        />
-                        {/* Bottom Facets */}
-                        <polygon
-                          points="32,32 58,28 32,60 6,28"
-                          fill="url(#jewelGradientBottom)"
-                          className="opacity-60"
-                        />
-                        {/* Center Line */}
-                        <line
-                          x1="6"
-                          y1="28"
-                          x2="58"
-                          y2="28"
-                          stroke="var(--r-gold-200)"
-                          strokeWidth="1"
-                          className="opacity-50"
-                        />
-                        {/* Vertical Lines */}
-                        <line
-                          x1="32"
-                          y1="4"
-                          x2="32"
-                          y2="60"
-                          stroke="var(--r-gold-200)"
-                          strokeWidth="0.5"
-                          className="opacity-30"
-                        />
-                        {/* Gradients */}
-                        <defs>
-                          <linearGradient
-                            id="jewelGradientTop"
-                            x1="0%"
-                            y1="0%"
-                            x2="100%"
-                            y2="100%"
-                          >
-                            <stop offset="0%" stopColor="var(--r-gold-100)" />
-                            <stop offset="50%" stopColor="var(--r-gold-300)" />
-                            <stop offset="100%" stopColor="var(--r-gold-500)" />
-                          </linearGradient>
-                          <linearGradient
-                            id="jewelGradientBottom"
-                            x1="0%"
-                            y1="0%"
-                            x2="100%"
-                            y2="100%"
-                          >
-                            <stop offset="0%" stopColor="var(--r-gold-500)" />
-                            <stop offset="50%" stopColor="var(--r-gold-600)" />
-                            <stop offset="100%" stopColor="var(--r-gold-700)" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </div>
-                  </div>
-                )}
+                ) : null}
 
                 {/* Scanning Line Effect */}
                 <div

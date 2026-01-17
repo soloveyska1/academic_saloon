@@ -1,6 +1,7 @@
-import { useState, memo } from 'react'
+import { useEffect, useRef, useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import s from '../../pages/HomePage.module.css'
+import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HOME HEADER — Elite Gold Edition
@@ -20,8 +21,21 @@ interface HomeHeaderProps {
 
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
+  const [avatarLoaded, setAvatarLoaded] = useState(false)
+  const hasMountedRef = useRef(false)
   const firstName = user.fullname?.split(' ')[0] || 'GUEST'
   const isVIP = user.rank.is_max
+  const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
+  const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
+    setAvatarLoaded(false)
+    setAvatarError(false)
+  }, [avatarSrc])
 
   return (
     <motion.header
@@ -57,10 +71,12 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
             </div>
 
             {/* 2. Image Layer (On top) */}
-            {userPhoto && !avatarError && (
+            {shouldShowAvatar && (
               <img
-                src={userPhoto}
+                src={avatarSrc}
                 alt={firstName}
+                loading="eager"
+                decoding="async"
                 referrerPolicy="no-referrer"
                 style={{
                   position: 'absolute',
@@ -69,8 +85,11 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
                   height: '100%',
                   objectFit: 'cover',
                   zIndex: 2,
-                  borderRadius: '50%'
+                  borderRadius: '50%',
+                  opacity: avatarLoaded ? 1 : 0,
+                  transition: 'opacity 200ms ease'
                 }}
+                onLoad={() => setAvatarLoaded(true)}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'
                   setAvatarError(true)
