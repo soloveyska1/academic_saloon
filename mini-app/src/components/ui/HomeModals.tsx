@@ -606,7 +606,7 @@ function HolographicCard({
               textTransform: 'uppercase',
               letterSpacing: '0.1em'
             }}>
-              CASHBACK
+              КЕШБЭК
             </div>
             <div style={{
               fontSize: 24,
@@ -628,7 +628,7 @@ function HolographicCard({
             letterSpacing: '0.15em',
             marginBottom: 6
           }}>
-            ACADEMIC SALOON
+            АКАДЕМИЧЕСКИЙ САЛУН
           </div>
           <div style={{
             fontSize: 14,
@@ -636,7 +636,7 @@ function HolographicCard({
             fontFamily: 'monospace',
             letterSpacing: '0.1em'
           }}>
-            •••• •••• •••• {isLocked ? 'LOCKED' : '8888'}
+            •••• •••• •••• {isLocked ? 'ЗАКРЫТО' : '8888'}
           </div>
         </div>
       </div>
@@ -651,9 +651,9 @@ function HolographicCard({
 function PrivilegeScanner({ rank, isLocked }: { rank: typeof RANKS_DATA[0], isLocked: boolean }) {
   const benefits = [
     { label: 'Кешбэк на все заказы', value: `${rank.cashback}%`, highlight: true },
-    { label: 'Доступ к закрытому клубу', value: 'Active', icon: CheckCircle },
-    { label: 'Приоритет поддержки', value: rank.cashback >= 7 ? 'High' : 'Standard', icon: Zap },
-    { label: 'Персональный менеджер', value: rank.cashback >= 10 ? 'VIP' : '—', icon: Crown }
+    { label: 'Доступ к закрытому клубу', value: 'Доступ открыт', icon: CheckCircle },
+    { label: 'Приоритет поддержки', value: rank.cashback >= 7 ? 'Высокий' : 'Стандартный', icon: Zap },
+    { label: 'Персональный менеджер', value: rank.cashback >= 10 ? 'Доступен' : '—', icon: Crown }
   ]
 
   return (
@@ -671,7 +671,7 @@ function PrivilegeScanner({ rank, isLocked }: { rank: typeof RANKS_DATA[0], isLo
         gap: 8
       }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: isLocked ? '#52525b' : '#22c55e', boxShadow: isLocked ? 'none' : '0 0 10px #22c55e' }} />
-        СКАНИРОВАНИЕ ПРИВИЛЕГИЙ
+        ПРОВЕРКА ПРИВИЛЕГИЙ
       </div>
 
       <div style={{ display: 'grid', gap: 10 }}>
@@ -762,7 +762,7 @@ export function CashbackModal({ isOpen, onClose, user: realUser }: CashbackModal
               position: 'absolute', top: -10, right: 0,
               fontSize: 9, fontWeight: 700, color: '#fca5a5',
               padding: '2px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.2)'
-            }}>SIM</div>
+            }}>ТЕСТ</div>
           )}
 
           <motion.div
@@ -779,7 +779,7 @@ export function CashbackModal({ isOpen, onClose, user: realUser }: CashbackModal
             }}>
               <CreditCard size={14} color="#D4AF37" />
               <span style={{ fontSize: 11, fontWeight: 700, color: '#D4AF37', letterSpacing: '0.05em' }}>
-                LOYALTY SYSTEM
+                ПРОГРАММА ПРИВИЛЕГИЙ
               </span>
             </div>
           </motion.div>
@@ -789,10 +789,10 @@ export function CashbackModal({ isOpen, onClose, user: realUser }: CashbackModal
             animate={{ opacity: 1, y: 0 }}
             style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 700, color: '#fff', marginBottom: 4 }}
           >
-            {isLockedView ? 'Уровень заблокирован' : 'Ваша карта'}
+            {isLockedView ? 'Уровень закрыт' : 'Карта привилегий'}
           </motion.h2>
           <motion.p style={{ fontSize: 13, color: '#a1a1aa' }}>
-            {isLockedView ? 'Увеличьте оборот для доступа' : 'Активный статус привилегий'}
+            {isLockedView ? 'Достигните требуемого оборота для доступа' : 'Ваш статус, кешбэк и преимущества'}
           </motion.p>
         </div>
 
