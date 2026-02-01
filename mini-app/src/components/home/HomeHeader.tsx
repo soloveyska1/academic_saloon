@@ -36,6 +36,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       {/* LEFT: Identity */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div className={s.avatarContainer} onClick={onSecretTap}>
+          <span className={s.avatarRing} aria-hidden="true" />
           <div className={s.avatar} style={{ position: 'relative', background: '#121214' }}>
             {/* 1. Fallback Layer (Always visible underneath) */}
             <div style={{

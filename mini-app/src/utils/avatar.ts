@@ -14,10 +14,13 @@ export function normalizeAvatarUrl(src?: string | null) {
 export function isImageAvatar(src?: string | null) {
   const normalized = normalizeAvatarUrl(src)
   if (!normalized) return false
-  return (
+  if (
     normalized.startsWith('https://') ||
     normalized.startsWith('http://') ||
     normalized.startsWith('data:image/') ||
     normalized.startsWith('blob:')
-  )
+  ) {
+    return true
+  }
+  return /(^|\/)[^/]+\.(?:png|jpe?g|gif|webp|avif|svg)(?:\?.*)?$/i.test(normalized)
 }

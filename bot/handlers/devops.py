@@ -24,7 +24,6 @@ GITHUB commands (trigger workflows):
 
 import asyncio
 import logging
-import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -42,7 +41,7 @@ MSK_TZ = ZoneInfo("Europe/Moscow")
 
 # GitHub API settings
 GITHUB_REPO = "soloveyska1/academic_saloon"
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = settings.GITHUB_TOKEN.get_secret_value() if settings.GITHUB_TOKEN else None
 
 
 # ══════════════════════════════════════════════════════════════
