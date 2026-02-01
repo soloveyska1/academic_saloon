@@ -67,11 +67,22 @@
   height: 52px;
   border-radius: 50%;
   padding: 2px;
-  /* Spinning gold border ring */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Spinning gold border ring */
+.avatarContainer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
   background: conic-gradient(from 0deg, transparent 0%, #d4af37 20%, transparent 40%);
   animation: rotateBorder 4s linear infinite;
   mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  z-index: 1;
 }
 
 /* The actual image container inside the spinning ring, obscured by mask above so we need a sibling */
