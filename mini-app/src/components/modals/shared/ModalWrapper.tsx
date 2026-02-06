@@ -144,12 +144,15 @@ export function ModalWrapper({
   // Backdrop opacity follows drag
   const backdropOpacity = dragY > 0 ? Math.max(0, 1 - dragY / 300) : 1
 
+  // Use vh (not dvh) — Telegram WebApp has no URL bar, so vh = actual viewport.
+  // dvh is not supported in older WebViews and causes maxHeight to be ignored entirely,
+  // which breaks flex layout and makes the scroll area non-scrollable.
   const sheetStyle = useMemo<React.CSSProperties>(() => ({
     position: 'fixed',
     bottom: 0,
     left: 0,
     right: 0,
-    maxHeight: '92dvh',
+    maxHeight: '92vh',
     display: 'flex',
     flexDirection: 'column',
     background: '#0c0c0e',
@@ -157,6 +160,7 @@ export function ModalWrapper({
     boxShadow: `0 -1px 0 ${accentColor}20, 0 -8px 40px rgba(0,0,0,0.4)`,
     zIndex: 2001,
     outline: 'none',
+    overflow: 'hidden',
   }), [accentColor])
 
   return (
