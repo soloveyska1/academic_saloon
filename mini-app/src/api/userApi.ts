@@ -9,6 +9,11 @@ export interface OrderCreateResponse {
   success: boolean
   order_id: number
   message: string
+  price?: number
+  is_manual_required?: boolean
+  promo_applied?: boolean
+  promo_failed?: boolean
+  promo_failure_reason?: string | null
 }
 
 // Development flag
@@ -18,10 +23,13 @@ const IS_DEV = import.meta.env.DEV || false
 // Set VITE_DEMO_MODE=true in .env to enable
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || IS_DEV
 
+// Known production API host — used as fallback when VITE_API_URL is not set
+const PRODUCTION_API_URL = 'https://academic-saloon.duckdns.org/api'
+
 // API base URL — normalized to ensure /api suffix is always present
 function normalizeApiBase(rawUrl?: string): string {
   const browserOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://academic-saloon.vercel.app'
-  const fallback = IS_DEV ? 'http://localhost:8000/api' : `${browserOrigin}/api`
+  const fallback = IS_DEV ? 'http://localhost:8000/api' : PRODUCTION_API_URL
   const candidate = (rawUrl || '').trim() || fallback
 
   try {

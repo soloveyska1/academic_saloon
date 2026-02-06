@@ -76,8 +76,10 @@ class OrderResponse(BaseModel):
     files_url: Optional[str] = None  # Yandex.Disk folder URL with work files
     review_submitted: bool = False  # Whether review was submitted
     is_archived: bool = False  # Whether order is archived
+    revision_count: int = 0  # Number of revision rounds (3 free included)
     created_at: str
     completed_at: Optional[str] = None
+    delivered_at: Optional[str] = None  # When work was delivered (30-day revision period)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -94,8 +96,11 @@ class UserResponse(BaseModel):
     total_spent: float
     discount: float
     referral_code: str
+    referrals_count: int = 0  # Number of referrals invited
     daily_luck_available: bool
     daily_bonus_streak: int = 0  # Days in a row claimed daily bonus
+    free_spins: int = 0  # Legacy roulette field (kept for frontend compat)
+    roulette_onboarding_seen: bool = True  # Legacy roulette field (kept for frontend compat)
     rank: RankInfo
     loyalty: LoyaltyInfo
     bonus_expiry: Optional[BonusExpiryInfo] = None  # Информация о сгорании бонусов

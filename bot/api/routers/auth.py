@@ -136,6 +136,7 @@ async def get_user_profile(
         total_spent=actual_total_spent,   # Use actual sum from completed orders
         discount=loyalty_info.discount,
         referral_code=referral_code,
+        referrals_count=user.referrals_count or 0,
         daily_luck_available=can_spin,
         daily_bonus_streak=user.daily_bonus_streak or 0,
         rank=rank_info,  # Use actual total spent
