@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { Shield, RefreshCw, Lock, Clock } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 
@@ -46,7 +46,7 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
       <div style={{ padding: '8px 20px 40px' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <motion.div
+          <m.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             style={{
@@ -64,9 +64,9 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
             <span style={{ fontSize: 11, fontWeight: 700, color: '#D4AF37', letterSpacing: '0.05em' }}>
               ВЫСШИЙ СТАНДАРТ
             </span>
-          </motion.div>
+          </m.div>
 
-          <motion.h2
+          <m.h2
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -79,22 +79,22 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
             }}
           >
             Гарантии
-          </motion.h2>
+          </m.h2>
 
-          <motion.p
+          <m.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.15 }}
             style={{ fontSize: 13, color: '#a1a1aa', maxWidth: 280, margin: '0 auto' }}
           >
             Гарантируем строгий контроль качества на всех этапах
-          </motion.p>
+          </m.p>
         </div>
 
         {/* Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
           {GUARANTEES_GRID.map((item, index) => (
-            <motion.div
+            <m.div
               key={item.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -149,12 +149,12 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
 
                 <div style={{ fontSize: 11, color: '#a1a1aa', lineHeight: 1.35 }}>{item.desc}</div>
               </div>
-            </motion.div>
+            </m.div>
           ))}
         </div>
 
         {/* Bottom Note */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
@@ -170,7 +170,7 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
         >
           <span style={{ color: '#D4AF37', fontWeight: 600 }}>Официальный договор</span> оферты при
           оформлении каждого заказа
-        </motion.div>
+        </m.div>
       </div>
     </ModalWrapper>
   )
