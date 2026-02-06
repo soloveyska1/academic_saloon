@@ -192,7 +192,10 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
 
             {/* Past rank */}
             {activeDisplayIndex < currentRankIndex && (
-              <PastRankSection rank={displayRank} />
+              <>
+                <PastRankSection rank={displayRank} />
+                <PrivilegeScanner rank={displayRank} isLocked={false} />
+              </>
             )}
 
             {/* Future rank */}
