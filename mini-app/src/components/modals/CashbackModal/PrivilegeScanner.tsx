@@ -88,7 +88,7 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 14px',
-                background: 'rgba(9,9,11,0.4)',
+                background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.03)',
                 borderRadius: 12,
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
