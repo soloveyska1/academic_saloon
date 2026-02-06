@@ -22,8 +22,9 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
   const cardStyle = useMemo(() => ({
     position: 'relative' as const,
     width: '100%',
-    aspectRatio: '1.6/1',
-    borderRadius: 24,
+    aspectRatio: '2/1',
+    maxHeight: 180,
+    borderRadius: 20,
     background: cardGradient,
     border: `1px solid ${isLocked ? 'rgba(255,255,255,0.1)' : 'rgba(212,175,55,0.3)'}`,
     overflow: 'hidden',
@@ -70,7 +71,7 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
         position: 'relative',
         zIndex: 2,
         height: '100%',
-        padding: 24,
+        padding: '16px 20px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -82,7 +83,7 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
               <Icon size={20} color={isLocked ? '#71717a' : rank.color} />
             </div>
             <span style={{
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: 700,
               color: isLocked ? '#71717a' : '#fff',
               letterSpacing: '0.05em',
@@ -99,7 +100,7 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
             }}>
-              CASHBACK
+              КЕШБЭК
             </div>
             <div style={{
               fontSize: 24,
@@ -129,7 +130,7 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
             fontFamily: 'monospace',
             letterSpacing: '0.1em',
           }}>
-            •••• •••• •••• {isLocked ? 'LOCKED' : '8888'}
+            •••• •••• •••• {isLocked ? '••••' : '8888'}
           </div>
         </div>
       </div>
