@@ -1,5 +1,5 @@
 import { m } from 'framer-motion'
-import { Shield, RefreshCw, Lock, Clock, FileCheck, Award } from 'lucide-react'
+import { RefreshCw, Lock, Clock, FileCheck, Award } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 
 export interface GuaranteesModalProps {
@@ -27,6 +27,11 @@ const GUARANTEES = [
     icon: Clock,
     title: 'Сдача точно в срок',
     desc: 'Гарантируем соблюдение дедлайна. В случае задержки по нашей вине — скидка на следующий заказ.',
+  },
+  {
+    icon: Award,
+    title: 'Официальный договор',
+    desc: 'Публичная оферта при оформлении каждого заказа. Ваши права защищены юридически.',
   },
 ]
 
@@ -127,42 +132,6 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
           ))}
         </div>
 
-        {/* ── Bottom note ── */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          style={{
-            marginTop: 16,
-            padding: 16,
-            borderRadius: 16,
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
-            border: '1px solid rgba(212,175,55,0.12)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-          }}
-        >
-          <div style={{
-            width: 42, height: 42, borderRadius: 14,
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.06) 100%)',
-            border: '1px solid rgba(212,175,55,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-            filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.2))',
-          }}>
-            <Award size={20} color="#d4af37" strokeWidth={1.5} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#f2f2f2', marginBottom: 4 }}>
-              Официальный договор
-            </div>
-            <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
-              Публичная оферта при оформлении каждого заказа
-            </div>
-          </div>
-        </m.div>
       </div>
     </ModalWrapper>
   )
