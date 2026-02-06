@@ -1,5 +1,5 @@
 import { m } from 'framer-motion'
-import { Shield, RefreshCw, Lock, Clock } from 'lucide-react'
+import { Shield, RefreshCw, Lock, Clock, CheckCircle } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 
 export interface GuaranteesModalProps {
@@ -7,29 +7,29 @@ export interface GuaranteesModalProps {
   onClose: () => void
 }
 
-const GUARANTEES_GRID = [
+const GUARANTEES = [
   {
     icon: Shield,
     title: 'Уникальность',
-    desc: 'Проходим любой Антиплагиат',
+    desc: 'Каждая работа проходит проверку на Антиплагиат. Гарантируем уникальность от 70% и выше.',
     accent: '#D4AF37',
   },
   {
     icon: RefreshCw,
-    title: '3 правки',
-    desc: 'Включены в стоимость заказа',
+    title: '3 бесплатные правки',
+    desc: 'Включены в стоимость. Если что-то нужно доработать — исправим без доплат.',
     accent: '#22c55e',
   },
   {
     icon: Lock,
-    title: 'Анонимно',
-    desc: 'Строгая конфиденциальность',
+    title: 'Конфиденциальность',
+    desc: 'Строгая анонимность. Ваши данные никогда не передаются третьим лицам.',
     accent: '#3b82f6',
   },
   {
     icon: Clock,
     title: 'Точно в срок',
-    desc: 'Бонус или скидка за задержку',
+    desc: 'Сдаём работу вовремя. В случае задержки — скидка или бонус на следующий заказ.',
     accent: '#f59e0b',
   },
 ]
@@ -43,133 +43,117 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
       title="Гарантии"
       accentColor="#D4AF37"
     >
-      <div style={{ padding: '8px 20px 40px' }}>
+      <div style={{ padding: '4px 20px 20px' }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <m.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 14px',
-              borderRadius: 20,
+              width: 56,
+              height: 56,
+              borderRadius: 18,
               background: 'rgba(212,175,55,0.1)',
               border: '1px solid rgba(212,175,55,0.2)',
-              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
             }}
           >
-            <Shield size={14} color="#D4AF37" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#D4AF37', letterSpacing: '0.05em' }}>
-              ВЫСШИЙ СТАНДАРТ
-            </span>
+            <Shield size={26} color="#D4AF37" strokeWidth={1.5} />
           </m.div>
 
           <m.h2
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.05 }}
             style={{
-              fontFamily: 'var(--font-serif)',
-              fontSize: 28,
+              fontSize: 22,
               fontWeight: 700,
               color: '#f2f2f2',
-              marginBottom: 8,
+              marginBottom: 6,
             }}
           >
-            Гарантии
+            Наши гарантии
           </m.h2>
 
           <m.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.15 }}
-            style={{ fontSize: 13, color: '#a1a1aa', maxWidth: 280, margin: '0 auto' }}
+            transition={{ delay: 0.1 }}
+            style={{ fontSize: 13, color: '#71717a', maxWidth: 260, margin: '0 auto' }}
           >
-            Гарантируем строгий контроль качества на всех этапах
+            Строгий контроль качества на каждом этапе
           </m.p>
         </div>
 
-        {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-          {GUARANTEES_GRID.map((item, index) => (
+        {/* Guarantee cards — vertical list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {GUARANTEES.map((item, index) => (
             <m.div
               key={item.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.05 }}
+              transition={{ delay: 0.1 + index * 0.05 }}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 14,
+                padding: '16px',
+                borderRadius: 16,
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}
             >
               <div
                 style={{
-                  background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: 20,
-                  padding: '20px 16px',
-                  height: '100%',
+                  flexShrink: 0,
+                  width: 42,
+                  height: 42,
+                  borderRadius: 13,
+                  background: `${item.accent}12`,
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  textAlign: 'center',
-                  position: 'relative',
-                  overflow: 'hidden',
+                  justifyContent: 'center',
                 }}
               >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '3px',
-                    background: `linear-gradient(90deg, transparent, ${item.accent}, transparent)`,
-                    opacity: 0.5,
-                  }}
-                />
+                <item.icon size={20} color={item.accent} strokeWidth={1.5} />
+              </div>
 
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 16,
-                    background: `${item.accent}15`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 12,
-                    boxShadow: `0 0 20px ${item.accent}10`,
-                  }}
-                >
-                  <item.icon size={22} color={item.accent} strokeWidth={1.5} />
-                </div>
-
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#f2f2f2', marginBottom: 6 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
                   {item.title}
                 </div>
-
-                <div style={{ fontSize: 11, color: '#a1a1aa', lineHeight: 1.35 }}>{item.desc}</div>
+                <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
+                  {item.desc}
+                </div>
               </div>
+
+              <CheckCircle size={16} color={item.accent} style={{ flexShrink: 0, marginTop: 2, opacity: 0.6 }} />
             </m.div>
           ))}
         </div>
 
-        {/* Bottom Note */}
+        {/* Bottom note */}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.4 }}
           style={{
+            marginTop: 20,
             textAlign: 'center',
-            padding: '12px',
-            borderRadius: 12,
-            background: 'rgba(212,175,55,0.05)',
-            border: '1px dashed rgba(212,175,55,0.2)',
-            fontSize: 11,
-            color: '#a1a1aa',
+            padding: '14px',
+            borderRadius: 14,
+            background: 'rgba(212,175,55,0.04)',
+            border: '1px solid rgba(212,175,55,0.12)',
+            fontSize: 12,
+            color: '#71717a',
+            lineHeight: 1.5,
           }}
         >
-          <span style={{ color: '#D4AF37', fontWeight: 600 }}>Официальный договор</span> оферты при
-          оформлении каждого заказа
+          <span style={{ color: '#D4AF37', fontWeight: 600 }}>Официальный договор</span> оферты
+          при оформлении каждого заказа
         </m.div>
       </div>
     </ModalWrapper>

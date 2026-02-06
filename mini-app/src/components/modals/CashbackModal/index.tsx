@@ -1,16 +1,15 @@
 import { useState, useMemo, useCallback } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
-import { CreditCard, CheckCircle, Lock } from 'lucide-react'
+import { Lock, ChevronRight } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 import { HolographicCard } from './HolographicCard'
 import { PrivilegeScanner } from './PrivilegeScanner'
-import { RankSelector } from './RankSelector'
 import { RANKS, getRankIndexByCashback } from '../../../lib/ranks'
 import { useAdmin } from '../../../contexts/AdminContext'
 import type { UserData } from '../../../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  CASHBACK MODAL — Premium Loyalty System Display
+//  CASHBACK MODAL — Premium Loyalty System
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface CashbackModalProps {
@@ -22,10 +21,6 @@ export interface CashbackModalProps {
 export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
   const admin = useAdmin()
   const [selectedRankIndex, setSelectedRankIndex] = useState<number | null>(null)
-
-  // ═══════════════════════════════════════════════════════════════════════
-  //  COMPUTED VALUES (memoized)
-  // ═══════════════════════════════════════════════════════════════════════
 
   const effectiveCashback = useMemo(() =>
     admin.simulatedRank !== null ? admin.simulatedRank : user.rank.cashback,
@@ -50,7 +45,6 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
   const nextRank = RANKS[currentRankIndex + 1]
   const isMax = !nextRank
 
-  // Progress calculation
   const { progress, spentToNext } = useMemo(() => {
     if (admin.simulatedRank !== null) {
       return {
@@ -64,17 +58,9 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
     }
   }, [admin.simulatedRank, nextRank, currentRank.minSpent, user.rank.progress, user.rank.spent_to_next])
 
-  // ═══════════════════════════════════════════════════════════════════════
-  //  HANDLERS
-  // ═══════════════════════════════════════════════════════════════════════
-
   const handleRankSelect = useCallback((index: number) => {
     setSelectedRankIndex(prev => prev === index ? null : index)
   }, [])
-
-  // ═══════════════════════════════════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════════════════════════════════
 
   return (
     <ModalWrapper
@@ -84,228 +70,250 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
       title="Система лояльности"
       accentColor={displayRank.color}
     >
-        <div style={{ padding: '8px 20px 40px' }}>
-          {/* Header */}
-          <Header
-            isLockedView={isLockedView}
-            isSimulated={admin.simulatedRank !== null}
-          />
-
-          {/* 3D Holographic Card */}
-          <div style={{ marginBottom: 32 }}>
-            <HolographicCard rank={displayRank} isLocked={isLockedView} />
+      <div style={{ padding: '4px 20px 20px' }}>
+        {/* Sim badge */}
+        {admin.simulatedRank !== null && (
+          <div style={{
+            textAlign: 'right',
+            marginBottom: 4,
+          }}>
+            <span style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: '#fca5a5',
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: 'rgba(239,68,68,0.15)',
+            }}>
+              SIM
+            </span>
           </div>
+        )}
 
-          {/* Rank Selector */}
-          <RankSelector
-            activeIndex={activeDisplayIndex}
-            currentUserIndex={currentRankIndex}
-            onSelect={handleRankSelect}
-          />
-
-          {/* Dynamic Content */}
-          <AnimatePresence mode="wait">
-            <m.div
-              key={displayRank.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* Current Rank View */}
-              {activeDisplayIndex === currentRankIndex && (
-                <CurrentRankContent
-                  rank={displayRank}
-                  progress={progress}
-                  spentToNext={spentToNext}
-                  isMax={isMax}
-                />
-              )}
-
-              {/* Past Rank View */}
-              {activeDisplayIndex < currentRankIndex && (
-                <PastRankContent rank={displayRank} />
-              )}
-
-              {/* Future Rank View */}
-              {activeDisplayIndex > currentRankIndex && (
-                <FutureRankContent
-                  rank={displayRank}
-                  userTotalSpent={user?.total_spent || 0}
-                />
-              )}
-            </m.div>
-          </AnimatePresence>
+        {/* Card */}
+        <div style={{ marginBottom: 20 }}>
+          <HolographicCard rank={displayRank} isLocked={isLockedView} />
         </div>
+
+        {/* Rank pills */}
+        <div style={{
+          display: 'flex',
+          gap: 6,
+          marginBottom: 24,
+          justifyContent: 'center',
+        }}>
+          {RANKS.map((rank, i) => {
+            const isActive = i === activeDisplayIndex
+            const isUnlocked = i <= currentRankIndex
+            return (
+              <m.button
+                key={rank.id}
+                onClick={() => handleRankSelect(i)}
+                whileTap={{ scale: 0.92 }}
+                style={{
+                  flex: 1,
+                  padding: '10px 4px',
+                  borderRadius: 12,
+                  border: isActive
+                    ? `1.5px solid ${rank.color}`
+                    : '1.5px solid rgba(255,255,255,0.06)',
+                  background: isActive
+                    ? `${rank.color}15`
+                    : 'rgba(255,255,255,0.02)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {!isUnlocked && (
+                  <Lock size={10} color="#52525b" style={{ position: 'absolute', top: 4, right: 4 }} />
+                )}
+                <span style={{
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: isActive ? rank.color : isUnlocked ? '#e4e4e7' : '#52525b',
+                }}>
+                  {rank.cashback}%
+                </span>
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  color: isActive ? rank.color : '#71717a',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}>
+                  {rank.displayName}
+                </span>
+              </m.button>
+            )
+          })}
+        </div>
+
+        {/* Dynamic content */}
+        <AnimatePresence mode="wait">
+          <m.div
+            key={displayRank.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+          >
+            {/* Current rank view */}
+            {activeDisplayIndex === currentRankIndex && (
+              <>
+                {!isMax && (
+                  <ProgressSection
+                    progress={progress}
+                    spentToNext={spentToNext}
+                    color={displayRank.color}
+                    nextRankName={nextRank?.displayName || ''}
+                  />
+                )}
+                {isMax && (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '16px 12px',
+                    marginBottom: 16,
+                    borderRadius: 16,
+                    background: `${displayRank.color}08`,
+                    border: `1px solid ${displayRank.color}20`,
+                  }}>
+                    <span style={{ fontSize: 13, color: displayRank.color, fontWeight: 600 }}>
+                      Максимальный уровень достигнут
+                    </span>
+                  </div>
+                )}
+                <PrivilegeScanner rank={displayRank} isLocked={false} />
+              </>
+            )}
+
+            {/* Past rank */}
+            {activeDisplayIndex < currentRankIndex && (
+              <div style={{
+                textAlign: 'center',
+                padding: '24px 16px',
+                borderRadius: 16,
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}>
+                <div style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  background: `${displayRank.color}20`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px',
+                }}>
+                  <displayRank.icon size={20} color={displayRank.color} />
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+                  Уровень пройден
+                </div>
+                <div style={{ fontSize: 12, color: '#71717a' }}>
+                  Все привилегии этого уровня получены
+                </div>
+              </div>
+            )}
+
+            {/* Future rank */}
+            {activeDisplayIndex > currentRankIndex && (
+              <>
+                <div style={{
+                  textAlign: 'center',
+                  padding: '20px 16px',
+                  borderRadius: 16,
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  marginBottom: 16,
+                }}>
+                  <Lock size={24} color="#52525b" style={{ margin: '0 auto 10px', display: 'block' }} />
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+                    Уровень недоступен
+                  </div>
+                  <div style={{ fontSize: 12, color: '#71717a' }}>
+                    Потратьте ещё{' '}
+                    <span style={{ color: '#e4e4e7', fontWeight: 600 }}>
+                      {Math.max(0, displayRank.minSpent - (user?.total_spent || 0)).toLocaleString('ru-RU')} ₽
+                    </span>
+                    {' '}для открытия
+                  </div>
+                </div>
+                <PrivilegeScanner rank={displayRank} isLocked={true} />
+              </>
+            )}
+          </m.div>
+        </AnimatePresence>
+      </div>
     </ModalWrapper>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SUB-COMPONENTS
+//  PROGRESS SECTION
 // ═══════════════════════════════════════════════════════════════════════════
 
-function Header({ isLockedView, isSimulated }: { isLockedView: boolean; isSimulated: boolean }) {
-  return (
-    <div style={{ textAlign: 'center', marginBottom: 28, position: 'relative' }}>
-      {isSimulated && (
-        <div style={{
-          position: 'absolute',
-          top: -10,
-          right: 0,
-          fontSize: 9,
-          fontWeight: 700,
-          color: '#fca5a5',
-          padding: '2px 6px',
-          borderRadius: 4,
-          background: 'rgba(239,68,68,0.2)',
-        }}>
-          SIM
-        </div>
-      )}
-
-      <m.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        style={{ marginBottom: 12, display: 'inline-block' }}
-      >
-        <div style={{
-          padding: '8px 16px',
-          borderRadius: 100,
-          background: 'rgba(212,175,55,0.1)',
-          border: '1px solid rgba(212,175,55,0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          <CreditCard size={14} color="#D4AF37" />
-          <span style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#D4AF37',
-            letterSpacing: '0.05em',
-          }}>
-            LOYALTY SYSTEM
-          </span>
-        </div>
-      </m.div>
-
-      <m.h2
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: 28,
-          fontWeight: 700,
-          color: '#fff',
-          marginBottom: 4,
-        }}
-      >
-        {isLockedView ? 'Уровень заблокирован' : 'Ваша карта'}
-      </m.h2>
-      <m.p style={{ fontSize: 13, color: '#a1a1aa' }}>
-        {isLockedView ? 'Увеличьте оборот для доступа' : 'Активный статус привилегий'}
-      </m.p>
-    </div>
-  )
-}
-
-function CurrentRankContent({
-  rank,
+function ProgressSection({
   progress,
   spentToNext,
-  isMax,
+  color,
+  nextRankName,
 }: {
-  rank: typeof RANKS[0]
   progress: number
   spentToNext: number
-  isMax: boolean
+  color: string
+  nextRankName: string
 }) {
   return (
-    <>
-      {!isMax && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>
-              Прогресс до следующего уровня
-            </span>
-            <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>
-              {Math.round(progress)}%
-            </span>
-          </div>
-          <div style={{
-            height: 6,
-            width: '100%',
-            background: 'rgba(255,255,255,0.06)',
-            borderRadius: 3,
-            overflow: 'hidden',
-          }}>
-            <m.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              style={{
-                height: '100%',
-                background: `linear-gradient(90deg, ${rank.color}, #fff)`,
-                borderRadius: 3,
-              }}
-            />
-          </div>
-          <div style={{ marginTop: 8, fontSize: 11, color: '#52525b', textAlign: 'right' }}>
-            Осталось: <span style={{ color: '#e4e4e7' }}>
-              {spentToNext.toLocaleString('ru-RU')} ₽
-            </span>
-          </div>
+    <div style={{
+      padding: '16px',
+      borderRadius: 16,
+      background: 'rgba(255,255,255,0.02)',
+      border: '1px solid rgba(255,255,255,0.05)',
+      marginBottom: 16,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+          До уровня «{nextRankName}»
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color }}>
+            {Math.round(progress)}%
+          </span>
+          <ChevronRight size={14} color={color} />
         </div>
-      )}
-      <PrivilegeScanner rank={rank} isLocked={false} />
-    </>
-  )
-}
+      </div>
 
-function PastRankContent({ rank }: { rank: typeof RANKS[0] }) {
-  return (
-    <div style={{
-      textAlign: 'center',
-      padding: 20,
-      background: 'rgba(255,255,255,0.03)',
-      borderRadius: 20,
-    }}>
-      <CheckCircle size={32} color={rank.color} style={{ margin: '0 auto 12px' }} />
-      <h3 style={{ fontSize: 16, color: '#fff', marginBottom: 4 }}>
-        Уровень пройден
-      </h3>
-      <p style={{ fontSize: 13, color: '#a1a1aa' }}>
-        Вы уже получили все награды этого уровня
-      </p>
-    </div>
-  )
-}
+      {/* Progress bar */}
+      <div style={{
+        height: 6,
+        width: '100%',
+        background: 'rgba(255,255,255,0.06)',
+        borderRadius: 3,
+        overflow: 'hidden',
+      }}>
+        <m.div
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(100, progress)}%` }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          style={{
+            height: '100%',
+            background: `linear-gradient(90deg, ${color}, ${color}cc)`,
+            borderRadius: 3,
+          }}
+        />
+      </div>
 
-function FutureRankContent({
-  rank,
-  userTotalSpent,
-}: {
-  rank: typeof RANKS[0]
-  userTotalSpent: number
-}) {
-  const remaining = (rank.minSpent - userTotalSpent).toLocaleString('ru-RU')
-
-  return (
-    <div style={{
-      textAlign: 'center',
-      padding: 20,
-      background: 'rgba(255,255,255,0.03)',
-      borderRadius: 20,
-    }}>
-      <Lock size={32} color="#52525b" style={{ margin: '0 auto 12px' }} />
-      <h3 style={{ fontSize: 16, color: '#fff', marginBottom: 4 }}>
-        Уровень недоступен
-      </h3>
-      <p style={{ fontSize: 13, color: '#a1a1aa' }}>
-        Потратьте еще {remaining} ₽ для открытия
-      </p>
-      <PrivilegeScanner rank={rank} isLocked={true} />
+      <div style={{ marginTop: 8, fontSize: 11, color: '#52525b', textAlign: 'right' }}>
+        Осталось: <span style={{ color: '#a1a1aa', fontWeight: 600 }}>
+          {spentToNext.toLocaleString('ru-RU')} ₽
+        </span>
+      </div>
     </div>
   )
 }
