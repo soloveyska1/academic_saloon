@@ -1,17 +1,8 @@
 import { AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion'
-import React, { useEffect, useCallback, useRef, useMemo } from 'react'
+import React, { useEffect, useCallback, useRef, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
-import { useScrollLock, useSheetRegistration, useSwipeToClose } from '../../ui/GestureGuard'
+import { useScrollLock, useSheetRegistration } from '../../ui/GestureGuard'
 import { useModalRegistration } from '../../../contexts/NavigationContext'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  КОНФИГУРАЦИЯ
-// ═══════════════════════════════════════════════════════════════════════════
-
-const DRAG_CONFIG = {
-  offsetThreshold: 120,
-  velocityThreshold: 0.4,
-} as const
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HAPTIC FEEDBACK
@@ -29,103 +20,24 @@ export const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => 
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  СТИЛИ (мемоизированные объекты)
+//  SPRING CONFIGS — iOS-like feel
 // ═══════════════════════════════════════════════════════════════════════════
 
-const styles = {
-  backdrop: {
-    position: 'fixed' as const,
-    inset: 0,
-    background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.95) 100%)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    zIndex: 2000,
-  },
-  // The sheet itself scrolls — no flex layout needed
-  sheet: {
-    position: 'fixed' as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    maxHeight: '92vh',
-    background: 'linear-gradient(180deg, rgba(18,18,20,0.98) 0%, rgba(12,12,14,0.99) 100%)',
-    borderRadius: '28px 28px 0 0',
-    boxShadow: '0 -8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
-    zIndex: 2001,
-    overflowY: 'auto' as const,
-    overflowX: 'hidden' as const,
-    WebkitOverflowScrolling: 'touch' as const,
-    overscrollBehavior: 'contain' as const,
-  },
-  // Sticky header stays at top when content scrolls
-  stickyHeader: {
-    position: 'sticky' as const,
-    top: 0,
-    zIndex: 5,
-    background: 'linear-gradient(180deg, rgba(18,18,20,0.98) 0%, rgba(18,18,20,0.95) 80%, transparent 100%)',
-    paddingBottom: 8,
-  },
-  // Handle area responds to swipe-to-close only
-  handleArea: {
-    display: 'flex',
-    justifyContent: 'center',
-    paddingTop: 12,
-    paddingBottom: 4,
-    cursor: 'grab',
-    touchAction: 'none' as const,
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    background: 'rgba(255,255,255,0.2)',
-  },
-  closeButton: {
-    position: 'absolute' as const,
-    top: 12,
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    zIndex: 10,
-  },
-}
+const SPRING_OPEN = { type: 'spring' as const, stiffness: 340, damping: 32 }
+const SPRING_CLOSE = { type: 'spring' as const, stiffness: 440, damping: 38 }
+const DISMISS_THRESHOLD = 100 // px
+const VELOCITY_THRESHOLD = 500 // px/s
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ANIMATION VARIANTS (оптимизированные)
-// ═══════════════════════════════════════════════════════════════════════════
-
-const backdropVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 },
-}
-
-const sheetVariants = {
-  hidden: { y: '100%' },
-  visible: { y: 0 },
-  exit: { y: '100%' },
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  MODAL WRAPPER COMPONENT
+//  MODAL WRAPPER — Vaul-inspired bottom sheet
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface ModalWrapperProps {
   isOpen: boolean
   onClose: () => void
   children: React.ReactNode
-  /** Уникальный ID для accessibility */
   modalId: string
-  /** Заголовок для screen readers */
   title: string
-  /** Акцентный цвет (опционально) */
   accentColor?: string
 }
 
@@ -138,135 +50,283 @@ export function ModalWrapper({
   accentColor = '#D4AF37',
 }: ModalWrapperProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const dragStartRef = useRef<{ y: number; time: number } | null>(null)
+  const [dragY, setDragY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
 
-  // Hooks для интеграции с системой
+  // System hooks
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
   useModalRegistration(isOpen)
 
-  // Native touch gesture — attached ONLY to the drag handle area
-  const {
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
-    dragOffset,
-    isDragging,
-  } = useSwipeToClose({
-    onClose,
-    offsetThreshold: DRAG_CONFIG.offsetThreshold,
-    velocityThreshold: DRAG_CONFIG.velocityThreshold,
-  })
-
-  // Закрытие с haptic
+  // Close with haptic
   const handleClose = useCallback(() => {
     triggerHaptic('light')
     onClose()
   }, [onClose])
 
-  // ═══════════════════════════════════════════════════════════════════════
-  //  ACCESSIBILITY: Focus management
-  // ═══════════════════════════════════════════════════════════════════════
+  // ─── Drag-to-dismiss (handle only) ────────────────────────────────
+  const onHandleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    if (!touch) return
+    dragStartRef.current = { y: touch.clientY, time: Date.now() }
+    setIsDragging(true)
+  }, [])
 
+  const onHandleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragStartRef.current) return
+    const touch = e.touches[0]
+    if (!touch) return
+    const dy = Math.max(0, touch.clientY - dragStartRef.current.y)
+    setDragY(dy)
+  }, [])
+
+  const onHandleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!dragStartRef.current) {
+      setIsDragging(false)
+      setDragY(0)
+      return
+    }
+    const touch = e.changedTouches[0]
+    if (!touch) { setIsDragging(false); setDragY(0); return }
+
+    const totalDy = touch.clientY - dragStartRef.current.y
+    const elapsed = Date.now() - dragStartRef.current.time
+    const velocity = elapsed > 0 ? (totalDy / elapsed) * 1000 : 0
+
+    if (totalDy > DISMISS_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
+      triggerHaptic('light')
+      onClose()
+    }
+    setDragY(0)
+    setIsDragging(false)
+    dragStartRef.current = null
+  }, [onClose])
+
+  // ─── Content-scroll-to-dismiss (Vaul pattern) ─────────────────────
+  // When content is scrolled to top and user pulls down → dismiss
+  const scrollDragRef = useRef<{ y: number; time: number; scrollWas0: boolean } | null>(null)
+  const [contentDragY, setContentDragY] = useState(0)
+  const [isContentDragging, setIsContentDragging] = useState(false)
+
+  const onContentTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    if (!touch) return
+    const el = contentRef.current
+    const scrolledToTop = !el || el.scrollTop <= 0
+    scrollDragRef.current = { y: touch.clientY, time: Date.now(), scrollWas0: scrolledToTop }
+  }, [])
+
+  const onContentTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!scrollDragRef.current) return
+    const touch = e.touches[0]
+    if (!touch) return
+    const el = contentRef.current
+    const atTop = !el || el.scrollTop <= 0
+    const dy = touch.clientY - scrollDragRef.current.y
+
+    // Only activate drag-to-dismiss if scrolled to top and pulling down
+    if (scrollDragRef.current.scrollWas0 && atTop && dy > 0) {
+      e.preventDefault()
+      setIsContentDragging(true)
+      setContentDragY(Math.max(0, dy))
+    } else {
+      // Scrolling normally — deactivate drag
+      if (isContentDragging) {
+        setIsContentDragging(false)
+        setContentDragY(0)
+      }
+      scrollDragRef.current.scrollWas0 = false
+    }
+  }, [isContentDragging])
+
+  const onContentTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!scrollDragRef.current || !isContentDragging) {
+      scrollDragRef.current = null
+      setIsContentDragging(false)
+      setContentDragY(0)
+      return
+    }
+    const touch = e.changedTouches[0]
+    if (!touch) { setIsContentDragging(false); setContentDragY(0); return }
+
+    const totalDy = touch.clientY - scrollDragRef.current.y
+    const elapsed = Date.now() - scrollDragRef.current.time
+    const velocity = elapsed > 0 ? (totalDy / elapsed) * 1000 : 0
+
+    if (totalDy > DISMISS_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
+      triggerHaptic('light')
+      onClose()
+    }
+    setContentDragY(0)
+    setIsContentDragging(false)
+    scrollDragRef.current = null
+  }, [isContentDragging, onClose])
+
+  // Combined drag offset
+  const totalDragY = dragY + contentDragY
+  const anyDragging = isDragging || isContentDragging
+
+  // ─── Focus management ─────────────────────────────────────────────
   useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement as HTMLElement
-      sheetRef.current?.focus()
+      setTimeout(() => sheetRef.current?.focus(), 50)
     } else {
       previousFocusRef.current?.focus()
     }
   }, [isOpen])
 
-  // Keyboard handler (Escape)
+  // Escape key
   useEffect(() => {
     if (!isOpen) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleClose()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   }, [isOpen, handleClose])
 
-  // Sheet style with accent border
-  const sheetStyle = useMemo(() => ({
-    ...styles.sheet,
-    borderTop: `1px solid ${accentColor}20`,
-  }), [accentColor])
+  // Reset drag state when closed
+  useEffect(() => {
+    if (!isOpen) {
+      setDragY(0)
+      setContentDragY(0)
+      setIsDragging(false)
+      setIsContentDragging(false)
+    }
+  }, [isOpen])
 
-  // Animate the entire sheet down when dragging from handle
-  const animateY = dragOffset > 0 ? dragOffset : 0
+  // Backdrop opacity follows drag
+  const backdropOpacity = totalDragY > 0
+    ? Math.max(0, 1 - totalDragY / 400)
+    : 1
+
+  const sheetStyle = useMemo<React.CSSProperties>(() => ({
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    maxHeight: '90vh',
+    display: 'flex',
+    flexDirection: 'column',
+    background: '#111113',
+    borderRadius: '20px 20px 0 0',
+    boxShadow: '0 -2px 10px rgba(0,0,0,0.04), 0 -8px 32px rgba(0,0,0,0.12)',
+    zIndex: 2001,
+    outline: 'none',
+    borderTop: `1px solid ${accentColor}25`,
+  }), [accentColor])
 
   return (
     <LazyMotion features={domAnimation}>
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* BACKDROP */}
+            {/* Backdrop */}
             <m.div
-              key={`${modalId}-backdrop`}
-              variants={backdropVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              transition={{ duration: 0.25 }}
+              key={`${modalId}-bd`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: backdropOpacity }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
               onClick={handleClose}
-              style={styles.backdrop}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                zIndex: 2000,
+              }}
               aria-hidden="true"
             />
 
-            {/* SHEET — scrollable container */}
+            {/* Sheet */}
             <m.div
-              key={`${modalId}-sheet`}
+              key={`${modalId}-sh`}
               ref={sheetRef}
-              initial="hidden"
-              animate={{ y: animateY }}
-              exit="exit"
-              variants={sheetVariants}
-              transition={
-                isDragging
-                  ? { type: 'tween', duration: 0 }
-                  : { type: 'spring', damping: 30, stiffness: 300 }
+              initial={{ y: '100%' }}
+              animate={{ y: totalDragY }}
+              exit={{ y: '100%' }}
+              transition={anyDragging
+                ? { type: 'tween', duration: 0 }
+                : isOpen ? SPRING_OPEN : SPRING_CLOSE
               }
               style={sheetStyle}
-              // Accessibility
               role="dialog"
               aria-modal="true"
               aria-labelledby={`${modalId}-title`}
               tabIndex={-1}
-              data-scroll-container="true"
             >
-              {/* Sticky header — handle + close stay visible when scrolling */}
-              <div style={styles.stickyHeader}>
-                <div
-                  style={styles.handleArea}
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  <div style={styles.handleBar} aria-hidden="true" />
-                </div>
-
-                <m.button
-                  onClick={handleClose}
-                  whileTap={{ scale: 0.9 }}
-                  style={styles.closeButton}
-                  aria-label="Закрыть"
-                >
-                  <X size={18} color="rgba(255,255,255,0.5)" />
-                </m.button>
+              {/* Handle — drag to dismiss */}
+              <div
+                style={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '12px 0 8px',
+                  cursor: 'grab',
+                  touchAction: 'none',
+                }}
+                onTouchStart={onHandleTouchStart}
+                onTouchMove={onHandleTouchMove}
+                onTouchEnd={onHandleTouchEnd}
+              >
+                <div style={{
+                  width: 36,
+                  height: 5,
+                  borderRadius: 2.5,
+                  background: 'rgba(255,255,255,0.25)',
+                }} />
               </div>
 
-              {/* Screen reader title (hidden) */}
-              <h2 id={`${modalId}-title`} className="sr-only">
-                {title}
-              </h2>
+              {/* Close button */}
+              <m.button
+                onClick={handleClose}
+                whileTap={{ scale: 0.9 }}
+                style={{
+                  position: 'absolute',
+                  top: 14,
+                  right: 16,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  background: 'rgba(255,255,255,0.08)',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 10,
+                }}
+                aria-label="Закрыть"
+              >
+                <X size={16} color="rgba(255,255,255,0.5)" />
+              </m.button>
 
-              {/* Content — scrolls naturally within the sheet */}
-              {children}
+              <h2 id={`${modalId}-title`} className="sr-only">{title}</h2>
+
+              {/* Scrollable content */}
+              <div
+                ref={contentRef}
+                onTouchStart={onContentTouchStart}
+                onTouchMove={onContentTouchMove}
+                onTouchEnd={onContentTouchEnd}
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
+                  paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
+                }}
+                data-scroll-container="true"
+              >
+                {children}
+              </div>
             </m.div>
           </>
         )}
@@ -348,7 +408,6 @@ export function HeroIcon({ icon: Icon, gradient, glowColor, size = 96 }: HeroIco
         position: 'relative',
       }}
     >
-      {/* Shine effect */}
       <div
         style={{
           position: 'absolute',
