@@ -12,25 +12,21 @@ const GUARANTEES = [
     icon: FileCheck,
     title: 'Уникальность от 75%',
     desc: 'Все работы проходят внутреннюю проверку на оригинальность. Минимальный порог — 75%, как правило выше.',
-    accent: '#D4AF37',
   },
   {
     icon: RefreshCw,
     title: '3 бесплатные правки',
     desc: 'Уже включены в стоимость. Если нужно что-то доработать — исправим без доплат в течение 14 дней.',
-    accent: '#22c55e',
   },
   {
     icon: Lock,
     title: 'Полная конфиденциальность',
     desc: 'Строгая анонимность. Ваши данные не передаются третьим лицам и не хранятся после выполнения.',
-    accent: '#3b82f6',
   },
   {
     icon: Clock,
     title: 'Сдача точно в срок',
     desc: 'Гарантируем соблюдение дедлайна. В случае задержки по нашей вине — скидка на следующий заказ.',
-    accent: '#f59e0b',
   },
 ]
 
@@ -45,76 +41,84 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
     >
       <div style={{ padding: '0 20px 20px' }}>
 
-        {/* ── Header (unified pattern) ── */}
+        {/* ── Section label (Cinzel serif) ── */}
         <m.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.03 }}
           style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: 12,
+            fontWeight: 600,
+            color: '#52525b',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            marginBottom: 6,
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
-            marginBottom: 24,
+            gap: 12,
           }}
         >
+          Гарантии
           <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            background: 'linear-gradient(135deg, #D4AF37 0%, #b8962e 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 16px -4px rgba(212,175,55,0.35)',
-            flexShrink: 0,
-          }}>
-            <Shield size={22} color="#fff" strokeWidth={2} />
-          </div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#f4f4f5', lineHeight: 1.2 }}>
-              Наши гарантии
-            </div>
-            <div style={{ fontSize: 13, color: '#71717a', marginTop: 2 }}>
-              Контроль качества на каждом этапе
-            </div>
-          </div>
+            flex: 1, height: 1,
+            background: 'linear-gradient(90deg, rgba(82,82,91,0.3), transparent)',
+          }} />
         </m.div>
 
-        {/* ── Guarantee cards (unified card pattern) ── */}
+        {/* ── Subtitle ── */}
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.06 }}
+          style={{ fontSize: 13, color: '#71717a', marginBottom: 20 }}
+        >
+          Контроль качества на каждом этапе выполнения
+        </m.div>
+
+        {/* ── Guarantee cards (voidGlass) ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {GUARANTEES.map((item, index) => (
             <m.div
               key={item.title}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.06 + index * 0.04 }}
+              transition={{ delay: 0.08 + index * 0.04 }}
               style={{
                 padding: 16,
                 borderRadius: 16,
-                background: `${item.accent}0a`,
-                border: `1px solid ${item.accent}1a`,
+                background: 'rgba(9,9,11,0.6)',
+                backdropFilter: 'blur(12px) saturate(150%)',
+                WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.3)',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
+              {/* Top highlight */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
+              }} />
+
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                 <div style={{
                   flexShrink: 0,
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  background: `${item.accent}15`,
-                  border: `1px solid ${item.accent}20`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  width: 42, height: 42, borderRadius: 14,
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)',
+                  border: '1px solid rgba(212,175,55,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.15))',
                 }}>
-                  <item.icon size={20} color={item.accent} strokeWidth={1.5} />
+                  <item.icon size={20} color="#d4af37" strokeWidth={1.5} />
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#f2f2f2', marginBottom: 4 }}>
                     {item.title}
                   </div>
-                  <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
                     {item.desc}
                   </div>
                 </div>
@@ -132,27 +136,29 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
             marginTop: 16,
             padding: 16,
             borderRadius: 16,
-            background: 'rgba(212,175,55,0.04)',
-            border: '1px solid rgba(212,175,55,0.1)',
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
+            border: '1px solid rgba(212,175,55,0.12)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
             display: 'flex',
             alignItems: 'center',
             gap: 14,
           }}
         >
           <div style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: 'rgba(212,175,55,0.1)',
-            border: '1px solid rgba(212,175,55,0.15)',
+            width: 42, height: 42, borderRadius: 14,
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.06) 100%)',
+            border: '1px solid rgba(212,175,55,0.25)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
+            filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.2))',
           }}>
-            <Award size={20} color="#D4AF37" strokeWidth={1.5} />
+            <Award size={20} color="#d4af37" strokeWidth={1.5} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#f2f2f2', marginBottom: 4 }}>
               Официальный договор
             </div>
-            <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
               Публичная оферта при оформлении каждого заказа
             </div>
           </div>

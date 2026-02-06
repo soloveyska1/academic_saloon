@@ -155,9 +155,9 @@ export function ModalWrapper({
     maxHeight: '92vh',
     display: 'flex',
     flexDirection: 'column',
-    background: '#0c0c0e',
+    background: '#09090b',
     borderRadius: '24px 24px 0 0',
-    boxShadow: `0 -1px 0 ${accentColor}20, 0 -8px 40px rgba(0,0,0,0.4)`,
+    boxShadow: `0 -8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)`,
     zIndex: 2001,
     outline: 'none',
     overflow: 'hidden',
@@ -204,6 +204,16 @@ export function ModalWrapper({
               aria-labelledby={`${modalId}-title`}
               tabIndex={-1}
             >
+              {/* Premium gold top highlight */}
+              <div style={{
+                position: 'absolute',
+                top: 0, left: 0, right: 0,
+                height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
+                opacity: 0.6,
+                zIndex: 5,
+              }} />
+
               {/* Handle — drag to dismiss */}
               <div
                 style={{
@@ -220,10 +230,10 @@ export function ModalWrapper({
                 onTouchEnd={onHandleTouchEnd}
               >
                 <div style={{
-                  width: 40,
-                  height: 5,
-                  borderRadius: 3,
-                  background: 'rgba(255,255,255,0.2)',
+                  width: 36,
+                  height: 4,
+                  borderRadius: 2,
+                  background: 'rgba(212,175,55,0.25)',
                 }} />
               </div>
 
