@@ -1,10 +1,10 @@
 import { memo, useMemo } from 'react'
 import { m } from 'framer-motion'
-import { CheckCircle, Zap, Crown } from 'lucide-react'
+import { CheckCircle, Zap, Crown, Gift } from 'lucide-react'
 import type { RankData } from '../../../lib/ranks'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PRIVILEGE SCANNER — Visual Benefit List with staggered animation
+//  PRIVILEGE SCANNER — Список привилегий уровня
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface PrivilegeScannerProps {
@@ -12,57 +12,58 @@ interface PrivilegeScannerProps {
   isLocked: boolean
 }
 
-// Variants для staggered анимации (более эффективно чем delay на каждом элементе)
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
   },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, x: -20 },
+  hidden: { opacity: 0, x: -12 },
   visible: { opacity: 1, x: 0 },
 }
 
 function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
-  // Мемоизация benefits
   const benefits = useMemo(() => [
-    { label: 'Кешбэк на все заказы', value: `${rank.cashback}%`, highlight: true },
-    { label: 'Доступ к закрытому клубу', value: 'Active', icon: CheckCircle },
-    { label: 'Приоритет поддержки', value: rank.cashback >= 7 ? 'High' : 'Standard', icon: Zap },
-    { label: 'Персональный менеджер', value: rank.cashback >= 10 ? 'VIP' : '—', icon: Crown },
+    {
+      icon: Gift,
+      label: 'Кешбэк на все заказы',
+      value: `${rank.cashback}%`,
+      highlight: true,
+    },
+    {
+      icon: CheckCircle,
+      label: 'Доступ к закрытому клубу',
+      value: 'Включён',
+      highlight: false,
+    },
+    {
+      icon: Zap,
+      label: 'Приоритет поддержки',
+      value: rank.cashback >= 7 ? 'Высокий' : 'Обычный',
+      highlight: false,
+    },
+    {
+      icon: Crown,
+      label: 'Персональный менеджер',
+      value: rank.cashback >= 10 ? 'Назначен' : 'Нет',
+      highlight: false,
+    },
   ], [rank.cashback])
 
-  const statusDotStyle = useMemo(() => ({
-    width: 6,
-    height: 6,
-    borderRadius: '50%',
-    background: isLocked ? '#52525b' : '#22c55e',
-    boxShadow: isLocked ? 'none' : '0 0 10px #22c55e',
-  }), [isLocked])
-
   return (
-    <div style={{ marginTop: 24 }}>
+    <div style={{ marginTop: 16 }}>
       {/* Header */}
       <div style={{
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 600,
         color: '#52525b',
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        marginBottom: 16,
-        paddingLeft: 4,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
+        marginBottom: 10,
+        paddingLeft: 2,
       }}>
-        <div style={statusDotStyle} />
-        СКАНИРОВАНИЕ ПРИВИЛЕГИЙ
+        Привилегии уровня
       </div>
 
       {/* Benefits List */}
@@ -70,10 +71,11 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        style={{ display: 'grid', gap: 10 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
       >
         {benefits.map((benefit) => {
-          const BenefitIcon = benefit.icon
+          const Icon = benefit.icon
+          const valueAvailable = benefit.value !== 'Нет'
           return (
             <m.div
               key={benefit.label}
@@ -82,30 +84,32 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '14px 16px',
+                padding: '13px 14px',
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.04)',
                 borderRadius: 14,
               }}
             >
-              <span style={{ fontSize: 13, color: '#a1a1aa' }}>
-                {benefit.label}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {BenefitIcon && (
-                  <BenefitIcon
-                    size={14}
-                    color={isLocked ? '#52525b' : benefit.highlight ? rank.color : '#71717a'}
-                  />
-                )}
-                <span style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: isLocked ? '#52525b' : benefit.highlight ? rank.color : '#e4e4e7',
-                }}>
-                  {benefit.value}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Icon
+                  size={15}
+                  color={isLocked ? '#3f3f46' : benefit.highlight ? rank.color : '#52525b'}
+                />
+                <span style={{ fontSize: 13, color: isLocked ? '#3f3f46' : '#a1a1aa' }}>
+                  {benefit.label}
                 </span>
               </div>
+              <span style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: isLocked
+                  ? '#3f3f46'
+                  : benefit.highlight
+                    ? rank.color
+                    : valueAvailable ? '#e4e4e7' : '#52525b',
+              }}>
+                {benefit.value}
+              </span>
             </m.div>
           )
         })}

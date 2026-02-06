@@ -1,40 +1,13 @@
 import { memo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Zap, ChevronRight, Clock, Camera } from 'lucide-react'
-import { useScrollLock, useSheetRegistration, useSwipeToClose } from '../ui/GestureGuard'
-import { useModalRegistration } from '../../contexts/NavigationContext'
+import { m } from 'framer-motion'
+import { Zap, Clock, Camera, ChevronRight } from 'lucide-react'
+import { ModalWrapper, triggerHaptic } from '../modals/shared'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  URGENT HUB SHEET — Premium Bottom Sheet (v2 - Native Gestures)
+//  URGENT HUB SHEET — Compact bottom sheet for urgent actions
 // ═══════════════════════════════════════════════════════════════════════════
-//
-//  v2 Improvements:
-//  1. Native touch gestures for drag-to-close (no framer-motion drag)
-//  2. Smooth scrolling on iOS without gesture conflicts
-//  3. Full GestureGuard integration
-//  4. Haptic feedback
+//  Uses shared ModalWrapper for consistent behavior across all modals.
 // ═══════════════════════════════════════════════════════════════════════════
-
-// Unified configuration
-const SHEET_CONFIG = {
-  offsetThreshold: 120,
-  velocityThreshold: 0.4,
-  spring: { damping: 32, stiffness: 380 },
-} as const
-
-// Haptic feedback utility
-const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'medium') => {
-  try {
-    const tg = (window as any).Telegram?.WebApp
-    if (tg?.HapticFeedback) {
-      tg.HapticFeedback.impactOccurred(style)
-    } else if (navigator.vibrate) {
-      navigator.vibrate(style === 'light' ? 10 : style === 'medium' ? 20 : 35)
-    }
-  } catch (e) {
-    // Ignore haptic errors
-  }
-}
 
 interface UrgentHubSheetProps {
   isOpen: boolean
@@ -47,363 +20,207 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
   isOpen,
   onClose,
   onNavigate,
-  haptic = triggerHaptic
+  haptic = triggerHaptic,
 }: UrgentHubSheetProps) {
-  // GestureGuard and NavigationContext integration
-  useScrollLock(isOpen)
-  useSheetRegistration(isOpen)
-  useModalRegistration(isOpen, 'urgent-hub-sheet')
-
-  // Native touch gesture for drag-to-close
-  const {
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
-    dragOffset,
-    isDragging,
-  } = useSwipeToClose({
-    onClose,
-    offsetThreshold: SHEET_CONFIG.offsetThreshold,
-    velocityThreshold: SHEET_CONFIG.velocityThreshold,
-  })
-
-  const handleOptionClick = useCallback((type: 'urgent' | 'photo') => {
+  const handleOptionClick = useCallback((route: string) => {
     haptic('medium')
     onClose()
-
-    // Slight delay to allow sheet to close before navigation
-    setTimeout(() => {
-      if (type === 'urgent') {
-        onNavigate('/create-order?urgent=true')
-      } else {
-        onNavigate('/create-order?mode=photo')
-      }
-    }, 200)
+    setTimeout(() => onNavigate(route), 200)
   }, [haptic, onClose, onNavigate])
 
-  const handleClose = useCallback(() => {
-    haptic('light')
-    onClose()
-  }, [haptic, onClose])
-
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* ═══════════════════════════════════════════════════════════════
-              BACKDROP — Dark overlay with blur
-              ═══════════════════════════════════════════════════════════════ */}
-          <motion.div
-            key="urgent-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={handleClose}
+    <ModalWrapper
+      isOpen={isOpen}
+      onClose={onClose}
+      modalId="urgent-hub"
+      title="Срочная помощь"
+      accentColor="#ef4444"
+    >
+      <div style={{ padding: '0 20px 8px' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <m.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.85)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              zIndex: 2000,
-              touchAction: 'none',
-            }}
-          />
-
-          {/* ═══════════════════════════════════════════════════════════════
-              SHEET — Main container with native touch gestures
-              ═══════════════════════════════════════════════════════════════ */}
-          <motion.div
-            key="urgent-sheet"
-            initial={{ y: '100%' }}
-            animate={{
-              y: dragOffset,
-              opacity: dragOffset > 100 ? 1 - (dragOffset - 100) / 200 : 1,
-            }}
-            exit={{ y: '100%' }}
-            transition={isDragging ? { duration: 0 } : {
-              type: 'spring',
-              ...SHEET_CONFIG.spring
-            }}
-            style={{
-              position: 'fixed',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '70vh',
-              background: '#09090b',
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
-              zIndex: 2001,
-              borderTop: '1px solid rgba(212,175,55,0.3)',
-              boxShadow: '0 -10px 40px rgba(0,0,0,0.9)',
+              width: 56,
+              height: 56,
+              borderRadius: 18,
+              background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))',
+              border: '1px solid rgba(239,68,68,0.25)',
               display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              boxShadow: '0 8px 24px -8px rgba(239,68,68,0.3)',
             }}
           >
-            {/* ═══════════════════════════════════════════════════════════
-                DRAG HANDLE — Native touch area for swipe-to-close
-                ═══════════════════════════════════════════════════════════ */}
-            <div
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              style={{
-                padding: '12px 20px 0',
-                cursor: 'grab',
-                touchAction: 'none',
-                flexShrink: 0,
-              }}
-            >
-              <div
-                style={{
-                  width: 40,
-                  height: 4,
-                  borderRadius: 2,
-                  background: isDragging ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)',
-                  margin: '0 auto 16px',
-                }}
-              />
+            <Zap size={26} color="#fca5a5" strokeWidth={1.5} />
+          </m.div>
+
+          <m.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            style={{ fontSize: 22, fontWeight: 700, color: '#f2f2f2', marginBottom: 6 }}
+          >
+            Срочная помощь
+          </m.div>
+
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            style={{ fontSize: 13, color: '#71717a' }}
+          >
+            Выберите подходящий вариант
+          </m.div>
+        </div>
+
+        {/* Options */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Option 1: Urgent 24h */}
+          <m.button
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleOptionClick('/create-order?urgent=true')}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              padding: '18px 16px',
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.02))',
+              border: '1px solid rgba(239,68,68,0.18)',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <Clock size={22} color="#fca5a5" strokeWidth={1.5} />
             </div>
 
-            {/* ═══════════════════════════════════════════════════════════
-                SCROLLABLE CONTENT AREA (native scroll)
-                ═══════════════════════════════════════════════════════════ */}
-            <div
-              data-scroll-container="true"
-              style={{
-                flex: '1 1 auto',
-                minHeight: 0, // Important: allows flex item to shrink below content size
-                overflowY: 'scroll',
-                overflowX: 'hidden',
-                overscrollBehavior: 'contain',
-                WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-y',
-                padding: '0 20px',
-                paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
-              }}
-            >
-              {/* ═══════════════════════════════════════════════════════════
-                  HEADER — Title and close button
-                  ═══════════════════════════════════════════════════════════ */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 24,
-                }}
-              >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 14,
-                    background: 'linear-gradient(145deg, rgba(24,24,27,1), rgba(9,9,11,1))',
-                    border: '1px solid rgba(239,68,68,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                  }}
-                >
-                  <Zap size={24} color="#fca5a5" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 700,
-                      color: '#f2f2f2',
-                      fontFamily: "'Manrope', sans-serif",
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    Срочная помощь
-                  </div>
-                  <div style={{ fontSize: 13, color: '#a1a1aa', marginTop: 2 }}>
-                    Выберите способ заказа
-                  </div>
-                </div>
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fca5a5', marginBottom: 3 }}>
+                Срочный заказ
               </div>
-
-              {/* Close Button */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleClose}
-                onTouchStart={(e) => e.stopPropagation()}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 12,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <X size={18} color="rgba(255,255,255,0.5)" />
-              </motion.button>
-            </div>
-
-            {/* ═══════════════════════════════════════════════════════════
-                OPTIONS — Action buttons
-                ═══════════════════════════════════════════════════════════ */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-              {/* Option 1: Urgent 24h */}
-              <motion.button
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleOptionClick('urgent')}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  padding: '18px',
-                  borderRadius: 18,
-                  background: 'linear-gradient(135deg, rgba(60, 10, 10, 0.4) 0%, rgba(20, 5, 5, 0.4) 100%)',
-                  border: '1px solid rgba(239,68,68,0.25)',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <div style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  background: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <Clock size={22} color="#fca5a5" />
-                </div>
-
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fca5a5', marginBottom: 3 }}>
-                    Срочный заказ
-                  </div>
-                  <div style={{ fontSize: 13, color: 'rgba(252, 165, 165, 0.6)' }}>
-                    Выполним за 24 часа
-                  </div>
-                </div>
-
-                <div style={{
-                  padding: '5px 9px',
-                  borderRadius: 8,
-                  background: 'rgba(239,68,68,0.15)',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5' }}>
-                    24ч
-                  </span>
-                </div>
-
-                <ChevronRight size={18} color="rgba(239,68,68,0.4)" />
-              </motion.button>
-
-              {/* Option 2: Photo 5 min */}
-              <motion.button
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleOptionClick('photo')}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  padding: '18px',
-                  borderRadius: 18,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <Camera size={22} color="#e5e5e5" />
-                </div>
-
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#f2f2f2', marginBottom: 3 }}>
-                    Скинуть фото
-                  </div>
-                  <div style={{ fontSize: 13, color: '#a1a1aa' }}>
-                    Оценим за 5 минут
-                  </div>
-                </div>
-
-                <div style={{
-                  padding: '5px 9px',
-                  borderRadius: 8,
-                  background: 'rgba(212,175,55,0.1)',
-                  border: '1px solid rgba(212,175,55,0.15)',
-                }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#fcd34d' }}>
-                    5 мин
-                  </span>
-                </div>
-
-                <ChevronRight size={18} color="rgba(255,255,255,0.2)" />
-              </motion.button>
-
-            </div>
-
-              {/* ═══════════════════════════════════════════════════════════
-                  FOOTER — Status indicator
-                  ═══════════════════════════════════════════════════════════ */}
-              <div style={{
-                marginTop: 20,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                opacity: 0.7,
-              }}>
-                <div style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: '#22c55e',
-                  boxShadow: '0 0 8px #22c55e',
-                }} />
-                <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 500 }}>
-                  Менеджеры онлайн
-                </span>
+              <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.4 }}>
+                Выполним работу за 24 часа с гарантией качества
               </div>
-
             </div>
-            {/* End of scrollable content area */}
 
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+            <div style={{
+              padding: '4px 10px',
+              borderRadius: 8,
+              background: 'rgba(239,68,68,0.12)',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5' }}>24ч</span>
+            </div>
+
+            <ChevronRight size={16} color="rgba(239,68,68,0.3)" style={{ flexShrink: 0 }} />
+          </m.button>
+
+          {/* Option 2: Photo estimate */}
+          <m.button
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleOptionClick('/create-order?mode=photo')}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              padding: '18px 16px',
+              borderRadius: 16,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <Camera size={22} color="#e4e4e7" strokeWidth={1.5} />
+            </div>
+
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#e4e4e7', marginBottom: 3 }}>
+                Скинуть фото задания
+              </div>
+              <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.4 }}>
+                Сфотографируйте задание — оценим стоимость за 5 минут
+              </div>
+            </div>
+
+            <div style={{
+              padding: '4px 10px',
+              borderRadius: 8,
+              background: 'rgba(212,175,55,0.1)',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#fcd34d' }}>5 мин</span>
+            </div>
+
+            <ChevronRight size={16} color="rgba(255,255,255,0.15)" style={{ flexShrink: 0 }} />
+          </m.button>
+        </div>
+
+        {/* Footer */}
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          style={{
+            marginTop: 20,
+            textAlign: 'center',
+            padding: '14px',
+            borderRadius: 14,
+            background: 'rgba(34,197,94,0.04)',
+            border: '1px solid rgba(34,197,94,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <div style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: '#22c55e',
+            boxShadow: '0 0 8px #22c55e',
+            flexShrink: 0,
+          }} />
+          <span style={{ fontSize: 12, color: '#71717a' }}>
+            Менеджеры <span style={{ color: '#4ade80', fontWeight: 600 }}>онлайн</span> — ответим моментально
+          </span>
+        </m.div>
+      </div>
+    </ModalWrapper>
   )
-}, (prevProps, nextProps) => {
-  return prevProps.isOpen === nextProps.isOpen
-})
+}, (prevProps, nextProps) => prevProps.isOpen === nextProps.isOpen)
 
 export default UrgentHubSheet

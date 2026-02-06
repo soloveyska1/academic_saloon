@@ -1,5 +1,5 @@
 import { m } from 'framer-motion'
-import { Shield, RefreshCw, Lock, Clock, CheckCircle } from 'lucide-react'
+import { Shield, RefreshCw, Lock, Clock, FileCheck, Award } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 
 export interface GuaranteesModalProps {
@@ -9,28 +9,36 @@ export interface GuaranteesModalProps {
 
 const GUARANTEES = [
   {
-    icon: Shield,
-    title: 'Уникальность',
-    desc: 'Каждая работа проходит проверку на Антиплагиат. Гарантируем уникальность от 70% и выше.',
+    icon: FileCheck,
+    title: 'Уникальность от 70%',
+    desc: 'Каждая работа проверяется через Антиплагиат. Вы получаете отчёт вместе с готовой работой.',
     accent: '#D4AF37',
+    accentBg: 'rgba(212,175,55,0.08)',
+    accentBorder: 'rgba(212,175,55,0.15)',
   },
   {
     icon: RefreshCw,
     title: '3 бесплатные правки',
-    desc: 'Включены в стоимость. Если что-то нужно доработать — исправим без доплат.',
+    desc: 'Уже включены в стоимость. Если нужно что-то доработать — исправим без доплат в течение 14 дней.',
     accent: '#22c55e',
+    accentBg: 'rgba(34,197,94,0.08)',
+    accentBorder: 'rgba(34,197,94,0.15)',
   },
   {
     icon: Lock,
-    title: 'Конфиденциальность',
-    desc: 'Строгая анонимность. Ваши данные никогда не передаются третьим лицам.',
+    title: 'Полная конфиденциальность',
+    desc: 'Строгая анонимность. Ваши данные не передаются третьим лицам и не хранятся после выполнения.',
     accent: '#3b82f6',
+    accentBg: 'rgba(59,130,246,0.08)',
+    accentBorder: 'rgba(59,130,246,0.15)',
   },
   {
     icon: Clock,
-    title: 'Точно в срок',
-    desc: 'Сдаём работу вовремя. В случае задержки — скидка или бонус на следующий заказ.',
+    title: 'Сдача точно в срок',
+    desc: 'Гарантируем соблюдение дедлайна. В случае задержки по нашей вине — скидка на следующий заказ.',
     accent: '#f59e0b',
+    accentBg: 'rgba(245,158,11,0.08)',
+    accentBorder: 'rgba(245,158,11,0.15)',
   },
 ]
 
@@ -43,7 +51,7 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
       title="Гарантии"
       accentColor="#D4AF37"
     >
-      <div style={{ padding: '4px 20px 20px' }}>
+      <div style={{ padding: '0 20px 20px' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <m.div
@@ -53,42 +61,38 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
               width: 56,
               height: 56,
               borderRadius: 18,
-              background: 'rgba(212,175,55,0.1)',
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
               border: '1px solid rgba(212,175,55,0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 16px',
+              boxShadow: '0 8px 24px -8px rgba(212,175,55,0.25)',
             }}
           >
             <Shield size={26} color="#D4AF37" strokeWidth={1.5} />
           </m.div>
 
-          <m.h2
+          <m.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: '#f2f2f2',
-              marginBottom: 6,
-            }}
+            style={{ fontSize: 22, fontWeight: 700, color: '#f2f2f2', marginBottom: 6 }}
           >
             Наши гарантии
-          </m.h2>
+          </m.div>
 
-          <m.p
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
-            style={{ fontSize: 13, color: '#71717a', maxWidth: 260, margin: '0 auto' }}
+            style={{ fontSize: 13, color: '#71717a', maxWidth: 280, margin: '0 auto' }}
           >
-            Строгий контроль качества на каждом этапе
-          </m.p>
+            Контроль качества на каждом этапе выполнения заказа
+          </m.div>
         </div>
 
-        {/* Guarantee cards — vertical list */}
+        {/* Guarantee cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {GUARANTEES.map((item, index) => (
             <m.div
@@ -97,40 +101,38 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + index * 0.05 }}
               style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 14,
                 padding: '16px',
                 borderRadius: 16,
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: item.accentBg,
+                border: `1px solid ${item.accentBorder}`,
               }}
             >
-              <div
-                style={{
-                  flexShrink: 0,
-                  width: 42,
-                  height: 42,
-                  borderRadius: 13,
-                  background: `${item.accent}12`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <item.icon size={20} color={item.accent} strokeWidth={1.5} />
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
-                  {item.title}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                <div
+                  style={{
+                    flexShrink: 0,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    background: `${item.accent}15`,
+                    border: `1px solid ${item.accent}20`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <item.icon size={20} color={item.accent} strokeWidth={1.5} />
                 </div>
-                <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
-                  {item.desc}
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 5 }}>
+                    {item.title}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.6 }}>
+                    {item.desc}
+                  </div>
                 </div>
               </div>
-
-              <CheckCircle size={16} color={item.accent} style={{ flexShrink: 0, marginTop: 2, opacity: 0.6 }} />
             </m.div>
           ))}
         </div>
@@ -142,18 +144,31 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
           transition={{ delay: 0.4 }}
           style={{
             marginTop: 20,
-            textAlign: 'center',
-            padding: '14px',
-            borderRadius: 14,
-            background: 'rgba(212,175,55,0.04)',
-            border: '1px solid rgba(212,175,55,0.12)',
-            fontSize: 12,
-            color: '#71717a',
-            lineHeight: 1.5,
+            padding: '16px',
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02))',
+            border: '1px solid rgba(212,175,55,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
           }}
         >
-          <span style={{ color: '#D4AF37', fontWeight: 600 }}>Официальный договор</span> оферты
-          при оформлении каждого заказа
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'rgba(212,175,55,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <Award size={18} color="#D4AF37" strokeWidth={1.5} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#D4AF37', marginBottom: 2 }}>
+              Официальный договор
+            </div>
+            <div style={{ fontSize: 11, color: '#71717a', lineHeight: 1.4 }}>
+              Публичная оферта при оформлении каждого заказа
+            </div>
+          </div>
         </m.div>
       </div>
     </ModalWrapper>
