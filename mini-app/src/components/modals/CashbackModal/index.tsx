@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
-import { Lock, CheckCircle, Sparkles, TrendingUp } from 'lucide-react'
+import { Lock, CheckCircle, Sparkles, TrendingUp, Percent } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 import { HolographicCard } from './HolographicCard'
 import { PrivilegeScanner } from './PrivilegeScanner'
@@ -71,24 +71,41 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
       accentColor={displayRank.color}
     >
       <div style={{ padding: '0 20px 20px' }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <m.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{ fontSize: 22, fontWeight: 700, color: '#f2f2f2', marginBottom: 6 }}
-          >
-            Система лояльности
-          </m.div>
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.05 }}
-            style={{ fontSize: 13, color: '#71717a' }}
-          >
-            Ваш текущий уровень — <span style={{ color: currentRank.color, fontWeight: 600 }}>{currentRank.displayName}</span>
-          </m.div>
-        </div>
+
+        {/* ── Header (unified pattern) ── */}
+        <m.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            marginBottom: 24,
+          }}
+        >
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            background: `linear-gradient(135deg, ${currentRank.color} 0%, ${currentRank.color}cc 100%)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: `0 4px 16px -4px ${currentRank.color}60`,
+            flexShrink: 0,
+          }}>
+            <Percent size={22} color="#fff" strokeWidth={2} />
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#f4f4f5', lineHeight: 1.2 }}>
+              Система лояльности
+            </div>
+            <div style={{ fontSize: 13, color: '#71717a', marginTop: 2 }}>
+              Ваш уровень — <span style={{ color: currentRank.color, fontWeight: 600 }}>{currentRank.displayName}</span>
+            </div>
+          </div>
+        </m.div>
 
         {/* Sim badge */}
         {admin.simulatedRank !== null && (
@@ -226,27 +243,38 @@ function ProgressSection({
 }) {
   return (
     <div style={{
-      padding: '16px',
+      padding: 16,
       borderRadius: 16,
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.05)',
-      marginBottom: 16,
+      background: `${color}0a`,
+      border: `1px solid ${color}1a`,
+      marginBottom: 10,
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <TrendingUp size={14} color={color} />
-          <span style={{ fontSize: 12, color: '#a1a1aa' }}>
-            До уровня «{nextRankName}»
-          </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 12,
+          background: `${color}15`,
+          border: `1px solid ${color}20`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <TrendingUp size={20} color={color} strokeWidth={1.5} />
         </div>
-        <span style={{ fontSize: 14, fontWeight: 700, color }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+            До уровня «{nextRankName}»
+          </div>
+          <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+            Осталось потратить {spentToNext.toLocaleString('ru-RU')} ₽
+          </div>
+        </div>
+        <span style={{ fontSize: 16, fontWeight: 700, color, flexShrink: 0 }}>
           {Math.round(progress)}%
         </span>
       </div>
 
       {/* Progress bar */}
       <div style={{
-        height: 6, width: '100%',
+        height: 6, width: '100%', marginTop: 14,
         background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden',
       }}>
         <m.div
@@ -260,12 +288,6 @@ function ProgressSection({
           }}
         />
       </div>
-
-      <div style={{ marginTop: 8, fontSize: 11, color: '#52525b', textAlign: 'right' }}>
-        Осталось потратить: <span style={{ color: '#a1a1aa', fontWeight: 600 }}>
-          {spentToNext.toLocaleString('ru-RU')} ₽
-        </span>
-      </div>
     </div>
   )
 }
@@ -277,26 +299,30 @@ function ProgressSection({
 function MaxRankSection({ color }: { color: string }) {
   return (
     <div style={{
-      padding: '20px 16px',
-      marginBottom: 16,
+      padding: 16,
+      marginBottom: 10,
       borderRadius: 16,
-      background: `${color}08`,
-      border: `1px solid ${color}20`,
-      textAlign: 'center',
+      background: `${color}0a`,
+      border: `1px solid ${color}1a`,
     }}>
-      <div style={{
-        width: 44, height: 44, borderRadius: 22,
-        background: `${color}15`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        margin: '0 auto 12px',
-      }}>
-        <Sparkles size={22} color={color} />
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: '#e4e4e7', marginBottom: 4 }}>
-        Максимальный уровень
-      </div>
-      <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
-        Вы достигли наивысшего ранга и получаете все привилегии программы лояльности
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 12,
+          background: `${color}15`,
+          border: `1px solid ${color}20`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Sparkles size={20} color={color} strokeWidth={1.5} />
+        </div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+            Максимальный уровень
+          </div>
+          <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+            Вы получаете все привилегии программы лояльности
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -309,26 +335,27 @@ function MaxRankSection({ color }: { color: string }) {
 function PastRankSection({ rank }: { rank: typeof RANKS[0] }) {
   return (
     <div style={{
-      padding: '20px 16px',
+      padding: 16,
       borderRadius: 16,
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.05)',
+      background: `${rank.color}0a`,
+      border: `1px solid ${rank.color}1a`,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{
-          width: 44, height: 44, borderRadius: 22,
+          width: 40, height: 40, borderRadius: 12,
           background: `${rank.color}15`,
+          border: `1px solid ${rank.color}20`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <CheckCircle size={22} color={rank.color} />
+          <CheckCircle size={20} color={rank.color} strokeWidth={1.5} />
         </div>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
             Уровень «{rank.displayName}» пройден
           </div>
-          <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
-            Вы уже прошли этот уровень. Кешбэк {rank.cashback}% и все привилегии этого ранга были активны на тот момент.
+          <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+            Кешбэк {rank.cashback}% и все привилегии этого ранга были активны
           </div>
         </div>
       </div>
@@ -343,27 +370,27 @@ function PastRankSection({ rank }: { rank: typeof RANKS[0] }) {
 function LockedRankSection({ rank, amountNeeded }: { rank: typeof RANKS[0]; amountNeeded: number }) {
   return (
     <div style={{
-      padding: '20px 16px',
+      padding: 16,
       borderRadius: 16,
       background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.05)',
-      marginBottom: 16,
+      border: '1px solid rgba(255,255,255,0.06)',
+      marginBottom: 10,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{
-          width: 44, height: 44, borderRadius: 22,
+          width: 40, height: 40, borderRadius: 12,
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.08)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <Lock size={20} color="#52525b" />
+          <Lock size={20} color="#52525b" strokeWidth={1.5} />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
             Уровень «{rank.displayName}»
           </div>
-          <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
             Для открытия нужно потратить ещё{' '}
             <span style={{ color: '#e4e4e7', fontWeight: 600 }}>
               {amountNeeded.toLocaleString('ru-RU')} ₽
@@ -372,14 +399,14 @@ function LockedRankSection({ rank, amountNeeded }: { rank: typeof RANKS[0]; amou
         </div>
       </div>
 
-      {/* Mini info row */}
+      {/* Cashback preview */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         marginTop: 14, paddingTop: 14,
         borderTop: '1px solid rgba(255,255,255,0.04)',
       }}>
-        <span style={{ fontSize: 11, color: '#52525b' }}>Кешбэк на этом уровне</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: rank.color }}>{rank.cashback}%</span>
+        <span style={{ fontSize: 12, color: '#52525b' }}>Кешбэк на этом уровне</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: rank.color }}>{rank.cashback}%</span>
       </div>
     </div>
   )
