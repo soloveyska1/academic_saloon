@@ -1,4 +1,4 @@
-import { motion, AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion'
+import { AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion'
 import React, { useEffect, useCallback, useRef, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { useScrollLock, useSheetRegistration, useSwipeToClose } from '../../ui/GestureGuard'
@@ -41,28 +41,43 @@ const styles = {
     WebkitBackdropFilter: 'blur(20px) saturate(180%)',
     zIndex: 2000,
   },
-  sheet: {
+  sheetOuter: {
     position: 'fixed' as const,
     bottom: 0,
     left: 0,
     right: 0,
     maxHeight: '92vh',
+    display: 'flex',
+    flexDirection: 'column' as const,
     background: 'linear-gradient(180deg, rgba(18,18,20,0.98) 0%, rgba(12,12,14,0.99) 100%)',
     borderRadius: '28px 28px 0 0',
     boxShadow: '0 -8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
     zIndex: 2001,
-    overflowY: 'auto' as const,
-    overflowX: 'hidden' as const,
-    WebkitOverflowScrolling: 'touch' as const,
-    touchAction: 'pan-y' as const,
+    overflow: 'hidden' as const,
   },
-  handle: {
+  handleArea: {
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 4,
+    cursor: 'grab',
+    touchAction: 'none' as const,
+  },
+  handleBar: {
     width: 40,
     height: 4,
     borderRadius: 2,
     background: 'rgba(255,255,255,0.2)',
-    margin: '12px auto 8px',
-    cursor: 'grab',
+  },
+  scrollArea: {
+    flex: 1,
+    overflowY: 'auto' as const,
+    overflowX: 'hidden' as const,
+    WebkitOverflowScrolling: 'touch' as const,
+    overscrollBehavior: 'contain' as const,
+    minHeight: 0,
   },
   closeButton: {
     position: 'absolute' as const,
@@ -129,7 +144,7 @@ export function ModalWrapper({
   useSheetRegistration(isOpen)
   useModalRegistration(isOpen)
 
-  // Native touch gesture
+  // Native touch gesture — attached ONLY to the drag handle area
   const {
     handleTouchStart,
     handleTouchMove,
@@ -154,12 +169,9 @@ export function ModalWrapper({
 
   useEffect(() => {
     if (isOpen) {
-      // Сохраняем текущий фокус
       previousFocusRef.current = document.activeElement as HTMLElement
-      // Фокус на модалку
       sheetRef.current?.focus()
     } else {
-      // Возвращаем фокус
       previousFocusRef.current?.focus()
     }
   }, [isOpen])
@@ -178,18 +190,14 @@ export function ModalWrapper({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, handleClose])
 
-  // Мемоизированный стиль с акцентом
-  const accentBorderStyle = useMemo(() => ({
-    ...styles.sheet,
+  // Outer sheet style with accent border
+  const outerStyle = useMemo(() => ({
+    ...styles.sheetOuter,
     borderTop: `1px solid ${accentColor}20`,
   }), [accentColor])
 
-  // Динамический transform при drag
-  const sheetStyle = useMemo(() => ({
-    ...accentBorderStyle,
-    transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
-    transition: isDragging ? 'none' : 'transform 0.3s ease-out',
-  }), [accentBorderStyle, dragOffset, isDragging])
+  // Animate the entire sheet down when dragging from handle
+  const animateY = dragOffset > 0 ? dragOffset : 0
 
   return (
     <LazyMotion features={domAnimation}>
@@ -213,24 +221,31 @@ export function ModalWrapper({
             <m.div
               key={`${modalId}-sheet`}
               ref={sheetRef}
-              variants={sheetVariants}
               initial="hidden"
-              animate="visible"
+              animate={{ y: animateY }}
               exit="exit"
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              style={sheetStyle}
+              variants={sheetVariants}
+              transition={
+                isDragging
+                  ? { type: 'tween', duration: 0 }
+                  : { type: 'spring', damping: 30, stiffness: 300 }
+              }
+              style={outerStyle}
               // Accessibility
               role="dialog"
               aria-modal="true"
               aria-labelledby={`${modalId}-title`}
               tabIndex={-1}
-              // Touch handlers
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
             >
-              {/* Drag Handle */}
-              <div style={styles.handle} aria-hidden="true" />
+              {/* Drag Handle — ONLY this area responds to swipe-to-close */}
+              <div
+                style={styles.handleArea}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div style={styles.handleBar} aria-hidden="true" />
+              </div>
 
               {/* Close Button */}
               <m.button
@@ -247,8 +262,10 @@ export function ModalWrapper({
                 {title}
               </h2>
 
-              {/* Content */}
-              {children}
+              {/* Scrollable Content — free to scroll, no swipe interference */}
+              <div style={styles.scrollArea} data-scroll-container="true">
+                {children}
+              </div>
             </m.div>
           </>
         )}

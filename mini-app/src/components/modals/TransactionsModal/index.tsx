@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import {
   Star, ArrowRight, Clock, CreditCard,
   ArrowUpRight, ArrowDownRight, Gift,
@@ -46,13 +46,13 @@ function OrbitingSparkles({ color = '#D4AF37', count = 8 }: { color?: string; co
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
       {Array.from({ length: count }).map((_, i) => (
-        <motion.div
+        <m.div
           key={i}
           animate={{ rotate: 360 }}
           transition={{ duration: 8 + i * 0.5, repeat: Infinity, ease: 'linear', delay: i * 0.3 }}
           style={{ position: 'absolute', top: '50%', left: '50%', width: 120, height: 120, marginTop: -60, marginLeft: -60 }}
         >
-          <motion.div
+          <m.div
             animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.8, 1.2, 0.8] }}
             transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
             style={{
@@ -61,7 +61,7 @@ function OrbitingSparkles({ color = '#D4AF37', count = 8 }: { color?: string; co
               borderRadius: '50%', background: color, boxShadow: `0 0 ${8 + i * 2}px ${color}`,
             }}
           />
-        </motion.div>
+        </m.div>
       ))}
     </div>
   )
@@ -76,7 +76,7 @@ function DecorativeCorner({ position, color = '#D4AF37' }: { position: 'top-left
   }
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 0.6, scale: 1 }}
       transition={{ delay: 0.3, duration: 0.5 }}
@@ -123,13 +123,13 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
     >
       <div style={{ padding: '8px 24px 40px' }}>
         {/* Ultra-Premium Balance Hero */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, scale: 0.9, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ delay: 0.1, type: 'spring', damping: 20, stiffness: 200 }}
           style={{ position: 'relative', marginBottom: 32 }}
         >
-          <motion.div
+          <m.div
             animate={{
               boxShadow: [
                 '0 0 40px rgba(212,175,55,0.2), inset 0 0 40px rgba(212,175,55,0.1)',
@@ -157,7 +157,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             }}
           >
             {/* Holographic overlay */}
-            <motion.div
+            <m.div
               animate={{
                 background: [
                   'linear-gradient(45deg, rgba(252,246,186,0.1) 0%, transparent 50%, rgba(212,175,55,0.1) 100%)',
@@ -171,7 +171,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             />
 
             {/* Shimmer */}
-            <motion.div
+            <m.div
               animate={{ x: ['-150%', '250%'] }}
               transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3 }}
               style={{
@@ -188,7 +188,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
 
             {/* Icon with sparkles */}
             <div style={{ position: 'relative', display: 'inline-block', marginBottom: 20 }}>
-              <motion.div
+              <m.div
                 animate={{ scale: [1, 1.05, 1], rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 style={{
@@ -200,25 +200,25 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                   position: 'relative', zIndex: 2,
                 }}
               >
-                <motion.div
+                <m.div
                   animate={{ rotateY: [0, 360] }}
                   transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
                   style={{ transformStyle: 'preserve-3d' }}
                 >
                   <CreditCard size={32} color="#D4AF37" strokeWidth={1.5} />
-                </motion.div>
-              </motion.div>
+                </m.div>
+              </m.div>
               <OrbitingSparkles />
             </div>
 
             {/* Label */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 }}
             >
-              <motion.div
+              <m.div
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 style={{ width: 24, height: 1, background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.6), transparent)' }}
@@ -227,15 +227,15 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 fontSize: 11, fontWeight: 700, color: 'rgba(212,175,55,0.9)',
                 letterSpacing: '0.25em', textShadow: '0 0 12px rgba(212,175,55,0.3)',
               }}>ВАШ БАЛАНС</span>
-              <motion.div
+              <m.div
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 style={{ width: 24, height: 1, background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.6), transparent)' }}
               />
-            </motion.div>
+            </m.div>
 
             {/* Balance */}
-            <motion.div
+            <m.div
               animate={{
                 textShadow: [
                   '0 0 30px rgba(212,175,55,0.4), 0 0 60px rgba(212,175,55,0.2)',
@@ -256,10 +256,10 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             >
               <AnimatedValue value={balance} />
               <span style={{ fontSize: 38, opacity: 0.9 }}>₽</span>
-            </motion.div>
+            </m.div>
 
             {/* Premium badge */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4 }}
@@ -270,18 +270,18 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 borderRadius: 100, border: '1px solid rgba(212,175,55,0.3)',
               }}
             >
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}>
+              <m.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}>
                 <Star size={14} color="#D4AF37" fill="rgba(212,175,55,0.3)" />
-              </motion.div>
+              </m.div>
               <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(212,175,55,0.9)', letterSpacing: '0.05em' }}>
                 Премиум-кошелёк
               </span>
-            </motion.div>
-          </motion.div>
-        </motion.div>
+            </m.div>
+          </m.div>
+        </m.div>
 
         {/* Section Header */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
@@ -302,7 +302,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               Последние {Math.min(5, transactions.length)} из {transactions.length}
             </div>
           </div>
-        </motion.div>
+        </m.div>
 
         {recentTransactions.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
@@ -313,7 +313,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               const gradientEnd = isCredit ? 'rgba(34,197,94,0.03)' : 'rgba(239,68,68,0.03)'
 
               return (
-                <motion.div
+                <m.div
                   key={tx.id}
                   initial={{ opacity: 0, x: -40, scale: 0.95 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -325,7 +325,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                     style={{ padding: 18 }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <motion.div
+                      <m.div
                         animate={isCredit ? { y: [0, -3, 0] } : { y: [0, 3, 0] }}
                         transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
                         style={{
@@ -339,7 +339,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                         {isCredit
                           ? <ArrowDownRight size={24} color={color} strokeWidth={2} />
                           : <ArrowUpRight size={24} color={color} strokeWidth={2} />}
-                      </motion.div>
+                      </m.div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
@@ -356,7 +356,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                         </div>
                       </div>
 
-                      <motion.div
+                      <m.div
                         animate={{
                           textShadow: [`0 0 8px ${color}30`, `0 0 16px ${color}50`, `0 0 8px ${color}30`],
                         }}
@@ -364,17 +364,17 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                         style={{ fontSize: 20, fontWeight: 700, fontFamily: 'var(--font-mono)', color }}
                       >
                         {isCredit ? '+' : '−'}{Math.abs(tx.amount).toLocaleString('ru-RU')} ₽
-                      </motion.div>
+                      </m.div>
                     </div>
                   </LuxuryCard>
-                </motion.div>
+                </m.div>
               )
             })}
           </div>
         ) : (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+          <m.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
             <LuxuryCard borderColor="rgba(212,175,55,0.2)" style={{ padding: 48, textAlign: 'center' }}>
-              <motion.div
+              <m.div
                 animate={{ y: [0, -8, 0], rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 3, repeat: Infinity }}
                 style={{
@@ -385,7 +385,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 }}
               >
                 <Gift size={28} color="rgba(212,175,55,0.7)" />
-              </motion.div>
+              </m.div>
               <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>
                 Пока нет операций
               </div>
@@ -393,12 +393,12 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 Ваши транзакции появятся здесь
               </div>
             </LuxuryCard>
-          </motion.div>
+          </m.div>
         )}
 
         {/* View All Button */}
         {transactions.length > 5 && (
-          <motion.button
+          <m.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
@@ -414,7 +414,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               position: 'relative', overflow: 'hidden', boxShadow: '0 4px 20px rgba(212,175,55,0.15)',
             }}
           >
-            <motion.div
+            <m.div
               animate={{ x: ['-150%', '250%'] }}
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 2.5 }}
               style={{
@@ -430,14 +430,14 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             }}>
               Смотреть все операции
             </span>
-            <motion.div
+            <m.div
               animate={{ x: [0, 4, 0] }}
               transition={{ duration: 1.5, repeat: Infinity }}
               style={{ position: 'relative', zIndex: 1 }}
             >
               <ArrowRight size={18} color="#D4AF37" />
-            </motion.div>
-          </motion.button>
+            </m.div>
+          </m.button>
         )}
       </div>
 

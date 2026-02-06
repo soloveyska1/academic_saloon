@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
+import { m, AnimatePresence } from 'framer-motion'
 import { CreditCard, CheckCircle, Lock } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 import { HolographicCard } from './HolographicCard'
@@ -84,7 +84,6 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
       title="Система лояльности"
       accentColor={displayRank.color}
     >
-      <LazyMotion features={domAnimation}>
         <div style={{ padding: '8px 20px 40px' }}>
           {/* Header */}
           <Header
@@ -138,7 +137,6 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
             </m.div>
           </AnimatePresence>
         </div>
-      </LazyMotion>
     </ModalWrapper>
   )
 }
