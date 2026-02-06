@@ -41,25 +41,34 @@ const styles = {
     WebkitBackdropFilter: 'blur(20px) saturate(180%)',
     zIndex: 2000,
   },
-  sheetOuter: {
+  // The sheet itself scrolls — no flex layout needed
+  sheet: {
     position: 'fixed' as const,
     bottom: 0,
     left: 0,
     right: 0,
     maxHeight: '92vh',
-    display: 'flex',
-    flexDirection: 'column' as const,
     background: 'linear-gradient(180deg, rgba(18,18,20,0.98) 0%, rgba(12,12,14,0.99) 100%)',
     borderRadius: '28px 28px 0 0',
     boxShadow: '0 -8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
     zIndex: 2001,
-    overflow: 'hidden' as const,
+    overflowY: 'auto' as const,
+    overflowX: 'hidden' as const,
+    WebkitOverflowScrolling: 'touch' as const,
+    overscrollBehavior: 'contain' as const,
   },
+  // Sticky header stays at top when content scrolls
+  stickyHeader: {
+    position: 'sticky' as const,
+    top: 0,
+    zIndex: 5,
+    background: 'linear-gradient(180deg, rgba(18,18,20,0.98) 0%, rgba(18,18,20,0.95) 80%, transparent 100%)',
+    paddingBottom: 8,
+  },
+  // Handle area responds to swipe-to-close only
   handleArea: {
-    flexShrink: 0,
     display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
+    justifyContent: 'center',
     paddingTop: 12,
     paddingBottom: 4,
     cursor: 'grab',
@@ -71,17 +80,9 @@ const styles = {
     borderRadius: 2,
     background: 'rgba(255,255,255,0.2)',
   },
-  scrollArea: {
-    flex: 1,
-    overflowY: 'auto' as const,
-    overflowX: 'hidden' as const,
-    WebkitOverflowScrolling: 'touch' as const,
-    overscrollBehavior: 'contain' as const,
-    minHeight: 0,
-  },
   closeButton: {
     position: 'absolute' as const,
-    top: 16,
+    top: 12,
     right: 16,
     width: 36,
     height: 36,
@@ -190,9 +191,9 @@ export function ModalWrapper({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, handleClose])
 
-  // Outer sheet style with accent border
-  const outerStyle = useMemo(() => ({
-    ...styles.sheetOuter,
+  // Sheet style with accent border
+  const sheetStyle = useMemo(() => ({
+    ...styles.sheet,
     borderTop: `1px solid ${accentColor}20`,
   }), [accentColor])
 
@@ -217,7 +218,7 @@ export function ModalWrapper({
               aria-hidden="true"
             />
 
-            {/* SHEET */}
+            {/* SHEET — scrollable container */}
             <m.div
               key={`${modalId}-sheet`}
               ref={sheetRef}
@@ -230,42 +231,42 @@ export function ModalWrapper({
                   ? { type: 'tween', duration: 0 }
                   : { type: 'spring', damping: 30, stiffness: 300 }
               }
-              style={outerStyle}
+              style={sheetStyle}
               // Accessibility
               role="dialog"
               aria-modal="true"
               aria-labelledby={`${modalId}-title`}
               tabIndex={-1}
+              data-scroll-container="true"
             >
-              {/* Drag Handle — ONLY this area responds to swipe-to-close */}
-              <div
-                style={styles.handleArea}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-              >
-                <div style={styles.handleBar} aria-hidden="true" />
-              </div>
+              {/* Sticky header — handle + close stay visible when scrolling */}
+              <div style={styles.stickyHeader}>
+                <div
+                  style={styles.handleArea}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  <div style={styles.handleBar} aria-hidden="true" />
+                </div>
 
-              {/* Close Button */}
-              <m.button
-                onClick={handleClose}
-                whileTap={{ scale: 0.9 }}
-                style={styles.closeButton}
-                aria-label="Закрыть"
-              >
-                <X size={18} color="rgba(255,255,255,0.5)" />
-              </m.button>
+                <m.button
+                  onClick={handleClose}
+                  whileTap={{ scale: 0.9 }}
+                  style={styles.closeButton}
+                  aria-label="Закрыть"
+                >
+                  <X size={18} color="rgba(255,255,255,0.5)" />
+                </m.button>
+              </div>
 
               {/* Screen reader title (hidden) */}
               <h2 id={`${modalId}-title`} className="sr-only">
                 {title}
               </h2>
 
-              {/* Scrollable Content — free to scroll, no swipe interference */}
-              <div style={styles.scrollArea} data-scroll-container="true">
-                {children}
-              </div>
+              {/* Content — scrolls naturally within the sheet */}
+              {children}
             </m.div>
           </>
         )}
