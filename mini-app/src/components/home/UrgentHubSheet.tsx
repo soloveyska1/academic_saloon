@@ -34,7 +34,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
       title="Срочная помощь"
       accentColor="#ef4444"
     >
-      <div style={{ padding: '0 20px 8px' }}>
+      <div style={{ padding: '0 20px 16px' }}>
 
         {/* Visible header */}
         <m.div
@@ -142,7 +142,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
             border: '1px solid rgba(212,175,55,0.15)',
             cursor: 'pointer',
             textAlign: 'left',
-            marginBottom: 16,
+            marginBottom: 20,
             display: 'flex',
             alignItems: 'center',
             gap: 14,
