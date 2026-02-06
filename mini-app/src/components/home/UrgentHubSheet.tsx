@@ -34,9 +34,9 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
       title="Срочная помощь"
       accentColor="#ef4444"
     >
-      <div style={{ padding: '0 20px 16px' }}>
+      <div style={{ padding: '0 20px 20px' }}>
 
-        {/* Visible header */}
+        {/* ── Header (unified pattern) ── */}
         <m.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -44,19 +44,19 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
-            marginBottom: 20,
+            gap: 14,
+            marginBottom: 24,
           }}
         >
           <div style={{
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             borderRadius: 14,
             background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 16px -4px rgba(239,68,68,0.4)',
+            boxShadow: '0 4px 16px -4px rgba(239,68,68,0.35)',
             flexShrink: 0,
           }}>
             <Zap size={22} color="#fff" strokeWidth={2} fill="rgba(255,255,255,0.2)" />
@@ -71,134 +71,132 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
           </div>
         </m.div>
 
-        {/* Option 1: Urgent order */}
-        <m.button
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.06 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleOptionClick('/create-order?urgent=true')}
-          style={{
-            width: '100%',
-            padding: '18px',
-            borderRadius: 18,
-            background: 'linear-gradient(145deg, rgba(239,68,68,0.12) 0%, rgba(239,68,68,0.04) 100%)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            cursor: 'pointer',
-            textAlign: 'left',
-            marginBottom: 10,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-          }}
-        >
-          <div style={{
-            width: 48, height: 48, borderRadius: 16,
-            background: 'rgba(239,68,68,0.12)',
-            border: '1px solid rgba(239,68,68,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <Sparkles size={22} color="#fca5a5" strokeWidth={1.5} />
-          </div>
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#f4f4f5', marginBottom: 3 }}>
-              Срочный заказ
-            </div>
-            <div style={{ fontSize: 13, color: '#a1a1aa', lineHeight: 1.4 }}>
-              Укажите тему, предмет и дедлайн — подберём автора
-            </div>
-          </div>
-
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
-            flexShrink: 0,
-          }}>
+        {/* ── Option cards ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+          {/* Urgent order */}
+          <m.button
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.06 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleOptionClick('/create-order?urgent=true')}
+            style={{
+              width: '100%',
+              padding: 16,
+              borderRadius: 16,
+              background: 'rgba(239,68,68,0.06)',
+              border: '1px solid rgba(239,68,68,0.12)',
+              cursor: 'pointer',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+            }}
+          >
             <div style={{
-              padding: '4px 10px',
-              borderRadius: 8,
-              background: 'rgba(239,68,68,0.15)',
-              border: '1px solid rgba(239,68,68,0.2)',
+              width: 40, height: 40, borderRadius: 12,
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
             }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5', whiteSpace: 'nowrap' }}>от 24ч</span>
+              <Sparkles size={20} color="#fca5a5" strokeWidth={1.5} />
             </div>
-            <ArrowRight size={16} color="rgba(252,165,165,0.4)" />
-          </div>
-        </m.button>
 
-        {/* Option 2: Photo estimate */}
-        <m.button
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleOptionClick('/create-order?type=photo_task&urgent=true')}
-          style={{
-            width: '100%',
-            padding: '18px',
-            borderRadius: 18,
-            background: 'linear-gradient(145deg, rgba(212,175,55,0.08) 0%, rgba(212,175,55,0.02) 100%)',
-            border: '1px solid rgba(212,175,55,0.15)',
-            cursor: 'pointer',
-            textAlign: 'left',
-            marginBottom: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-          }}
-        >
-          <div style={{
-            width: 48, height: 48, borderRadius: 16,
-            background: 'rgba(212,175,55,0.08)',
-            border: '1px solid rgba(212,175,55,0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <Camera size={22} color="#fcd34d" strokeWidth={1.5} />
-          </div>
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#f4f4f5', marginBottom: 3 }}>
-              Скинуть фото задания
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+                Срочный заказ
+              </div>
+              <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+                Укажите тему, предмет и дедлайн — подберём автора
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: '#a1a1aa', lineHeight: 1.4 }}>
-              Оценим стоимость за 5 минут
-            </div>
-          </div>
 
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
-            flexShrink: 0,
-          }}>
             <div style={{
-              padding: '4px 10px',
-              borderRadius: 8,
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
+              flexShrink: 0,
+            }}>
+              <div style={{
+                padding: '4px 10px',
+                borderRadius: 8,
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.15)',
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5', whiteSpace: 'nowrap' }}>от 24ч</span>
+              </div>
+              <ArrowRight size={16} color="rgba(252,165,165,0.35)" />
+            </div>
+          </m.button>
+
+          {/* Photo estimate */}
+          <m.button
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleOptionClick('/create-order?type=photo_task&urgent=true')}
+            style={{
+              width: '100%',
+              padding: 16,
+              borderRadius: 16,
+              background: 'rgba(212,175,55,0.06)',
+              border: '1px solid rgba(212,175,55,0.12)',
+              cursor: 'pointer',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+            }}
+          >
+            <div style={{
+              width: 40, height: 40, borderRadius: 12,
               background: 'rgba(212,175,55,0.1)',
               border: '1px solid rgba(212,175,55,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
             }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#fcd34d', whiteSpace: 'nowrap' }}>5 мин</span>
+              <Camera size={20} color="#fcd34d" strokeWidth={1.5} />
             </div>
-            <ArrowRight size={16} color="rgba(212,175,55,0.3)" />
-          </div>
-        </m.button>
 
-        {/* Trust indicators */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+                Скинуть фото задания
+              </div>
+              <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+                Оценим стоимость за 5 минут
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
+              flexShrink: 0,
+            }}>
+              <div style={{
+                padding: '4px 10px',
+                borderRadius: 8,
+                background: 'rgba(212,175,55,0.08)',
+                border: '1px solid rgba(212,175,55,0.12)',
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#fcd34d', whiteSpace: 'nowrap' }}>5 мин</span>
+              </div>
+              <ArrowRight size={16} color="rgba(212,175,55,0.25)" />
+            </div>
+          </m.button>
+        </div>
+
+        {/* ── Trust indicators ── */}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15 }}
-          style={{
-            display: 'flex',
-            gap: 8,
-          }}
+          style={{ display: 'flex', gap: 10 }}
         >
           <div style={{
             flex: 1,
             padding: '10px 12px',
             borderRadius: 12,
-            background: 'rgba(34,197,94,0.05)',
-            border: '1px solid rgba(34,197,94,0.1)',
+            background: 'rgba(34,197,94,0.04)',
+            border: '1px solid rgba(34,197,94,0.08)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -210,8 +208,8 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
             flex: 1,
             padding: '10px 12px',
             borderRadius: 12,
-            background: 'rgba(34,197,94,0.05)',
-            border: '1px solid rgba(34,197,94,0.1)',
+            background: 'rgba(34,197,94,0.04)',
+            border: '1px solid rgba(34,197,94,0.08)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
