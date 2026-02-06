@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Download, Share2, X, Check, Loader2 } from 'lucide-react'
 import { API_BASE_URL, getAuthHeaders } from '../../api/userApi'
+import { CenteredModalWrapper } from '../modals/shared'
 
 interface Props {
+  isOpen: boolean
   value: string
   size?: number
   onClose: () => void
@@ -12,6 +14,7 @@ interface Props {
 }
 
 export function QRCodeModal({
+  isOpen,
   value,
   size = 220,
   onClose,
@@ -30,6 +33,8 @@ export function QRCodeModal({
 
   // Load premium card from our API
   useEffect(() => {
+    if (!isOpen) return
+
     const loadPremiumCard = async () => {
       try {
         setCardLoading(true)
@@ -60,7 +65,7 @@ export function QRCodeModal({
         URL.revokeObjectURL(premiumCardUrl)
       }
     }
-  }, [])
+  }, [isOpen])
 
   const handleShare = async () => {
     if (!navigator.share) return
@@ -149,44 +154,14 @@ export function QRCodeModal({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.92)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        zIndex: 9999,
-        padding: '20px 16px',
-        overflowY: 'auto',
-      }}
+    <CenteredModalWrapper
+      isOpen={isOpen}
+      onClose={onClose}
+      modalId="qr-code-modal"
+      title={title}
+      hideCloseButton
     >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        transition={{ type: 'spring', damping: 25 }}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'rgba(12,12,14,0.98)',
-          borderRadius: 24,
-          padding: '24px 20px',
-          textAlign: 'center',
-          maxWidth: 360,
-          width: '100%',
-          maxHeight: 'calc(100vh - 60px)',
-          overflowY: 'auto',
-          position: 'relative',
-          marginTop: 20,
-        }}
-      >
+      <div style={{ padding: '24px 20px', textAlign: 'center' }}>
         {/* Close Button */}
         <motion.button
           whileTap={{ scale: 0.9 }}
@@ -375,7 +350,7 @@ export function QRCodeModal({
         }}>
           Друзья получат скидку 5% · Вы — 5% роялти
         </p>
-      </motion.div>
+      </div>
 
       {/* CSS for spin animation */}
       <style>{`
@@ -384,6 +359,6 @@ export function QRCodeModal({
           to { transform: rotate(360deg); }
         }
       `}</style>
-    </motion.div>
+    </CenteredModalWrapper>
   )
 }

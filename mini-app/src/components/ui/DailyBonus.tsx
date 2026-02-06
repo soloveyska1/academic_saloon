@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Gift, Flame, X, Check, ChevronRight } from 'lucide-react'
+import { Gift, Flame, Check, ChevronRight } from 'lucide-react'
 import { DailyBonusClaimResult } from '../../api/userApi'
+import { CenteredModalWrapper } from '../modals/shared'
 
 interface Props {
+  isOpen: boolean
   streak: number
   canClaim: boolean
   bonuses: number[]
@@ -12,7 +14,7 @@ interface Props {
   onClose: () => void
 }
 
-export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, onClaim, onClose }: Props) {
+export function DailyBonusModal({ isOpen, streak, canClaim, bonuses, cooldownRemaining, onClaim, onClose }: Props) {
   const [isClaiming, setIsClaiming] = useState(false)
   const [claimResult, setClaimResult] = useState<DailyBonusClaimResult | null>(null)
 
@@ -36,7 +38,6 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
     if (!canClaim || isClaiming) return
     setIsClaiming(true)
     try {
-      // Direct call, no fake delay
       const result = await onClaim()
       setClaimResult(result)
     } catch (e) {
@@ -46,42 +47,20 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2000,
-        padding: 20,
-      }}
+    <CenteredModalWrapper
+      isOpen={isOpen}
+      onClose={onClose}
+      modalId="daily-bonus-modal"
+      title="Ежедневный бонус"
+      accentColor="#d4af37"
+      hideCloseButton
     >
-      <motion.div
-        initial={{ scale: 0.9, y: 20, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.9, y: 20, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'linear-gradient(145deg, #121214 0%, #09090b 100%)',
-          border: '1px solid rgba(212, 175, 55, 0.3)',
-          borderRadius: 32,
-          padding: 32,
-          textAlign: 'center',
-          maxWidth: 380,
-          width: '100%',
-          position: 'relative',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(212,175,55,0.1)',
-          overflow: 'hidden'
-        }}
-      >
+      <div style={{
+        padding: 32,
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
         {/* Ambient Glow */}
         <div style={{
           position: 'absolute',
@@ -92,29 +71,6 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
           background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)',
           pointerEvents: 'none'
         }} />
-
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            width: 32,
-            height: 32,
-            background: 'rgba(255,255,255,0.05)',
-            border: 'none',
-            borderRadius: '50%',
-            color: '#a1a1aa',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            zIndex: 10
-          }}
-        >
-          <X size={18} />
-        </button>
 
         <AnimatePresence mode="wait">
           {!claimResult ? (
@@ -355,7 +311,7 @@ export function DailyBonusModal({ streak, canClaim, bonuses, cooldownRemaining, 
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
-    </motion.div>
+      </div>
+    </CenteredModalWrapper>
   )
 }
