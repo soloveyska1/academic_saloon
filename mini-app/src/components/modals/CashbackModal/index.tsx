@@ -16,11 +16,9 @@ import type { UserData } from '../../../types'
 const VOID_CARD: React.CSSProperties = {
   padding: 16,
   borderRadius: 16,
-  background: 'rgba(9,9,11,0.6)',
-  backdropFilter: 'blur(12px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+  background: 'rgba(255,255,255,0.03)',
   border: '1px solid rgba(255,255,255,0.04)',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.3)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
   position: 'relative',
   overflow: 'hidden',
 }
