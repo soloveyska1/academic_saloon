@@ -20,10 +20,21 @@ const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || IS_DEV
 
 // API base URL — normalized to ensure /api suffix is always present
 function normalizeApiBase(rawUrl?: string): string {
-  const fallback = IS_DEV ? 'http://localhost:8000/api' : 'https://academic-saloon.duckdns.org/api'
+  const browserOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://academic-saloon.vercel.app'
+  const fallback = IS_DEV ? 'http://localhost:8000/api' : `${browserOrigin}/api`
   const candidate = (rawUrl || '').trim() || fallback
 
   try {
+    // Support relative values like "/api" or "/backend" from Vite env
+    if (candidate.startsWith('/')) {
+      const rel = new URL(candidate, browserOrigin)
+      const cleanPath = rel.pathname.replace(/\/+$/, '')
+      rel.pathname = cleanPath.endsWith('/api') ? '/api' : `${cleanPath}/api`
+      rel.search = ''
+      rel.hash = ''
+      return rel.toString().replace(/\/$/, '')
+    }
+
     const url = new URL(candidate)
 
     // Ensure pathname ends with /api exactly once
