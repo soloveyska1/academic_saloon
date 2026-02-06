@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { fetchDailyBonusInfo, claimDailyBonus } from '../api/userApi'
@@ -29,15 +29,13 @@ import {
   ModalLoadingFallback,
 } from '../components/home'
 
-// Lazy load heavy modal components
+// Lazy load modal components — all use shared ModalWrapper / CenteredModalWrapper
 const QRCodeModal = lazy(() => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal })))
 const DailyBonusModal = lazy(() => import('../components/ui/DailyBonus').then(m => ({ default: m.DailyBonusModal })))
-// Refactored modals with LazyMotion and accessibility
 const CashbackModal = lazy(() => import('../components/modals/CashbackModal').then(m => ({ default: m.CashbackModal })))
 const RanksModal = lazy(() => import('../components/modals/RanksModal').then(m => ({ default: m.RanksModal })))
-// Legacy modals (unchanged)
-const GuaranteesModal = lazy(() => import('../components/ui/HomeModals').then(m => ({ default: m.GuaranteesModal })))
-const TransactionsModal = lazy(() => import('../components/ui/HomeModals').then(m => ({ default: m.TransactionsModal })))
+const GuaranteesModal = lazy(() => import('../components/modals/GuaranteesModal').then(m => ({ default: m.GuaranteesModal })))
+const TransactionsModal = lazy(() => import('../components/modals/TransactionsModal').then(m => ({ default: m.TransactionsModal })))
 const WelcomePromoModal = lazy(() => import('../components/ui/WelcomePromoModal').then(m => ({ default: m.WelcomePromoModal })))
 
 interface Props {
@@ -313,32 +311,35 @@ export function HomePage({ user }: Props) {
       {/* ═══════════════════════════════════════════════════════════════════
           MODALS — Lazy loaded
           ═══════════════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          MODALS — All use shared wrappers with internal AnimatePresence.
+          Rendered always (not conditionally) so exit animations work.
+          ═══════════════════════════════════════════════════════════════════ */}
       <Suspense fallback={<ModalLoadingFallback />}>
-        <AnimatePresence>
-          {state.modals.qr && (
-            <QRCodeModal value={user.referral_code} onClose={() => actions.closeModal('qr')} />
-          )}
-        </AnimatePresence>
+        <QRCodeModal
+          isOpen={state.modals.qr}
+          value={user.referral_code}
+          onClose={() => actions.closeModal('qr')}
+        />
 
-        <AnimatePresence>
-          {state.modals.dailyBonus && state.dailyBonus.info && (
-            <DailyBonusModal
-              streak={dailyStreak}
-              canClaim={canClaimBonus}
-              bonuses={state.dailyBonus.info.bonuses}
-              cooldownRemaining={state.dailyBonus.info.cooldown_remaining}
-              onClaim={async () => {
-                const result = await claimDailyBonus()
-                if (result.won) {
-                  actions.setConfetti(true)
-                }
-                actions.updateDailyBonusAfterClaim('24ч')
-                return result
-              }}
-              onClose={() => actions.closeModal('dailyBonus')}
-            />
-          )}
-        </AnimatePresence>
+        {state.dailyBonus.info && (
+          <DailyBonusModal
+            isOpen={state.modals.dailyBonus}
+            streak={dailyStreak}
+            canClaim={canClaimBonus}
+            bonuses={state.dailyBonus.info.bonuses}
+            cooldownRemaining={state.dailyBonus.info.cooldown_remaining}
+            onClaim={async () => {
+              const result = await claimDailyBonus()
+              if (result.won) {
+                actions.setConfetti(true)
+              }
+              actions.updateDailyBonusAfterClaim('24ч')
+              return result
+            }}
+            onClose={() => actions.closeModal('dailyBonus')}
+          />
+        )}
 
         <Confetti
           active={state.showConfetti}
@@ -346,44 +347,34 @@ export function HomePage({ user }: Props) {
           intensity={capability.tier === 3 ? 'medium' : 'low'}
         />
 
-        {state.modals.cashback && (
-          <CashbackModal
-            isOpen={state.modals.cashback}
-            onClose={() => actions.closeModal('cashback')}
-            user={user}
-          />
-        )}
-        {state.modals.guarantees && (
-          <GuaranteesModal
-            isOpen={state.modals.guarantees}
-            onClose={() => actions.closeModal('guarantees')}
-          />
-        )}
-        {state.modals.transactions && (
-          <TransactionsModal
-            isOpen={state.modals.transactions}
-            onClose={() => actions.closeModal('transactions')}
-            transactions={user.transactions}
-            balance={user.balance}
-            onViewAll={() => navigate('/profile')}
-          />
-        )}
-        {state.modals.ranks && (
-          <RanksModal
-            isOpen={state.modals.ranks}
-            onClose={() => actions.closeModal('ranks')}
-            user={user}
-          />
-        )}
-        {state.modals.welcome && (
-          <WelcomePromoModal
-            isOpen={state.modals.welcome}
-            onClose={() => actions.closeModal('welcome')}
-            promoCode="WELCOME10"
-            discount={10}
-            onApplyPromo={() => navigate('/create-order')}
-          />
-        )}
+        <CashbackModal
+          isOpen={state.modals.cashback}
+          onClose={() => actions.closeModal('cashback')}
+          user={user}
+        />
+        <GuaranteesModal
+          isOpen={state.modals.guarantees}
+          onClose={() => actions.closeModal('guarantees')}
+        />
+        <TransactionsModal
+          isOpen={state.modals.transactions}
+          onClose={() => actions.closeModal('transactions')}
+          transactions={user.transactions}
+          balance={user.balance}
+          onViewAll={() => navigate('/profile')}
+        />
+        <RanksModal
+          isOpen={state.modals.ranks}
+          onClose={() => actions.closeModal('ranks')}
+          user={user}
+        />
+        <WelcomePromoModal
+          isOpen={state.modals.welcome}
+          onClose={() => actions.closeModal('welcome')}
+          promoCode="WELCOME10"
+          discount={10}
+          onApplyPromo={() => navigate('/create-order')}
+        />
       </Suspense>
     </main>
   )
