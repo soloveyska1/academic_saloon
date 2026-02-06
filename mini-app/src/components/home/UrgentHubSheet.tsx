@@ -1,10 +1,10 @@
 import { memo, useCallback } from 'react'
 import { m } from 'framer-motion'
-import { Zap, Camera, ArrowRight, Shield, Sparkles } from 'lucide-react'
+import { Zap, Camera, ArrowRight, Shield } from 'lucide-react'
 import { ModalWrapper, triggerHaptic } from '../modals/shared'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  URGENT HUB SHEET
+//  URGENT HUB SHEET — "The Void & The Gold" Premium Edition
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface UrgentHubSheetProps {
@@ -36,46 +36,37 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
     >
       <div style={{ padding: '0 20px 20px' }}>
 
-        {/* ── Header (unified pattern) ── */}
+        {/* ── Section label (Cinzel serif, like home page section titles) ── */}
         <m.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.03 }}
           style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: 12,
+            fontWeight: 600,
+            color: '#52525b',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            marginBottom: 20,
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
-            marginBottom: 24,
+            gap: 12,
           }}
         >
+          Срочная помощь
           <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 16px -4px rgba(239,68,68,0.35)',
-            flexShrink: 0,
-          }}>
-            <Zap size={22} color="#fff" strokeWidth={2} fill="rgba(255,255,255,0.2)" />
-          </div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#f4f4f5', lineHeight: 1.2 }}>
-              Срочная помощь
-            </div>
-            <div style={{ fontSize: 13, color: '#71717a', marginTop: 2 }}>
-              Приступим в ближайший час
-            </div>
-          </div>
+            flex: 1,
+            height: 1,
+            background: 'linear-gradient(90deg, rgba(82,82,91,0.3), transparent)',
+          }} />
         </m.div>
 
-        {/* ── Option cards ── */}
+        {/* ── Option cards (voidGlass material) ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
           {/* Urgent order */}
           <m.button
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.06 }}
             whileTap={{ scale: 0.98 }}
@@ -84,31 +75,43 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               width: '100%',
               padding: 16,
               borderRadius: 16,
-              background: 'rgba(239,68,68,0.06)',
-              border: '1px solid rgba(239,68,68,0.12)',
+              background: 'rgba(9,9,11,0.6)',
+              backdropFilter: 'blur(12px) saturate(150%)',
+              WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+              border: '1px solid rgba(255,255,255,0.04)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.3)',
               cursor: 'pointer',
               textAlign: 'left',
               display: 'flex',
               alignItems: 'center',
               gap: 14,
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
+            {/* Premium top highlight */}
             <div style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.15)',
+              position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
+            }} />
+
+            <div style={{
+              width: 42, height: 42, borderRadius: 14,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)',
+              border: '1px solid rgba(212,175,55,0.2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
+              filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.15))',
             }}>
-              <Sparkles size={20} color="#fca5a5" strokeWidth={1.5} />
+              <Zap size={20} color="#d4af37" strokeWidth={1.5} />
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#f2f2f2', marginBottom: 3 }}>
                 Срочный заказ
               </div>
-              <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
-                Укажите тему, предмет и дедлайн — подберём автора
+              <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
+                Укажите тему и дедлайн — подберём автора
               </div>
             </div>
 
@@ -117,20 +120,24 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               flexShrink: 0,
             }}>
               <div style={{
-                padding: '4px 10px',
+                padding: '3px 10px',
                 borderRadius: 8,
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.15)',
+                background: 'rgba(212,175,55,0.08)',
+                border: '1px solid rgba(212,175,55,0.15)',
               }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#fca5a5', whiteSpace: 'nowrap' }}>от 24ч</span>
+                <span style={{
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: 10, fontWeight: 600, color: '#d4af37',
+                  letterSpacing: '0.05em',
+                }}>от 24ч</span>
               </div>
-              <ArrowRight size={16} color="rgba(252,165,165,0.35)" />
+              <ArrowRight size={16} color="rgba(212,175,55,0.3)" />
             </div>
           </m.button>
 
           {/* Photo estimate */}
           <m.button
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             whileTap={{ scale: 0.98 }}
@@ -139,30 +146,41 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               width: '100%',
               padding: 16,
               borderRadius: 16,
-              background: 'rgba(212,175,55,0.06)',
-              border: '1px solid rgba(212,175,55,0.12)',
+              background: 'rgba(9,9,11,0.6)',
+              backdropFilter: 'blur(12px) saturate(150%)',
+              WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+              border: '1px solid rgba(255,255,255,0.04)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.3)',
               cursor: 'pointer',
               textAlign: 'left',
               display: 'flex',
               alignItems: 'center',
               gap: 14,
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
             <div style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: 'rgba(212,175,55,0.1)',
-              border: '1px solid rgba(212,175,55,0.15)',
+              position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
+            }} />
+
+            <div style={{
+              width: 42, height: 42, borderRadius: 14,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)',
+              border: '1px solid rgba(212,175,55,0.2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
+              filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.15))',
             }}>
-              <Camera size={20} color="#fcd34d" strokeWidth={1.5} />
+              <Camera size={20} color="#d4af37" strokeWidth={1.5} />
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#e4e4e7', marginBottom: 4 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#f2f2f2', marginBottom: 3 }}>
                 Скинуть фото задания
               </div>
-              <div style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: '#71717a', lineHeight: 1.5 }}>
                 Оценим стоимость за 5 минут
               </div>
             </div>
@@ -172,14 +190,18 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
               flexShrink: 0,
             }}>
               <div style={{
-                padding: '4px 10px',
+                padding: '3px 10px',
                 borderRadius: 8,
                 background: 'rgba(212,175,55,0.08)',
-                border: '1px solid rgba(212,175,55,0.12)',
+                border: '1px solid rgba(212,175,55,0.15)',
               }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#fcd34d', whiteSpace: 'nowrap' }}>5 мин</span>
+                <span style={{
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: 10, fontWeight: 600, color: '#d4af37',
+                  letterSpacing: '0.05em',
+                }}>5 мин</span>
               </div>
-              <ArrowRight size={16} color="rgba(212,175,55,0.25)" />
+              <ArrowRight size={16} color="rgba(212,175,55,0.3)" />
             </div>
           </m.button>
         </div>
@@ -188,39 +210,41 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
+          transition={{ delay: 0.16 }}
           style={{ display: 'flex', gap: 10 }}
         >
           <div style={{
             flex: 1,
             padding: '10px 12px',
             borderRadius: 12,
-            background: 'rgba(34,197,94,0.04)',
-            border: '1px solid rgba(34,197,94,0.08)',
+            background: 'rgba(9,9,11,0.4)',
+            border: '1px solid rgba(255,255,255,0.03)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
           }}>
-            <Shield size={14} color="#4ade80" />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>Гарантия качества</span>
+            <Shield size={13} color="#d4af37" style={{ filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.3))' }} />
+            <span style={{ fontSize: 11, color: '#71717a', letterSpacing: '0.02em' }}>Гарантия качества</span>
           </div>
           <div style={{
             flex: 1,
             padding: '10px 12px',
             borderRadius: 12,
-            background: 'rgba(34,197,94,0.04)',
-            border: '1px solid rgba(34,197,94,0.08)',
+            background: 'rgba(9,9,11,0.4)',
+            border: '1px solid rgba(255,255,255,0.03)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
           }}>
             <div style={{
-              width: 7, height: 7, borderRadius: '50%',
+              width: 6, height: 6, borderRadius: '50%',
               background: '#22c55e',
-              boxShadow: '0 0 6px #22c55e',
+              boxShadow: '0 0 8px #22c55e',
               flexShrink: 0,
             }} />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>Онлайн 24/7</span>
+            <span style={{ fontSize: 11, color: '#71717a', letterSpacing: '0.02em' }}>Онлайн 24/7</span>
           </div>
         </m.div>
       </div>
