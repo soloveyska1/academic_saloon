@@ -20,16 +20,27 @@ export const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => 
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SPRING CONFIGS — iOS-like feel
+//  SPRING CONFIGS
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SPRING_OPEN = { type: 'spring' as const, stiffness: 340, damping: 32 }
-const SPRING_CLOSE = { type: 'spring' as const, stiffness: 440, damping: 38 }
-const DISMISS_THRESHOLD = 100 // px
-const VELOCITY_THRESHOLD = 500 // px/s
+const SPRING_OPEN = { type: 'spring' as const, stiffness: 300, damping: 30 }
+const SPRING_CLOSE = { type: 'spring' as const, stiffness: 400, damping: 35 }
+const DISMISS_THRESHOLD = 80 // px
+const VELOCITY_THRESHOLD = 400 // px/s
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MODAL WRAPPER — Vaul-inspired bottom sheet
+//  MODAL WRAPPER — Clean bottom sheet
+// ═══════════════════════════════════════════════════════════════════════════
+//
+//  Architecture:
+//  1. Handle area: drag-to-dismiss via touch events (touchAction: none)
+//  2. Content area: pure native scroll (NO touch event interference)
+//  3. Backdrop: click to close
+//
+//  Previous bug: content-scroll-to-dismiss used e.preventDefault() on
+//  React synthetic events which broke native scrolling entirely.
+//  Fix: removed it. Only the handle supports drag-to-dismiss now.
+//
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface ModalWrapperProps {
@@ -50,7 +61,6 @@ export function ModalWrapper({
   accentColor = '#D4AF37',
 }: ModalWrapperProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const dragStartRef = useRef<{ y: number; time: number } | null>(null)
   const [dragY, setDragY] = useState(0)
@@ -67,7 +77,7 @@ export function ModalWrapper({
     onClose()
   }, [onClose])
 
-  // ─── Drag-to-dismiss (handle only) ────────────────────────────────
+  // ─── Handle drag-to-dismiss (ONLY on the grabber) ─────────────────
   const onHandleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0]
     if (!touch) return
@@ -105,70 +115,6 @@ export function ModalWrapper({
     dragStartRef.current = null
   }, [onClose])
 
-  // ─── Content-scroll-to-dismiss (Vaul pattern) ─────────────────────
-  // When content is scrolled to top and user pulls down → dismiss
-  const scrollDragRef = useRef<{ y: number; time: number; scrollWas0: boolean } | null>(null)
-  const [contentDragY, setContentDragY] = useState(0)
-  const [isContentDragging, setIsContentDragging] = useState(false)
-
-  const onContentTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0]
-    if (!touch) return
-    const el = contentRef.current
-    const scrolledToTop = !el || el.scrollTop <= 0
-    scrollDragRef.current = { y: touch.clientY, time: Date.now(), scrollWas0: scrolledToTop }
-  }, [])
-
-  const onContentTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!scrollDragRef.current) return
-    const touch = e.touches[0]
-    if (!touch) return
-    const el = contentRef.current
-    const atTop = !el || el.scrollTop <= 0
-    const dy = touch.clientY - scrollDragRef.current.y
-
-    // Only activate drag-to-dismiss if scrolled to top and pulling down
-    if (scrollDragRef.current.scrollWas0 && atTop && dy > 0) {
-      e.preventDefault()
-      setIsContentDragging(true)
-      setContentDragY(Math.max(0, dy))
-    } else {
-      // Scrolling normally — deactivate drag
-      if (isContentDragging) {
-        setIsContentDragging(false)
-        setContentDragY(0)
-      }
-      scrollDragRef.current.scrollWas0 = false
-    }
-  }, [isContentDragging])
-
-  const onContentTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!scrollDragRef.current || !isContentDragging) {
-      scrollDragRef.current = null
-      setIsContentDragging(false)
-      setContentDragY(0)
-      return
-    }
-    const touch = e.changedTouches[0]
-    if (!touch) { setIsContentDragging(false); setContentDragY(0); return }
-
-    const totalDy = touch.clientY - scrollDragRef.current.y
-    const elapsed = Date.now() - scrollDragRef.current.time
-    const velocity = elapsed > 0 ? (totalDy / elapsed) * 1000 : 0
-
-    if (totalDy > DISMISS_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
-      triggerHaptic('light')
-      onClose()
-    }
-    setContentDragY(0)
-    setIsContentDragging(false)
-    scrollDragRef.current = null
-  }, [isContentDragging, onClose])
-
-  // Combined drag offset
-  const totalDragY = dragY + contentDragY
-  const anyDragging = isDragging || isContentDragging
-
   // ─── Focus management ─────────────────────────────────────────────
   useEffect(() => {
     if (isOpen) {
@@ -191,31 +137,26 @@ export function ModalWrapper({
   useEffect(() => {
     if (!isOpen) {
       setDragY(0)
-      setContentDragY(0)
       setIsDragging(false)
-      setIsContentDragging(false)
     }
   }, [isOpen])
 
   // Backdrop opacity follows drag
-  const backdropOpacity = totalDragY > 0
-    ? Math.max(0, 1 - totalDragY / 400)
-    : 1
+  const backdropOpacity = dragY > 0 ? Math.max(0, 1 - dragY / 300) : 1
 
   const sheetStyle = useMemo<React.CSSProperties>(() => ({
     position: 'fixed',
     bottom: 0,
     left: 0,
     right: 0,
-    maxHeight: '90vh',
+    maxHeight: '92dvh',
     display: 'flex',
     flexDirection: 'column',
-    background: '#111113',
-    borderRadius: '20px 20px 0 0',
-    boxShadow: '0 -2px 10px rgba(0,0,0,0.04), 0 -8px 32px rgba(0,0,0,0.12)',
+    background: '#0c0c0e',
+    borderRadius: '24px 24px 0 0',
+    boxShadow: `0 -1px 0 ${accentColor}20, 0 -8px 40px rgba(0,0,0,0.4)`,
     zIndex: 2001,
     outline: 'none',
-    borderTop: `1px solid ${accentColor}25`,
   }), [accentColor])
 
   return (
@@ -229,14 +170,14 @@ export function ModalWrapper({
               initial={{ opacity: 0 }}
               animate={{ opacity: backdropOpacity }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
+              transition={{ duration: 0.2 }}
               onClick={handleClose}
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'rgba(0,0,0,0.5)',
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
+                background: 'rgba(0,0,0,0.6)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
                 zIndex: 2000,
               }}
               aria-hidden="true"
@@ -247,9 +188,9 @@ export function ModalWrapper({
               key={`${modalId}-sh`}
               ref={sheetRef}
               initial={{ y: '100%' }}
-              animate={{ y: totalDragY }}
+              animate={{ y: dragY }}
               exit={{ y: '100%' }}
-              transition={anyDragging
+              transition={isDragging
                 ? { type: 'tween', duration: 0 }
                 : isOpen ? SPRING_OPEN : SPRING_CLOSE
               }
@@ -266,7 +207,7 @@ export function ModalWrapper({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '12px 0 8px',
+                  padding: '14px 0 10px',
                   cursor: 'grab',
                   touchAction: 'none',
                 }}
@@ -275,10 +216,10 @@ export function ModalWrapper({
                 onTouchEnd={onHandleTouchEnd}
               >
                 <div style={{
-                  width: 36,
+                  width: 40,
                   height: 5,
-                  borderRadius: 2.5,
-                  background: 'rgba(255,255,255,0.25)',
+                  borderRadius: 3,
+                  background: 'rgba(255,255,255,0.2)',
                 }} />
               </div>
 
@@ -290,11 +231,11 @@ export function ModalWrapper({
                   position: 'absolute',
                   top: 14,
                   right: 16,
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  background: 'rgba(255,255,255,0.08)',
-                  border: 'none',
+                  width: 34,
+                  height: 34,
+                  borderRadius: 17,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -303,17 +244,13 @@ export function ModalWrapper({
                 }}
                 aria-label="Закрыть"
               >
-                <X size={16} color="rgba(255,255,255,0.5)" />
+                <X size={16} color="rgba(255,255,255,0.4)" />
               </m.button>
 
               <h2 id={`${modalId}-title`} className="sr-only">{title}</h2>
 
-              {/* Scrollable content */}
+              {/* Scrollable content — NO touch event interference */}
               <div
-                ref={contentRef}
-                onTouchStart={onContentTouchStart}
-                onTouchMove={onContentTouchMove}
-                onTouchEnd={onContentTouchEnd}
                 style={{
                   flex: 1,
                   minHeight: 0,
@@ -321,7 +258,7 @@ export function ModalWrapper({
                   overflowX: 'hidden',
                   WebkitOverflowScrolling: 'touch',
                   overscrollBehavior: 'contain',
-                  paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
+                  paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
                 }}
                 data-scroll-container="true"
               >
