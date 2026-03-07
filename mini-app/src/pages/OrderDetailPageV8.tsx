@@ -30,7 +30,7 @@
  */
 
 import { useState, useEffect, useCallback, memo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
@@ -79,7 +79,15 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
-import { fetchOrderDetail, fetchPaymentInfo, PaymentInfo, archiveOrder, unarchiveOrder } from '../api/userApi'
+import {
+  fetchOrderDetail,
+  fetchPaymentInfo,
+  PaymentInfo,
+  archiveOrder,
+  unarchiveOrder,
+  confirmPayment,
+  uploadChatFile,
+} from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
 import { useToast } from '../components/ui/Toast'
@@ -194,6 +202,33 @@ const WORK_TYPE_LABELS: Record<string, string> = {
 const formatPrice = (amount: number | undefined | null): string => {
   if (!amount || typeof amount !== 'number') return '0'
   return amount.toLocaleString('ru-RU')
+}
+
+async function copyTextSafely(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    // Use fallback below.
+  }
+
+  try {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    textarea.style.pointerEvents = 'none'
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    const copied = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return copied
+  } catch {
+    return false
+  }
 }
 
 // Format deadline to Russian
@@ -905,7 +940,9 @@ interface PaymentSheetProps {
   onClose: () => void
   order: Order
   paymentInfo: PaymentInfo | null
+  paymentMethod: PaymentMethod
   paymentScheme: 'full' | 'half'
+  setPaymentMethod: (method: PaymentMethod) => void
   setPaymentScheme: (scheme: 'full' | 'half') => void
   onConfirmPayment: () => void
 }
@@ -915,11 +952,12 @@ const PaymentSheet = memo(function PaymentSheet({
   onClose,
   order,
   paymentInfo,
+  paymentMethod,
   paymentScheme,
+  setPaymentMethod,
   setPaymentScheme,
   onConfirmPayment,
 }: PaymentSheetProps) {
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card')
   const [cardNumberVisible, setCardNumberVisible] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const { showToast } = useToast()
@@ -930,6 +968,7 @@ const PaymentSheet = memo(function PaymentSheet({
   const halfAmount = Math.ceil(fullAmount / 2)
   const remainingAfterHalf = fullAmount - halfAmount
   const todayAmount = paymentScheme === 'full' ? fullAmount : halfAmount
+  const hasPaymentInfo = Boolean(paymentInfo)
 
   // Card info from paymentInfo
   const cardNumber = paymentInfo?.card_number || '2200 0000 0000 0000'
@@ -937,8 +976,13 @@ const PaymentSheet = memo(function PaymentSheet({
   const maskedCard = cardNumber.replace(/(\d{4})\s*(\d{4})\s*(\d{4})\s*(\d{4})/, '$1 •••• •••• $4')
 
   // Copy handler
-  const handleCopy = useCallback((text: string, field: string) => {
-    navigator.clipboard.writeText(text)
+  const handleCopy = useCallback(async (text: string, field: string) => {
+    const copied = await copyTextSafely(text)
+    if (!copied) {
+      haptic?.('error')
+      showToast({ type: 'error', title: 'Не удалось скопировать' })
+      return
+    }
     haptic?.('light')
     setCopiedField(field)
     showToast({ type: 'success', title: 'Скопировано' })
@@ -946,9 +990,14 @@ const PaymentSheet = memo(function PaymentSheet({
   }, [haptic, showToast])
 
   // Copy all for card
-  const handleCopyAll = useCallback(() => {
+  const handleCopyAll = useCallback(async () => {
     const allText = `Карта: ${cardNumber}\nПолучатель: ${cardHolder}\nСумма: ${todayAmount} ₽\nКомментарий: Заказ #${order.id}`
-    navigator.clipboard.writeText(allText)
+    const copied = await copyTextSafely(allText)
+    if (!copied) {
+      haptic?.('error')
+      showToast({ type: 'error', title: 'Не удалось скопировать реквизиты' })
+      return
+    }
     haptic?.('medium')
     setCopiedField('all')
     showToast({ type: 'success', title: 'Все данные скопированы' })
@@ -1666,28 +1715,41 @@ const PaymentSheet = memo(function PaymentSheet({
               borderTop: `1px solid ${DS.colors.border}`,
               background: DS.colors.bgSurface,
             }}>
+              {!hasPaymentInfo && (
+                <div style={{
+                  marginBottom: DS.space.md,
+                  fontSize: DS.fontSize.sm,
+                  color: DS.colors.textMuted,
+                  textAlign: 'center',
+                }}>
+                  Реквизиты еще загружаются. Подождите пару секунд.
+                </div>
+              )}
               <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={onConfirmPayment}
+                whileTap={hasPaymentInfo ? { scale: 0.98 } : undefined}
+                onClick={hasPaymentInfo ? onConfirmPayment : undefined}
+                disabled={!hasPaymentInfo}
                 style={{
                   width: '100%',
                   padding: `${DS.space.lg}px ${DS.space.xl}px`,
                   borderRadius: DS.radius.lg,
-                  background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
-                  border: 'none',
-                  cursor: 'pointer',
+                  background: hasPaymentInfo
+                    ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
+                    : DS.colors.bgElevated,
+                  border: hasPaymentInfo ? 'none' : `1px solid ${DS.colors.border}`,
+                  cursor: hasPaymentInfo ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: DS.space.sm,
-                  boxShadow: '0 8px 24px -4px rgba(212,175,55,0.4)',
+                  boxShadow: hasPaymentInfo ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
                 }}
               >
-                <CheckCircle2 size={20} color="#0a0a0c" />
+                <CheckCircle2 size={20} color={hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted} />
                 <span style={{
                   fontSize: DS.fontSize.lg,
                   fontWeight: 700,
-                  color: '#0a0a0c',
+                  color: hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted,
                 }}>
                   Я оплатил(а)
                 </span>
@@ -1709,7 +1771,7 @@ interface ConfirmPaymentModalProps {
   onClose: () => void
   order: Order
   paymentAmount: number
-  onSubmit: () => void
+  onSubmit: (receipt: File | null) => Promise<void>
 }
 
 interface ChecklistItem {
@@ -1791,12 +1853,18 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
 
     haptic?.('medium')
     setIsSubmitting(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    setIsSubmitting(false)
-    onSubmit()
+    try {
+      await onSubmit(screenshot)
+    } catch (err) {
+      haptic?.('error')
+      showToast({
+        type: 'error',
+        title: 'Не удалось отправить подтверждение',
+        message: err instanceof Error ? err.message : 'Попробуйте ещё раз',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (!isOpen) return null
@@ -3446,6 +3514,7 @@ function ErrorState({ message, onBack }: { message: string; onBack: () => void }
 export function OrderDetailPageV8() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { haptic } = useTelegram()
   const { showToast } = useToast()
   const { addMessageHandler } = useWebSocketContext()
@@ -3455,6 +3524,7 @@ export function OrderDetailPageV8() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card')
   const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
   const [paymentSheetOpen, setPaymentSheetOpen] = useState(false)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
@@ -3524,9 +3594,14 @@ export function OrderDetailPageV8() {
     navigate('/orders')
   }, [haptic, navigate])
 
-  const handleCopyOrderId = useCallback(() => {
+  const handleCopyOrderId = useCallback(async () => {
     if (!order) return
-    navigator.clipboard.writeText(`#${order.id}`)
+    const copied = await copyTextSafely(`#${order.id}`)
+    if (!copied) {
+      haptic?.('error')
+      showToast({ type: 'error', title: 'Не удалось скопировать номер заказа' })
+      return
+    }
     haptic?.('light')
     showToast({ type: 'success', title: 'Скопировано', message: `Номер заказа #${order.id}` })
   }, [order, haptic, showToast])
@@ -3544,9 +3619,33 @@ export function OrderDetailPageV8() {
   }, [haptic, navigate])
 
   const handlePaymentClick = useCallback(() => {
-    haptic?.('medium')
-    setPaymentSheetOpen(true)
-  }, [haptic])
+    const openPayment = async () => {
+      if (!order) return
+
+      haptic?.('medium')
+
+      if (!paymentInfo) {
+        try {
+          const freshPaymentInfo = await fetchPaymentInfo(order.id)
+          setPaymentInfo(freshPaymentInfo)
+          setPaymentSheetOpen(true)
+          return
+        } catch {
+          haptic?.('error')
+          showToast({
+            type: 'error',
+            title: 'Не удалось загрузить реквизиты',
+            message: 'Попробуйте открыть оплату ещё раз через несколько секунд.',
+          })
+          return
+        }
+      }
+
+      setPaymentSheetOpen(true)
+    }
+
+    void openPayment()
+  }, [order, paymentInfo, haptic, showToast])
 
   const handleDownloadFiles = useCallback(() => {
     if (!order?.files_url) return
@@ -3562,23 +3661,56 @@ export function OrderDetailPageV8() {
   }, [haptic])
 
   // Submit payment confirmation
-  const handleSubmitPaymentConfirmation = useCallback(() => {
+  const handleSubmitPaymentConfirmation = useCallback(async (receipt: File | null) => {
+    if (!order) {
+      throw new Error('Заказ не найден')
+    }
+
+    const result = await confirmPayment(order.id, paymentMethod, paymentScheme)
+    if (!result.success) {
+      throw new Error(result.message || 'Не удалось отправить подтверждение')
+    }
+
+    let receiptAttached = false
+    let receiptUploadFailed = false
+
+    if (receipt) {
+      try {
+        await uploadChatFile(order.id, receipt)
+        receiptAttached = true
+      } catch {
+        receiptUploadFailed = true
+      }
+    }
+
     haptic?.('success')
     setConfirmModalOpen(false)
+    setOrder((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: result.new_status as OrderStatus,
+            payment_method: paymentMethod,
+            payment_scheme: paymentScheme,
+          }
+        : prev
+    )
 
-    // Optimistically update order status to verification_pending
-    if (order) {
-      setOrder((prev) =>
-        prev ? { ...prev, status: 'verification_pending' as OrderStatus } : prev
-      )
+    if (receiptUploadFailed) {
+      showToast({
+        type: 'warning',
+        title: 'Подтверждение отправлено',
+        message: 'Статус обновили, но скриншот не прикрепился. Его можно дослать в чат заказа.',
+      })
+      return
     }
 
     showToast({
       type: 'success',
       title: 'Отправлено на проверку',
-      message: 'Мы уведомим вас о результате',
+      message: receiptAttached ? 'Подтверждение и скриншот переданы менеджеру.' : 'Мы уведомим вас о результате.',
     })
-  }, [haptic, order, showToast])
+  }, [order, paymentMethod, paymentScheme, haptic, showToast])
 
   // Calculate today's payment amount
   const calculateTodayAmount = useCallback((): number => {
@@ -3597,6 +3729,25 @@ export function OrderDetailPageV8() {
   // Determine if we're in payment flow
   const isPaymentFlow = ['waiting_payment', 'confirmed'].includes(order?.status || '')
   const isVerificationPending = order?.status === 'verification_pending'
+  const requestedAction = searchParams.get('action')
+
+  useEffect(() => {
+    if (!order || requestedAction !== 'pay') return
+
+    if (!isPaymentFlow) {
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('action')
+      setSearchParams(nextParams, { replace: true })
+      return
+    }
+
+    if (!paymentInfo) return
+
+    setPaymentSheetOpen(true)
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('action')
+    setSearchParams(nextParams, { replace: true })
+  }, [order, requestedAction, isPaymentFlow, paymentInfo, searchParams, setSearchParams])
 
   // Open in-app chat handler for this specific order
   const handleOpenChat = useCallback(() => {
@@ -3700,7 +3851,9 @@ export function OrderDetailPageV8() {
         onClose={() => setPaymentSheetOpen(false)}
         order={order}
         paymentInfo={paymentInfo}
+        paymentMethod={paymentMethod}
         paymentScheme={paymentScheme}
+        setPaymentMethod={setPaymentMethod}
         setPaymentScheme={setPaymentScheme}
         onConfirmPayment={handleOpenConfirmModal}
       />

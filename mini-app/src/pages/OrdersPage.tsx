@@ -1272,6 +1272,105 @@ const FloatingCreateButton = memo(function FloatingCreateButton({
   )
 })
 
+const BatchPaymentBanner = memo(function BatchPaymentBanner({
+  count,
+  amount,
+  onClick,
+}: {
+  count: number
+  amount: number
+  onClick: () => void
+}) {
+  return (
+    <motion.button
+      initial={prefersReducedMotion ? {} : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileTap={{ scale: 0.985 }}
+      onClick={onClick}
+      style={{
+        width: '100%',
+        marginBottom: 16,
+        padding: '18px 18px 16px',
+        borderRadius: 22,
+        border: '1px solid rgba(212,175,55,0.2)',
+        background: 'linear-gradient(145deg, rgba(32,28,18,0.98), rgba(18,18,20,0.98))',
+        cursor: 'pointer',
+        textAlign: 'left',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{
+        position: 'absolute',
+        inset: 'auto auto -20px -10px',
+        width: 140,
+        height: 140,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(212,175,55,0.18) 0%, transparent 68%)',
+        filter: 'blur(10px)',
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          width: 50,
+          height: 50,
+          borderRadius: 16,
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.22), rgba(212,175,55,0.08))',
+          border: '1px solid rgba(212,175,55,0.22)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <CreditCard size={22} color="#d4af37" />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: 'rgba(212,175,55,0.72)',
+            letterSpacing: '0.1em',
+            marginBottom: 6,
+          }}>
+            ЕДИНАЯ ОПЛАТА
+          </div>
+          <div style={{
+            fontSize: 17,
+            fontWeight: 700,
+            color: 'var(--text-main)',
+            marginBottom: 4,
+          }}>
+            Оплатить {count} {count === 1 ? 'заказ' : count < 5 ? 'заказа' : 'заказов'} сразу
+          </div>
+          <div style={{
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.62)',
+            lineHeight: 1.45,
+          }}>
+            Один перевод на {amount.toLocaleString('ru-RU')} ₽ вместо нескольких переходов по карточкам.
+          </div>
+        </div>
+
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: 14,
+          background: 'linear-gradient(135deg, #D4AF37, #b48e26)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          boxShadow: '0 8px 18px rgba(212,175,55,0.2)',
+        }}>
+          <ChevronRight size={18} color="#0a0a0c" />
+        </div>
+      </div>
+    </motion.button>
+  )
+})
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  🏠 MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1315,6 +1414,22 @@ export function OrdersPage({ orders }: Props) {
       totalValue,
     }
   }, [orders])
+
+  const payableOrders = useMemo(() => {
+    return orders.filter((order) => {
+      if (order.is_archived) return false
+      if (!['confirmed', 'waiting_payment'].includes(order.status)) return false
+      const remaining = (order.final_price || order.price || 0) - (order.paid_amount || 0)
+      return remaining > 0
+    })
+  }, [orders])
+
+  const batchPaymentTotal = useMemo(() => {
+    return payableOrders.reduce((sum, order) => {
+      const remaining = (order.final_price || order.price || 0) - (order.paid_amount || 0)
+      return sum + Math.max(remaining, 0)
+    }, 0)
+  }, [payableOrders])
 
   // Filter and sort orders
   const filteredOrders = useMemo(() => {
@@ -1393,6 +1508,12 @@ export function OrdersPage({ orders }: Props) {
   const handleCreateOrder = () => {
     haptic('medium')
     navigate('/create-order')
+  }
+
+  const handleBatchPayment = () => {
+    if (payableOrders.length < 2) return
+    haptic('medium')
+    navigate(`/batch-payment?orders=${payableOrders.map(order => order.id).join(',')}`)
   }
 
   const handleClearFilter = () => {
@@ -1483,6 +1604,14 @@ export function OrdersPage({ orders }: Props) {
         onFilterChange={handleFilterChange}
         currentFilter={filter}
       />
+
+      {payableOrders.length > 1 && (
+        <BatchPaymentBanner
+          count={payableOrders.length}
+          amount={batchPaymentTotal}
+          onClick={handleBatchPayment}
+        />
+      )}
 
       {/* Filter Bar */}
       <FilterBar

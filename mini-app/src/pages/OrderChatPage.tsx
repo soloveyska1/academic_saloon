@@ -200,6 +200,8 @@ export function OrderChatPage() {
       }
     } catch {
       setInputText(textToSend)
+      setMessages(prev => prev.filter(m => m.id !== tempMsg.id))
+      setError('Не удалось отправить сообщение')
       haptic?.('error')
     } finally {
       setIsSending(false)
@@ -395,7 +397,8 @@ export function OrderChatPage() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100vh - 80px)',
+        minHeight: '100vh',
+        height: '100dvh',
         background: 'var(--bg-main)',
         position: 'relative',
         overflow: 'hidden'

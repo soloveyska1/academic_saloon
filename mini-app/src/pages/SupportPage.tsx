@@ -1,16 +1,32 @@
+import { useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Headphones } from 'lucide-react'
+import { ArrowLeft, Headphones } from 'lucide-react'
 import { FloatingParticles } from '../components/ui/PremiumDesign'
 import { SupportChat } from '../components/support/SupportChat'
+import { useTelegram } from '../hooks/useUserData'
 
 export function SupportPage() {
+  const navigate = useNavigate()
+  const { haptic } = useTelegram()
+
+  const handleBack = useCallback(() => {
+    haptic('light')
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate('/')
+  }, [haptic, navigate])
+
   return (
     <div
       className="app-content"
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100vh - 80px)', // Adjust for bottom nav
+        minHeight: '100vh',
+        height: '100dvh',
         background: 'var(--bg-main)',
         position: 'relative',
         overflow: 'hidden'
@@ -24,13 +40,32 @@ export function SupportPage() {
         animate={{ opacity: 1, y: 0 }}
         style={{
           padding: '16px 16px 10px',
-          textAlign: 'center',
           position: 'relative',
           zIndex: 1,
           flexShrink: 0
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleBack}
+            aria-label="Назад"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <ArrowLeft size={18} color="var(--text-main)" />
+          </motion.button>
+
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -48,7 +83,7 @@ export function SupportPage() {
             <Headphones size={18} color="#0a0a0c" />
           </motion.div>
 
-          <div>
+          <div style={{ textAlign: 'left' }}>
             <h1 style={{
               fontFamily: "var(--font-serif)",
               fontSize: 20,

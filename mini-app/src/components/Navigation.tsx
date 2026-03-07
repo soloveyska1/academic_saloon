@@ -84,7 +84,21 @@ export const Navigation = () => {
   const lastScrollY = useRef(0)
 
   // Pages where nav is completely removed
-  const isHiddenPage = ['/order/', '/create-order', '/support'].some(path => location.pathname.startsWith(path)) && location.pathname !== '/orders'
+  const isHiddenPage = ['/order/', '/create-order', '/support', '/batch-payment'].some(path => location.pathname.startsWith(path)) && location.pathname !== '/orders'
+
+  const isNavItemActive = (path: string) => {
+    if (path === '/') return location.pathname === '/'
+    if (path === '/orders') return location.pathname === '/orders'
+    if (path === '/club') return location.pathname === '/club' || location.pathname.startsWith('/club/')
+    if (path === '/profile') {
+      return (
+        location.pathname === '/profile' ||
+        location.pathname === '/referral' ||
+        location.pathname === '/achievements'
+      )
+    }
+    return location.pathname === path
+  }
 
   // Smart Hide Logic (Throttled for performance)
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -127,7 +141,7 @@ export const Navigation = () => {
   if (isHiddenPage && !isVisible) return null
 
   // Find active index for spotlight
-  const activeIndex = navItems.findIndex(item => location.pathname === item.path)
+  const activeIndex = navItems.findIndex(item => isNavItemActive(item.path))
 
   return (
     <AnimatePresence>
@@ -214,7 +228,7 @@ export const Navigation = () => {
             )}
 
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path
+              const isActive = isNavItemActive(item.path)
               const Icon = item.icon
 
               return (
