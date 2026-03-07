@@ -373,6 +373,8 @@ const OrderAppBar = memo(function OrderAppBar({
   onArchive,
 }: OrderAppBarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+  const StatusIcon = statusConfig.icon
   const workTypeLabel = order.work_type_label || WORK_TYPE_LABELS[order.work_type] || 'Заказ'
 
   const menuItems = [
