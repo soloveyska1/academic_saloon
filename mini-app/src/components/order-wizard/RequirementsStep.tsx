@@ -63,25 +63,23 @@ export function RequirementsStep({
       <DetailsPrelude serviceName={service?.label} />
 
       <InputCard
-        label="Предмет"
+        label="Предмет / дисциплина"
         value={subject}
         onChange={onSubjectChange}
-        placeholder="Например: Экономика, Маркетинг, Python"
+        placeholder="Экономика, маркетинг, Python"
         icon={BookOpen}
         required
         disabled={disabled}
-        helper="Это поле помогает сразу направить заказ по нужному сценарию."
       />
 
       <InputCard
-        label="Тема или формулировка"
+        label="Тема работы"
         value={topic}
         onChange={onTopicChange}
-        placeholder="Можно оставить пустым, если тему уточним позже"
+        placeholder="Если тема уже есть, напишите её"
         icon={FileText}
         disabled={disabled}
-        hint="Необязательно"
-        helper="Если тема свободная, так и напишите. Менеджер уточнит это дальше."
+        hint="По желанию"
       />
 
       <RequirementsSummaryCard
@@ -117,69 +115,57 @@ function DetailsPrelude({ serviceName }: { serviceName?: string }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 260, damping: 28 }}
       style={{
-        position: 'relative',
-        overflow: 'hidden',
-        padding: '18px 18px 16px',
-        borderRadius: 22,
+        padding: '16px 16px 14px',
+        borderRadius: 20,
         background: `
-          radial-gradient(circle at top right, rgba(212, 175, 55, 0.14), transparent 34%),
-          linear-gradient(145deg, rgba(255, 255, 255, 0.03), transparent 55%),
-          linear-gradient(145deg, var(--bg-elevated), var(--bg-surface))
+          radial-gradient(circle at top right, rgba(212, 175, 55, 0.10), transparent 32%),
+          linear-gradient(180deg, rgba(20, 18, 12, 0.92), rgba(11, 11, 16, 0.94))
         `,
-        border: '1px solid rgba(212, 175, 55, 0.16)',
-        boxShadow: '0 18px 40px -30px rgba(0, 0, 0, 0.75)',
+        border: '1px solid rgba(212, 175, 55, 0.14)',
+        boxShadow: '0 16px 36px -34px rgba(0, 0, 0, 0.88)',
       }}
     >
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
         <div style={{
-          display: 'inline-flex',
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          background: 'rgba(212, 175, 55, 0.10)',
+          border: '1px solid rgba(212, 175, 55, 0.14)',
+          display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          alignSelf: 'flex-start',
-          padding: '7px 12px',
-          borderRadius: 999,
-          background: 'rgba(212, 175, 55, 0.08)',
-          border: '1px solid rgba(212, 175, 55, 0.18)',
+          justifyContent: 'center',
+          flexShrink: 0,
         }}>
-          <Sparkles size={14} color="var(--gold-300)" />
-          <span style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--gold-300)',
-          }}>
-            Материалы для заявки
-          </span>
+          <Sparkles size={18} color="var(--gold-300)" />
         </div>
 
-        <div>
-          <div style={{
-            fontSize: 20,
-            fontWeight: 700,
-            color: 'var(--text-main)',
-            lineHeight: 1.2,
-            marginBottom: 8,
-            fontFamily: "'Manrope', sans-serif",
-          }}>
-            Дайте контекст, и заявка сразу станет сильнее.
-          </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 14,
-            lineHeight: 1.6,
+            fontWeight: 700,
+            color: 'var(--text-main)',
+            marginBottom: 5,
+            lineHeight: 1.35,
+          }}>
+            Контекст для точной оценки
+          </div>
+          <div style={{
+            fontSize: 12.5,
+            lineHeight: 1.55,
             color: 'var(--text-secondary)',
           }}>
             {serviceName
-              ? `Для формата «${serviceName}» лучше сразу приложить методичку, пример или скрин задания и коротко описать ожидания.`
-              : 'Чем точнее предмет, тема и материалы, тем быстрее менеджер соберёт понятный сценарий и цену.'}
+              ? `Для «${serviceName}» достаточно указать предмет, тему и приложить материалы, если они уже есть.`
+              : 'Предмет, тема и материалы помогают быстрее собрать сценарий, цену и сроки без лишних уточнений.'}
           </div>
         </div>
+      </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          <PreludeFact icon={CheckCircle2} label="предмет и тема" />
-          <PreludeFact icon={PenTool} label="требования и пожелания" />
-          <PreludeFact icon={ShieldCheck} label="файлы и методички" />
-        </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+        <PreludeFact icon={CheckCircle2} label="точная оценка" />
+        <PreludeFact icon={PenTool} label="ясные требования" />
+        <PreludeFact icon={ShieldCheck} label="материалы под рукой" />
       </div>
     </motion.section>
   )
@@ -196,17 +182,45 @@ function PreludeFact({
     <div style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: 8,
-      padding: '9px 12px',
+      gap: 7,
+      padding: '8px 10px',
       borderRadius: 999,
       background: 'rgba(255, 255, 255, 0.04)',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
+      border: '1px solid rgba(255, 255, 255, 0.05)',
       color: 'var(--text-secondary)',
     }}>
-      <Icon size={14} color="var(--gold-300)" />
-      <span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span>
+      <Icon size={13} color="var(--gold-300)" />
+      <span style={{ fontSize: 11, fontWeight: 600 }}>{label}</span>
     </div>
   )
+}
+
+function getSectionShellStyle(active = false, subtle = false) {
+  return {
+    position: 'relative' as const,
+    overflow: 'hidden' as const,
+    background: subtle
+      ? 'linear-gradient(180deg, rgba(16, 15, 18, 0.92), rgba(11, 11, 16, 0.94))'
+      : `
+          radial-gradient(circle at top right, rgba(212, 175, 55, 0.07), transparent 34%),
+          linear-gradient(180deg, rgba(18, 17, 22, 0.96), rgba(10, 10, 16, 0.94))
+        `,
+    borderRadius: 22,
+    border: active ? '1px solid rgba(212, 175, 55, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
+    boxShadow: active ? '0 0 22px -10px rgba(212, 175, 55, 0.26)' : '0 18px 34px -34px rgba(0, 0, 0, 0.85)',
+  }
+}
+
+function getInnerSurfaceStyle(active = false, dashed = false) {
+  return {
+    background: active
+      ? 'linear-gradient(180deg, rgba(212, 175, 55, 0.10), rgba(255, 255, 255, 0.03))'
+      : 'linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02))',
+    border: dashed
+      ? '1px dashed rgba(212, 175, 55, 0.32)'
+      : `1px solid ${active ? 'rgba(212, 175, 55, 0.18)' : 'rgba(255, 255, 255, 0.05)'}`,
+    borderRadius: 18,
+  }
 }
 
 interface InputCardProps {
@@ -239,57 +253,83 @@ function InputCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        background: 'linear-gradient(180deg, var(--bg-elevated), var(--bg-card-solid))',
-        borderRadius: 18,
-        border: focused ? '1px solid var(--border-gold-strong)' : '1px solid var(--border-default)',
-        padding: '15px 16px',
-        boxShadow: focused ? '0 0 22px -8px rgba(212, 175, 55, 0.35)' : '0 14px 30px -30px rgba(0, 0, 0, 0.75)',
+        ...getSectionShellStyle(focused),
+        padding: '14px',
         opacity: disabled ? 0.65 : 1,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        {Icon && <Icon size={14} color="var(--gold-400)" strokeWidth={2} />}
-        <span style={{
-          fontSize: 11,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          color: 'var(--gold-400)',
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 36,
+          height: 36,
+          borderRadius: 12,
+          background: focused ? 'rgba(212, 175, 55, 0.12)' : 'rgba(212, 175, 55, 0.08)',
+          border: `1px solid ${focused ? 'rgba(212, 175, 55, 0.20)' : 'rgba(212, 175, 55, 0.12)'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
         }}>
-          {label} {required && <span style={{ opacity: 0.7 }}>*</span>}
-        </span>
-        {hint && (
-          <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>
-            {hint}
-          </span>
-        )}
+          {Icon && <Icon size={16} color="var(--gold-400)" strokeWidth={2} />}
+        </div>
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexWrap: 'wrap',
+            marginBottom: 2,
+          }}>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: 'var(--gold-400)',
+            }}>
+              {label} {required && <span style={{ opacity: 0.75 }}>*</span>}
+            </span>
+
+            {hint && <StatusPill tone="muted" label={hint} />}
+          </div>
+
+          {helper && (
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>
+              {helper}
+            </div>
+          )}
+        </div>
       </div>
 
-      <input
-        type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        placeholder={placeholder}
-        disabled={disabled}
-        style={{
-          width: '100%',
-          fontSize: 16,
-          fontFamily: "'Manrope', sans-serif",
-          color: 'var(--text-main)',
-          background: 'transparent',
-          border: 'none',
-          outline: 'none',
-          padding: 0,
-        }}
-      />
-
-      {helper && (
-        <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)' }}>
-          {helper}
-        </div>
-      )}
+      <div style={{
+        ...getInnerSurfaceStyle(focused),
+        marginTop: 12,
+        padding: '13px 14px',
+      }}>
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={placeholder}
+          disabled={disabled}
+          style={{
+            width: '100%',
+            fontSize: value ? 16 : 15,
+            lineHeight: 1.35,
+            fontWeight: value ? 600 : 500,
+            fontFamily: "'Manrope', sans-serif",
+            color: value ? 'var(--text-main)' : 'var(--text-secondary)',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            padding: 0,
+            minWidth: 0,
+          }}
+        />
+      </div>
     </motion.div>
   )
 }
@@ -310,43 +350,60 @@ function RequirementsSummaryCard({
   const trimmedValue = value.trim()
   const hasContent = trimmedValue.length > 0
   const lineCount = trimmedValue ? trimmedValue.split('\n').filter(Boolean).length : 0
-  const preview = trimmedValue.split('\n').slice(0, 4).join('\n')
-  const previewTag = hasContent ? `${Math.max(lineCount, 1)} блоков` : 'Пока пусто'
+  const preview = trimmedValue.split('\n').slice(0, 3).join('\n')
+  const previewTag = hasContent ? `${Math.max(lineCount, 1)} пункт.` : 'По желанию'
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        background: 'linear-gradient(180deg, var(--bg-elevated), var(--bg-card-solid))',
-        borderRadius: 20,
-        border: '1px solid var(--border-default)',
-        padding: '16px',
+        ...getSectionShellStyle(false),
+        padding: '14px',
         opacity: disabled ? 0.65 : 1,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <PenTool size={15} color="var(--gold-400)" strokeWidth={2} />
-        <span style={{
-          fontSize: 11,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          color: 'var(--gold-400)',
-          flex: 1,
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div style={{
+          width: 36,
+          height: 36,
+          borderRadius: 12,
+          background: 'rgba(212, 175, 55, 0.08)',
+          border: '1px solid rgba(212, 175, 55, 0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
         }}>
-          Требования и пожелания
-        </span>
-        <StatusPill tone={hasContent ? 'good' : 'muted'} label={previewTag} />
+          <PenTool size={16} color="var(--gold-400)" strokeWidth={2} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--gold-400)',
+            marginBottom: 2,
+          }}>
+            Требования
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>
+            Объём, оформление, особые пожелания
+          </div>
+        </div>
+
+        <StatusPill tone={hasContent ? 'accent' : 'muted'} label={previewTag} />
         {hasContent && !disabled && (
           <motion.button
             type="button"
             whileTap={{ scale: 0.94 }}
             onClick={onClear}
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: 8,
+              width: 30,
+              height: 30,
+              borderRadius: 10,
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.18)',
               display: 'flex',
@@ -366,22 +423,20 @@ function RequirementsSummaryCard({
         onClick={disabled ? undefined : onEdit}
         style={{
           width: '100%',
-          padding: hasContent ? '16px' : '18px 16px',
-          background: hasContent ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.02)',
-          border: hasContent ? '1px solid rgba(255, 255, 255, 0.04)' : '1px dashed var(--border-gold)',
-          borderRadius: 16,
+          ...getInnerSurfaceStyle(hasContent, !hasContent),
+          padding: hasContent ? '16px' : '16px',
           cursor: disabled ? 'not-allowed' : 'pointer',
           textAlign: 'left',
           display: 'flex',
-          alignItems: hasContent ? 'flex-start' : 'center',
+          alignItems: 'center',
           gap: 14,
         }}
       >
         <div style={{
-          width: 42,
-          height: 42,
+          width: 44,
+          height: 44,
           borderRadius: 12,
-          background: 'rgba(212, 175, 55, 0.10)',
+          background: hasContent ? 'rgba(212, 175, 55, 0.12)' : 'rgba(212, 175, 55, 0.08)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -391,33 +446,38 @@ function RequirementsSummaryCard({
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
-            {hasContent ? 'Требования сохранены' : 'Откройте редактор требований'}
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginBottom: 5 }}>
+            {hasContent ? 'Требования добавлены' : 'Добавить требования'}
           </div>
           <div style={{
             fontSize: 13,
-            lineHeight: 1.6,
+            lineHeight: 1.55,
             color: hasContent ? 'var(--text-secondary)' : 'var(--text-muted)',
             whiteSpace: hasContent ? 'pre-wrap' : 'normal',
             display: '-webkit-box',
-            WebkitLineClamp: hasContent ? 4 : undefined,
+            WebkitLineClamp: hasContent ? 3 : undefined,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
           }}>
             {hasContent
               ? preview
-              : 'Добавьте объём, методичку, требования к уникальности, стиль оформления и любые особые пожелания.'}
+              : 'Опишите объём, формат оформления, особые пожелания и все, что важно учесть в работе.'}
           </div>
-          {!hasContent && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-              <StatusPill tone="muted" label="объём" />
-              <StatusPill tone="muted" label="методичка" />
-              <StatusPill tone="muted" label="уникальность" />
-            </div>
-          )}
         </div>
 
-        <ChevronRight size={18} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: hasContent ? 2 : 0 }} />
+        <div style={{
+          width: 34,
+          height: 34,
+          borderRadius: 12,
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <ChevronRight size={18} color="var(--text-muted)" />
+        </div>
       </motion.button>
     </motion.div>
   )
@@ -475,34 +535,53 @@ function AttachmentsCard({ files, onAdd, onRemove, disabled }: AttachmentsCardPr
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        background: 'linear-gradient(180deg, var(--bg-elevated), var(--bg-card-solid))',
-        borderRadius: 20,
-        border: isDragging ? '1px solid var(--border-gold-strong)' : '1px solid var(--border-default)',
-        padding: '16px',
-        boxShadow: isDragging ? '0 0 24px -10px rgba(212, 175, 55, 0.35)' : '0 16px 30px -32px rgba(0, 0, 0, 0.75)',
+        ...getSectionShellStyle(isDragging),
+        padding: '14px',
         opacity: disabled ? 0.65 : 1,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <Paperclip size={15} color="var(--gold-400)" strokeWidth={2} />
-        <span style={{
-          fontSize: 11,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          color: 'var(--gold-400)',
-          flex: 1,
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div style={{
+          width: 36,
+          height: 36,
+          borderRadius: 12,
+          background: 'rgba(212, 175, 55, 0.08)',
+          border: '1px solid rgba(212, 175, 55, 0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
         }}>
-          Материалы и вложения
-        </span>
+          <Paperclip size={16} color="var(--gold-400)" strokeWidth={2} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--gold-400)',
+            marginBottom: 2,
+          }}>
+            Файлы
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>
+            Методичка, задание, пример или скрин
+          </div>
+        </div>
+
         <StatusPill
-          tone={files.length > 0 ? 'good' : 'muted'}
-          label={files.length > 0 ? `${files.length} файл(ов)` : 'Необязательно'}
+          tone={files.length > 0 ? 'accent' : 'muted'}
+          label={files.length > 0 ? `${files.length} файл(ов)` : 'По желанию'}
         />
       </div>
 
       <motion.div
-        animate={{ backgroundColor: isDragging ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.03)' }}
+        animate={{
+          scale: isDragging ? 0.995 : 1,
+          backgroundColor: isDragging ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+        }}
         onDragOver={(event) => {
           event.preventDefault()
           if (!disabled) setIsDragging(true)
@@ -511,9 +590,8 @@ function AttachmentsCard({ files, onAdd, onRemove, disabled }: AttachmentsCardPr
         onDrop={handleDrop}
         onClick={() => !disabled && inputRef.current?.click()}
         style={{
-          padding: '18px 16px',
-          borderRadius: 18,
-          border: '1px dashed var(--border-gold)',
+          ...getInnerSurfaceStyle(isDragging, files.length === 0),
+          padding: '15px 16px',
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
       >
@@ -533,6 +611,7 @@ function AttachmentsCard({ files, onAdd, onRemove, disabled }: AttachmentsCardPr
             height: 44,
             borderRadius: 14,
             background: 'rgba(212, 175, 55, 0.10)',
+            border: '1px solid rgba(212, 175, 55, 0.14)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -542,27 +621,29 @@ function AttachmentsCard({ files, onAdd, onRemove, disabled }: AttachmentsCardPr
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
-              {files.length > 0 ? 'Добавить ещё материалы' : 'Прикрепите методичку, пример или задание'}
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginBottom: 5 }}>
+              {files.length > 0 ? 'Добавить ещё файлы' : 'Прикрепить файлы'}
             </div>
             <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-secondary)' }}>
-              PDF, DOCX, XLSX, JPG, PNG, ZIP и другие рабочие форматы. До 50 МБ на файл.
+              Поддерживаем документы, изображения, архивы и медиа. До 50 МБ на файл.
             </div>
           </div>
+
+          <StatusPill tone="accent" label="до 50 МБ" />
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-          <StatusPill tone="muted" label="методичка" />
-          <StatusPill tone="muted" label="пример работы" />
-          <StatusPill tone="muted" label="скрин задания" />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          <StatusPill tone="muted" label="PDF / DOCX" />
+          <StatusPill tone="muted" label="JPG / PNG" />
+          <StatusPill tone="muted" label="ZIP / XLSX" />
         </div>
       </motion.div>
 
       {(files.length > 0 || notice) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
           {files.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <StatusPill tone="good" label={`${files.length} файл(ов)`} />
+              <StatusPill tone="accent" label={`${files.length} файл(ов)`} />
               <StatusPill tone="muted" label={formatFileSize(totalSize)} />
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Все выбранные материалы загрузим после создания заказа.
@@ -624,8 +705,8 @@ function AttachedFileRow({
         gap: 12,
         padding: '12px 14px',
         borderRadius: 16,
-        background: 'rgba(255, 255, 255, 0.04)',
-        border: '1px solid rgba(255, 255, 255, 0.04)',
+        background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02))',
+        border: '1px solid rgba(255, 255, 255, 0.05)',
       }}
     >
       <div style={{
@@ -989,7 +1070,7 @@ function StatusPill({
   tone,
 }: {
   label: string
-  tone: 'good' | 'muted'
+  tone: 'good' | 'muted' | 'accent'
 }) {
   const palette = tone === 'good'
     ? {
@@ -997,11 +1078,17 @@ function StatusPill({
       border: 'rgba(34, 197, 94, 0.18)',
       color: '#7dd3a6',
     }
-    : {
-      background: 'rgba(255, 255, 255, 0.04)',
-      border: 'rgba(255, 255, 255, 0.06)',
-      color: 'var(--text-muted)',
-    }
+    : tone === 'accent'
+      ? {
+        background: 'rgba(212, 175, 55, 0.10)',
+        border: 'rgba(212, 175, 55, 0.20)',
+        color: 'var(--gold-300)',
+      }
+      : {
+        background: 'rgba(255, 255, 255, 0.04)',
+        border: 'rgba(255, 255, 255, 0.06)',
+        color: 'var(--text-muted)',
+      }
 
   return (
     <span style={{
