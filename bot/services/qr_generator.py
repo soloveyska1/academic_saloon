@@ -6,7 +6,7 @@ Premium QR Code Generator for Academic Saloon
 - Золотой QR-код с закруглёнными модулями
 - Логотип "AS" по центру
 
-Ссылка формата: https://t.me/{bot}/app?startapp=ref_{user_id}
+Ссылка формата: https://t.me/{bot}?start=ref{user_id}
 """
 
 import io
@@ -38,11 +38,11 @@ TEXT_MUTED = (113, 113, 122)       # #71717a
 
 def get_referral_link(user_id: int) -> str:
     """
-    Формирует правильную deep-link ссылку на Mini App.
-    Формат: https://t.me/{bot}/app?startapp=ref_{user_id}
+    Формирует реферальную deep-link ссылку, которую обрабатывает /start.
+    Формат: https://t.me/{bot}?start=ref{user_id}
     """
     bot_username = settings.BOT_USERNAME.lstrip("@")
-    return f"https://t.me/{bot_username}/app?startapp=ref_{user_id}"
+    return f"https://t.me/{bot_username}?start=ref{user_id}"
 
 
 from typing import Optional, Any

@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Users, Copy, Share2, Gift, Check, QrCode, ChevronRight, Crown, Sparkles } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { useToast } from '../components/ui/Toast'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { copyTextSafely } from '../utils/clipboard'
+import { QRCodeModal } from '../components/ui/QRCode'
+import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 
 interface Props {
   user: UserData | null
@@ -100,13 +102,11 @@ export function ReferralPage({ user }: Props) {
   const safeBack = useSafeBackNavigation('/profile')
 
   const referralCode = user?.referral_code || `REF${user?.telegram_id || ''}`
-  // Correct Mini App deep link format for referrals
-  const referralLink = `https://t.me/${botUsername}/app?startapp=ref_${user?.telegram_id || ''}`
+  const referralLink = buildReferralLink(botUsername, user?.telegram_id)
 
   // Реальные данные из user
   const referralCount = user?.referrals_count || 0
-  // Примерный расчёт заработка (100₽ за реферала)
-  const totalEarned = referralCount * 100
+  const totalEarned = user?.referral_earnings || 0
 
   // Список рефералов - пока недоступен из API, показываем количество
   const invitedFriends: { name: string; bonus: number; date: string }[] = []
@@ -118,6 +118,16 @@ export function ReferralPage({ user }: Props) {
     : 100
 
   const copyLink = async () => {
+    if (!referralLink) {
+      hapticError()
+      showToast({
+        type: 'error',
+        title: 'Ссылка недоступна',
+        message: 'Попробуйте открыть раздел чуть позже.',
+      })
+      return
+    }
+
     haptic('medium')
     const copiedSuccessfully = await copyTextSafely(referralLink)
 
@@ -126,7 +136,7 @@ export function ReferralPage({ user }: Props) {
       hapticSuccess()
       showToast({
         type: 'success',
-        title: 'Скопировано!',
+        title: 'Ссылка скопирована',
         message: 'Ссылка в буфере обмена',
       })
       setTimeout(() => setCopied(false), 2000)
@@ -137,17 +147,27 @@ export function ReferralPage({ user }: Props) {
     showToast({
       type: 'error',
       title: 'Ошибка',
-      message: 'Не удалось скопировать',
+      message: 'Не удалось скопировать ссылку',
     })
   }
 
   const shareLink = async () => {
+    if (!referralLink) {
+      hapticError()
+      showToast({
+        type: 'error',
+        title: 'Ссылка недоступна',
+        message: 'Не удалось подготовить приглашение.',
+      })
+      return
+    }
+
     haptic('medium')
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Присоединяйся к Academic Saloon!',
-          text: `Используй мой код ${referralCode} и получи бонус на первый заказ!`,
+          text: buildReferralShareText(referralCode),
           url: referralLink,
         })
         return
@@ -159,7 +179,7 @@ export function ReferralPage({ user }: Props) {
       }
     }
 
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`Используй мой код ${referralCode} и получи бонус на первый заказ!`)}`
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(buildReferralShareText(referralCode))}`
     if (tg?.openTelegramLink) {
       tg.openTelegramLink(shareUrl)
       return
@@ -240,7 +260,7 @@ export function ReferralPage({ user }: Props) {
             WebkitTextFillColor: 'transparent',
           }}
         >
-          ПРИГЛАСИ ДРУЗЕЙ
+          Приглашайте друзей
         </h1>
         <p
           style={{
@@ -249,7 +269,7 @@ export function ReferralPage({ user }: Props) {
             lineHeight: 1.5,
           }}
         >
-          Получай <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>100₽</span> за каждого друга
+          Делитесь своей ссылкой, чтобы получать бонусы на баланс и открывать новые привилегии.
         </p>
       </motion.header>
 
@@ -458,7 +478,24 @@ export function ReferralPage({ user }: Props) {
 
         <div
           style={{
-            display: 'flex',
+            padding: '12px 14px',
+            marginBottom: 12,
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            fontSize: 12,
+            lineHeight: 1.55,
+            color: 'var(--text-muted)',
+            wordBreak: 'break-all',
+          }}
+        >
+          {referralLink}
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: 10,
           }}
         >
@@ -466,7 +503,6 @@ export function ReferralPage({ user }: Props) {
             onClick={copyLink}
             whileTap={{ scale: 0.95 }}
             style={{
-              flex: 1,
               padding: '14px 20px',
               background: copied
                 ? 'var(--success-glass)'
@@ -481,7 +517,7 @@ export function ReferralPage({ user }: Props) {
               justifyContent: 'center',
               gap: 8,
               color: copied ? 'var(--success-text)' : 'var(--text-main)',
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
             }}
           >
@@ -493,7 +529,6 @@ export function ReferralPage({ user }: Props) {
             onClick={shareLink}
             whileTap={{ scale: 0.95 }}
             style={{
-              flex: 1,
               padding: '14px 20px',
               background: 'var(--gold-metallic)',
               border: 'none',
@@ -504,13 +539,35 @@ export function ReferralPage({ user }: Props) {
               justifyContent: 'center',
               gap: 8,
               color: '#0a0a0c',
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               boxShadow: 'var(--glow-gold)',
             }}
           >
             <Share2 size={18} />
             Поделиться
+          </motion.button>
+
+          <motion.button
+            onClick={() => setShowQR(true)}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              padding: '14px 20px',
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 12,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              color: 'var(--text-main)',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            <QrCode size={18} />
+            QR
           </motion.button>
         </div>
       </motion.div>
@@ -643,6 +700,21 @@ export function ReferralPage({ user }: Props) {
           ))}
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {showQR && referralLink && (
+          <QRCodeModal
+            isOpen={showQR}
+            onClose={() => setShowQR(false)}
+            value={referralLink}
+            displayValue={referralCode}
+            title="QR-код приглашения"
+            subtitle="Покажите QR, отправьте карточку или откройте ссылку прямо из приложения."
+            shareText={buildReferralShareText(referralCode)}
+            downloadFileName={`academic-saloon-${referralCode}`}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

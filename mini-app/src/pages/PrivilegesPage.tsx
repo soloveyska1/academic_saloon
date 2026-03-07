@@ -187,7 +187,7 @@ const LevelCard = memo(function LevelCard({ levelId, currentLevelId, currentXp }
               )}
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)', marginTop: 2 }}>
-              {level.minXp > 0 ? `От ${level.minXp} XP` : 'Начальный уровень'}
+              {level.minXp > 0 ? `От ${level.minXp} баллов прогресса` : 'Начальный уровень'}
             </div>
           </div>
         </div>
@@ -200,7 +200,7 @@ const LevelCard = memo(function LevelCard({ levelId, currentLevelId, currentXp }
                 Прогресс
               </span>
               <span style={{ fontSize: 12, color: level.accentColor, fontWeight: 500 }}>
-                {currentXp} / {level.minXp} XP
+                {currentXp} / {level.minXp} баллов
               </span>
             </div>
             <div
@@ -331,14 +331,14 @@ function PrivilegesPage() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.6)' }}>
-              Опыт (XP)
+              Прогресс
             </span>
             <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
-              {club.xp} XP
+              {club.xp} баллов
             </span>
           </div>
           <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)', marginTop: 10 }}>
-            Повышайте уровень, набирая XP за активность в клубе и оплаченные заказы.
+            Повышайте уровень, набирая баллы прогресса за активность и оплаченные заказы.
           </div>
         </motion.div>
 

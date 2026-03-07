@@ -13,6 +13,7 @@ import { useAdmin } from '../contexts/AdminContext'
 import { useCapability } from '../contexts/DeviceCapabilityContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
+import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 
 // New Home Components
 import {
@@ -44,7 +45,7 @@ import s from './HomePage.module.css'
 
 export function HomePage({ user }: Props) {
   const navigate = useNavigate()
-  const { haptic, tg } = useTelegram()
+  const { haptic, tg, botUsername } = useTelegram()
   const admin = useAdmin()
   const { activePromo } = usePromo()
   const capability = useCapability()
@@ -114,6 +115,7 @@ export function HomePage({ user }: Props) {
   // User type detection for progressive disclosure
   const isNewUser = user.orders_count === 0 || admin.simulateNewUser
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
+  const inviteLink = buildReferralLink(botUsername, user.telegram_id)
 
   const handleNewOrder = useCallback(() => {
     haptic('heavy')
@@ -122,7 +124,7 @@ export function HomePage({ user }: Props) {
 
   const handleOpenLounge = useCallback(() => {
     haptic('light')
-    navigate('/club/privileges')
+    navigate('/club')
   }, [haptic, navigate])
 
   const retryDailyBonus = useCallback(() => {
@@ -275,8 +277,11 @@ export function HomePage({ user }: Props) {
       <Suspense fallback={<ModalLoadingFallback />}>
         <QRCodeModal
           isOpen={state.modals.qr}
-          value={user.referral_code}
+          value={inviteLink}
+          displayValue={user.referral_code}
           onClose={() => actions.closeModal('qr')}
+          shareText={buildReferralShareText(user.referral_code)}
+          downloadFileName={`academic-saloon-${user.referral_code}`}
         />
 
         {state.dailyBonus.info && (

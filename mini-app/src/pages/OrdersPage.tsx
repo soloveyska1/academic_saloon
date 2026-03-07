@@ -7,7 +7,6 @@ import {
   ArrowUpRight,
   BookOpen,
   Briefcase,
-  CalendarClock,
   Camera,
   CheckCircle2,
   ChevronRight,
@@ -24,7 +23,6 @@ import {
   Scroll,
   Search,
   Sparkles,
-  Wallet,
   XCircle,
 } from 'lucide-react'
 import { Order } from '../types'
@@ -263,6 +261,25 @@ function formatMoney(amount: number | null | undefined): string {
   return `${Math.max(0, Math.round(amount || 0)).toLocaleString('ru-RU')} ₽`
 }
 
+function pluralize(value: number, forms: [string, string, string]): string {
+  const absValue = Math.abs(value) % 100
+  const remainder = absValue % 10
+
+  if (absValue > 10 && absValue < 20) {
+    return forms[2]
+  }
+
+  if (remainder > 1 && remainder < 5) {
+    return forms[1]
+  }
+
+  if (remainder === 1) {
+    return forms[0]
+  }
+
+  return forms[2]
+}
+
 function getRemainingAmount(order: Order): number {
   return Math.max((order.final_price || order.price || 0) - (order.paid_amount || 0), 0)
 }
@@ -334,25 +351,25 @@ function getSectionedOrders(orders: Order[], filter: FilterType, query: string) 
     {
       key: 'action',
       title: 'Требуют вашего решения',
-      caption: 'Сначала показываем то, что важно сделать сейчас.',
+      caption: 'Здесь собраны заказы, где нужен ваш следующий шаг.',
       orders: actionOrders,
     },
     {
       key: 'active',
       title: 'В работе',
-      caption: 'Текущие заказы без лишнего шума.',
+      caption: 'Все активные заказы с текущим этапом, сроком и суммой.',
       orders: activeOrders,
     },
     {
       key: 'completed',
       title: 'Недавно завершено',
-      caption: 'Последние готовые заказы в истории.',
+      caption: 'Готовые работы, которые можно открыть и пересмотреть.',
       orders: recentCompleted,
     },
     {
       key: 'closed',
       title: 'История',
-      caption: 'Закрытые заказы, которые не требуют действий.',
+      caption: 'Закрытые и отменённые заявки для справки.',
       orders: closedOrders,
     },
   ].filter(section => section.orders.length > 0)
@@ -390,16 +407,16 @@ function getFilterTitle(filter: FilterType): string {
 function getFilterCaption(filter: FilterType): string {
   switch (filter) {
     case 'action':
-      return 'Платежи, проверки и шаги, где нужен ваш ответ.'
+      return 'Платежи, подтверждения и проверки, где нужен ваш ответ.'
     case 'active':
-      return 'Все заказы, которые еще идут.'
+      return 'Все заказы, которые ещё находятся в работе.'
     case 'completed':
-      return 'Готовые заказы и закрытая история.'
+      return 'Готовые работы и завершённые задачи.'
     case 'archived':
       return 'Скрытые и архивные заказы.'
     case 'all':
     default:
-      return 'Вся история в одном месте.'
+      return 'Весь список заказов, сроков и следующих шагов.'
   }
 }
 
@@ -648,6 +665,51 @@ function OrdersSection({
   )
 }
 
+function MetricTile({
+  label,
+  value,
+  accent,
+}: {
+  label: string
+  value: string
+  accent?: string
+}) {
+  return (
+    <div
+      style={{
+        padding: '12px 12px 10px',
+        borderRadius: 16,
+        background: 'rgba(255,255,255,0.035)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10.5,
+          fontWeight: 700,
+          color: 'rgba(255,255,255,0.44)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          marginBottom: 6,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          lineHeight: 1.3,
+          color: accent || 'var(--text-main)',
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  )
+}
+
 function ActionSpotlight({
   order,
   payableCount,
@@ -710,14 +772,14 @@ function ActionSpotlight({
               color: 'var(--text-main)',
               marginBottom: 4,
             }}>
-              Оплатить {payableCount} заказа одним платежом
+              Оплатить {payableCount} {pluralize(payableCount, ['заказ', 'заказа', 'заказов'])} одним платежом
             </div>
             <div style={{
               fontSize: 13,
               lineHeight: 1.55,
               color: 'var(--text-secondary)',
             }}>
-              Один переход вместо нескольких карточек. Сумма к оплате: {formatMoney(payableTotal)}.
+              Один переход вместо нескольких оплат. Общая сумма: {formatMoney(payableTotal)}.
             </div>
           </div>
 
@@ -785,7 +847,7 @@ function ActionSpotlight({
             letterSpacing: '0.08em',
             marginBottom: 6,
           }}>
-            Сейчас важнее всего
+            Главное действие
           </div>
           <div style={{
             fontSize: 18,
@@ -803,7 +865,7 @@ function ActionSpotlight({
             lineHeight: 1.55,
             color: 'var(--text-secondary)',
           }}>
-            {meta.hint}
+            {meta.actionLabel ? `${meta.actionLabel} и перейдите к следующему этапу.` : meta.hint}
           </div>
         </div>
 
@@ -844,6 +906,7 @@ function OrderCard({
     : (order.final_price || order.price || 0)
   const amountLabel = ['confirmed', 'waiting_payment'].includes(order.status) ? 'К оплате' : 'Стоимость'
   const progressValue = typeof order.progress === 'number' && order.progress > 0 ? `${Math.round(order.progress)}%` : null
+  const stepLabel = meta.step > 0 ? `Этап ${Math.min(meta.step, 4)} из 4` : 'История'
 
   return (
     <motion.button
@@ -960,16 +1023,77 @@ function OrderCard({
           </div>
 
           <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: 8,
-            marginBottom: 12,
+            marginBottom: 14,
           }}>
-            <MetaChip icon={CalendarClock} label={formatDeadline(order.deadline)} />
-            <MetaChip icon={Wallet} label={`${amountLabel}: ${formatMoney(amount)}`} />
-            <MetaChip icon={Clock3} label={formatShortDate(order.created_at)} />
-            {order.files_url && <MetaChip icon={FileText} label="Файлы" />}
-            {progressValue && <MetaChip icon={Activity} label={progressValue} />}
+            <MetricTile
+              label="Срок"
+              value={formatDeadline(order.deadline)}
+              accent={getHoursUntilDeadline(order.deadline) !== null && (getHoursUntilDeadline(order.deadline) ?? 999) <= 24
+                ? meta.color
+                : undefined}
+            />
+            <MetricTile
+              label={amountLabel}
+              value={formatMoney(amount)}
+              accent={meta.needsAction ? 'var(--gold-300)' : undefined}
+            />
+            <MetricTile
+              label="Создан"
+              value={formatShortDate(order.created_at)}
+            />
+          </div>
+
+          <div style={{
+            padding: '12px 14px',
+            borderRadius: 16,
+            background: 'rgba(255,255,255,0.035)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            marginBottom: 14,
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              marginBottom: 6,
+              flexWrap: 'wrap',
+            }}>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'rgba(255,255,255,0.44)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}>
+                Следующий шаг
+              </div>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: meta.color,
+              }}>
+                {stepLabel}
+              </div>
+            </div>
+
+            <div style={{
+              fontSize: 13,
+              lineHeight: 1.55,
+              color: 'var(--text-main)',
+              marginBottom: order.files_url || progressValue ? 8 : 0,
+            }}>
+              {meta.hint}
+            </div>
+
+            {(order.files_url || progressValue) && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {order.files_url && <MetaChip icon={FileText} label="Есть вложения" />}
+                {progressValue && <MetaChip icon={Activity} label={`Готовность ${progressValue}`} />}
+              </div>
+            )}
           </div>
 
           <div style={{
@@ -1142,16 +1266,16 @@ export function OrdersPage({ orders }: Props) {
   const sections = getSectionedOrders(visibleOrders, filter, searchQuery)
 
   const heroTitle = stats.action > 0
-    ? `${stats.action} требуют вашего решения`
+    ? `${stats.action} ${pluralize(stats.action, ['заказ ждёт', 'заказа ждут', 'заказов ждут'])} вашего шага`
     : stats.active > 0
-      ? `${stats.active} заказа в работе`
+      ? `${stats.active} ${pluralize(stats.active, ['заказ в работе', 'заказа в работе', 'заказов в работе'])}`
       : stats.all > 0
-        ? `${stats.all} заказов под контролем`
+        ? `${stats.all} ${pluralize(stats.all, ['заказ под контролем', 'заказа под контролем', 'заказов под контролем'])}`
         : 'Здесь появятся ваши заказы'
 
   const heroSubtitle = stats.action > 0
-    ? 'Сверху показываем приоритетный шаг, чтобы вы не искали его по списку.'
-    : 'Чистая лента статусов, сроков и следующих действий без перегруженного дашборда.'
+    ? 'Сначала показываем главное действие, затем полный список по этапам, срокам и суммам.'
+    : 'Открывайте нужный заказ, смотрите его этап и переходите к следующему действию без лишних поисков.'
 
   const handleCreateOrder = () => {
     haptic('medium')
@@ -1177,7 +1301,7 @@ export function OrdersPage({ orders }: Props) {
 
   const filterItems = [
     { key: 'all' as FilterType, label: 'Все', count: stats.all },
-    { key: 'action' as FilterType, label: 'Нужны вам', count: stats.action },
+    { key: 'action' as FilterType, label: 'Нужно сейчас', count: stats.action },
     { key: 'active' as FilterType, label: 'В работе', count: stats.active },
     { key: 'completed' as FilterType, label: 'Готово', count: stats.completed },
     ...(stats.archived > 0 ? [{ key: 'archived' as FilterType, label: 'Архив', count: stats.archived }] : []),
@@ -1334,9 +1458,9 @@ export function OrdersPage({ orders }: Props) {
             gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: 10,
           }}>
-            <StatPill label="Нужны вам" value={String(stats.action)} accent="var(--gold-300)" />
+            <StatPill label="Нужно сейчас" value={String(stats.action)} accent="var(--gold-300)" />
             <StatPill label="В работе" value={String(stats.active)} accent="#93c5fd" />
-            <StatPill label="Готово" value={String(stats.completed)} accent="#86efac" />
+            <StatPill label="Завершено" value={String(stats.completed)} accent="#86efac" />
           </div>
         </motion.section>
 
@@ -1362,7 +1486,7 @@ export function OrdersPage({ orders }: Props) {
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Номер, предмет или тема"
+              placeholder="По номеру, предмету или теме"
               style={{
                 flex: 1,
                 minWidth: 0,

@@ -103,7 +103,7 @@ const HistoryHeader = memo(function HistoryHeader({
           </div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
-              История
+              История привилегий
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>
               Баланс: {currentBalance} баллов

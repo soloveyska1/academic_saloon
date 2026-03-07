@@ -73,10 +73,10 @@ const StoreHeader = memo(function StoreHeader({
           </div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
-              Магазин наград
+              Каталог привилегий
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>
-              Обменяйте баллы на привилегии
+              Обменивайте баллы на полезные бонусы и ваучеры
             </div>
           </div>
         </div>

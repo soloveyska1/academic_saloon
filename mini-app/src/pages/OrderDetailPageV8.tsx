@@ -2794,9 +2794,9 @@ const FilesSection = memo(function FilesSection({
 
 // Support contact configuration
 const SUPPORT_CONFIG = {
-  name: 'Семён',
-  role: 'Основатель · Поддержка',
-  telegramUsername: 'acadsaloninfo',
+  name: 'Техподдержка',
+  role: 'Academic Saloon · поддержка по заказам',
+  telegramUsername: 'Thisissaymoon',
   responseTime: '~10 мин',
 }
 

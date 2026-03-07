@@ -31,7 +31,7 @@ function getNextAction(orders: Order[]): NextAction | null {
       id: `payment-${paymentOrder.id}`,
       type: 'payment',
       priority: 1,
-      title: 'Оплата заказа',
+      title: 'Ожидает оплаты',
       subtitle: paymentOrder.subject || paymentOrder.work_type_label || `Заказ #${paymentOrder.id}`,
       icon: CreditCard,
       color: NEXT_ACTION_CONFIG.payment.color,
@@ -49,7 +49,7 @@ function getNextAction(orders: Order[]): NextAction | null {
       id: `files-${filesOrder.id}`,
       type: 'files_needed',
       priority: 2,
-      title: 'Нужны материалы',
+      title: 'Нужно уточнить материалы',
       subtitle: filesOrder.subject || filesOrder.work_type_label || `Заказ #${filesOrder.id}`,
       icon: FileText,
       color: NEXT_ACTION_CONFIG.files_needed.color,
@@ -103,7 +103,7 @@ function getNextAction(orders: Order[]): NextAction | null {
       id: `message-${messageOrder.id}`,
       type: 'new_message',
       priority: 5,
-      title: 'Новое сообщение',
+      title: 'Есть новое сообщение',
       subtitle: messageOrder.subject || messageOrder.work_type_label || `Заказ #${messageOrder.id}`,
       icon: MessageCircle,
       color: NEXT_ACTION_CONFIG.new_message.color,
@@ -126,7 +126,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <div className={s.sectionTitle}>ТРЕБУЕТ ВНИМАНИЯ</div>
+      <div className={s.sectionTitle}>СЛЕДУЮЩИЙ ШАГ</div>
       <AnimatePresence mode="wait">
         <motion.div
           key={nextAction.id}
@@ -139,19 +139,20 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
             onNavigate(nextAction.route)
           }}
           style={{
-            borderRadius: '16px',
-            padding: '2px', // For gradient border effect
+            borderRadius: '20px',
+            padding: '2px',
             cursor: 'pointer',
-            background: `linear-gradient(135deg, ${nextAction.color}40, rgba(255,255,255,0.05))`,
-            position: 'relative'
+            background: `linear-gradient(135deg, ${nextAction.color}36, rgba(255,255,255,0.05))`,
+            position: 'relative',
+            boxShadow: `0 18px 34px -26px ${nextAction.color}66`,
           }}
         >
           <div style={{
             background: '#0c0c0e',
-            borderRadius: '14px',
-            padding: '16px',
+            borderRadius: '18px',
+            padding: '18px',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             gap: 16
           }}>
             <div style={{
@@ -166,7 +167,7 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
 
             <div style={{ flex: 1 }}>
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6
               }}>
                 <div style={{
                   width: 6, height: 6, borderRadius: '50%', background: nextAction.color,
@@ -176,18 +177,37 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
                   fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', color: nextAction.color,
                   textTransform: 'uppercase'
                 }}>
-                  ВАЖНО
+                  СЕЙЧАС ВАЖНО
                 </span>
               </div>
-              <div style={{ fontSize: '15px', fontWeight: 600, color: '#f2f2f2', marginBottom: '2px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: '#f2f2f2', marginBottom: '4px' }}>
                 {nextAction.title}
               </div>
-              <div style={{ fontSize: '13px', color: '#71717a' }} className="truncate">
+              <div style={{
+                fontSize: '13px',
+                color: '#a1a1aa',
+                lineHeight: 1.5,
+                marginBottom: 10,
+              }}>
                 {nextAction.subtitle}
+              </div>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 10px',
+                borderRadius: '999px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                color: '#f4f4f5',
+                fontSize: '11px',
+                fontWeight: 700,
+              }}>
+                Открыть заказ
               </div>
             </div>
 
-            <ChevronRight size={20} color="#52525b" />
+            <ChevronRight size={20} color="#52525b" style={{ marginTop: 14 }} />
           </div>
         </motion.div>
       </AnimatePresence>

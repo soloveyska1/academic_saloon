@@ -114,7 +114,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
         }}
       >
-        КЛУБ
+        ПРИВИЛЕГИИ
       </motion.button>
     </motion.header>
   )

@@ -1,156 +1,165 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Share2, X, Check, Loader2 } from 'lucide-react'
+import { Check, Download, ExternalLink, Loader2, Share2, X } from 'lucide-react'
 import { API_BASE_URL, getAuthHeaders } from '../../api/userApi'
 import { CenteredModalWrapper } from '../modals/shared'
 
 interface Props {
   isOpen: boolean
   value: string
-  size?: number
+  displayValue?: string
   onClose: () => void
   title?: string
   subtitle?: string
+  shareTitle?: string
+  shareText?: string
+  downloadFileName?: string
+}
+
+type QrAssetState = {
+  cardUrl: string | null
+  simpleUrl: string | null
+  loading: boolean
 }
 
 export function QRCodeModal({
   isOpen,
   value,
-  size = 220,
+  displayValue,
   onClose,
-  title = 'Ваш QR-код',
-  subtitle = 'Покажите друзьям для быстрой регистрации'
+  title = 'QR-код приглашения',
+  subtitle = 'Покажите QR, отправьте изображение или откройте ссылку в Telegram.',
+  shareTitle = 'Приглашение в Academic Saloon',
+  shareText = 'Открывай сервис по ссылке ниже.',
+  downloadFileName = 'academic-saloon-referral',
 }: Props) {
+  const [assetState, setAssetState] = useState<QrAssetState>({
+    cardUrl: null,
+    simpleUrl: null,
+    loading: false,
+  })
+  const [sharing, setSharing] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
-  const [sharing, setSharing] = useState(false)
-  const [premiumCardUrl, setPremiumCardUrl] = useState<string | null>(null)
-  const [cardLoading, setCardLoading] = useState(true)
-  const [cardError, setCardError] = useState(false)
 
-  // Fallback QR using external service (for display only)
-  const fallbackQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size * 2}x${size * 2}&data=${encodeURIComponent(value)}&bgcolor=09090b&color=d4af37&format=png`
+  const normalizedDisplayValue = useMemo(() => displayValue || value, [displayValue, value])
+  const visibleImageUrl = assetState.cardUrl || assetState.simpleUrl
 
-  // Load premium card from our API
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) {
+      return
+    }
 
-    const loadPremiumCard = async () => {
-      try {
-        setCardLoading(true)
-        setCardError(false)
+    let cancelled = false
+    let currentCardUrl: string | null = null
+    let currentSimpleUrl: string | null = null
 
-        const response = await fetch(`${API_BASE_URL}/qr/referral?style=card`, {
+    const loadQrAssets = async () => {
+      setAssetState({ cardUrl: null, simpleUrl: null, loading: true })
+
+      const loadStyle = async (style: 'card' | 'simple') => {
+        const response = await fetch(`${API_BASE_URL}/qr/referral?style=${style}`, {
           headers: getAuthHeaders(),
         })
 
         if (!response.ok) {
-          throw new Error('Failed to load premium QR')
+          throw new Error(`Failed to load ${style} QR`)
         }
 
         const blob = await response.blob()
-        const url = URL.createObjectURL(blob)
-        setPremiumCardUrl(url)
-      } catch {
-        setCardError(true)
-      } finally {
-        setCardLoading(false)
+        return URL.createObjectURL(blob)
       }
+
+      try {
+        currentCardUrl = await loadStyle('card')
+      } catch {
+        currentCardUrl = null
+      }
+
+      try {
+        currentSimpleUrl = await loadStyle('simple')
+      } catch {
+        currentSimpleUrl = null
+      }
+
+      if (cancelled) {
+        if (currentCardUrl) URL.revokeObjectURL(currentCardUrl)
+        if (currentSimpleUrl) URL.revokeObjectURL(currentSimpleUrl)
+        return
+      }
+
+      setAssetState({
+        cardUrl: currentCardUrl,
+        simpleUrl: currentSimpleUrl,
+        loading: false,
+      })
     }
 
-    loadPremiumCard()
+    loadQrAssets()
 
     return () => {
-      if (premiumCardUrl) {
-        URL.revokeObjectURL(premiumCardUrl)
-      }
+      cancelled = true
+      if (currentCardUrl) URL.revokeObjectURL(currentCardUrl)
+      if (currentSimpleUrl) URL.revokeObjectURL(currentSimpleUrl)
     }
   }, [isOpen])
 
   const handleShare = async () => {
-    if (!navigator.share) return
+    if (!value || !navigator.share) return
+
     setSharing(true)
-
     try {
-      // Try to share the premium card
-      let blob: Blob | null = null
+      if (visibleImageUrl) {
+        const imageResponse = await fetch(visibleImageUrl)
+        const imageBlob = await imageResponse.blob()
+        const file = new File([imageBlob], `${downloadFileName}.png`, { type: 'image/png' })
 
-      if (premiumCardUrl) {
-        const response = await fetch(premiumCardUrl)
-        blob = await response.blob()
-      } else {
-        // Fallback to external QR
-        const response = await fetch(fallbackQrUrl)
-        blob = await response.blob()
-      }
-
-      const file = new File([blob], 'academic-saloon-invite.png', { type: 'image/png' })
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'Academic Saloon — Приглашение',
-          text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\n👉 t.me/Kladovaya_GIPSR_bot?start=${value}`,
-        })
-        setSharing(false)
-        return
-      }
-    } catch {
-      /* silent */
-    }
-
-    // Fallback to text share
-    try {
-      await navigator.share({
-        title: 'Academic Saloon — Приглашение',
-        text: `Присоединяйся к Academic Saloon!\n\n💎 Скидка 5% на первый заказ\n💰 Бонус 100₽ на счёт\n\n👉 t.me/Kladovaya_GIPSR_bot?start=${value}`,
-      })
-    } catch {
-      /* silent */
-    }
-    setSharing(false)
-  }
-
-  const handleDownload = async () => {
-    setDownloading(true)
-    try {
-      // Prefer premium card for download
-      let blob: Blob
-
-      if (premiumCardUrl) {
-        const response = await fetch(premiumCardUrl)
-        blob = await response.blob()
-      } else {
-        // Fetch premium card directly for download
-        const response = await fetch(`${API_BASE_URL}/qr/referral?style=card`, {
-          headers: getAuthHeaders(),
-        })
-        if (response.ok) {
-          blob = await response.blob()
-        } else {
-          // Ultimate fallback
-          const fallbackResponse = await fetch(fallbackQrUrl)
-          blob = await fallbackResponse.blob()
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: shareTitle,
+            text: `${shareText}\n${value}`,
+          })
+          return
         }
       }
 
-      // Create download link
-      const url = window.URL.createObjectURL(blob)
+      await navigator.share({
+        title: shareTitle,
+        text: `${shareText}\n${value}`,
+      })
+    } catch {
+      /* intentionally ignore cancel and share errors */
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    if (!visibleImageUrl) return
+
+    setDownloading(true)
+    try {
+      const response = await fetch(visibleImageUrl)
+      const blob = await response.blob()
+      const blobUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = url
-      link.download = `academic-saloon-${value}.png`
+      link.href = blobUrl
+      link.download = `${downloadFileName}.png`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-
+      window.URL.revokeObjectURL(blobUrl)
       setDownloaded(true)
-      setTimeout(() => setDownloaded(false), 2000)
-    } catch {
-      // Fallback: open in new tab
-      window.open(fallbackQrUrl, '_blank')
+      window.setTimeout(() => setDownloaded(false), 2000)
+    } finally {
+      setDownloading(false)
     }
-    setDownloading(false)
+  }
+
+  const handleOpenLink = () => {
+    if (!value) return
+    window.open(value, '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -162,7 +171,6 @@ export function QRCodeModal({
       hideCloseButton
     >
       <div style={{ padding: '24px 20px', textAlign: 'center' }}>
-        {/* Close Button */}
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={onClose}
@@ -179,180 +187,181 @@ export function QRCodeModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#52525b',
+            color: '#71717a',
           }}
         >
           <X size={16} />
         </motion.button>
 
-        <h3 style={{
-          fontSize: 18,
-          fontWeight: 600,
-          color: '#fff',
-          marginBottom: 4,
-          marginTop: 8,
-        }}>
-          {title}
-        </h3>
-        <p style={{ fontSize: 12, color: '#71717a', marginBottom: 16 }}>
-          {subtitle}
-        </p>
+        <div style={{ marginTop: 8, marginBottom: 18 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 6px 0' }}>
+            {title}
+          </h3>
+          <p style={{ fontSize: 12.5, color: '#a1a1aa', lineHeight: 1.55, margin: 0 }}>
+            {subtitle}
+          </p>
+        </div>
 
-        {/* QR Card - Clean Display */}
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.1 }}
+        <div
           style={{
-            marginBottom: 16,
+            minHeight: 220,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: cardLoading ? 200 : 'auto',
+            marginBottom: 16,
           }}
         >
-          {cardLoading ? (
+          {assetState.loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
               <Loader2 size={28} color="#d4af37" style={{ animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: 11, color: '#52525b' }}>Генерируем...</span>
+              <span style={{ fontSize: 11, color: '#71717a' }}>Готовим QR-код…</span>
             </div>
-          ) : cardError ? (
+          ) : visibleImageUrl ? (
             <img
-              src={fallbackQrUrl}
-              alt="QR Code"
-              loading="lazy"
-              style={{
-                width: size,
-                height: size,
-                borderRadius: 12,
-              }}
-            />
-          ) : premiumCardUrl ? (
-            <img
-              src={premiumCardUrl}
-              alt="Premium QR Card"
+              src={visibleImageUrl}
+              alt="Реферальный QR-код"
               loading="lazy"
               style={{
                 width: '100%',
-                maxWidth: 320,
-                borderRadius: 16,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                maxWidth: assetState.cardUrl ? 320 : 220,
+                borderRadius: assetState.cardUrl ? 18 : 16,
+                boxShadow: '0 16px 36px rgba(0,0,0,0.35)',
               }}
             />
           ) : (
-            <img
-              src={fallbackQrUrl}
-              alt="QR Code"
-              loading="lazy"
+            <div
               style={{
-                width: size,
-                height: size,
-                borderRadius: 12,
+                width: '100%',
+                maxWidth: 280,
+                padding: '22px 20px',
+                borderRadius: 18,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                color: '#a1a1aa',
+                lineHeight: 1.6,
+                fontSize: 13,
               }}
-            />
+            >
+              Не удалось загрузить QR-код. Откройте ссылку напрямую или попробуйте снова чуть позже.
+            </div>
           )}
-        </motion.div>
+        </div>
 
-        {/* Referral Code - Minimal */}
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          borderRadius: 12,
-          padding: '12px 16px',
-          marginBottom: 16,
-        }}>
-          <div style={{ fontSize: 9, color: '#52525b', marginBottom: 4, letterSpacing: '0.1em', fontWeight: 500, textAlign: 'center' }}>
-            ВАШ РЕФЕРАЛЬНЫЙ КОД
+        <div
+          style={{
+            padding: '14px 16px',
+            marginBottom: 16,
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.05)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              color: '#71717a',
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}
+          >
+            Код приглашения
           </div>
-          <code style={{
-            color: '#d4af37',
-            fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
-            fontSize: 12,
-            fontWeight: 600,
-            letterSpacing: '0.02em',
-            display: 'block',
-            overflowWrap: 'anywhere',
-            wordBreak: 'normal',
-            lineHeight: '1.5',
-            textAlign: 'center',
-            maxWidth: '100%',
-          }}>
-            {value}
+          <code
+            style={{
+              color: '#d4af37',
+              fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
+              fontSize: 13,
+              fontWeight: 700,
+              overflowWrap: 'anywhere',
+              display: 'block',
+              lineHeight: 1.5,
+            }}
+          >
+            {normalizedDisplayValue}
           </code>
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleDownload}
-            disabled={downloading}
+            disabled={downloading || !visibleImageUrl}
             style={{
-              flex: 1,
-              padding: '14px 16px',
-              background: 'rgba(255,255,255,0.06)',
-              border: 'none',
-              borderRadius: 12,
-              color: downloaded ? '#22c55e' : '#a1a1aa',
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: downloading ? 'wait' : 'pointer',
+              minHeight: 48,
+              borderRadius: 14,
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.05)',
+              color: downloaded ? '#22c55e' : '#f4f4f5',
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: downloading || !visibleImageUrl ? 'default' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 6,
+              opacity: visibleImageUrl ? 1 : 0.5,
             }}
           >
-            {downloading ? (
-              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-            ) : downloaded ? (
-              <Check size={16} />
-            ) : (
-              <Download size={16} />
-            )}
+            {downloading ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : downloaded ? <Check size={15} /> : <Download size={15} />}
             {downloaded ? 'Готово' : 'Скачать'}
           </motion.button>
 
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleShare}
-            disabled={sharing}
+            disabled={sharing || !value}
             style={{
-              flex: 1.2,
-              padding: '14px 16px',
-              background: '#d4af37',
+              minHeight: 48,
+              borderRadius: 14,
               border: 'none',
-              borderRadius: 12,
+              background: 'var(--gold-metallic)',
               color: '#09090b',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: sharing ? 'wait' : 'pointer',
+              fontSize: 12.5,
+              fontWeight: 700,
+              cursor: sharing || !value ? 'default' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 6,
+              opacity: value ? 1 : 0.5,
             }}
           >
-            {sharing ? (
-              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-            ) : (
-              <Share2 size={16} />
-            )}
+            {sharing ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Share2 size={15} />}
             Поделиться
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleOpenLink}
+            disabled={!value}
+            style={{
+              minHeight: 48,
+              borderRadius: 14,
+              border: '1px solid rgba(212,175,55,0.18)',
+              background: 'rgba(212,175,55,0.1)',
+              color: '#d4af37',
+              fontSize: 12.5,
+              fontWeight: 700,
+              cursor: value ? 'pointer' : 'default',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              opacity: value ? 1 : 0.5,
+            }}
+          >
+            <ExternalLink size={15} />
+            Открыть
           </motion.button>
         </div>
 
-        {/* Tip */}
-        <p style={{
-          fontSize: 10,
-          color: '#3f3f46',
-          marginTop: 14,
-          lineHeight: 1.6,
-        }}>
-          Друзья получат скидку 5% · Вы — 5% роялти
+        <p style={{ fontSize: 11, color: '#71717a', lineHeight: 1.6, margin: '14px 4px 0' }}>
+          Если QR не сканируется с экрана, можно скачать карточку или сразу открыть ссылку в Telegram.
         </p>
       </div>
 
-      {/* CSS for spin animation */}
       <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }

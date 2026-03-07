@@ -35,8 +35,8 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
     },
     {
       icon: CheckCircle,
-      label: 'Доступ к закрытому клубу',
-      value: 'Включён',
+      label: 'Раздел привилегий',
+      value: 'Доступен',
       highlight: false,
     },
     {
@@ -47,8 +47,8 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
     },
     {
       icon: Crown,
-      label: 'Индивидуальные условия',
-      value: rank.cashback >= 10 ? 'Доступны' : 'Нет',
+      label: 'Персональные условия',
+      value: rank.cashback >= 10 ? 'Доступны' : 'Базовые',
       highlight: false,
     },
   ], [rank.cashback])

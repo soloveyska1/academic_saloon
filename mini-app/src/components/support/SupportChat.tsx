@@ -1,301 +1,516 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Send, ShieldCheck, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { AlertCircle, ExternalLink, Loader2, MessageCircle, RefreshCw, Send, ShieldCheck } from 'lucide-react'
 import { ChatMessage } from '../../types'
 import { fetchSupportMessages, sendSupportMessage } from '../../api/userApi'
 import { useTelegram } from '../../hooks/useUserData'
+import { SUPPORT_TELEGRAM_URL } from '../../lib/appLinks'
 
 function haveSameMessages(a: ChatMessage[], b: ChatMessage[]): boolean {
-    if (a.length !== b.length) return false
+  if (a.length !== b.length) return false
 
-    return a.every((message, index) => {
-        const next = b[index]
-        return message.id === next.id &&
-            message.message_text === next.message_text &&
-            message.created_at === next.created_at &&
-            message.is_read === next.is_read &&
-            message.sender_type === next.sender_type
-    })
+  return a.every((message, index) => {
+    const next = b[index]
+    return message.id === next.id &&
+      message.message_text === next.message_text &&
+      message.created_at === next.created_at &&
+      message.is_read === next.is_read &&
+      message.sender_type === next.sender_type
+  })
+}
+
+function formatTime(dateString: string): string {
+  return new Date(dateString).toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function formatDayLabel(dateString: string): string {
+  const date = new Date(dateString)
+  const today = new Date()
+  const yesterday = new Date()
+  yesterday.setDate(today.getDate() - 1)
+
+  const isSameDate = (left: Date, right: Date) =>
+    left.getDate() === right.getDate() &&
+    left.getMonth() === right.getMonth() &&
+    left.getFullYear() === right.getFullYear()
+
+  if (isSameDate(date, today)) return 'Сегодня'
+  if (isSameDate(date, yesterday)) return 'Вчера'
+
+  return date.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+  })
+}
+
+function openSupportTelegram() {
+  window.open(SUPPORT_TELEGRAM_URL, '_blank', 'noopener,noreferrer')
 }
 
 export function SupportChat() {
-    const { haptic } = useTelegram()
-    const [messages, setMessages] = useState<ChatMessage[]>([])
-    const [inputText, setInputText] = useState('')
-    const [isLoading, setIsLoading] = useState(true)
-    const [isSending, setIsSending] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const messagesEndRef = useRef<HTMLDivElement>(null)
-    const errorCountRef = useRef(0)
-    const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const { haptic } = useTelegram()
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [inputText, setInputText] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSending, setIsSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const errorCountRef = useRef(0)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-    const scrollToBottom = useCallback(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [])
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
 
-    const loadMessages = useCallback(async () => {
-        try {
-            const response = await fetchSupportMessages()
-            // Reset error count on success
-            errorCountRef.current = 0
-            setError(null)
-            setMessages(prev => haveSameMessages(prev, response.messages) ? prev : response.messages)
-        } catch {
-            errorCountRef.current++
+  const loadMessages = useCallback(async () => {
+    try {
+      const response = await fetchSupportMessages()
+      errorCountRef.current = 0
+      setError(null)
+      setMessages(prev => haveSameMessages(prev, response.messages) ? prev : response.messages)
+    } catch {
+      errorCountRef.current += 1
 
-            // Show error after 3 consecutive failures
-            if (errorCountRef.current >= 3) {
-                setError('Не удалось загрузить сообщения')
-                // Stop polling on repeated errors
-                if (intervalRef.current) {
-                    clearInterval(intervalRef.current)
-                    intervalRef.current = null
-                }
-            }
-        } finally {
-            setIsLoading(false)
+      if (errorCountRef.current >= 3) {
+        setError('Не удалось загрузить переписку. Попробуйте обновить чат или откройте Telegram напрямую.')
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
         }
-    }, [])
-
-    // Polling for messages with error recovery
-    useEffect(() => {
-        loadMessages()
-        intervalRef.current = setInterval(loadMessages, 5000)
-
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current)
-            }
-        }
-    }, [loadMessages])
-
-    // Auto-scroll to bottom
-    useEffect(() => {
-        scrollToBottom()
-    }, [messages, scrollToBottom])
-
-    const handleRetry = useCallback(() => {
-        setError(null)
-        setIsLoading(true)
-        errorCountRef.current = 0
-        loadMessages()
-        // Restart polling
-        if (!intervalRef.current) {
-            intervalRef.current = setInterval(loadMessages, 5000)
-        }
-    }, [loadMessages])
-
-    const handleSend = async () => {
-        if (!inputText.trim() || isSending) return
-
-        haptic('light')
-        setIsSending(true)
-        const textToSend = inputText
-        const tempId = Date.now()
-        setInputText('') // Optimistic clear
-
-        try {
-            // Optimistic update
-            const tempMsg: ChatMessage = {
-                id: tempId,
-                sender_type: 'client',
-                sender_name: 'Вы',
-                message_text: textToSend,
-                file_type: null,
-                file_name: null,
-                file_url: null,
-                created_at: new Date().toISOString(),
-                is_read: false
-            }
-            setMessages(prev => [...prev, tempMsg])
-
-            await sendSupportMessage(textToSend)
-            await loadMessages() // Sync real ID
-        } catch {
-            // Rollback - restore input
-            setInputText(textToSend)
-            setMessages(prev => prev.filter(m => m.id !== tempId))
-            haptic('error')
-        } finally {
-            setIsSending(false)
-        }
+      }
+    } finally {
+      setIsLoading(false)
+      setHasLoadedOnce(true)
     }
+  }, [])
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault()
-            handleSend()
-        }
+  useEffect(() => {
+    loadMessages()
+    intervalRef.current = setInterval(loadMessages, 5000)
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
     }
+  }, [loadMessages])
 
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, scrollToBottom])
 
-            {/* Messages Area */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {isLoading && messages.length === 0 ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
-                        <Loader2 className="animate-spin" color="#d4af37" />
-                    </div>
-                ) : error ? (
-                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40 }}>
-                        <AlertCircle size={48} color="rgba(239,68,68,0.5)" style={{ margin: '0 auto 16px' }} />
-                        <p style={{ marginBottom: 16 }}>{error}</p>
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleRetry}
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                padding: '10px 20px',
-                                background: 'rgba(212,175,55,0.1)',
-                                border: '1px solid rgba(212,175,55,0.3)',
-                                borderRadius: 12,
-                                color: '#d4af37',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <RefreshCw size={16} />
-                            Повторить
-                        </motion.button>
-                    </div>
-                ) : messages.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40 }}>
-                        <ShieldCheck size={48} color="rgba(212,175,55,0.3)" style={{ margin: '0 auto 16px' }} />
-                        <p>Напишите нам, мы на связи!</p>
-                    </div>
-                ) : (
-                    messages.map((msg, index) => {
-                        const isMe = msg.sender_type === 'client'
-                        const showAvatar = !isMe && (index === 0 || messages[index - 1].sender_type === 'client')
+  const handleRetry = useCallback(() => {
+    setError(null)
+    setIsLoading(true)
+    errorCountRef.current = 0
+    loadMessages()
+    if (!intervalRef.current) {
+      intervalRef.current = setInterval(loadMessages, 5000)
+    }
+  }, [loadMessages])
 
-                        return (
-                            <motion.div
-                                key={msg.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                style={{
-                                    alignSelf: isMe ? 'flex-end' : 'flex-start',
-                                    maxWidth: '85%',
-                                    display: 'flex',
-                                    gap: 8,
-                                    flexDirection: isMe ? 'row-reverse' : 'row'
-                                }}
-                            >
-                                {!isMe && (
-                                    <div style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: '50%',
-                                        background: 'rgba(212,175,55,0.2)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        opacity: showAvatar ? 1 : 0 // Keep space
-                                    }}>
-                                        <ShieldCheck size={16} color="#d4af37" />
-                                    </div>
-                                )}
+  const handleSend = async () => {
+    const textToSend = inputText.trim()
+    if (!textToSend || isSending) return
 
-                                <div>
-                                    {/* Bubble */}
-                                    <div style={{
-                                        padding: '12px 16px',
-                                        borderRadius: 18,
-                                        borderTopRightRadius: isMe ? 4 : 18,
-                                        borderTopLeftRadius: !isMe ? 4 : 18,
-                                        background: isMe
-                                            ? 'linear-gradient(135deg, #d4af37, #b38728)'
-                                            : 'rgba(255,255,255,0.05)',
-                                        color: isMe ? '#000' : 'var(--text-main)',
-                                        border: !isMe ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                                        fontSize: 15,
-                                        lineHeight: 1.4,
-                                        boxShadow: isMe ? '0 4px 12px rgba(212,175,55,0.2)' : 'none'
-                                    }}>
-                                        {msg.message_text}
-                                    </div>
+    haptic('light')
+    setIsSending(true)
+    const tempId = Date.now()
+    setInputText('')
 
-                                    {/* Time */}
-                                    <div style={{
-                                        fontSize: 11,
-                                        color: 'var(--text-muted)',
-                                        marginTop: 4,
-                                        textAlign: isMe ? 'right' : 'left',
-                                        paddingRight: isMe ? 4 : 0,
-                                        paddingLeft: !isMe ? 4 : 0
-                                    }}>
-                                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )
-                    })
-                )}
-                <div ref={messagesEndRef} />
+    try {
+      const tempMsg: ChatMessage = {
+        id: tempId,
+        sender_type: 'client',
+        sender_name: 'Вы',
+        message_text: textToSend,
+        file_type: null,
+        file_name: null,
+        file_url: null,
+        created_at: new Date().toISOString(),
+        is_read: false,
+      }
+      setMessages(prev => [...prev, tempMsg])
+
+      await sendSupportMessage(textToSend)
+      await loadMessages()
+    } catch {
+      setInputText(textToSend)
+      setMessages(prev => prev.filter(message => message.id !== tempId))
+      haptic('error')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const messageFeed = useMemo(() => {
+    return messages.map((message, index) => {
+      const previous = messages[index - 1]
+      const showDayDivider = !previous || formatDayLabel(previous.created_at) !== formatDayLabel(message.created_at)
+      const isClient = message.sender_type === 'client'
+      const showSupportLabel = !isClient && (!previous || previous.sender_type === 'client')
+
+      return {
+        message,
+        showDayDivider,
+        showSupportLabel,
+        isClient,
+      }
+    })
+  }, [messages])
+
+  const composerPlaceholder = hasLoadedOnce && messages.length === 0
+    ? 'Напишите, что нужно решить'
+    : 'Сообщение в поддержку'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '16px 16px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        {isLoading && messages.length === 0 ? (
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 24 }}>
+            <Loader2 className="animate-spin" color="#d4af37" />
+          </div>
+        ) : error ? (
+          <div
+            style={{
+              marginTop: 20,
+              padding: '20px 18px',
+              borderRadius: 20,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              textAlign: 'center',
+            }}
+          >
+            <AlertCircle size={42} color="rgba(239,68,68,0.7)" style={{ margin: '0 auto 14px' }} />
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
+              Чат временно недоступен
             </div>
-
-            {/* Input Area */}
-            <div style={{
-                padding: '12px 16px',
-                background: 'rgba(20, 20, 23, 0.8)',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(20px)',
-            }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    gap: 10,
-                    background: 'rgba(255,255,255,0.05)',
-                    borderRadius: 20,
-                    padding: '8px 8px 8px 16px',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                }}>
-                    <textarea
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Сообщение..."
-                        rows={1}
-                        style={{
-                            flex: 1,
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--text-main)',
-                            fontSize: 15,
-                            resize: 'none',
-                            padding: '10px 0',
-                            maxHeight: 100,
-                            minHeight: 24,
-                            outline: 'none',
-                            fontFamily: 'inherit'
-                        }}
-                    />
-
-                    <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={handleSend}
-                        disabled={!inputText.trim() || isSending}
-                        style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: '50%',
-                            background: inputText.trim() && !isSending ? '#d4af37' : 'rgba(255,255,255,0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: 'none',
-                            cursor: inputText.trim() && !isSending ? 'pointer' : 'default',
-                            color: inputText.trim() && !isSending ? '#000' : 'rgba(255,255,255,0.3)',
-                            transition: 'all 0.2s',
-                            flexShrink: 0
-                        }}
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 16 }}>
+              {error}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleRetry}
+                style={{
+                  minHeight: 44,
+                  borderRadius: 14,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.04)',
+                  color: '#f4f4f5',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+              >
+                <RefreshCw size={15} />
+                Обновить
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={openSupportTelegram}
+                style={{
+                  minHeight: 44,
+                  borderRadius: 14,
+                  border: '1px solid rgba(212,175,55,0.18)',
+                  background: 'rgba(212,175,55,0.1)',
+                  color: '#d4af37',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+              >
+                <ExternalLink size={15} />
+                Telegram
+              </motion.button>
+            </div>
+          </div>
+        ) : messages.length === 0 ? (
+          <div
+            style={{
+              marginTop: 8,
+              padding: '20px 18px',
+              borderRadius: 22,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(18,18,22,0.96) 100%)',
+              border: '1px solid rgba(212,175,55,0.16)',
+            }}
+          >
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 18,
+                background: 'rgba(212,175,55,0.12)',
+                border: '1px solid rgba(212,175,55,0.18)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 14,
+              }}
+            >
+              <ShieldCheck size={24} color="#d4af37" />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
+              Поддержка уже на связи
+            </div>
+            <div style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 16 }}>
+              Напишите вопрос по оплате, срокам, правкам или файлам. Если удобнее, можно сразу открыть Telegram и написать напрямую.
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={openSupportTelegram}
+              style={{
+                minHeight: 46,
+                padding: '0 16px',
+                borderRadius: 14,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.04)',
+                color: '#f4f4f5',
+                fontSize: 13,
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <ExternalLink size={15} />
+              Открыть Telegram
+            </motion.button>
+          </div>
+        ) : (
+          <>
+            {messageFeed.map(({ message, showDayDivider, showSupportLabel, isClient }) => (
+              <div key={message.id}>
+                {showDayDivider && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      margin: '8px 0 14px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.05)',
+                        fontSize: 11,
+                        color: 'rgba(255,255,255,0.52)',
+                      }}
                     >
-                        {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                    </motion.button>
-                </div>
-            </div>
+                      {formatDayLabel(message.created_at)}
+                    </span>
+                  </div>
+                )}
+
+                {!isClient && showSupportLabel && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginBottom: 8,
+                      paddingLeft: 4,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 10,
+                        background: 'rgba(212,175,55,0.12)',
+                        border: '1px solid rgba(212,175,55,0.18)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <ShieldCheck size={14} color="#d4af37" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#f4f4f5' }}>
+                        Техподдержка Academic Saloon
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.44)' }}>
+                        Отвечаем в чате и в Telegram
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: isClient ? 'flex-end' : 'flex-start',
+                    marginBottom: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      maxWidth: '84%',
+                      padding: '12px 14px',
+                      borderRadius: 18,
+                      background: isClient
+                        ? 'linear-gradient(135deg, #e7cb72 0%, #d4af37 55%, #b38728 100%)'
+                        : 'rgba(255,255,255,0.05)',
+                      border: isClient ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                      color: isClient ? '#090909' : '#f4f4f5',
+                      boxShadow: isClient ? '0 8px 22px rgba(212,175,55,0.18)' : 'none',
+                    }}
+                  >
+                    <div style={{ fontSize: 14.5, lineHeight: 1.55 }}>
+                      {message.message_text}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        textAlign: isClient ? 'right' : 'left',
+                        fontSize: 11,
+                        color: isClient ? 'rgba(9,9,9,0.68)' : 'rgba(255,255,255,0.45)',
+                      }}
+                    >
+                      {formatTime(message.created_at)}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            ))}
+          </>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div
+        style={{
+          padding: '12px 16px 16px',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(15,15,18,0.88)',
+          backdropFilter: 'blur(20px)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 10,
+            padding: '10px 10px 10px 14px',
+            borderRadius: 18,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <textarea
+            value={inputText}
+            onChange={(event) => setInputText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault()
+                handleSend()
+              }
+            }}
+            placeholder={composerPlaceholder}
+            rows={1}
+            style={{
+              flex: 1,
+              minHeight: 22,
+              maxHeight: 120,
+              resize: 'none',
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: '#f4f4f5',
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+          />
+
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSend}
+            disabled={isSending || inputText.trim().length === 0}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 14,
+              border: 'none',
+              background: inputText.trim().length === 0 ? 'rgba(255,255,255,0.08)' : 'var(--gold-metallic)',
+              color: inputText.trim().length === 0 ? 'rgba(255,255,255,0.36)' : '#090909',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: inputText.trim().length === 0 ? 'default' : 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            {isSending ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={16} />}
+          </motion.button>
         </div>
-    )
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginTop: 10,
+            fontSize: 11.5,
+            color: 'rgba(255,255,255,0.42)',
+          }}
+        >
+          <span>По срочным вопросам можно сразу открыть Telegram.</span>
+          <button
+            type="button"
+            onClick={openSupportTelegram}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              color: '#d4af37',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: 11.5,
+              fontWeight: 700,
+              cursor: 'pointer',
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            Telegram
+            <ExternalLink size={13} />
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  )
 }

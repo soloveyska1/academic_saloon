@@ -34,10 +34,11 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
   const title = order.subject || order.work_type_label || `Заказ #${order.id}`
   const WorkTypeIcon = (order.work_type_label && WORK_TYPE_ICONS[order.work_type_label]) || FileText
   const isActive = !shouldReduceMotion && ['pending', 'in_progress', 'review', 'waiting_payment'].includes(order.status)
+  const createdAt = new Date(order.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 
   return (
     <div style={{ paddingBottom: '30px' }}>
-      <div className={s.sectionTitle}>ПОСЛЕДНЯЯ АКТИВНОСТЬ</div>
+      <div className={s.sectionTitle}>ПОСЛЕДНИЙ ЗАКАЗ</div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -51,10 +52,14 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
           padding: '20px',
           cursor: 'pointer',
           border: '1px solid rgba(255,255,255,0.08)',
-          position: 'relative'
+          position: 'relative',
+          background: `
+            radial-gradient(circle at top right, rgba(212,175,55,0.10), transparent 34%),
+            linear-gradient(180deg, rgba(19,18,24,0.96), rgba(10,10,16,0.96))
+          `,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
           {/* Icon Container */}
           <div style={{
             width: 50, height: 50, borderRadius: '14px',
@@ -69,7 +74,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
           {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4
+              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap',
             }}>
               <span style={{
                 fontSize: '11px',
@@ -80,6 +85,12 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
               }}>
                 {status.label}
               </span>
+              <span style={{
+                fontSize: '11px',
+                color: '#71717a',
+              }}>
+                {createdAt}
+              </span>
               {isActive && (
                 <motion.div
                   animate={{ opacity: [0.5, 1, 0.5] }}
@@ -88,10 +99,25 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
                 />
               )}
             </div>
-            <div className="truncate" style={{
-              fontSize: '15px', fontWeight: 600, color: '#f2f2f2'
+            <div style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: '#f2f2f2',
+              lineHeight: 1.35,
+              marginBottom: 4,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
             }}>
               {title}
+            </div>
+            <div style={{
+              fontSize: '13px',
+              color: '#a1a1aa',
+              lineHeight: 1.5,
+            }}>
+              Откройте заказ, чтобы посмотреть этап, сроки и следующие действия.
             </div>
           </div>
 
@@ -114,4 +140,3 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
     prevProps.order.status === nextProps.order.status &&
     prevProps.order.created_at === nextProps.order.created_at
 })
-

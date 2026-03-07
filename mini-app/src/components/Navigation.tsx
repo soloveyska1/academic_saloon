@@ -152,7 +152,7 @@ export const Navigation = () => {
   const navItems: NavItem[] = [
     { id: 'home', icon: Home, label: 'Главная', path: '/' },
     { id: 'orders', icon: List, label: 'Заказы', path: '/orders' },
-    { id: 'club', icon: Crown, label: 'Клуб', path: '/club' },
+    { id: 'club', icon: Crown, label: 'Бонусы', path: '/club' },
     { id: 'profile', icon: User, label: 'Профиль', path: '/profile' }
   ]
 

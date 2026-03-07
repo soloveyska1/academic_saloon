@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { UserData } from '../types'
 import { fetchUserData, fetchConfig } from '../api/userApi'
+import { SUPPORT_TELEGRAM_URL } from '../lib/appLinks'
 
 // Demo mode flag - same as in userApi.ts
 const IS_DEV = import.meta.env.DEV || false
@@ -144,13 +145,11 @@ export function useTelegram() {
 
   const openSupport = useCallback(() => {
     try {
-      // Open bot with support command to create topic
-      const url = `https://t.me/${botUsername}?start=support`
-      tg?.openTelegramLink(url)
+      tg?.openTelegramLink(SUPPORT_TELEGRAM_URL)
     } catch {
-      window.open(`https://t.me/${botUsername}?start=support`, '_blank')
+      window.open(SUPPORT_TELEGRAM_URL, '_blank', 'noopener,noreferrer')
     }
-  }, [tg, botUsername])
+  }, [tg])
 
   const showAlert = useCallback((message: string) => {
     try {

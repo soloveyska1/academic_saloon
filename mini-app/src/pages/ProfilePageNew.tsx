@@ -31,6 +31,7 @@ import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { useToast } from '../components/ui/Toast'
 import { copyTextSafely } from '../utils/clipboard'
+import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 import { getDisplayName } from '../lib/ranks'
 
 interface Props {
@@ -82,9 +83,9 @@ const ACTIONABLE_ORDER_META: Record<string, OrderActionMeta> = {
 }
 
 const CLUB_LEVEL_LABELS = {
-  silver: 'Серебряный клуб',
-  gold: 'Золотой клуб',
-  platinum: 'Платиновый клуб',
+  silver: 'Стартовый уровень',
+  gold: 'Усиленный уровень',
+  platinum: 'Максимальный уровень',
 } as const
 
 const TRANSACTION_REASON_LABELS: Record<string, string> = {
@@ -180,8 +181,8 @@ function getProfileRankName(rankName: string | null | undefined) {
 }
 
 function getClubLevelLabel(level: string | null | undefined) {
-  if (!level) return 'Клуб привилегий'
-  return CLUB_LEVEL_LABELS[level as keyof typeof CLUB_LEVEL_LABELS] || 'Клуб привилегий'
+  if (!level) return 'Уровень привилегий'
+  return CLUB_LEVEL_LABELS[level as keyof typeof CLUB_LEVEL_LABELS] || 'Уровень привилегий'
 }
 
 function getMemberSince(user: UserData) {
@@ -711,7 +712,7 @@ export function ProfilePageNew({ user }: Props) {
     [club.activeVouchers]
   )
 
-  const inviteLink = botUsername ? `https://t.me/${botUsername}/app?startapp=ref_${user.telegram_id}` : ''
+  const inviteLink = buildReferralLink(botUsername, user.telegram_id)
   const isAdmin = user.telegram_id === 872379852
   const mainActionMeta = actionableOrder ? ACTIONABLE_ORDER_META[actionableOrder.status] : null
 
@@ -790,13 +791,13 @@ export function ProfilePageNew({ user }: Props) {
     if (!inviteLink) return
 
     haptic('medium')
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent('Если тоже нужен академический сервис с понятным процессом и сильной поддержкой, открывай мини-приложение.')}`
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(buildReferralShareText(user.referral_code))}`
     if (tg?.openTelegramLink) {
       tg.openTelegramLink(shareUrl)
     } else {
       window.open(shareUrl, '_blank', 'noopener,noreferrer')
     }
-  }, [haptic, inviteLink, tg])
+  }, [haptic, inviteLink, tg, user.referral_code])
 
   const handleOpenQR = useCallback(() => {
     if (!inviteLink) return
@@ -1153,7 +1154,7 @@ export function ProfilePageNew({ user }: Props) {
             <ActionTile
               icon={Gift}
               label="Награды"
-              hint="Клуб, бонусы и новые обмены"
+              hint="Баллы, ваучеры и доступные привилегии"
               onClick={handleOpenRewards}
             />
           </div>
@@ -1264,7 +1265,7 @@ export function ProfilePageNew({ user }: Props) {
                     fontWeight: 700,
                     color: 'var(--text-main)',
                   }}>
-                    Баллы клуба
+                    Баллы привилегий
                   </div>
                 </div>
                 <div style={{
@@ -1282,8 +1283,8 @@ export function ProfilePageNew({ user }: Props) {
                   marginBottom: 12,
                 }}>
                   {club.dailyBonus.status === 'available'
-                    ? `${clubLevelLabel} • ежедневный бонус уже доступен.`
-                    : `${clubLevelLabel} • серия ежедневных бонусов: ${club.dailyBonus.streakDay} день.`}
+                    ? `Баллы привилегий • ${clubLevelLabel.toLowerCase()}, ежедневный бонус уже доступен.`
+                    : `Баллы привилегий • ${clubLevelLabel.toLowerCase()}, серия бонусов: ${club.dailyBonus.streakDay} день.`}
                 </div>
                 <ProgressLine
                   value={club.levelProgress}
@@ -1466,7 +1467,7 @@ export function ProfilePageNew({ user }: Props) {
                   lineHeight: 1.6,
                   color: 'var(--text-secondary)',
                 }}>
-                  Пока нет активных ваучеров. Получайте их в клубе привилегий и применяйте при следующем заказе.
+                  Пока нет активных ваучеров. Получайте их в разделе привилегий и применяйте при следующем заказе.
                 </div>
               )}
 
@@ -1589,7 +1590,7 @@ export function ProfilePageNew({ user }: Props) {
               <ActionMiniButton icon={Copy} label="Копировать" onClick={handleCopyReferral} disabled={!inviteLink} />
               <ActionMiniButton icon={ArrowUpRight} label="Поделиться" onClick={handleShareReferral} disabled={!inviteLink} />
               <ActionMiniButton icon={QrCode} label="QR-код" onClick={handleOpenQR} disabled={!inviteLink} />
-              <ActionMiniButton icon={Users} label="Подробнее" onClick={handleOpenReferralPage} />
+              <ActionMiniButton icon={Users} label="О программе" onClick={handleOpenReferralPage} />
             </div>
           </div>
         </section>
@@ -1597,7 +1598,7 @@ export function ProfilePageNew({ user }: Props) {
         <section style={{ marginBottom: 120 }}>
           <SectionTitle
             title="Поддержка и сервис"
-            caption="Все важные служебные разделы: помощь, клуб и история активности."
+            caption="Все важные служебные разделы: помощь, привилегии и история активности."
           />
           <div style={{
             display: 'grid',
@@ -1612,7 +1613,7 @@ export function ProfilePageNew({ user }: Props) {
             />
             <ActionTile
               icon={GraduationCap}
-              label="Привилегии клуба"
+              label="Привилегии"
               hint="Посмотреть уровни, условия и доступные преимущества"
               onClick={handleOpenPrivileges}
             />
@@ -1625,8 +1626,8 @@ export function ProfilePageNew({ user }: Props) {
             />
             <ActionTile
               icon={CircleHelp}
-              label="История клуба"
-              hint="Бонусы, обмены, миссии и вся активность по клубу"
+              label="История привилегий"
+              hint="Бонусы, обмены, ваучеры и вся активность по привилегиям"
               onClick={() => {
                 haptic('light')
                 navigate('/club/history')
@@ -1641,8 +1642,11 @@ export function ProfilePageNew({ user }: Props) {
           <QRCodeModal
             onClose={() => setShowQR(false)}
             value={inviteLink}
+            displayValue={user.referral_code}
             title="Ваша реферальная ссылка"
             subtitle="Покажите QR или дайте другу открыть его с вашего телефона"
+            shareText={buildReferralShareText(user.referral_code)}
+            downloadFileName={`academic-saloon-${user.referral_code}`}
           />
         )}
       </AnimatePresence>
