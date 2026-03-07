@@ -5,7 +5,7 @@ import {
   ArrowLeft, Check, AlertCircle, Send, ChevronRight, Loader2,
   Tag, Clock, Zap, Flame, Rocket, Timer, Hourglass
 } from 'lucide-react'
-import { WorkType, OrderCreateRequest, Voucher } from '../types'
+import { UserData, WorkType, OrderCreateRequest, Voucher } from '../types'
 import { createOrder, uploadOrderFiles } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
@@ -75,7 +75,11 @@ function buildOrderDescription(requirements: string, selectedVoucher: Voucher | 
   return parts.length > 0 ? parts.join('\n\n') : undefined
 }
 
-export function CreateOrderPage() {
+interface CreateOrderPageProps {
+  user?: UserData | null
+}
+
+export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -140,6 +144,11 @@ export function CreateOrderPage() {
     promoUsed?: { code: string; discount: number } | null
     basePrice?: number
   } | null>(null)
+
+  const loyaltyDiscount = useMemo(() => {
+    const rawDiscount = user?.loyalty?.discount ?? user?.discount ?? 0
+    return Math.min(Math.max(rawDiscount, 0), 50)
+  }, [user])
 
   // ─────────────────────────────────────────────────────────────────────────
   //  TELEGRAM MAINBUTTON — DISABLED
@@ -317,14 +326,23 @@ export function CreateOrderPage() {
     return Math.round(st.priceNum * dl.multiplierNum)
   }, [serviceTypeId, deadline])
 
+  const applyDisplayedDiscounts = useCallback((basePrice: number, promoDiscount = 0) => {
+    const priceAfterLoyalty = basePrice * (1 - loyaltyDiscount / 100)
+    const priceAfterPromo = priceAfterLoyalty * (1 - promoDiscount / 100)
+    return Math.round(priceAfterPromo)
+  }, [loyaltyDiscount])
+
+  const getEstimateBaseAfterLoyalty = useCallback(() => {
+    const basePrice = getBaseEstimate()
+    if (!basePrice) return null
+    return applyDisplayedDiscounts(basePrice, 0)
+  }, [applyDisplayedDiscounts, getBaseEstimate])
+
   const getEstimate = useCallback(() => {
     const basePrice = getBaseEstimate()
     if (!basePrice) return null
-    if (activePromo) {
-      return Math.round(basePrice * (1 - activePromo.discount / 100))
-    }
-    return basePrice
-  }, [getBaseEstimate, activePromo])
+    return applyDisplayedDiscounts(basePrice, activePromo?.discount ?? 0)
+  }, [applyDisplayedDiscounts, getBaseEstimate, activePromo])
 
   // ─────────────────────────────────────────────────────────────────────────
   //  SUBMIT
@@ -470,7 +488,7 @@ export function CreateOrderPage() {
     const promoUsed = result.promoUsed
     const basePrice = result.basePrice
     const savings = basePrice && promoUsed
-      ? Math.round(basePrice * (promoUsed.discount / 100))
+      ? Math.round(basePrice * (1 - loyaltyDiscount / 100) * (promoUsed.discount / 100))
       : 0
 
     return (
@@ -957,7 +975,7 @@ export function CreateOrderPage() {
                   >
                     <PromoCodeSection
                       variant="inline"
-                      basePrice={getBaseEstimate() || undefined}
+                      basePrice={getEstimateBaseAfterLoyalty() || undefined}
                     />
                   </motion.div>
 
@@ -992,6 +1010,7 @@ export function CreateOrderPage() {
                     <EstimateCard
                       estimate={estimate}
                       baseEstimate={getBaseEstimate()}
+                      loyaltyDiscount={loyaltyDiscount}
                       activePromo={activePromo}
                       isDark={isDark}
                     />
@@ -1205,11 +1224,17 @@ function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCar
 interface EstimateCardProps {
   estimate: number
   baseEstimate: number | null
+  loyaltyDiscount: number
   activePromo: { code: string; discount: number } | null
   isDark: boolean
 }
 
-function EstimateCard({ estimate, baseEstimate, activePromo, isDark }: EstimateCardProps) {
+function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePromo, isDark }: EstimateCardProps) {
+  const priceAfterLoyalty = baseEstimate
+    ? Math.round(baseEstimate * (1 - loyaltyDiscount / 100))
+    : null
+  const hasLoyaltyDiscount = loyaltyDiscount > 0
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -1236,24 +1261,40 @@ function EstimateCard({ estimate, baseEstimate, activePromo, isDark }: EstimateC
               Ориентировочно
             </span>
           </div>
-          {activePromo && (
+          {(activePromo || hasLoyaltyDiscount) && (
             <span style={{ fontSize: 12, fontWeight: 600, color: '#22c55e', display: 'block', marginTop: 2 }}>
-              С промокодом {activePromo.discount}%
+              {hasLoyaltyDiscount && activePromo
+                ? `Статус ${loyaltyDiscount}% + промокод ${activePromo.discount}%`
+                : hasLoyaltyDiscount
+                  ? `С учетом личной скидки ${loyaltyDiscount}%`
+                  : `С промокодом ${activePromo?.discount}%`}
             </span>
           )}
         </div>
 
         <div style={{ textAlign: 'right' }}>
-          {activePromo && baseEstimate && (
-            <div style={{
-              fontSize: 14,
-              color: 'var(--text-muted)',
-              textDecoration: 'line-through',
-              marginBottom: 4,
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
-              {baseEstimate.toLocaleString('ru-RU')} ₽
-            </div>
+          {(activePromo || hasLoyaltyDiscount) && baseEstimate && (
+            <>
+              <div style={{
+                fontSize: 14,
+                color: 'var(--text-muted)',
+                textDecoration: 'line-through',
+                marginBottom: 4,
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
+                {baseEstimate.toLocaleString('ru-RU')} ₽
+              </div>
+              {activePromo && hasLoyaltyDiscount && priceAfterLoyalty && (
+                <div style={{
+                  fontSize: 12,
+                  color: 'var(--text-secondary)',
+                  marginBottom: 4,
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>
+                  После статуса: {priceAfterLoyalty.toLocaleString('ru-RU')} ₽
+                </div>
+              )}
+            </>
           )}
           <motion.span
             key={estimate}
@@ -1262,13 +1303,13 @@ function EstimateCard({ estimate, baseEstimate, activePromo, isDark }: EstimateC
             style={{
               fontSize: 24,
               fontWeight: 800,
-              color: activePromo ? '#22c55e' : (isDark ? '#d4af37' : '#9e7a1a'),
+              color: activePromo || hasLoyaltyDiscount ? '#22c55e' : (isDark ? '#d4af37' : '#9e7a1a'),
               fontFamily: "'JetBrains Mono', monospace",
             }}
           >
             {estimate.toLocaleString('ru-RU')} ₽
           </motion.span>
-          {activePromo && (
+          {(activePromo || hasLoyaltyDiscount) && (
             <div style={{
               fontSize: 12,
               fontWeight: 600,
@@ -1279,8 +1320,14 @@ function EstimateCard({ estimate, baseEstimate, activePromo, isDark }: EstimateC
               justifyContent: 'flex-end',
               gap: 6,
             }}>
-              <Tag size={12} />
-              {activePromo.code} −{activePromo.discount}%
+              {activePromo ? (
+                <>
+                  <Tag size={12} />
+                  {activePromo.code} −{activePromo.discount}%
+                </>
+              ) : (
+                `Личная скидка −${loyaltyDiscount}%`
+              )}
             </div>
           )}
         </div>

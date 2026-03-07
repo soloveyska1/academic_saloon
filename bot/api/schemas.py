@@ -126,8 +126,7 @@ class PromoCodeRequest(BaseModel):
     @field_validator('code')
     @classmethod
     def validate_code(cls, v: str) -> str:
-        # Allow alphanumeric characters (Latin and Cyrillic)
-        cleaned = re.sub(r'[^A-Za-z0-9А-Яа-яЁё]', '', v)
+        cleaned = re.sub(r'[^A-Za-z0-9]', '', v.strip().upper())
         if not cleaned:
             raise ValueError('Некорректный промокод')
         return cleaned.upper()
@@ -138,6 +137,7 @@ class PromoCodeResponse(BaseModel):
     success: bool
     message: str
     discount: Optional[float] = None  # Changed to float to support decimal discounts
+    valid_until: Optional[str] = None
 
 
 class RouletteResponse(BaseModel):

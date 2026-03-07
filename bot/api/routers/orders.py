@@ -25,6 +25,7 @@ from bot.api.schemas import (
 from bot.api.dependencies import (
     get_loyalty_levels, get_loyalty_info, order_to_response
 )
+from bot.api.rate_limit import limiter
 from bot.services.pricing import calculate_price
 from bot.services.yandex_disk import yandex_disk_service
 from bot.services.mini_app_logger import (
@@ -329,7 +330,9 @@ async def get_order_detail(
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.post("/promo", response_model=PromoCodeResponse)
+@limiter.limit("20/minute")
 async def apply_promo_code(
+    request: Request,
     data: PromoCodeRequest,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
@@ -354,7 +357,8 @@ async def apply_promo_code(
         return PromoCodeResponse(
             success=True,
             message=f"Промокод {code} активирован! Скидка {discount_display}%",
-            discount=discount  # Keep as float to preserve precision
+            discount=discount,  # Keep as float to preserve precision
+            valid_until=expires_at.isoformat() if expires_at else None,
         )
 
     # Return specific error message from PromoService
@@ -503,6 +507,7 @@ async def create_order(
                 code=promo_code_used,
                 user_id=tg_user.id,
                 base_price=base_price,
+                loyalty_discount=capped_loyalty_discount,
                 bot=bot  # Pass bot for admin notifications
             )
             if not apply_success:
@@ -630,7 +635,7 @@ async def create_order(
         success=True,
         order_id=order.id,
         message=message,
-        price=float(price_calc.final_price) if not price_calc.is_manual_required else None,
+        price=float(order.final_price) if not price_calc.is_manual_required else None,
         is_manual_required=price_calc.is_manual_required,
         promo_applied=bool(promo_code_used),
         promo_failed=promo_validation_failed,

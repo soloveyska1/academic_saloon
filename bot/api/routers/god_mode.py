@@ -65,6 +65,19 @@ def require_god_mode(tg_user: TelegramUser) -> None:
         raise HTTPException(status_code=403, detail="Access denied. You are not a god.")
 
 
+def calculate_order_promo_discount_amount(order: Order) -> float:
+    if not order.promo_code or (order.promo_discount or 0) <= 0 or (order.price or 0) <= 0:
+        return 0.0
+
+    from bot.services.promo_service import PromoService
+
+    return PromoService.calculate_discount_amount(
+        base_price=order.price or 0.0,
+        loyalty_discount=order.discount or 0.0,
+        promo_discount=order.promo_discount or 0.0,
+    )
+
+
 async def log_admin_action(
     session: AsyncSession,
     admin: TelegramUser,
@@ -224,13 +237,24 @@ async def get_dashboard(
     # Use fallback if is_active column doesn't exist on promocode_usages
     try:
         total_discount_given = await session.scalar(
-            select(func.sum(PromoCodeUsage.discount_amount)).where(
-                PromoCodeUsage.is_active == True
+            select(
+                func.sum(
+                    Order.price * (1 - (Order.discount / 100.0)) * (Order.promo_discount / 100.0)
+                )
             )
+            .select_from(PromoCodeUsage)
+            .join(Order, Order.id == PromoCodeUsage.order_id)
+            .where(PromoCodeUsage.is_active == True)
         ) or 0.0
     except Exception:
         total_discount_given = await session.scalar(
-            select(func.sum(PromoCodeUsage.discount_amount))
+            select(
+                func.sum(
+                    Order.price * (1 - (Order.discount / 100.0)) * (Order.promo_discount / 100.0)
+                )
+            )
+            .select_from(PromoCodeUsage)
+            .join(Order, Order.id == PromoCodeUsage.order_id)
         ) or 0.0
 
     # Most popular promo codes (top 3 by usage count)
@@ -358,10 +382,7 @@ async def get_orders(
         user = users_map.get(o.user_id)
         order_dict = order_to_response(o).__dict__
 
-        # Calculate discount amount saved if promo was used
-        promo_discount_amount = 0.0
-        if o.promo_code and o.promo_discount > 0:
-            promo_discount_amount = o.price * (o.promo_discount / 100.0)
+        promo_discount_amount = calculate_order_promo_discount_amount(o)
 
         order_dict.update({
             "user_telegram_id": o.user_id,
@@ -414,7 +435,7 @@ async def get_order_details(
     promo_discount_amount = 0.0
     promo_returned = False
     if order.promo_code and order.promo_discount > 0:
-        promo_discount_amount = order.price * (order.promo_discount / 100.0)
+        promo_discount_amount = calculate_order_promo_discount_amount(order)
 
         # Check if promo was returned (for cancelled orders)
         promo_usage_result = await session.execute(
@@ -583,12 +604,13 @@ async def update_order_price(
         promo_discount = order.promo_discount or 0.0
 
         # Check if usage already exists (for manual orders we defer usage until price is set)
-        existing_usage = await session.execute(
+        existing_usage_result = await session.execute(
             select(PromoCodeUsage).where(
                 PromoCodeUsage.order_id == order_id
             )
         )
-        usage_exists = existing_usage.first() is not None
+        existing_usage = existing_usage_result.scalar_one_or_none()
+        usage_exists = existing_usage is not None
 
         # Apply promo usage if we haven't yet (manual orders)
         if old_price == 0 and not usage_exists:
@@ -598,6 +620,7 @@ async def update_order_price(
                 code=order.promo_code,
                 user_id=order.user_id,
                 base_price=new_price,
+                loyalty_discount=order.discount or 0.0,
                 bot=bot
             )
             if not apply_success:
@@ -628,6 +651,13 @@ async def update_order_price(
                 # Promo is no longer valid; clear it to avoid showing stale code without discount
                 order.promo_code = None
                 order.promo_discount = 0.0
+
+        if existing_usage and order.promo_code and order.promo_discount > 0:
+            existing_usage.discount_amount = PromoService.calculate_discount_amount(
+                base_price=new_price,
+                loyalty_discount=order.discount or 0.0,
+                promo_discount=order.promo_discount or 0.0,
+            )
 
     # Auto-transition status if needed
     old_status = order.status
@@ -1412,7 +1442,14 @@ async def get_promos(
         # Get total savings (with fallback)
         try:
             total_savings = await session.scalar(
-                select(func.sum(PromoCodeUsage.discount_amount)).where(
+                select(
+                    func.sum(
+                        Order.price * (1 - (Order.discount / 100.0)) * (Order.promo_discount / 100.0)
+                    )
+                )
+                .select_from(PromoCodeUsage)
+                .join(Order, Order.id == PromoCodeUsage.order_id)
+                .where(
                     and_(
                         PromoCodeUsage.promocode_id == p.id,
                         PromoCodeUsage.is_active == True
@@ -1421,9 +1458,14 @@ async def get_promos(
             ) or 0.0
         except Exception:
             total_savings = await session.scalar(
-                select(func.sum(PromoCodeUsage.discount_amount)).where(
-                    PromoCodeUsage.promocode_id == p.id
+                select(
+                    func.sum(
+                        Order.price * (1 - (Order.discount / 100.0)) * (Order.promo_discount / 100.0)
+                    )
                 )
+                .select_from(PromoCodeUsage)
+                .join(Order, Order.id == PromoCodeUsage.order_id)
+                .where(PromoCodeUsage.promocode_id == p.id)
             ) or 0.0
 
         # Get creator info
@@ -1476,7 +1518,7 @@ async def create_promo(
 
     # Check if exists
     existing = await session.scalar(
-        select(PromoCode).where(PromoCode.code == code)
+        select(PromoCode).where(func.upper(PromoCode.code) == code.upper())
     )
     if existing:
         raise HTTPException(status_code=400, detail="Promo code already exists")

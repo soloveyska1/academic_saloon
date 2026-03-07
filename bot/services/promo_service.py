@@ -12,9 +12,8 @@ This service handles all promo code operations with:
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
-from sqlalchemy import select, update, func, and_
+from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from zoneinfo import ZoneInfo
 from aiogram import Bot
 
@@ -80,6 +79,25 @@ class PromoService:
 
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
+
+    @staticmethod
+    def calculate_discount_amount(
+        base_price: float,
+        loyalty_discount: float,
+        promo_discount: float,
+    ) -> float:
+        """
+        Calculate the actual savings produced by the promo itself.
+
+        Loyalty discount is applied before the promo on Order.final_price,
+        so promo savings must be counted from the already discounted amount.
+        """
+        safe_base_price = max(float(base_price or 0), 0.0)
+        safe_loyalty_discount = min(max(float(loyalty_discount or 0), 0.0), 100.0)
+        safe_promo_discount = min(max(float(promo_discount or 0), 0.0), 100.0)
+
+        price_after_loyalty = safe_base_price * (1 - safe_loyalty_discount / 100.0)
+        return round(price_after_loyalty * (safe_promo_discount / 100.0), 2)
 
     @staticmethod
     async def validate_promo_code(
@@ -195,6 +213,7 @@ class PromoService:
         code: str,
         user_id: int,
         base_price: float,
+        loyalty_discount: float = 0.0,
         bot: Optional[Bot] = None
     ) -> tuple[bool, str, float]:
         """
@@ -232,6 +251,11 @@ class PromoService:
                 return False, "Промокод был деактивирован", 0.0
 
             now = datetime.now(MSK_TZ)
+
+            if promo.valid_from:
+                valid_from = promo.valid_from.replace(tzinfo=MSK_TZ) if promo.valid_from.tzinfo is None else promo.valid_from
+                if now < valid_from:
+                    return False, "Срок действия промокода ещё не наступил", 0.0
 
             if promo.valid_until:
                 valid_until = promo.valid_until.replace(tzinfo=MSK_TZ) if promo.valid_until.tzinfo is None else promo.valid_until
@@ -285,7 +309,11 @@ class PromoService:
                 return False, "Вы уже использовали этот промокод", 0.0
 
             # Calculate discount amount
-            discount_amount = base_price * (promo.discount_percent / 100.0)
+            discount_amount = PromoService.calculate_discount_amount(
+                base_price=base_price,
+                loyalty_discount=loyalty_discount,
+                promo_discount=promo.discount_percent,
+            )
 
             # Record usage (is_active will be ignored if column doesn't exist)
             usage = PromoCodeUsage(

@@ -27,6 +27,10 @@ function formatExpiryDate(timestamp: number): string {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
+function sanitizePromoInput(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 50)
+}
+
 interface PromoCodeSectionProps {
   // Display mode
   variant?: 'compact' | 'full' | 'inline'
@@ -112,6 +116,12 @@ export function PromoCodeSection({
       return () => clearTimeout(timer)
     }
   }, [activePromo])
+
+  useEffect(() => {
+    if (collapsible && (activePromo || validationError)) {
+      setIsExpanded(true)
+    }
+  }, [activePromo, collapsible, validationError])
 
   const handleSubmit = async () => {
     if (!inputCode.trim() || isValidating) return
@@ -427,7 +437,7 @@ export function PromoCodeSection({
                   ref={inputRef}
                   type="text"
                   value={inputCode}
-                  onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                  onChange={(e) => setInputCode(sanitizePromoInput(e.target.value))}
                   onKeyDown={handleKeyDown}
                   placeholder="Промокод"
                   style={{
@@ -640,7 +650,7 @@ export function PromoCodeSection({
                   lineHeight: 1.5,
                   marginBottom: activePromo.expiresAt ? 8 : 0,
                 }}>
-                  Промокод активирован и будет применён к вашему следующему заказу
+                  Промокод активирован. Применим его к следующей заявке и перепроверим условия перед отправкой.
                 </div>
                 {activePromo.expiresAt && (
                   <motion.div
@@ -769,7 +779,7 @@ export function PromoCodeSection({
                   ref={inputRef}
                   type="text"
                   value={inputCode}
-                  onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                  onChange={(e) => setInputCode(sanitizePromoInput(e.target.value))}
                   onKeyDown={handleKeyDown}
                   placeholder="ПРОМОКОД"
                   disabled={isValidating}

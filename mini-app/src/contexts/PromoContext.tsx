@@ -1,51 +1,30 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react'
 import { applyPromoCode } from '../api/userApi'
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  PROMO CONTEXT — Bulletproof Global Promo Code State Management
-//
-//  Features:
-//  - Debounced validation to prevent spam
-//  - Cross-tab synchronization via localStorage events
-//  - Re-validation before order submission
-//  - Proper expiration handling
-//  - Race condition prevention
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export interface ActivePromo {
   code: string
   discount: number
   message: string
-  activatedAt: number // timestamp when promo was validated
-  validatedAt: number // timestamp of last successful validation
-  expiresAt?: number | null // timestamp when promo expires (from server)
+  activatedAt: number
+  validatedAt: number
+  expiresAt?: number | null
+  userId?: number | null
 }
 
 interface PromoContextType {
-  // Active promo code (validated and ready to use)
   activePromo: ActivePromo | null
-
-  // Loading state for async validation
   isValidating: boolean
-
-  // Validation error message
   validationError: string | null
-
-  // Actions
   validateAndSetPromo: (code: string) => Promise<boolean>
   clearPromo: () => void
   revalidatePromo: () => Promise<boolean>
-
-  // Helper to check if promo is still valid (not expired locally)
   isPromoValid: () => boolean
 }
 
 const PromoContext = createContext<PromoContextType | null>(null)
 
 const STORAGE_KEY = 'academic_saloon_active_promo'
-const PROMO_EXPIRY_HOURS = 24 // Promo expires after 24 hours of inactivity
-const DEBOUNCE_MS = 500 // Debounce validation requests
-const REVALIDATION_INTERVAL_MS = 5 * 60 * 1000 // Re-validate every 5 minutes
+const REVALIDATION_INTERVAL_MS = 5 * 60 * 1000
 
 export function usePromo() {
   const context = useContext(PromoContext)
@@ -55,302 +34,323 @@ export function usePromo() {
   return context
 }
 
-// Safe hook that doesn't throw
 export function usePromoSafe(): PromoContextType | null {
   return useContext(PromoContext)
 }
 
-// Validate that parsed data is a valid ActivePromo object
-function isValidActivePromo(data: any): data is ActivePromo {
+function getCurrentTelegramUserId(): number | null {
+  const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+  return typeof userId === 'number' ? userId : null
+}
+
+function isValidActivePromo(data: unknown): data is ActivePromo {
+  if (!data || typeof data !== 'object') {
+    return false
+  }
+
+  const candidate = data as Record<string, unknown>
+
   return (
-    data &&
-    typeof data === 'object' &&
-    typeof data.code === 'string' &&
-    typeof data.discount === 'number' &&
-    typeof data.message === 'string' &&
-    typeof data.activatedAt === 'number' &&
-    typeof data.validatedAt === 'number' &&
-    data.code.length > 0 &&
-    data.discount >= 0 &&
-    data.discount <= 100
+    typeof candidate.code === 'string' &&
+    typeof candidate.discount === 'number' &&
+    typeof candidate.message === 'string' &&
+    typeof candidate.activatedAt === 'number' &&
+    typeof candidate.validatedAt === 'number' &&
+    candidate.code.length > 0 &&
+    candidate.discount >= 0 &&
+    candidate.discount <= 100 &&
+    (candidate.expiresAt === undefined || candidate.expiresAt === null || typeof candidate.expiresAt === 'number') &&
+    (candidate.userId === undefined || candidate.userId === null || typeof candidate.userId === 'number')
   )
 }
 
-export function PromoProvider({ children }: { children: ReactNode }) {
-  const [activePromo, setActivePromo] = useState<ActivePromo | null>(() => {
-    // Load saved promo from localStorage
+function isPromoExpiredOnClient(promo: ActivePromo): boolean {
+  return typeof promo.expiresAt === 'number' && promo.expiresAt <= Date.now()
+}
+
+function sanitizePromoCode(code: string): string {
+  return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 50)
+}
+
+function readStoredPromo(currentUserId: number | null): ActivePromo | null {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (!saved) return null
+
+    const parsed = JSON.parse(saved)
+    if (!isValidActivePromo(parsed)) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+
+    if (isPromoExpiredOnClient(parsed)) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+
+    if (currentUserId && parsed.userId !== currentUserId) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+
+    return parsed
+  } catch {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-
-        // Validate the parsed data
-        if (!isValidActivePromo(parsed)) {
-          localStorage.removeItem(STORAGE_KEY)
-          return null
-        }
-
-        // Check if promo has expired (either 24 hours from activation OR server expiry time)
-        const hoursElapsed = (Date.now() - parsed.activatedAt) / (1000 * 60 * 60)
-        const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
-        const isServerExpired = parsed.expiresAt && parsed.expiresAt < Date.now()
-
-        if (!isLocallyExpired && !isServerExpired) {
-          return parsed
-        }
-        // Clear expired promo
-        localStorage.removeItem(STORAGE_KEY)
-      }
+      localStorage.removeItem(STORAGE_KEY)
     } catch {
-      // Clear corrupted data
-      try {
-        localStorage.removeItem(STORAGE_KEY)
-      } catch {
-        // Ignore errors when clearing
-      }
+      // Ignore storage cleanup failures.
     }
     return null
-  })
+  }
+}
 
+export function PromoProvider({ children }: { children: ReactNode }) {
+  const [currentUserId, setCurrentUserId] = useState<number | null>(() => getCurrentTelegramUserId())
+  const [activePromo, setActivePromo] = useState<ActivePromo | null>(() => readStoredPromo(getCurrentTelegramUserId()))
   const [isValidating, setIsValidating] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const validationRequestIdRef = useRef(0)
 
-  // Refs for debouncing and preventing race conditions
-  const debounceTimerRef = useRef<number | null>(null)
-  const validationInProgressRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (currentUserId) return
 
-  // Save to localStorage whenever activePromo changes
+    const intervalId = window.setInterval(() => {
+      const nextUserId = getCurrentTelegramUserId()
+      if (nextUserId) {
+        setCurrentUserId(nextUserId)
+        window.clearInterval(intervalId)
+      }
+    }, 500)
+
+    return () => window.clearInterval(intervalId)
+  }, [currentUserId])
+
+  useEffect(() => {
+    if (!activePromo || !currentUserId) return
+
+    if (activePromo.userId !== currentUserId) {
+      setActivePromo(null)
+      setValidationError(null)
+    }
+  }, [activePromo, currentUserId])
+
   useEffect(() => {
     try {
       if (activePromo) {
-        const serialized = JSON.stringify(activePromo)
-        localStorage.setItem(STORAGE_KEY, serialized)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(activePromo))
       } else {
         localStorage.removeItem(STORAGE_KEY)
       }
     } catch {
-      // Storage error - ignore (user may have disabled localStorage)
+      // Ignore storage write failures.
     }
   }, [activePromo])
 
-  // Cross-tab synchronization
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) {
-        try {
-          if (e.newValue) {
-            const parsed = JSON.parse(e.newValue)
+      if (e.key !== STORAGE_KEY) return
 
-            // Validate the parsed data
-            if (!isValidActivePromo(parsed)) {
-              return
-            }
+      if (!e.newValue) {
+        setActivePromo(null)
+        setValidationError(null)
+        return
+      }
 
-            // Check expiration (both local and server)
-            const hoursElapsed = (Date.now() - parsed.activatedAt) / (1000 * 60 * 60)
-            const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
-            const isServerExpired = parsed.expiresAt && parsed.expiresAt < Date.now()
+      try {
+        const parsed = JSON.parse(e.newValue)
+        if (!isValidActivePromo(parsed)) return
+        if (isPromoExpiredOnClient(parsed)) return
+        if (currentUserId && parsed.userId !== currentUserId) return
 
-            if (!isLocallyExpired && !isServerExpired) {
-              setActivePromo(parsed)
-              setValidationError(null)
-            }
-          } else {
-            // Promo was cleared in another tab
-            setActivePromo(null)
-            setValidationError(null)
-          }
-        } catch {
-          // Invalid JSON - ignore
-        }
+        setActivePromo(parsed)
+        setValidationError(null)
+      } catch {
+        // Ignore invalid sync payloads.
       }
     }
 
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
+  }, [currentUserId])
 
-  // Validate and set promo code (with debounce)
   const validateAndSetPromo = useCallback(async (code: string): Promise<boolean> => {
-    const normalizedCode = code.trim().toUpperCase()
+    const normalizedCode = sanitizePromoCode(code)
 
     if (!normalizedCode) {
       setValidationError('Введите промокод')
       return false
     }
 
-    // Prevent duplicate validation of the same code
-    if (validationInProgressRef.current === normalizedCode) {
-      return false
+    if (
+      activePromo &&
+      activePromo.code === normalizedCode &&
+      !isPromoExpiredOnClient(activePromo) &&
+      (!currentUserId || activePromo.userId === currentUserId)
+    ) {
+      setValidationError(null)
+      return true
     }
 
-    // Clear any pending debounce
-    if (debounceTimerRef.current) {
-      window.clearTimeout(debounceTimerRef.current)
-    }
+    const requestId = validationRequestIdRef.current + 1
+    validationRequestIdRef.current = requestId
+    setIsValidating(true)
+    setValidationError(null)
 
-    // Debounce the validation
-    return new Promise((resolve) => {
-      debounceTimerRef.current = window.setTimeout(async () => {
-        validationInProgressRef.current = normalizedCode
-        setIsValidating(true)
+    try {
+      const result = await applyPromoCode(normalizedCode)
+
+      if (requestId !== validationRequestIdRef.current) {
+        return false
+      }
+
+      if (result.success && typeof result.discount === 'number') {
+        const promoUserId = currentUserId ?? getCurrentTelegramUserId()
+        setActivePromo({
+          code: normalizedCode,
+          discount: result.discount,
+          message: result.message,
+          activatedAt: Date.now(),
+          validatedAt: Date.now(),
+          expiresAt: result.valid_until ? new Date(result.valid_until).getTime() : null,
+          userId: promoUserId,
+        })
         setValidationError(null)
 
         try {
-          const result = await applyPromoCode(normalizedCode)
-
-          // Check if another validation started while we were waiting
-          if (validationInProgressRef.current !== normalizedCode) {
-            resolve(false)
-            return
-          }
-
-          if (result.success && result.discount) {
-            const newPromo: ActivePromo = {
-              code: normalizedCode,
-              discount: result.discount,
-              message: result.message,
-              activatedAt: Date.now(),
-              validatedAt: Date.now(),
-              expiresAt: result.valid_until ? new Date(result.valid_until).getTime() : null,
-            }
-            setActivePromo(newPromo)
-            setValidationError(null)
-
-            // Haptic feedback on success
-            try {
-              window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
-            } catch { /* ignore */ }
-
-            resolve(true)
-          } else {
-            setValidationError(result.message || 'Промокод недействителен')
-
-            // Haptic feedback on error
-            try {
-              window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error')
-            } catch { /* ignore */ }
-
-            resolve(false)
-          }
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Ошибка проверки промокода'
-          setValidationError(message)
-          resolve(false)
-        } finally {
-          setIsValidating(false)
-          validationInProgressRef.current = null
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+        } catch {
+          // Ignore Telegram haptic failures.
         }
-      }, DEBOUNCE_MS)
-    })
-  }, [])
 
-  // Re-validate currently active promo (for use before order submission)
+        return true
+      }
+
+      setValidationError(result.message || 'Промокод недействителен')
+
+      try {
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error')
+      } catch {
+        // Ignore Telegram haptic failures.
+      }
+
+      return false
+    } catch (err) {
+      setValidationError(err instanceof Error ? err.message : 'Ошибка проверки промокода')
+      return false
+    } finally {
+      if (requestId === validationRequestIdRef.current) {
+        setIsValidating(false)
+      }
+    }
+  }, [activePromo, currentUserId])
+
   const revalidatePromo = useCallback(async (): Promise<boolean> => {
     if (!activePromo) {
-      return true // No promo to validate
+      return true
     }
 
-    // Check local expiration first (both local and server)
-    const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
-    const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
-    const isServerExpired = activePromo.expiresAt && activePromo.expiresAt < Date.now()
-
-    if (isLocallyExpired || isServerExpired) {
+    if (isPromoExpiredOnClient(activePromo)) {
       setActivePromo(null)
-      const reason = isServerExpired ? 'Срок действия истёк' : 'Промокод истёк (24 часа с активации)'
-      setValidationError(reason)
+      setValidationError('Срок действия промокода истёк')
       return false
     }
 
-    // ALWAYS revalidate before order submission - no time-based skipping
-    // This ensures promo is still valid on server side
+    if (currentUserId && activePromo.userId && activePromo.userId !== currentUserId) {
+      setActivePromo(null)
+      setValidationError(null)
+      return false
+    }
 
-    // Re-validate with server
+    const requestId = validationRequestIdRef.current + 1
+    validationRequestIdRef.current = requestId
     setIsValidating(true)
+
     try {
       const result = await applyPromoCode(activePromo.code)
 
-      if (result.success && result.discount) {
-        // Update validation timestamp
-        setActivePromo({
-          ...activePromo,
-          validatedAt: Date.now(),
-          discount: result.discount, // Update discount in case it changed
-          expiresAt: result.valid_until ? new Date(result.valid_until).getTime() : activePromo.expiresAt,
-        })
-        return true
-      } else {
-        // Promo is no longer valid
-        setActivePromo(null)
-        setValidationError(result.message || 'Промокод больше не действителен')
-
-        // Haptic feedback
-        try {
-          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('warning')
-        } catch { /* ignore */ }
-
+      if (requestId !== validationRequestIdRef.current) {
         return false
       }
+
+      if (result.success && typeof result.discount === 'number') {
+        const promoUserId = currentUserId ?? activePromo.userId ?? getCurrentTelegramUserId()
+        setActivePromo((prev) => {
+          if (!prev || prev.code !== activePromo.code) return prev
+
+          return {
+            ...prev,
+            discount: result.discount,
+            message: result.message,
+            validatedAt: Date.now(),
+            expiresAt: result.valid_until ? new Date(result.valid_until).getTime() : prev.expiresAt,
+            userId: promoUserId,
+          }
+        })
+        setValidationError(null)
+        return true
+      }
+
+      setActivePromo(null)
+      setValidationError(result.message || 'Промокод больше не действителен')
+
+      try {
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('warning')
+      } catch {
+        // Ignore Telegram haptic failures.
+      }
+
+      return false
     } catch {
-      // Network error - keep the promo but mark as potentially stale
-      // Don't clear the promo on network error - let the server handle it at order time
+      // Keep the promo locally on transient network failures.
       return true
     } finally {
-      setIsValidating(false)
+      if (requestId === validationRequestIdRef.current) {
+        setIsValidating(false)
+      }
     }
-  }, [activePromo])
+  }, [activePromo, currentUserId])
 
-  // Clear promo code
   const clearPromo = useCallback(() => {
     setActivePromo(null)
     setValidationError(null)
 
-    // Light haptic feedback
     try {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
-    } catch { /* ignore */ }
+    } catch {
+      // Ignore Telegram haptic failures.
+    }
   }, [])
 
-  // Check if promo is still valid (both local and server expiration)
   const isPromoValid = useCallback(() => {
     if (!activePromo) return false
-    const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
-    const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
-    const isServerExpired = activePromo.expiresAt && activePromo.expiresAt < Date.now()
-    return !isLocallyExpired && !isServerExpired
-  }, [activePromo])
+    if (isPromoExpiredOnClient(activePromo)) return false
+    if (currentUserId && activePromo.userId && activePromo.userId !== currentUserId) return false
+    return true
+  }, [activePromo, currentUserId])
 
-  // Periodic expiration check
   useEffect(() => {
     if (!activePromo) return
 
-    const checkExpiration = () => {
-      const hoursElapsed = (Date.now() - activePromo.activatedAt) / (1000 * 60 * 60)
-      const isLocallyExpired = hoursElapsed >= PROMO_EXPIRY_HOURS
-      const isServerExpired = activePromo.expiresAt && activePromo.expiresAt < Date.now()
-
-      if (isLocallyExpired || isServerExpired) {
+    const maybeRevalidate = () => {
+      if (document.visibilityState === 'hidden') return
+      if (isPromoExpiredOnClient(activePromo)) {
         setActivePromo(null)
-        const reason = isServerExpired ? 'Срок действия истёк' : 'Промокод истёк'
-        setValidationError(reason)
+        setValidationError('Срок действия промокода истёк')
+        return
       }
+      if (Date.now() - activePromo.validatedAt < REVALIDATION_INTERVAL_MS) return
+      void revalidatePromo()
     }
 
-    // Check every minute
-    const interval = setInterval(checkExpiration, 60 * 1000)
-    return () => clearInterval(interval)
-  }, [activePromo])
+    maybeRevalidate()
+    const intervalId = window.setInterval(maybeRevalidate, REVALIDATION_INTERVAL_MS)
+    document.addEventListener('visibilitychange', maybeRevalidate)
 
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) {
-        window.clearTimeout(debounceTimerRef.current)
-        debounceTimerRef.current = null
-      }
+      window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', maybeRevalidate)
     }
-  }, [])
+  }, [activePromo, revalidatePromo])
 
   return (
     <PromoContext.Provider

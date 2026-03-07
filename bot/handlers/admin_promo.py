@@ -1,6 +1,7 @@
 from aiogram import Router, F, types, Bot
 from aiogram.filters import Command, CommandObject
 from sqlalchemy import select
+import re
 
 from database.db import get_session
 from database.models.promocodes import PromoCode
@@ -23,9 +24,13 @@ async def cmd_promo_create(message: types.Message, command: CommandObject):
         if len(args) < 2:
             raise ValueError("Мало аргументов")
 
-        code = args[0].upper()
+        code = args[0].strip().upper()
         percent = float(args[1])
         max_uses = int(args[2]) if len(args) > 2 else 0
+
+        if not re.fullmatch(r'[A-Z0-9]{3,50}', code):
+            await message.answer("⚠️ Код может содержать только латинские буквы и цифры (3-50 символов).")
+            return
         
         if not (0 < percent <= 100):
             await message.answer("⚠️ Процент скидки должен быть от 1 до 100.")

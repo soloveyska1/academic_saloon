@@ -477,7 +477,7 @@ function AppContent() {
                               <Route path="/club/privileges" element={<PrivilegesPage />} />
                               <Route path="/club/history" element={<ClubHistoryPage />} />
                               <Route path="/profile" element={<ProfilePage user={userData} />} />
-                              <Route path="/create-order" element={<CreateOrderPage />} />
+                              <Route path="/create-order" element={<CreateOrderPage user={userData} />} />
                               <Route path="/referral" element={<ReferralPage user={userData} />} />
                               <Route path="/achievements" element={<AchievementsPage user={userData} />} />
                               <Route path="/support" element={<SupportPage />} />
