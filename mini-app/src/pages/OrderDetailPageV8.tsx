@@ -212,6 +212,23 @@ const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
   other: FileText,
 }
 
+const KNOWN_ORDER_STATUSES = new Set<OrderStatus>([
+  'draft',
+  'pending',
+  'waiting_estimation',
+  'waiting_payment',
+  'verification_pending',
+  'confirmed',
+  'paid',
+  'paid_full',
+  'in_progress',
+  'review',
+  'revision',
+  'completed',
+  'cancelled',
+  'rejected',
+])
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -291,6 +308,21 @@ const getOrderSubline = (order: Order): string => {
   }
 
   return parts.join(' • ') || 'Все детали можно уточнить в чате заказа'
+}
+
+const normalizeOrderForView = (order: Order): Order => ({
+  ...order,
+  status: KNOWN_ORDER_STATUSES.has(order.status) ? order.status : 'pending',
+  work_type: order.work_type || 'other',
+  work_type_label: order.work_type_label || WORK_TYPE_LABELS[order.work_type] || 'Заказ',
+  created_at: order.created_at || '',
+})
+
+const formatTimelineDate = (value?: string | null): string | undefined => {
+  if (!value) return undefined
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return undefined
+  return parsed.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
 // Countdown hook
@@ -585,7 +617,7 @@ interface HeroSummaryProps {
 const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryProps) {
   const isAwaitingPayment = ['waiting_payment', 'confirmed'].includes(order.status)
   const paymentExpired = Boolean(isAwaitingPayment && countdown?.urgency === 'expired')
-  const statusConfig = STATUS_CONFIG[order.status]
+  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const StatusIcon = statusConfig.icon
   const WorkTypeIcon = WORK_TYPE_ICONS[order.work_type] || WORK_TYPE_ICONS.other
   const workTypeLabel = order.work_type_label || WORK_TYPE_LABELS[order.work_type] || 'Заказ'
@@ -3164,7 +3196,7 @@ const getTimelineSteps = (order: Order): TimelineStep[] => {
       label: 'Заказ создан',
       icon: Package,
       status: statusStep >= 0 ? 'completed' : 'upcoming',
-      date: order.created_at ? new Date(order.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : undefined,
+      date: formatTimelineDate(order.created_at),
     },
     {
       id: 'estimated',
@@ -3550,7 +3582,7 @@ export function OrderDetailPageV8() {
     setError(null)
     try {
       const data = await fetchOrderDetail(orderId)
-      setOrder(data)
+      setOrder(normalizeOrderForView(data))
 
       // Load payment info if needed
       if (
@@ -3687,12 +3719,12 @@ export function OrderDetailPageV8() {
     setConfirmModalOpen(false)
     setOrder((prev) =>
       prev
-        ? {
+        ? normalizeOrderForView({
             ...prev,
             status: result.new_status as OrderStatus,
             payment_method: paymentMethod,
             payment_scheme: paymentScheme,
-          }
+          } as Order)
         : prev
     )
 
@@ -3764,11 +3796,11 @@ export function OrderDetailPageV8() {
     try {
       if (order.is_archived) {
         await unarchiveOrder(order.id)
-        setOrder(prev => prev ? { ...prev, is_archived: false } : prev)
+        setOrder(prev => prev ? normalizeOrderForView({ ...prev, is_archived: false }) : prev)
         showToast({ type: 'success', title: 'Восстановлено', message: 'Заказ убран из архива' })
       } else {
         await archiveOrder(order.id)
-        setOrder(prev => prev ? { ...prev, is_archived: true } : prev)
+        setOrder(prev => prev ? normalizeOrderForView({ ...prev, is_archived: true }) : prev)
         showToast({ type: 'success', title: 'Архивировано', message: 'Заказ перемещён в архив' })
       }
     } catch {
