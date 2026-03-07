@@ -2,7 +2,12 @@ import { useCallback, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useNavigation } from '../contexts/NavigationContext'
 import { useTelegram } from '../hooks/useUserData'
-import { canNavigateBackWithinApp, getBackFallback, shouldShowTelegramBackButton } from '../utils/navigation'
+import {
+  canNavigateBackWithinApp,
+  getBackFallback,
+  rememberAppRoute,
+  shouldShowTelegramBackButton,
+} from '../utils/navigation'
 
 export function RouteNavigationController() {
   const location = useLocation()
@@ -21,6 +26,10 @@ export function RouteNavigationController() {
 
     navigate(fallbackPath)
   }, [fallbackPath, navigate])
+
+  useEffect(() => {
+    rememberAppRoute(location.pathname, location.search)
+  }, [location.pathname, location.search])
 
   useEffect(() => {
     const backButton = tg?.BackButton

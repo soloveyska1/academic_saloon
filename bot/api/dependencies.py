@@ -77,6 +77,8 @@ def get_loyalty_info(orders_count: int, loyalty_levels: list[LoyaltyLevel]) -> L
 
 def order_to_response(order: Order) -> OrderResponse:
     """Convert Order model to response schema"""
+    final_price = order.final_price if order.final_price is not None else (order.price or 0)
+
     return OrderResponse(
         id=order.id,
         status=order.status.value if hasattr(order.status, 'value') else str(order.status),
@@ -86,7 +88,7 @@ def order_to_response(order: Order) -> OrderResponse:
         topic=order.topic,
         deadline=order.deadline,
         price=round(float(order.price or 0), 2),
-        final_price=round(float(order.final_price), 2),
+        final_price=round(float(final_price or 0), 2),
         paid_amount=round(float(order.paid_amount or 0), 2),
         discount=round(float(order.discount or 0), 2),
         promo_code=getattr(order, 'promo_code', None),

@@ -1,3 +1,9 @@
+export const LAST_APP_ROUTE_STORAGE_KEY = 'academic_saloon_last_app_route'
+
+export function isAdminRoute(pathname: string): boolean {
+  return pathname.startsWith('/admin') || pathname.startsWith('/god')
+}
+
 export function isTopLevelNavigationRoute(pathname: string): boolean {
   return pathname === '/' || pathname === '/orders' || pathname === '/club' || pathname === '/profile'
 }
@@ -30,17 +36,41 @@ export function getBackFallback(pathname: string): string {
   if (pathname === '/club') return '/'
   if (pathname === '/referral' || pathname === '/achievements') return '/profile'
   if (pathname.startsWith('/profile')) return '/'
-  if (pathname.startsWith('/admin') || pathname.startsWith('/god')) return '/'
+  if (isAdminRoute(pathname)) return getLastAppRoute()
 
   return '/'
 }
 
 export function shouldShowTelegramBackButton(pathname: string): boolean {
-  if (pathname.startsWith('/admin') || pathname.startsWith('/god')) {
+  if (isAdminRoute(pathname)) {
     return false
   }
 
   return !isTopLevelNavigationRoute(pathname)
+}
+
+export function rememberAppRoute(pathname: string, search = ''): void {
+  if (typeof window === 'undefined' || isAdminRoute(pathname)) return
+
+  try {
+    sessionStorage.setItem(LAST_APP_ROUTE_STORAGE_KEY, `${pathname}${search}`)
+  } catch {
+    // Ignore storage failures
+  }
+}
+
+export function getLastAppRoute(): string {
+  if (typeof window === 'undefined') return '/'
+
+  try {
+    const saved = sessionStorage.getItem(LAST_APP_ROUTE_STORAGE_KEY)
+    if (!saved || !saved.startsWith('/') || isAdminRoute(saved)) {
+      return '/'
+    }
+    return saved
+  } catch {
+    return '/'
+  }
 }
 
 export function canNavigateBackWithinApp(): boolean {

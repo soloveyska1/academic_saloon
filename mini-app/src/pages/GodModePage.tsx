@@ -14,7 +14,7 @@ import {
   AlertTriangle, Send, Plus, Trash2, ToggleLeft, ToggleRight,
   Zap, Settings, Home, Shield, Bell, CreditCard, Percent, Volume2, VolumeX
 } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAdmin } from '../contexts/AdminContext'
 import {
   fetchGodDashboard,
@@ -47,6 +47,7 @@ import {
 } from '../api/userApi'
 import type { GodDashboard, GodOrder, GodUser, GodPromo, GodLog, GodLiveUser } from '../types'
 import { useToast } from '../components/ui/Toast'
+import { getLastAppRoute } from '../utils/navigation'
 
 // Notification sound (base64 encoded simple beep)
 const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YVoGAACBhYaJioiGg4B9enh3dnd5fICDhYaHiImJiomJiIeGhYOBf3x6d3V0dHV2eXx/goWHiYqLjIyMi4qIhoSBfnx5dnRyc3N1d3p9gIOGiImLjI2NjYyLiYeFgn98eXd0cnFyc3Z4e36BhIeLjI6Pj4+OjYuJhoN/fHl2c3FwcXJ0d3p+gYSHi46Qk5KRkI6Liod/e3ZycG9vb3Byd3p+goeLj5KVlpWUko+Mh4B7dXFubmxsbW90eH2Dh4yQlJeYmJiWk4+LhX51cG1ramprbnJ3fYOJjZGVmJqampiVko6IgHpzbWppaGhqbnN5f4WKjpSXmZqbmZaUkYuEfnhxbGloZ2hqb3R7gYeMkZWYmpubmJaTjoiAeXJsaGdmZ2ptc3qAhoyRlpmbnJ2bmJaTjYaAeXJsaGZlZmhtc3mAh4ySlpmcnp6bmJaTjYaAeXJsamdmZ2htc3qAhoySlpmbnJ2bmJaUj4iFfnlybWppaWltc3mAhoqPlJibnJ2bmJaTj4iFgHlzbWppZ2hrb3V7gYeMkZWYmpubmJaSjoiCe3VuaGdmZ2hscnl/hYqPlJeampyamJaTj4mDfXZwbGhnZmdqb3V7gYeNkZWYmZqZl5WSkI2KhYB6dXBsaGZlZWdrcHZ8goeMkJOWl5iXlZKPjImFgXx3c29raWhmZmdqbXF3fIGGioqKi4uLioqJh4aCfXl1cnBtbWxsbW1vcHJ1d3p9f4GCg4OEhISDg4KAfn18e3p6enp7fH5/gIGCgoKCgoKCgYGAfn18e3t7fH1+f4GCgoKCgoKBgYCAfn18e3t7e3x+gIGCg4ODg4OCgYCAfn18fHx8fH1/gIGCg4ODgoKBgH9+fXx8fHx9fn+AgYKDg4OCgYGAf359fHx8fX1+f4CCgoODg4KBgH9+fXx8fH19foCAgoKDg4OCgYB/fn18fHx9fX6AgIKCg4OCgoGAf359fHx8fX1+gICCgoODg4KCAX9/fn1+fn5+foCAgoKCgoKBgIB/fn19fX19fX+AgIGCgoKCgoGAgH9+fX19fX5/gICBgoKCgoKBgH9/fn19fX5+f4CAgYKCgoKBgYCAf35+fn5+fn+AgIGBgoKCgoGAgIB/fn5+fn5/gICBgoKCgoGBgIB/f35+fn5/gICBgoKCgoGBgIB/f39+fn5/f4CAgYGCgoKBgYCAf39/fn5/f4CAgYGCgoKBgYCAf39/f39/f4CAgYGBgoKBgYCAgH9/f39/f4CAgYGBgYGBgYCAgIB/f39/f4CAgIGBgYGBgYGAgICAf39/f3+AgICBgYGBgYGBgICAgH9/f3+AgICBgYGBgYGBgICAgH9/f3+AgICBgYGBgYGBgICAf39/f4CAgICBgYGBgYCAgICAgH9/f4CAgICBgYGBgYCAf39/f39/f4CAgICBgYGBgYB/f39/f39/gICAgYGBgYGAgH9/f39/f4CAgIGBgYGBgIB/f39/f39/gICAgYGBgYGAf39/f39/f4CAgIGBgYGBgH9/f39/f3+AgICBgYGBgYB/f39/f39/gICAgYGBgYGAf39/f39/gICAgIGBgYGBgH9/f39/f4CAgICBgYGBgYB/f39/f3+AgICAgYGBgYGAf39/f39/gICAgIGBgYGBgH9/f39/f4CAgICBgYGBgYB/f39/f3+AgICAgYGBgYGAf39/f39/gICAgYGBgYGAgH9/f39/f4CAgICBgYGBgIB/f39/f39/gICAgYGBgYCAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgIGBgYCAgH9/f39/f4CAgICBgYGAgIB/f39/f3+AgICAgYGBgICAf39/f39/gICAgICAgICAf39/f39/f3+AgICAgICAf39/f39/f3+AgICAgICAf39/f39/f3+AgICAgICAf39/f39/f4CAgICAgIB/f39/f39/f4CAgICAgH9/f39/f39/gICAgICAgH9/f39/f39/gICAgICAgA=='
@@ -94,28 +95,30 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 // Common styles
 const cardStyle: React.CSSProperties = {
-  background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
-  border: '1px solid rgba(212,175,55,0.2)',
-  borderRadius: 16,
-  padding: 16,
+  background: 'radial-gradient(circle at top right, rgba(212,175,55,0.12), transparent 38%), linear-gradient(145deg, rgba(24,24,28,0.96), rgba(12,12,15,0.98))',
+  border: '1px solid rgba(212,175,55,0.16)',
+  boxShadow: '0 18px 48px rgba(0,0,0,0.28)',
+  borderRadius: 22,
+  padding: 18,
 }
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '10px 14px',
-  background: 'rgba(0,0,0,0.3)',
-  border: '1px solid rgba(212,175,55,0.2)',
-  borderRadius: 10,
+  padding: '12px 14px',
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 14,
   color: '#fff',
   fontSize: 14,
   outline: 'none',
+  boxSizing: 'border-box',
 }
 
 const buttonStyle: React.CSSProperties = {
-  padding: '10px 20px',
+  padding: '12px 18px',
   background: 'linear-gradient(180deg, #f5d485, #D4AF37)',
   border: 'none',
-  borderRadius: 10,
+  borderRadius: 14,
   color: '#0a0a0c',
   fontWeight: 600,
   fontSize: 14,
@@ -127,7 +130,7 @@ const buttonStyle: React.CSSProperties = {
 
 const secondaryButtonStyle: React.CSSProperties = {
   ...buttonStyle,
-  background: 'rgba(255,255,255,0.1)',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))',
   color: '#fff',
 }
 
@@ -190,13 +193,127 @@ function withRouteParams(current: URLSearchParams, updates: Record<string, strin
   return next
 }
 
+function getActiveTab(searchParams: URLSearchParams): TabId {
+  const tab = searchParams.get('tab')
+  return TABS.some(item => item.id === tab) ? (tab as TabId) : 'dashboard'
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  meta,
+}: {
+  eyebrow: string
+  title: string
+  description: string
+  meta?: string
+}) {
+  return (
+    <div style={{ ...cardStyle, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{
+          padding: '6px 10px',
+          borderRadius: 999,
+          background: 'rgba(212,175,55,0.08)',
+          border: '1px solid rgba(212,175,55,0.16)',
+          color: '#d4af37',
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        }}>
+          {eyebrow}
+        </div>
+        {meta && (
+          <div style={{ color: 'rgba(255,255,255,0.46)', fontSize: 12 }}>
+            {meta}
+          </div>
+        )}
+      </div>
+      <div>
+        <div style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 6 }}>
+          {title}
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.62)', fontSize: 13, lineHeight: 1.6 }}>
+          {description}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StateCard({
+  title,
+  description,
+  tone = 'neutral',
+  actionLabel,
+  onAction,
+}: {
+  title: string
+  description: string
+  tone?: 'neutral' | 'error'
+  actionLabel?: string
+  onAction?: () => void
+}) {
+  const accent = tone === 'error' ? '#fca5a5' : '#d4af37'
+
+  return (
+    <div style={{
+      ...cardStyle,
+      padding: 18,
+      borderColor: tone === 'error' ? 'rgba(239,68,68,0.22)' : 'rgba(212,175,55,0.14)',
+      background: tone === 'error'
+        ? 'radial-gradient(circle at top right, rgba(239,68,68,0.12), transparent 40%), linear-gradient(145deg, rgba(24,20,22,0.96), rgba(12,12,15,0.98))'
+        : cardStyle.background,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: 14,
+          background: tone === 'error' ? 'rgba(239,68,68,0.12)' : 'rgba(212,175,55,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <AlertTriangle size={18} color={accent} />
+        </div>
+        <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>
+          {title}
+        </div>
+      </div>
+      <div style={{ color: 'rgba(255,255,255,0.62)', fontSize: 13, lineHeight: 1.6 }}>
+        {description}
+      </div>
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          style={{ ...secondaryButtonStyle, width: 'fit-content' }}
+        >
+          <RefreshCw size={16} />
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function GodModePage() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { isAdmin, telegramId, simulateNewUser, toggleSimulateNewUser, accessResolved } = useAdmin()
-  const [activeTab, setActiveTab] = useState<TabId>(() => {
-    const tab = searchParams.get('tab')
-    return TABS.some(item => item.id === tab) ? (tab as TabId) : 'dashboard'
-  })
+  const activeTab = useMemo(() => getActiveTab(searchParams), [searchParams])
+  const appReturnPath = useMemo(() => getLastAppRoute(), [])
+  const appReturnLabel = useMemo(
+    () => formatPageLabel(appReturnPath.split('?')[0] || '/'),
+    [appReturnPath]
+  )
 
   // Notification state
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
@@ -300,19 +417,20 @@ export function GodModePage() {
     }
   }, [activeTab])
 
-  useEffect(() => {
-    const tab = searchParams.get('tab')
-    if (tab && TABS.some(item => item.id === tab) && tab !== activeTab) {
-      setActiveTab(tab as TabId)
-    }
-  }, [activeTab, searchParams])
-
   const handleTabChange = useCallback((tab: TabId) => {
-    setActiveTab(tab)
-    const next = new URLSearchParams(searchParams)
-    next.set('tab', tab)
+    const next = withRouteParams(searchParams, {
+      tab,
+      order_q: null,
+      order_status: null,
+      user_q: null,
+      user_filter: null,
+    })
     setSearchParams(next, { replace: true })
   }, [searchParams, setSearchParams])
+
+  const handleReturnToApp = useCallback(() => {
+    navigate(appReturnPath || '/')
+  }, [appReturnPath, navigate])
 
   if (!accessResolved) {
     return (
@@ -376,160 +494,146 @@ export function GodModePage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #0a0a0c 0%, #0d0d10 100%)',
+      background: 'linear-gradient(180deg, #09090b 0%, #0d0d11 46%, #09090b 100%)',
       paddingBottom: 100,
     }}>
       {/* Header */}
       <div style={{
-        padding: '16px 20px',
-        borderBottom: '1px solid rgba(212,175,55,0.15)',
+        padding: '16px 16px 12px',
         position: 'sticky',
         top: 0,
-        background: 'rgba(10,10,12,0.95)',
-        backdropFilter: 'blur(20px)',
+        background: 'linear-gradient(180deg, rgba(10,10,12,0.98), rgba(10,10,12,0.9))',
+        backdropFilter: 'blur(24px)',
         zIndex: 100,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            background: 'linear-gradient(135deg, #D4AF37, #f5d485)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <Crown size={24} color="#0a0a0c" />
-          </div>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ color: '#D4AF37', fontSize: 18, fontWeight: 700, margin: 0 }}>
-              Операционный центр
-            </h1>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, margin: 0 }}>
-              Заказы, клиенты, промокоды и контроль системы
-            </p>
-          </div>
-
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleSimulateNewUser}
-            style={{
-              height: 36,
-              padding: '0 12px',
-              borderRadius: 10,
-              background: simulateNewUser ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)',
-              border: simulateNewUser ? '1px solid rgba(168,85,247,0.5)' : '1px solid rgba(255,255,255,0.06)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              color: simulateNewUser ? '#c4b5fd' : 'rgba(255,255,255,0.72)',
-              flexShrink: 0,
-            }}
-            title={simulateNewUser ? 'Выключить сценарий новичка' : 'Включить сценарий новичка'}
-          >
-            <Users size={16} />
-            <span style={{ fontSize: 12, fontWeight: 700 }}>
-              Новичок
-            </span>
-          </motion.button>
-
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            style={{
-              height: 36,
-              padding: '0 12px',
-              borderRadius: 10,
-              background: soundEnabled ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-              border: `1px solid ${soundEnabled ? 'rgba(34,197,94,0.24)' : 'rgba(239,68,68,0.24)'}`,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              color: soundEnabled ? '#86efac' : '#fca5a5',
-              flexShrink: 0,
-            }}
-          >
-            {soundEnabled ? (
-              <Volume2 size={16} />
-            ) : (
-              <VolumeX size={16} />
-            )}
-            <span style={{ fontSize: 12, fontWeight: 700 }}>
-              Звук
-            </span>
-          </motion.button>
-
-          <div style={{ position: 'relative' }}>
-            <div style={{
-              height: 36,
-              padding: '0 12px',
-              borderRadius: 10,
-              background: 'rgba(212,175,55,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}>
-              <Bell size={16} color="#D4AF37" />
-              <span style={{ color: '#D4AF37', fontSize: 12, fontWeight: 700 }}>
-                Сигналы
-              </span>
-            </div>
-            {unreadCount > 0 && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                style={{
-                  position: 'absolute',
-                  top: -6,
-                  right: -6,
-                  minWidth: 18,
-                  height: 18,
-                  borderRadius: 9,
-                  background: '#ef4444',
-                  color: '#fff',
+        <div style={{
+          ...cardStyle,
+          padding: 16,
+          borderRadius: 24,
+          background: 'radial-gradient(circle at top right, rgba(212,175,55,0.18), transparent 36%), linear-gradient(145deg, rgba(24,24,28,0.98), rgba(10,10,13,0.98))',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 12, flex: '1 1 260px', minWidth: 0 }}>
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 16,
+                background: 'linear-gradient(135deg, #D4AF37, #f5d485)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 12px 30px rgba(212,175,55,0.2)',
+                flexShrink: 0,
+              }}>
+                <Crown size={24} color="#0a0a0c" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  color: '#D4AF37',
                   fontSize: 11,
                   fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 4px',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  marginBottom: 8,
+                }}>
+                  Админка салона
+                </div>
+                <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 700, margin: 0, marginBottom: 8 }}>
+                  Операционный центр
+                </h1>
+                <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: 13, margin: 0, lineHeight: 1.6, maxWidth: 520 }}>
+                  Заказы, клиенты, промокоды и вся операционная работа в одном ритме с приложением.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '0 1 auto' }}>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleReturnToApp}
+                style={{ ...secondaryButtonStyle, minHeight: 44 }}
+                title={`Вернуться на экран "${appReturnLabel}"`}
+              >
+                <Home size={16} />
+                Вернуться в приложение
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={toggleSimulateNewUser}
+                style={{
+                  ...secondaryButtonStyle,
+                  minHeight: 44,
+                  background: simulateNewUser
+                    ? 'linear-gradient(180deg, rgba(168,85,247,0.22), rgba(124,58,237,0.16))'
+                    : secondaryButtonStyle.background,
+                  border: simulateNewUser ? '1px solid rgba(196,181,253,0.32)' : '1px solid rgba(255,255,255,0.08)',
+                  color: simulateNewUser ? '#ddd6fe' : '#fff',
+                }}
+                title={simulateNewUser ? 'Выключить полный сценарий новичка' : 'Включить полный сценарий новичка'}
+              >
+                <Users size={16} />
+                {simulateNewUser ? 'Тест новичка активен' : 'Сценарий новичка'}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                style={{
+                  ...secondaryButtonStyle,
+                  minHeight: 44,
+                  background: soundEnabled
+                    ? 'linear-gradient(180deg, rgba(34,197,94,0.18), rgba(21,128,61,0.12))'
+                    : 'linear-gradient(180deg, rgba(239,68,68,0.16), rgba(153,27,27,0.12))',
+                  border: `1px solid ${soundEnabled ? 'rgba(34,197,94,0.26)' : 'rgba(239,68,68,0.26)'}`,
+                  color: soundEnabled ? '#bbf7d0' : '#fecaca',
                 }}
               >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </motion.div>
-            )}
+                {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                {soundEnabled ? 'Звук включён' : 'Звук выключен'}
+              </motion.button>
+            </div>
           </div>
-        </div>
 
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          marginTop: 12,
-          flexWrap: 'wrap',
-        }}>
-          <div style={{
-            padding: '6px 10px',
-            borderRadius: 999,
-            background: 'rgba(212,175,55,0.08)',
-            border: '1px solid rgba(212,175,55,0.14)',
-            color: '#d4af37',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-          }}>
-            Раздел: {TABS.find(tab => tab.id === activeTab)?.label}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
+            <div style={{
+              padding: '8px 12px',
+              borderRadius: 999,
+              background: 'rgba(212,175,55,0.08)',
+              border: '1px solid rgba(212,175,55,0.14)',
+              color: '#d4af37',
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>
+              Раздел: {TABS.find(tab => tab.id === activeTab)?.label}
+            </div>
+            <div style={{
+              padding: '8px 12px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.72)',
+              fontSize: 12,
+              fontWeight: 600,
+            }}>
+              Возврат: {appReturnLabel}
+            </div>
+            <div style={{
+              padding: '8px 12px',
+              borderRadius: 999,
+              background: unreadCount > 0 ? 'rgba(239,68,68,0.14)' : 'rgba(34,197,94,0.12)',
+              border: `1px solid ${unreadCount > 0 ? 'rgba(239,68,68,0.24)' : 'rgba(34,197,94,0.2)'}`,
+              color: unreadCount > 0 ? '#fecaca' : '#bbf7d0',
+              fontSize: 12,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <Bell size={14} />
+              {unreadCount > 0 ? `${unreadCount} новых сигналов` : 'Сигналы под контролем'}
+            </div>
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>
-            {unreadCount > 0 ? `Есть ${unreadCount} новых сигналов` : 'Система под контролем'}
-          </div>
-        </div>
 
         {/* Notification toast */}
         <AnimatePresence>
@@ -606,10 +710,10 @@ export function GodModePage() {
       {/* Tabs */}
       <div style={{
         display: 'flex',
-        gap: 8,
-        padding: '12px 16px',
+        gap: 10,
+        padding: '12px 16px 0',
         overflowX: 'auto',
-        borderBottom: '1px solid rgba(212,175,55,0.1)',
+        scrollbarWidth: 'none',
       }}>
         {TABS.map(tab => (
           <motion.button
@@ -617,26 +721,28 @@ export function GodModePage() {
             whileTap={{ scale: 0.95 }}
             onClick={() => handleTabChange(tab.id)}
             style={{
-              padding: '8px 16px',
-              borderRadius: 10,
-              border: 'none',
+              padding: '12px 16px',
+              borderRadius: 16,
+              border: `1px solid ${activeTab === tab.id ? 'rgba(212,175,55,0.28)' : 'rgba(255,255,255,0.08)'}`,
               background: activeTab === tab.id
-                ? 'linear-gradient(180deg, #f5d485, #D4AF37)'
-                : 'rgba(255,255,255,0.05)',
-              color: activeTab === tab.id ? '#0a0a0c' : 'rgba(255,255,255,0.6)',
+                ? 'linear-gradient(180deg, rgba(245,212,133,0.98), rgba(212,175,55,0.98))'
+                : 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))',
+              color: activeTab === tab.id ? '#0a0a0c' : 'rgba(255,255,255,0.74)',
               fontWeight: 600,
               fontSize: 13,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              boxShadow: activeTab === tab.id ? '0 12px 30px rgba(212,175,55,0.2)' : 'none',
             }}
           >
             {tab.icon}
             {tab.label}
           </motion.button>
         ))}
+      </div>
       </div>
 
       {/* Content */}
@@ -665,6 +771,7 @@ function DashboardTab() {
   const [data, setData] = useState<GodDashboard | null>(null)
   const [pendingOrders, setPendingOrders] = useState<GodOrder[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const previousPendingCountRef = useRef(0)
 
@@ -689,6 +796,7 @@ function DashboardTab() {
       ])
       setData(dashboardResult)
       setPendingOrders(ordersResult.orders)
+      setError(null)
 
       // Play sound if new pending orders
       if (ordersResult.orders.length > 0 && previousPendingCountRef.current < ordersResult.orders.length) {
@@ -699,8 +807,9 @@ function DashboardTab() {
         } catch {}
       }
       previousPendingCountRef.current = ordersResult.orders.length
-    } catch {
-      /* silent */
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Не удалось загрузить сводку'
+      setError(message)
     }
     setLoading(false)
   }, [])
@@ -743,7 +852,17 @@ function DashboardTab() {
     return <LoadingSpinner />
   }
 
-  if (!data) return null
+  if (!data) {
+    return (
+      <StateCard
+        tone="error"
+        title="Сводка центра сейчас недоступна"
+        description={error || 'Не удалось собрать показатели админки.'}
+        actionLabel="Загрузить ещё раз"
+        onAction={() => void load()}
+      />
+    )
+  }
 
   const focusQueues = [
     {
@@ -787,6 +906,13 @@ function DashboardTab() {
       exit={{ opacity: 0 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
+      <SectionHeader
+        eyebrow="Контроль"
+        title="Центр управления"
+        description="Ключевые показатели, горячие очереди и быстрые действия, чтобы ничего не терялось между статусами."
+        meta={error ? 'Последняя загрузка прошла с предупреждением' : `Онлайн: ${data.users.online}`}
+      />
+
       {/* QUICK ACTIONS - Pending Payments */}
       {pendingOrders.length > 0 && (
         <motion.div
@@ -1165,9 +1291,11 @@ function FocusCard({
 // ═══════════════════════════════════════════════════════════════════════════
 
 function OrdersTab() {
+  const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [orders, setOrders] = useState<GodOrder[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState(() => searchParams.get('order_q') || '')
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get('order_status') || 'all')
   const [selectedOrder, setSelectedOrder] = useState<GodOrder | null>(null)
@@ -1203,11 +1331,20 @@ function OrdersTab() {
       const result = await fetchGodOrders({ status: statusFilter, search: deferredSearch, limit: 100 })
       setOrders(result.orders)
       setTotal(result.total)
-    } catch {
-      /* silent */
+      setError(null)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Не удалось загрузить заказы'
+      setOrders([])
+      setTotal(0)
+      setError(message)
+      showToast({
+        type: 'error',
+        title: 'Заказы не загрузились',
+        message,
+      })
     }
     setLoading(false)
-  }, [deferredSearch, statusFilter])
+  }, [deferredSearch, showToast, statusFilter])
 
   useEffect(() => {
     void load()
@@ -1220,44 +1357,91 @@ function OrdersTab() {
       exit={{ opacity: 0 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
-      {/* Search & Filter */}
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <Search size={16} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-          <input
-            type="text"
-            placeholder="ID или тема..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ ...inputStyle, paddingLeft: 40 }}
-          />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ ...inputStyle, width: 'auto', minWidth: 100 }}
-        >
-          <option value="all">Все</option>
-          <option value="pending">Ожидает</option>
-          <option value="verification_pending">Проверка</option>
-          <option value="waiting_payment">К оплате</option>
-          <option value="in_progress">В работе</option>
-          <option value="review">Готово</option>
-          <option value="completed">Завершён</option>
-        </select>
-      </div>
+      <SectionHeader
+        eyebrow="Операции"
+        title="Заказы"
+        description="Все заявки, статусы и быстрый вход в детали заказа без провалов между очередями."
+        meta={statusFilter === 'all'
+          ? `Показано ${total} заказов`
+          : `Очередь: ${STATUS_CONFIG[statusFilter]?.label || statusFilter}`}
+      />
 
-      {/* Results count */}
-      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-        {statusFilter === 'all' ? 'Все очереди' : `Очередь: ${STATUS_CONFIG[statusFilter]?.label || statusFilter}`} • Найдено: {total}
+      <div style={{ ...cardStyle, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 220px', position: 'relative' }}>
+            <Search size={16} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              type="text"
+              placeholder="ID заказа, тема или предмет"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ ...inputStyle, paddingLeft: 40 }}
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ ...inputStyle, width: 'auto', minWidth: 156 }}
+          >
+            <option value="all">Все статусы</option>
+            <option value="pending">Ожидает</option>
+            <option value="verification_pending">Проверка</option>
+            <option value="waiting_payment">К оплате</option>
+            <option value="in_progress">В работе</option>
+            <option value="review">Готово</option>
+            <option value="completed">Завершён</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => void load()}
+            style={{ ...secondaryButtonStyle, minHeight: 48 }}
+          >
+            <RefreshCw size={16} />
+            Обновить
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{
+            padding: '8px 12px',
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: 12,
+            fontWeight: 600,
+          }}>
+            Найдено: {total}
+          </div>
+          <div style={{
+            padding: '8px 12px',
+            borderRadius: 999,
+            background: 'rgba(212,175,55,0.08)',
+            border: '1px solid rgba(212,175,55,0.16)',
+            color: '#d4af37',
+            fontSize: 12,
+            fontWeight: 600,
+          }}>
+            {statusFilter === 'all' ? 'Все очереди' : STATUS_CONFIG[statusFilter]?.label || statusFilter}
+          </div>
+        </div>
       </div>
 
       {/* Orders List */}
-      {loading ? <LoadingSpinner /> : (
+      {loading ? <LoadingSpinner /> : error ? (
+        <StateCard
+          tone="error"
+          title="Очередь заказов сейчас недоступна"
+          description={error}
+          actionLabel="Загрузить ещё раз"
+          onAction={() => void load()}
+        />
+      ) : (
         orders.length === 0 ? (
-          <div style={{ ...cardStyle, textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
-            По текущему фильтру заказов нет.
-          </div>
+          <StateCard
+            title="По текущему фильтру заявок нет"
+            description="Попробуйте снять фильтр или уточнить поисковый запрос. Очередь останется здесь же, без перезагрузки экрана."
+          />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {orders.map(order => (
@@ -1287,19 +1471,14 @@ function OrdersTab() {
 
 function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void }) {
   const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
-  const [isHovered, setIsHovered] = React.useState(false)
+  const shortUserName = order.user_username ? `@${order.user_username}` : order.user_fullname
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{
-        scale: 1.01,
-        boxShadow: '0 15px 40px -10px rgba(212, 175, 55, 0.25), 0 0 0 1px rgba(212, 175, 55, 0.3)',
-      }}
+      whileHover={{ scale: 1.01, boxShadow: '0 18px 40px rgba(0,0,0,0.34)' }}
       whileTap={{ scale: 0.98 }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
       onClick={onClick}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       style={{
@@ -1307,193 +1486,137 @@ function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void })
         cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
-        boxShadow: '0 8px 25px -8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
-        position: 'relative',
+        gap: 14,
+        padding: 16,
       }}
     >
-      {/* Quick Action Buttons (appear on hover) */}
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            style={{
-              position: 'absolute',
-              top: 12,
-              right: 12,
-              display: 'flex',
-              gap: 6,
-              zIndex: 10,
-            }}
-          >
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={(e) => {
-                e.stopPropagation()
-                onClick()
-              }}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'rgba(212, 175, 55, 0.15)',
-                border: '1px solid rgba(212, 175, 55, 0.3)',
-                color: '#D4AF37',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(212, 175, 55, 0.2)',
-              }}
-              title="Открыть детали"
-            >
-              <ChevronRight size={16} />
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <motion.span
-          whileHover={{ scale: 1.05 }}
-          style={{
-            padding: '5px 12px',
-            background: cfg.bg,
-            color: cfg.color,
-            borderRadius: 8,
-            fontSize: 11,
-            fontWeight: 700,
-            border: `1px solid ${cfg.color}20`,
-            boxShadow: `0 2px 8px ${cfg.color}15`,
-            letterSpacing: '0.02em',
-          }}
-        >
-          {cfg.emoji} {cfg.label}
-        </motion.span>
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600 }}>#{order.id}</span>
-        {order.promo_code && (
-          <>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
             <span style={{
-              padding: '4px 8px',
-              background: order.promo_returned
-                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15))'
-                : 'linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(34, 197, 94, 0.15))',
-              border: `1px solid ${order.promo_returned ? '#ef4444' : '#D4AF37'}`,
-              color: order.promo_returned ? '#ef4444' : '#D4AF37',
-              borderRadius: 6,
+              padding: '6px 10px',
+              background: cfg.bg,
+              color: cfg.color,
+              borderRadius: 999,
               fontSize: 11,
               fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              boxShadow: order.promo_returned ? '0 2px 6px rgba(239, 68, 68, 0.2)' : '0 2px 6px rgba(212, 175, 55, 0.2)',
+              border: `1px solid ${cfg.color}20`,
             }}>
-              🎫 {order.promo_code} {order.promo_discount > 0 && (
-                <span style={{
-                  color: order.promo_returned ? '#fff' : '#22c55e',
-                  background: order.promo_returned ? '#ef4444' : '#22c55e',
-                  padding: '1px 4px',
-                  borderRadius: 3,
-                  fontSize: 10,
-                }}>
-                  −{order.promo_discount}%
-                </span>
-              )}
+              {cfg.label}
             </span>
-            {(order.promo_discount_amount || 0) > 0 && (
-              <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 700 }}>
-                −{(order.promo_discount_amount || 0).toFixed(0)}₽
+            <span style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12, fontWeight: 700 }}>
+              #{order.id}
+            </span>
+            {order.promo_code && (
+              <span style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: order.promo_returned ? 'rgba(239,68,68,0.14)' : 'rgba(34,197,94,0.14)',
+                border: `1px solid ${order.promo_returned ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`,
+                color: order.promo_returned ? '#fca5a5' : '#86efac',
+                fontSize: 11,
+                fontWeight: 700,
+              }}>
+                {order.promo_code}{order.promo_discount > 0 ? ` • −${order.promo_discount}%` : ''}
               </span>
             )}
-          </>
-        )}
-        <span style={{ marginLeft: 'auto', color: '#D4AF37', fontWeight: 700 }}>{order.final_price.toLocaleString()}₽</span>
+          </div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 18, marginBottom: 6 }}>
+            {order.work_type_label}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.64)', fontSize: 13, lineHeight: 1.5 }}>
+            {order.subject || 'Предмет не указан'}
+          </div>
+        </div>
+        <div style={{
+          padding: '12px 14px',
+          borderRadius: 16,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          textAlign: 'right',
+          minWidth: 120,
+        }}>
+          <div style={{ color: '#D4AF37', fontWeight: 700, fontSize: 18 }}>
+            {formatMoney(order.final_price)}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 11, marginTop: 4 }}>
+            {order.paid_amount > 0 ? `Оплачено ${formatMoney(order.paid_amount)}` : 'Без оплаты'}
+          </div>
+        </div>
       </div>
-      <div style={{ color: '#fff', fontWeight: 500 }}>{order.work_type_label}</div>
-      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-        {order.subject || 'Без предмета'}
-      </div>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{
+          padding: '7px 10px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: 'rgba(255,255,255,0.68)',
+          fontSize: 12,
+          fontWeight: 600,
+        }}>
+          Клиент: {shortUserName}
+        </span>
+        <span style={{
+          padding: '7px 10px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: 'rgba(255,255,255,0.68)',
+          fontSize: 12,
+          fontWeight: 600,
+        }}>
+          Создан: {formatDateTime(order.created_at)}
+        </span>
         {order.deadline && (
           <span style={{
-            padding: '4px 8px',
+            padding: '7px 10px',
             borderRadius: 999,
-            background: 'rgba(255,255,255,0.05)',
-            color: 'rgba(255,255,255,0.55)',
-            fontSize: 11,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.68)',
+            fontSize: 12,
             fontWeight: 600,
           }}>
-            Срок: {formatDateTime(order.deadline)}
+            Дедлайн: {formatDateTime(order.deadline)}
           </span>
         )}
         {order.admin_notes && (
           <span style={{
-            padding: '4px 8px',
+            padding: '7px 10px',
             borderRadius: 999,
             background: 'rgba(212,175,55,0.08)',
+            border: '1px solid rgba(212,175,55,0.16)',
             color: '#D4AF37',
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
           }}>
             Есть заметка
           </span>
         )}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-          {order.user_fullname} {order.user_username ? `@${order.user_username}` : ''}
-        </span>
         {order.progress > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto', minWidth: 128 }}>
             <div style={{
-              width: 70,
-              height: 5,
+              width: 84,
+              height: 6,
               background: 'rgba(255,255,255,0.08)',
-              borderRadius: 3,
+              borderRadius: 999,
               overflow: 'hidden',
-              position: 'relative',
             }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${order.progress}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-                style={{
-                  height: '100%',
-                  background: 'linear-gradient(90deg, #d4af37, #f5d061)',
-                  borderRadius: 3,
-                  boxShadow: '0 0 8px rgba(212, 175, 55, 0.5)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Shimmer effect */}
-                <motion.div
-                  animate={{
-                    x: ['-100%', '200%'],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    repeatDelay: 1,
-                    ease: 'easeInOut',
-                  }}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '40%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)',
-                  }}
-                />
-              </motion.div>
+              <div style={{
+                width: `${Math.max(0, Math.min(order.progress, 100))}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #d4af37, #f5d061)',
+                borderRadius: 999,
+              }} />
             </div>
-            <span style={{ color: '#D4AF37', fontSize: 11, fontWeight: 700 }}>{order.progress}%</span>
+            <span style={{ color: '#D4AF37', fontSize: 12, fontWeight: 700 }}>{order.progress}%</span>
           </div>
         )}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, color: '#D4AF37', fontWeight: 700 }}>
+          Детали
+          <ChevronRight size={16} />
+        </div>
       </div>
     </motion.div>
   )
@@ -2020,12 +2143,15 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
 // ═══════════════════════════════════════════════════════════════════════════
 
 function UsersTab() {
+  const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [users, setUsers] = useState<GodUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState(() => searchParams.get('user_q') || '')
   const [filterType, setFilterType] = useState(() => searchParams.get('user_filter') || '')
   const [selectedUser, setSelectedUser] = useState<GodUser | null>(null)
+  const [total, setTotal] = useState(0)
   const deferredSearch = useDeferredValue(search.trim())
   const filterLabel = ({
     banned: 'заблокированные',
@@ -2060,14 +2186,24 @@ function UsersTab() {
     try {
       const result = await fetchGodUsers({ search: deferredSearch, filter_type: filterType, limit: 100 })
       setUsers(result.users)
-    } catch {
-      /* silent */
+      setTotal(result.total)
+      setError(null)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Не удалось загрузить клиентов'
+      setUsers([])
+      setTotal(0)
+      setError(message)
+      showToast({
+        type: 'error',
+        title: 'Клиенты не загрузились',
+        message,
+      })
     }
     setLoading(false)
-  }, [deferredSearch, filterType])
+  }, [deferredSearch, filterType, showToast])
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
 
   return (
@@ -2077,40 +2213,86 @@ function UsersTab() {
       exit={{ opacity: 0 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
-      {/* Search & Filter */}
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <Search size={16} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-          <input
-            type="text"
-            placeholder="ID, username, имя..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ ...inputStyle, paddingLeft: 40 }}
-          />
-        </div>
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          style={{ ...inputStyle, width: 'auto', minWidth: 100 }}
-        >
-          <option value="">Все</option>
-          <option value="banned">Забанены</option>
-          <option value="watched">Наблюдение</option>
-          <option value="with_balance">С балансом</option>
-        </select>
-      </div>
+      <SectionHeader
+        eyebrow="CRM"
+        title="Клиенты"
+        description="Профили, баланс, наблюдение и быстрый вход в историю клиента без лишних переходов."
+        meta={filterType ? `Фильтр: ${filterLabel}` : `Показано ${total} клиентов`}
+      />
 
-      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-        {filterType ? `Фильтр: ${filterLabel}` : 'Все клиенты'} • Показано: {users.length}
+      <div style={{ ...cardStyle, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 220px', position: 'relative' }}>
+            <Search size={16} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              type="text"
+              placeholder="ID, username или имя"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ ...inputStyle, paddingLeft: 40 }}
+            />
+          </div>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            style={{ ...inputStyle, width: 'auto', minWidth: 156 }}
+          >
+            <option value="">Все клиенты</option>
+            <option value="banned">Забанены</option>
+            <option value="watched">Под наблюдением</option>
+            <option value="with_balance">С балансом</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => void load()}
+            style={{ ...secondaryButtonStyle, minHeight: 48 }}
+          >
+            <RefreshCw size={16} />
+            Обновить
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{
+            padding: '8px 12px',
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: 12,
+            fontWeight: 600,
+          }}>
+            Найдено: {total}
+          </div>
+          <div style={{
+            padding: '8px 12px',
+            borderRadius: 999,
+            background: 'rgba(212,175,55,0.08)',
+            border: '1px solid rgba(212,175,55,0.16)',
+            color: '#d4af37',
+            fontSize: 12,
+            fontWeight: 600,
+          }}>
+            {filterType ? filterLabel : 'Все клиенты'}
+          </div>
+        </div>
       </div>
 
       {/* Users List */}
-      {loading ? <LoadingSpinner /> : (
+      {loading ? <LoadingSpinner /> : error ? (
+        <StateCard
+          tone="error"
+          title="База клиентов сейчас недоступна"
+          description={error}
+          actionLabel="Загрузить ещё раз"
+          onAction={() => void load()}
+        />
+      ) : (
         users.length === 0 ? (
-          <div style={{ ...cardStyle, textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
-            Клиенты по текущему фильтру не найдены.
-          </div>
+          <StateCard
+            title="По текущему фильтру никого нет"
+            description="Снимите фильтр или измените запрос. Список клиентов появится здесь же без переходов между разделами."
+          />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {users.map(user => (
@@ -2141,41 +2323,126 @@ function UsersTab() {
 function UserCard({ user, onClick }: { user: GodUser; onClick: () => void }) {
   return (
     <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.01, boxShadow: '0 18px 40px rgba(0,0,0,0.34)' }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       style={{
         ...cardStyle,
         cursor: 'pointer',
         display: 'flex',
-        alignItems: 'center',
-        gap: 12,
+        flexDirection: 'column',
+        gap: 14,
+        padding: 16,
       }}
     >
-      <div style={{
-        width: 48,
-        height: 48,
-        borderRadius: 12,
-        background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 24,
-      }}>
-        {user.rank_emoji}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: '#fff', fontWeight: 600 }}>{user.fullname || 'Без имени'}</span>
-          {user.is_banned && <Ban size={14} color="#ef4444" />}
-          {user.is_watched && <Eye size={14} color="#f59e0b" />}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{
+          width: 52,
+          height: 52,
+          borderRadius: 16,
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 24,
+          flexShrink: 0,
+        }}>
+          {user.rank_emoji}
         </div>
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-          {user.username ? `@${user.username}` : `ID: ${user.telegram_id}`}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{user.fullname || 'Без имени'}</span>
+            {user.is_banned && (
+              <span style={{
+                padding: '5px 8px',
+                borderRadius: 999,
+                background: 'rgba(239,68,68,0.14)',
+                border: '1px solid rgba(239,68,68,0.2)',
+                color: '#fca5a5',
+                fontSize: 11,
+                fontWeight: 700,
+              }}>
+                Заблокирован
+              </span>
+            )}
+            {user.is_watched && (
+              <span style={{
+                padding: '5px 8px',
+                borderRadius: 999,
+                background: 'rgba(245,158,11,0.14)',
+                border: '1px solid rgba(245,158,11,0.2)',
+                color: '#fcd34d',
+                fontSize: 11,
+                fontWeight: 700,
+              }}>
+                Под наблюдением
+              </span>
+            )}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 12 }}>
+            {user.username ? `@${user.username}` : `ID: ${user.telegram_id}`}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.62)', fontSize: 13, marginTop: 8 }}>
+            {user.rank_name} • {user.loyalty_status}
+          </div>
+        </div>
+        <div style={{
+          padding: '12px 14px',
+          borderRadius: 16,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          textAlign: 'right',
+          minWidth: 116,
+        }}>
+          <div style={{ color: '#D4AF37', fontWeight: 700, fontSize: 18 }}>
+            {formatMoney(user.balance)}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 11, marginTop: 4 }}>
+            Баланс
+          </div>
         </div>
       </div>
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ color: '#D4AF37', fontWeight: 700 }}>{user.balance.toLocaleString()}₽</div>
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{user.orders_count} заказов</div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{
+          padding: '7px 10px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: 'rgba(255,255,255,0.7)',
+          fontSize: 12,
+          fontWeight: 600,
+        }}>
+          Заказов: {user.orders_count}
+        </span>
+        <span style={{
+          padding: '7px 10px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: 'rgba(255,255,255,0.7)',
+          fontSize: 12,
+          fontWeight: 600,
+        }}>
+          Потратил: {formatMoney(user.total_spent)}
+        </span>
+        <span style={{
+          padding: '7px 10px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: 'rgba(255,255,255,0.7)',
+          fontSize: 12,
+          fontWeight: 600,
+        }}>
+          Рефералы: {user.referrals_count}
+        </span>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, color: '#D4AF37', fontWeight: 700 }}>
+          Профиль клиента
+          <ChevronRight size={16} />
+        </div>
       </div>
     </motion.div>
   )
@@ -2986,13 +3253,15 @@ function PromosTab() {
 function LiveTab() {
   const [data, setData] = useState<{ online_count: number; users: GodLiveUser[] } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
       const result = await fetchGodLiveActivity()
       setData(result)
-    } catch {
-      /* silent */
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить онлайн-активность')
     }
     setLoading(false)
   }, [])
@@ -3005,6 +3274,18 @@ function LiveTab() {
 
   if (loading && !data) return <LoadingSpinner />
 
+  if (!data) {
+    return (
+      <StateCard
+        tone="error"
+        title="Не удалось открыть онлайн-активность"
+        description={error || 'Сервис активности временно не ответил.'}
+        actionLabel="Загрузить ещё раз"
+        onAction={() => void load()}
+      />
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -3012,6 +3293,13 @@ function LiveTab() {
       exit={{ opacity: 0 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
+      <SectionHeader
+        eyebrow="Мониторинг"
+        title="Кто сейчас в приложении"
+        description="Активные пользователи, текущие экраны и быстрый срез поведения без перехода в логи."
+        meta={error ? 'Последняя загрузка с предупреждением' : `${data.online_count} онлайн`}
+      />
+
       {/* Online count */}
       <div style={{
         ...cardStyle,
@@ -3084,14 +3372,17 @@ function LiveTab() {
 function LogsTab() {
   const [logs, setLogs] = useState<GodLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const result = await fetchGodLogs({ limit: 100 })
       setLogs(result.logs)
-    } catch {
-      /* silent */
+      setError(null)
+    } catch (err) {
+      setLogs([])
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить журнал действий')
     }
     setLoading(false)
   }, [])
@@ -3109,6 +3400,23 @@ function LogsTab() {
       exit={{ opacity: 0 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
     >
+      <SectionHeader
+        eyebrow="Аудит"
+        title="Журнал действий"
+        description="Последние 100 операций админки с контекстом по целям и времени выполнения."
+        meta={error ? 'Загрузка завершилась с ошибкой' : `${logs.length} записей`}
+      />
+
+      {error ? (
+        <StateCard
+          tone="error"
+          title="Журнал не загрузился"
+          description={error}
+          actionLabel="Загрузить ещё раз"
+          onAction={() => void load()}
+        />
+      ) : null}
+
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Последние 100 действий</span>
         <button onClick={load} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -3142,6 +3450,13 @@ function LogsTab() {
           </div>
         </div>
       ))}
+
+      {!error && logs.length === 0 && (
+        <StateCard
+          title="Журнал пока пуст"
+          description="Здесь появятся действия после работы с заказами, клиентами и промокодами."
+        />
+      )}
     </motion.div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { UserData } from '../types'
 import { fetchUserData, fetchConfig } from '../api/userApi'
 import { SUPPORT_TELEGRAM_URL } from '../lib/appLinks'
+import { useAdmin } from '../contexts/AdminContext'
 
 // Demo mode flag - same as in userApi.ts
 const IS_DEV = import.meta.env.DEV || false
@@ -32,7 +33,8 @@ async function waitForTelegramContext(timeoutMs = 7000, pollMs = 50) {
 }
 
 export function useUserData() {
-  const [userData, setUserData] = useState<UserData | null>(null)
+  const admin = useAdmin()
+  const [rawUserData, setRawUserData] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,7 +52,7 @@ export function useUserData() {
         }
 
         const data = await fetchUserData()
-        setUserData(data)
+        setRawUserData(data)
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
@@ -65,11 +67,56 @@ export function useUserData() {
   const refetch = async () => {
     try {
       const data = await fetchUserData()
-      setUserData(data)
+      setRawUserData(data)
     } catch {
       // Silent refetch failure - user data stays unchanged
     }
   }
+
+  const userData = useMemo(() => {
+    if (!rawUserData) return null
+    if (!admin.simulateNewUser) return rawUserData
+
+    return {
+      ...rawUserData,
+      balance: 0,
+      bonus_balance: 0,
+      transactions: [],
+      orders_count: 0,
+      total_spent: 0,
+      referrals_count: 0,
+      referral_earnings: 0,
+      orders: [],
+      daily_luck_available: true,
+      daily_bonus_streak: 0,
+      free_spins: 0,
+      rank: {
+        name: 'Новый клиент',
+        emoji: '✦',
+        level: 1,
+        cashback: 0,
+        bonus: null,
+        next_rank: rawUserData.rank.next_rank,
+        progress: 0,
+        spent_to_next: rawUserData.rank.spent_to_next || 5000,
+        is_max: false,
+      },
+      loyalty: {
+        status: 'Новый клиент',
+        emoji: '✦',
+        level: 1,
+        discount: 0,
+        orders_to_next: Math.max(rawUserData.loyalty.orders_to_next || 3, 1),
+      },
+      bonus_expiry: {
+        has_expiry: false,
+        balance: 0,
+        status: 'ok',
+        status_text: 'Бонусный баланс пока пустой',
+        color: '#9ca3af',
+      },
+    }
+  }, [admin.simulateNewUser, rawUserData])
 
   return { userData, loading, error, refetch }
 }

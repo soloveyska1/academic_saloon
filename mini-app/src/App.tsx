@@ -440,64 +440,62 @@ function AppContent() {
         <DeviceCapabilityProvider>
           {/* PromoProvider stays mounted even during loading to preserve state */}
           <PromoProvider>
-            <AdminProvider>
-              <ClubProvider userId={telegramId || undefined}>
-                <NavigationProvider>
-                  <GestureGuardProvider>
-                    <ToastProvider>
-                    <WebSocketProvider
-                      telegramId={telegramId}
-                      onOrderUpdate={handleOrderUpdate}
-                      onBalanceUpdate={handleBalanceUpdate}
-                      onProgressUpdate={handleProgressUpdate}
-                      onNotification={handleNotification}
-                      onRefresh={handleRefresh}
-                    >
-                      <BrowserRouter>
-                        <div className="app">
-                          <RouteNavigationController />
-                          {/* Smart Realtime Notifications with React Router navigation */}
-                          <NotificationHandler
-                            notification={notification}
-                            onDismiss={() => setNotification(null)}
-                          />
+            <ClubProvider userId={telegramId || undefined}>
+              <NavigationProvider>
+                <GestureGuardProvider>
+                  <ToastProvider>
+                  <WebSocketProvider
+                    telegramId={telegramId}
+                    onOrderUpdate={handleOrderUpdate}
+                    onBalanceUpdate={handleBalanceUpdate}
+                    onProgressUpdate={handleProgressUpdate}
+                    onNotification={handleNotification}
+                    onRefresh={handleRefresh}
+                  >
+                    <BrowserRouter>
+                      <div className="app">
+                        <RouteNavigationController />
+                        {/* Smart Realtime Notifications with React Router navigation */}
+                        <NotificationHandler
+                          notification={notification}
+                          onDismiss={() => setNotification(null)}
+                        />
 
-                          <Suspense fallback={<LoadingScreen />}>
-                            <Routes>
-                              <Route path="/" element={<HomePage user={userData} />} />
-                              <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
-                              <Route path="/order/:id" element={<OrderDetailPageV8 />} />
-                              <Route path="/order/:id/chat" element={<OrderChatPage />} />
-                              {/* Club Routes */}
-                              <Route path="/club" element={<ClubPage user={userData} />} />
-                              <Route path="/club/rewards" element={<RewardsStorePage />} />
-                              <Route path="/club/vouchers" element={<MyVouchersPage />} />
-                              <Route path="/club/privileges" element={<PrivilegesPage />} />
-                              <Route path="/club/history" element={<ClubHistoryPage />} />
-                              <Route path="/profile" element={<ProfilePage user={userData} />} />
-                              <Route path="/create-order" element={<CreateOrderPage user={userData} />} />
-                              <Route path="/referral" element={<ReferralPage user={userData} />} />
-                              <Route path="/achievements" element={<AchievementsPage user={userData} />} />
-                              <Route path="/support" element={<SupportPage />} />
-                              <Route path="/batch-payment" element={<BatchPaymentPage />} />
-                              <Route path="/admin" element={<GodModePage />} />
-                              <Route path="/god" element={<GodModePage />} />
-                            </Routes>
-                          </Suspense>
+                        <Suspense fallback={<LoadingScreen />}>
+                          <Routes>
+                            <Route path="/" element={<HomePage user={userData} />} />
+                            <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
+                            <Route path="/order/:id" element={<OrderDetailPageV8 />} />
+                            <Route path="/order/:id/chat" element={<OrderChatPage />} />
+                            {/* Club Routes */}
+                            <Route path="/club" element={<ClubPage user={userData} />} />
+                            <Route path="/club/rewards" element={<RewardsStorePage />} />
+                            <Route path="/club/vouchers" element={<MyVouchersPage />} />
+                            <Route path="/club/privileges" element={<PrivilegesPage />} />
+                            <Route path="/club/history" element={<ClubHistoryPage />} />
+                            <Route path="/profile" element={<ProfilePage user={userData} />} />
+                            <Route path="/create-order" element={<CreateOrderPage user={userData} />} />
+                            <Route path="/referral" element={<ReferralPage user={userData} />} />
+                            <Route path="/achievements" element={<AchievementsPage user={userData} />} />
+                            <Route path="/support" element={<SupportPage />} />
+                            <Route path="/batch-payment" element={<BatchPaymentPage />} />
+                            <Route path="/admin" element={<GodModePage />} />
+                            <Route path="/god" element={<GodModePage />} />
+                          </Routes>
+                        </Suspense>
 
-                          <Navigation />
-                          {/* Admin Debug Panel */}
-                          <AdminPanel />
-                          {/* WebSocket Status Indicator - only in debug mode */}
-                          <AdminAwareWSIndicator />
-                        </div>
-                      </BrowserRouter>
-                    </WebSocketProvider>
-                  </ToastProvider>
-                  </GestureGuardProvider>
-                </NavigationProvider>
-              </ClubProvider>
-            </AdminProvider>
+                        <Navigation />
+                        {/* Admin Debug Panel */}
+                        <AdminPanel />
+                        {/* WebSocket Status Indicator - only in debug mode */}
+                        <AdminAwareWSIndicator />
+                      </div>
+                    </BrowserRouter>
+                  </WebSocketProvider>
+                </ToastProvider>
+                </GestureGuardProvider>
+              </NavigationProvider>
+            </ClubProvider>
           </PromoProvider>
         </DeviceCapabilityProvider>
       </ThemeProvider>
@@ -507,7 +505,11 @@ function AppContent() {
 
 // Main App wrapper
 function App() {
-  return <AppContent />
+  return (
+    <AdminProvider>
+      <AppContent />
+    </AdminProvider>
+  )
 }
 
 export default App
