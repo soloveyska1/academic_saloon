@@ -357,6 +357,7 @@ export function ProfilePageNew({ user }: Props) {
                   onSupport={handleSupport}
                   onMyOrders={handleMyOrders}
                   onInviteFriend={handleInviteFriend}
+                  isFirstOrder={user.orders_count === 0}
                 />
 
                 <ConciergeCard

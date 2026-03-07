@@ -208,7 +208,13 @@ export function HomePage({ user }: Props) {
         {isNewUser ? (
           <>
             {/* PRIMARY CTA */}
-            <NewTaskCTA onClick={handleNewOrder} />
+            <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
+
+            {/* Welcome onboarding for new users */}
+            <EmptyStateOnboarding
+              onCreateOrder={handleNewOrder}
+              primaryActionLabel="Создать первый заказ"
+            />
 
             {/* Quick info badges (Срочно, Кешбэк, Гарантии) */}
             <QuickActionsRow
@@ -223,9 +229,6 @@ export function HomePage({ user }: Props) {
               }}
               haptic={haptic}
             />
-
-            {/* Welcome onboarding for new users */}
-            <EmptyStateOnboarding onCreateOrder={handleNewOrder} />
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════════════════
@@ -242,7 +245,7 @@ export function HomePage({ user }: Props) {
             />
 
             {/* PRIMARY CTA */}
-            <NewTaskCTA onClick={handleNewOrder} />
+            <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
 
             {/* Quick info badges */}
             <QuickActionsRow

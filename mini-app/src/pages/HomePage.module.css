@@ -35,6 +35,98 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
+.primaryActionCard {
+  position: relative;
+}
+
+.firstOrderActionCard {
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.28), transparent 38%),
+    linear-gradient(145deg, rgba(43, 31, 7, 0.92) 0%, rgba(9, 9, 11, 0.94) 45%, rgba(20, 16, 6, 0.96) 100%);
+  border-color: rgba(212, 175, 55, 0.32) !important;
+  box-shadow:
+    0 24px 50px -14px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(212, 175, 55, 0.08),
+    0 0 40px rgba(212, 175, 55, 0.12);
+}
+
+.returningOrderActionCard {
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.16), transparent 34%),
+    linear-gradient(145deg, rgba(14, 14, 17, 0.92) 0%, rgba(9, 9, 11, 0.95) 100%);
+}
+
+.primaryActionGlow {
+  position: absolute;
+  inset: auto auto -28px -20px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.22) 0%, transparent 68%);
+  filter: blur(10px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.primaryActionShine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 35%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.primaryActionOrb {
+  position: absolute;
+  top: -44px;
+  right: -24px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(252,246,186,0.25) 0%, rgba(212,175,55,0.08) 45%, transparent 70%);
+  filter: blur(8px);
+  opacity: 0.9;
+  animation: primaryOrbFloat 5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.primaryActionArrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  animation: primaryArrowPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes primaryArrowPulse {
+  0%,
+  100% {
+    transform: translateX(0);
+    box-shadow: 0 0 0 rgba(212, 175, 55, 0);
+  }
+
+  50% {
+    transform: translateX(3px);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+  }
+}
+
+@keyframes primaryOrbFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-8px, 6px, 0) scale(1.06);
+  }
+}
+
 /* The "Liquid Gold" Accent */
 .goldAccent {
   background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%);

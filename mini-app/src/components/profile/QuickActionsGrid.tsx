@@ -13,6 +13,7 @@ interface QuickActionsGridProps {
   onSupport: () => void
   onMyOrders: () => void
   onInviteFriend: () => void
+  isFirstOrder?: boolean
 }
 
 interface ActionButtonProps {
@@ -146,6 +147,7 @@ export const QuickActionsGrid = memo(function QuickActionsGrid({
   onSupport,
   onMyOrders,
   onInviteFriend,
+  isFirstOrder = false,
 }: QuickActionsGridProps) {
   const [copiedState, setCopiedState] = useState(false)
 
@@ -158,7 +160,7 @@ export const QuickActionsGrid = memo(function QuickActionsGrid({
   const actions = [
     {
       id: 'new-order',
-      label: 'Новый заказ',
+      label: isFirstOrder ? 'Первый заказ' : 'Новый заказ',
       icon: <Plus size={22} strokeWidth={2.5} />,
       color: '#22c55e',
       bgColor: 'rgba(34, 197, 94, 0.15)',
