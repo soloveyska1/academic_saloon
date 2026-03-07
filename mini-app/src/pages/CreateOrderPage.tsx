@@ -25,6 +25,7 @@ import {
   WIZARD_STEPS,
   DRAFT_KEY,
 } from '../components/order-wizard'
+import homeStyles from './HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  CREATE ORDER PAGE — Premium Order Wizard
@@ -532,173 +533,181 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     const savings = basePrice && promoUsed
       ? Math.round(basePrice * (1 - loyaltyDiscount / 100) * (promoUsed.discount / 100))
       : 0
+    const title = result.ok ? 'Заявка принята' : 'Не удалось отправить заявку'
+    const lead = result.ok && result.id
+      ? `Заказ #${result.id} создан. Сейчас проверяем вводные и готовим оценку от менеджера.`
+      : result.msg
+    const details = result.ok
+      ? result.msg.replace(/^✅?\s*Заказ #?\d+\s+создан!?/i, '').trim()
+      : result.msg
 
     return (
       <div style={{ padding: 24, paddingBottom: 100, minHeight: '100vh', height: '100dvh', background: 'var(--bg-main)' }}>
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '70vh',
-            textAlign: 'center',
+            minHeight: '100%',
           }}
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
+          <motion.section
+            className={`${homeStyles.voidGlass} ${homeStyles.primaryActionCard} ${homeStyles.returningOrderActionCard}`}
             style={{
-              width: 100,
-              height: 100,
-              borderRadius: '50%',
-              background: result.ok
-                ? 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05))'
-                : 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05))',
-              border: `3px solid ${result.ok ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 32,
-              boxShadow: `0 0 60px -10px ${result.ok ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'}`,
+              position: 'relative',
+              width: '100%',
+              maxWidth: 420,
+              padding: '26px 22px 22px',
+              borderRadius: 30,
+              overflow: 'hidden',
+              border: `1px solid ${result.ok ? 'rgba(74,222,128,0.22)' : 'rgba(239,68,68,0.18)'}`,
             }}
           >
-            {result.ok ? (
-              <Check size={50} color="#22c55e" strokeWidth={2} />
-            ) : (
-              <AlertCircle size={50} color="#ef4444" strokeWidth={2} />
-            )}
-          </motion.div>
+            <div className={homeStyles.primaryActionGlow} aria-hidden="true" />
+            <div className={homeStyles.primaryActionShine} aria-hidden="true" />
 
-          <h2 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 28,
-            fontWeight: 700,
-            color: result.ok ? 'var(--text-main)' : 'var(--error-text)',
-            marginBottom: 16,
-          }}>
-            {result.ok ? 'Заявка отправлена' : 'Ошибка'}
-          </h2>
-
-          <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: result.ok && promoUsed ? 20 : 40, maxWidth: 300, lineHeight: 1.6 }}>
-            {result.msg}
-          </p>
-
-          {/* Promo savings card */}
-          {result.ok && promoUsed && savings > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.3, type: 'spring' }}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 12,
-                padding: '20px 24px',
-                marginBottom: 32,
-                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))',
-                border: '2px solid rgba(34, 197, 94, 0.3)',
-                borderRadius: 20,
-                maxWidth: 320,
-                width: '100%',
-                boxShadow: '0 8px 32px -8px rgba(34, 197, 94, 0.3)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
+            <div style={{ position: 'relative', zIndex: 1 }}>
               <motion.div
-                animate={{ x: ['-100%', '200%'] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '50%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-                  transform: 'skewX(-20deg)',
-                  pointerEvents: 'none',
-                }}
-              />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Tag size={18} color="#22c55e" />
-                <span style={{ fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#22c55e', letterSpacing: '0.05em' }}>
-                  {promoUsed.code}
-                </span>
-                <span style={{ padding: '3px 8px', borderRadius: 6, background: 'rgba(34, 197, 94, 0.25)', fontSize: 12, fontWeight: 700, color: '#22c55e' }}>
-                  -{promoUsed.discount}%
-                </span>
-              </div>
-              <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                Ваша экономия
-              </div>
-              <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
-                style={{
-                  fontSize: 32,
-                  fontWeight: 800,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  background: 'linear-gradient(135deg, #22c55e, #4ade80)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
+                  width: 86,
+                  height: 86,
+                  borderRadius: '50%',
+                  background: result.ok
+                    ? 'linear-gradient(135deg, rgba(74,222,128,0.18), rgba(34,197,94,0.05))'
+                    : 'linear-gradient(135deg, rgba(248,113,113,0.18), rgba(239,68,68,0.05))',
+                  border: `2px solid ${result.ok ? 'rgba(74,222,128,0.42)' : 'rgba(239,68,68,0.35)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 18px',
+                  boxShadow: `0 0 52px -18px ${result.ok ? 'rgba(74,222,128,0.55)' : 'rgba(239,68,68,0.45)'}`,
                 }}
               >
-                {savings.toLocaleString('ru-RU')} ₽
+                {result.ok ? (
+                  <Check size={42} color="#4ade80" strokeWidth={2.2} />
+                ) : (
+                  <AlertCircle size={42} color="#f87171" strokeWidth={2.2} />
+                )}
               </motion.div>
-            </motion.div>
-          )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 320 }}>
-            {result.ok && result.id && (
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: promoUsed ? 0.6 : 0.3 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => navigate(`/order/${result.id}`)}
+              <motion.div
                 style={{
-                  padding: '18px 28px',
-                  fontSize: 17,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 12px',
+                  borderRadius: 999,
+                  background: 'rgba(9, 9, 11, 0.58)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  fontSize: 11,
                   fontWeight: 700,
-                  fontFamily: "'Playfair Display', serif",
-                  color: '#050505',
-                  background: 'linear-gradient(180deg, #f5d061, #d4af37, #b48e26)',
-                  border: 'none',
-                  borderRadius: 16,
-                  cursor: 'pointer',
-                  boxShadow: '0 0 35px -8px rgba(212,175,55,0.6)',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: result.ok ? '#ecfccb' : '#fecaca',
+                  margin: '0 auto 14px',
                 }}
               >
-                Открыть заказ
-              </motion.button>
-            )}
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: promoUsed ? 0.7 : 0.4 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate(result.ok ? '/orders' : '/')}
+                {result.ok ? <Check size={12} /> : <AlertCircle size={12} />}
+                {result.ok ? 'Заявка отправлена' : 'Нужна повторная отправка'}
+              </motion.div>
+
+              <div className={homeStyles.goldAccent} style={{
+                fontFamily: "'Manrope', sans-serif",
+                fontSize: 'clamp(30px, 7vw, 40px)',
+                fontWeight: 800,
+                lineHeight: 1.04,
+                textAlign: 'center',
+                marginBottom: 12,
+              }}>
+                {title}
+              </div>
+
+              <div style={{
+                fontSize: 15.5,
+                lineHeight: 1.65,
+                color: '#d4d4d8',
+                textAlign: 'center',
+                marginBottom: 16,
+              }}>
+                {lead}
+              </div>
+
+              {details && details !== lead && (
+                <div className={homeStyles.heroProofRail}>
+                  <div className={homeStyles.heroProofItem} style={{ alignItems: 'flex-start' }}>
+                    <Tag size={15} color="#d4af37" style={{ marginTop: 1 }} />
+                    <span style={{ lineHeight: 1.6 }}>{details}</span>
+                  </div>
+                  {promoUsed && savings > 0 && (
+                    <div className={homeStyles.heroProofItem}>
+                      <Tag size={15} color="#22c55e" />
+                      Промокод {promoUsed.code} сэкономил {savings.toLocaleString('ru-RU')} ₽
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 18 }}>
+                {result.ok && result.id && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: promoUsed ? 0.35 : 0.25 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate(`/order/${result.id}`)}
+                    className={homeStyles.heroPrimaryButton}
+                  >
+                    <span>Открыть заказ</span>
+                    <div className={homeStyles.primaryActionArrow}>
+                      <ChevronRight size={18} color="#09090b" strokeWidth={2.6} />
+                    </div>
+                  </motion.button>
+                )}
+
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: promoUsed ? 0.45 : 0.35 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate(result.ok ? '/orders' : '/')}
+                  style={{
+                    minHeight: 56,
+                    padding: '0 18px',
+                    borderRadius: 18,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'rgba(255,255,255,0.04)',
+                    color: 'var(--text-main)',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {result.ok ? 'Перейти в мои заказы' : 'Вернуться на главную'}
+                </motion.button>
+              </div>
+            </div>
+          </motion.section>
+
+          {!result.ok && (
+            <div
               style={{
-                padding: '16px 28px',
-                fontSize: 16,
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 16,
-                cursor: 'pointer',
+                width: '100%',
+                maxWidth: 420,
+                marginTop: 14,
+                fontSize: 12.5,
+                lineHeight: 1.6,
+                color: 'var(--text-muted)',
+                textAlign: 'center',
               }}
             >
-              {result.ok ? 'В мои заказы' : 'На главную'}
-            </motion.button>
-          </div>
+              Проверьте подключение и попробуйте ещё раз. Если ошибка повторится, можно написать в поддержку из профиля.
+            </div>
+          )}
         </motion.div>
       </div>
     )

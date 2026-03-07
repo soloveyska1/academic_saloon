@@ -18,6 +18,15 @@ import {
 //  BATCH PAYMENT PAGE — Pay All Orders at Once
 // ═══════════════════════════════════════════════════════════════════════════
 
+function formatOrdersLabel(count: number) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) return `${count} заказ`
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} заказа`
+  return `${count} заказов`
+}
+
 export function BatchPaymentPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -316,7 +325,7 @@ export function BatchPaymentPage() {
             color: 'var(--text-muted)',
             margin: 0,
           }}>
-            {paymentInfo?.orders_count} {paymentInfo?.orders_count === 1 ? 'заказ' : paymentInfo?.orders_count && paymentInfo.orders_count < 5 ? 'заказа' : 'заказов'}
+            {paymentInfo ? formatOrdersLabel(paymentInfo.orders_count) : '0 заказов'}
           </p>
         </div>
       </div>
@@ -376,7 +385,7 @@ export function BatchPaymentPage() {
                   color: 'var(--text-muted)',
                   margin: 0,
                 }}>
-                  {paymentInfo?.orders_count} заказов
+                  {paymentInfo ? formatOrdersLabel(paymentInfo.orders_count) : '0 заказов'}
                 </p>
               </div>
             </div>
@@ -903,7 +912,7 @@ export function BatchPaymentPage() {
               lineHeight: 1.5,
             }}>
               После нажатия менеджер проверит оплату.<br />
-              Все {paymentInfo?.orders_count} заказов будут подтверждены одновременно.
+              Подтверждение пройдет сразу по всем выбранным заказам.
             </p>
           </div>
         </motion.div>

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle,
+  ArrowLeft,
   BookOpen,
   CheckCircle2,
   ChevronRight,
@@ -833,6 +834,11 @@ function RequirementsEditorModal({
     setShowTemplates(false)
   }, [])
 
+  const primaryTemplateKey = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId]
+    ? serviceTypeId
+    : 'default'
+  const templatePreview = REQUIREMENTS_TEMPLATES[primaryTemplateKey] || REQUIREMENTS_TEMPLATES.default
+
   const placeholder = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId]
     ? REQUIREMENTS_TEMPLATES[serviceTypeId]
     : `Опишите ожидания:
@@ -869,10 +875,13 @@ function RequirementsEditorModal({
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              padding: '16px 20px',
+              padding: '16px 20px 14px',
               paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))',
-              background: 'var(--bg-surface)',
-              borderBottom: '1px solid var(--border-default)',
+              background: `
+                radial-gradient(circle at top right, rgba(212, 175, 55, 0.14), transparent 34%),
+                linear-gradient(180deg, rgba(16, 15, 20, 0.98), rgba(10, 10, 14, 0.98))
+              `,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
             }}
           >
             <motion.button
@@ -880,31 +889,79 @@ function RequirementsEditorModal({
               whileTap={{ scale: 0.9 }}
               onClick={handleSave}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--border-default)',
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.06)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <X size={20} color="var(--text-secondary)" />
+              <ArrowLeft size={18} color="var(--text-secondary)" />
             </motion.button>
 
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)' }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-main)', marginBottom: 2 }}>
                 Требования
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
                 {serviceName || 'Опишите детали в свободной форме'}
               </div>
             </div>
 
             <StatusPill tone={charCount > 0 ? 'good' : 'muted'} label={`${charCount} символов`} />
           </motion.div>
+
+          <div
+            style={{
+              padding: '12px 20px 14px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+              background: 'rgba(10, 10, 14, 0.9)',
+            }}
+          >
+            <div
+              style={{
+                ...getSectionShellStyle(true, true),
+                padding: '14px 14px 12px',
+                borderRadius: 18,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  background: 'rgba(212, 175, 55, 0.10)',
+                  border: '1px solid rgba(212, 175, 55, 0.16)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Sparkles size={16} color="var(--gold-300)" />
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', marginBottom: 4 }}>
+                    Чем точнее вводные, тем быстрее оценка
+                  </div>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-secondary)', marginBottom: 10 }}>
+                    Можно написать требования свободно или вставить готовую структуру и быстро заполнить её под себя.
+                  </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <StatusPill tone="accent" label={serviceName || 'Общий шаблон'} />
+                    <StatusPill tone="muted" label="объём" />
+                    <StatusPill tone="muted" label="оформление" />
+                    <StatusPill tone="muted" label="особые пожелания" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <motion.div
             initial={{ y: -10, opacity: 0 }}
@@ -914,8 +971,8 @@ function RequirementsEditorModal({
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              padding: '10px 20px',
-              borderBottom: '1px solid var(--border-subtle)',
+              padding: '12px 20px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
               flexWrap: 'wrap',
             }}
           >
@@ -938,10 +995,32 @@ function RequirementsEditorModal({
                 exit={{ height: 0, opacity: 0 }}
                 style={{
                   overflow: 'hidden',
-                  borderBottom: '1px solid var(--border-subtle)',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                 }}
               >
-                <div style={{ padding: '12px 20px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ padding: '12px 20px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{
+                    ...getInnerSurfaceStyle(true),
+                    padding: '14px 14px 12px',
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gold-300)', marginBottom: 8 }}>
+                      Быстрый каркас
+                    </div>
+                    <div style={{
+                      fontSize: 12.5,
+                      lineHeight: 1.6,
+                      color: 'var(--text-secondary)',
+                      whiteSpace: 'pre-wrap',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}>
+                      {templatePreview}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {Object.keys(REQUIREMENTS_TEMPLATES).map((key) => (
                     <motion.button
                       key={key}
@@ -949,19 +1028,20 @@ function RequirementsEditorModal({
                       whileTap={{ scale: 0.96 }}
                       onClick={() => handleTemplateInsert(key)}
                       style={{
-                        padding: '8px 12px',
+                        padding: '9px 13px',
                         fontSize: 12,
-                        fontWeight: 600,
-                        color: 'var(--text-secondary)',
-                        background: 'var(--bg-glass)',
-                        border: '1px solid var(--border-default)',
-                        borderRadius: 10,
+                        fontWeight: 700,
+                        color: key === primaryTemplateKey ? 'var(--gold-300)' : 'var(--text-secondary)',
+                        background: key === primaryTemplateKey ? 'rgba(212,175,55,0.10)' : 'var(--bg-glass)',
+                        border: `1px solid ${key === primaryTemplateKey ? 'rgba(212,175,55,0.18)' : 'var(--border-default)'}`,
+                        borderRadius: 12,
                         cursor: 'pointer',
                       }}
                     >
                       {getTemplateLabel(key)}
                     </motion.button>
                   ))}
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -976,36 +1056,73 @@ function RequirementsEditorModal({
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            <textarea
-              ref={textareaRef}
-              value={localValue}
-              onChange={(event) => setLocalValue(event.target.value)}
-              placeholder={placeholder}
+            <div
               style={{
-                width: '100%',
-                minHeight: 320,
-                height: '100%',
-                fontSize: 16,
-                fontFamily: "'Manrope', sans-serif",
-                color: 'var(--text-main)',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                lineHeight: 1.7,
-                padding: 0,
+                ...getSectionShellStyle(true),
+                padding: 16,
+                minHeight: '100%',
               }}
-              autoCapitalize="sentences"
-              autoCorrect="on"
-              spellCheck
-            />
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 12,
+                flexWrap: 'wrap',
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gold-300)', marginBottom: 4 }}>
+                    Поле описания
+                  </div>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                    Напишите своими словами или отредактируйте готовую структуру под задачу.
+                  </div>
+                </div>
+                <StatusPill tone={localValue.trim().length > 40 ? 'good' : 'accent'} label={localValue.trim().length > 40 ? 'Хватает для оценки' : 'Лучше добавить детали'} />
+              </div>
+
+              <div
+                style={{
+                  ...getInnerSurfaceStyle(localValue.trim().length > 0, !localValue.trim()),
+                  padding: '14px 14px 18px',
+                  minHeight: '56vh',
+                }}
+              >
+                <textarea
+                  ref={textareaRef}
+                  value={localValue}
+                  onChange={(event) => setLocalValue(event.target.value)}
+                  placeholder={placeholder}
+                  style={{
+                    width: '100%',
+                    minHeight: 'calc(56vh - 32px)',
+                    fontSize: 15.5,
+                    fontFamily: "'Manrope', sans-serif",
+                    color: 'var(--text-main)',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    resize: 'none',
+                    lineHeight: 1.72,
+                    padding: 0,
+                  }}
+                  autoCapitalize="sentences"
+                  autoCorrect="on"
+                  spellCheck
+                />
+              </div>
+            </div>
           </div>
 
           <div style={{
-            padding: '14px 20px calc(14px + env(safe-area-inset-bottom, 0px))',
-            borderTop: '1px solid var(--border-subtle)',
-            background: 'var(--bg-surface)',
+            padding: '12px 20px calc(14px + env(safe-area-inset-bottom, 0px))',
+            borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+            background: 'linear-gradient(180deg, rgba(10, 10, 14, 0.92), rgba(8, 8, 12, 0.98))',
           }}>
+            <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', marginBottom: 10 }}>
+              Сохраним текст в заявку и покажем его менеджеру без обрезки.
+            </div>
             <motion.button
               type="button"
               whileTap={{ scale: 0.98 }}

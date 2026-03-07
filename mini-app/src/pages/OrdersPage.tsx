@@ -251,12 +251,6 @@ function formatDeadline(deadline: string | null | undefined): string {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
-function formatShortDate(dateString: string | null | undefined): string {
-  const date = parseDateSafe(dateString)
-  if (!date) return 'Без даты'
-  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-}
-
 function formatMoney(amount: number | null | undefined): string {
   return `${Math.max(0, Math.round(amount || 0)).toLocaleString('ru-RU')} ₽`
 }
@@ -665,51 +659,6 @@ function OrdersSection({
   )
 }
 
-function MetricTile({
-  label,
-  value,
-  accent,
-}: {
-  label: string
-  value: string
-  accent?: string
-}) {
-  return (
-    <div
-      style={{
-        padding: '12px 12px 10px',
-        borderRadius: 16,
-        background: 'rgba(255,255,255,0.035)',
-        border: '1px solid rgba(255,255,255,0.05)',
-        minWidth: 0,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 10.5,
-          fontWeight: 700,
-          color: 'rgba(255,255,255,0.44)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          marginBottom: 6,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 700,
-          lineHeight: 1.3,
-          color: accent || 'var(--text-main)',
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  )
-}
-
 function ActionSpotlight({
   order,
   payableCount,
@@ -919,17 +868,17 @@ function OrderCard({
       style={{
         ...getSurfaceStyle(meta.needsAction),
         width: '100%',
-        padding: '16px',
-        marginBottom: 12,
+        padding: '14px',
+        marginBottom: 10,
         cursor: 'pointer',
         textAlign: 'left',
       }}
     >
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         <div style={{
-          width: 46,
-          height: 46,
-          borderRadius: 16,
+          width: 42,
+          height: 42,
+          borderRadius: 14,
           background: meta.chipBackground,
           border: `1px solid ${meta.chipBorder}`,
           display: 'flex',
@@ -946,7 +895,7 @@ function OrderCard({
             alignItems: 'center',
             gap: 8,
             justifyContent: 'space-between',
-            marginBottom: 10,
+            marginBottom: 8,
             flexWrap: 'wrap',
           }}>
             <div style={{
@@ -956,7 +905,7 @@ function OrderCard({
               minWidth: 0,
             }}>
               <span style={{
-                fontSize: 11,
+                fontSize: 10.5,
                 fontWeight: 700,
                 color: 'rgba(255,255,255,0.45)',
                 letterSpacing: '0.08em',
@@ -996,11 +945,11 @@ function OrderCard({
           </div>
 
           <div style={{
-            fontSize: 17,
+            fontSize: 16,
             fontWeight: 700,
             color: 'var(--text-main)',
             lineHeight: 1.35,
-            marginBottom: 6,
+            marginBottom: 4,
             display: '-webkit-box',
             WebkitBoxOrient: 'vertical',
             WebkitLineClamp: 2,
@@ -1010,98 +959,63 @@ function OrderCard({
           </div>
 
           <div style={{
-            fontSize: 13,
+            fontSize: 12.5,
             lineHeight: 1.55,
             color: 'var(--text-secondary)',
-            marginBottom: 12,
+            marginBottom: 10,
             display: '-webkit-box',
             WebkitBoxOrient: 'vertical',
-            WebkitLineClamp: 2,
+            WebkitLineClamp: 1,
             overflow: 'hidden',
           }}>
             {getDisplaySubtitle(order)}
           </div>
 
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            display: 'flex',
+            flexWrap: 'wrap',
             gap: 8,
-            marginBottom: 14,
+            marginBottom: 12,
           }}>
-            <MetricTile
-              label="Срок"
-              value={formatDeadline(order.deadline)}
-              accent={getHoursUntilDeadline(order.deadline) !== null && (getHoursUntilDeadline(order.deadline) ?? 999) <= 24
-                ? meta.color
-                : undefined}
-            />
-            <MetricTile
-              label={amountLabel}
-              value={formatMoney(amount)}
-              accent={meta.needsAction ? 'var(--gold-300)' : undefined}
-            />
-            <MetricTile
-              label="Создан"
-              value={formatShortDate(order.created_at)}
-            />
-          </div>
-
-          <div style={{
-            padding: '12px 14px',
-            borderRadius: 16,
-            background: 'rgba(255,255,255,0.035)',
-            border: '1px solid rgba(255,255,255,0.05)',
-            marginBottom: 14,
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-              marginBottom: 6,
-              flexWrap: 'wrap',
-            }}>
-              <div style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.44)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-              }}>
-                Следующий шаг
-              </div>
-              <div style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: meta.color,
-              }}>
-                {stepLabel}
-              </div>
-            </div>
-
-            <div style={{
-              fontSize: 13,
-              lineHeight: 1.55,
-              color: 'var(--text-main)',
-              marginBottom: order.files_url || progressValue ? 8 : 0,
-            }}>
-              {meta.hint}
-            </div>
-
-            {(order.files_url || progressValue) && (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {order.files_url && <MetaChip icon={FileText} label="Есть вложения" />}
-                {progressValue && <MetaChip icon={Activity} label={`Готовность ${progressValue}`} />}
-              </div>
-            )}
+            <MetaChip icon={Clock3} label={formatDeadline(order.deadline)} />
+            <MetaChip icon={meta.needsAction ? CreditCard : FolderOpen} label={`${amountLabel}: ${formatMoney(amount)}`} />
+            <MetaChip icon={Activity} label={stepLabel} />
+            {order.files_url && <MetaChip icon={FileText} label="Есть файлы" />}
+            {progressValue && <MetaChip icon={Activity} label={`Готовность ${progressValue}`} />}
           </div>
 
           <div style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: 12,
           }}>
-            <StepTrack step={meta.step} color={meta.color} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+              <StepTrack step={meta.step} color={meta.color} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'rgba(255,255,255,0.42)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: 2,
+                }}>
+                  Следующий шаг
+                </div>
+                <div style={{
+                  fontSize: 12.5,
+                  lineHeight: 1.5,
+                  color: 'var(--text-main)',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 2,
+                  overflow: 'hidden',
+                }}>
+                  {meta.hint}
+                </div>
+              </div>
+            </div>
 
             {meta.needsAction ? (
               <motion.button

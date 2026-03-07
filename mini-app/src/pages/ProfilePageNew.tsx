@@ -713,11 +713,11 @@ export function ProfilePageNew({ user }: Props) {
     [user.orders]
   )
   const latestTransactions = useMemo(
-    () => [...user.transactions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4),
+    () => [...user.transactions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 3),
     [user.transactions]
   )
   const activeVouchers = useMemo(
-    () => club.activeVouchers.slice(0, 3),
+    () => club.activeVouchers.slice(0, 2),
     [club.activeVouchers]
   )
 
@@ -861,7 +861,7 @@ export function ProfilePageNew({ user }: Props) {
             alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: 12,
-            marginBottom: 18,
+            marginBottom: 14,
           }}
         >
           <div>
@@ -925,9 +925,9 @@ export function ProfilePageNew({ user }: Props) {
           style={{
             position: 'relative',
             width: '100%',
-            padding: '24px 20px 20px',
+            padding: '20px 18px 18px',
             borderRadius: 28,
-            marginBottom: 22,
+            marginBottom: 18,
             overflow: 'hidden',
             border: '1px solid rgba(212,175,55,0.16)',
             isolation: 'isolate',
@@ -963,7 +963,7 @@ export function ProfilePageNew({ user }: Props) {
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <span style={{ fontSize: 30 }}>{user.rank.emoji || '✨'}</span>
+                  <Crown size={28} color="var(--gold-300)" />
                 )}
               </div>
 
@@ -1012,7 +1012,7 @@ export function ProfilePageNew({ user }: Props) {
                 <Gift size={15} color="#d4af37" />
                 {club.dailyBonus.status === 'available'
                   ? 'Ежедневный бонус уже можно забрать'
-                  : `${club.points} баллов клуба и ${club.activeVouchers.length} ваучеров`}
+                  : `${club.points} бонусных баллов и ${club.activeVouchers.length} ваучеров`}
               </div>
             </div>
 
@@ -1065,14 +1065,14 @@ export function ProfilePageNew({ user }: Props) {
           </div>
         </motion.section>
 
-        <section style={{ marginBottom: 22 }}>
+        <section style={{ marginBottom: 18 }}>
           <SectionTitle
             title="Быстрый доступ"
             caption="Ключевые разделы, к которым вы возвращаетесь чаще всего."
           />
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))',
             gap: 12,
           }}>
             <ActionTile
@@ -1103,10 +1103,10 @@ export function ProfilePageNew({ user }: Props) {
           </div>
         </section>
 
-        <section style={{ marginBottom: 22 }}>
+        <section style={{ marginBottom: 18 }}>
           <SectionTitle
             title="Статус и условия"
-            caption="Кэшбэк, персональная скидка, бонусный баланс и текущий уровень без лишних терминов."
+            caption="Скидка, кэшбэк, бонусы и текущие условия клиента."
           />
           <div style={{ display: 'grid', gap: 12 }}>
             <div style={{ ...getSurfaceStyle(), padding: '18px' }}>
@@ -1157,98 +1157,38 @@ export function ProfilePageNew({ user }: Props) {
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 12,
-            }}>
-              <div style={{ ...getSurfaceStyle(), padding: '18px' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginBottom: 12,
-                }}>
-                  <BadgePercent size={18} color="#86efac" />
-                  <div style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: 'var(--text-main)',
-                  }}>
-                    Персональная скидка
-                  </div>
-                </div>
-                  <div style={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: '#86efac',
-                    marginBottom: 6,
-                  }}>
-                  {loyaltyDiscount}%
-                </div>
-                <div style={{
-                  fontSize: 12.5,
-                  lineHeight: 1.55,
-                  color: 'var(--text-secondary)',
-                }}>
-                  {user.loyalty.orders_to_next > 0
-                    ? `До следующего уровня лояльности: ${user.loyalty.orders_to_next} заказов.`
-                    : 'Максимальная скидка уже активна.'}
-                </div>
-              </div>
-
-              <div style={{ ...getSurfaceStyle(), padding: '18px' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginBottom: 12,
-                }}>
-                  <Gift size={18} color="#fcd34d" />
-                  <div style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: 'var(--text-main)',
-                  }}>
-                    Баллы клуба
-                  </div>
-                </div>
-                <div style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: '#fcd34d',
-                  marginBottom: 6,
-                }}>
-                  {club.points}
-                </div>
-                <div style={{
-                  fontSize: 12.5,
-                  lineHeight: 1.55,
-                  color: 'var(--text-secondary)',
-                  marginBottom: 12,
-                }}>
-                  {club.dailyBonus.status === 'available'
-                    ? `Уровень клуба: ${clubLevelLabel.toLowerCase()}. Ежедневный бонус уже доступен.`
-                    : `Уровень клуба: ${clubLevelLabel.toLowerCase()}. Серия бонусов: ${formatCountWithWord(club.dailyBonus.streakDay, 'день', 'дня', 'дней')}.`}
-                </div>
-                <ProgressLine
-                  value={club.levelProgress}
-                  fill="linear-gradient(90deg, #93c5fd, #c4b5fd)"
-                  glowColor="rgba(147, 197, 253, 0.28)"
-                />
-              </div>
-            </div>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
               gap: 12,
             }}>
               <StatCard
+                label="Скидка"
+                value={`${loyaltyDiscount}%`}
+                accent="#86efac"
+                helper={user.loyalty.orders_to_next > 0
+                  ? `До следующего уровня: ${user.loyalty.orders_to_next} заказов`
+                  : 'Максимальная скидка уже активна'}
+              />
+              <StatCard
+                label="Кэшбэк"
+                value={`${cashbackPercent}%`}
+                accent="var(--gold-300)"
+                helper="Начисляется после оплаченных заказов"
+              />
+              <StatCard
+                label="Баллы"
+                value={String(club.points)}
+                accent="#fcd34d"
+                helper={club.dailyBonus.status === 'available'
+                  ? 'Ежедневный бонус уже доступен'
+                  : `${clubLevelLabel} • серия ${formatCountWithWord(club.dailyBonus.streakDay, 'день', 'дня', 'дней')}`}
+              />
+              <StatCard
                 label="Бонусный баланс"
                 value={formatMoney(bonusBalance)}
-                accent="var(--gold-300)"
+                accent="#93c5fd"
                 helper={user.bonus_expiry?.has_expiry && user.bonus_expiry.days_left !== undefined
-                  ? `${formatExpiryHint(user.bonus_expiry.days_left)}`
-                  : 'Доступен для оплаты и скидок'}
+                  ? formatExpiryHint(user.bonus_expiry.days_left)
+                  : 'Можно списать в оплату'}
               />
               <StatCard
                 label="Реферальные бонусы"
@@ -1256,14 +1196,20 @@ export function ProfilePageNew({ user }: Props) {
                 accent="#93c5fd"
                 helper={referralsCount > 0 ? `${referralsCount} приглашено` : 'Пока без приглашений'}
               />
+              <StatCard
+                label="Ваучеры"
+                value={String(club.activeVouchers.length)}
+                accent="#fcd34d"
+                helper={club.activeVouchers.length > 0 ? 'Можно применить в новой заявке' : 'Появятся после обмена баллов'}
+              />
             </div>
           </div>
         </section>
 
-        <section style={{ marginBottom: 22 }}>
+        <section style={{ marginBottom: 18 }}>
           <SectionTitle
             title="Бонусы и ваучеры"
-            caption="Баланс, последние операции и ваучеры, которые можно применить к следующему заказу."
+            caption="Что доступно сейчас и что можно применить в следующем заказе."
           />
           <div style={{
             display: 'grid',
@@ -1493,7 +1439,7 @@ export function ProfilePageNew({ user }: Props) {
           </div>
         </section>
 
-        <section style={{ marginBottom: 22 }}>
+        <section style={{ marginBottom: 18 }}>
           <SectionTitle
             title="Реферальная программа"
             caption="Отсюда можно сразу скопировать ссылку, отправить её в Telegram или показать QR."
@@ -1571,7 +1517,7 @@ export function ProfilePageNew({ user }: Props) {
           </div>
         </section>
 
-        <section style={{ marginBottom: 120 }}>
+        <section style={{ marginBottom: 104 }}>
           <SectionTitle
             title="Поддержка и сервис"
             caption="Помощь по заказам, условия клуба и история бонусной активности."

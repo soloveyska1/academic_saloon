@@ -93,6 +93,7 @@ import { useWebSocketContext } from '../hooks/useWebSocket'
 import { useModalRegistration } from '../contexts/NavigationContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { useToast } from '../components/ui/Toast'
+import homeStyles from './HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              DESIGN SYSTEM V8
@@ -197,6 +198,19 @@ const WORK_TYPE_LABELS: Record<string, string> = {
   other: 'Работа',
 }
 
+const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
+  masters: Award,
+  diploma: FileCheck,
+  coursework: FileText,
+  essay: Sparkles,
+  report: File,
+  control: CheckCircle2,
+  presentation: Image,
+  practice: CalendarCheck,
+  photo_task: Image,
+  other: FileText,
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -243,6 +257,10 @@ const formatDeadlineRu = (deadline: string): string => {
   if (lower === 'today' || lower === 'сегодня') return 'Сегодня'
   if (lower === 'tomorrow' || lower === 'завтра') return 'Завтра'
   if (lower === 'yesterday' || lower === 'вчера') return 'Вчера'
+  if (lower === '3days') return '2-3 дня'
+  if (lower === 'week') return 'Неделя'
+  if (lower === '2weeks') return '2 недели'
+  if (lower === 'month') return 'Месяц+'
 
   // Try to parse as date
   const date = new Date(deadline)
@@ -255,6 +273,23 @@ const formatDeadlineRu = (deadline: string): string => {
 
   // Return as-is if can't parse
   return deadline
+}
+
+const getOrderHeadline = (order: Order): string =>
+  order.topic?.trim() || order.subject?.trim() || 'Тема уточняется в заявке'
+
+const getOrderSubline = (order: Order): string => {
+  const parts: string[] = []
+
+  if (order.work_type_label) {
+    parts.push(order.work_type_label)
+  }
+
+  if (order.subject?.trim() && order.subject.trim() !== getOrderHeadline(order)) {
+    parts.push(`Предмет: ${order.subject.trim()}`)
+  }
+
+  return parts.join(' • ') || 'Все детали можно уточнить в чате заказа'
 }
 
 // Countdown hook
@@ -560,6 +595,13 @@ interface HeroSummaryProps {
 const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryProps) {
   const isAwaitingPayment = ['waiting_payment', 'confirmed'].includes(order.status)
   const statusConfig = STATUS_CONFIG[order.status]
+  const StatusIcon = statusConfig.icon
+  const WorkTypeIcon = WORK_TYPE_ICONS[order.work_type] || WORK_TYPE_ICONS.other
+  const workTypeLabel = order.work_type_label || WORK_TYPE_LABELS[order.work_type] || 'Заказ'
+  const headline = getOrderHeadline(order)
+  const subline = getOrderSubline(order)
+  const totalPrice = order.final_price || order.price || 0
+  const remainingAmount = Math.max(totalPrice - (order.paid_amount || 0), 0)
 
   // Urgency colors for countdown
   const urgencyColors = {
@@ -573,151 +615,165 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
     <div
       style={{
         margin: `0 ${DS.space.lg}px ${DS.space.lg}px`,
-        padding: DS.space.xl,
-        borderRadius: DS.radius.xl,
-        background: DS.colors.bgCard,
+        padding: 20,
+        borderRadius: 28,
+        background: `
+          radial-gradient(circle at top right, rgba(212,175,55,0.12), transparent 36%),
+          linear-gradient(180deg, rgba(18,18,22,0.97), rgba(10,10,14,0.96))
+        `,
         border: `1px solid ${DS.colors.border}`,
+        boxShadow: '0 24px 48px -40px rgba(0,0,0,0.82)',
       }}
     >
-      {/* Order Description */}
-      <div style={{ marginBottom: DS.space.lg }}>
-        <p
-          style={{
-            fontSize: DS.fontSize.base,
-            color: DS.colors.textPrimary,
-            margin: 0,
-            lineHeight: 1.5,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {order.topic || order.subject || 'Описание заказа'}
-        </p>
-      </div>
-
-      {/* Quick Info Chips */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: DS.space.sm, marginBottom: DS.space.lg }}>
-        {order.subject && (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
           <div
             style={{
-              padding: `${DS.space.xs}px ${DS.space.md}px`,
-              borderRadius: DS.radius.sm,
-              background: 'rgba(59,130,246,0.1)',
-              border: '1px solid rgba(59,130,246,0.2)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              borderRadius: 999,
+              background: 'rgba(9, 9, 11, 0.58)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'var(--gold-100)',
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
             }}
           >
-            <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.info }}>
-              {order.subject}
-            </span>
-          </div>
-        )}
-        {order.deadline && (
-          <div
-            style={{
-              padding: `${DS.space.xs}px ${DS.space.md}px`,
-              borderRadius: DS.radius.sm,
-              background: 'rgba(139,92,246,0.1)',
-              border: '1px solid rgba(139,92,246,0.2)',
-            }}
-          >
-            <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.purple }}>
-              Сдать: {formatDeadlineRu(order.deadline)}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Payment Countdown Block - Only for awaiting_payment status */}
-      {isAwaitingPayment && countdown && (
-        <div
-          style={{
-            padding: DS.space.lg,
-            borderRadius: DS.radius.lg,
-            background: `linear-gradient(135deg, ${urgencyColors[countdown.urgency]}15, ${urgencyColors[countdown.urgency]}05)`,
-            border: `1px solid ${urgencyColors[countdown.urgency]}30`,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: DS.space.md }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
-              {countdown.urgency === 'critical' ? (
-                <Flame size={16} color={urgencyColors[countdown.urgency]} />
-              ) : countdown.urgency === 'warning' ? (
-                <AlertTriangle size={16} color={urgencyColors[countdown.urgency]} />
-              ) : (
-                <Clock size={16} color={urgencyColors[countdown.urgency]} />
-              )}
-              <span style={{ fontSize: DS.fontSize.sm, color: DS.colors.textSecondary }}>
-                Оплатить до
-              </span>
-            </div>
-            <span
-              style={{
-                fontSize: DS.fontSize['2xl'],
-                fontWeight: 700,
-                fontFamily: 'var(--font-mono)',
-                color: urgencyColors[countdown.urgency],
-              }}
-            >
-              {countdown.formatted}
-            </span>
+            <WorkTypeIcon size={13} color="var(--gold-300)" />
+            {workTypeLabel}
           </div>
 
-          {/* Progress Bar */}
           <div
             style={{
-              height: 4,
-              borderRadius: 2,
-              background: 'rgba(255,255,255,0.1)',
-              overflow: 'hidden',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 12px',
+              borderRadius: 999,
+              background: statusConfig.bgColor,
+              border: `1px solid ${statusConfig.borderColor}`,
+              color: statusConfig.color,
+              fontSize: 11.5,
+              fontWeight: 700,
             }}
           >
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${countdown.progress}%` }}
-              transition={{ duration: 0.5 }}
-              style={{
-                height: '100%',
-                borderRadius: 2,
-                background: `linear-gradient(90deg, ${urgencyColors[countdown.urgency]}, ${urgencyColors[countdown.urgency]}80)`,
-              }}
-            />
+            <StatusIcon size={13} className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''} />
+            {statusConfig.label}
           </div>
         </div>
-      )}
 
-      {/* Price Display */}
-      {order.final_price && order.final_price > 0 && (
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop: DS.space.lg,
-            paddingTop: DS.space.lg,
-            borderTop: `1px solid ${DS.colors.border}`,
+            padding: '8px 12px',
+            borderRadius: 16,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            color: 'var(--gold-300)',
+            fontSize: 14,
+            fontWeight: 700,
+            flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: DS.fontSize.base, color: DS.colors.textSecondary }}>
-            Стоимость заказа
-          </span>
-          <div style={{ textAlign: 'right' }}>
-            <span
+          #{order.id}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div
+          style={{
+            fontSize: 24,
+            fontWeight: 800,
+            color: DS.colors.textPrimary,
+            lineHeight: 1.15,
+            marginBottom: 8,
+          }}
+        >
+          {headline}
+        </div>
+
+        <div
+          style={{
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: DS.colors.textSecondary,
+          }}
+        >
+          {subline}
+        </div>
+      </div>
+
+      <div className={homeStyles.heroProofRail} style={{ marginBottom: isAwaitingPayment && countdown ? 14 : 0 }}>
+        {order.deadline && (
+          <div className={homeStyles.heroProofItem}>
+            <Clock size={15} color="#d4af37" />
+            Срок: {formatDeadlineRu(order.deadline)}
+          </div>
+        )}
+        {totalPrice > 0 && (
+          <div className={homeStyles.heroProofItem}>
+            <Banknote size={15} color="#d4af37" />
+            {remainingAmount > 0 && remainingAmount !== totalPrice
+              ? `Осталось оплатить ${formatPrice(remainingAmount)} ₽`
+              : `Стоимость ${formatPrice(totalPrice)} ₽`}
+          </div>
+        )}
+        <div className={homeStyles.heroProofItem}>
+          <Sparkles size={15} color="#d4af37" />
+          {order.files_url ? 'Файлы будут в этом заказе' : 'Все детали и правки ведём внутри заказа'}
+        </div>
+      </div>
+
+      {isAwaitingPayment && countdown && (
+        <div>
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 20,
+              background: `linear-gradient(135deg, ${urgencyColors[countdown.urgency]}15, rgba(255,255,255,0.03))`,
+              border: `1px solid ${urgencyColors[countdown.urgency]}30`,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {countdown.urgency === 'critical' ? (
+                  <Flame size={16} color={urgencyColors[countdown.urgency]} />
+                ) : countdown.urgency === 'warning' ? (
+                  <AlertTriangle size={16} color={urgencyColors[countdown.urgency]} />
+                ) : (
+                  <Clock size={16} color={urgencyColors[countdown.urgency]} />
+                )}
+                <span style={{ fontSize: 13, fontWeight: 700, color: DS.colors.textPrimary }}>
+                  Оплатить до {countdown.formatted}
+                </span>
+              </div>
+              <span style={{ fontSize: 12.5, color: DS.colors.textSecondary }}>
+                После оплаты сразу запускаем заказ
+              </span>
+            </div>
+
+            <div
               style={{
-                fontSize: DS.fontSize['3xl'],
-                fontWeight: 700,
-                fontFamily: 'var(--font-mono)',
-                color: DS.colors.gold,
+                height: 5,
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.08)',
+                overflow: 'hidden',
               }}
             >
-              {formatPrice(order.final_price)} ₽
-            </span>
-            {order.paid_amount !== undefined && order.paid_amount > 0 && order.paid_amount < order.final_price && (
-              <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.success }}>
-                Оплачено: {formatPrice(order.paid_amount)} ₽
-              </div>
-            )}
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${countdown.progress}%` }}
+                transition={{ duration: 0.5 }}
+                style={{
+                  height: '100%',
+                  borderRadius: 999,
+                  background: `linear-gradient(90deg, ${urgencyColors[countdown.urgency]}, ${urgencyColors[countdown.urgency]}80)`,
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -2254,10 +2310,10 @@ const TRUST_CHIPS: TrustChip[] = [
   {
     id: 'secure',
     icon: Shield,
-    label: 'Безопасно',
+    label: 'Реквизиты по заказу',
     color: DS.colors.success,
     bgColor: 'rgba(34,197,94,0.12)',
-    details: 'Все платежи защищены. Мы не храним данные ваших карт.',
+    details: 'Показываем только реквизиты и сумму по текущему заказу. После отправки перевода платёж уходит на ручную проверку.',
   },
   {
     id: 'fast',
@@ -2265,7 +2321,7 @@ const TRUST_CHIPS: TrustChip[] = [
     label: '5-15 мин',
     color: DS.colors.purple,
     bgColor: 'rgba(139,92,246,0.12)',
-    details: 'Среднее время проверки оплаты — от 5 до 15 минут.',
+    details: 'Обычно подтверждаем оплату за 5-15 минут. Если нужно дольше, статус всё равно обновится автоматически.',
   },
 ]
 
@@ -2407,18 +2463,21 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
       style={{
         margin: `0 ${DS.space.lg}px`,
         marginBottom: DS.space.lg,
-        padding: DS.space.lg,
-        borderRadius: DS.radius.xl,
-        background: `linear-gradient(135deg, rgba(6,182,212,0.15), rgba(6,182,212,0.05))`,
-        border: `1px solid rgba(6,182,212,0.25)`,
+        padding: 18,
+        borderRadius: 24,
+        background: `
+          radial-gradient(circle at top right, rgba(6,182,212,0.16), transparent 34%),
+          linear-gradient(180deg, rgba(14,20,26,0.98), rgba(10,12,18,0.96))
+        `,
+        border: `1px solid rgba(6,182,212,0.22)`,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
         <div
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: DS.radius.lg,
+            width: 46,
+            height: 46,
+            borderRadius: 16,
             background: 'rgba(6,182,212,0.2)',
             display: 'flex',
             alignItems: 'center',
@@ -2429,59 +2488,20 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
           <Loader2 size={24} color={DS.colors.cyan} className="animate-spin" />
         </div>
         <div style={{ flex: 1 }}>
-          <h3
-            style={{
-              fontSize: DS.fontSize.lg,
-              fontWeight: 700,
-              color: DS.colors.textPrimary,
-              margin: 0,
-            }}
-          >
-            Проверяем оплату
-          </h3>
-          <p
-            style={{
-              fontSize: DS.fontSize.sm,
-              color: DS.colors.textSecondary,
-              margin: 0,
-              marginTop: 2,
-            }}
-          >
-            Обычно это занимает {estimatedMinutes} минут
-          </p>
+          <div style={{ fontSize: 16, fontWeight: 700, color: DS.colors.textPrimary, marginBottom: 4 }}>
+            Платёж на проверке
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.55, color: DS.colors.textSecondary }}>
+            Деньги уже отправлены. Обычно подтверждаем оплату за {estimatedMinutes} минут и переводим заказ в работу автоматически.
+          </div>
         </div>
       </div>
 
-      {/* Progress dots */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: DS.space.sm,
-          marginTop: DS.space.lg,
-        }}
-      >
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.4, 1, 0.4],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              delay: i * 0.3,
-            }}
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              background: DS.colors.cyan,
-            }}
-          />
-        ))}
+      <div className={homeStyles.heroProofRail} style={{ marginBottom: 0 }}>
+        <div className={homeStyles.heroProofItem}>
+          <ShieldCheck size={14} color="#06b6d4" />
+          Статус обновится сам, ничего дополнительно отправлять не нужно
+        </div>
       </div>
     </motion.div>
   )
@@ -2841,77 +2861,48 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
         </span>
       </div>
 
-      {/* Card */}
       <div
+        className={homeStyles.voidGlass}
         style={{
-          padding: DS.space.lg,
-          borderRadius: DS.radius.xl,
-          background: DS.colors.bgCard,
+          padding: 18,
+          borderRadius: 24,
           border: `1px solid ${DS.colors.border}`,
         }}
       >
-        <div style={{ display: 'flex', gap: DS.space.lg }}>
-          {/* Avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
           <div
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: DS.radius.lg,
-              background: `linear-gradient(135deg, ${DS.colors.gold}30, ${DS.colors.goldDark}20)`,
-              border: `2px solid ${DS.colors.borderGold}`,
+              width: 54,
+              height: 54,
+              borderRadius: 18,
+              background: `linear-gradient(135deg, ${DS.colors.gold}26, ${DS.colors.goldDark}18)`,
+              border: `1px solid ${DS.colors.borderGold}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <span
-              style={{
-                fontSize: DS.fontSize['2xl'],
-                fontWeight: 700,
-                color: DS.colors.gold,
-                fontFamily: 'var(--font-serif)',
-              }}
-            >
-              С
-            </span>
+            <MessageCircle size={22} color={DS.colors.gold} />
           </div>
 
-          {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: DS.fontSize.lg,
-                fontWeight: 700,
-                color: DS.colors.textPrimary,
-                marginBottom: 2,
-              }}
-            >
-              {SUPPORT_CONFIG.name}
+            <div style={{ fontSize: 17, fontWeight: 700, color: DS.colors.textPrimary, marginBottom: 4 }}>
+              Поддержка по заказу
             </div>
-            <div
-              style={{
-                fontSize: DS.fontSize.sm,
-                color: DS.colors.textSecondary,
-                marginBottom: DS.space.sm,
-              }}
-            >
-              {SUPPORT_CONFIG.role}
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: DS.colors.textSecondary, marginBottom: 8 }}>
+              По оплате, срокам, правкам и всем уточнениям по текущему заказу.
             </div>
-
-            {/* Stats Row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.xs }}>
-              <Clock size={12} color={DS.colors.success} />
-              <span style={{ fontSize: DS.fontSize.xs, color: DS.colors.textSecondary }}>
-                Ответ {SUPPORT_CONFIG.responseTime}
-              </span>
+            <div className={homeStyles.heroProofRail} style={{ marginBottom: 0 }}>
+              <div className={homeStyles.heroProofItem}>
+                <Clock size={14} color="#22c55e" />
+                Ответ обычно {SUPPORT_CONFIG.responseTime}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Buttons */}
-        <div style={{ display: 'flex', gap: DS.space.sm, marginTop: DS.space.lg }}>
-          {/* In-app chat button */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 10 }}>
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={() => {
@@ -2919,56 +2910,44 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
               onOpenChat()
             }}
             style={{
-              flex: 1,
-              padding: `${DS.space.md}px ${DS.space.lg}px`,
-              borderRadius: DS.radius.lg,
+              minHeight: 52,
+              borderRadius: 18,
               background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: DS.space.sm,
-              boxShadow: '0 4px 12px rgba(212,175,55,0.3)',
+              gap: 8,
+              color: '#0a0a0c',
+              fontSize: 15,
+              fontWeight: 700,
             }}
           >
             <MessageCircle size={18} color="#0a0a0c" />
-            <span
-              style={{
-                fontSize: DS.fontSize.base,
-                fontWeight: 600,
-                color: '#0a0a0c',
-              }}
-            >
-              Написать
-            </span>
+            Написать в чат
           </motion.button>
 
-          {/* Telegram button */}
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={handleTelegramClick}
             style={{
-              padding: `${DS.space.md}px ${DS.space.lg}px`,
-              borderRadius: DS.radius.lg,
-              background: DS.colors.bgElevated,
+              minHeight: 52,
+              borderRadius: 18,
+              background: 'rgba(255,255,255,0.04)',
               border: `1px solid ${DS.colors.borderLight}`,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: DS.space.sm,
+              gap: 8,
+              color: DS.colors.textSecondary,
+              fontSize: 14,
+              fontWeight: 600,
             }}
           >
-            <Send size={18} color={DS.colors.info} />
-            <span
-              style={{
-                fontSize: DS.fontSize.sm,
-                color: DS.colors.textSecondary,
-              }}
-            >
-              @{SUPPORT_CONFIG.telegramUsername}
-            </span>
+            <Send size={16} color={DS.colors.info} />
+            @{SUPPORT_CONFIG.telegramUsername}
           </motion.button>
         </div>
       </div>
@@ -2992,22 +2971,22 @@ const GUARANTEES: Guarantee[] = [
   {
     id: 'refund',
     icon: Banknote,
-    title: 'Возврат',
-    description: 'Полный возврат, если работа не соответствует требованиям',
+    title: 'Возврат до старта',
+    description: 'Полный возврат возможен только если работа ещё не начата. После старта заказа доводим результат до требований.',
     color: DS.colors.success,
   },
   {
     id: 'revisions',
     icon: RotateCcw,
-    title: 'Правки',
-    description: 'Бесплатные доработки до полного соответствия ТЗ',
+    title: '3 круга правок',
+    description: 'В стоимость включены 3 бесплатных круга правок. Дальнейшие доработки обсуждаем отдельно.',
     color: DS.colors.info,
   },
   {
     id: 'deadline',
     icon: CalendarCheck,
-    title: 'Сроки',
-    description: 'Гарантируем выполнение точно в указанный срок',
+    title: 'Срок под контролем',
+    description: 'Срок фиксируем при подтверждении заказа и ведём работу с приоритетом под него.',
     color: DS.colors.purple,
   },
 ]
@@ -3065,16 +3044,16 @@ const GuaranteesRow = memo(function GuaranteesRow() {
                 setExpandedId(isExpanded ? null : g.id)
               }}
               style={{
-                padding: DS.space.md,
-                borderRadius: DS.radius.lg,
+                padding: 12,
+                borderRadius: 18,
                 background: isExpanded ? `${g.color}15` : DS.colors.bgCard,
                 border: `1px solid ${isExpanded ? `${g.color}40` : DS.colors.border}`,
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                gap: DS.space.xs,
-                textAlign: 'center',
+                alignItems: 'flex-start',
+                gap: 8,
+                textAlign: 'left',
               }}
             >
               <div
@@ -3088,8 +3067,8 @@ const GuaranteesRow = memo(function GuaranteesRow() {
                   justifyContent: 'center',
                 }}
               >
-                <Icon size={18} color={g.color} />
-              </div>
+                  <Icon size={18} color={g.color} />
+                </div>
               <span
                 style={{
                   fontSize: DS.fontSize.sm,
@@ -3098,6 +3077,15 @@ const GuaranteesRow = memo(function GuaranteesRow() {
                 }}
               >
                 {g.title}
+              </span>
+              <span
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  color: isExpanded ? DS.colors.textSecondary : DS.colors.textMuted,
+                }}
+              >
+                {g.id === 'refund' ? 'Если работа не стартовала' : g.id === 'revisions' ? '3 бесплатных круга' : 'Фиксируем при подтверждении'}
               </span>
             </motion.button>
           )
