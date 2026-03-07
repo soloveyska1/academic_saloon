@@ -1092,8 +1092,42 @@ interface DeadlineStepProps {
 }
 
 function DeadlineStep({ selected, onSelect, isDark }: DeadlineStepProps) {
+  void isDark
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          padding: '16px 16px 14px',
+          borderRadius: 20,
+          background: `
+            radial-gradient(circle at top right, rgba(212, 175, 55, 0.10), transparent 32%),
+            linear-gradient(180deg, rgba(19, 18, 24, 0.96), rgba(10, 10, 16, 0.94))
+          `,
+          border: '1px solid rgba(212, 175, 55, 0.14)',
+          boxShadow: '0 18px 36px -34px rgba(0, 0, 0, 0.88)',
+        }}
+      >
+        <div style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: 'var(--text-main)',
+          marginBottom: 6,
+        }}>
+          Выберите комфортный темп
+        </div>
+        <div style={{
+          fontSize: 13,
+          lineHeight: 1.55,
+          color: 'var(--text-secondary)',
+        }}>
+          Срочные варианты повышают приоритет команды и стоимость. Если запас по времени есть,
+          лучше брать спокойный режим без лишней наценки.
+        </div>
+      </motion.div>
+
       {DEADLINES.map((dl, i) => (
         <DeadlineCard
           key={dl.value}
@@ -1121,6 +1155,8 @@ interface DeadlineCardProps {
 }
 
 function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCardProps) {
+  void isDark
+
   const getIcon = () => {
     if (config.urgency >= 85) return Flame
     if (config.urgency >= 60) return Rocket
@@ -1129,121 +1165,195 @@ function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCar
     return Hourglass
   }
   const Icon = getIcon()
-
-  const theme = {
-    cardBg: isDark ? 'rgba(18, 18, 22, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-    cardBgSelected: isDark
-      ? `linear-gradient(135deg, ${config.color}15 0%, ${config.color}08 100%)`
-      : `linear-gradient(135deg, ${config.color}12 0%, ${config.color}05 100%)`,
-    border: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(120, 85, 40, 0.08)',
-    borderSelected: isDark ? `${config.color}60` : `${config.color}50`,
-    text: isDark ? '#f2f2f2' : '#18181b',
-    textSecondary: isDark ? '#a1a1aa' : '#52525b',
-    barBg: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
-    iconBg: isDark ? `${config.color}18` : `${config.color}12`,
-    iconBorder: isDark ? `${config.color}35` : `${config.color}25`,
-  }
+  const meta = getDeadlineMeta(config.value)
 
   return (
     <motion.button
       type="button"
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      initial={{ opacity: 0, y: 20, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: index * 0.06, type: 'spring', stiffness: 400, damping: 30 }}
+      transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
         width: '100%',
-        padding: '16px 18px',
-        background: selected ? theme.cardBgSelected : theme.cardBg,
-        border: `2px solid ${selected ? theme.borderSelected : theme.border}`,
-        borderRadius: 18,
+        padding: '15px 16px',
+        background: `
+          radial-gradient(circle at top right, rgba(212, 175, 55, ${selected ? '0.12' : '0.07'}), transparent 34%),
+          linear-gradient(180deg, rgba(19, 18, 24, 0.96), rgba(10, 10, 16, 0.94))
+        `,
+        border: `1px solid ${selected ? 'rgba(212, 175, 55, 0.28)' : 'rgba(255, 255, 255, 0.06)'}`,
+        borderRadius: 22,
         cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
         WebkitTapHighlightColor: 'transparent',
+        boxShadow: selected ? '0 20px 44px -36px rgba(212, 175, 55, 0.24)' : '0 18px 34px -34px rgba(0, 0, 0, 0.85)',
       }}
     >
-      {/* Icon */}
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: 14,
-          background: theme.iconBg,
-          border: `1.5px solid ${theme.iconBorder}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Icon
-          size={24}
-          color={config.color}
-          strokeWidth={selected ? 2.5 : 2}
-          style={{ filter: selected ? `drop-shadow(0 0 8px ${config.color}60)` : 'none' }}
-        />
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ fontSize: 16, fontWeight: selected ? 700 : 600, color: selected ? theme.text : theme.textSecondary }}>
-            {config.label}
-          </span>
-          <span style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: config.color,
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            {config.multiplier}
-          </span>
+      {meta.recommended && (
+        <div style={{
+          position: 'absolute',
+          top: 12,
+          right: 14,
+          padding: '6px 10px',
+          borderRadius: 999,
+          background: 'rgba(212, 175, 55, 0.10)',
+          border: '1px solid rgba(212, 175, 55, 0.18)',
+          color: 'var(--gold-300)',
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        }}>
+          Оптимально
         </div>
+      )}
 
-        {/* Urgency bar */}
-        <div style={{ height: 6, background: theme.barBg, borderRadius: 4, overflow: 'hidden' }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${config.urgency}%` }}
-            transition={{ delay: index * 0.06 + 0.2, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-            style={{
-              height: '100%',
-              background: `linear-gradient(90deg, ${config.color}cc, ${config.color})`,
-              borderRadius: 4,
-            }}
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 16,
+            background: `linear-gradient(180deg, ${config.color}1c, ${config.color}10)`,
+            border: `1px solid ${selected ? `${config.color}50` : `${config.color}30`}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Icon
+            size={22}
+            color={config.color}
+            strokeWidth={selected ? 2.4 : 2}
+            style={{ filter: selected ? `drop-shadow(0 0 10px ${config.color}40)` : 'none' }}
           />
         </div>
-      </div>
 
-      {/* Checkmark */}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 180 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              background: 'linear-gradient(145deg, #f5d061, #d4af37, #b48e26)',
-              display: 'flex',
+        <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            marginBottom: 6,
+            paddingRight: meta.recommended ? 92 : 0,
+          }}>
+            <span style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: 'var(--text-main)',
+            }}>
+              {config.label}
+            </span>
+            <span style={{
+              display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
+              minWidth: 74,
+              height: 34,
+              padding: '0 12px',
+              borderRadius: 999,
+              background: selected ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+              border: `1px solid ${selected ? 'rgba(212, 175, 55, 0.20)' : 'rgba(255, 255, 255, 0.06)'}`,
+              fontSize: 13,
+              fontWeight: 700,
+              color: config.multiplier === 'Базовая' ? 'var(--text-secondary)' : config.color,
+              fontFamily: "'JetBrains Mono', monospace",
               flexShrink: 0,
-            }}
-          >
-            <Check size={16} color="#050505" strokeWidth={3} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            }}>
+              {config.multiplier}
+            </span>
+          </div>
+
+          <div style={{
+            fontSize: 13,
+            lineHeight: 1.55,
+            color: 'var(--text-secondary)',
+            marginBottom: 12,
+          }}>
+            {meta.description}
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexWrap: 'wrap',
+          }}>
+            <DeadlineMetaPill label={meta.pace} accent={selected ? 'var(--gold-300)' : config.color} />
+            <DeadlineMetaPill
+              label={config.multiplier === 'Базовая' ? 'без доплаты' : `доплата ${config.multiplier}`}
+            />
+            {selected && <DeadlineMetaPill label="выбрано" accent="var(--gold-300)" />}
+          </div>
+        </div>
+      </div>
     </motion.button>
+  )
+}
+
+function getDeadlineMeta(value: string) {
+  switch (value) {
+    case 'today':
+      return {
+        pace: 'экстренно',
+        description: 'Максимальный приоритет, если результат действительно нужен сегодня.',
+      }
+    case 'tomorrow':
+      return {
+        pace: 'очень быстро',
+        description: 'Подходит, когда дедлайн уже близко, но нужен небольшой запас на работу.',
+      }
+    case '3days':
+      return {
+        pace: 'сбалансировано',
+        description: 'Хороший баланс между скоростью, качеством проработки и стоимостью.',
+        recommended: true,
+      }
+    case 'week':
+      return {
+        pace: 'спокойный темп',
+        description: 'Комфортный срок для большинства задач без лишней спешки.',
+      }
+    case '2weeks':
+      return {
+        pace: 'с запасом',
+        description: 'Дает больше времени на правки, согласования и спокойную доработку.',
+      }
+    case 'month':
+    default:
+      return {
+        pace: 'базовый расчет',
+        description: 'Наиболее мягкий режим без срочной надбавки и с полным запасом по времени.',
+      }
+  }
+}
+
+function DeadlineMetaPill({
+  label,
+  accent,
+}: {
+  label: string
+  accent?: string
+}) {
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '7px 10px',
+      borderRadius: 999,
+      background: accent ? 'rgba(212, 175, 55, 0.10)' : 'rgba(255, 255, 255, 0.04)',
+      border: `1px solid ${accent ? 'rgba(212, 175, 55, 0.18)' : 'rgba(255, 255, 255, 0.06)'}`,
+      color: accent || 'var(--text-muted)',
+      fontSize: 11,
+      fontWeight: 700,
+      lineHeight: 1,
+    }}>
+      {label}
+    </span>
   )
 }
 

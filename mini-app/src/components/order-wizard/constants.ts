@@ -180,7 +180,7 @@ export const REQUIREMENTS_TEMPLATES: Record<string, string> = {
 export const WIZARD_STEPS = [
   { num: 1, title: 'Выберите услугу', subtitle: 'Что нужно сделать?' },
   { num: 2, title: 'Контекст заказа', subtitle: 'Предмет, требования и файлы' },
-  { num: 3, title: 'Сроки', subtitle: 'Когда нужно сдать?' },
+  { num: 3, title: 'Сроки', subtitle: 'Выберите комфортный темп' },
 ]
 
 // Storage keys
