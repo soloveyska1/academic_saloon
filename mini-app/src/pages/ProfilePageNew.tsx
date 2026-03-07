@@ -17,7 +17,6 @@ import {
   LucideIcon,
   Medal,
   QrCode,
-  Rocket,
   ShieldCheck,
   Sparkles,
   Ticket,
@@ -29,10 +28,12 @@ import { useTelegram } from '../hooks/useUserData'
 import { useClub } from '../contexts/ClubContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { QRCodeModal } from '../components/ui/QRCode'
+import { TransactionsModal } from '../components/modals/TransactionsModal'
 import { useToast } from '../components/ui/Toast'
 import { copyTextSafely } from '../utils/clipboard'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 import { getDisplayName } from '../lib/ranks'
+import homeStyles from './HomePage.module.css'
 
 interface Props {
   user: UserData | null
@@ -94,7 +95,7 @@ const TRANSACTION_REASON_LABELS: Record<string, string> = {
   admin_adjustment: 'Корректировка баланса',
   order_discount: 'Оплата бонусами',
   compensation: 'Компенсация',
-  order_cashback: 'Кешбэк за заказ',
+  order_cashback: 'Кэшбэк за заказ',
   bonus_expired: 'Сгорание бонусов',
   daily_luck: 'Ежедневный бонус',
   coupon: 'Купон',
@@ -174,6 +175,15 @@ function formatExpiryHint(daysLeft: number | null | undefined) {
   return `сгорают через ${days} дней`
 }
 
+function formatCountWithWord(value: number, one: string, two: string, five: string) {
+  const abs = Math.abs(value) % 100
+  const last = abs % 10
+  if (abs > 10 && abs < 20) return `${value} ${five}`
+  if (last === 1) return `${value} ${one}`
+  if (last >= 2 && last <= 4) return `${value} ${two}`
+  return `${value} ${five}`
+}
+
 function getProfileRankName(rankName: string | null | undefined) {
   const mapped = getDisplayName(rankName || '')
   if (!mapped || mapped.trim() === '') return 'Статус клиента'
@@ -181,8 +191,8 @@ function getProfileRankName(rankName: string | null | undefined) {
 }
 
 function getClubLevelLabel(level: string | null | undefined) {
-  if (!level) return 'Уровень привилегий'
-  return CLUB_LEVEL_LABELS[level as keyof typeof CLUB_LEVEL_LABELS] || 'Уровень привилегий'
+  if (!level) return 'Уровень клуба'
+  return CLUB_LEVEL_LABELS[level as keyof typeof CLUB_LEVEL_LABELS] || 'Уровень клуба'
 }
 
 function getMemberSince(user: UserData) {
@@ -340,20 +350,16 @@ function SectionTitle({
   caption?: string
 }) {
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{
-        fontSize: 16,
-        fontWeight: 700,
-        color: 'var(--text-main)',
-        marginBottom: caption ? 4 : 0,
-      }}>
+    <div style={{ marginBottom: 14 }}>
+      <div className={homeStyles.sectionTitle} style={{ marginBottom: caption ? 8 : 0 }}>
         {title}
       </div>
       {caption && (
         <div style={{
           fontSize: 12.5,
           lineHeight: 1.5,
-          color: 'var(--text-muted)',
+          color: 'var(--text-secondary)',
+          marginLeft: 4,
         }}>
           {caption}
         </div>
@@ -430,11 +436,10 @@ function StatCard({
   helper?: string
 }) {
   return (
-    <div style={{
+    <div className={homeStyles.voidGlass} style={{
       padding: '14px',
-      borderRadius: 18,
-      background: 'rgba(255,255,255,0.035)',
-      border: '1px solid rgba(255,255,255,0.05)',
+      borderRadius: 22,
+      border: '1px solid rgba(255,255,255,0.06)',
       minWidth: 0,
     }}>
       <div style={{
@@ -486,10 +491,12 @@ function ActionTile({
       type="button"
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
+      className={homeStyles.voidGlass}
       style={{
-        ...getSurfaceStyle(Boolean(accent)),
         width: '100%',
         padding: '16px',
+        borderRadius: 22,
+        border: `1px solid ${accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.06)'}`,
         cursor: 'pointer',
         textAlign: 'left',
       }}
@@ -537,6 +544,7 @@ function TransactionRow({
   iconBackground,
   iconBorder,
   amountColor,
+  hideDivider,
 }: {
   icon: LucideIcon
   title: string
@@ -547,6 +555,7 @@ function TransactionRow({
   iconBackground: string
   iconBorder: string
   amountColor: string
+  hideDivider?: boolean
 }) {
   return (
     <div style={{
@@ -554,7 +563,7 @@ function TransactionRow({
       alignItems: 'center',
       gap: 12,
       padding: '12px 0',
-      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      borderBottom: hideDivider ? 'none' : '1px solid rgba(255,255,255,0.05)',
     }}>
       <div style={{
         width: 38,
@@ -617,11 +626,10 @@ function VoucherCard({
   applyRules?: string
 }) {
   return (
-    <div style={{
+    <div className={homeStyles.voidGlass} style={{
       padding: '14px',
-      borderRadius: 18,
-      background: 'rgba(255,255,255,0.035)',
-      border: '1px solid rgba(255,255,255,0.05)',
+      borderRadius: 22,
+      border: '1px solid rgba(255,255,255,0.06)',
     }}>
       <div style={{
         display: 'flex',
@@ -677,6 +685,7 @@ export function ProfilePageNew({ user }: Props) {
   const { showToast } = useToast()
   const club = useClub()
   const [showQR, setShowQR] = useState(false)
+  const [showTransactions, setShowTransactions] = useState(false)
 
   if (!user) {
     return null
@@ -715,6 +724,28 @@ export function ProfilePageNew({ user }: Props) {
   const inviteLink = buildReferralLink(botUsername, user.telegram_id)
   const isAdmin = user.telegram_id === 872379852
   const mainActionMeta = actionableOrder ? ACTIONABLE_ORDER_META[actionableOrder.status] : null
+  const primaryActionTitle = mainActionMeta
+    ? mainActionMeta.title
+    : user.orders_count === 0
+      ? 'Создать первый заказ'
+      : 'Открыть новый заказ'
+  const primaryActionDescription = mainActionMeta
+    ? `${getOrderDisplayTitle(actionableOrder!)} • ${mainActionMeta.description}`
+    : user.orders_count === 0
+      ? 'Заполните заявку, и дальше мы проведём вас по цене, срокам и всем следующим шагам.'
+      : 'Если нужна новая работа, срочная задача или доработка, начните следующую заявку отсюда.'
+  const primaryActionButton = mainActionMeta
+    ? mainActionMeta.button
+    : user.orders_count === 0
+      ? 'Начать'
+      : 'Перейти'
+  const primaryActionFootnote = mainActionMeta
+    ? ['confirmed', 'waiting_payment'].includes(actionableOrder!.status)
+      ? `К оплате ${formatMoney(getRemainingAmount(actionableOrder!))}${actionableOrder?.deadline ? ` • срок ${formatDeadline(actionableOrder.deadline)}` : ''}`
+      : actionableOrder?.deadline
+        ? `Ближайший срок: ${formatDeadline(actionableOrder.deadline)}`
+        : 'Откройте заказ, чтобы не потерять следующий шаг.'
+    : `С нами с ${formatMemberSince(memberSince)}`
 
   const handleCreateOrder = useCallback(() => {
     haptic('medium')
@@ -745,6 +776,11 @@ export function ProfilePageNew({ user }: Props) {
     haptic('light')
     navigate('/club/privileges')
   }, [haptic, navigate])
+
+  const handleOpenTransactions = useCallback(() => {
+    haptic('light')
+    setShowTransactions(true)
+  }, [haptic])
 
   const handleOpenClub = useCallback(() => {
     haptic('medium')
@@ -839,27 +875,23 @@ export function ProfilePageNew({ user }: Props) {
             }}>
               Профиль
             </div>
-            <h1 style={{
+            <h1 className={homeStyles.goldAccent} style={{
               margin: 0,
               fontSize: 30,
-              lineHeight: 1.05,
-              fontWeight: 700,
-              fontFamily: "'Playfair Display', serif",
-              background: 'var(--gold-metallic)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              lineHeight: 1.02,
+              fontWeight: 800,
+              fontFamily: "'Manrope', sans-serif",
             }}>
-              Все важное под рукой
+              Ваш кабинет
             </h1>
             <div style={{
               marginTop: 8,
               fontSize: 13,
-              lineHeight: 1.5,
+              lineHeight: 1.6,
               color: 'var(--text-secondary)',
               maxWidth: 360,
             }}>
-              Заказы, бонусы, ваучеры, поддержка и все полезные действия в одном месте.
+              Главный заказ, бонусы, ваучеры и поддержка в одном месте.
             </div>
           </div>
 
@@ -887,245 +919,156 @@ export function ProfilePageNew({ user }: Props) {
         </motion.div>
 
         <motion.section
+          className={`${homeStyles.voidGlass} ${homeStyles.primaryActionCard} ${homeStyles.returningOrderActionCard}`}
           initial={prefersReducedMotion ? {} : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           style={{
-            ...getSurfaceStyle(true),
-            padding: '20px',
-            marginBottom: 18,
+            position: 'relative',
+            width: '100%',
+            padding: '24px 20px 20px',
+            borderRadius: 28,
+            marginBottom: 22,
+            overflow: 'hidden',
+            border: '1px solid rgba(212,175,55,0.16)',
+            isolation: 'isolate',
           }}
         >
-          <div style={{
-            display: 'flex',
-            gap: 14,
-            alignItems: 'flex-start',
-            marginBottom: 18,
-          }}>
-            <div style={{
-              width: 64,
-              height: 64,
-              borderRadius: 22,
-              overflow: 'hidden',
-              flexShrink: 0,
-              background: 'rgba(212, 175, 55, 0.12)',
-              border: '1px solid rgba(212, 175, 55, 0.18)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              {tgUser?.photo_url ? (
-                <img
-                  src={tgUser.photo_url}
-                  alt={user.fullname}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <span style={{ fontSize: 28 }}>{user.rank.emoji || '✨'}</span>
-              )}
-            </div>
+          <div className={homeStyles.primaryActionGlow} aria-hidden="true" />
+          <div className={homeStyles.primaryActionShine} aria-hidden="true" />
+          <div className={homeStyles.primaryActionOrb} aria-hidden="true" />
 
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 14,
+              marginBottom: 16,
+            }}>
               <div style={{
+                width: 68,
+                height: 68,
+                borderRadius: 22,
+                overflow: 'hidden',
+                flexShrink: 0,
+                background: 'rgba(212, 175, 55, 0.12)',
+                border: '1px solid rgba(212, 175, 55, 0.18)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                flexWrap: 'wrap',
-                marginBottom: 6,
+                justifyContent: 'center',
               }}>
-                <div style={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: 'var(--text-main)',
-                  lineHeight: 1.15,
+                {tgUser?.photo_url ? (
+                  <img
+                    src={tgUser.photo_url}
+                    alt={user.fullname}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 30 }}>{user.rank.emoji || '✨'}</span>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                  <MetaPill icon={Crown} label={displayRankName} accent="var(--gold-300)" />
+                  <MetaPill icon={BadgePercent} label={`Скидка ${loyaltyDiscount}%`} />
+                  <MetaPill icon={Wallet2} label={`Кэшбэк ${cashbackPercent}%`} />
+                </div>
+
+                <div className={homeStyles.goldAccent} style={{
+                  fontFamily: "'Manrope', sans-serif",
+                  fontSize: 'clamp(28px, 7vw, 38px)',
+                  fontWeight: 800,
+                  lineHeight: 1.04,
+                  marginBottom: 8,
                 }}>
                   {user.fullname}
                 </div>
-                <MetaPill icon={Crown} label={displayRankName} accent="var(--gold-300)" />
-              </div>
 
-              <div style={{
-                fontSize: 13,
-                lineHeight: 1.55,
-                color: 'var(--text-secondary)',
-                marginBottom: 12,
-              }}>
-                {user.username ? `@${user.username}` : 'Telegram-клиент'} • с {formatMemberSince(memberSince)}
-              </div>
-
-              <div style={{
-                display: 'flex',
-                gap: 8,
-                flexWrap: 'wrap',
-              }}>
-                <MetaPill icon={BadgePercent} label={`Скидка ${loyaltyDiscount}%`} />
-                <MetaPill icon={Wallet2} label={`Кэшбэк ${cashbackPercent}%`} />
-                {club.dailyBonus.status === 'available' && <MetaPill icon={Gift} label="Доступен ежедневный бонус" accent="var(--gold-300)" />}
+                <div style={{
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  color: '#d4d4d8',
+                  marginBottom: 16,
+                }}>
+                  {user.username ? `@${user.username}` : 'Telegram-клиент'} • с {formatMemberSince(memberSince)} • бонусный баланс {formatMoney(bonusBalance)}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 10,
-          }}>
-            <StatCard label="Заказы" value={String(ordersCount)} accent="var(--gold-300)" helper="Всего оформлено" />
-            <StatCard label="Активно" value={String(activeOrders.length)} accent="#93c5fd" helper="Открытые заказы" />
-            <StatCard label="Ваш шаг" value={String(actionRequiredCount)} accent="#86efac" helper="Нуждается в действии" />
-            <StatCard label="Бонусы" value={formatMoney(bonusBalance)} accent="#fcd34d" helper="Можно списать в оплату" />
+            <div className={homeStyles.heroProofRail}>
+              <div className={homeStyles.heroProofItem}>
+                <BookOpen size={15} color="#d4af37" />
+                {formatCountWithWord(ordersCount, 'заказ', 'заказа', 'заказов')} оформлено
+              </div>
+              <div className={homeStyles.heroProofItem}>
+                <Sparkles size={15} color="#d4af37" />
+                {actionRequiredCount > 0
+                  ? actionRequiredCount === 1
+                    ? '1 шаг требует внимания'
+                    : `${formatCountWithWord(actionRequiredCount, 'шаг', 'шага', 'шагов')} требуют внимания`
+                  : 'Сейчас нет срочных действий'}
+              </div>
+              <div className={homeStyles.heroProofItem}>
+                <Gift size={15} color="#d4af37" />
+                {club.dailyBonus.status === 'available'
+                  ? 'Ежедневный бонус уже можно забрать'
+                  : `${club.points} баллов клуба и ${club.activeVouchers.length} ваучеров`}
+              </div>
+            </div>
+
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.985 }}
+              onClick={handleOpenActionableOrder}
+              className={homeStyles.heroPrimaryButton}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 15.5, fontWeight: 800, color: '#faf7e3', marginBottom: 4 }}>
+                  {primaryActionTitle}
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.55, color: '#d4d4d8' }}>
+                  {primaryActionDescription}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                <div style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: '#f6deb1',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}>
+                  {primaryActionButton}
+                </div>
+                <div className={homeStyles.primaryActionArrow}>
+                  <ArrowUpRight size={18} color="#09090b" strokeWidth={2.6} />
+                </div>
+              </div>
+            </motion.button>
+
+            <div className={homeStyles.heroFootnote}>
+              {primaryActionFootnote}
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: 10,
+              marginTop: 18,
+            }}>
+              <StatCard label="Заказы" value={String(ordersCount)} accent="var(--gold-300)" helper="Всего оформлено" />
+              <StatCard label="Активно" value={String(activeOrders.length)} accent="#93c5fd" helper="В работе сейчас" />
+              <StatCard label="Ваш шаг" value={String(actionRequiredCount)} accent="#86efac" helper="Нуждается в действии" />
+              <StatCard label="Бонусы" value={formatMoney(bonusBalance)} accent="#fcd34d" helper="Можно списать в оплату" />
+            </div>
           </div>
         </motion.section>
-
-        <motion.button
-          type="button"
-          initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileTap={{ scale: 0.985 }}
-          onClick={handleOpenActionableOrder}
-          style={{
-            ...getSurfaceStyle(true),
-            width: '100%',
-            padding: '18px',
-            marginBottom: 18,
-            cursor: 'pointer',
-            textAlign: 'left',
-          }}
-        >
-          {mainActionMeta ? (
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 16,
-                background: 'rgba(212, 175, 55, 0.14)',
-                border: '1px solid rgba(212, 175, 55, 0.20)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                <mainActionMeta.icon size={22} color={mainActionMeta.color} />
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: mainActionMeta.color,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  marginBottom: 6,
-                }}>
-                  {mainActionMeta.label}
-                </div>
-                <div style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: 'var(--text-main)',
-                  marginBottom: 4,
-                }}>
-                  {mainActionMeta.title}
-                </div>
-                <div style={{
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                  color: 'var(--text-secondary)',
-                  marginBottom: 10,
-                }}>
-                  {getOrderDisplayTitle(actionableOrder!)} • {mainActionMeta.description}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  <MetaPill icon={Clock3} label={formatDeadline(actionableOrder?.deadline)} accent={mainActionMeta.color} />
-                  {['confirmed', 'waiting_payment'].includes(actionableOrder!.status) && (
-                    <MetaPill icon={Wallet2} label={formatMoney(getRemainingAmount(actionableOrder!))} accent={mainActionMeta.color} />
-                  )}
-                </div>
-              </div>
-
-              <div style={{
-                height: 42,
-                padding: '0 16px',
-                borderRadius: 14,
-                background: 'var(--gold-metallic)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#090909',
-                fontSize: 14,
-                fontWeight: 700,
-                flexShrink: 0,
-                marginLeft: 'auto',
-              }}>
-                {mainActionMeta.button}
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 16,
-                background: 'rgba(212, 175, 55, 0.14)',
-                border: '1px solid rgba(212, 175, 55, 0.20)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                <Rocket size={22} color="var(--gold-300)" />
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--gold-300)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  marginBottom: 6,
-                }}>
-                  Главное действие
-                </div>
-                <div style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: 'var(--text-main)',
-                  marginBottom: 4,
-                }}>
-                  {user.orders_count === 0 ? 'Создать первый заказ' : 'Открыть новый заказ'}
-                </div>
-                <div style={{
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                  color: 'var(--text-secondary)',
-                }}>
-                  {user.orders_count === 0
-                    ? 'Заполните заявку, и дальше мы сами проведем вас по цене, срокам и всем следующим шагам.'
-                    : 'Если нужна следующая работа, срочная задача или доработка, начните новую заявку отсюда.'}
-                </div>
-              </div>
-
-              <div style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                background: 'var(--gold-metallic)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                marginLeft: 'auto',
-              }}>
-                <ArrowUpRight size={18} color="#090909" />
-              </div>
-            </div>
-          )}
-        </motion.button>
 
         <section style={{ marginBottom: 22 }}>
           <SectionTitle
             title="Быстрый доступ"
-            caption="Только реальные действия, которыми вы пользуетесь чаще всего."
+            caption="Ключевые разделы, к которым вы возвращаетесь чаще всего."
           />
           <div style={{
             display: 'grid',
@@ -1135,7 +1078,7 @@ export function ProfilePageNew({ user }: Props) {
             <ActionTile
               icon={BookOpen}
               label="Мои заказы"
-              hint={`${user.orders_count} заказов и все статусы`}
+              hint={`${formatCountWithWord(ordersCount, 'заказ', 'заказа', 'заказов')} и все статусы`}
               onClick={handleOpenOrders}
               accent="var(--gold-300)"
             />
@@ -1153,8 +1096,8 @@ export function ProfilePageNew({ user }: Props) {
             />
             <ActionTile
               icon={Gift}
-              label="Награды"
-              hint="Баллы, ваучеры и доступные привилегии"
+              label="Каталог бонусов"
+              hint="Баллы, ваучеры и доступные предложения"
               onClick={handleOpenRewards}
             />
           </div>
@@ -1162,8 +1105,8 @@ export function ProfilePageNew({ user }: Props) {
 
         <section style={{ marginBottom: 22 }}>
           <SectionTitle
-            title="Условия и привилегии"
-            caption="Здесь собраны все условия, которые реально влияют на цену, бонусы и приоритет."
+            title="Статус и условия"
+            caption="Кэшбэк, персональная скидка, бонусный баланс и текущий уровень без лишних терминов."
           />
           <div style={{ display: 'grid', gap: 12 }}>
             <div style={{ ...getSurfaceStyle(), padding: '18px' }}>
@@ -1265,7 +1208,7 @@ export function ProfilePageNew({ user }: Props) {
                     fontWeight: 700,
                     color: 'var(--text-main)',
                   }}>
-                    Баллы привилегий
+                    Баллы клуба
                   </div>
                 </div>
                 <div style={{
@@ -1283,8 +1226,8 @@ export function ProfilePageNew({ user }: Props) {
                   marginBottom: 12,
                 }}>
                   {club.dailyBonus.status === 'available'
-                    ? `Баллы привилегий • ${clubLevelLabel.toLowerCase()}, ежедневный бонус уже доступен.`
-                    : `Баллы привилегий • ${clubLevelLabel.toLowerCase()}, серия бонусов: ${club.dailyBonus.streakDay} день.`}
+                    ? `Уровень клуба: ${clubLevelLabel.toLowerCase()}. Ежедневный бонус уже доступен.`
+                    : `Уровень клуба: ${clubLevelLabel.toLowerCase()}. Серия бонусов: ${formatCountWithWord(club.dailyBonus.streakDay, 'день', 'дня', 'дней')}.`}
                 </div>
                 <ProgressLine
                   value={club.levelProgress}
@@ -1320,14 +1263,14 @@ export function ProfilePageNew({ user }: Props) {
         <section style={{ marginBottom: 22 }}>
           <SectionTitle
             title="Бонусы и ваучеры"
-            caption="Сколько бонусов доступно сейчас, что начислялось недавно и какие ваучеры можно применить к новому заказу."
+            caption="Баланс, последние операции и ваучеры, которые можно применить к следующему заказу."
           />
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
             gap: 12,
           }}>
-            <div style={{ ...getSurfaceStyle(), padding: '18px' }}>
+            <div className={homeStyles.voidGlass} style={{ padding: '18px', borderRadius: 24, border: '1px solid rgba(255,255,255,0.06)' }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1343,14 +1286,14 @@ export function ProfilePageNew({ user }: Props) {
                     color: 'var(--text-main)',
                     marginBottom: 4,
                   }}>
-                    Бонусный баланс
+                    Доступно сейчас
                   </div>
                   <div style={{
                     fontSize: 12.5,
                     color: 'var(--text-muted)',
                     lineHeight: 1.5,
                   }}>
-                    Эти бонусы можно использовать при оплате заказов и скидках.
+                    Бонусный баланс, кэшбэк и последние движения по счёту.
                   </div>
                 </div>
                 <MetaPill icon={Wallet2} label={formatMoney(bonusBalance)} accent="var(--gold-300)" />
@@ -1387,11 +1330,24 @@ export function ProfilePageNew({ user }: Props) {
               </div>
 
               {latestTransactions.length > 0 ? (
-                <div>
+                <div style={{ marginBottom: 12 }}>
                   {latestTransactions.map((transaction, index) => {
                     const presentation = getTransactionPresentation(transaction)
                     return (
-                      <div key={transaction.id} style={index === latestTransactions.length - 1 ? { borderBottom: 'none' } : undefined}>
+                      <motion.button
+                        key={transaction.id}
+                        type="button"
+                        whileTap={{ scale: 0.99 }}
+                        onClick={handleOpenTransactions}
+                        style={{
+                          width: '100%',
+                          padding: 0,
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                      >
                         <TransactionRow
                           icon={presentation.icon}
                           iconColor={presentation.iconColor}
@@ -1402,24 +1358,44 @@ export function ProfilePageNew({ user }: Props) {
                           amount={formatMoney(transaction.amount).replace(' ₽', '')}
                           positive={transaction.type === 'credit'}
                           amountColor={presentation.amountColor}
+                          hideDivider={index === latestTransactions.length - 1}
                         />
-                      </div>
+                      </motion.button>
                     )
                   })}
                 </div>
               ) : (
                 <div style={{
-                  padding: '16px 0 4px',
+                  padding: '16px 0 12px',
                   fontSize: 13,
                   lineHeight: 1.55,
                   color: 'var(--text-secondary)',
                 }}>
-                  История начислений появится здесь после первого бонуса, кешбэка или списания в оплату.
+                  История появится здесь после первого бонуса, кэшбэка или списания в оплату.
                 </div>
               )}
+
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.97 }}
+                onClick={handleOpenTransactions}
+                style={{
+                  minHeight: 42,
+                  padding: '0 14px',
+                  borderRadius: 14,
+                  border: '1px solid rgba(212,175,55,0.18)',
+                  background: 'rgba(212,175,55,0.10)',
+                  color: 'var(--gold-300)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Открыть историю бонусов
+              </motion.button>
             </div>
 
-            <div style={{ ...getSurfaceStyle(), padding: '18px' }}>
+            <div className={homeStyles.voidGlass} style={{ padding: '18px', borderRadius: 24, border: '1px solid rgba(255,255,255,0.06)' }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1435,14 +1411,14 @@ export function ProfilePageNew({ user }: Props) {
                     color: 'var(--text-main)',
                     marginBottom: 4,
                   }}>
-                    Активные ваучеры
+                    Ваучеры к следующему заказу
                   </div>
                   <div style={{
                     fontSize: 12.5,
                     color: 'var(--text-muted)',
                     lineHeight: 1.5,
                   }}>
-                    Их можно применить в новой заявке, если условия ваучера подходят.
+                    Сохранённые предложения, которые можно применить в новой заявке.
                   </div>
                 </div>
                 <MetaPill icon={Ticket} label={`${club.activeVouchers.length} доступно`} accent="var(--gold-300)" />
@@ -1467,7 +1443,7 @@ export function ProfilePageNew({ user }: Props) {
                   lineHeight: 1.6,
                   color: 'var(--text-secondary)',
                 }}>
-                  Пока нет активных ваучеров. Получайте их в разделе привилегий и применяйте при следующем заказе.
+                  Пока нет активных ваучеров. Их можно получить в каталоге бонусов и применить в следующем заказе.
                 </div>
               )}
 
@@ -1510,7 +1486,7 @@ export function ProfilePageNew({ user }: Props) {
                     cursor: 'pointer',
                   }}
                 >
-                  Открыть награды
+                  Каталог бонусов
                 </motion.button>
               </div>
             </div>
@@ -1598,7 +1574,7 @@ export function ProfilePageNew({ user }: Props) {
         <section style={{ marginBottom: 120 }}>
           <SectionTitle
             title="Поддержка и сервис"
-            caption="Все важные служебные разделы: помощь, привилегии и история активности."
+            caption="Помощь по заказам, условия клуба и история бонусной активности."
           />
           <div style={{
             display: 'grid',
@@ -1613,8 +1589,8 @@ export function ProfilePageNew({ user }: Props) {
             />
             <ActionTile
               icon={GraduationCap}
-              label="Привилегии"
-              hint="Посмотреть уровни, условия и доступные преимущества"
+              label="Условия клуба"
+              hint="Текущий статус, кэшбэк, бонусы и доступные условия"
               onClick={handleOpenPrivileges}
             />
             <ActionTile
@@ -1626,8 +1602,8 @@ export function ProfilePageNew({ user }: Props) {
             />
             <ActionTile
               icon={CircleHelp}
-              label="История привилегий"
-              hint="Бонусы, обмены, ваучеры и вся активность по привилегиям"
+              label="История бонусов"
+              hint="Начисления, списания, обмены и вся бонусная активность"
               onClick={() => {
                 haptic('light')
                 navigate('/club/history')
@@ -1638,6 +1614,17 @@ export function ProfilePageNew({ user }: Props) {
       </div>
 
       <AnimatePresence>
+        <TransactionsModal
+          isOpen={showTransactions}
+          onClose={() => setShowTransactions(false)}
+          transactions={user.transactions}
+          balance={bonusBalance}
+          onViewAll={() => {
+            setShowTransactions(false)
+            navigate('/club/history')
+          }}
+        />
+
         {showQR && inviteLink && (
           <QRCodeModal
             onClose={() => setShowQR(false)}

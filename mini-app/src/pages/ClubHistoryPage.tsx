@@ -6,6 +6,7 @@ import { ClubHistoryEntry } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { useClub } from '../contexts/ClubContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
+import homeStyles from './HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  CLUB HISTORY PAGE - Реальная история баллов и начислений
@@ -102,8 +103,8 @@ const HistoryHeader = memo(function HistoryHeader({
             <History size={20} color="rgba(255, 255, 255, 0.7)" />
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
-              История привилегий
+            <div className={homeStyles.goldAccent} style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Manrope', sans-serif" }}>
+              История бонусов
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>
               Баланс: {currentBalance} баллов
@@ -182,13 +183,13 @@ function ClubHistoryPage() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.03 }}
+                className={homeStyles.voidGlass}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 12,
                   padding: '14px 16px',
-                  borderRadius: 14,
-                  background: 'rgba(18, 18, 21, 0.95)',
+                  borderRadius: 20,
                   border: '1px solid rgba(255, 255, 255, 0.06)',
                 }}
               >

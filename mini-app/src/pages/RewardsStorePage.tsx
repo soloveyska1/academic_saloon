@@ -7,6 +7,7 @@ import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { useClub } from '../contexts/ClubContext'
 import { useModalRegistration } from '../contexts/NavigationContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
+import homeStyles from './HomePage.module.css'
 
 import {
   RewardCard,
@@ -72,8 +73,8 @@ const StoreHeader = memo(function StoreHeader({
             <ShoppingBag size={20} color="#D4AF37" />
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
-              Каталог привилегий
+            <div className={homeStyles.goldAccent} style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Manrope', sans-serif" }}>
+              Каталог бонусов
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>
               Обменивайте баллы на полезные бонусы и ваучеры
