@@ -35,7 +35,7 @@ const RANK_DISPLAY_NAMES: Record<string, string> = {
   'Салага': 'Резидент',
   'Ковбой': 'Партнёр',
   'Головорез': 'VIP-Клиент',
-  'Легенда Запада': 'Премиум',
+  'Легенда Запада': 'Премиум клуб',
 }
 
 // Animated counter component

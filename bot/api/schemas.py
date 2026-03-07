@@ -89,6 +89,7 @@ class UserResponse(BaseModel):
     """Full user profile for Mini App"""
     id: int
     telegram_id: int
+    created_at: Optional[str] = None
     username: Optional[str] = None
     fullname: str
     balance: float

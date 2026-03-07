@@ -134,6 +134,7 @@ async def get_user_profile(
     return UserResponse(
         id=user.id,
         telegram_id=user.telegram_id,
+        created_at=user.created_at.isoformat() if user.created_at else None,
         username=user.username,
         fullname=user.fullname or tg_user.first_name,
         balance=round(float(user.balance or 0), 2),

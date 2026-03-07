@@ -2,6 +2,7 @@
 export interface UserData {
   id: number
   telegram_id: number
+  created_at?: string | null
   username: string | null
   fullname: string
   balance: number

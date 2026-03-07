@@ -49,7 +49,7 @@ export const RANKS: RankData[] = [
   {
     id: 'premium',
     name: 'Легенда Запада',
-    displayName: 'Премиум',
+    displayName: 'Премиум клуб',
     cashback: 10,
     minSpent: 50000,
     icon: Gem,
