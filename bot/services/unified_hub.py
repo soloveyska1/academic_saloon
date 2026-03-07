@@ -24,6 +24,7 @@ from database.models.orders import (
     Order, OrderStatus, Conversation, ConversationType, WORK_TYPE_LABELS, WorkType
 )
 from database.models.users import User
+from bot.services.order_message_formatter import build_admin_topic_header_text
 
 logger = logging.getLogger(__name__)
 
@@ -312,34 +313,17 @@ async def _send_order_topic_header(
         client_name = getattr(user, 'fullname', None) or getattr(user, 'full_name', None) or "Неизвестно"
     if not client_username:
         client_username = getattr(user, 'username', None)
-    username = f"@{client_username}" if client_username else "нет"
-
-    # Тип работы
-    try:
-        work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
-    except (ValueError, KeyError):
-        work_label = order.work_type or "Заказ"
-
-    header = f"""🆕 <b>НОВЫЙ ЗАКАЗ #{order.id}</b>
-
-👤 <b>Клиент:</b> {client_name}
-📱 <b>Username:</b> {username}
-🆔 <b>ID:</b> <code>{order.user_id}</code>
-
-📝 <b>Тип:</b> {work_label}
-📚 <b>Предмет:</b> {order.subject or '—'}
-⏰ <b>Срок:</b> {order.deadline or '—'}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 <i>Пишите сюда — сообщения уйдут клиенту</i>
-💡 <i>Начните с точки <code>.</code> для внутреннего комментария</i>
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
 
     try:
         await bot.send_message(
             chat_id=settings.ADMIN_GROUP_ID,
             message_thread_id=topic_id,
-            text=header,
+            text=build_admin_topic_header_text(
+                order=order,
+                client_name=client_name,
+                client_username=client_username,
+                user_id=order.user_id,
+            ),
         )
     except Exception as e:
         logger.warning(f"Failed to send order topic header: {e}")

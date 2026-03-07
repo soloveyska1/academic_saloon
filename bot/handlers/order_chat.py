@@ -35,6 +35,12 @@ from database.models.orders import (
 from database.models.users import User
 from bot.states.chat import ChatStates
 from bot.services.yandex_disk import yandex_disk_service
+from bot.services.order_message_formatter import (
+    build_admin_topic_header_text,
+    build_price_breakdown_lines,
+    format_deadline_for_admin,
+    format_plain_text,
+)
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -266,62 +272,40 @@ async def send_topic_header(
 ):
     """Отправляет заголовок-информацию в новый топик"""
     client_name = user.fullname if user else "Неизвестно"
-    username = f"@{user.username}" if user and user.username else "нет"
-
-    header_lines = [
-        "🆕 <b>Новый диалог</b>\n",
-        f"👤 <b>Клиент:</b> {client_name}",
-        f"📱 <b>Username:</b> {username}",
-        f"🆔 <b>ID:</b> <code>{conv.user_id}</code>",
-    ]
+    username = user.username if user and user.username else None
+    order = None
 
     if order_id:
         order = await session.get(Order, order_id)
-        if order:
-            header_lines.append("")
-            header_lines.append(format_order_info(order))
-
-    header_lines.extend([
-        "",
-        "━" * 30,
-        "💡 <i>Пишите сюда — сообщения уйдут клиенту.</i>",
-        "💡 <i>Начните сообщение с точки <code>.</code> для внутреннего комментария.</i>",
-    ])
 
     await bot.send_message(
         chat_id=settings.ADMIN_GROUP_ID,
         message_thread_id=conv.topic_id,
-        text="\n".join(header_lines),
+        text=build_admin_topic_header_text(
+            order=order,
+            client_name=client_name,
+            client_username=username,
+            user_id=conv.user_id,
+        ),
     )
 
 
 def format_order_info(order: Order) -> str:
     """Форматирует краткую информацию о заказе"""
     work_type = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
+    lines = [
+        f"Заказ <code>#{order.id}</code>",
+        f"Формат: {format_plain_text(work_type)}",
+        f"Срок: {format_deadline_for_admin(order.deadline)}",
+        f"Статус: {format_plain_text(order.status_label)}",
+    ]
 
     if order.price > 0:
-        price_str = f"{int(order.price):,}₽".replace(",", " ")
-        # Показываем скидку если есть
-        if order.discount > 0:
-            price_str = f"{price_str} (−{order.discount:.0f}%)"
-        # Показываем бонусы если использованы
-        if order.bonus_used > 0:
-            price_str = f"{price_str} (−{int(order.bonus_used)}₽)"
-        # Показываем итоговую сумму если есть скидки/бонусы
-        if order.discount > 0 or order.bonus_used > 0:
-            price_str = f"{price_str} = {int(order.final_price):,}₽".replace(",", " ")
+        lines.extend(build_price_breakdown_lines(order))
     else:
-        price_str = "не установлена"
+        lines.append("Стоимость: ещё не назначена")
 
-    deadline_str = order.deadline if order.deadline else "не указаны"
-
-    return (
-        f"📋 <b>Заказ #{order.id}</b>\n"
-        f"📝 {work_type}\n"
-        f"💵 Цена: {price_str}\n"
-        f"⏰ Сроки: {deadline_str}\n"
-        f"📊 Статус: {order.status_label}"
-    )
+    return "\n".join(lines)
 
 
 # ══════════════════════════════════════════════════════════════

@@ -44,6 +44,12 @@ from bot.api.schemas import (
 from bot.api.dependencies import order_to_response
 from bot.bot_instance import get_bot
 from bot.services.bonus import BonusService, BonusReason
+from bot.services.order_message_formatter import (
+    build_client_payment_rejected_text,
+    build_client_price_ready_text,
+    build_issue_keyboard,
+    build_order_keyboard,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/god", tags=["God Mode"])
@@ -690,39 +696,11 @@ async def update_order_price(
 
     # Notify user via Telegram
     try:
-        # Build message with promo info if applicable
-        final_price = order.final_price
-        promo_discount = order.promo_discount or 0
-        loyalty_discount = order.discount or 0
-
-        if order.promo_code and promo_discount > 0:
-            # Show promo discount and loyalty if both exist
-            discount_lines = f"🎟 Промокод: <b>{order.promo_code}</b> (−{promo_discount:.0f}%)"
-            if loyalty_discount > 0:
-                discount_lines += f"\n🎖 Скидка лояльности: −{loyalty_discount:.0f}%"
-
-            price_msg = (
-                f"💰 <b>Цена заказа #{order_id} установлена!</b>\n\n"
-                f"Базовая сумма: <s>{new_price:.0f}₽</s>\n"
-                f"{discount_lines}\n"
-                f"К оплате: <code>{final_price:.0f}₽</code>\n\n"
-                f"Оплатите заказ, чтобы мы начали работу."
-            )
-        elif loyalty_discount > 0:
-            price_msg = (
-                f"💰 <b>Цена заказа #{order_id} установлена!</b>\n\n"
-                f"Базовая сумма: <s>{new_price:.0f}₽</s>\n"
-                f"🎖 Скидка лояльности: −{loyalty_discount:.0f}%\n"
-                f"К оплате: <code>{final_price:.0f}₽</code>\n\n"
-                f"Оплатите заказ, чтобы мы начали работу."
-            )
-        else:
-            price_msg = (
-                f"💰 <b>Цена заказа #{order_id} установлена!</b>\n\n"
-                f"Сумма: <code>{final_price:.0f}₽</code>\n\n"
-                f"Оплатите заказ, чтобы мы начали работу."
-            )
-        await bot.send_message(order.user_id, price_msg)
+        await bot.send_message(
+            order.user_id,
+            build_client_price_ready_text(order),
+            reply_markup=build_order_keyboard(order.id, primary_text="Открыть оплату"),
+        )
     except Exception:
         pass
 
@@ -853,10 +831,13 @@ async def confirm_order_payment(
     try:
         await bot.send_message(
             order.user_id,
-            f"✅ <b>Оплата подтверждена!</b>\n\n"
-            f"Заказ: #{order_id}\n"
-            f"Сумма: <code>{amount:.0f}₽</code>\n\n"
-            f"Приступаем к работе! Следите за прогрессом в приложении.",
+            (
+                f"<b>Оплата подтверждена</b>\n\n"
+                f"Заказ <code>#{order_id}</code>\n"
+                f"Сумма: <b>{amount:.0f} ₽</b>\n\n"
+                f"Приступаем к работе. Все следующие этапы будут видны в заказе."
+            ),
+            reply_markup=build_order_keyboard(order_id, primary_text="Открыть заказ"),
         )
     except Exception:
         pass
@@ -924,10 +905,8 @@ async def reject_order_payment(
     try:
         await bot.send_message(
             order.user_id,
-            f"❌ <b>Платёж не подтверждён</b>\n\n"
-            f"Заказ: #{order_id}\n"
-            f"Причина: {reason}\n\n"
-            f"Пожалуйста, проверьте перевод или свяжитесь с поддержкой.",
+            build_client_payment_rejected_text(order_id, reason),
+            reply_markup=build_issue_keyboard(order_id),
         )
     except Exception:
         pass

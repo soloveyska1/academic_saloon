@@ -32,6 +32,10 @@ from bot.services.mini_app_logger import (
     log_order_created, log_mini_app_event, MiniAppEvent
 )
 from bot.bot_instance import get_bot
+from bot.services.order_message_formatter import (
+    build_client_order_created_text,
+    build_order_keyboard,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -599,14 +603,18 @@ async def create_order(
 
     # User notification
     try:
-        work_label = WORK_TYPE_LABELS.get(work_type_enum, data.work_type)
-        promo_text = f"\n🏷️ Промокод: <code>{promo_code_used}</code> (-{promo_discount}%)" if promo_code_used else ""
-        user_message = f"✅ <b>Заказ #{order.id} принят!</b>\n\n📋 <b>{work_label}</b>\n📚 {data.subject}\n⏰ Срок: {data.deadline}{promo_text}\n\nМенеджер оценит заказ и вернётся с точной ценой."
-        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📱 Открыть Мини-апп", web_app={"url": f"{settings.WEBAPP_URL}/orders"})],
-            [InlineKeyboardButton(text="💬 Написать менеджеру", callback_data=f"enter_chat_order_{order.id}")],
-        ])
+        user_message = build_client_order_created_text(
+            order=order,
+            subject=data.subject,
+            promo_code=promo_code_used,
+            promo_discount=promo_discount if promo_code_used else None,
+        )
+        keyboard = build_order_keyboard(
+            order_id=order.id,
+            primary_text="Открыть заказ",
+            chat_callback=f"enter_chat_order_{order.id}",
+            chat_text="Написать менеджеру",
+        )
         await bot.send_message(chat_id=user.telegram_id, text=user_message, reply_markup=keyboard)
     except Exception as e:
         logger.warning(f"User Notify Failed: {e}")
@@ -625,7 +633,11 @@ async def create_order(
     except Exception as e:
         logger.warning(f"Log Failed: {e}")
 
-    message = "🦄 Спецзаказ принят! Шериф оценит сложность и вернётся с ценой." if price_calc.is_manual_required else f"✅ Заказ #{order.id} создан! Ожидайте оценку от менеджера."
+    message = (
+        "Заявка принята. Менеджер вручную оценит детали и вернётся с точной стоимостью."
+        if price_calc.is_manual_required
+        else f"Заказ #{order.id} создан. Ожидайте оценку от менеджера."
+    )
 
     # Add promo failure warning to message if applicable
     if promo_validation_failed and promo_failure_reason:

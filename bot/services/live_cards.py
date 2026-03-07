@@ -10,6 +10,7 @@ UNIFIED HUB Architecture:
 import logging
 import re
 from datetime import datetime, timedelta
+from html import escape
 from typing import Optional
 
 from aiogram import Bot
@@ -19,7 +20,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
-from database.models.orders import Order, OrderStatus, WORK_TYPE_LABELS, WorkType, Conversation
+from database.models.orders import Order, OrderStatus, Conversation, get_status_meta
+from bot.services.order_message_formatter import (
+    build_price_breakdown_lines,
+    format_deadline_label,
+    format_money,
+    format_plain_text,
+    get_order_work_label,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,57 +55,49 @@ CARD_STAGES = {
     "new": {
         "statuses": [OrderStatus.PENDING.value, OrderStatus.WAITING_ESTIMATION.value],
         "emoji": "🔴",
-        "tag": "#NEW",
-        "status_tag": "#status_new",
+        "tag": "Новый заказ",
     },
     # Ждёт оплаты
     "waiting": {
         "statuses": [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value],
         "emoji": "🟡",
-        "tag": "#WAIT",
-        "status_tag": "#status_waiting",
+        "tag": "Ждёт оплаты",
     },
     # Проверка оплаты
     "verification": {
         "statuses": [OrderStatus.VERIFICATION_PENDING.value],
         "emoji": "🟠",
-        "tag": "#CHECK",
-        "status_tag": "#status_check",
+        "tag": "Проверка оплаты",
     },
     # В работе
     "work": {
         "statuses": [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value, OrderStatus.IN_PROGRESS.value],
         "emoji": "🔵",
-        "tag": "#WORK",
-        "status_tag": "#status_work",
+        "tag": "В работе",
     },
     # На проверке у клиента
     "review": {
         "statuses": [OrderStatus.REVIEW.value],
         "emoji": "🟣",
-        "tag": "#REVIEW",
-        "status_tag": "#status_review",
+        "tag": "На проверке",
     },
     # Правки запрошены
     "revision": {
         "statuses": [OrderStatus.REVISION.value],
         "emoji": "🟠",
-        "tag": "#REVISION",
-        "status_tag": "#status_revision",
+        "tag": "Правки",
     },
     # Завершён
     "done": {
         "statuses": [OrderStatus.COMPLETED.value],
         "emoji": "🟢",
-        "tag": "#DONE",
-        "status_tag": "#status_done",
+        "tag": "Завершён",
     },
     # Отменён/Отклонён
     "cancelled": {
         "statuses": [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value],
         "emoji": "⚫",
-        "tag": "#CLOSED",
-        "status_tag": "#status_closed",
+        "tag": "Закрыт",
     },
 }
 
@@ -129,12 +129,12 @@ DEADLINE_DAYS = {
 
 # Конфиг приоритетов (badge, label, days_threshold)
 PRIORITY_CONFIG = [
-    {"badge": "🔥🔥🔥", "label": "ГОРИТ!", "max_days": 0, "color": "#ff0000"},
-    {"badge": "🔥🔥", "label": "СРОЧНО", "max_days": 1, "color": "#ff4400"},
-    {"badge": "🔥", "label": "Скоро", "max_days": 3, "color": "#ff8800"},
-    {"badge": "⏰", "label": "Эта неделя", "max_days": 7, "color": "#ffcc00"},
-    {"badge": "📅", "label": "Есть время", "max_days": 14, "color": "#88cc00"},
-    {"badge": "🌿", "label": "Не срочно", "max_days": 999, "color": "#00cc00"},
+    {"badge": "🔥", "label": "Срок сегодня", "max_days": 0, "color": "#ff0000"},
+    {"badge": "⚡", "label": "Очень срочно", "max_days": 1, "color": "#ff4400"},
+    {"badge": "⏱", "label": "Срочный срок", "max_days": 3, "color": "#ff8800"},
+    {"badge": "📅", "label": "Ближайший срок", "max_days": 7, "color": "#ffcc00"},
+    {"badge": "🗂", "label": "Плановый срок", "max_days": 14, "color": "#88cc00"},
+    {"badge": "🌿", "label": "Спокойный срок", "max_days": 999, "color": "#00cc00"},
 ]
 
 
@@ -177,14 +177,13 @@ def get_deadline_priority(deadline: str) -> dict:
         return {"badge": "❓", "label": "Срок не указан", "days_left": None, "is_overdue": False}
 
     now = datetime.now()
-    delta = deadline_date - now
-    days_left = delta.days
+    days_left = (deadline_date.date() - now.date()).days
 
     # Просрочен
     if days_left < 0:
         return {
             "badge": "💀",
-            "label": f"ПРОСРОЧЕН на {abs(days_left)} дн.",
+            "label": f"Просрочен на {abs(days_left)} дн.",
             "days_left": days_left,
             "is_overdue": True
         }
@@ -192,7 +191,7 @@ def get_deadline_priority(deadline: str) -> dict:
     # Находим подходящий приоритет
     for priority in PRIORITY_CONFIG:
         if days_left <= priority["max_days"]:
-            days_text = f"{days_left} дн." if days_left > 0 else "СЕГОДНЯ"
+            days_text = f"{days_left} дн." if days_left > 0 else "сегодня"
             return {
                 "badge": priority["badge"],
                 "label": priority["label"],
@@ -258,149 +257,70 @@ def render_order_card(
         Текст сообщения карточки
     """
     stage = get_card_stage(order.status)
-
-    # Тип работы
-    try:
-        work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
-    except ValueError:
-        work_label = order.work_type or "Заказ"
-
-    # ═══ УМНЫЙ ПРИОРИТЕТ ═══
     priority = get_deadline_priority(order.deadline)
-    priority_badge = priority["badge"]
+    work_label = format_plain_text(get_order_work_label(order))
+    status_meta = get_status_meta(order.status)
+    status_label = status_meta.get("label", "Ожидает оценки")
 
-    # Показываем приоритет только для активных заказов
-    show_priority = stage["name"] in ("new", "waiting", "verification", "work", "review")
-    priority_line = ""
-    if show_priority and priority["days_left"] is not None:
+    lines = [
+        f"{stage['emoji']} <b>{stage['tag']} · заказ #{order.id}</b>",
+        work_label,
+    ]
+
+    if client_name:
+        client_line = f"Клиент: {format_plain_text(client_name)}"
+        if client_username:
+            client_line += f" · @{format_plain_text(client_username)}"
+        lines.extend(["", client_line, f"ID: <code>{order.user_id}</code>"])
+
+    details = [f"Статус: {format_plain_text(status_label)}"]
+    if order.subject:
+        details.append(f"Тема: {format_plain_text(order.subject)}")
+    if order.deadline:
+        details.append(f"Срок: {format_deadline_label(order.deadline)}")
+    if order.description:
+        desc = order.description.strip()
+        if len(desc) > 180:
+            desc = desc[:177].rstrip() + "..."
+        details.append(f"Комментарий: {format_plain_text(desc)}")
+    lines.extend(["", *details])
+
+    if order.price > 0:
+        price_lines = build_price_breakdown_lines(order)
+        lines.extend(["", "<b>Финансы</b>", *[f"• {line}" for line in price_lines]])
+    elif stage["name"] in ("new", "waiting"):
+        lines.extend(["", "Стоимость: ещё не назначена"])
+
+    if stage["name"] == "new":
+        lines.extend(["", f"Оценка на старте: {get_estimated_completion(order.work_type)}"])
+
+    if priority["days_left"] is not None:
         if priority["is_overdue"]:
-            priority_line = f"\n\n⚠️ <b>{priority['label']}</b>"
+            lines.extend(["", f"⚠️ <b>{escape(priority['label'])}</b>"])
         else:
             days_text = priority.get("days_text", f"{priority['days_left']} дн.")
-            priority_line = f"\n{priority_badge} <b>{priority['label']}</b> • Осталось: {days_text}"
+            lines.extend(["", f"{priority['badge']} {escape(priority['label'])} · {escape(days_text)}"])
 
-    # Заголовок с приоритетом
-    if show_priority and priority_badge not in ("❓", "🌿", "📅"):
-        header = f"{stage['emoji']} <b>{stage['tag']} #{order.id}</b> {priority_badge} | {work_label}"
-    else:
-        header = f"{stage['emoji']} <b>{stage['tag']} #{order.id}</b> | {work_label}"
-
-    # Клиент
-    client_info = ""
-    if client_name:
-        client_info = f"👤 <b>Клиент:</b> {client_name}"
-        if client_username:
-            client_info += f" (@{client_username})"
-        client_info += f"\n🆔 <code>{order.user_id}</code>\n"
-
-    # Детали заказа
-    details = []
-    if order.subject:
-        details.append(f"📚 {order.subject}")
-    if order.deadline:
-        details.append(f"⏰ Срок: {order.deadline}")
-    if order.description:
-        # Обрезаем длинное описание
-        desc = order.description[:200] + "..." if len(order.description) > 200 else order.description
-        details.append(f"📝 {desc}")
-
-    details_text = "\n".join(details) if details else ""
-
-    # ═══ ЦЕНА И СКИДКИ (UPDATED) ═══
-    price_text = ""
-    if order.price > 0:
-        price_text = "\n💰 <b>Финансы:</b>"
-        
-        # Base Price Formatting
-        base_price_fmt = f"{order.price:,.0f}".replace(",", " ")
-        
-        # Check for discounts
-        has_promo = bool(order.promo_code)
-        has_loyalty = bool(order.discount and order.discount > 0)
-        has_bonus = bool(order.bonus_used and order.bonus_used > 0)
-        
-        if has_promo or has_loyalty or has_bonus:
-            # 1. Base Price (crossed out)
-            price_text += f"\n  • Базовая: <s>{base_price_fmt}₽</s>"
-            
-            # 2. Loyalty Discount
-            if has_loyalty:
-                price_text += f"\n  • Лояльность: -{order.discount}%"
-                
-            # 3. Promo Code
-            if has_promo:
-                promo_val = order.promo_discount if order.promo_discount else 0
-                price_text += f"\n  • Промокод: <code>{order.promo_code}</code> (-{promo_val}%)"
-                
-            # 4. Bonuses
-            if has_bonus:
-                bonus_fmt = f"{order.bonus_used:,.0f}".replace(",", " ")
-                price_text += f"\n  • Бонусы: -{bonus_fmt}₽"
-                
-            # 5. FINAL PRICE
-            final_price = order.final_price
-            final_fmt = f"{final_price:,.0f}".replace(",", " ")
-            price_text += f"\n  👉 <b>Итого: {final_fmt}₽</b>"
-        else:
-            # Check if paid full/partially
-            price_text += f" <b>{base_price_fmt}₽</b>"
-            
-        # Payment Status
-        if order.paid_amount > 0:
-            paid_formatted = f"{order.paid_amount:,.0f}".replace(",", " ")
-            price_text += f"\n  ✅ Оплачено: {paid_formatted}₽"
-            
-            # Show remaining
-            final = order.final_price
-            if order.paid_amount < final:
-                left = final - order.paid_amount
-                left_fmt = f"{left:,.0f}".replace(",", " ")
-                price_text += f" (ост. {left_fmt}₽)"
-
-    # Оценка времени выполнения (только для новых)
-    estimate_text = ""
-    if stage["name"] == "new":
-        estimate = get_estimated_completion(order.work_type)
-        estimate_text = f"\n🕐 <b>Оценка:</b> {estimate}"
-
-    # Ссылка на файлы
-    files_text = ""
     if yadisk_link:
-        files_text = f"\n📁 <a href=\"{yadisk_link}\">Файлы на Яндекс.Диске</a>"
+        lines.extend(["", f"Файлы: <a href=\"{yadisk_link}\">открыть папку</a>"])
 
-    # Extra text (для комментариев)
-    extra_section = ""
     if extra_text:
-        # Filter out promo lines if we already showed them
-        lines = extra_text.split('\n')
-        filtered = []
-        for line in lines:
-            if "🏷️ Промокод" in line and (order.price > 0):
-                continue
-            filtered.append(line)
-        
-        final_extra = "\n".join(filtered).strip()
-        if final_extra:
-            extra_section = f"\n\n📌 <i>{final_extra}</i>"
+        extra_lines = [
+            format_plain_text(line)
+            for line in extra_text.splitlines()
+            if line.strip() and not ("Промокод" in line and order.price > 0)
+        ]
+        if extra_lines:
+            lines.extend(["", "<b>Пометка</b>", *extra_lines])
 
-    # Прогресс выполнения (только для статусов "в работе")
-    progress_section = ""
-    if stage["name"] == "work":
-        progress = getattr(order, 'progress', 0) or 0
+    if stage["name"] in ("work", "revision"):
+        progress = getattr(order, "progress", 0) or 0
         if progress > 0:
-            # Визуальный прогресс-бар
             filled = int(progress / 10)
-            empty = 10 - filled
-            bar = "▓" * filled + "░" * empty
-            progress_section = f"\n\n📊 <b>Прогресс:</b> [{bar}] {progress}%"
+            bar = "▓" * filled + "░" * (10 - filled)
+            lines.extend(["", f"Прогресс: [{bar}] {progress}%"])
 
-    # Тег статуса
-    status_tag = f"\n\n{stage['status_tag']}"
-
-    # Собираем текст
-    text = f"{header}\n\n{client_info}{details_text}{price_text}{estimate_text}{files_text}{priority_line}{extra_section}{progress_section}{status_tag}"
-
-    return text
+    return "\n".join(lines)
 
 
 def get_card_keyboard(
@@ -428,18 +348,18 @@ def get_card_keyboard(
     if stage_name == "new":
         # ═══ НОВЫЙ ЗАКАЗ ═══
         buttons.append([
-            InlineKeyboardButton(
-                text="💵 Оценить заказ",
-                callback_data=f"card_price:{order.id}"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text="Назначить стоимость",
+                    callback_data=f"card_price:{order.id}"
+                ),
+            ])
         buttons.append([
             InlineKeyboardButton(
-                text="🚫 Отклонить",
+                text="Отклонить",
                 callback_data=f"card_reject:{order.id}"
             ),
             InlineKeyboardButton(
-                text="🔇 Спам/Бан",
+                text="Спам / бан",
                 callback_data=f"card_ban:{order.id}"
             ),
         ])
@@ -450,53 +370,53 @@ def get_card_keyboard(
 
         # Кнопки подтверждения оплаты
         buttons.append([
-            InlineKeyboardButton(
-                text=f"✅ 100% оплачено ({int(final_price)} ₽)",
-                callback_data=f"card_confirm_pay:{order.id}:full"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text=f"Подтвердить 100% ({int(final_price)} ₽)",
+                    callback_data=f"card_confirm_pay:{order.id}:full"
+                ),
+            ])
         buttons.append([
             InlineKeyboardButton(
-                text=f"💰 Предоплата 50% ({half_amount} ₽)",
+                text=f"Подтвердить 50% ({half_amount} ₽)",
                 callback_data=f"card_confirm_pay:{order.id}:half"
             ),
         ])
 
         # Служебные кнопки
         buttons.append([
-            InlineKeyboardButton(
-                text="🔔 Напомнить",
-                callback_data=f"card_remind:{order.id}"
-            ),
-            InlineKeyboardButton(
-                text="✏️ Цена",
-                callback_data=f"card_price:{order.id}"
-            ),
-            InlineKeyboardButton(
-                text="🚫 Отмена",
-                callback_data=f"card_reject:{order.id}"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text="Напомнить клиенту",
+                    callback_data=f"card_remind:{order.id}"
+                ),
+                InlineKeyboardButton(
+                    text="Изменить цену",
+                    callback_data=f"card_price:{order.id}"
+                ),
+                InlineKeyboardButton(
+                    text="Отменить",
+                    callback_data=f"card_reject:{order.id}"
+                ),
+            ])
 
     elif stage_name == "verification":
         # ═══ ПРОВЕРКА ОПЛАТЫ (клиент нажал "Я оплатил") ═══
         half_amount = int(final_price / 2) if final_price else 0
 
         buttons.append([
-            InlineKeyboardButton(
-                text=f"✅ Полная оплата ({int(final_price)} ₽)",
-                callback_data=f"card_confirm_pay:{order.id}:full"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text=f"Подтвердить 100% ({int(final_price)} ₽)",
+                    callback_data=f"card_confirm_pay:{order.id}:full"
+                ),
+            ])
         buttons.append([
             InlineKeyboardButton(
-                text=f"💰 Предоплата 50% ({half_amount} ₽)",
+                text=f"Подтвердить 50% ({half_amount} ₽)",
                 callback_data=f"card_confirm_pay:{order.id}:half"
             ),
         ])
         buttons.append([
             InlineKeyboardButton(
-                text="❌ Не оплачено",
+                text="Отклонить платёж",
                 callback_data=f"card_reject_pay:{order.id}"
             ),
         ])
@@ -507,38 +427,38 @@ def get_card_keyboard(
 
         # Прогресс
         buttons.append([
-            InlineKeyboardButton(
-                text=f"📊 Прогресс: {progress}%",
-                callback_data=f"card_progress:{order.id}"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text=f"Обновить прогресс ({progress}%)",
+                    callback_data=f"card_progress:{order.id}"
+                ),
+            ])
 
         # Если предоплата 50% и нужна доплата
         if is_half_paid:
             remaining = int(final_price - paid_amount)
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"💳 Запросить доплату ({remaining} ₽)",
+                    text=f"Запросить доплату ({remaining} ₽)",
                     callback_data=f"card_request_final:{order.id}"
                 ),
             ])
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"✅ Доплата получена ({remaining} ₽)",
+                    text=f"Подтвердить доплату ({remaining} ₽)",
                     callback_data=f"card_confirm_final:{order.id}"
                 ),
             ])
 
         # Сдача работы
         buttons.append([
-            InlineKeyboardButton(
-                text="📤 Сдать работу",
-                callback_data=f"card_deliver:{order.id}"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text="Передать результат",
+                    callback_data=f"card_deliver:{order.id}"
+                ),
+            ])
         buttons.append([
             InlineKeyboardButton(
-                text="✅ Готово",
+                text="Завершить заказ",
                 callback_data=f"card_complete:{order.id}"
             ),
         ])
@@ -550,23 +470,23 @@ def get_card_keyboard(
             remaining = int(final_price - paid_amount)
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"💳 Запросить доплату ({remaining} ₽)",
+                    text=f"Запросить доплату ({remaining} ₽)",
                     callback_data=f"card_request_final:{order.id}"
                 ),
             ])
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"✅ Доплата получена",
+                    text="Подтвердить доплату",
                     callback_data=f"card_confirm_final:{order.id}"
                 ),
             ])
 
         buttons.append([
-            InlineKeyboardButton(
-                text="✅ Завершить заказ",
-                callback_data=f"card_complete:{order.id}"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text="Завершить заказ",
+                    callback_data=f"card_complete:{order.id}"
+                ),
+            ])
 
     elif stage_name == "revision":
         # ═══ ПРАВКИ ЗАПРОШЕНЫ ═══
@@ -574,22 +494,22 @@ def get_card_keyboard(
 
         # Прогресс
         buttons.append([
-            InlineKeyboardButton(
-                text=f"📊 Прогресс: {progress}%",
-                callback_data=f"card_progress:{order.id}"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text=f"Обновить прогресс ({progress}%)",
+                    callback_data=f"card_progress:{order.id}"
+                ),
+            ])
 
         # Сдача работы (повторная)
         buttons.append([
-            InlineKeyboardButton(
-                text="📤 Сдать исправления",
-                callback_data=f"card_deliver:{order.id}"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text="Передать исправления",
+                    callback_data=f"card_deliver:{order.id}"
+                ),
+            ])
         buttons.append([
             InlineKeyboardButton(
-                text="✅ Готово",
+                text="Завершить заказ",
                 callback_data=f"card_complete:{order.id}"
             ),
         ])
@@ -597,11 +517,11 @@ def get_card_keyboard(
     elif stage_name in ("done", "cancelled"):
         # ═══ ЗАВЕРШЁН / ОТМЕНЁН ═══
         buttons.append([
-            InlineKeyboardButton(
-                text="🔄 Переоткрыть",
-                callback_data=f"card_reopen:{order.id}"
-            ),
-        ])
+                InlineKeyboardButton(
+                    text="Вернуть в работу",
+                    callback_data=f"card_reopen:{order.id}"
+                ),
+            ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 

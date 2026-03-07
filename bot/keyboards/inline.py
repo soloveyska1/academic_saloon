@@ -17,7 +17,7 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
         # Row 1: Primary CTA — Mini App главная страница
         [
             InlineKeyboardButton(
-                text="Личный кабинет",
+                text="Открыть приложение",
                 web_app=WebAppInfo(url=settings.WEBAPP_URL)
             )
         ],
@@ -28,7 +28,7 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
                 url=settings.REVIEWS_CHANNEL
             ),
             InlineKeyboardButton(
-                text="Гарантии",
+                text="Условия и гарантии",
                 callback_data="codex"
             ),
         ],
@@ -69,10 +69,10 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="🐎 Позвать друга", callback_data="referral"),
-            InlineKeyboardButton(text="📜 Кодекс", callback_data="codex")
+            InlineKeyboardButton(text="📜 Условия", callback_data="codex")
         ],
         [
-            InlineKeyboardButton(text="⭐ Шериф", callback_data="support")
+            InlineKeyboardButton(text="💬 Поддержка", callback_data="support")
         ]
     ])
     return kb
@@ -100,7 +100,7 @@ def get_sheriff_choice_keyboard() -> InlineKeyboardMarkup:
             )
         ],
         [
-            InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")
+            InlineKeyboardButton(text="Назад", callback_data="back_to_menu")
         ]
     ])
     return kb
@@ -111,12 +111,12 @@ def get_codex_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="📜 Полный свод законов (Telegraph)",
+                text="Подробные условия",
                 url="https://telegra.ph/Kodeks-Saluna-Polnaya-versiya-11-29"
             )
         ],
         [
-            InlineKeyboardButton(text="🔙 В главное меню", callback_data="back_to_menu")
+            InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")
         ]
     ])
     return kb
@@ -128,7 +128,7 @@ def get_referral_keyboard(ref_text: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="📤 Отправить другу", switch_inline_query=ref_text)
         ],
         [
-            InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")
+            InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")
         ]
     ])
     return kb
@@ -137,7 +137,7 @@ def get_referral_keyboard(ref_text: str) -> InlineKeyboardMarkup:
 def get_back_keyboard() -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")
+            InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")
         ]
     ])
     return kb
@@ -147,7 +147,7 @@ def get_cancel_complete_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура после отмены заказа — два варианта действий"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🍺 К барной стойке", callback_data="back_to_menu")
+            InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")
         ],
         [
             InlineKeyboardButton(text="📜 Посмотреть примеры", url=settings.REVIEWS_CHANNEL)
@@ -175,7 +175,7 @@ def get_price_list_keyboard() -> InlineKeyboardMarkup:
         ],
         # Row 4: Назад
         [
-            InlineKeyboardButton(text="🔙 В главное меню", callback_data="back_to_menu"),
+            InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu"),
         ],
     ])
     return kb

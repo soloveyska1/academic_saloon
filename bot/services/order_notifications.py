@@ -9,8 +9,13 @@ import logging
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-from database.models.orders import Order, OrderStatus, get_status_meta
+from database.models.orders import Order, OrderStatus
 from core.config import settings
+from bot.services.order_message_formatter import (
+    build_issue_keyboard,
+    build_order_keyboard,
+    build_status_notification_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,79 +27,65 @@ logger = logging.getLogger(__name__)
 NOTIFICATION_TEMPLATES = {
     # Заказ ждёт оплаты
     OrderStatus.WAITING_PAYMENT.value: {
-        "emoji": "💳",
-        "title": "Ожидает оплаты",
-        "message": "Цена рассчитана. Оплатите для начала работы.",
+        "title": "Стоимость готова",
+        "message": "Откройте заказ, чтобы выбрать способ оплаты и запустить работу.",
         "show_price": True,
-        "webapp_button": "💳 Оплатить",
-        "webapp_path": "/orders/{order_id}",
+        "webapp_button": "Открыть оплату",
     },
 
     # Заказ подтверждён
     OrderStatus.CONFIRMED.value: {
-        "emoji": "✓",
-        "title": "Цена установлена",
-        "message": "Заказ оценён. Оплатите для начала работы.",
+        "title": "Стоимость готова",
+        "message": "Откройте заказ, чтобы выбрать способ оплаты и запустить работу.",
         "show_price": True,
-        "webapp_button": "💳 Оплатить",
-        "webapp_path": "/orders/{order_id}",
+        "webapp_button": "Открыть оплату",
     },
 
     # Аванс оплачен
     OrderStatus.PAID.value: {
-        "emoji": "💰",
-        "title": "Аванс получен",
-        "message": "Приступаем к работе. Уведомим о готовности.",
+        "title": "Оплата получена",
+        "message": "Заказ запущен в работу. Держим вас в курсе по следующим этапам.",
         "show_price": False,
-        "webapp_button": "📋 Отслеживать",
-        "webapp_path": "/orders/{order_id}",
+        "webapp_button": "Открыть заказ",
     },
 
     # Полностью оплачен
     OrderStatus.PAID_FULL.value: {
-        "emoji": "💰",
         "title": "Оплата получена",
-        "message": "Заказ в приоритете. Уведомим о готовности.",
+        "message": "Заказ запущен в работу. Держим вас в курсе по следующим этапам.",
         "show_price": False,
-        "webapp_button": "📋 Отслеживать",
-        "webapp_path": "/orders/{order_id}",
+        "webapp_button": "Открыть заказ",
     },
 
     # В работе
     OrderStatus.IN_PROGRESS.value: {
-        "emoji": "⚙️",
         "title": "В работе",
-        "message": "Работаем над заказом.",
+        "message": "Работаем по вашему заказу. Все обновления будут приходить сюда и в приложении.",
         "show_price": False,
-        "webapp_button": "📋 Отслеживать",
-        "webapp_path": "/orders/{order_id}",
+        "webapp_button": "Открыть заказ",
     },
 
     # На проверке
     OrderStatus.REVIEW.value: {
-        "emoji": "✓",
         "title": "Готово к проверке",
-        "message": "Работа выполнена. Проверьте результат.",
+        "message": "Работа готова. Откройте заказ, чтобы посмотреть результат и оставить комментарий.",
         "show_price": False,
-        "webapp_button": "📋 Открыть заказ",
-        "webapp_path": "/orders/{order_id}",
+        "webapp_button": "Открыть заказ",
     },
 
     # Завершён
     OrderStatus.COMPLETED.value: {
-        "emoji": "✓",
         "title": "Заказ завершён",
-        "message": "Благодарим за заказ.",
+        "message": "Спасибо за доверие. Если понадобится новая работа, всё готово к следующей заявке.",
         "show_price": False,
-        "webapp_button": "📝 Новый заказ",
+        "webapp_button": "Новый заказ",
         "webapp_path": "/create-order",
     },
 
     # Отклонён
     OrderStatus.REJECTED.value: {
-        "emoji": "✕",
         "title": "Заказ отклонён",
-        "message": "Не можем выполнить данный заказ. Свяжитесь с поддержкой.",
+        "message": "Мы не можем взять этот заказ в работу. Напишите в поддержку, если хотите обсудить альтернативу.",
         "show_price": False,
         "support_button": True,
     },
@@ -128,49 +119,21 @@ async def notify_order_status_change(
         logger.debug(f"Нет шаблона уведомления для статуса {new_status}")
         return False
 
-    # Формируем премиальный текст
-    emoji = template["emoji"]
     title = template["title"]
     message = custom_message or template["message"]
-
-    # Премиальный строгий формат
-    text = f"""<b>{emoji} {title}</b>
-
-Заказ <code>#{order.id}</code> · {order.work_type_label}
-
-{message}"""
-
-    # Добавляем цену если нужно
-    if template.get("show_price") and order.price > 0:
-        final_price = order.final_price
-        price_formatted = f"{int(final_price):,}".replace(",", " ")
-
-        if order.bonus_used > 0:
-            text += f"\n\n💰 К оплате: <b>{price_formatted} ₽</b>"
-            text += f"\n<i>Бонусы: −{int(order.bonus_used)} ₽</i>"
-        else:
-            text += f"\n\n💰 К оплате: <b>{price_formatted} ₽</b>"
+    text = build_status_notification_text(
+        order=order,
+        title=title,
+        message=message,
+        show_price=template.get("show_price", False),
+    )
 
     # Формируем клавиатуру с WebApp кнопками
-    buttons = []
-
-    # Главная WebApp кнопка
-    if template.get("webapp_button") and template.get("webapp_path"):
-        webapp_path = template["webapp_path"].format(order_id=order.id)
-        webapp_url = f"{settings.WEBAPP_URL}{webapp_path}"
-        buttons.append([InlineKeyboardButton(
-            text=template["webapp_button"],
-            web_app=WebAppInfo(url=webapp_url)
-        )])
-
-    # Кнопка поддержки
+    keyboard = None
     if template.get("support_button"):
-        buttons.append([InlineKeyboardButton(
-            text="💬 Поддержка",
-            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
-        )])
-
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons) if buttons else None
+        keyboard = build_issue_keyboard(order.id)
+    elif template.get("webapp_button"):
+        keyboard = build_order_keyboard(order.id, primary_text=template["webapp_button"])
 
     # Отправляем уведомление
     try:

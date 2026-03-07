@@ -34,6 +34,10 @@ from bot.services.unified_hub import (
 )
 from core.config import settings
 from bot.handlers.order_chat import get_or_create_topic, format_order_info
+from bot.services.order_message_formatter import (
+    build_client_price_ready_text,
+    build_payment_keyboard as build_order_payment_keyboard,
+)
 from bot.utils import parse_order_id
 from core.media_cache import send_cached_photo
 
@@ -91,25 +95,23 @@ def build_price_offer_text(
     Ultra-clean дизайн без разделителей.
     """
     # Строка с дедлайном (только если есть)
-    deadline_line = f"⏱ <b>{deadline}</b>\n" if deadline else ""
+    deadline_line = f"⏱ Срок: <b>{deadline}</b>\n" if deadline else ""
 
     # Строка с бонусами
     if bonus_note:
         bonus_line = f"💎 <i>{bonus_note}</i>\n"
     elif bonus_used > 0:
-        bonus_line = f"💎 Бонусы:  <code>−{bonus_used:.0f} ₽</code>\n"
+        bonus_line = f"💎 Списано бонусов: <code>−{bonus_used:.0f} ₽</code>\n"
     else:
         bonus_line = ""
 
-    return f"""<b>💰 СЧЁТ НА ОПЛАТУ №{order_id}</b>
+    return f"""<b>Стоимость согласована</b>
 
-Шериф всё посчитал. Расклад такой:
+Заказ <code>#{order_id}</code> · <b>{work_label}</b>
+{deadline_line}💵 Базовая стоимость: <code>{base_price:.0f} ₽</code>
+{bonus_line}👉 <b>К оплате: <code>{final_price:.0f} ₽</code></b>
 
-📂 <b>{work_label}</b>
-{deadline_line}💵 Тариф:  <code>{base_price:.0f} ₽</code>
-{bonus_line}👉 <b>К ОПЛАТЕ: <code>{final_price:.0f} ₽</code></b>
-
-<i>Выбирай, как удобнее платить.</i>"""
+<i>Выберите удобный формат оплаты ниже.</i>"""
 
 
 def build_payment_keyboard(order_id: int, final_price: float, bonus_used: float = 0) -> InlineKeyboardMarkup:
@@ -120,11 +122,11 @@ def build_payment_keyboard(order_id: int, final_price: float, bonus_used: float 
 
     buttons = [
         [InlineKeyboardButton(
-            text=f"💳 100% Сразу ({final_price:.0f}₽)",
+            text=f"Оплатить полностью ({final_price:.0f} ₽)",
             callback_data=f"pay_scheme:full:{order_id}"
         )],
         [InlineKeyboardButton(
-            text=f"🌓 Аванс 50% ({half_amount:.0f}₽)",
+            text=f"Предоплата 50% ({half_amount:.0f} ₽)",
             callback_data=f"pay_scheme:half:{order_id}"
         )],
     ]
@@ -132,13 +134,13 @@ def build_payment_keyboard(order_id: int, final_price: float, bonus_used: float 
     # Кнопка "Не тратить бонусы" только если они были применены
     if bonus_used > 0:
         buttons.append([InlineKeyboardButton(
-            text="🔄 Не тратить бонусы (Пересчитать)",
+            text="Не списывать бонусы",
             callback_data=f"price_no_bonus:{order_id}"
         )])
 
     # Кнопка для вопросов/торга
     buttons.append([InlineKeyboardButton(
-        text="💬 Обсудить условия",
+        text="Обсудить условия",
         callback_data=f"price_question:{order_id}"
     )])
 
@@ -159,35 +161,11 @@ async def send_payment_notification(
         return False
 
     try:
-        # Use order.final_price which includes discount (loyalty + promo) and bonus_used
-        final_price = order.final_price
-        bonus_used = order.bonus_used
-
-        # Формируем краткий премиум-текст
-        price_formatted = f"{int(final_price):,}".replace(",", " ")
-
-        bonus_line = ""
-        if bonus_used > 0:
-            bonus_line = f"\n💎 Применено бонусов: -{int(bonus_used)} ₽"
-
-        client_text = f"""🏆 <b>Заказ #{order.id} оценён!</b>
-
-💰 К оплате: <b>{price_formatted} ₽</b>{bonus_line}
-
-Нажми кнопку ниже, чтобы перейти к оплате."""
-
-        # Клавиатура с WebApp кнопкой
-        webapp_url = f"{settings.WEBAPP_URL}/orders/{order.id}"
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(
-                text="💳 Перейти к оплате",
-                web_app=WebAppInfo(url=webapp_url)
-            )],
-            [InlineKeyboardButton(
-                text="💬 Обсудить условия",
-                callback_data=f"price_question:{order.id}"
-            )],
-        ])
+        client_text = build_client_price_ready_text(order)
+        kb = build_order_payment_keyboard(
+            order_id=order.id,
+            chat_callback=f"price_question:{order.id}",
+        )
 
         # Отправляем с картинкой
         if IMG_PAYMENT_BILL.exists():
@@ -631,18 +609,18 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
 
 Работа уже началась. Следи за прогрессом в кабинете!"""
     else:
-        user_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
+        user_text = f"""🎉 <b>Оплата подтверждена</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
 💰 Получено: <b>{paid_formatted} ₽</b>
 
-Шериф уже запряг лошадей. Как будет готово — пришлю уведомление сюда.
-Следи за статусом в кабинете."""
+Работа уже запущена. Когда появится следующий этап, сразу пришлём уведомление сюда.
+Статус и детали всегда доступны в приложении."""
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="👀 Отследить статус", callback_data="my_orders")],
-        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="profile_referral")],
-        [InlineKeyboardButton(text="🌵 В Салун", callback_data="back_to_menu")],
+        [InlineKeyboardButton(text="Открыть мои заказы", callback_data="my_orders")],
+        [InlineKeyboardButton(text="Реферальная программа", callback_data="profile_referral")],
+        [InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")],
     ])
 
     try:
@@ -850,18 +828,12 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
 со скриншотом чека, разберёмся!</i>""".replace(",", " ")
 
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Вернуться к оплате", callback_data=f"pay_order:{order_id}")],
         [InlineKeyboardButton(
-            text="💳 К оплате",
-            callback_data=f"pay_order:{order_id}"
-        )],
-        [InlineKeyboardButton(
-            text="🆘 Написать Шерифу",
+            text="Открыть поддержку",
             url=f"https://t.me/{settings.SUPPORT_USERNAME}"
         )],
-        [InlineKeyboardButton(
-            text="🌵 В салун",
-            callback_data="back_to_menu"
-        )],
+        [InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")],
     ])
 
     try:

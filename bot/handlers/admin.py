@@ -47,6 +47,12 @@ from bot.services.order_progress import (
     update_order_progress,
     sync_progress_with_status,
 )
+from bot.services.order_message_formatter import (
+    build_client_price_ready_text,
+    build_issue_keyboard,
+    build_order_keyboard,
+    build_payment_keyboard,
+)
 
 router = Router()
 
@@ -125,28 +131,24 @@ def build_price_offer_text(
     Ultra-clean дизайн без разделителей.
     """
     # Строка с дедлайном (только если есть)
-    deadline_line = f"⏱ <b>{deadline}</b>\n" if deadline else ""
+    deadline_line = f"⏱ Срок: <b>{deadline}</b>\n" if deadline else ""
 
     # Строка с бонусами
     if bonus_note:
         # Особый текст (например, "Бонусы сохранены на балансе")
         bonus_line = f"💎 <i>{bonus_note}</i>\n"
     elif bonus_used > 0:
-        bonus_line = f"💎 Бонусы:  <code>−{bonus_used:.0f} ₽</code>\n"
+        bonus_line = f"💎 Списано бонусов: <code>−{bonus_used:.0f} ₽</code>\n"
     else:
         bonus_line = ""
 
-    return f"""<b>💰 СЧЁТ НА ОПЛАТУ №{order_id}</b>
+    return f"""<b>Стоимость согласована</b>
 
-Шериф всё посчитал. Расклад такой:
+Заказ <code>#{order_id}</code> · <b>{work_label}</b>
+{deadline_line}💵 Базовая стоимость: <code>{base_price:.0f} ₽</code>
+{bonus_line}👉 <b>К оплате: <code>{final_price:.0f} ₽</code></b>
 
-📂 <b>{work_label}</b>
-{deadline_line}
-💵 Тариф:  <code>{base_price:.0f} ₽</code>
-{bonus_line}
-👉 <b>К ОПЛАТЕ: <code>{final_price:.0f} ₽</code></b>
-
-<i>Выбирай, как удобнее платить.</i>"""
+<i>Выберите удобный формат оплаты ниже.</i>"""
 
 
 # ══════════════════════════════════════════════════════════════
@@ -2247,30 +2249,11 @@ async def cmd_price(message: Message, command: CommandObject, session: AsyncSess
         order_data={"final_price": final_price, "bonus_used": bonus_to_use}
     )
 
-    # Формируем премиум-уведомление для Mini App
-    price_formatted = f"{int(final_price):,}".replace(",", " ")
-    bonus_line = ""
-    if bonus_to_use > 0:
-        bonus_line = f"\n💎 Применено бонусов: -{int(bonus_to_use)} ₽"
-
-    client_text = f"""🏆 <b>Заказ #{order.id} оценён!</b>
-
-💰 К оплате: <b>{price_formatted} ₽</b>{bonus_line}
-
-Нажми кнопку ниже, чтобы перейти к оплате."""
-
-    # Клавиатура с WebApp кнопкой
-    webapp_url = f"{settings.WEBAPP_URL}/orders/{order.id}"
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💳 Перейти к оплате",
-            web_app=WebAppInfo(url=webapp_url)
-        )],
-        [InlineKeyboardButton(
-            text="💬 Обсудить условия",
-            callback_data=f"price_question:{order.id}"
-        )],
-    ])
+    client_text = build_client_price_ready_text(order)
+    kb = build_payment_keyboard(
+        order_id=order.id,
+        chat_callback=f"price_question:{order.id}",
+    )
 
     # Отправляем клиенту с картинкой
     try:
@@ -2536,14 +2519,14 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    await callback.answer("📨 Открываю чат с Шерифом...")
+    await callback.answer("📨 Открываю чат поддержки...")
 
     # Уведомляем клиента и предлагаем войти в чат
     client_text = f"""💬 <b>Готов обсудить!</b>
 
 Заказ #{order.id} · {order.price:.0f}₽
 
-Нажми кнопку ниже, чтобы войти в чат и обсудить условия напрямую с Шерифом."""
+Нажми кнопку ниже, чтобы войти в чат по заказу и обсудить детали напрямую с поддержкой."""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -2551,7 +2534,7 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
             callback_data=f"enter_chat_order_{order.id}"
         )],
         [InlineKeyboardButton(
-            text="🌵 В салун",
+            text="В главное меню",
             callback_data="back_to_menu"
         )],
     ])
@@ -2807,7 +2790,7 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
         return
 
-    await callback.answer("🕵️‍♂️ Шериф получил сигнал...")
+    await callback.answer("Платёж отправлен на проверку...")
 
     # ═══ ОБНОВЛЯЕМ СТАТУС НА VERIFICATION_PENDING ═══
     order.status = OrderStatus.VERIFICATION_PENDING.value
@@ -2821,11 +2804,11 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
 
     # ═══ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ═══
     amount = get_payment_amount(order)
-    user_text = f"""🕵️‍♂️ <b>Платеж на проверке</b>
+    user_text = f"""🕵️‍♂️ <b>Платёж на проверке</b>
 
 Заказ <b>#{order.id}</b> · {amount:.0f}₽
 
-Шериф получил сигнал. Мы проверяем казну вручную.
+Мы получили подтверждение и проверяем поступление вручную.
 
 💤 <b>Если сейчас ночь</b> — подтвердим утром.
 ✅ <b>Твой заказ зафиксирован</b>. Не волнуйся.
@@ -3003,7 +2986,7 @@ async def process_payment_receipt(message: Message, state: FSMContext, session: 
 
 Заказ <b>#{order_id}</b> · {amount:.0f}₽
 
-Шериф проверяет чек. Как только увидит поступление — сразу дам знать.
+Проверяем чек. Как только увидим поступление — сразу пришлём подтверждение.
 
 <i>Обычно это пара минут.</i>"""
 
@@ -3192,30 +3175,11 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
 
-    # Формируем премиум-уведомление для Mini App
-    price_formatted = f"{int(final_price):,}".replace(",", " ")
-    bonus_line = ""
-    if bonus_to_use > 0:
-        bonus_line = f"\n💎 Применено бонусов: -{int(bonus_to_use)} ₽"
-
-    client_text = f"""🏆 <b>Заказ #{order.id} оценён!</b>
-
-💰 К оплате: <b>{price_formatted} ₽</b>{bonus_line}
-
-Нажми кнопку ниже, чтобы перейти к оплате."""
-
-    # Клавиатура с WebApp кнопкой
-    webapp_url = f"{settings.WEBAPP_URL}/orders/{order.id}"
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💳 Перейти к оплате",
-            web_app=WebAppInfo(url=webapp_url)
-        )],
-        [InlineKeyboardButton(
-            text="💬 Обсудить условия",
-            callback_data=f"price_question:{order.id}"
-        )],
-    ])
+    client_text = build_client_price_ready_text(order)
+    kb = build_payment_keyboard(
+        order_id=order.id,
+        chat_callback=f"price_question:{order.id}",
+    )
 
     # Отправляем клиенту с картинкой
     try:
@@ -3321,30 +3285,11 @@ async def process_order_price_input(message: Message, state: FSMContext, session
         order_data={"final_price": final_price, "bonus_used": bonus_to_use}
     )
 
-    # Формируем премиум-уведомление для Mini App
-    price_formatted = f"{int(final_price):,}".replace(",", " ")
-    bonus_line = ""
-    if bonus_to_use > 0:
-        bonus_line = f"\n💎 Применено бонусов: -{int(bonus_to_use)} ₽"
-
-    client_text = f"""🏆 <b>Заказ #{order.id} оценён!</b>
-
-💰 К оплате: <b>{price_formatted} ₽</b>{bonus_line}
-
-Нажми кнопку ниже, чтобы перейти к оплате."""
-
-    # Клавиатура с WebApp кнопкой
-    webapp_url = f"{settings.WEBAPP_URL}/orders/{order.id}"
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="💳 Перейти к оплате",
-            web_app=WebAppInfo(url=webapp_url)
-        )],
-        [InlineKeyboardButton(
-            text="💬 Обсудить условия",
-            callback_data=f"price_question:{order.id}"
-        )],
-    ])
+    client_text = build_client_price_ready_text(order)
+    kb = build_payment_keyboard(
+        order_id=order.id,
+        chat_callback=f"price_question:{order.id}",
+    )
 
     # Отправляем клиенту с картинкой
     try:
@@ -3574,18 +3519,17 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
     # Уведомляем клиента — Premium Payment Success!
     bonus_line = f"\n\n🎁 <b>+{order_bonus:.0f}₽</b> бонусов на баланс!" if order_bonus > 0 else ""
 
-    client_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
+    client_text = f"""🎉 <b>Оплата подтверждена</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
 💰 Аванс получен: <b>{int(order.paid_amount):,} ₽</b>
 
-Шериф уже запряг лошадей. Как будет готово — пришлю уведомление сюда.
-Следи за статусом в кабинете.{bonus_line}""".replace(",", " ")
+Работа уже запущена. О следующем этапе сообщим сюда и покажем детали в приложении.{bonus_line}""".replace(",", " ")
 
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="👀 Отследить статус", callback_data="my_orders")],
-        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="profile_referral")],
-        [InlineKeyboardButton(text="🌵 В Салун", callback_data="back_to_menu")],
+        [InlineKeyboardButton(text="Открыть мои заказы", callback_data="my_orders")],
+        [InlineKeyboardButton(text="Реферальная программа", callback_data="profile_referral")],
+        [InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")],
     ])
 
     # Отправляем клиенту с картинкой (FSInputFile)
@@ -3645,22 +3589,22 @@ async def reject_payment_callback(callback: CallbackQuery, session: AsyncSession
     final_price = order.final_price
 
     # Новое улучшенное сообщение для клиента
-    client_text = f"""🚫 <b>ОПЛАТА НЕ НАЙДЕНА</b>
+    client_text = f"""🚫 <b>Платёж пока не подтверждён</b>
 
-Партнер, в нашем сейфе пока пусто. Мы проверили счета, но поступления по заказу <b>#{order.id}</b> на сумму <b>{final_price:.0f} ₽</b> не видим.
+Мы проверили счета, но поступления по заказу <b>#{order.id}</b> на сумму <b>{final_price:.0f} ₽</b> пока не видим.
 
 <b>Возможные причины:</b>
-• Банковская задержка (переводы идут до 15 минут).
-• Ошибка в реквизитах.
-• Ты забыл нажать «Отправить» в приложении банка.
+• банковская задержка до 15 минут;
+• ошибка в реквизитах;
+• перевод не был подтверждён в приложении банка.
 
-Если деньги списались — без паники. Жми кнопку ниже и пиши лично Шерифу, разберемся."""
+Если деньги уже списались, открой поддержку и пришлите чек — быстро сверим оплату."""
 
     # Новая клавиатура с действиями для клиента
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="🆘 Написать Шерифу",
+                text="Открыть поддержку",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             ),
         ],
@@ -3697,7 +3641,7 @@ async def dismiss_payment_error_callback(callback: CallbackQuery):
         try:
             await callback.message.edit_text(
                 "⏳ <b>Ожидаем поступление оплаты...</b>\n\n"
-                "Если деньги списались — напиши Шерифу.",
+                "Если деньги списались — напишите в поддержку.",
                 reply_markup=None
             )
         except Exception:
@@ -4764,7 +4708,7 @@ async def admin_dialog_send_file(message: Message, state: FSMContext, bot: Bot, 
         return
 
     try:
-        msg_text = f"🛡️ <b>Файл от Шерифа:</b>"
+        msg_text = f"📎 <b>Файл от поддержки</b>"
         if caption:
             msg_text += f"\n\n{caption}"
 
@@ -4826,7 +4770,7 @@ async def admin_dialog_send_voice(message: Message, state: FSMContext, bot: Bot,
         # Сначала текст
         await bot.send_message(
             chat_id=user_id,
-            text="🛡️ <b>Голосовое от Шерифа:</b>"
+            text="🎤 <b>Голосовое от поддержки</b>"
         )
         # Потом голосовое
         await bot.send_voice(
@@ -4872,7 +4816,7 @@ async def admin_messaging_file(message: Message, state: FSMContext, bot: Bot, se
         caption = message.caption or ""
 
         if message.voice:
-            await bot.send_message(chat_id=user_id, text="🛡️ <b>Голосовое от Шерифа:</b>")
+            await bot.send_message(chat_id=user_id, text="🎤 <b>Голосовое от поддержки</b>")
             await bot.send_voice(
                 chat_id=user_id,
                 voice=message.voice.file_id,
@@ -4880,7 +4824,7 @@ async def admin_messaging_file(message: Message, state: FSMContext, bot: Bot, se
             )
             preview = "🎤 Голосовое"
         elif message.photo:
-            msg_text = f"🛡️ <b>Файл от Шерифа:</b>" + (f"\n\n{caption}" if caption else "")
+            msg_text = f"📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
             await bot.send_photo(
                 chat_id=user_id,
                 photo=message.photo[-1].file_id,
@@ -4889,7 +4833,7 @@ async def admin_messaging_file(message: Message, state: FSMContext, bot: Bot, se
             )
             preview = "📷 Фото"
         elif message.video:
-            msg_text = f"🛡️ <b>Файл от Шерифа:</b>" + (f"\n\n{caption}" if caption else "")
+            msg_text = f"📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
             await bot.send_video(
                 chat_id=user_id,
                 video=message.video.file_id,
@@ -4898,7 +4842,7 @@ async def admin_messaging_file(message: Message, state: FSMContext, bot: Bot, se
             )
             preview = "🎬 Видео"
         else:
-            msg_text = f"🛡️ <b>Файл от Шерифа:</b>" + (f"\n\n{caption}" if caption else "")
+            msg_text = f"📎 <b>Файл от поддержки</b>" + (f"\n\n{caption}" if caption else "")
             await bot.send_document(
                 chat_id=user_id,
                 document=message.document.file_id,
@@ -5212,7 +5156,7 @@ async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
     await state.clear()
 
     # Форматируем сообщение от шерифа
-    sheriff_msg = f"""🤠 <b>Сообщение от Шерифа</b>
+    sheriff_msg = f"""💬 <b>Сообщение поддержки</b>
 
 {msg_text}
 
@@ -5293,7 +5237,7 @@ async def forward_file_to_user(message: Message, state: FSMContext, bot: Bot):
     # Отправляем файл с подписью
     caption = f"""📥 <b>Файл по заказу #{order_id}</b>
 
-<i>Готовая работа от Салуна!</i>"""
+<i>Материал по вашему заказу.</i>"""
 
     try:
         if message.document:
@@ -5496,18 +5440,18 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     )
 
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ С КАРТИНКОЙ ═══
-    user_text = f"""🎉 <b>ОПЛАТА ПОДТВЕРЖДЕНА!</b>
+    user_text = f"""🎉 <b>Оплата подтверждена</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
 💰 Аванс получен: <b>{int(order.paid_amount):,} ₽</b>
 
-Шериф уже запряг лошадей. Как будет готово — пришлю уведомление сюда.
-Следи за статусом в кабинете.""".replace(",", " ")
+Работа уже запущена. Когда появится следующий этап, мы сразу сообщим сюда.
+Следить за деталями можно в приложении.""".replace(",", " ")
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="👀 Отследить статус", callback_data="my_orders")],
-        [InlineKeyboardButton(text="🤝 Приведи друга (+500₽)", callback_data="profile_referral")],
-        [InlineKeyboardButton(text="🌵 В Салун", callback_data="back_to_menu")],
+        [InlineKeyboardButton(text="Открыть мои заказы", callback_data="my_orders")],
+        [InlineKeyboardButton(text="Реферальная программа", callback_data="profile_referral")],
+        [InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")],
     ])
 
     try:
