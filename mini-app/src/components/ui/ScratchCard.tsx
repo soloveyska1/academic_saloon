@@ -460,7 +460,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
 export const SCRATCH_PRIZES = [
   { prize: 'Бонус за лояльность', amount: 50, weight: 40 },
   { prize: 'Кэшбек', amount: 100, weight: 30 },
-  { prize: 'VIP бонус', amount: 200, weight: 20 },
+  { prize: 'Премиум бонус', amount: 200, weight: 20 },
   { prize: 'Джекпот!', amount: 500, weight: 8 },
   { prize: 'МЕГА ДЖЕКПОТ!', amount: 1000, weight: 2 },
 ]

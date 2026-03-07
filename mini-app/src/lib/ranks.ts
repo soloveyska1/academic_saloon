@@ -39,7 +39,7 @@ export const RANKS: RankData[] = [
   {
     id: 'vip',
     name: 'Головорез',
-    displayName: 'VIP-Клиент',
+    displayName: 'Приоритет',
     cashback: 7,
     minSpent: 15000,
     icon: Crown,

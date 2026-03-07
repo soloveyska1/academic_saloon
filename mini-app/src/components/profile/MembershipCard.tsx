@@ -34,19 +34,19 @@ const LEVEL_CONFIG: Record<MembershipLevel, {
     perks: ['Повышенный кэшбэк', 'Приоритетная оценка'],
   },
   gold: {
-    label: 'VIP-Клиент',
+    label: 'Приоритет',
     color: '#D4AF37',
     gradient: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 50%, #D4AF37 100%)',
-    perks: ['Максимальный кэшбэк', 'Персональный менеджер', 'Скидки на опции'],
+    perks: ['Максимальный кэшбэк', 'Приоритетная поддержка', 'Скидки на опции'],
   },
   premium: {
     label: 'Премиум',
     color: '#B9F2FF',
     gradient: 'linear-gradient(135deg, #E5E4E2 0%, #B9F2FF 50%, #E5E4E2 100%)',
-    perks: ['VIP поддержка', 'Эксклюзивные бонусы', 'Приоритет в очереди'],
+    perks: ['Приоритетная поддержка', 'Эксклюзивные бонусы', 'Приоритет в очереди'],
   },
   max: {
-    label: 'Легенда',
+    label: 'Премиум клуб',
     color: '#FFD700',
     gradient: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 30%, #FFD700 60%, #FBF5B7 100%)',
     perks: ['Все привилегии', 'Персональные условия', 'Ранний доступ'],
@@ -67,6 +67,7 @@ export const MembershipCard = memo(function MembershipCard({
 }: MembershipCardProps) {
   const config = LEVEL_CONFIG[user.membershipLevel]
   const isMaxLevel = user.membershipLevel === 'max'
+  const safeProgress = Math.min(Math.max(progress, 0), 100)
 
   return (
     <motion.div
@@ -176,7 +177,7 @@ export const MembershipCard = memo(function MembershipCard({
                 До следующего уровня
               </span>
               <span style={{ fontSize: 12, fontWeight: 500, color: config.color }}>
-                {progress}%
+                {safeProgress}%
               </span>
             </div>
             <div
@@ -189,7 +190,7 @@ export const MembershipCard = memo(function MembershipCard({
             >
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
+                animate={{ width: `${safeProgress}%` }}
                 transition={{ duration: 1, ease: 'easeOut' }}
                 style={{
                   height: '100%',

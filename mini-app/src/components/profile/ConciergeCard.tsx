@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Headphones, ChevronRight, Clock, MessageCircle } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  CONCIERGE CARD - Personal support access (for premium users)
+//  SUPPORT CARD - Premium support access (for premium users)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface ConciergeCardProps {
@@ -50,10 +50,10 @@ export const ConciergeCard = memo(function ConciergeCard({
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', marginBottom: 2 }}>
-                Персональный менеджер
+                Приоритетная поддержка
               </div>
               <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>
-                Доступно с уровня VIP-Клиент
+                Доступно с уровня Приоритет
               </div>
             </div>
           </div>
@@ -108,7 +108,7 @@ export const ConciergeCard = memo(function ConciergeCard({
           </motion.div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>
-              Ваш консьерж
+              Линия поддержки
             </div>
             {managerName && (
               <div style={{ fontSize: 13, color: '#D4AF37', marginTop: 2 }}>
@@ -137,7 +137,7 @@ export const ConciergeCard = memo(function ConciergeCard({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
               <Clock size={12} color="rgba(255, 255, 255, 0.5)" />
               <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.5)' }}>
-                Время ответа
+                Средний ответ
               </span>
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#22c55e' }}>
@@ -155,11 +155,11 @@ export const ConciergeCard = memo(function ConciergeCard({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
               <MessageCircle size={12} color="rgba(255, 255, 255, 0.5)" />
               <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.5)' }}>
-                Статус
+                Канал
               </span>
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#22c55e' }}>
-              Онлайн
+              Чат
             </div>
           </div>
         </div>
@@ -183,7 +183,7 @@ export const ConciergeCard = memo(function ConciergeCard({
         >
           <MessageCircle size={18} color="#1a1a1d" />
           <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1d' }}>
-            Написать консьержу
+            Открыть чат поддержки
           </span>
           <ChevronRight size={16} color="#1a1a1d" />
         </motion.button>

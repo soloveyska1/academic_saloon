@@ -262,10 +262,10 @@ export function GodModePage() {
         >
           <Shield size={40} color="#ef4444" />
         </motion.div>
-        <h1 style={{ color: '#ef4444', fontSize: 24, margin: 0 }}>Access Denied</h1>
+        <h1 style={{ color: '#ef4444', fontSize: 24, margin: 0 }}>Доступ закрыт</h1>
         <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', maxWidth: 300 }}>
-          You are not authorized to access God Mode.
-          This incident will be reported.
+          У вас нет доступа к админ-панели.
+          Если это ошибка, проверьте права доступа.
         </p>
       </div>
     )

@@ -96,7 +96,7 @@ export function LoadingScreen() {
           textTransform: 'uppercase',
           margin: 0
         }}>
-          Premium Service
+          Академический сервис
         </p>
       </motion.div>
 

@@ -609,7 +609,7 @@ export function AdminPanel() {
                     {[
                       { label: 'Резидент (3%)', val: 3 },
                       { label: 'Партнёр (5%)', val: 5 },
-                      { label: 'VIP (7%)', val: 7 },
+                      { label: 'Приоритет (7%)', val: 7 },
                       { label: 'Премиум (10%)', val: 10 },
                     ].map((item) => {
                       const isActive = admin.simulatedRank === item.val

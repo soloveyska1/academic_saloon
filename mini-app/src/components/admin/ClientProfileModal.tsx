@@ -31,7 +31,7 @@ interface ClientProfileModalProps {
 const SEGMENT_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
     new: { label: 'Новый', color: 'text-blue-400', bg: 'bg-blue-500/10' },
     active: { label: 'Активный', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    vip: { label: 'VIP', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    vip: { label: 'Приоритет', color: 'text-amber-400', bg: 'bg-amber-500/10' },
     dormant: { label: 'Спящий', color: 'text-orange-400', bg: 'bg-orange-500/10' },
     churned: { label: 'Ушедший', color: 'text-red-400', bg: 'bg-red-500/10' },
 }

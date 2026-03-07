@@ -28,7 +28,7 @@ const LEVEL_CONFIG: Record<MembershipLevel, { label: string; color: string; grad
     gradient: 'conic-gradient(from 0deg, #E5E5E5, #A0A0A0, #C0C0C0, #E5E5E5)',
   },
   gold: {
-    label: 'VIP-Клиент',
+    label: 'Приоритет',
     color: '#D4AF37',
     gradient: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #D4AF37, #B38728, #FBF5B7, #BF953F)',
   },
@@ -38,7 +38,7 @@ const LEVEL_CONFIG: Record<MembershipLevel, { label: string; color: string; grad
     gradient: 'conic-gradient(from 0deg, #67E8F9, #B9F2FF, #22D3EE, #B9F2FF, #67E8F9)',
   },
   max: {
-    label: 'Легенда',
+    label: 'Премиум клуб',
     color: '#FFD700',
     gradient: 'conic-gradient(from 0deg, #BF953F, #FCF6BA, #FFD700, #B38728, #FBF5B7, #BF953F)',
   },

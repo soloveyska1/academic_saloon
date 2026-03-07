@@ -347,7 +347,7 @@ export function Dashboard({ user }: DashboardProps) {
               fontWeight: 300,
             }}
           >
-            Персональный менеджер
+            Приоритетная поддержка
           </p>
         </motion.div>
 

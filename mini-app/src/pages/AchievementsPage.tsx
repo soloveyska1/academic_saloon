@@ -165,12 +165,12 @@ function generateAchievements(user: UserData | null): Achievement[] {
     // ── STATUS: Psychological rewards ──
     {
       id: 'vip_status',
-      title: 'VIP статус',
-      description: 'Достигни VIP уровня лояльности',
+      title: 'Приоритетный статус',
+      description: 'Достигни приоритетного уровня клуба',
       icon: Crown,
       color: '#a855f7',
       unlocked: user.rank.level >= 3,
-      progress: user.rank.level,
+      progress: Math.min(user.rank.level, 3),
       maxProgress: 3,
       // Priority queue = costs nothing, feels premium, speeds up workflow
       reward: 'Приоритетная очередь',
@@ -178,15 +178,15 @@ function generateAchievements(user: UserData | null): Achievement[] {
     },
     {
       id: 'legend',
-      title: 'Легенда Салуна',
-      description: 'Достигни максимального уровня',
+      title: 'Высший статус',
+      description: 'Открой Премиум клуб',
       icon: Sparkles,
       color: '#f59e0b',
       unlocked: user.rank.is_max,
-      progress: user.rank.level,
+      progress: Math.min(user.rank.level, 4),
       maxProgress: 4,
       // Exclusive room access + early discounts = pure status, no cost
-      reward: 'VIP-комната + ранний доступ',
+      reward: 'Закрытые привилегии и ранний доступ',
       rarity: 'legendary',
     },
 
@@ -213,8 +213,8 @@ function generateAchievements(user: UserData | null): Achievement[] {
       unlocked: user.total_spent >= 50000,
       progress: Math.min(user.total_spent, 50000),
       maxProgress: 50000,
-      // Personal manager = premium feel, actually saves YOUR time
-      reward: 'Личный менеджер 24/7',
+      // Premium operational perks without false promises
+      reward: 'Индивидуальные условия и приоритет',
       rarity: 'legendary',
     },
 
@@ -280,7 +280,7 @@ function generateAchievements(user: UserData | null): Achievement[] {
       color: '#8b5cf6',
       unlocked: user.orders_count >= 1,
       // Exclusive badge = pure status, zero cost, creates envy
-      reward: 'Эксклюзивный значок OG',
+      reward: 'Знак раннего участника',
       rarity: 'common',
       secret: true,
     },
@@ -341,8 +341,11 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
     haptic('light')
   }
 
+  const progressValue = achievement.maxProgress
+    ? Math.min(achievement.progress || 0, achievement.maxProgress)
+    : (achievement.progress || 0)
   const progressPercent = achievement.maxProgress
-    ? ((achievement.progress || 0) / achievement.maxProgress) * 100
+    ? Math.min((progressValue / achievement.maxProgress) * 100, 100)
     : 0
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -690,8 +693,8 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
                 <span style={{ color: 'rgba(255,255,255,0.35)' }}>Прогресс</span>
                 <span style={{ color: 'rgba(212,175,55,0.6)', fontWeight: 600 }}>
                   {achievement.maxProgress >= 1000
-                    ? `${(achievement.progress || 0).toLocaleString()}/${achievement.maxProgress.toLocaleString()}`
-                    : `${achievement.progress || 0}/${achievement.maxProgress}`
+                    ? `${progressValue.toLocaleString()}/${achievement.maxProgress.toLocaleString()}`
+                    : `${progressValue}/${achievement.maxProgress}`
                   }
                 </span>
               </div>

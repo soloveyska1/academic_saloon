@@ -83,7 +83,7 @@ const EmptyState = ({ onSendHello }: { onSendHello: () => void }) => (
       marginBottom: 8,
       fontFamily: 'var(--font-serif)',
     }}>
-      Персональный менеджер
+      Поддержка по заказу
     </h3>
 
     <p style={{
@@ -964,7 +964,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             color: 'var(--text-main)',
             marginBottom: 2,
           }}>
-            Персональный менеджер
+            Поддержка по заказу
           </div>
           <div style={{
             fontSize: 12,

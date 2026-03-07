@@ -17,7 +17,7 @@ const REFERRAL_TIERS = [
   { count: 3, bonus: 100, label: 'Начало пути' },
   { count: 5, bonus: 200, label: 'Активист' },
   { count: 10, bonus: 500, label: 'Амбассадор' },
-  { count: 25, bonus: 1000, label: 'Легенда' },
+  { count: 25, bonus: 1000, label: 'Премиум клуб' },
 ]
 
 // Invited friend card component

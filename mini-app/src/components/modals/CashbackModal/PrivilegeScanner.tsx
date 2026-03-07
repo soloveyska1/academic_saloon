@@ -47,8 +47,8 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
     },
     {
       icon: Crown,
-      label: 'Персональный менеджер',
-      value: rank.cashback >= 10 ? 'Назначен' : 'Нет',
+      label: 'Индивидуальные условия',
+      value: rank.cashback >= 10 ? 'Доступны' : 'Нет',
       highlight: false,
     },
   ], [rank.cashback])

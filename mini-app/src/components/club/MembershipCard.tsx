@@ -47,10 +47,16 @@ export const MembershipCard = memo(function MembershipCard({
     : null
 
   const progressPercent = currentLevel.nextLevelXp
-    ? ((clubState.xp - currentLevel.minXp) / (currentLevel.nextLevelXp - currentLevel.minXp)) * 100
+    ? Math.min(
+        Math.max(
+          ((clubState.xp - currentLevel.minXp) / (currentLevel.nextLevelXp - currentLevel.minXp)) * 100,
+          0
+        ),
+        100
+      )
     : 100
 
-  const xpToNext = currentLevel.nextLevelXp ? currentLevel.nextLevelXp - clubState.xp : 0
+  const xpToNext = currentLevel.nextLevelXp ? Math.max(currentLevel.nextLevelXp - clubState.xp, 0) : 0
 
   // Active privileges chips (first 3)
   const activePerks = currentLevel.perks.slice(0, 3)
