@@ -801,10 +801,10 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 textTransform: 'uppercase',
                 color: isFastMode ? '#60a5fa' : 'var(--gold-400)',
               }}>
-                {isFastMode ? 'Быстрый запрос' : 'Полная заявка'}
+                {isFastMode ? 'Быстрый запрос' : 'Основной маршрут'}
               </div>
 
-              {canShowModeSwitch && (
+              {canShowModeSwitch && isFastMode && (
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.97 }}
@@ -826,16 +826,17 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
           </div>
 
           <div style={{
-            padding: '10px 16px',
-            background: 'rgba(212,175,55,0.1)',
-            border: '1px solid var(--border-gold)',
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 700,
-            color: 'var(--gold-400)',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            {step}/{totalSteps}
+              padding: '10px 16px',
+              background: 'rgba(212,175,55,0.1)',
+              border: '1px solid var(--border-gold)',
+              borderRadius: 12,
+              fontSize: 12,
+              fontWeight: 700,
+              color: 'var(--gold-400)',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}>
+            Шаг {step} из {totalSteps}
           </div>
         </motion.div>
 
@@ -898,23 +899,10 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{
-                    padding: '16px 18px',
-                    borderRadius: 18,
-                    background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
-                    border: '1px solid rgba(212,175,55,0.18)',
-                  }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
-                      Основной путь через полную заявку
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-                      Сначала выберите формат работы, чтобы заявка сразу пошла по точному сценарию.
-                    </div>
-                  </div>
-
                   <ServiceTypeStep
                     selected={serviceTypeId}
                     onSelect={handleServiceTypeSelect}
+                    onUrgentRequest={() => switchMode('fast')}
                     minimal
                   />
                 </div>
@@ -1459,11 +1447,13 @@ function FloatingCtaDock({
                 ? (submittingLabel || (isRevalidating ? 'Проверка...' : 'Отправка...'))
                 : step === totalSteps
                   ? (isFastMode ? 'Отправить быстрый запрос' : 'Отправить заявку')
+                  : step === 1 && !isFastMode
+                    ? 'Перейти к деталям'
                   : step === 2 && !isFastMode
                     ? 'Выбрать сроки'
-                    : step === 1 && isFastMode
-                      ? 'Перейти к сроку'
-                    : 'Продолжить'}
+                  : step === 1 && isFastMode
+                    ? 'Перейти к сроку'
+                  : 'Продолжить'}
             </span>
 
             {/* Icon */}
