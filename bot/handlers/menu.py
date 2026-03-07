@@ -420,7 +420,7 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
 @router.callback_query(F.data == "support")
 async def call_support(callback: CallbackQuery, bot: Bot):
-    """Связь с поддержкой — выбор способа связи"""
+    """Связь с поддержкой — единый центр помощи"""
     from bot.keyboards.inline import get_sheriff_choice_keyboard
 
     await callback.answer("🤠")
@@ -433,17 +433,15 @@ async def call_support(callback: CallbackQuery, bot: Bot):
         details="Открыл «Шериф на связи»",
     )
 
-    text = """🛡️ <b>Шериф к вашим услугам!</b>
+    text = """🛡️ <b>Центр помощи Academic Saloon</b>
 
-Выбери, как хочешь связаться:
+Здесь один понятный маршрут:
 
-<b>💬 Телеграм</b> — напишешь мне напрямую,
-отвечу в течение пары часов (обычно быстрее)
+<b>💬 Чат поддержки</b> — основной способ быстро решить вопрос по заказу, оплате, срокам, правкам или файлам.
 
-<b>🤖 Чат здесь</b> — пиши прямо в боте,
-увижу сразу и отвечу сюда же
+<b>✈️ Telegram</b> — запасной внешний канал, если удобнее писать напрямую.
 
-<i>Выбирай, партнёр! 🤠</i>"""
+<i>Открой чат поддержки, и мы сразу подхватим диалог.</i>"""
 
     await safe_delete_message(callback)
     await callback.message.answer(text, reply_markup=get_sheriff_choice_keyboard(), disable_web_page_preview=True)
@@ -677,8 +675,7 @@ async def handle_text_message(message: Message, bot: Bot, session: AsyncSession)
 
     # Показываем меню связи с шерифом
     await message.answer(
-        "🤔 <b>Хочешь что-то спросить?</b>\n\n"
-        "Чтобы связаться с Шерифом, нажми кнопку ниже:\n\n"
-        "💬 <i>Так я точно увижу твоё сообщение!</i>",
+        "🤔 <b>Нужна помощь?</b>\n\n"
+        "Открой чат поддержки кнопкой ниже. Это основной и самый быстрый способ решить вопрос по заказу.",
         reply_markup=get_sheriff_choice_keyboard()
     )

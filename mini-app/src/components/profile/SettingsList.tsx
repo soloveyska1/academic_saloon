@@ -252,7 +252,8 @@ export const SettingsList = memo(function SettingsList({
             icon={<HelpCircle size={18} />}
             iconColor="#3B82F6"
             iconBg="rgba(59, 130, 246, 0.15)"
-            title="Частые вопросы"
+            title="Быстрые ответы"
+            subtitle="Оплата, сроки, правки, файлы"
             action={<ChevronRight size={18} color="rgba(255, 255, 255, 0.3)" />}
             onClick={() => onNavigate('faq')}
           />
@@ -260,8 +261,8 @@ export const SettingsList = memo(function SettingsList({
             icon={<MessageCircle size={18} />}
             iconColor="#22c55e"
             iconBg="rgba(34, 197, 94, 0.15)"
-            title="Поддержка"
-            subtitle="Связаться с нами"
+            title="Центр помощи"
+            subtitle="Чат поддержки и Telegram"
             action={<ChevronRight size={18} color="rgba(255, 255, 255, 0.3)" />}
             onClick={() => onNavigate('support')}
           />

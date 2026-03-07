@@ -31,7 +31,7 @@ function getNextAction(orders: Order[]): NextAction | null {
       id: `payment-${paymentOrder.id}`,
       type: 'payment',
       priority: 1,
-      title: 'Ожидает оплаты',
+      title: 'Нужна оплата',
       subtitle: paymentOrder.subject || paymentOrder.work_type_label || `Заказ #${paymentOrder.id}`,
       icon: CreditCard,
       color: NEXT_ACTION_CONFIG.payment.color,

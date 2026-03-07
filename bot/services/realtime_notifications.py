@@ -46,8 +46,8 @@ ORDER_STATUS_NOTIFICATIONS = {
     # Цена назначена, ожидание оплаты
     "waiting_payment": {
         "type": NotificationType.PRICE_SET,
-        "title": "💰 Цена подтверждена!",
-        "message": "Ознакомьтесь с расчётом и оплатите заказ",
+        "title": "Расчёт готов",
+        "message": "Проверьте сумму и переходите к оплате",
         "icon": "check-circle",
         "color": "#d4af37",  # Золотой для премиальности
         "priority": "high",
@@ -67,22 +67,23 @@ ORDER_STATUS_NOTIFICATIONS = {
     # Оплата подтверждена
     "paid": {
         "type": NotificationType.PAYMENT_CONFIRMED,
-        "title": "Оплата получена!",
-        "message": "Приступаем к работе над вашим заказом",
+        "title": "Оплата подтверждена",
+        "message": "Заказ принят в работу. Дальше обновления придут автоматически",
         "icon": "check-circle",
         "color": "#22c55e",
         "priority": "high",
         "celebration": True,
     },
 
-    # Подтверждён, в работе
+    # Подтверждён расчёт, ждём оплату
     "confirmed": {
-        "type": NotificationType.IN_PROGRESS,
-        "title": "Заказ подтверждён",
-        "message": "Работа началась! Следите за прогрессом",
-        "icon": "play",
-        "color": "#3b82f6",
+        "type": NotificationType.PRICE_SET,
+        "title": "Расчёт готов",
+        "message": "Проверьте сумму и переходите к оплате",
+        "icon": "check-circle",
+        "color": "#d4af37",
         "priority": "high",
+        "action": "view_order",
     },
 
     # В работе
@@ -98,7 +99,7 @@ ORDER_STATUS_NOTIFICATIONS = {
     # На проверке
     "review": {
         "type": NotificationType.REVIEW,
-        "title": "Работа готова!",
+        "title": "Работа готова",
         "message": "Проверьте результат и подтвердите выполнение",
         "icon": "eye",
         "color": "#a855f7",
@@ -120,7 +121,7 @@ ORDER_STATUS_NOTIFICATIONS = {
     # Выполнен
     "completed": {
         "type": NotificationType.COMPLETED,
-        "title": "Заказ выполнен!",
+        "title": "Заказ выполнен",
         "message": "Спасибо за доверие! Будем рады видеть вас снова",
         "icon": "trophy",
         "color": "#22c55e",
@@ -226,7 +227,7 @@ BALANCE_NOTIFICATIONS = {
     },
     "order_cashback": {
         "positive": {
-            "title": "🎁 Кешбэк за заказ!",
+            "title": "Кэшбэк за заказ",
             "message": "+{amount}₽ начислено на баланс",
         },
     },
@@ -260,7 +261,7 @@ async def send_order_status_notification(
         msg_text = config["message"]
         title_text = config["title"]
 
-        if extra_data and new_status == "waiting_payment":
+        if extra_data and new_status in {"waiting_payment", "confirmed"}:
             final_price = extra_data.get("final_price")
             bonus_used = extra_data.get("bonus_used", 0)
             if final_price:

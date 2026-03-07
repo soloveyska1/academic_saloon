@@ -4,7 +4,7 @@ import {
   Bell, Package, Wallet, CheckCircle, AlertTriangle,
   Info, X, Sparkles, Clock, TrendingUp, TrendingDown,
   Play, Edit, Eye, RefreshCw, Trophy, XCircle, Calculator,
-  Zap, Target, Gift, Star, Award, Percent
+  Zap, Target, Gift, Star, Award, Percent, ArrowUpRight
 } from 'lucide-react'
 import { useTelegram } from '../../hooks/useUserData'
 import { Confetti, useConfetti } from './Confetti'
@@ -251,7 +251,6 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                       fontWeight: 700,
                       color: theme.titleColor,
                       letterSpacing: '-0.01em',
-                      fontFamily: "'Inter', system-ui, sans-serif", // Ensure clean font
                     }}
                   >
                     {notification.title}
@@ -347,14 +346,14 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                   color: theme.actionText,
                   fontWeight: 500
                 }}>
-                  Нармите чтобы посмотреть
+                  Нажмите, чтобы открыть
                 </span>
                 <motion.div
                   animate={{ x: [0, 3, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                   style={{ display: 'flex' }}
                 >
-                  <TrendingUp size={12} color={theme.actionText} style={{ transform: 'rotate(45deg)' }} />
+                  <ArrowUpRight size={12} color={theme.actionText} />
                 </motion.div>
               </motion.div>
             )}

@@ -165,25 +165,26 @@ interface StatusConfig {
   label: string
   color: string
   bgColor: string
+  borderColor: string
   icon: typeof Clock
   step: number
 }
 
 const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
-  draft: { label: 'Черновик', color: '#6b7280', bgColor: 'rgba(107,114,128,0.15)', icon: Clock, step: 0 },
-  pending: { label: 'На оценке', color: DS.colors.warning, bgColor: 'rgba(245,158,11,0.15)', icon: Clock, step: 1 },
-  waiting_estimation: { label: 'На оценке', color: DS.colors.warning, bgColor: 'rgba(245,158,11,0.15)', icon: Clock, step: 1 },
-  waiting_payment: { label: 'Ожидает оплаты', color: DS.colors.gold, bgColor: 'rgba(212,175,55,0.15)', icon: CreditCard, step: 2 },
-  confirmed: { label: 'Ожидает оплаты', color: DS.colors.gold, bgColor: 'rgba(212,175,55,0.15)', icon: CreditCard, step: 2 },
-  verification_pending: { label: 'Проверка оплаты', color: DS.colors.cyan, bgColor: 'rgba(6,182,212,0.15)', icon: Loader2, step: 2 },
-  paid: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', icon: Loader2, step: 3 },
-  paid_full: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', icon: Loader2, step: 3 },
-  in_progress: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', icon: Loader2, step: 3 },
-  revision: { label: 'На доработке', color: '#f97316', bgColor: 'rgba(249,115,22,0.15)', icon: Clock, step: 3 },
-  review: { label: 'На проверке', color: DS.colors.purple, bgColor: 'rgba(139,92,246,0.15)', icon: Clock, step: 4 },
-  completed: { label: 'Выполнен', color: DS.colors.success, bgColor: 'rgba(34,197,94,0.15)', icon: CheckCircle2, step: 5 },
-  cancelled: { label: 'Отменён', color: DS.colors.error, bgColor: 'rgba(239,68,68,0.15)', icon: XCircle, step: -1 },
-  rejected: { label: 'Отклонён', color: DS.colors.error, bgColor: 'rgba(239,68,68,0.15)', icon: XCircle, step: -1 },
+  draft: { label: 'Черновик', color: '#6b7280', bgColor: 'rgba(107,114,128,0.15)', borderColor: 'rgba(107,114,128,0.25)', icon: Clock, step: 0 },
+  pending: { label: 'На оценке', color: DS.colors.warning, bgColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.24)', icon: Clock, step: 1 },
+  waiting_estimation: { label: 'На оценке', color: DS.colors.warning, bgColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.24)', icon: Clock, step: 1 },
+  waiting_payment: { label: 'К оплате', color: DS.colors.gold, bgColor: 'rgba(212,175,55,0.15)', borderColor: 'rgba(212,175,55,0.24)', icon: CreditCard, step: 2 },
+  confirmed: { label: 'К оплате', color: DS.colors.gold, bgColor: 'rgba(212,175,55,0.15)', borderColor: 'rgba(212,175,55,0.24)', icon: CreditCard, step: 2 },
+  verification_pending: { label: 'Проверка оплаты', color: DS.colors.cyan, bgColor: 'rgba(6,182,212,0.15)', borderColor: 'rgba(6,182,212,0.24)', icon: Loader2, step: 2 },
+  paid: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.24)', icon: Loader2, step: 3 },
+  paid_full: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.24)', icon: Loader2, step: 3 },
+  in_progress: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.24)', icon: Loader2, step: 3 },
+  revision: { label: 'На доработке', color: '#f97316', bgColor: 'rgba(249,115,22,0.15)', borderColor: 'rgba(249,115,22,0.24)', icon: Clock, step: 3 },
+  review: { label: 'На проверке', color: DS.colors.purple, bgColor: 'rgba(139,92,246,0.15)', borderColor: 'rgba(139,92,246,0.24)', icon: Clock, step: 4 },
+  completed: { label: 'Выполнен', color: DS.colors.success, bgColor: 'rgba(34,197,94,0.15)', borderColor: 'rgba(34,197,94,0.24)', icon: CheckCircle2, step: 5 },
+  cancelled: { label: 'Отменён', color: DS.colors.error, bgColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.24)', icon: XCircle, step: -1 },
+  rejected: { label: 'Отклонён', color: DS.colors.error, bgColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.24)', icon: XCircle, step: -1 },
 }
 
 const WORK_TYPE_LABELS: Record<string, string> = {
@@ -380,7 +381,7 @@ const OrderAppBar = memo(function OrderAppBar({
   const menuItems = [
     { icon: Copy, label: 'Скопировать номер', onClick: () => { onCopyOrderId(); setMenuOpen(false) } },
     { icon: MessageCircle, label: 'Написать менеджеру', onClick: () => { onContactManager(); setMenuOpen(false) } },
-    { icon: HelpCircle, label: 'FAQ / Помощь', onClick: () => { onOpenFAQ(); setMenuOpen(false) } },
+    { icon: HelpCircle, label: 'Центр помощи', onClick: () => { onOpenFAQ(); setMenuOpen(false) } },
     { icon: Archive, label: order.is_archived ? 'Из архива' : 'В архив', onClick: () => { onArchive(); setMenuOpen(false) } },
   ]
 
@@ -583,6 +584,7 @@ interface HeroSummaryProps {
 
 const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryProps) {
   const isAwaitingPayment = ['waiting_payment', 'confirmed'].includes(order.status)
+  const paymentExpired = Boolean(isAwaitingPayment && countdown?.urgency === 'expired')
   const statusConfig = STATUS_CONFIG[order.status]
   const StatusIcon = statusConfig.icon
   const WorkTypeIcon = WORK_TYPE_ICONS[order.work_type] || WORK_TYPE_ICONS.other
@@ -728,7 +730,9 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {countdown.urgency === 'critical' ? (
+                {paymentExpired ? (
+                  <AlertTriangle size={16} color={urgencyColors.expired} />
+                ) : countdown.urgency === 'critical' ? (
                   <Flame size={16} color={urgencyColors[countdown.urgency]} />
                 ) : countdown.urgency === 'warning' ? (
                   <AlertTriangle size={16} color={urgencyColors[countdown.urgency]} />
@@ -736,33 +740,37 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
                   <Clock size={16} color={urgencyColors[countdown.urgency]} />
                 )}
                 <span style={{ fontSize: 13, fontWeight: 700, color: DS.colors.textPrimary }}>
-                  Оплатить до {countdown.formatted}
+                  {paymentExpired ? 'Срок оплаты истёк' : `Оплатить до ${countdown.formatted}`}
                 </span>
               </div>
               <span style={{ fontSize: 12.5, color: DS.colors.textSecondary }}>
-                После оплаты сразу запускаем заказ
+                {paymentExpired
+                  ? 'Напишите в поддержку, чтобы подтвердить актуальность расчёта и срока.'
+                  : 'После оплаты сразу запускаем заказ'}
               </span>
             </div>
 
-            <div
-              style={{
-                height: 5,
-                borderRadius: 999,
-                background: 'rgba(255,255,255,0.08)',
-                overflow: 'hidden',
-              }}
-            >
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${countdown.progress}%` }}
-                transition={{ duration: 0.5 }}
+            {!paymentExpired && (
+              <div
                 style={{
-                  height: '100%',
                   borderRadius: 999,
-                  background: `linear-gradient(90deg, ${urgencyColors[countdown.urgency]}, ${urgencyColors[countdown.urgency]}80)`,
+                  background: 'rgba(255,255,255,0.08)',
+                  height: 5,
+                  overflow: 'hidden',
                 }}
-              />
-            </div>
+              >
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${countdown.progress}%` }}
+                  transition={{ duration: 0.5 }}
+                  style={{
+                    height: '100%',
+                    borderRadius: 999,
+                    background: `linear-gradient(90deg, ${urgencyColors[countdown.urgency]}, ${urgencyColors[countdown.urgency]}80)`,
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -779,6 +787,7 @@ type ActionBarVariant = 'payment' | 'verification' | 'work' | 'review' | 'comple
 interface StickyActionBarProps {
   order: Order
   paymentScheme: 'full' | 'half'
+  paymentExpired: boolean
   onPaymentClick: () => void
   onContactManager: () => void
   onDownloadFiles: () => void
@@ -787,6 +796,7 @@ interface StickyActionBarProps {
 const StickyActionBar = memo(function StickyActionBar({
   order,
   paymentScheme,
+  paymentExpired,
   onPaymentClick,
   onContactManager,
   onDownloadFiles,
@@ -828,7 +838,15 @@ const StickyActionBar = memo(function StickyActionBar({
     disabled: boolean
     onClick: () => void
   }> = {
-    payment: {
+    payment: paymentExpired ? {
+      showAmount: false,
+      buttonText: 'Связаться с поддержкой',
+      buttonIcon: MessageCircle,
+      buttonColor: DS.colors.textPrimary,
+      buttonBg: DS.colors.bgElevated,
+      disabled: false,
+      onClick: onContactManager,
+    } : {
       showAmount: true,
       buttonText: 'Перейти к оплате',
       buttonIcon: ChevronRight,
@@ -3597,7 +3615,7 @@ export function OrderDetailPageV8() {
 
   const handleOpenFAQ = useCallback(() => {
     haptic?.('light')
-    navigate('/support')
+    navigate('/support?view=faq')
   }, [haptic, navigate])
 
   const handlePaymentClick = useCallback(() => {
@@ -3844,6 +3862,7 @@ export function OrderDetailPageV8() {
       <StickyActionBar
         order={order}
         paymentScheme={paymentScheme}
+        paymentExpired={Boolean(paymentCountdown && paymentCountdown.urgency === 'expired')}
         onPaymentClick={handlePaymentClick}
         onContactManager={handleContactManager}
         onDownloadFiles={handleDownloadFiles}

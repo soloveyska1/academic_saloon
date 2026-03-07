@@ -20,7 +20,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
   {
     id: 'cashback',
     icon: Percent,
-    title: 'Кешбэк',
+    title: 'Кэшбэк',
     subtitle: 'до 10%',
     action: 'modal',
     modal: 'cashback',

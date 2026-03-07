@@ -79,18 +79,24 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_sheriff_choice_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура выбора способа связи с шерифом"""
+    """Клавиатура центра помощи с основным входом в чат поддержки"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="💬 Написать в Телеграм",
+                text="💬 Открыть чат поддержки",
+                callback_data="enter_chat_support"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=f"✈️ Telegram @{settings.SUPPORT_USERNAME}",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             )
         ],
         [
             InlineKeyboardButton(
-                text="🤖 Чат прямо здесь",
-                callback_data="support_bot_chat"
+                text="⭐ Отзывы и кейсы",
+                url=settings.REVIEWS_CHANNEL
             )
         ],
         [

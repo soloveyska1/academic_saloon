@@ -26,7 +26,7 @@ BONUS_REASON_DESCRIPTIONS = {
     "admin_adjustment": "Корректировка админом",
     "order_discount": "Использовано на заказ",
     "compensation": "Компенсация",
-    "order_cashback": "Кешбэк за заказ",
+    "order_cashback": "Кэшбэк за заказ",
     "bonus_expired": "Сгорание бонусов",
     "daily_luck": "Ежедневный бонус",
     "coupon": "Купон",
@@ -41,7 +41,7 @@ class BonusReason(str, Enum):
     ADMIN_ADJUSTMENT = "admin_adjustment"    # Корректировка админом
     ORDER_DISCOUNT = "order_discount"        # Списание на заказ
     COMPENSATION = "compensation"            # Компенсация
-    ORDER_CASHBACK = "order_cashback"        # Кешбэк за выполненный заказ
+    ORDER_CASHBACK = "order_cashback"        # Кэшбэк за выполненный заказ
     BONUS_EXPIRED = "bonus_expired"          # Сгорание бонусов
     DAILY_LUCK = "daily_luck"                # Ежедневная удача / бонус
     COUPON = "coupon"                        # Промокод
@@ -370,7 +370,7 @@ class BonusService:
             user_id=user_id,
             amount=cashback_amount,
             reason=BonusReason.ORDER_CASHBACK,
-            description=f"Кешбэк {cashback_percent}% за заказ #{order_id}",
+            description=f"Кэшбэк {cashback_percent}% за заказ #{order_id}",
             bot=bot,
         )
 

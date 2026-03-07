@@ -4,7 +4,6 @@ import { AlertCircle, ExternalLink, Loader2, MessageCircle, RefreshCw, Send, Shi
 import { ChatMessage } from '../../types'
 import { fetchSupportMessages, sendSupportMessage } from '../../api/userApi'
 import { useTelegram } from '../../hooks/useUserData'
-import { SUPPORT_TELEGRAM_URL } from '../../lib/appLinks'
 
 function haveSameMessages(a: ChatMessage[], b: ChatMessage[]): boolean {
   if (a.length !== b.length) return false
@@ -46,12 +45,8 @@ function formatDayLabel(dateString: string): string {
   })
 }
 
-function openSupportTelegram() {
-  window.open(SUPPORT_TELEGRAM_URL, '_blank', 'noopener,noreferrer')
-}
-
 export function SupportChat() {
-  const { haptic } = useTelegram()
+  const { haptic, openSupport } = useTelegram()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -224,7 +219,7 @@ export function SupportChat() {
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={openSupportTelegram}
+                onClick={openSupport}
                 style={{
                   minHeight: 44,
                   borderRadius: 14,
@@ -270,14 +265,14 @@ export function SupportChat() {
               <ShieldCheck size={24} color="#d4af37" />
             </div>
             <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
-              Поддержка уже на связи
+              Можно писать сразу сюда
             </div>
             <div style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 16 }}>
-              Напишите вопрос по оплате, срокам, правкам или файлам. Если удобнее, можно сразу открыть Telegram и написать напрямую.
+              Напишите вопрос по оплате, срокам, правкам или файлам. Если удобнее перейти во внешний канал, откройте Telegram.
             </div>
             <motion.button
               whileTap={{ scale: 0.97 }}
-              onClick={openSupportTelegram}
+              onClick={openSupport}
               style={{
                 minHeight: 46,
                 padding: '0 16px',
@@ -291,10 +286,10 @@ export function SupportChat() {
                 alignItems: 'center',
                 gap: 8,
               }}
-            >
-              <ExternalLink size={15} />
-              Открыть Telegram
-            </motion.button>
+              >
+                <ExternalLink size={15} />
+                Telegram
+              </motion.button>
           </div>
         ) : (
           <>

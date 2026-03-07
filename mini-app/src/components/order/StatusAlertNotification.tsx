@@ -18,37 +18,37 @@ interface StatusAlertNotificationProps {
 
 export const STATUS_ALERTS: Record<string, StatusAlert> = {
     waiting_payment: {
-        title: '💰 Цена подтверждена!',
-        message: 'Ознакомьтесь с расчётом и оплатите заказ',
+        title: 'Расчёт готов',
+        message: 'Проверьте сумму и переходите к оплате',
         icon: 'check',
         color: '#d4af37',
     },
     confirmed: {
-        title: '💰 Цена подтверждена!',
-        message: 'Ознакомьтесь с расчётом и оплатите заказ',
+        title: 'Расчёт готов',
+        message: 'Проверьте сумму и переходите к оплате',
         icon: 'check',
         color: '#d4af37',
     },
     paid: {
-        title: '🎉 Оплата подтверждена!',
-        message: 'Заказ принят в работу. Шериф уже запряг лошадей!',
+        title: 'Оплата подтверждена',
+        message: 'Заказ принят в работу. Дальше обновления придут автоматически.',
         icon: 'check',
         color: '#22c55e',
     },
     in_progress: {
-        title: '⚡ Заказ в работе!',
+        title: 'Заказ в работе',
         message: 'Автор активно работает над вашим заказом',
         icon: 'play',
         color: '#3b82f6',
     },
     review: {
-        title: '✨ Работа готова!',
+        title: 'Работа готова',
         message: 'Проверьте результат и подтвердите выполнение',
         icon: 'check',
         color: '#a855f7',
     },
     completed: {
-        title: '🏆 Заказ выполнен!',
+        title: 'Заказ выполнен',
         message: 'Спасибо за доверие! Будем рады видеть вас снова',
         icon: 'trophy',
         color: '#22c55e',

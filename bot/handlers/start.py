@@ -299,9 +299,9 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
         )
 
         await message.answer(
-            "💬 <b>Поддержка Academic Saloon</b>\n\n"
-            "Вы подключены к службе поддержки.\n"
-            "Напишите ваш вопрос — мы ответим в ближайшее время.\n\n"
+            "💬 <b>Центр помощи Academic Saloon</b>\n\n"
+            "Вы подключены к чату поддержки.\n"
+            "Напишите вопрос по оплате, срокам, правкам или файлам — мы ответим в ближайшее время.\n\n"
             "Чтобы выйти — нажмите кнопку внизу 👇",
             reply_markup=get_exit_chat_keyboard(),
         )

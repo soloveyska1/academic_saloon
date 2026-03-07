@@ -60,7 +60,7 @@ const STATUS_INFO: Record<OrderStatus, StatusInfo> = {
   },
   waiting_payment: {
     icon: CreditCard,
-    label: 'Ожидает оплаты',
+    label: 'К оплате',
     description: 'Заказ оценён! Оплатите, чтобы мы начали работу.',
     nextStep: 'Выберите способ оплаты и переведите средства.',
     action: { label: 'Оплатить', action: 'payment', icon: CreditCard },
@@ -71,8 +71,8 @@ const STATUS_INFO: Record<OrderStatus, StatusInfo> = {
   },
   confirmed: {
     icon: CreditCard,
-    label: 'Ожидает оплаты',
-    description: 'Заказ подтверждён! Оплатите для начала работы.',
+    label: 'К оплате',
+    description: 'Расчёт подтверждён. Оплатите заказ, чтобы мы сразу запустили работу.',
     nextStep: 'Прокрутите вниз к форме оплаты.',
     action: { label: 'К оплате', action: 'payment', icon: CreditCard },
     color: '#d4af37',

@@ -87,7 +87,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     step: 1,
   },
   confirmed: {
-    label: 'Ожидает оплаты',
+    label: 'К оплате',
     hint: 'После оплаты сразу запускаем заказ в работу.',
     color: '#d4af37',
     chipBackground: 'rgba(212, 175, 55, 0.14)',
@@ -99,7 +99,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     actionLabel: 'Оплатить',
   },
   waiting_payment: {
-    label: 'Ожидает оплаты',
+    label: 'К оплате',
     hint: 'После оплаты сразу запускаем заказ в работу.',
     color: '#d4af37',
     chipBackground: 'rgba(212, 175, 55, 0.14)',

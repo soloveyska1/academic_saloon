@@ -31,9 +31,9 @@ const RANK_DISPLAY_NAMES: Record<string, string> = {
 
 // Rank perks
 const RANK_PERKS: Record<number, string[]> = {
-  1: ['Кешбэк 3%', 'Доступ к бонусам'],
-  2: ['Кешбэк 5%', 'Приоритетная оценка'],
-  3: ['Кешбэк 7%', 'Приоритетная поддержка', 'Бесплатная доработка'],
+  1: ['Кэшбэк 3%', 'Доступ к бонусам'],
+  2: ['Кэшбэк 5%', 'Приоритетная оценка'],
+  3: ['Кэшбэк 7%', 'Приоритетная поддержка', 'Бесплатная доработка'],
   4: ['Максимальный кешбэк 10%', 'Индивидуальные условия', 'Приоритет в очереди', 'Эксклюзивные скидки'],
 }
 
@@ -310,7 +310,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                Кешбэк {newRank.cashback}%
+                Кэшбэк {newRank.cashback}%
               </span>
             </motion.div>
           </motion.div>

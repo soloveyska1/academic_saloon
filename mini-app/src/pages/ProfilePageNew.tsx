@@ -860,7 +860,7 @@ export function ProfilePageNew({ user }: Props) {
 
   const handleOpenSupport = useCallback(() => {
     haptic('medium')
-    navigate('/support')
+    navigate('/support?view=chat')
   }, [haptic, navigate])
 
   const handleOpenRewards = useCallback(() => {
