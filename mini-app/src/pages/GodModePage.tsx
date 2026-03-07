@@ -5,7 +5,7 @@
  * No passwords - pure Telegram authentication
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Crown, Activity, Users, Package, Tag, ScrollText, Terminal, Radio,
@@ -14,17 +14,21 @@ import {
   AlertTriangle, Send, Plus, Trash2, ToggleLeft, ToggleRight,
   Zap, Settings, Home, Shield, Bell, CreditCard, Percent, Volume2, VolumeX
 } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { useAdmin } from '../contexts/AdminContext'
 import {
   fetchGodDashboard,
   fetchGodOrders,
+  fetchGodOrderDetails,
   fetchGodUsers,
+  fetchGodUserDetails,
   fetchGodPromos,
   fetchGodLogs,
   fetchGodLiveActivity,
   updateGodOrderStatus,
   updateGodOrderPrice,
   updateGodOrderProgress,
+  updateGodOrderNotes,
   confirmGodPayment,
   rejectGodPayment,
   sendGodOrderMessage,
@@ -78,13 +82,13 @@ const STATUS_CONFIG: Record<string, { label: string; emoji: string; color: strin
 // Tabs configuration
 type TabId = 'dashboard' | 'orders' | 'users' | 'promos' | 'live' | 'logs' | 'sql' | 'broadcast'
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard', label: 'Дашборд', icon: <Home size={18} /> },
+  { id: 'dashboard', label: 'Центр', icon: <Home size={18} /> },
   { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
   { id: 'users', label: 'Клиенты', icon: <Users size={18} /> },
-  { id: 'promos', label: 'Промо', icon: <Tag size={18} /> },
-  { id: 'live', label: 'Live', icon: <Radio size={18} /> },
-  { id: 'logs', label: 'Логи', icon: <ScrollText size={18} /> },
-  { id: 'sql', label: 'SQL', icon: <Terminal size={18} /> },
+  { id: 'promos', label: 'Промокоды', icon: <Tag size={18} /> },
+  { id: 'live', label: 'Онлайн', icon: <Radio size={18} /> },
+  { id: 'logs', label: 'Журнал', icon: <ScrollText size={18} /> },
+  { id: 'sql', label: 'Запросы', icon: <Terminal size={18} /> },
   { id: 'broadcast', label: 'Рассылка', icon: <Bell size={18} /> },
 ]
 
@@ -127,10 +131,72 @@ const secondaryButtonStyle: React.CSSProperties = {
   color: '#fff',
 }
 
+const TRANSACTION_REASON_LABELS: Record<string, string> = {
+  order_created: 'Бонус за новый заказ',
+  referral_bonus: 'Реферальный бонус',
+  admin_adjustment: 'Ручная корректировка',
+  order_discount: 'Оплата бонусами',
+  compensation: 'Компенсация',
+  order_cashback: 'Кэшбэк за заказ',
+  bonus_expired: 'Сгорание бонусов',
+  daily_luck: 'Ежедневный бонус',
+  coupon: 'Купон',
+  promo_code: 'Промокод',
+  order_refund: 'Возврат бонусов',
+}
+
+function formatMoney(value: number | null | undefined) {
+  return `${Number(value || 0).toLocaleString('ru-RU')} ₽`
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return 'Нет данных'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return 'Нет данных'
+  return parsed.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function formatPageLabel(value: string | null | undefined) {
+  if (!value) return 'Экран не определён'
+
+  const labels: Record<string, string> = {
+    '/': 'Главная',
+    '/orders': 'Заказы',
+    '/profile': 'Профиль',
+    '/club': 'Клуб',
+    '/support': 'Поддержка',
+    '/create-order': 'Оформление заказа',
+  }
+
+  return labels[value] || value
+}
+
+function withRouteParams(current: URLSearchParams, updates: Record<string, string | null | undefined>) {
+  const next = new URLSearchParams(current)
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (!value || value === 'all') {
+      next.delete(key)
+      return
+    }
+    next.set(key, value)
+  })
+
+  return next
+}
+
 export function GodModePage() {
-  const { isAdmin, telegramId, simulateNewUser, toggleSimulateNewUser } = useAdmin()
-  const [activeTab, setActiveTab] = useState<TabId>('dashboard')
-  const [loading, setLoading] = useState(true)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { isAdmin, telegramId, simulateNewUser, toggleSimulateNewUser, accessResolved } = useAdmin()
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    const tab = searchParams.get('tab')
+    return TABS.some(item => item.id === tab) ? (tab as TabId) : 'dashboard'
+  })
 
   // Notification state
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
@@ -234,7 +300,43 @@ export function GodModePage() {
     }
   }, [activeTab])
 
-  // Access denied screen
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab && TABS.some(item => item.id === tab) && tab !== activeTab) {
+      setActiveTab(tab as TabId)
+    }
+  }, [activeTab, searchParams])
+
+  const handleTabChange = useCallback((tab: TabId) => {
+    setActiveTab(tab)
+    const next = new URLSearchParams(searchParams)
+    next.set('tab', tab)
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  if (!accessResolved) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(180deg, #0a0a0c 0%, #0d0d10 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        gap: 14,
+      }}>
+        <LoadingSpinner />
+        <div style={{ color: '#D4AF37', fontSize: 14, fontWeight: 700 }}>
+          Проверяем доступ к операционному центру
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12, textAlign: 'center', maxWidth: 320 }}>
+          Подтягиваем Telegram-сессию и права администратора.
+        </div>
+      </div>
+    )
+  }
+
   if (!isAdmin) {
     return (
       <div style={{
@@ -301,68 +403,81 @@ export function GodModePage() {
           </div>
           <div style={{ flex: 1 }}>
             <h1 style={{ color: '#D4AF37', fontSize: 18, fontWeight: 700, margin: 0 }}>
-              GOD MODE
+              Операционный центр
             </h1>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, margin: 0 }}>
-              Full Control Panel
+              Заказы, клиенты, промокоды и контроль системы
             </p>
           </div>
 
-          {/* New user simulation toggle */}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={toggleSimulateNewUser}
             style={{
-              width: 36,
               height: 36,
+              padding: '0 12px',
               borderRadius: 10,
               background: simulateNewUser ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)',
-              border: simulateNewUser ? '1px solid rgba(168,85,247,0.5)' : '1px solid transparent',
+              border: simulateNewUser ? '1px solid rgba(168,85,247,0.5)' : '1px solid rgba(255,255,255,0.06)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 8,
+              color: simulateNewUser ? '#c4b5fd' : 'rgba(255,255,255,0.72)',
+              flexShrink: 0,
             }}
-            title={simulateNewUser ? 'Выключить режим новичка' : 'Включить режим новичка'}
+            title={simulateNewUser ? 'Выключить сценарий новичка' : 'Включить сценарий новичка'}
           >
-            <span style={{ fontSize: 16 }}>{simulateNewUser ? '👶' : '🎭'}</span>
+            <Users size={16} />
+            <span style={{ fontSize: 12, fontWeight: 700 }}>
+              Новичок
+            </span>
           </motion.button>
 
-          {/* Sound toggle */}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setSoundEnabled(!soundEnabled)}
             style={{
-              width: 36,
               height: 36,
+              padding: '0 12px',
               borderRadius: 10,
               background: soundEnabled ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-              border: 'none',
+              border: `1px solid ${soundEnabled ? 'rgba(34,197,94,0.24)' : 'rgba(239,68,68,0.24)'}`,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 8,
+              color: soundEnabled ? '#86efac' : '#fca5a5',
+              flexShrink: 0,
             }}
           >
             {soundEnabled ? (
-              <Volume2 size={18} color="#22c55e" />
+              <Volume2 size={16} />
             ) : (
-              <VolumeX size={18} color="#ef4444" />
+              <VolumeX size={16} />
             )}
+            <span style={{ fontSize: 12, fontWeight: 700 }}>
+              Звук
+            </span>
           </motion.button>
 
-          {/* Notification badge */}
           <div style={{ position: 'relative' }}>
             <div style={{
-              width: 36,
               height: 36,
+              padding: '0 12px',
               borderRadius: 10,
               background: 'rgba(212,175,55,0.1)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 8,
             }}>
-              <Bell size={18} color="#D4AF37" />
+              <Bell size={16} color="#D4AF37" />
+              <span style={{ color: '#D4AF37', fontSize: 12, fontWeight: 700 }}>
+                Сигналы
+              </span>
             </div>
             {unreadCount > 0 && (
               <motion.div
@@ -388,6 +503,31 @@ export function GodModePage() {
                 {unreadCount > 9 ? '9+' : unreadCount}
               </motion.div>
             )}
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          marginTop: 12,
+          flexWrap: 'wrap',
+        }}>
+          <div style={{
+            padding: '6px 10px',
+            borderRadius: 999,
+            background: 'rgba(212,175,55,0.08)',
+            border: '1px solid rgba(212,175,55,0.14)',
+            color: '#d4af37',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}>
+            Раздел: {TABS.find(tab => tab.id === activeTab)?.label}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>
+            {unreadCount > 0 ? `Есть ${unreadCount} новых сигналов` : 'Система под контролем'}
           </div>
         </div>
 
@@ -475,7 +615,7 @@ export function GodModePage() {
           <motion.button
             key={tab.id}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             style={{
               padding: '8px 16px',
               borderRadius: 10,
@@ -521,10 +661,24 @@ export function GodModePage() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function DashboardTab() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [data, setData] = useState<GodDashboard | null>(null)
   const [pendingOrders, setPendingOrders] = useState<GodOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const previousPendingCountRef = useRef(0)
+
+  const openRoute = useCallback((tab: TabId, updates: Record<string, string | null | undefined>) => {
+    const next = withRouteParams(searchParams, {
+      tab,
+      order_status: null,
+      order_q: null,
+      user_filter: null,
+      user_q: null,
+      ...updates,
+    })
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -537,30 +691,34 @@ function DashboardTab() {
       setPendingOrders(ordersResult.orders)
 
       // Play sound if new pending orders
-      if (ordersResult.orders.length > 0 && pendingOrders.length < ordersResult.orders.length) {
+      if (ordersResult.orders.length > 0 && previousPendingCountRef.current < ordersResult.orders.length) {
         try {
           const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp2ckIB0aGRqeIyeo52SgHBjYGd3jJ+pqJuKd2hkaHqOnqmomox4aGVofI+gqqmai3doZWl9kKGrq5qKeGhlanySoaurmop4aGVqfZKhq6yainhoZWp9kqGrrJqKeGhlbH6SoausmYp4aGZsfpOiq6yZinhpZm1/k6KsrJmJeGlmbYCToqysmon/');
           audio.volume = 0.3
           audio.play().catch(() => {})
         } catch {}
       }
+      previousPendingCountRef.current = ordersResult.orders.length
     } catch {
       /* silent */
     }
     setLoading(false)
-  }, [pendingOrders.length])
+  }, [])
 
   useEffect(() => {
-    load()
-    const interval = setInterval(load, 15000) // Auto-refresh every 15s
-    return () => clearInterval(interval)
-  }, [])
+    void load()
+    const interval = window.setInterval(() => {
+      void load()
+    }, 15000)
+    return () => window.clearInterval(interval)
+  }, [load])
 
   const handleQuickConfirm = async (orderId: number) => {
     setActionLoading(orderId)
     try {
       await confirmGodPayment(orderId)
       setPendingOrders(prev => prev.filter(o => o.id !== orderId))
+      await load()
       // Vibrate on success
       if (navigator.vibrate) navigator.vibrate(100)
     } catch {
@@ -574,6 +732,7 @@ function DashboardTab() {
     try {
       await rejectGodPayment(orderId, 'Платёж не найден')
       setPendingOrders(prev => prev.filter(o => o.id !== orderId))
+      await load()
     } catch {
       /* silent */
     }
@@ -585,6 +744,41 @@ function DashboardTab() {
   }
 
   if (!data) return null
+
+  const focusQueues = [
+    {
+      id: 'pending',
+      label: 'Новые заявки',
+      count: data.orders.by_status.pending || 0,
+      description: 'Сразу забрать в работу и оценить объём.',
+      accent: '#f59e0b',
+      onClick: () => openRoute('orders', { order_status: 'pending' }),
+    },
+    {
+      id: 'waiting_estimation',
+      label: 'На оценке',
+      count: data.orders.by_status.waiting_estimation || 0,
+      description: 'Назначить цену и не потерять горячий спрос.',
+      accent: '#8b5cf6',
+      onClick: () => openRoute('orders', { order_status: 'waiting_estimation' }),
+    },
+    {
+      id: 'verification_pending',
+      label: 'Проверка оплаты',
+      count: data.orders.by_status.verification_pending || 0,
+      description: 'Подтвердить платёж и запустить заказ без задержки.',
+      accent: '#ec4899',
+      onClick: () => openRoute('orders', { order_status: 'verification_pending' }),
+    },
+    {
+      id: 'watched',
+      label: 'Клиенты под наблюдением',
+      count: data.users.watched || 0,
+      description: 'Проблемные и ценные клиенты в отдельной очереди.',
+      accent: '#D4AF37',
+      onClick: () => openRoute('users', { user_filter: 'watched' }),
+    },
+  ]
 
   return (
     <motion.div
@@ -735,16 +929,29 @@ function DashboardTab() {
           }}
         >
           <AlertTriangle size={24} color="#ef4444" />
-          <div style={{ flex: 1 }}>
-            <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 14 }}>
-              Требуют внимания: {data.orders.needing_attention}
+            <div style={{ flex: 1 }}>
+              <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 14 }}>
+                Требуют внимания: {data.orders.needing_attention}
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                Новые, на оценке и на проверке оплаты
+              </div>
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-              Pending, verification, estimation
-            </div>
-          </div>
         </motion.div>
       )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+        {focusQueues.map(queue => (
+          <FocusCard
+            key={queue.id}
+            label={queue.label}
+            count={queue.count}
+            description={queue.description}
+            accent={queue.accent}
+            onClick={queue.onClick}
+          />
+        ))}
+      </div>
 
       {/* Revenue Stats */}
       <div style={cardStyle}>
@@ -787,7 +994,7 @@ function DashboardTab() {
           <span style={{ color: '#fff', fontWeight: 600 }}>Пользователи</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-          <StatCard label="Online" value={data.users.online} color="#22c55e" />
+          <StatCard label="Онлайн" value={data.users.online} color="#22c55e" />
           <StatCard label="Сегодня" value={data.users.today} color="#3b82f6" />
           <StatCard label="За неделю" value={data.users.week} color="#8b5cf6" />
           <StatCard label="Всего" value={data.users.total} color="#D4AF37" />
@@ -895,32 +1102,115 @@ function StatCard({ label, value, color }: { label: string; value: string | numb
   )
 }
 
+function FocusCard({
+  label,
+  count,
+  description,
+  accent,
+  onClick,
+}: {
+  label: string
+  count: number
+  description: string
+  accent: string
+  onClick: () => void
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      style={{
+        ...cardStyle,
+        padding: 14,
+        cursor: 'pointer',
+        textAlign: 'left',
+        border: `1px solid ${accent}25`,
+        background: `linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98)), ${accent}`,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+        <div style={{
+          minWidth: 40,
+          height: 40,
+          borderRadius: 12,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: `${accent}18`,
+          color: accent,
+          fontSize: 18,
+          fontWeight: 800,
+        }}>
+          {count}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: '#fff', fontWeight: 700, lineHeight: 1.35, marginBottom: 4 }}>
+            {label}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.46)', fontSize: 12, lineHeight: 1.5 }}>
+            {description}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: accent, fontSize: 12, fontWeight: 700 }}>
+        Открыть очередь
+        <ChevronRight size={14} />
+      </div>
+    </motion.button>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  ORDERS TAB
 // ═══════════════════════════════════════════════════════════════════════════
 
 function OrdersTab() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [orders, setOrders] = useState<GodOrder[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [search, setSearch] = useState(() => searchParams.get('order_q') || '')
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('order_status') || 'all')
   const [selectedOrder, setSelectedOrder] = useState<GodOrder | null>(null)
   const [total, setTotal] = useState(0)
+  const deferredSearch = useDeferredValue(search.trim())
+
+  useEffect(() => {
+    const nextSearch = searchParams.get('order_q') || ''
+    const nextStatus = searchParams.get('order_status') || 'all'
+    if (nextSearch !== search) {
+      setSearch(nextSearch)
+    }
+    if (nextStatus !== statusFilter) {
+      setStatusFilter(nextStatus)
+    }
+  }, [search, searchParams, statusFilter])
+
+  useEffect(() => {
+    const next = withRouteParams(searchParams, {
+      tab: 'orders',
+      order_q: search.trim() || null,
+      order_status: statusFilter,
+    })
+
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true })
+    }
+  }, [search, searchParams, setSearchParams, statusFilter])
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await fetchGodOrders({ status: statusFilter, search, limit: 100 })
+      const result = await fetchGodOrders({ status: statusFilter, search: deferredSearch, limit: 100 })
       setOrders(result.orders)
       setTotal(result.total)
     } catch {
       /* silent */
     }
     setLoading(false)
-  }, [statusFilter, search])
+  }, [deferredSearch, statusFilter])
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
 
   return (
@@ -939,7 +1229,6 @@ function OrdersTab() {
             placeholder="ID или тема..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && load()}
             style={{ ...inputStyle, paddingLeft: 40 }}
           />
         </div>
@@ -960,20 +1249,26 @@ function OrdersTab() {
 
       {/* Results count */}
       <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-        Найдено: {total}
+        {statusFilter === 'all' ? 'Все очереди' : `Очередь: ${STATUS_CONFIG[statusFilter]?.label || statusFilter}`} • Найдено: {total}
       </div>
 
       {/* Orders List */}
       {loading ? <LoadingSpinner /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {orders.map(order => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onClick={() => setSelectedOrder(order)}
-            />
-          ))}
-        </div>
+        orders.length === 0 ? (
+          <div style={{ ...cardStyle, textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+            По текущему фильтру заказов нет.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {orders.map(order => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                onClick={() => setSelectedOrder(order)}
+              />
+            ))}
+          </div>
+        )
       )}
 
       {/* Order Detail Modal */}
@@ -1121,6 +1416,32 @@ function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void })
       <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
         {order.subject || 'Без предмета'}
       </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {order.deadline && (
+          <span style={{
+            padding: '4px 8px',
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.05)',
+            color: 'rgba(255,255,255,0.55)',
+            fontSize: 11,
+            fontWeight: 600,
+          }}>
+            Срок: {formatDateTime(order.deadline)}
+          </span>
+        )}
+        {order.admin_notes && (
+          <span style={{
+            padding: '4px 8px',
+            borderRadius: 999,
+            background: 'rgba(212,175,55,0.08)',
+            color: '#D4AF37',
+            fontSize: 11,
+            fontWeight: 700,
+          }}>
+            Есть заметка
+          </span>
+        )}
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
           {order.user_fullname} {order.user_username ? `@${order.user_username}` : ''}
@@ -1179,19 +1500,86 @@ function OrderCard({ order, onClick }: { order: GodOrder; onClick: () => void })
 }
 
 function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClose: () => void; onUpdate: () => void }) {
+  const { showToast } = useToast()
+  const [detailOrder, setDetailOrder] = useState<GodOrder>(order)
+  const [detailUser, setDetailUser] = useState<{
+    telegram_id: number | null
+    username: string | null
+    fullname: string | null
+    balance: number
+    orders_count: number
+    total_spent: number
+    is_banned: boolean
+  } | null>(null)
+  const [messages, setMessages] = useState<Array<{
+    id: number
+    sender_type: string
+    message_text: string | null
+    file_type: string | null
+    file_name: string | null
+    created_at: string | null
+  }>>([])
+  const [detailsLoading, setDetailsLoading] = useState(true)
   const [status, setStatus] = useState(order.status)
   const [price, setPrice] = useState(order.price.toString())
   const [progress, setProgress] = useState(order.progress.toString())
   const [message, setMessage] = useState('')
+  const [notes, setNotes] = useState(order.admin_notes || '')
   const [saving, setSaving] = useState(false)
+
+  const syncOrder = useCallback((nextOrder: GodOrder) => {
+    setDetailOrder(nextOrder)
+    setStatus(nextOrder.status)
+    setPrice(String(nextOrder.price || nextOrder.final_price || 0))
+    setProgress(String(nextOrder.progress || 0))
+    setNotes(nextOrder.admin_notes || '')
+  }, [])
+
+  const loadDetails = useCallback(async () => {
+    setDetailsLoading(true)
+    try {
+      const data = await fetchGodOrderDetails(order.id)
+      syncOrder(data.order as GodOrder)
+      setDetailUser(data.user)
+      setMessages(data.messages)
+      setNotes((data.order as GodOrder).admin_notes || '')
+    } catch {
+      showToast({
+        type: 'error',
+        title: 'Не удалось открыть заказ',
+        message: 'Попробуйте обновить данные ещё раз',
+      })
+    } finally {
+      setDetailsLoading(false)
+    }
+  }, [order.id, showToast, syncOrder])
+
+  useEffect(() => {
+    syncOrder(order)
+    setDetailUser(null)
+    setMessages([])
+    setNotes(order.admin_notes || '')
+  }, [order, syncOrder])
+
+  useEffect(() => {
+    loadDetails()
+  }, [loadDetails])
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([
+      loadDetails(),
+      Promise.resolve(onUpdate()),
+    ])
+  }, [loadDetails, onUpdate])
 
   const handleStatusChange = async () => {
     setSaving(true)
     try {
-      await updateGodOrderStatus(order.id, status)
-      onUpdate()
+      await updateGodOrderStatus(detailOrder.id, status)
+      showToast({ type: 'success', title: 'Статус обновлён' })
+      await refreshAll()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось обновить статус' })
     }
     setSaving(false)
   }
@@ -1199,10 +1587,11 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
   const handlePriceChange = async () => {
     setSaving(true)
     try {
-      await updateGodOrderPrice(order.id, parseFloat(price))
-      onUpdate()
+      await updateGodOrderPrice(detailOrder.id, parseFloat(price))
+      showToast({ type: 'success', title: 'Стоимость обновлена' })
+      await refreshAll()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось обновить стоимость' })
     }
     setSaving(false)
   }
@@ -1210,10 +1599,11 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
   const handleProgressChange = async () => {
     setSaving(true)
     try {
-      await updateGodOrderProgress(order.id, parseInt(progress))
-      onUpdate()
+      await updateGodOrderProgress(detailOrder.id, parseInt(progress, 10))
+      showToast({ type: 'success', title: 'Прогресс обновлён' })
+      await refreshAll()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось обновить прогресс' })
     }
     setSaving(false)
   }
@@ -1221,11 +1611,12 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
   const handleConfirmPayment = async () => {
     setSaving(true)
     try {
-      await confirmGodPayment(order.id)
-      onUpdate()
+      await confirmGodPayment(detailOrder.id)
+      showToast({ type: 'success', title: 'Оплата подтверждена' })
+      await Promise.resolve(onUpdate())
       onClose()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось подтвердить оплату' })
     }
     setSaving(false)
   }
@@ -1233,11 +1624,12 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
   const handleRejectPayment = async () => {
     setSaving(true)
     try {
-      await rejectGodPayment(order.id, 'Платёж не найден')
-      onUpdate()
+      await rejectGodPayment(detailOrder.id, 'Платёж не найден')
+      showToast({ type: 'success', title: 'Проверка оплаты отклонена' })
+      await Promise.resolve(onUpdate())
       onClose()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось отклонить оплату' })
     }
     setSaving(false)
   }
@@ -1246,15 +1638,30 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
     if (!message.trim()) return
     setSaving(true)
     try {
-      await sendGodOrderMessage(order.id, message)
+      await sendGodOrderMessage(detailOrder.id, message)
       setMessage('')
+      showToast({ type: 'success', title: 'Сообщение отправлено' })
+      await loadDetails()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось отправить сообщение' })
     }
     setSaving(false)
   }
 
-  const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+  const handleSaveNotes = async () => {
+    setSaving(true)
+    try {
+      await updateGodOrderNotes(detailOrder.id, notes)
+      showToast({ type: 'success', title: 'Заметка по заказу сохранена' })
+      await refreshAll()
+    } catch {
+      showToast({ type: 'error', title: 'Не удалось сохранить заметку' })
+    }
+    setSaving(false)
+  }
+
+  const cfg = STATUS_CONFIG[detailOrder.status] || STATUS_CONFIG.pending
+  const recentMessages = [...messages].slice(-6).reverse()
 
   return (
     <motion.div
@@ -1280,13 +1687,12 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
         style={{
           ...cardStyle,
           width: '100%',
-          maxWidth: 500,
+          maxWidth: 560,
           maxHeight: '90vh',
           overflow: 'auto',
           borderRadius: '24px 24px 0 0',
         }}
       >
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <span style={{
             padding: '6px 14px',
@@ -1297,111 +1703,150 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
           }}>
             {cfg.emoji} {cfg.label}
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}>Заказ #{order.id}</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}>Заказ #{detailOrder.id}</span>
           <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer' }}>
             <X size={24} color="rgba(255,255,255,0.5)" />
           </button>
         </div>
 
-        {/* 🎫 PROMO CODE BADGE - VERY VISIBLE AT TOP */}
-        {order.promo_code && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>
+            {detailOrder.work_type_label}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, lineHeight: 1.6 }}>
+            {detailOrder.subject || 'Предмет не указан'}
+            {detailOrder.topic ? ` • ${detailOrder.topic}` : ''}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12, marginTop: 8 }}>
+            Клиент: {detailOrder.user_fullname || 'Клиент без имени'}
+            {detailOrder.user_username ? ` • @${detailOrder.user_username}` : ''}
+            {detailOrder.created_at ? ` • создан ${formatDateTime(detailOrder.created_at)}` : ''}
+          </div>
+        </div>
+
+        {detailOrder.promo_code && (
           <div style={{
-            marginBottom: 20,
-            padding: '18px 20px',
-            background: order.promo_returned
-              ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15))'
-              : 'linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(34, 197, 94, 0.15))',
-            border: `2px solid ${order.promo_returned ? '#ef4444' : '#D4AF37'}`,
+            marginBottom: 18,
+            padding: '16px 18px',
+            background: detailOrder.promo_returned
+              ? 'linear-gradient(135deg, rgba(239,68,68,0.18), rgba(220,38,38,0.08))'
+              : 'linear-gradient(135deg, rgba(212,175,55,0.18), rgba(34,197,94,0.10))',
+            border: `1px solid ${detailOrder.promo_returned ? 'rgba(239,68,68,0.35)' : 'rgba(212,175,55,0.24)'}`,
             borderRadius: 16,
-            boxShadow: order.promo_returned ? '0 4px 20px rgba(239, 68, 68, 0.3)' : '0 4px 20px rgba(212, 175, 55, 0.3)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 24 }}>🎫</span>
-              <span style={{
-                color: order.promo_returned ? '#ef4444' : '#D4AF37',
-                fontWeight: 800,
-                fontSize: 18,
-                letterSpacing: '0.5px',
-                textTransform: 'uppercase'
-              }}>
-                ПРОМОКОД: {order.promo_code}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              <span style={{ color: detailOrder.promo_returned ? '#fca5a5' : '#D4AF37', fontSize: 13, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Промокод {detailOrder.promo_code}
               </span>
-              {order.promo_discount > 0 && (
+              {detailOrder.promo_discount > 0 && (
                 <span style={{
-                  padding: '6px 14px',
-                  background: order.promo_returned ? '#ef4444' : '#22c55e',
-                  borderRadius: 8,
-                  color: '#fff',
-                  fontSize: 16,
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(34,197,94,0.18)',
+                  color: '#86efac',
+                  fontSize: 12,
                   fontWeight: 700,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                 }}>
-                  −{order.promo_discount}%
+                  −{detailOrder.promo_discount}%
                 </span>
               )}
-              {order.promo_returned && (
+              {detailOrder.promo_returned && (
                 <span style={{
-                  padding: '6px 12px',
-                  background: '#ef4444',
-                  borderRadius: 8,
-                  color: '#fff',
-                  fontSize: 13,
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(239,68,68,0.18)',
+                  color: '#fca5a5',
+                  fontSize: 12,
                   fontWeight: 700,
                 }}>
-                  ❌ ВОЗВРАЩЁН
+                  Возвращён
                 </span>
               )}
             </div>
-            <div style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
-              {(order.promo_discount_amount || 0) > 0 && (
-                <div style={{ marginBottom: 6 }}>
-                  💰 Сэкономлено: <span style={{ color: '#22c55e', fontSize: 16 }}>{(order.promo_discount_amount || 0).toFixed(0)}₽</span>
-                </div>
-              )}
-              {order.promo_discount > 0 ? (
-                <div style={{ color: 'rgba(255,255,255,0.8)' }}>
-                  Цена без промо: <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>{order.price.toLocaleString()}₽</span> →
-                  <span style={{ color: '#22c55e', fontSize: 16, marginLeft: 6 }}>{order.final_price.toLocaleString()}₽</span>
-                </div>
-              ) : (
-                <div style={{ color: 'rgba(255,255,255,0.7)' }}>Промокод применён, но скидка не активна</div>
-              )}
+            <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: 13, lineHeight: 1.5 }}>
+              Экономия клиента: {formatMoney(detailOrder.promo_discount_amount)}
             </div>
-            {order.promo_returned && (
+          </div>
+        )}
+
+        {detailUser && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: 10,
+            marginBottom: 18,
+          }}>
+            <div style={{ padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 4 }}>Баланс</div>
+              <div style={{ color: '#D4AF37', fontWeight: 700 }}>{formatMoney(detailUser.balance)}</div>
+            </div>
+            <div style={{ padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 4 }}>Заказов</div>
+              <div style={{ color: '#fff', fontWeight: 700 }}>{detailUser.orders_count}</div>
+            </div>
+            <div style={{ padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 4 }}>Потратил</div>
+              <div style={{ color: '#fff', fontWeight: 700 }}>{formatMoney(detailUser.total_spent)}</div>
+            </div>
+          </div>
+        )}
+
+        {(detailOrder.description || detailOrder.files_url) && (
+          <div style={{ ...cardStyle, marginBottom: 18, padding: 14 }}>
+            <div style={{ color: '#fff', fontWeight: 700, marginBottom: 10 }}>Материалы заказа</div>
+            {detailOrder.description && (
               <div style={{
-                marginTop: 12,
-                padding: '8px 12px',
-                background: 'rgba(239, 68, 68, 0.2)',
-                borderRadius: 8,
-                color: '#ef4444',
-                fontSize: 12,
-                fontWeight: 600,
+                color: 'rgba(255,255,255,0.72)',
+                fontSize: 13,
+                lineHeight: 1.65,
+                whiteSpace: 'pre-line',
+                marginBottom: detailOrder.files_url ? 12 : 0,
               }}>
-                ⚠️ Промокод был возвращён из-за отмены заказа
+                {detailOrder.description}
               </div>
+            )}
+            {detailOrder.files_url && (
+              <button
+                type="button"
+                onClick={() => window.open(detailOrder.files_url!, '_blank', 'noopener,noreferrer')}
+                style={{
+                  ...secondaryButtonStyle,
+                  width: '100%',
+                  justifyContent: 'center',
+                  background: 'rgba(255,255,255,0.05)',
+                }}
+              >
+                <Package size={16} />
+                Открыть папку с файлами
+              </button>
             )}
           </div>
         )}
 
-        {/* Order Info */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ color: '#fff', fontWeight: 600, fontSize: 16, marginBottom: 8 }}>
-            {order.work_type_label}
-          </div>
-          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
-            {order.subject} • {order.topic || 'Тема не указана'}
-          </div>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 8 }}>
-            Клиент: {order.user_fullname} (ID: {order.user_telegram_id})
-          </div>
+        <div style={{ ...cardStyle, marginBottom: 18, padding: 14 }}>
+          <div style={{ color: '#fff', fontWeight: 700, marginBottom: 10 }}>Внутренняя заметка</div>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Что важно помнить по этому заказу"
+            rows={3}
+            style={{ ...inputStyle, resize: 'vertical', marginBottom: 10 }}
+          />
+          <button
+            type="button"
+            onClick={handleSaveNotes}
+            disabled={saving}
+            style={{ ...secondaryButtonStyle, width: '100%', justifyContent: 'center' }}
+          >
+            Сохранить заметку
+          </button>
         </div>
 
-        {/* Quick Actions for Verification Pending */}
-        {order.status === 'verification_pending' && (
+        {detailOrder.status === 'verification_pending' && (
           <div style={{
             display: 'flex',
             gap: 10,
-            marginBottom: 20,
+            marginBottom: 18,
             padding: 16,
             background: 'rgba(236,72,153,0.1)',
             borderRadius: 12,
@@ -1411,7 +1856,7 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
               disabled={saving}
               style={{ ...buttonStyle, flex: 1, background: 'linear-gradient(180deg, #22c55e, #16a34a)' }}
             >
-              <Check size={18} /> Подтвердить
+              <Check size={18} /> Подтвердить оплату
             </button>
             <button
               onClick={handleRejectPayment}
@@ -1423,10 +1868,9 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
           </div>
         )}
 
-        {/* Status Change */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, display: 'block' }}>
-            Статус
+            Статус заказа
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
             <select
@@ -1440,7 +1884,7 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
             </select>
             <button
               onClick={handleStatusChange}
-              disabled={saving || status === order.status}
+              disabled={saving || status === detailOrder.status}
               style={buttonStyle}
             >
               <Check size={16} />
@@ -1448,22 +1892,20 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
           </div>
         </div>
 
-        {/* Price */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, display: 'block' }}>
-            Цена{order.promo_code && order.promo_discount > 0 ? (
-              <> (базовая: {order.price.toLocaleString()}₽, со скидкой −{order.promo_discount}%: {order.final_price.toLocaleString()}₽)</>
-            ) : (
-              <> (текущая: {order.final_price.toLocaleString()}₽)</>
-            )}, оплачено: {order.paid_amount.toLocaleString()}₽
+            Стоимость и оплата
           </label>
+          <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginBottom: 8 }}>
+            База: {formatMoney(detailOrder.price)} • Финальная: {formatMoney(detailOrder.final_price)} • Оплачено: {formatMoney(detailOrder.paid_amount)}
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               style={{ ...inputStyle, flex: 1 }}
-              placeholder={order.final_price.toString()}
+              placeholder={detailOrder.final_price.toString()}
             />
             <button
               onClick={handlePriceChange}
@@ -1475,7 +1917,6 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
           </div>
         </div>
 
-        {/* Progress */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, display: 'block' }}>
             Прогресс: {progress}%
@@ -1499,7 +1940,6 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
           </div>
         </div>
 
-        {/* Send Message */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, display: 'block' }}>
             Сообщение клиенту
@@ -1521,6 +1961,55 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
             </button>
           </div>
         </div>
+
+        <div style={{ ...cardStyle, padding: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+            <div style={{ color: '#fff', fontWeight: 700 }}>Последние сообщения</div>
+            <button
+              type="button"
+              onClick={loadDetails}
+              disabled={detailsLoading}
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <RefreshCw size={14} color="rgba(255,255,255,0.45)" />
+            </button>
+          </div>
+          {detailsLoading ? (
+            <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>Загружаем переписку и детали…</div>
+          ) : recentMessages.length === 0 ? (
+            <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>Сообщений пока нет.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {recentMessages.map(item => (
+                <div key={item.id} style={{
+                  padding: '10px 12px',
+                  borderRadius: 12,
+                  background: item.sender_type === 'admin' ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${item.sender_type === 'admin' ? 'rgba(212,175,55,0.18)' : 'rgba(255,255,255,0.06)'}`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                    <span style={{ color: item.sender_type === 'admin' ? '#D4AF37' : '#d4d4d8', fontSize: 12, fontWeight: 700 }}>
+                      {item.sender_type === 'admin' ? 'Команда' : 'Клиент'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>
+                      {formatDateTime(item.created_at)}
+                    </span>
+                  </div>
+                  {item.message_text && (
+                    <div style={{ color: 'rgba(255,255,255,0.74)', fontSize: 13, lineHeight: 1.55 }}>
+                      {item.message_text}
+                    </div>
+                  )}
+                  {item.file_name && (
+                    <div style={{ color: '#D4AF37', fontSize: 12, marginTop: 6 }}>
+                      Файл: {item.file_name}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </motion.div>
     </motion.div>
   )
@@ -1531,22 +2020,51 @@ function OrderDetailModal({ order, onClose, onUpdate }: { order: GodOrder; onClo
 // ═══════════════════════════════════════════════════════════════════════════
 
 function UsersTab() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [users, setUsers] = useState<GodUser[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [filterType, setFilterType] = useState('')
+  const [search, setSearch] = useState(() => searchParams.get('user_q') || '')
+  const [filterType, setFilterType] = useState(() => searchParams.get('user_filter') || '')
   const [selectedUser, setSelectedUser] = useState<GodUser | null>(null)
+  const deferredSearch = useDeferredValue(search.trim())
+  const filterLabel = ({
+    banned: 'заблокированные',
+    watched: 'под наблюдением',
+    with_balance: 'с балансом',
+  } as Record<string, string>)[filterType] || 'все клиенты'
+
+  useEffect(() => {
+    const nextSearch = searchParams.get('user_q') || ''
+    const nextFilter = searchParams.get('user_filter') || ''
+    if (nextSearch !== search) {
+      setSearch(nextSearch)
+    }
+    if (nextFilter !== filterType) {
+      setFilterType(nextFilter)
+    }
+  }, [filterType, search, searchParams])
+
+  useEffect(() => {
+    const next = withRouteParams(searchParams, {
+      tab: 'users',
+      user_q: search.trim() || null,
+      user_filter: filterType || null,
+    })
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true })
+    }
+  }, [filterType, search, searchParams, setSearchParams])
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await fetchGodUsers({ search, filter_type: filterType, limit: 100 })
+      const result = await fetchGodUsers({ search: deferredSearch, filter_type: filterType, limit: 100 })
       setUsers(result.users)
     } catch {
       /* silent */
     }
     setLoading(false)
-  }, [search, filterType])
+  }, [deferredSearch, filterType])
 
   useEffect(() => {
     load()
@@ -1568,7 +2086,6 @@ function UsersTab() {
             placeholder="ID, username, имя..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && load()}
             style={{ ...inputStyle, paddingLeft: 40 }}
           />
         </div>
@@ -1584,17 +2101,27 @@ function UsersTab() {
         </select>
       </div>
 
+      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+        {filterType ? `Фильтр: ${filterLabel}` : 'Все клиенты'} • Показано: {users.length}
+      </div>
+
       {/* Users List */}
       {loading ? <LoadingSpinner /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {users.map(user => (
-            <UserCard
-              key={user.telegram_id}
-              user={user}
-              onClick={() => setSelectedUser(user)}
-            />
-          ))}
-        </div>
+        users.length === 0 ? (
+          <div style={{ ...cardStyle, textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+            Клиенты по текущему фильтру не найдены.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {users.map(user => (
+              <UserCard
+                key={user.telegram_id}
+                user={user}
+                onClick={() => setSelectedUser(user)}
+              />
+            ))}
+          </div>
+        )
       )}
 
       {/* User Detail Modal */}
@@ -1655,23 +2182,73 @@ function UserCard({ user, onClick }: { user: GodUser; onClick: () => void }) {
 }
 
 function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: () => void; onUpdate: () => void }) {
+  const { showToast } = useToast()
+  const [detailUser, setDetailUser] = useState<GodUser>(user)
+  const [orders, setOrders] = useState<GodOrder[]>([])
+  const [transactions, setTransactions] = useState<Array<{
+    id: number
+    amount: number
+    type: string
+    reason: string
+    description: string | null
+    created_at: string | null
+  }>>([])
+  const [detailsLoading, setDetailsLoading] = useState(true)
   const [balanceAmount, setBalanceAmount] = useState('')
   const [balanceReason, setBalanceReason] = useState('')
   const [banReason, setBanReason] = useState('')
   const [notes, setNotes] = useState(user.admin_notes || '')
   const [saving, setSaving] = useState(false)
 
+  const loadDetails = useCallback(async () => {
+    setDetailsLoading(true)
+    try {
+      const data = await fetchGodUserDetails(user.telegram_id)
+      setDetailUser(data.user as GodUser)
+      setOrders(data.orders as GodOrder[])
+      setTransactions(data.transactions)
+      setNotes((data.user as GodUser).admin_notes || '')
+    } catch {
+      showToast({
+        type: 'error',
+        title: 'Не удалось открыть клиента',
+        message: 'Попробуйте обновить данные ещё раз',
+      })
+    } finally {
+      setDetailsLoading(false)
+    }
+  }, [showToast, user.telegram_id])
+
+  useEffect(() => {
+    setDetailUser(user)
+    setNotes(user.admin_notes || '')
+    setOrders([])
+    setTransactions([])
+  }, [user])
+
+  useEffect(() => {
+    loadDetails()
+  }, [loadDetails])
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([
+      loadDetails(),
+      Promise.resolve(onUpdate()),
+    ])
+  }, [loadDetails, onUpdate])
+
   const handleBalance = async (add: boolean) => {
     if (!balanceAmount) return
     setSaving(true)
     try {
       const amount = add ? parseFloat(balanceAmount) : -parseFloat(balanceAmount)
-      await modifyGodUserBalance(user.telegram_id, amount, balanceReason || 'Admin adjustment', true)
+      await modifyGodUserBalance(detailUser.telegram_id, amount, balanceReason || 'Ручная корректировка', true)
       setBalanceAmount('')
       setBalanceReason('')
-      onUpdate()
+      showToast({ type: 'success', title: 'Баланс обновлён' })
+      await refreshAll()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось изменить баланс' })
     }
     setSaving(false)
   }
@@ -1679,11 +2256,14 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
   const handleBan = async () => {
     setSaving(true)
     try {
-      await toggleGodUserBan(user.telegram_id, !user.is_banned, banReason)
-      onUpdate()
-      onClose()
+      await toggleGodUserBan(detailUser.telegram_id, !detailUser.is_banned, banReason)
+      showToast({ type: 'success', title: detailUser.is_banned ? 'Блокировка снята' : 'Клиент заблокирован' })
+      await refreshAll()
+      if (!detailUser.is_banned) {
+        onClose()
+      }
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось изменить блокировку' })
     }
     setSaving(false)
   }
@@ -1691,10 +2271,11 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
   const handleWatch = async () => {
     setSaving(true)
     try {
-      await toggleGodUserWatch(user.telegram_id, !user.is_watched)
-      onUpdate()
+      await toggleGodUserWatch(detailUser.telegram_id, !detailUser.is_watched)
+      showToast({ type: 'success', title: detailUser.is_watched ? 'Наблюдение снято' : 'Клиент добавлен под наблюдение' })
+      await refreshAll()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось изменить наблюдение' })
     }
     setSaving(false)
   }
@@ -1702,13 +2283,17 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
   const handleSaveNotes = async () => {
     setSaving(true)
     try {
-      await updateGodUserNotes(user.telegram_id, notes)
-      onUpdate()
+      await updateGodUserNotes(detailUser.telegram_id, notes)
+      showToast({ type: 'success', title: 'Заметки сохранены' })
+      await refreshAll()
     } catch {
-      /* silent */
+      showToast({ type: 'error', title: 'Не удалось сохранить заметки' })
     }
     setSaving(false)
   }
+
+  const recentOrders = orders.slice(0, 5)
+  const recentTransactions = transactions.slice(0, 5)
 
   return (
     <motion.div
@@ -1734,19 +2319,20 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
         style={{
           ...cardStyle,
           width: '100%',
-          maxWidth: 500,
+          maxWidth: 560,
           maxHeight: '90vh',
           overflow: 'auto',
           borderRadius: '24px 24px 0 0',
         }}
       >
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <div style={{ fontSize: 32 }}>{user.rank_emoji}</div>
+          <div style={{ fontSize: 32 }}>{detailUser.rank_emoji}</div>
           <div style={{ flex: 1 }}>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{user.fullname || 'Без имени'}</div>
+            <div style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
+              {detailUser.fullname || 'Клиент без имени'}
+            </div>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-              @{user.username || 'none'} • ID: {user.telegram_id}
+              {detailUser.username ? `@${detailUser.username}` : 'Без username'} • ID: {detailUser.telegram_id}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -1754,28 +2340,65 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
           </button>
         </div>
 
-        {/* Stats */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 10,
-          marginBottom: 20,
+          marginBottom: 18,
         }}>
           <div style={{ textAlign: 'center', padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 10 }}>
-            <div style={{ color: '#D4AF37', fontWeight: 700, fontSize: 18 }}>{user.balance.toLocaleString()}₽</div>
+            <div style={{ color: '#D4AF37', fontWeight: 700, fontSize: 18 }}>{formatMoney(detailUser.balance)}</div>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Баланс</div>
           </div>
           <div style={{ textAlign: 'center', padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 10 }}>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{user.orders_count}</div>
+            <div style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{detailUser.orders_count}</div>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Заказов</div>
           </div>
           <div style={{ textAlign: 'center', padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 10 }}>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{user.total_spent.toLocaleString()}₽</div>
+            <div style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>{formatMoney(detailUser.total_spent)}</div>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Потрачено</div>
           </div>
         </div>
 
-        {/* Balance Management */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: 10,
+          marginBottom: 18,
+        }}>
+          <div style={{ padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 4 }}>Статус</div>
+            <div style={{ color: '#fff', fontWeight: 700 }}>{detailUser.rank_name}</div>
+            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }}>
+              Лояльность: {detailUser.loyalty_status} • скидка {detailUser.loyalty_discount}%
+            </div>
+          </div>
+          <div style={{ padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 4 }}>Рефералы</div>
+            <div style={{ color: '#fff', fontWeight: 700 }}>{detailUser.referrals_count}</div>
+            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 4 }}>
+              Заработано: {formatMoney(detailUser.referral_earnings)}
+            </div>
+          </div>
+        </div>
+
+        {detailUser.bonus_expiry?.has_expiry && (
+          <div style={{
+            ...cardStyle,
+            marginBottom: 18,
+            padding: 14,
+            background: 'rgba(245,158,11,0.08)',
+            border: '1px solid rgba(245,158,11,0.2)',
+          }}>
+            <div style={{ color: '#fbbf24', fontWeight: 700, marginBottom: 4 }}>
+              Бонусный баланс под контролем
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 1.55 }}>
+              {detailUser.bonus_expiry.status_text} • cгорит {formatMoney(detailUser.bonus_expiry.burn_amount)}
+            </div>
+          </div>
+        )}
+
         <div style={{ marginBottom: 20 }}>
           <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, display: 'block' }}>
             Изменить баланс
@@ -1807,12 +2430,11 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
             type="text"
             value={balanceReason}
             onChange={(e) => setBalanceReason(e.target.value)}
-            placeholder="Причина (опционально)"
+            placeholder="Причина изменения"
             style={inputStyle}
           />
         </div>
 
-        {/* Ban / Watch */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
           <button
             onClick={handleBan}
@@ -1820,13 +2442,13 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
             style={{
               ...buttonStyle,
               flex: 1,
-              background: user.is_banned
+              background: detailUser.is_banned
                 ? 'linear-gradient(180deg, #22c55e, #16a34a)'
                 : 'linear-gradient(180deg, #ef4444, #dc2626)',
             }}
           >
-            {user.is_banned ? <Check size={16} /> : <Ban size={16} />}
-            {user.is_banned ? 'Разбанить' : 'Забанить'}
+            {detailUser.is_banned ? <Check size={16} /> : <Ban size={16} />}
+            {detailUser.is_banned ? 'Разблокировать' : 'Заблокировать'}
           </button>
           <button
             onClick={handleWatch}
@@ -1834,23 +2456,22 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
             style={{
               ...secondaryButtonStyle,
               flex: 1,
-              background: user.is_watched ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
+              background: detailUser.is_watched ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
             }}
           >
-            {user.is_watched ? <EyeOff size={16} /> : <Eye size={16} />}
-            {user.is_watched ? 'Снять' : 'Следить'}
+            {detailUser.is_watched ? <EyeOff size={16} /> : <Eye size={16} />}
+            {detailUser.is_watched ? 'Снять наблюдение' : 'Наблюдать'}
           </button>
         </div>
 
-        {/* Notes */}
-        <div>
+        <div style={{ marginBottom: 18 }}>
           <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, display: 'block' }}>
-            Заметки админа
+            Заметки по клиенту
           </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Заметки о пользователе..."
+            placeholder="Что важно помнить о клиенте"
             rows={3}
             style={{ ...inputStyle, resize: 'vertical' }}
           />
@@ -1861,6 +2482,89 @@ function UserDetailModal({ user, onClose, onUpdate }: { user: GodUser; onClose: 
           >
             Сохранить заметки
           </button>
+        </div>
+
+        <div style={{ ...cardStyle, padding: 14, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+            <div style={{ color: '#fff', fontWeight: 700 }}>Последние заказы</div>
+            <button onClick={loadDetails} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+              <RefreshCw size={14} color="rgba(255,255,255,0.45)" />
+            </button>
+          </div>
+          {detailsLoading ? (
+            <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>Загружаем историю клиента…</div>
+          ) : recentOrders.length === 0 ? (
+            <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>У клиента пока нет заказов.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {recentOrders.map(item => {
+                const statusMeta = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending
+                return (
+                  <div key={item.id} style={{
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                      <span style={{ color: '#fff', fontWeight: 600 }}>#{item.id}</span>
+                      <span style={{
+                        padding: '3px 8px',
+                        borderRadius: 999,
+                        background: statusMeta.bg,
+                        color: statusMeta.color,
+                        fontSize: 11,
+                        fontWeight: 700,
+                      }}>
+                        {statusMeta.label}
+                      </span>
+                      <span style={{ marginLeft: 'auto', color: '#D4AF37', fontWeight: 700 }}>
+                        {formatMoney(item.final_price)}
+                      </span>
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>
+                      {item.work_type_label}
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12, marginTop: 4 }}>
+                      {item.subject || 'Предмет не указан'} • {formatDateTime(item.created_at)}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        <div style={{ ...cardStyle, padding: 14 }}>
+          <div style={{ color: '#fff', fontWeight: 700, marginBottom: 10 }}>Последние операции</div>
+          {detailsLoading ? (
+            <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>Загружаем операции…</div>
+          ) : recentTransactions.length === 0 ? (
+            <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>Операций пока нет.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {recentTransactions.map(item => (
+                <div key={item.id} style={{
+                  padding: '10px 12px',
+                  borderRadius: 12,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                    <div style={{ color: '#fff', fontWeight: 600 }}>
+                      {TRANSACTION_REASON_LABELS[item.reason] || item.description || 'Операция'}
+                    </div>
+                    <div style={{ color: item.amount >= 0 ? '#86efac' : '#fca5a5', fontWeight: 700 }}>
+                      {item.amount >= 0 ? '+' : ''}{formatMoney(item.amount)}
+                    </div>
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12 }}>
+                    {item.description || 'Без комментария'} • {formatDateTime(item.created_at)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </motion.div>
     </motion.div>
@@ -1881,6 +2585,14 @@ function PromosTab() {
   const [newDiscount, setNewDiscount] = useState('10')
   const [newMaxUses, setNewMaxUses] = useState('0')
   const [newUsersOnly, setNewUsersOnly] = useState(false)
+  const [newValidUntil, setNewValidUntil] = useState('')
+
+  const applyValidityPreset = useCallback((days: number) => {
+    const next = new Date()
+    next.setDate(next.getDate() + days)
+    next.setMinutes(next.getMinutes() - next.getTimezoneOffset())
+    setNewValidUntil(next.toISOString().slice(0, 16))
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1903,8 +2615,9 @@ function PromosTab() {
     try {
       await createGodPromo({
         code: newCode,
-        discount_percent: parseFloat(newDiscount),
-        max_uses: parseInt(newMaxUses),
+        discount_percent: Number(newDiscount || '0'),
+        max_uses: Number(newMaxUses || '0'),
+        valid_until: newValidUntil ? new Date(newValidUntil).toISOString() : undefined,
         new_users_only: newUsersOnly,
       })
       showToast({
@@ -1916,6 +2629,7 @@ function PromosTab() {
       setNewDiscount('10')
       setNewMaxUses('0')
       setNewUsersOnly(false)
+      setNewValidUntil('')
       setShowCreate(false)
       load()
     } catch (e) {
@@ -2023,6 +2737,47 @@ function PromosTab() {
                 />
               </div>
               {/* New users only toggle */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                  Срок действия
+                </label>
+                <input
+                  type="datetime-local"
+                  value={newValidUntil}
+                  onChange={(e) => setNewValidUntil(e.target.value)}
+                  style={inputStyle}
+                />
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[3, 7, 30].map(days => (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => applyValidityPreset(days)}
+                      style={{
+                        ...secondaryButtonStyle,
+                        padding: '8px 12px',
+                        fontSize: 12,
+                        background: 'rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      {days} {days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setNewValidUntil('')}
+                    style={{
+                      ...secondaryButtonStyle,
+                      padding: '8px 12px',
+                      fontSize: 12,
+                      background: 'rgba(255,255,255,0.03)',
+                    }}
+                  >
+                    Без срока
+                  </button>
+                </div>
+              </div>
+
               <div
                 onClick={() => setNewUsersOnly(!newUsersOnly)}
                 style={{
@@ -2276,7 +3031,7 @@ function LiveTab() {
         <span style={{ color: '#22c55e', fontWeight: 700, fontSize: 18 }}>
           {data?.online_count || 0}
         </span>
-        <span style={{ color: 'rgba(255,255,255,0.5)' }}>пользователей онлайн</span>
+        <span style={{ color: 'rgba(255,255,255,0.5)' }}>клиентов онлайн</span>
         <button onClick={load} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer' }}>
           <RefreshCw size={16} color="rgba(255,255,255,0.4)" />
         </button>
@@ -2294,10 +3049,10 @@ function LiveTab() {
             }} />
             <div style={{ flex: 1 }}>
               <div style={{ color: '#fff', fontWeight: 500 }}>
-                {user.fullname || 'Unknown'} {user.username ? `@${user.username}` : ''}
+                {user.fullname || 'Клиент без имени'} {user.username ? `@${user.username}` : ''}
               </div>
               <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                {user.current_page || 'Unknown page'}
+                {formatPageLabel(user.current_page)}
                 {user.current_order_id && ` • Заказ #${user.current_order_id}`}
               </div>
             </div>
@@ -2383,7 +3138,7 @@ function LogsTab() {
             </div>
           )}
           <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 4 }}>
-            {log.admin_username || `Admin ${log.admin_id}`} • {new Date(log.created_at!).toLocaleString('ru')}
+            {log.admin_username || `Админ ${log.admin_id}`} • {new Date(log.created_at!).toLocaleString('ru')}
           </div>
         </div>
       ))}
@@ -2430,7 +3185,7 @@ function SqlTab() {
       }}>
         <AlertTriangle size={18} color="#f59e0b" />
         <span style={{ color: '#f59e0b', fontSize: 12 }}>
-          Только SELECT запросы. Модификация через API endpoints.
+          Только SELECT-запросы. Любые изменения проводим через отдельные действия панели.
         </span>
       </div>
 
@@ -2451,7 +3206,7 @@ function SqlTab() {
       {result && (
         <div style={{ ...cardStyle, overflow: 'auto' }}>
           {result.error ? (
-            <div style={{ color: '#ef4444' }}>Error: {result.error}</div>
+            <div style={{ color: '#ef4444' }}>Ошибка: {result.error}</div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>

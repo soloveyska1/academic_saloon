@@ -1,9 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-
-// Admin Telegram IDs
-const ADMIN_IDS = [
-  872379852, // Main admin
-]
+import { fetchGodSystemInfo } from '../api/userApi'
+const DEV_ADMIN_ID = 872379852
 
 interface AdminSettings {
   isAdmin: boolean
@@ -16,6 +13,7 @@ interface AdminSettings {
 }
 
 interface AdminContextType extends AdminSettings {
+  accessResolved: boolean
   toggleDebugMode: () => void
   toggleSimulateNewUser: () => void
   toggleUnlimitedRoulette: () => void
@@ -37,6 +35,33 @@ const defaultSettings: AdminSettings = {
 const AdminContext = createContext<AdminContextType | null>(null)
 
 const STORAGE_KEY = 'academic_saloon_admin_settings'
+const MAX_ATTEMPTS = 20
+
+type PersistedAdminSettings = Pick<AdminSettings, 'debugMode' | 'simulateNewUser' | 'unlimitedRoulette' | 'showDebugInfo'>
+
+function getPersistedSettings(): PersistedAdminSettings {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      return {
+        debugMode: Boolean(parsed.debugMode),
+        simulateNewUser: Boolean(parsed.simulateNewUser),
+        unlimitedRoulette: Boolean(parsed.unlimitedRoulette),
+        showDebugInfo: Boolean(parsed.showDebugInfo),
+      }
+    }
+  } catch {
+    // Ignore parse errors
+  }
+
+  return {
+    debugMode: false,
+    simulateNewUser: false,
+    unlimitedRoulette: false,
+    showDebugInfo: false,
+  }
+}
 
 export function useAdmin() {
   const context = useContext(AdminContext)
@@ -54,63 +79,94 @@ export function useIsAdmin() {
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AdminSettings>(() => {
-    // Load saved settings from localStorage
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        return { ...defaultSettings, ...parsed }
-      }
-    } catch {
-      // Ignore parse errors
-    }
-    return defaultSettings
+    return { ...defaultSettings, ...getPersistedSettings() }
   })
-
+  const [accessResolved, setAccessResolved] = useState(false)
   const [simulatedRank, setSimulatedRank] = useState<number | null>(null)
 
   // Check if current user is admin with retry logic
   useEffect(() => {
     let attempts = 0
-    const maxAttempts = 20 // 2 seconds (100ms * 20)
+    let cancelled = false
+    let intervalId: number | null = null
 
-    const checkAdmin = () => {
+    const resolveAccess = (next: Partial<AdminSettings>) => {
+      if (cancelled) return true
+      setSettings(prev => ({ ...prev, ...next }))
+      setAccessResolved(true)
+      return true
+    }
+
+    const checkAdmin = async () => {
       const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user
       const userId = tgUser?.id
 
       if (userId) {
-        const isAdmin = ADMIN_IDS.includes(userId)
-        setSettings(prev => ({ ...prev, isAdmin, telegramId: userId }))
-        return true
+        try {
+          const systemInfo = await fetchGodSystemInfo()
+          return resolveAccess({
+            isAdmin: systemInfo.admin_ids.includes(userId),
+            telegramId: userId,
+          })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : ''
+          const isPermissionFailure = /доступ|access denied|not a god|403/i.test(message)
+          if (isPermissionFailure || attempts >= MAX_ATTEMPTS) {
+            return resolveAccess({ isAdmin: false, telegramId: userId })
+          }
+          return false
+        }
       }
 
-      // Fallback for dev mode
-      if (import.meta.env.DEV || !window.Telegram?.WebApp) {
-        setSettings(prev => ({ ...prev, isAdmin: true, telegramId: 872379852 })) // Default to admin in dev
-        return true
+      // Fallback only for local development
+      if (import.meta.env.DEV) {
+        return resolveAccess({ isAdmin: true, telegramId: DEV_ADMIN_ID })
+      }
+
+      if (!window.Telegram?.WebApp) {
+        return resolveAccess({ isAdmin: false, telegramId: null })
+      }
+
+      if (attempts >= MAX_ATTEMPTS) {
+        return resolveAccess({ isAdmin: false, telegramId: null })
       }
 
       return false
     }
 
     // Try immediately
-    if (checkAdmin()) return
+    void checkAdmin().then((resolved) => {
+      if (resolved || cancelled) return
 
-    // Poll if not ready
-    const interval = setInterval(() => {
-      attempts++
-      if (checkAdmin() || attempts >= maxAttempts) {
-        clearInterval(interval)
+      intervalId = window.setInterval(() => {
+        attempts++
+        void checkAdmin().then((done) => {
+          if ((done || attempts >= MAX_ATTEMPTS) && intervalId !== null) {
+            window.clearInterval(intervalId)
+            intervalId = null
+          }
+        })
+      }, 100)
+    })
+
+    return () => {
+      cancelled = true
+      if (intervalId !== null) {
+        window.clearInterval(intervalId)
       }
-    }, 100)
-
-    return () => clearInterval(interval)
+    }
   }, [])
 
   // Save settings to localStorage when they change
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+      const persisted: PersistedAdminSettings = {
+        debugMode: settings.debugMode,
+        simulateNewUser: settings.simulateNewUser,
+        unlimitedRoulette: settings.unlimitedRoulette,
+        showDebugInfo: settings.showDebugInfo,
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
     } catch {
       // Ignore storage errors
     }
@@ -143,6 +199,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     <AdminContext.Provider
       value={{
         ...settings,
+        accessResolved,
         toggleDebugMode,
         toggleSimulateNewUser,
         toggleUnlimitedRoulette,

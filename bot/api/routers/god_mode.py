@@ -62,7 +62,7 @@ def require_god_mode(tg_user: TelegramUser) -> None:
     """
     if tg_user.id not in settings.ADMIN_IDS:
         logger.warning(f"[GOD MODE] Access denied for user {tg_user.id}")
-        raise HTTPException(status_code=403, detail="Access denied. You are not a god.")
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
 
 
 def calculate_order_promo_discount_amount(order: Order) -> float:
@@ -386,7 +386,7 @@ async def get_orders(
 
         order_dict.update({
             "user_telegram_id": o.user_id,
-            "user_fullname": user.fullname if user else "Unknown",
+            "user_fullname": user.fullname if user else "Без имени",
             "user_username": user.username if user else None,
             "admin_notes": o.admin_notes,
             "channel_message_id": o.channel_message_id,
@@ -416,7 +416,7 @@ async def get_order_details(
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=404, detail="Заказ не найден")
 
     # Get user
     user = await session.scalar(
@@ -453,7 +453,7 @@ async def get_order_details(
         "order": {
             **order_to_response(order).__dict__,
             "user_telegram_id": order.user_id,
-            "user_fullname": user.fullname if user else "Unknown",
+            "user_fullname": user.fullname if user else "Без имени",
             "user_username": user.username if user else None,
             "admin_notes": order.admin_notes,
             "revision_count": order.revision_count,
@@ -501,7 +501,7 @@ async def update_order_status(
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=404, detail="Заказ не найден")
 
     new_status = data.status
 
@@ -585,7 +585,7 @@ async def update_order_price(
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=404, detail="Заказ не найден")
 
     new_price = data.price
 
@@ -764,7 +764,7 @@ async def update_order_progress(
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=404, detail="Заказ не найден")
 
     new_progress = data.progress
     status_text = data.status_text
@@ -813,7 +813,7 @@ async def confirm_order_payment(
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=404, detail="Заказ не найден")
 
     amount = data.amount if data.amount is not None else order.final_price
     if amount <= 0:
@@ -902,7 +902,7 @@ async def reject_order_payment(
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=404, detail="Заказ не найден")
 
     reason = data.reason
 
@@ -965,7 +965,7 @@ async def send_order_message(
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=404, detail="Заказ не найден")
 
     text = data.text
 
@@ -1016,6 +1016,7 @@ async def send_order_message(
 async def update_order_notes(
     order_id: int,
     data: GodOrderNotesRequest,
+    request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -1024,9 +1025,19 @@ async def update_order_notes(
 
     order = await session.get(Order, order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
+        raise HTTPException(status_code=404, detail="Заказ не найден")
 
+    old_notes = order.admin_notes or ""
     order.admin_notes = data.notes
+
+    await log_admin_action(
+        session, tg_user, AdminActionType.ORDER_NOTE_UPDATE,
+        target_type="order", target_id=order_id,
+        details="Обновлена внутренняя заметка по заказу",
+        old_value={"notes": old_notes},
+        new_value={"notes": order.admin_notes},
+        request=request,
+    )
     await session.commit()
 
     return {"success": True}
@@ -1126,7 +1137,7 @@ async def get_user_details(
         select(User).where(User.telegram_id == user_id)
     )
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
 
     # Get orders
     orders_result = await session.execute(
@@ -1206,7 +1217,7 @@ async def modify_user_balance(
         select(User).where(User.telegram_id == user_id)
     )
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
 
     amount = data.amount
     reason = data.reason
@@ -1237,7 +1248,7 @@ async def modify_user_balance(
     await log_admin_action(
         session, tg_user, action_type,
         target_type="user", target_id=user_id,
-        details=f"Balance: {old_balance} -> {user.balance} ({'+' if amount > 0 else ''}{amount})",
+        details=f"Баланс: {old_balance} -> {user.balance} ({'+' if amount > 0 else ''}{amount})",
         old_value={"balance": old_balance},
         new_value={"balance": user.balance, "reason": reason},
         request=request,
@@ -1277,7 +1288,7 @@ async def ban_user(
         select(User).where(User.telegram_id == user_id)
     )
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
 
     ban = data.ban
     reason = data.reason
@@ -1291,7 +1302,7 @@ async def ban_user(
         session, tg_user,
         AdminActionType.USER_BAN if ban else AdminActionType.USER_UNBAN,
         target_type="user", target_id=user_id,
-        details=f"{'Banned' if ban else 'Unbanned'}: {reason}",
+        details=f"{'Блокировка' if ban else 'Разблокировка'}: {reason or 'без комментария'}",
         old_value={"is_banned": old_banned},
         new_value={"is_banned": ban, "reason": reason},
         request=request,
@@ -1335,7 +1346,7 @@ async def toggle_watch_user(
         select(User).where(User.telegram_id == user_id)
     )
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
 
     watch = data.watch
 
@@ -1372,7 +1383,7 @@ async def update_user_notes(
         select(User).where(User.telegram_id == user_id)
     )
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
 
     old_notes = user.admin_notes
     user.admin_notes = data.notes
@@ -1541,7 +1552,7 @@ async def create_promo(
     await log_admin_action(
         session, tg_user, AdminActionType.PROMO_CREATE,
         target_type="promo",
-        details=f"Created promo: {code} ({data.discount_percent}%)",
+        details=f"Создан промокод {code} ({data.discount_percent}%)",
         new_value={"code": code, "discount": data.discount_percent, "max_uses": data.max_uses},
         request=request,
     )
@@ -1563,7 +1574,7 @@ async def toggle_promo(
 
     promo = await session.get(PromoCode, promo_id)
     if not promo:
-        raise HTTPException(status_code=404, detail="Promo not found")
+        raise HTTPException(status_code=404, detail="Промокод не найден")
 
     promo.is_active = not promo.is_active
 
@@ -1591,7 +1602,7 @@ async def delete_promo(
 
     promo = await session.get(PromoCode, promo_id)
     if not promo:
-        raise HTTPException(status_code=404, detail="Promo not found")
+        raise HTTPException(status_code=404, detail="Промокод не найден")
 
     code = promo.code
     await session.delete(promo)
@@ -1892,7 +1903,7 @@ async def subscribe_admin_notifications(
     register_admin_id(tg_user.id)
 
     logger.info(f"[GOD MODE] Admin {tg_user.id} subscribed to notifications")
-    return {"success": True, "message": "Subscribed to admin notifications"}
+    return {"success": True, "message": "Подписка на сигналы включена"}
 
 
 @router.post("/unsubscribe")
@@ -1909,4 +1920,4 @@ async def unsubscribe_admin_notifications(
     unregister_admin_id(tg_user.id)
 
     logger.info(f"[GOD MODE] Admin {tg_user.id} unsubscribed from notifications")
-    return {"success": True, "message": "Unsubscribed from admin notifications"}
+    return {"success": True, "message": "Подписка на сигналы выключена"}

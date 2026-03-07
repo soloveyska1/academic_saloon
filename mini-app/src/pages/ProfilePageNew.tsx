@@ -27,6 +27,7 @@ import {
 import { Order, OrderStatus, Transaction, UserData, Voucher } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { useClub } from '../contexts/ClubContext'
+import { useAdmin } from '../contexts/AdminContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { TransactionsModal } from '../components/modals/TransactionsModal'
@@ -781,6 +782,7 @@ function VoucherCard({
 export function ProfilePageNew({ user }: Props) {
   const navigate = useNavigate()
   const { tg, haptic, hapticSuccess, hapticError, botUsername, user: tgUser } = useTelegram()
+  const { isAdmin } = useAdmin()
   const { showToast } = useToast()
   const club = useClub()
   const [showQR, setShowQR] = useState(false)
@@ -822,7 +824,6 @@ export function ProfilePageNew({ user }: Props) {
   )
 
   const inviteLink = buildReferralLink(botUsername, user.telegram_id)
-  const isAdmin = user.telegram_id === 872379852
   const mainActionMeta = actionableOrder ? ACTIONABLE_ORDER_META[actionableOrder.status] : null
   const primaryActionTitle = mainActionMeta
     ? mainActionMeta.title
@@ -943,7 +944,7 @@ export function ProfilePageNew({ user }: Props) {
 
   const handleAdminAccess = useCallback(() => {
     hapticSuccess()
-    navigate('/god')
+    navigate('/admin')
   }, [hapticSuccess, navigate])
 
   const handleToggleSection = useCallback((sectionId: ProfileSectionId) => {

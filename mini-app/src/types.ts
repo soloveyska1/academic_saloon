@@ -58,18 +58,10 @@ export interface BonusExpiryInfo {
   balance: number
   days_left?: number
   expiry_date?: string
-  final_price: number
-  paid_amount: number
-  discount: number
-  bonus_used: number
-  progress: number
-  payment_scheme: 'full' | 'half' | null  // full / half (prepayment)
-  files_url: string | null  // Yandex.Disk URL with work files
-  review_submitted: boolean  // Whether review was submitted
-  revision_count: number  // Счётчик кругов правок (3 бесплатно)
-  created_at: string
-  completed_at: string | null
-  delivered_at: string | null  // When work was delivered (30-day revision period starts)
+  burn_amount?: number
+  status?: 'ok' | 'warning' | 'expired'
+  status_text?: string
+  color?: string
 }
 
 export interface Order {
@@ -621,6 +613,7 @@ export interface GodUser {
   referrals_count: number
   referral_earnings: number
   daily_bonus_streak?: number
+  bonus_expiry?: BonusExpiryInfo
   created_at: string | null
   updated_at?: string | null
 }

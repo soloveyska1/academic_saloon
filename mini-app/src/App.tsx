@@ -47,8 +47,6 @@ const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then(modu
 const SupportPage = lazy(() => import('./pages/SupportPage').then(module => ({ default: module.SupportPage })))
 const OrderChatPage = lazy(() => import('./pages/OrderChatPage').then(module => ({ default: module.OrderChatPage })))
 const BatchPaymentPage = lazy(() => import('./pages/BatchPaymentPage').then(module => ({ default: module.BatchPaymentPage })))
-// AdminDashboardPage removed as per instruction
-const AdminPage = lazy(() => import('./pages/AdminPage').then(module => ({ default: module.AdminPage })))
 const GodModePage = lazy(() => import('./pages/GodModePage').then(module => ({ default: module.GodModePage })))
 
 // WebSocket connection status indicator (only shown in debug mode)
@@ -482,7 +480,7 @@ function AppContent() {
                               <Route path="/achievements" element={<AchievementsPage user={userData} />} />
                               <Route path="/support" element={<SupportPage />} />
                               <Route path="/batch-payment" element={<BatchPaymentPage />} />
-                              <Route path="/admin" element={<AdminPage />} />
+                              <Route path="/admin" element={<GodModePage />} />
                               <Route path="/god" element={<GodModePage />} />
                             </Routes>
                           </Suspense>

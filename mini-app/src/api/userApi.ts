@@ -598,6 +598,13 @@ export async function updateGodOrderProgress(orderId: number, progress: number, 
   })
 }
 
+export async function updateGodOrderNotes(orderId: number, notes: string): Promise<{ success: boolean }> {
+  return apiFetch(`/god/orders/${orderId}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  })
+}
+
 export async function confirmGodPayment(orderId: number, amount?: number, isFull?: boolean): Promise<{ success: boolean }> {
   return apiFetch(`/god/orders/${orderId}/confirm-payment`, {
     method: 'POST',

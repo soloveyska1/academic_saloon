@@ -599,7 +599,7 @@ class GodOrderNotesRequest(BaseModel):
 class GodUserBalanceRequest(BaseModel):
     """Request to modify user balance"""
     amount: float = Field(...)
-    reason: str = Field(default="Admin adjustment", max_length=500)
+    reason: str = Field(default="Ручная корректировка", max_length=500)
     notify: bool = True
 
     @field_validator('amount')
