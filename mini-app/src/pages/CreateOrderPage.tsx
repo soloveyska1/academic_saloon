@@ -1191,25 +1191,6 @@ function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCar
         boxShadow: selected ? '0 20px 44px -36px rgba(212, 175, 55, 0.24)' : '0 18px 34px -34px rgba(0, 0, 0, 0.85)',
       }}
     >
-      {meta.recommended && (
-        <div style={{
-          position: 'absolute',
-          top: 12,
-          right: 14,
-          padding: '6px 10px',
-          borderRadius: 999,
-          background: 'rgba(212, 175, 55, 0.10)',
-          border: '1px solid rgba(212, 175, 55, 0.18)',
-          color: 'var(--gold-300)',
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-        }}>
-          Оптимально
-        </div>
-      )}
-
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         <div
           style={{
@@ -1236,10 +1217,9 @@ function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCar
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             gap: 10,
             marginBottom: 6,
-            paddingRight: meta.recommended ? 92 : 0,
+            flexWrap: 'wrap',
           }}>
             <span style={{
               fontSize: 18,
@@ -1247,24 +1227,6 @@ function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCar
               color: 'var(--text-main)',
             }}>
               {config.label}
-            </span>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: 74,
-              height: 34,
-              padding: '0 12px',
-              borderRadius: 999,
-              background: selected ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-              border: `1px solid ${selected ? 'rgba(212, 175, 55, 0.20)' : 'rgba(255, 255, 255, 0.06)'}`,
-              fontSize: 13,
-              fontWeight: 700,
-              color: config.multiplier === 'Базовая' ? 'var(--text-secondary)' : config.color,
-              fontFamily: "'JetBrains Mono', monospace",
-              flexShrink: 0,
-            }}>
-              {config.multiplier}
             </span>
           </div>
 
@@ -1284,9 +1246,8 @@ function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCar
             flexWrap: 'wrap',
           }}>
             <DeadlineMetaPill label={meta.pace} accent={selected ? 'var(--gold-300)' : config.color} />
-            <DeadlineMetaPill
-              label={config.multiplier === 'Базовая' ? 'без доплаты' : `доплата ${config.multiplier}`}
-            />
+            <DeadlineMetaPill label={config.multiplier === 'Базовая' ? 'без доплаты' : config.multiplier} />
+            {meta.recommended && <DeadlineMetaPill label="оптимально" accent="var(--gold-300)" />}
             {selected && <DeadlineMetaPill label="выбрано" accent="var(--gold-300)" />}
           </div>
         </div>

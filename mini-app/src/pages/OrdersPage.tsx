@@ -1227,8 +1227,17 @@ export function OrdersPage({ orders }: Props) {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
             }}>
-              Порядок без шума
+              Ваши заказы
             </h1>
+            <div style={{
+              marginTop: 8,
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: 'var(--text-secondary)',
+              maxWidth: 340,
+            }}>
+              Статусы, сроки и все следующие шаги по каждому заказу в одном месте.
+            </div>
           </div>
 
           <motion.button
