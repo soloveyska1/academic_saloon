@@ -681,27 +681,43 @@ async def upload_order_files(
 
     file_data = []
     blocked_files = []
+    oversized_files = []
     for file in files:
+        filename = file.filename or "unnamed_file"
         # Check file extension
-        if not is_allowed_file(file.filename):
-            blocked_files.append(file.filename)
-            logger.warning(f"Blocked file upload: {file.filename} (order_id={order_id})")
+        if not is_allowed_file(filename):
+            blocked_files.append(filename)
+            logger.warning(f"Blocked file upload: {filename} (order_id={order_id})")
             continue
 
         content = await file.read()
         if len(content) > 50 * 1024 * 1024:
+            oversized_files.append(filename)
             continue
-        file_data.append((content, file.filename))
+        file_data.append((content, filename))
 
-    if blocked_files and not file_data:
+    if (blocked_files or oversized_files) and not file_data:
+        reasons = []
+        if blocked_files:
+            reasons.append(f"неподдерживаемый тип: {', '.join(blocked_files)}")
+        if oversized_files:
+            reasons.append(f"превышен лимит 50 МБ: {', '.join(oversized_files)}")
         return FileUploadResponse(
             success=False,
-            message=f"Недопустимый тип файла: {', '.join(blocked_files)}",
-            uploaded_count=0
+            message="; ".join(reasons),
+            uploaded_count=0,
+            blocked_files=blocked_files,
+            oversized_files=oversized_files,
         )
 
     if not file_data:
-        return FileUploadResponse(success=False, message="Нет файлов для загрузки", uploaded_count=0)
+        return FileUploadResponse(
+            success=False,
+            message="Нет файлов для загрузки",
+            uploaded_count=0,
+            blocked_files=blocked_files,
+            oversized_files=oversized_files,
+        )
 
     result = await yandex_disk_service.upload_multiple_files(
         files=file_data,
@@ -741,9 +757,40 @@ async def upload_order_files(
         except Exception:
             pass
 
-        return FileUploadResponse(success=True, message=f"✅ Загружено {len(file_data)} файл(ов)", files_url=result.folder_url, uploaded_count=len(file_data))
+        uploaded_count = result.uploaded_count or len(file_data)
+        rejected_count = len(blocked_files) + len(oversized_files)
+        storage_failed_count = max(len(file_data) - uploaded_count, 0)
 
-    return FileUploadResponse(success=False, message=f"Ошибка загрузки: {result.error}")
+        message = f"✅ Загружено {uploaded_count} из {len(files)} файл(ов)"
+        issue_notes = []
+        if blocked_files:
+            issue_notes.append(f"пропущены неподдерживаемые файлы ({len(blocked_files)})")
+        if oversized_files:
+            issue_notes.append(f"пропущены файлы больше 50 МБ ({len(oversized_files)})")
+        if storage_failed_count > 0:
+            issue_notes.append(f"не загрузились {storage_failed_count} файл(ов)")
+        elif rejected_count == 0 and uploaded_count == len(file_data):
+            message = f"✅ Загружено {uploaded_count} файл(ов)"
+
+        if issue_notes:
+            message = f"{message}; {', '.join(issue_notes)}"
+
+        return FileUploadResponse(
+            success=True,
+            message=message,
+            files_url=result.folder_url,
+            uploaded_count=uploaded_count,
+            blocked_files=blocked_files,
+            oversized_files=oversized_files,
+        )
+
+    return FileUploadResponse(
+        success=False,
+        message=f"Ошибка загрузки: {result.error}",
+        uploaded_count=result.uploaded_count,
+        blocked_files=blocked_files,
+        oversized_files=oversized_files,
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  PAYMENT

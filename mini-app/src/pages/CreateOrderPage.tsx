@@ -6,7 +6,7 @@ import {
   Tag, Clock, Zap, Flame, Rocket, Timer, Hourglass
 } from 'lucide-react'
 import { UserData, WorkType, OrderCreateRequest, Voucher } from '../types'
-import { createOrder, uploadOrderFiles } from '../api/userApi'
+import { createOrder, uploadOrderFiles, FileUploadResponse } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePromo } from '../contexts/PromoContext'
@@ -73,6 +73,52 @@ function buildOrderDescription(requirements: string, selectedVoucher: Voucher | 
   }
 
   return parts.length > 0 ? parts.join('\n\n') : undefined
+}
+
+function formatFileNamesPreview(fileNames: string[]) {
+  const preview = fileNames.slice(0, 3)
+  if (preview.length === 0) {
+    return ''
+  }
+
+  if (fileNames.length <= 3) {
+    return preview.join(', ')
+  }
+
+  return `${preview.join(', ')} и ещё ${fileNames.length - 3}`
+}
+
+function buildAttachmentUploadMessage(uploadResult: FileUploadResponse, selectedCount: number) {
+  const blockedFiles = uploadResult.blocked_files ?? []
+  const oversizedFiles = uploadResult.oversized_files ?? []
+  const rejectedCount = blockedFiles.length + oversizedFiles.length
+  const parts: string[] = []
+
+  if (uploadResult.success && uploadResult.uploaded_count > 0) {
+    if (uploadResult.uploaded_count === selectedCount && rejectedCount === 0) {
+      parts.push('Файлы прикреплены к заказу.')
+    } else {
+      parts.push(`К заказу прикрепили ${uploadResult.uploaded_count} из ${selectedCount} файлов.`)
+    }
+  }
+
+  if (blockedFiles.length > 0) {
+    parts.push(`Не приняли неподдерживаемые форматы: ${formatFileNamesPreview(blockedFiles)}.`)
+  }
+
+  if (oversizedFiles.length > 0) {
+    parts.push(`Не приняли файлы больше 50 МБ: ${formatFileNamesPreview(oversizedFiles)}.`)
+  }
+
+  if ((uploadResult.success && uploadResult.uploaded_count < selectedCount) || (!uploadResult.success && selectedCount > 0)) {
+    parts.push('Остальное можно дослать позже в чате заказа.')
+  }
+
+  if (parts.length > 0) {
+    return parts.join(' ')
+  }
+
+  return 'Заказ создан, но файлы не загрузились. Их можно отправить позже в чате заказа.'
 }
 
 interface CreateOrderPageProps {
@@ -304,9 +350,9 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   }, [haptic])
 
   // Files
-  const addFiles = useCallback((fileList: FileList) => {
+  const addFiles = useCallback((newFiles: File[]) => {
     haptic('light')
-    setFiles((prev) => [...prev, ...Array.from(fileList)])
+    setFiles((prev) => [...prev, ...newFiles])
   }, [haptic])
 
   const removeFile = useCallback((index: number) => {
@@ -429,11 +475,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               setSubmittingLabel(percent > 0 ? `Загружаем файлы... ${percent}%` : 'Загружаем файлы...')
             })
 
-            if (uploadResult.success && uploadResult.uploaded_count > 0) {
-              finalMsg = `${finalMsg} Файлы прикреплены к заказу.`
-            } else {
-              finalMsg = `${finalMsg} Заказ создан, но файлы не загрузились. Их можно отправить позже в чате заказа.`
-            }
+            finalMsg = `${finalMsg} ${buildAttachmentUploadMessage(uploadResult, files.length)}`
           } catch {
             finalMsg = `${finalMsg} Заказ создан, но файлы не загрузились. Их можно отправить позже в чате заказа.`
           }

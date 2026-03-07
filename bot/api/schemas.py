@@ -395,6 +395,8 @@ class FileUploadResponse(BaseModel):
     message: str
     files_url: Optional[str] = None
     uploaded_count: int = 0
+    blocked_files: List[str] = Field(default_factory=list)
+    oversized_files: List[str] = Field(default_factory=list)
 
 class PaymentConfirmRequest(BaseModel):
     payment_method: str

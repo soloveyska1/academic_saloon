@@ -60,6 +60,8 @@ class UploadResult:
     public_url: Optional[str] = None
     folder_url: Optional[str] = None
     error: Optional[str] = None
+    uploaded_count: int = 0
+    total_count: int = 0
 
 
 def sanitize_filename(name: str) -> str:
@@ -300,6 +302,8 @@ class YandexDiskService:
                     success=True,
                     public_url=public_url,
                     folder_url=public_url,
+                    uploaded_count=1,
+                    total_count=1,
                 )
 
         except Exception as e:
@@ -362,7 +366,12 @@ class YandexDiskService:
                         logger.debug(f"Uploaded: {safe_filename}")
 
                 if uploaded_count == 0:
-                    return UploadResult(success=False, error="No files were uploaded")
+                    return UploadResult(
+                        success=False,
+                        error="No files were uploaded",
+                        uploaded_count=0,
+                        total_count=len(files),
+                    )
 
                 # Публикуем папку
                 public_url = await self._publish_folder(client, folder_path)
@@ -373,6 +382,8 @@ class YandexDiskService:
                     success=True,
                     public_url=public_url,
                     folder_url=public_url,
+                    uploaded_count=uploaded_count,
+                    total_count=len(files),
                 )
 
         except Exception as e:
@@ -442,7 +453,12 @@ class YandexDiskService:
                         logger.debug(f"Uploaded append file: {safe_filename}")
 
                 if uploaded_count == 0:
-                    return UploadResult(success=False, error="No append files were uploaded")
+                    return UploadResult(
+                        success=False,
+                        error="No append files were uploaded",
+                        uploaded_count=0,
+                        total_count=len(files),
+                    )
 
                 # Публикуем папку заказа (не подпапку)
                 public_url = await self._publish_folder(client, order_folder)
@@ -453,6 +469,8 @@ class YandexDiskService:
                     success=True,
                     public_url=public_url,
                     folder_url=public_url,
+                    uploaded_count=uploaded_count,
+                    total_count=len(files),
                 )
 
         except Exception as e:

@@ -247,7 +247,12 @@ export async function setDailyBonusStreak(streak: number): Promise<DailyBonusRes
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface FileUploadResponse {
-  success: boolean; message: string; files_url?: string; uploaded_count: number
+  success: boolean
+  message: string
+  files_url?: string
+  uploaded_count: number
+  blocked_files?: string[]
+  oversized_files?: string[]
 }
 
 export async function uploadOrderFiles(orderId: number, files: File[], onProgress?: (percent: number) => void): Promise<FileUploadResponse> {
