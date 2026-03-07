@@ -17,9 +17,10 @@ interface HomeHeaderProps {
   }
   userPhoto?: string
   onSecretTap: () => void
+  onOpenLounge: () => void
 }
 
-export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap }: HomeHeaderProps) {
+export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap, onOpenLounge }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
   const firstName = user.fullname?.split(' ')[0] || 'GUEST'
   const isVIP = user.rank.is_max
@@ -98,7 +99,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       <motion.button
         type="button"
         whileTap={{ scale: 0.95 }}
-        onClick={onSecretTap}
+        onClick={onOpenLounge}
         style={{
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(212,175,55,0.2)',
@@ -113,7 +114,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
         }}
       >
-        ЛАУНЖ
+        КЛУБ
       </motion.button>
     </motion.header>
   )

@@ -78,6 +78,7 @@ class OrderResponse(BaseModel):
     is_archived: bool = False  # Whether order is archived
     revision_count: int = 0  # Number of revision rounds (3 free included)
     created_at: str
+    updated_at: Optional[str] = None
     completed_at: Optional[str] = None
     delivered_at: Optional[str] = None  # When work was delivered (30-day revision period)
 
@@ -97,6 +98,7 @@ class UserResponse(BaseModel):
     discount: float
     referral_code: str
     referrals_count: int = 0  # Number of referrals invited
+    referral_earnings: float = 0
     daily_luck_available: bool
     daily_bonus_streak: int = 0  # Days in a row claimed daily bonus
     free_spins: int = 0  # Legacy roulette field (kept for frontend compat)

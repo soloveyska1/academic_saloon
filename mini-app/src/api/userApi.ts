@@ -784,7 +784,7 @@ export async function unsubscribeGodNotifications(): Promise<{ success: boolean 
 function getMockUserData(): UserData {
   return {
     id: 1, telegram_id: 123456789, username: 'dev', fullname: 'Dev User', balance: 1000, bonus_balance: 100,
-    transactions: [], orders: [], orders_count: 0, total_spent: 0, discount: 0, referral_code: 'DEV', referrals_count: 0,
+    transactions: [], orders: [], orders_count: 0, total_spent: 0, discount: 0, referral_code: 'DEV', referrals_count: 0, referral_earnings: 0,
     daily_luck_available: true, daily_bonus_streak: 1, free_spins: 0, roulette_onboarding_seen: true,
     rank: { name: 'Player', emoji: '🎲', level: 1, cashback: 0, bonus: null, next_rank: null, progress: 0, spent_to_next: 100, is_max: false },
     loyalty: { status: 'Start', emoji: 'S', level: 1, discount: 0, orders_to_next: 1 }

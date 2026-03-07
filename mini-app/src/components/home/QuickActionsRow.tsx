@@ -35,15 +35,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
   }
 
   return (
-    <div className={s.scrollRow} style={{
-      marginBottom: 24,
-      display: 'flex',
-      gap: 12,
-      overflowX: 'auto',
-      paddingBottom: 4, // Space for scrollbar if visible/touch
-      marginRight: -20, // Negative margin to pull to edge...
-      paddingRight: 20 // ...and padding to keep content visible
-    }}>
+    <div className={s.scrollRow} style={{ marginBottom: 20, gap: 10 }}>
       {QUICK_ACTIONS.map((action, index) => (
         <motion.button
           key={action.id}
@@ -52,44 +44,53 @@ export const QuickActionsRow = memo(function QuickActionsRow({
           transition={{ delay: 0.1 + index * 0.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => handleClick(action)}
-          className={s.voidGlass}
           style={{
-            minWidth: '100px',
-            flex: 1,
-            padding: '16px 12px',
-            borderRadius: '16px',
+            minWidth: '120px',
+            padding: '12px 14px',
+            borderRadius: '999px',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 10,
             cursor: 'pointer',
-            position: 'relative',
-            border: '1px solid rgba(255,255,255,0.05)'
+            background: 'rgba(12, 12, 15, 0.78)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
           }}
         >
           <div style={{
-            marginBottom: '10px',
-            filter: "drop-shadow(0 0 8px rgba(212,175,55,0.3))"
+            width: 34,
+            height: 34,
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(212,175,55,0.12)',
+            border: '1px solid rgba(212,175,55,0.18)',
+            flexShrink: 0,
           }}>
-            <action.icon size={24} color="#d4af37" strokeWidth={1.5} />
+            <action.icon size={16} color="#d4af37" strokeWidth={2} />
           </div>
-          <div style={{
-            fontFamily: "'Manrope', sans-serif",
-            fontSize: '12px',
-            fontWeight: 600,
-            color: '#f2f2f2',
-            marginBottom: '2px'
-          }}>
-            {action.title}
-          </div>
-          <div style={{
-            fontFamily: "'Manrope', sans-serif",
-            fontSize: '11px',
-            fontWeight: 600,
-            color: '#a1a1aa',
-            lineHeight: '1.2'
-          }}>
-            {action.subtitle}
+          <div style={{ textAlign: 'left' }}>
+            <div style={{
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: '12px',
+              fontWeight: 700,
+              color: '#f4f4f5',
+              lineHeight: 1.1,
+              marginBottom: 3,
+            }}>
+              {action.title}
+            </div>
+            <div style={{
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: '11px',
+              fontWeight: 600,
+              color: '#a1a1aa',
+              lineHeight: 1.1,
+            }}>
+              {action.subtitle}
+            </div>
           </div>
         </motion.button>
       ))}

@@ -1,6 +1,6 @@
 import { memo, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Gift, Crown, MessageCircle, FileText, Share2, Check, Sparkles } from 'lucide-react'
+import { Plus, Crown, MessageCircle, FileText, Share2, Check, Sparkles } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  QUICK ACTIONS GRID - Premium fast access to common actions
@@ -176,7 +176,6 @@ export const QuickActionsGrid = memo(function QuickActionsGrid({
       bgColor: 'rgba(212, 175, 55, 0.12)',
       borderColor: 'rgba(212, 175, 55, 0.15)',
       onClick: onBonuses,
-      isPrimary: true,
     },
     {
       id: 'privileges',

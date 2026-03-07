@@ -155,7 +155,14 @@ async def get_client_profile(
         raise HTTPException(status_code=404, detail="Client not found")
 
     # Get user's orders
-    orders_query = select(Order).where(Order.user_id == user.telegram_id).order_by(desc(Order.created_at))
+    orders_query = (
+        select(Order)
+        .where(
+            Order.user_id == user.telegram_id,
+            Order.work_type != 'support_chat',
+        )
+        .order_by(desc(Order.created_at))
+    )
     orders_res = await session.execute(orders_query)
     orders = orders_res.scalars().all()
 
@@ -212,7 +219,7 @@ async def get_client_profile(
         created_at=user.created_at.isoformat() if user.created_at else None,
         last_active=user.updated_at.isoformat() if user.updated_at else None,
         balance=user.balance or 0,
-        bonus_balance=getattr(user, 'bonus_balance', 0) or 0,
+        bonus_balance=user.balance or 0,
         total_spent=total_spent,
         rank_name=rank_info_obj.name if rank_info_obj else 'Новичок',
         rank_emoji=rank_info_obj.emoji if rank_info_obj else '🌱',

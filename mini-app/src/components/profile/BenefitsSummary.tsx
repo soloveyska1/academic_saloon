@@ -27,7 +27,7 @@ export const BenefitsSummary = memo(function BenefitsSummary({
   savedLast30Days,
   onHowItWorks,
 }: BenefitsSummaryProps) {
-  const totalBalance = balance + bonusBalance
+  const totalBalance = balance
 
   return (
     <motion.div
@@ -94,16 +94,16 @@ export const BenefitsSummary = memo(function BenefitsSummary({
           }}
         >
           <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)', marginBottom: 4 }}>
-            Доступный баланс
+            Клубный баланс
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 28, fontWeight: 700, color: '#22c55e' }}>
               {formatCurrency(totalBalance)}
             </span>
           </div>
-          {bonusBalance > 0 && (
+          {(bonusBalance > 0 || balance > 0) && (
             <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)', marginTop: 4 }}>
-              из них бонусов: {formatCurrency(bonusBalance)}
+              Баланс можно использовать при оплате до 50% стоимости заказа.
             </div>
           )}
         </div>
@@ -173,7 +173,7 @@ export const BenefitsSummary = memo(function BenefitsSummary({
           >
             <Wallet size={16} color="#D4AF37" />
             <span style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.7)' }}>
-              Сэкономлено за 30 дней:{' '}
+              Начислено за 30 дней:{' '}
               <span style={{ fontWeight: 600, color: '#D4AF37' }}>
                 {formatCurrency(savedLast30Days)}
               </span>

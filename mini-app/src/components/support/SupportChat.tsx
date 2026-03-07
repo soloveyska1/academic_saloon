@@ -5,6 +5,19 @@ import { ChatMessage } from '../../types'
 import { fetchSupportMessages, sendSupportMessage } from '../../api/userApi'
 import { useTelegram } from '../../hooks/useUserData'
 
+function haveSameMessages(a: ChatMessage[], b: ChatMessage[]): boolean {
+    if (a.length !== b.length) return false
+
+    return a.every((message, index) => {
+        const next = b[index]
+        return message.id === next.id &&
+            message.message_text === next.message_text &&
+            message.created_at === next.created_at &&
+            message.is_read === next.is_read &&
+            message.sender_type === next.sender_type
+    })
+}
+
 export function SupportChat() {
     const { haptic } = useTelegram()
     const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -26,13 +39,7 @@ export function SupportChat() {
             // Reset error count on success
             errorCountRef.current = 0
             setError(null)
-            // Only update if count changes to avoid flicker
-            setMessages(prev => {
-                if (prev.length !== response.messages.length) {
-                    return response.messages
-                }
-                return prev
-            })
+            setMessages(prev => haveSameMessages(prev, response.messages) ? prev : response.messages)
         } catch {
             errorCountRef.current++
 
@@ -84,12 +91,13 @@ export function SupportChat() {
         haptic('light')
         setIsSending(true)
         const textToSend = inputText
+        const tempId = Date.now()
         setInputText('') // Optimistic clear
 
         try {
             // Optimistic update
             const tempMsg: ChatMessage = {
-                id: Date.now(),
+                id: tempId,
                 sender_type: 'client',
                 sender_name: 'Вы',
                 message_text: textToSend,
@@ -106,7 +114,7 @@ export function SupportChat() {
         } catch {
             // Rollback - restore input
             setInputText(textToSend)
-            setMessages(prev => prev.filter(m => m.id !== Date.now()))
+            setMessages(prev => prev.filter(m => m.id !== tempId))
             haptic('error')
         } finally {
             setIsSending(false)

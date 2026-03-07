@@ -6,7 +6,7 @@ import {
   Tag, Clock, Zap, Flame, Rocket, Timer, Hourglass
 } from 'lucide-react'
 import { WorkType, OrderCreateRequest } from '../types'
-import { createOrder } from '../api/userApi'
+import { createOrder, uploadOrderFiles } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePromo } from '../contexts/PromoContext'
@@ -93,6 +93,7 @@ export function CreateOrderPage() {
 
   // UI
   const [submitting, setSubmitting] = useState(false)
+  const [submittingLabel, setSubmittingLabel] = useState<string | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [result, setResult] = useState<{
     ok: boolean
@@ -264,13 +265,17 @@ export function CreateOrderPage() {
 
     haptic('heavy')
     setSubmitting(true)
+    setSubmittingLabel('Отправляем заявку...')
+    let shouldShowResult = false
 
     try {
       let promoToUse = activePromo?.code
       if (activePromo && !forceWithoutPromo) {
+        setSubmittingLabel('Проверяем условия...')
         const promoStillValid = await revalidatePromo()
         if (!promoStillValid) {
           setSubmitting(false)
+          setSubmittingLabel(null)
           setPromoLostReason('Промокод больше не действителен')
           setShowPromoWarning(true)
           hapticError()
@@ -282,6 +287,7 @@ export function CreateOrderPage() {
         promoToUse = undefined
       }
 
+      setSubmittingLabel('Создаём заказ...')
       const data: OrderCreateRequest = {
         work_type: serviceTypeId as WorkType,
         subject: subject.trim(),
@@ -325,6 +331,23 @@ export function CreateOrderPage() {
           finalMsg = finalMsg + ' Ваучер применён!'
         }
 
+        if (files.length > 0 && res.order_id) {
+          try {
+            setSubmittingLabel('Загружаем файлы...')
+            const uploadResult = await uploadOrderFiles(res.order_id, files, (percent) => {
+              setSubmittingLabel(percent > 0 ? `Загружаем файлы... ${percent}%` : 'Загружаем файлы...')
+            })
+
+            if (uploadResult.success && uploadResult.uploaded_count > 0) {
+              finalMsg = `${finalMsg} Файлы прикреплены к заказу.`
+            } else {
+              finalMsg = `${finalMsg} Заказ создан, но файлы не загрузились. Их можно отправить позже в чате заказа.`
+            }
+          } catch {
+            finalMsg = `${finalMsg} Заказ создан, но файлы не загрузились. Их можно отправить позже в чате заказа.`
+          }
+        }
+
         setResult({
           ok: true,
           msg: finalMsg,
@@ -332,22 +355,28 @@ export function CreateOrderPage() {
           promoUsed: actualPromoUsed,
           basePrice: basePrice || undefined
         })
+        shouldShowResult = true
       } else {
         hapticError()
         const errorMsg = typeof res.message === 'string'
           ? res.message
           : (typeof res.message === 'object' ? JSON.stringify(res.message) : 'Произошла ошибка')
         setResult({ ok: false, msg: errorMsg })
+        shouldShowResult = true
       }
     } catch (err) {
       hapticError()
       const errorMessage = err instanceof Error ? err.message : 'Произошла ошибка'
       setResult({ ok: false, msg: errorMessage })
+      shouldShowResult = true
     } finally {
       setSubmitting(false)
-      setStep(4)
+      setSubmittingLabel(null)
+      if (shouldShowResult) {
+        setStep(4)
+      }
     }
-  }, [serviceTypeId, deadline, subject, topic, requirements, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, selectedVoucherId, club])
+  }, [serviceTypeId, deadline, subject, topic, requirements, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, selectedVoucherId, club, files])
 
   const handlePromoWarningContinue = useCallback(() => {
     setShowPromoWarning(false)
@@ -798,6 +827,7 @@ export function CreateOrderPage() {
         step={step}
         canProceed={canProceed}
         submitting={submitting}
+        submittingLabel={submittingLabel}
         isRevalidating={isRevalidating}
         onNext={goNext}
         onSubmit={() => handleSubmit()}
@@ -1084,6 +1114,7 @@ interface FloatingCtaDockProps {
   step: number
   canProceed: boolean
   submitting: boolean
+  submittingLabel?: string | null
   isRevalidating: boolean
   onNext: () => void
   onSubmit: () => void
@@ -1094,6 +1125,7 @@ function FloatingCtaDock({
   step,
   canProceed,
   submitting,
+  submittingLabel,
   isRevalidating,
   onNext,
   onSubmit,
@@ -1193,7 +1225,7 @@ function FloatingCtaDock({
               }}
             >
               {submitting
-                ? (isRevalidating ? 'Проверка...' : 'Отправка...')
+                ? (submittingLabel || (isRevalidating ? 'Проверка...' : 'Отправка...'))
                 : step === 3
                   ? 'Рассчитать'
                   : step === 2

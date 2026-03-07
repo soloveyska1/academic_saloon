@@ -142,7 +142,8 @@ class PromoService:
                 orders_count_stmt = select(func.count(Order.id)).where(
                     and_(
                         Order.user_id == user_id,
-                        Order.status.notin_([OrderStatus.cancelled.value, OrderStatus.rejected.value])
+                        Order.work_type != 'support_chat',
+                        Order.status.notin_([OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value])
                     )
                 )
                 orders_result = await session.execute(orders_count_stmt)
@@ -247,7 +248,8 @@ class PromoService:
                     orders_count_stmt = select(func.count(Order.id)).where(
                         and_(
                             Order.user_id == user_id,
-                            Order.status.notin_([OrderStatus.cancelled.value, OrderStatus.rejected.value])
+                            Order.work_type != 'support_chat',
+                            Order.status.notin_([OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value])
                         )
                     )
                     orders_result = await session.execute(orders_count_stmt)

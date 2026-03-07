@@ -99,6 +99,7 @@ def order_to_response(order: Order) -> OrderResponse:
         is_archived=getattr(order, 'is_archived', False),  # Whether order is archived
         revision_count=getattr(order, 'revision_count', 0) or 0,
         created_at=order.created_at.isoformat() if order.created_at else "",
+        updated_at=order.updated_at.isoformat() if getattr(order, 'updated_at', None) else None,
         completed_at=order.completed_at.isoformat() if order.completed_at else None,
         delivered_at=order.delivered_at.isoformat() if getattr(order, 'delivered_at', None) else None
     )

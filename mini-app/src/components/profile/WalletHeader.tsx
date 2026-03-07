@@ -28,7 +28,7 @@ export const WalletHeader = memo(function WalletHeader({
   breakdown,
 }: WalletHeaderProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const totalBalance = balance + bonusBalance
+  const totalBalance = balance
 
   return (
     <motion.div
@@ -60,15 +60,15 @@ export const WalletHeader = memo(function WalletHeader({
                 <Wallet size={16} color="#22c55e" />
               </div>
               <span style={{ fontSize: 14, color: 'rgba(255, 255, 255, 0.6)' }}>
-                Ваш баланс
+                Клубный баланс
               </span>
             </div>
             <div style={{ fontSize: 32, fontWeight: 700, color: '#22c55e' }}>
               {formatCurrency(totalBalance)}
             </div>
-            {bonusBalance > 0 && (
+            {(bonusBalance > 0 || balance > 0) && (
               <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.5)', marginTop: 4 }}>
-                Бонусов: {formatCurrency(bonusBalance)}
+                Можно использовать до 50% стоимости заказа
               </div>
             )}
           </div>
@@ -116,11 +116,10 @@ export const WalletHeader = memo(function WalletHeader({
               }}
             >
               <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.4)', marginBottom: 12 }}>
-                Откуда баланс
+                Что есть сейчас
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {/* Bonuses */}
                 <div
                   style={{
                     display: 'flex',
@@ -146,7 +145,7 @@ export const WalletHeader = memo(function WalletHeader({
                       <Gift size={14} color="#D4AF37" />
                     </div>
                     <span style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.7)' }}>
-                      Бонусы и акции
+                      На счёте сейчас
                     </span>
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 600, color: '#D4AF37' }}>
@@ -154,7 +153,6 @@ export const WalletHeader = memo(function WalletHeader({
                   </span>
                 </div>
 
-                {/* Cashback */}
                 <div
                   style={{
                     display: 'flex',
@@ -180,15 +178,14 @@ export const WalletHeader = memo(function WalletHeader({
                       <Percent size={14} color="#22c55e" />
                     </div>
                     <span style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.7)' }}>
-                      Кэшбэк
+                      Текущий кэшбэк
                     </span>
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 600, color: '#22c55e' }}>
-                    {formatCurrency(breakdown.cashback)}
+                    {breakdown.cashback}%
                   </span>
                 </div>
 
-                {/* Referral */}
                 {breakdown.referralEarnings > 0 && (
                   <div
                     style={{
@@ -215,7 +212,7 @@ export const WalletHeader = memo(function WalletHeader({
                         <Users size={14} color="#A78BFA" />
                       </div>
                       <span style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.7)' }}>
-                        Реферальные
+                        Заработано по рефералам
                       </span>
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 600, color: '#A78BFA' }}>

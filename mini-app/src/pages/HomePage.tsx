@@ -117,9 +117,8 @@ export function HomePage({ user }: Props) {
   useEffect(() => {
     if (!user) return
 
-    const isNewUser = user.orders_count === 0
     const isSimulatingNewUser = admin.simulateNewUser
-    const shouldShow = isNewUser || isSimulatingNewUser
+    const shouldShow = isSimulatingNewUser
     const alreadyShown = localStorage.getItem(WELCOME_MODAL_SHOWN_KEY) === 'true'
 
     if (alreadyShown && !isSimulatingNewUser) return
@@ -150,6 +149,11 @@ export function HomePage({ user }: Props) {
   const handleNewOrder = useCallback(() => {
     haptic('heavy')
     navigate('/create-order')
+  }, [haptic, navigate])
+
+  const handleOpenLounge = useCallback(() => {
+    haptic('light')
+    navigate('/club/privileges')
   }, [haptic, navigate])
 
   const retryDailyBonus = useCallback(() => {
@@ -200,6 +204,7 @@ export function HomePage({ user }: Props) {
           }}
           userPhoto={userPhoto}
           onSecretTap={handleSecretTap}
+          onOpenLounge={handleOpenLounge}
         />
 
         {/* ═══════════════════════════════════════════════════════════════════
@@ -207,27 +212,11 @@ export function HomePage({ user }: Props) {
           ═══════════════════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
-            {/* PRIMARY CTA */}
             <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
 
-            {/* Welcome onboarding for new users */}
             <EmptyStateOnboarding
               onCreateOrder={handleNewOrder}
-              primaryActionLabel="Создать первый заказ"
-            />
-
-            {/* Quick info badges (Срочно, Кешбэк, Гарантии) */}
-            <QuickActionsRow
-              onNavigate={navigate}
-              onOpenModal={(modal: ModalName) => {
-                if (modal === 'cashback') actions.openModal('cashback')
-                else if (modal === 'guarantees') actions.openModal('guarantees')
-              }}
-              onOpenUrgentSheet={() => {
-                haptic('medium')
-                actions.openModal('urgentSheet')
-              }}
-              haptic={haptic}
+              primaryActionLabel="Открыть первую заявку"
             />
           </>
         ) : (
@@ -235,31 +224,7 @@ export function HomePage({ user }: Props) {
              RETURNING USER FLOW — Full feature set
              ═══════════════════════════════════════════════════════════════════ */
           <>
-            {/* Daily bonus for engaged users */}
-            <DailyBonusBanner
-              canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
-              currentStreak={dailyStreak}
-              potentialBonus={state.dailyBonus.info?.bonuses?.[0] ?? 100}
-              onClaim={() => { actions.openModal('dailyBonus'); haptic('medium') }}
-              haptic={haptic}
-            />
-
-            {/* PRIMARY CTA */}
             <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-
-            {/* Quick info badges */}
-            <QuickActionsRow
-              onNavigate={navigate}
-              onOpenModal={(modal: ModalName) => {
-                if (modal === 'cashback') actions.openModal('cashback')
-                else if (modal === 'guarantees') actions.openModal('guarantees')
-              }}
-              onOpenUrgentSheet={() => {
-                haptic('medium')
-                actions.openModal('urgentSheet')
-              }}
-              haptic={haptic}
-            />
 
             {/* Next action card for active orders */}
             <NextActionCard
@@ -275,6 +240,27 @@ export function HomePage({ user }: Props) {
                 onClick={() => navigate(`/order/${user.orders[0].id}`)}
               />
             )}
+
+            <QuickActionsRow
+              onNavigate={navigate}
+              onOpenModal={(modal: ModalName) => {
+                if (modal === 'cashback') actions.openModal('cashback')
+                else if (modal === 'guarantees') actions.openModal('guarantees')
+              }}
+              onOpenUrgentSheet={() => {
+                haptic('medium')
+                actions.openModal('urgentSheet')
+              }}
+              haptic={haptic}
+            />
+
+            <DailyBonusBanner
+              canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
+              currentStreak={dailyStreak}
+              potentialBonus={state.dailyBonus.info?.bonuses?.[0] ?? 100}
+              onClaim={() => { actions.openModal('dailyBonus'); haptic('medium') }}
+              haptic={haptic}
+            />
           </>
         )}
 

@@ -238,11 +238,10 @@ function usePaymentCountdown(deadline: string | null, hoursLimit = 24): Countdow
     if (!deadline) return
 
     const calculate = (): CountdownResult | null => {
-      // Парсим дедлайн оплаты (24 часа от создания заказа или конкретная дата)
+      // Таймер строим от момента последнего обновления заказа в платёжном статусе.
       const target = new Date(deadline)
       if (isNaN(target.getTime())) return null
 
-      // Добавляем 24 часа к дедлайну если это дата создания
       const paymentDeadline = new Date(target.getTime() + hoursLimit * 60 * 60 * 1000)
       const diff = paymentDeadline.getTime() - Date.now()
 
@@ -3465,7 +3464,10 @@ export function OrderDetailPageV8() {
   const isValidOrderId = !isNaN(orderId) && orderId > 0
 
   // Countdown for payment
-  const countdown = usePaymentCountdown(order?.created_at || null)
+  const paymentCountdownAnchor = order && ['waiting_payment', 'confirmed'].includes(order.status)
+    ? (order.updated_at || order.created_at || null)
+    : null
+  const countdown = usePaymentCountdown(paymentCountdownAnchor)
 
   // Load order data
   const loadOrder = useCallback(async () => {

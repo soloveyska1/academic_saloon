@@ -15,6 +15,7 @@ export interface UserData {
   discount: number
   referral_code: string
   referrals_count: number  // Number of referrals
+  referral_earnings: number
   orders: Order[]
   daily_luck_available: boolean
   daily_bonus_streak: number  // Days in a row claimed daily bonus
@@ -83,6 +84,7 @@ export interface Order {
   promo_code?: string | null  // Applied promo code
   promo_discount?: number  // Promo discount percentage
   created_at: string
+  updated_at?: string | null
   files_url: string | null
   description: string | null
   work_type: string
@@ -676,4 +678,3 @@ export interface GodOrderMessage {
   file_name: string | null
   created_at: string | null
 }
-

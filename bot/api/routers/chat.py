@@ -256,6 +256,16 @@ async def get_or_create_support_order(session: AsyncSession, user: User) -> Orde
                 raise HTTPException(status_code=500, detail="Failed to create support chat")
     return order
 
+
+async def get_support_order(session: AsyncSession, user: User) -> Order | None:
+    """Return existing support chat order without creating a new hidden record."""
+    result = await session.execute(
+        select(Order)
+        .where(Order.user_id == user.telegram_id, Order.work_type == 'support_chat')
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
 @router.get("/support/messages", response_model=ChatMessagesResponse)
 async def get_support_messages(
     tg_user: TelegramUser = Depends(get_current_user),
@@ -266,7 +276,9 @@ async def get_support_messages(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    order = await get_or_create_support_order(session, user)
+    order = await get_support_order(session, user)
+    if not order:
+        return ChatMessagesResponse(order_id=0, messages=[], unread_count=0)
 
     msgs_result = await session.execute(select(OrderMessage).where(OrderMessage.order_id == order.id).order_by(OrderMessage.created_at.asc()))
     messages = msgs_result.scalars().all()

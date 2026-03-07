@@ -71,19 +71,27 @@ function transformToProfileUser(user: UserData): ProfileUser {
 
 // Transform UserData to Wallet
 function transformToWallet(user: UserData): Wallet {
-  // Расчёт суммы экономии за счёт кэшбэка
-  const savedLast30Days = Math.round((user.total_spent * user.rank.cashback) / 100)
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+  const earnedLast30Days = Math.round(
+    user.transactions.reduce((sum, transaction) => {
+      const timestamp = new Date(transaction.created_at).getTime()
+      if (transaction.type !== 'credit' || Number.isNaN(timestamp) || timestamp < thirtyDaysAgo) {
+        return sum
+      }
+      return sum + transaction.amount
+    }, 0)
+  )
 
   return {
     balance: user.balance,
-    bonusBalance: user.bonus_balance,
+    bonusBalance: 0,
     cashbackPercent: user.rank.cashback,
     discountPercent: user.discount,
-    savedLast30Days,
+    savedLast30Days: earnedLast30Days,
     breakdown: {
-      bonuses: user.bonus_balance,
-      cashback: Math.round(user.total_spent * 0.03), // Estimated
-      referralEarnings: 0, // Would come from backend
+      bonuses: user.balance,
+      cashback: user.rank.cashback,
+      referralEarnings: user.referral_earnings,
     },
   }
 }
@@ -194,7 +202,7 @@ export function ProfilePageNew({ user }: Props) {
 
   const handleMyOrders = useCallback(() => {
     haptic('medium')
-    navigate('/')
+    navigate('/orders')
   }, [haptic, navigate])
 
   const handleInviteFriend = useCallback(() => {

@@ -1,11 +1,14 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, BadgePercent, Clock3, Plus, Rocket, ShieldCheck } from 'lucide-react'
+import {
+  ArrowRight,
+  Clock3,
+  MessageCircleMore,
+  Plus,
+  Rocket,
+  ShieldCheck,
+} from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  NEW TASK CTA — The "Black Card"
-// ═══════════════════════════════════════════════════════════════════════════
 
 interface NewTaskCTAProps {
   onClick: () => void
@@ -15,28 +18,29 @@ interface NewTaskCTAProps {
 
 const CTA_CONFIG = {
   'first-order': {
-    eyebrow: 'ПЕРВЫЙ ШАГ',
-    title: 'Создать первый заказ',
-    subtitle: 'Опишите задачу за пару минут. Дальше менеджер поможет с оценкой и деталями.',
-    helper: 'Нажмите сюда, чтобы открыть короткую заявку',
-    accent: 'Ваш старт',
+    eyebrow: 'ПЕРВЫЙ СЦЕНАРИЙ',
+    title: 'Первый заказ',
+    subtitle: 'Опишите предмет, тему и срок. Остальное менеджер спокойно соберёт с вами уже после заявки.',
+    ctaLabel: 'Открыть первую заявку',
+    note: 'Без оплаты до согласования цены и деталей.',
     icon: Rocket,
-    chips: [
-      { icon: Clock3, label: '2 минуты на заявку' },
-      { icon: ShieldCheck, label: 'Безопасная сделка' },
-      { icon: BadgePercent, label: '10% на первый заказ' },
+    proofs: [
+      { icon: Clock3, label: '3 поля без перегруза' },
+      { icon: MessageCircleMore, label: 'Ответ в чате после отправки' },
+      { icon: ShieldCheck, label: 'Файлы можно дослать позже' },
     ],
   },
   'repeat-order': {
     eyebrow: 'ГЛАВНОЕ ДЕЙСТВИЕ',
     title: 'Новый заказ',
-    subtitle: 'Откройте новую заявку, если нужна ещё одна работа, срочная задача или доработка.',
-    helper: 'Переход к оформлению новой заявки',
-    accent: 'Быстрый старт',
+    subtitle: 'Откройте ещё одну заявку, если нужна новая работа, срочная задача или доработка.',
+    ctaLabel: 'Открыть новую заявку',
+    note: 'Короткая форма, дальше всё сопровождает менеджер.',
     icon: Plus,
-    chips: [
-      { icon: Clock3, label: 'Быстрый запуск' },
-      { icon: ShieldCheck, label: 'Менеджер на связи' },
+    proofs: [
+      { icon: Clock3, label: 'Запуск за пару минут' },
+      { icon: MessageCircleMore, label: 'Живой менеджер на связи' },
+      { icon: ShieldCheck, label: 'Подходит и для срочных задач' },
     ],
   },
 } as const
@@ -59,168 +63,121 @@ export const NewTaskCTA = memo(function NewTaskCTA({
       className={`${s.voidGlass} ${s.primaryActionCard} ${variant === 'first-order' ? s.firstOrderActionCard : s.returningOrderActionCard}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.985 }}
       onClick={handleClick}
       style={{
         position: 'relative',
         width: '100%',
-        padding: '24px',
-        borderRadius: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
+        padding: '26px 22px 22px',
+        borderRadius: '28px',
         cursor: 'pointer',
-        marginBottom: '24px',
+        marginBottom: '20px',
         overflow: 'hidden',
-        border: '1px solid rgba(212,175,55,0.15)',
+        border: '1px solid rgba(212,175,55,0.16)',
         isolation: 'isolate',
+        textAlign: 'left',
       }}
     >
       <div className={s.primaryActionGlow} aria-hidden="true" />
       <div className={s.primaryActionShine} aria-hidden="true" />
       <div className={s.primaryActionOrb} aria-hidden="true" />
 
-      <div style={{
-        position: 'relative',
-        zIndex: 1,
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '8px 12px',
-        borderRadius: 999,
-        marginBottom: 18,
-        background: 'rgba(9, 9, 11, 0.65)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        fontFamily: "'Manrope', sans-serif",
-        fontSize: '11px',
-        fontWeight: 700,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        color: 'var(--gold-100)',
-      }}>
-        <span style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          background: '#d4af37',
-          boxShadow: '0 0 12px rgba(212,175,55,0.75)',
-          flexShrink: 0,
-        }} />
-        {config.eyebrow}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start', gap: 16, position: 'relative', zIndex: 1 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 14,
+          marginBottom: 18,
+        }}
+      >
+        <div
+          style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
-            padding: '6px 10px',
+            gap: 8,
+            padding: '8px 12px',
             borderRadius: 999,
-            marginBottom: '12px',
-            background: 'rgba(212,175,55,0.14)',
-            color: '#f7e7a8',
+            background: 'rgba(9, 9, 11, 0.58)',
+            border: '1px solid rgba(255,255,255,0.08)',
             fontFamily: "'Manrope', sans-serif",
             fontSize: '11px',
             fontWeight: 700,
-          }}>
-            <AccentIcon size={14} strokeWidth={2.2} />
-            {config.accent}
-          </div>
-
-          <div className={s.goldAccent} style={{
-            fontFamily: "'Manrope', sans-serif",
-            fontSize: 'clamp(28px, 7vw, 36px)',
-            fontWeight: 800,
-            lineHeight: '1.05',
-            marginBottom: '10px'
-          }}>
-            {config.title}
-          </div>
-          <div style={{
-            maxWidth: 440,
-            color: '#d4d4d8',
-            fontFamily: "'Manrope', sans-serif",
-            fontSize: '14px',
-            fontWeight: 500,
-            lineHeight: '1.55'
-          }}>
-            {config.subtitle}
-          </div>
-
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 8,
-            marginTop: 18,
-          }}>
-            {config.chips.map((chip) => {
-              const ChipIcon = chip.icon
-
-              return (
-                <div
-                  key={chip.label}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 10px',
-                    borderRadius: 999,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#f4f4f5',
-                    fontFamily: "'Manrope', sans-serif",
-                    fontSize: '12px',
-                    fontWeight: 600,
-                  }}
-                >
-                  <ChipIcon size={14} color="#d4af37" strokeWidth={2.2} />
-                  {chip.label}
-                </div>
-              )
-            })}
-          </div>
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--gold-100)',
+          }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#d4af37',
+              boxShadow: '0 0 12px rgba(212,175,55,0.72)',
+              flexShrink: 0,
+            }}
+          />
+          {config.eyebrow}
         </div>
 
-        <div style={{
-          width: 56,
-          height: 56,
-          borderRadius: '18px',
-          background: 'linear-gradient(135deg, #f7d25c 0%, #d4af37 45%, #8e6e27 100%)',
-          boxShadow: '0 12px 30px rgba(212,175,55,0.45)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <AccentIcon size={26} color="#09090b" strokeWidth={2.8} />
+        <div className={s.heroActionIcon}>
+          <AccentIcon size={20} color="#09090b" strokeWidth={2.7} />
         </div>
       </div>
 
-      <div style={{
-        position: 'relative',
-        zIndex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-        marginTop: 20,
-        paddingTop: 18,
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-      }}>
-        <div style={{
-          color: '#a1a1aa',
-          fontFamily: "'Manrope', sans-serif",
-          fontSize: '12px',
-          fontWeight: 600,
-        }}>
-          {config.helper}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div
+          className={s.goldAccent}
+          style={{
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: 'clamp(30px, 7vw, 40px)',
+            fontWeight: 800,
+            lineHeight: 1.02,
+            marginBottom: 12,
+            maxWidth: 420,
+          }}
+        >
+          {config.title}
         </div>
 
-        <div className={s.primaryActionArrow}>
-          <ArrowRight size={20} color="#f7e7a8" strokeWidth={2.5} />
+        <div
+          style={{
+            maxWidth: 470,
+            color: '#d4d4d8',
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: '15px',
+            fontWeight: 500,
+            lineHeight: 1.6,
+            marginBottom: 18,
+          }}
+        >
+          {config.subtitle}
         </div>
+
+        <div className={s.heroProofRail}>
+          {config.proofs.map((proof) => {
+            const ProofIcon = proof.icon
+
+            return (
+              <div key={proof.label} className={s.heroProofItem}>
+                <ProofIcon size={15} color="#d4af37" strokeWidth={2.2} />
+                <span>{proof.label}</span>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className={s.heroPrimaryButton}>
+          <span>{config.ctaLabel}</span>
+          <div className={s.primaryActionArrow}>
+            <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
+          </div>
+        </div>
+
+        <div className={s.heroFootnote}>{config.note}</div>
       </div>
     </motion.button>
   )

@@ -71,7 +71,10 @@ async def get_user_profile(
     # Get user's orders (Order.user_id = telegram_id, NOT internal id!)
     orders_result = await session.execute(
         select(Order)
-        .where(Order.user_id == user.telegram_id)
+        .where(
+            Order.user_id == user.telegram_id,
+            Order.work_type != 'support_chat',
+        )
         .order_by(desc(Order.created_at))
         .limit(50)
     )
@@ -83,7 +86,10 @@ async def get_user_profile(
         func.count(Order.id).label('total_orders'),
         func.count(Order.id).filter(Order.status == OrderStatus.COMPLETED.value).label('completed_orders'),
         func.coalesce(func.sum(Order.paid_amount).filter(Order.status == OrderStatus.COMPLETED.value), 0).label('total_spent')
-    ).where(Order.user_id == user.telegram_id)
+    ).where(
+        Order.user_id == user.telegram_id,
+        Order.work_type != 'support_chat',
+    )
 
     stats_result = await session.execute(stats_query)
     stats = stats_result.one()
@@ -137,6 +143,7 @@ async def get_user_profile(
         discount=loyalty_info.discount,
         referral_code=referral_code,
         referrals_count=user.referrals_count or 0,
+        referral_earnings=round(float(user.referral_earnings or 0), 2),
         daily_luck_available=can_spin,
         daily_bonus_streak=user.daily_bonus_streak or 0,
         rank=rank_info,  # Use actual total spent
