@@ -5,6 +5,8 @@ import { ArrowLeft, ShoppingBag, Check, Sparkles, AlertCircle, Ticket } from 'lu
 import { Reward, RewardCategory, Voucher } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { useClub } from '../contexts/ClubContext'
+import { useModalRegistration } from '../contexts/NavigationContext'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 
 import {
   RewardCard,
@@ -112,6 +114,8 @@ const ExchangeSuccessModal = memo(function ExchangeSuccessModal({
   onClose: () => void
   onViewVouchers: () => void
 }) {
+  useModalRegistration(true, 'reward-exchange-success')
+
   const expiresAt = voucher ? new Date(voucher.expiresAt) : null
   const expiresFormatted = expiresAt?.toLocaleDateString('ru-RU', {
     day: 'numeric',
@@ -324,6 +328,7 @@ const ErrorToast = memo(function ErrorToast({
 function RewardsStorePage() {
   const navigate = useNavigate()
   const club = useClub()
+  const handleBack = useSafeBackNavigation('/club')
 
   // State
   const [activeTab, setActiveTab] = useState<RewardCategory | 'all'>('all')
@@ -347,10 +352,6 @@ function RewardsStorePage() {
   }, [])
 
   // Handlers
-  const handleBack = useCallback(() => {
-    navigate('/club')
-  }, [navigate])
-
   const handleExchange = useCallback((reward: Reward) => {
     // Проверка баланса
     if (club.points < reward.costPoints) {

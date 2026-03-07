@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import {
+  ArrowLeft,
   Trophy,
   Star,
   Target,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 
 interface Props {
   user: UserData | null
@@ -720,10 +722,16 @@ function AchievementCard({ achievement, index }: { achievement: Achievement; ind
 }
 
 export function AchievementsPage({ user }: Props) {
+  const { haptic } = useTelegram()
+  const safeBack = useSafeBackNavigation('/profile')
   const achievements = useMemo(() => generateAchievements(user), [user])
   const unlockedCount = achievements.filter(a => a.unlocked).length
   const totalCount = achievements.length
   const progress = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0
+  const handleBack = useCallback(() => {
+    haptic('light')
+    safeBack()
+  }, [haptic, safeBack])
 
   // Sort: unlocked first, then by rarity (legendary > epic > rare > common)
   const sortedAchievements = useMemo(() => {
@@ -779,6 +787,26 @@ export function AchievementsPage({ user }: Props) {
           zIndex: 1,
         }}
       >
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 18 }}>
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={handleBack}
+            aria-label="Назад"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <ArrowLeft size={18} color="var(--text-main)" />
+          </motion.button>
+        </div>
         {/* Hero Icon with Breathing Animation */}
         <div style={{ position: 'relative', display: 'inline-block', marginBottom: 16 }}>
           {/* Outer breathing ring */}

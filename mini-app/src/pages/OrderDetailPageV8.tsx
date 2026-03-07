@@ -90,6 +90,8 @@ import {
 } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
+import { useModalRegistration } from '../contexts/NavigationContext'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { useToast } from '../components/ui/Toast'
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -962,6 +964,7 @@ const PaymentSheet = memo(function PaymentSheet({
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const { showToast } = useToast()
   const { haptic } = useTelegram()
+  useModalRegistration(isOpen, 'order-payment-sheet')
 
   // Calculate amounts
   const fullAmount = order.final_price || 0
@@ -1797,6 +1800,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { haptic } = useTelegram()
   const { showToast } = useToast()
+  useModalRegistration(isOpen, 'order-confirm-payment-modal')
 
   // Reset on open
   useEffect(() => {
@@ -3518,6 +3522,7 @@ export function OrderDetailPageV8() {
   const { haptic } = useTelegram()
   const { showToast } = useToast()
   const { addMessageHandler } = useWebSocketContext()
+  const safeBack = useSafeBackNavigation('/orders')
 
   // State
   const [order, setOrder] = useState<Order | null>(null)
@@ -3591,8 +3596,8 @@ export function OrderDetailPageV8() {
   // Handlers
   const handleBack = useCallback(() => {
     haptic?.('light')
-    navigate('/orders')
-  }, [haptic, navigate])
+    safeBack()
+  }, [haptic, safeBack])
 
   const handleCopyOrderId = useCallback(async () => {
     if (!order) return

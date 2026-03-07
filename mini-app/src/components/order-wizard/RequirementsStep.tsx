@@ -4,6 +4,7 @@ import {
   BookOpen, FileText, PenTool, Paperclip, X, ChevronRight, Trash2,
   ClipboardPaste, FileUp, Upload, Sparkles
 } from 'lucide-react'
+import { useModalRegistration } from '../../contexts/NavigationContext'
 import { SERVICE_TYPES, REQUIREMENTS_TEMPLATES } from './constants'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -514,6 +515,7 @@ function RequirementsEditorModal({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [localValue, setLocalValue] = useState(value)
   const [showTemplates, setShowTemplates] = useState(false)
+  useModalRegistration(isOpen, 'requirements-editor-modal')
 
   // Sync local value when modal opens
   useEffect(() => {

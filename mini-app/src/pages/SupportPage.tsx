@@ -1,23 +1,19 @@
 import { useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Headphones } from 'lucide-react'
 import { FloatingParticles } from '../components/ui/PremiumDesign'
 import { SupportChat } from '../components/support/SupportChat'
 import { useTelegram } from '../hooks/useUserData'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 
 export function SupportPage() {
-  const navigate = useNavigate()
   const { haptic } = useTelegram()
+  const safeBack = useSafeBackNavigation('/')
 
   const handleBack = useCallback(() => {
     haptic('light')
-    if (window.history.length > 1) {
-      navigate(-1)
-      return
-    }
-    navigate('/')
-  }, [haptic, navigate])
+    safeBack()
+  }, [haptic, safeBack])
 
   return (
     <div

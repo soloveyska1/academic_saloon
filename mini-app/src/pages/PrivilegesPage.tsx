@@ -1,10 +1,10 @@
-import { useCallback, memo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Crown, Check, Lock, Gem, Medal } from 'lucide-react'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { CLUB_LEVELS } from '../components/club'
 import { useClub } from '../contexts/ClubContext'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  PRIVILEGES PAGE - Реальные привилегии из состояния клуба
@@ -281,12 +281,8 @@ const LevelCard = memo(function LevelCard({ levelId, currentLevelId, currentXp }
 })
 
 function PrivilegesPage() {
-  const navigate = useNavigate()
   const club = useClub()
-
-  const handleBack = useCallback(() => {
-    navigate('/club')
-  }, [navigate])
+  const handleBack = useSafeBackNavigation('/club')
 
   const levels = ['silver', 'gold', 'platinum']
 

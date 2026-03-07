@@ -6,6 +6,7 @@ import { Voucher } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { VoucherList } from '../components/club'
 import { useClub } from '../contexts/ClubContext'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MY VOUCHERS PAGE - Реальные ваучеры из клубного состояния
@@ -81,16 +82,13 @@ const VouchersHeader = memo(function VouchersHeader({
 function MyVouchersPage() {
   const navigate = useNavigate()
   const club = useClub()
+  const handleBack = useSafeBackNavigation('/club')
 
   // Получаем реальные ваучеры из состояния клуба
   const vouchers = club.vouchers
   const activeCount = club.activeVouchers.length
 
   // Handlers
-  const handleBack = useCallback(() => {
-    navigate('/club')
-  }, [navigate])
-
   const handleApplyVoucher = useCallback((voucher: Voucher) => {
     // Haptic feedback
     try {

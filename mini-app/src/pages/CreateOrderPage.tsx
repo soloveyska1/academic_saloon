@@ -11,6 +11,8 @@ import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePromo } from '../contexts/PromoContext'
 import { useClub } from '../contexts/ClubContext'
+import { useModalRegistration } from '../contexts/NavigationContext'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
 import { Confetti } from '../components/ui/Confetti'
 import {
@@ -81,6 +83,7 @@ export function CreateOrderPage() {
   const { isDark } = useTheme()
   const { activePromo, clearPromo, revalidatePromo, isValidating: isRevalidating } = usePromo()
   const club = useClub()
+  const safeBack = useSafeBackNavigation('/')
 
   // State for promo warning modal
   const [showPromoWarning, setShowPromoWarning] = useState(false)
@@ -252,17 +255,13 @@ export function CreateOrderPage() {
   const goBack = useCallback(() => {
     haptic('light')
     if (step === 1) {
-      if (window.history.length > 1) {
-        navigate(-1)
-        return
-      }
-      navigate('/')
+      safeBack()
       return
     }
 
     setDirection(-1)
     setStep((s) => s - 1)
-  }, [step, navigate, haptic])
+  }, [step, safeBack, haptic])
 
   const handleServiceTypeSelect = useCallback((id: string) => {
     haptic('light')
@@ -1463,6 +1462,8 @@ interface PromoWarningModalProps {
 }
 
 function PromoWarningModal({ isOpen, reason, onContinue, onCancel, isDark }: PromoWarningModalProps) {
+  useModalRegistration(isOpen, 'create-order-promo-warning')
+
   return (
     <AnimatePresence>
       {isOpen && (

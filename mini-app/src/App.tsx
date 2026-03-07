@@ -4,6 +4,7 @@ import { Navigation } from './components/Navigation'
 import { LoadingScreen } from './components/LoadingScreen'
 import { PremiumSplashScreen } from './components/PremiumSplashScreen'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { RouteNavigationController } from './components/RouteNavigationController'
 import { ToastProvider } from './components/ui/Toast'
 import { AdminProvider, useAdmin } from './contexts/AdminContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -456,6 +457,7 @@ function AppContent() {
                     >
                       <BrowserRouter>
                         <div className="app">
+                          <RouteNavigationController />
                           {/* Smart Realtime Notifications with React Router navigation */}
                           <NotificationHandler
                             notification={notification}

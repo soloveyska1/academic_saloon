@@ -36,10 +36,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     const [isHidden, setHiddenState] = useState(false)
     const [isForcedHidden, setForcedHidden] = useState(false)
     const [modalCount, setModalCount] = useState(0)
+    const [legacyModalOpen, setLegacyModalOpen] = useState(false)
     const activeModalsRef = useRef<Set<string>>(new Set())
 
     // Computed: any modal is open
-    const isModalOpen = modalCount > 0
+    const isModalOpen = modalCount > 0 || legacyModalOpen
 
     const setHidden = useCallback((hidden: boolean) => {
         setHiddenState(hidden)
@@ -47,11 +48,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
     // Simple modal open/close (backward compatible)
     const setModalOpen = useCallback((open: boolean) => {
-        if (open) {
-            setModalCount(prev => prev + 1)
-        } else {
-            setModalCount(prev => Math.max(0, prev - 1))
-        }
+        setLegacyModalOpen(open)
     }, [])
 
     // Advanced: register/unregister modal with optional ID
@@ -79,16 +76,6 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     const forceShow = useCallback(() => {
         setForcedHidden(false)
     }, [])
-
-    // Auto-hide navigation when modals are open
-    useEffect(() => {
-        if (isModalOpen) {
-            setHiddenState(true)
-        }
-        // Note: We don't auto-show when modals close
-        // Navigation will be shown by scroll behavior
-    }, [isModalOpen])
-
     return (
         <NavigationContext.Provider
             value={{

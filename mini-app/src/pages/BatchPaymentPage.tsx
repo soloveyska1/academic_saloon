@@ -7,6 +7,7 @@ import {
   FileText, AlertCircle
 } from 'lucide-react'
 import { useTelegram } from '../hooks/useUserData'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import {
   BatchPaymentInfo,
   fetchBatchPaymentInfo,
@@ -21,6 +22,7 @@ export function BatchPaymentPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { haptic, hapticSuccess, hapticError } = useTelegram()
+  const handleBack = useSafeBackNavigation('/orders')
 
   // Get order IDs from URL params
   const orderIdsParam = searchParams.get('orders')
@@ -155,7 +157,7 @@ export function BatchPaymentPage() {
         </p>
         <motion.button
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/orders')}
+          onClick={handleBack}
           style={{
             padding: '12px 24px',
             background: 'var(--bg-card)',
@@ -283,7 +285,7 @@ export function BatchPaymentPage() {
           whileTap={{ scale: 0.9 }}
           onClick={() => {
             haptic('light')
-            navigate('/orders')
+            handleBack()
           }}
           style={{
             width: 40,

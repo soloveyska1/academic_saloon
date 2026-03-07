@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Copy, Share2, Gift, Check, QrCode, ChevronRight, Crown, Sparkles } from 'lucide-react'
+import { ArrowLeft, Users, Copy, Share2, Gift, Check, QrCode, ChevronRight, Crown, Sparkles } from 'lucide-react'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { useToast } from '../components/ui/Toast'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { copyTextSafely } from '../utils/clipboard'
 
 interface Props {
@@ -96,6 +97,7 @@ export function ReferralPage({ user }: Props) {
   const { showToast } = useToast()
   const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
+  const safeBack = useSafeBackNavigation('/profile')
 
   const referralCode = user?.referral_code || `REF${user?.telegram_id || ''}`
   // Correct Mini App deep link format for referrals
@@ -166,6 +168,11 @@ export function ReferralPage({ user }: Props) {
     window.open(shareUrl, '_blank', 'noopener,noreferrer')
   }
 
+  const handleBack = useCallback(() => {
+    haptic('light')
+    safeBack()
+  }, [haptic, safeBack])
+
   return (
     <div
       className="app-content"
@@ -183,6 +190,26 @@ export function ReferralPage({ user }: Props) {
           marginBottom: 24,
         }}
       >
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 18 }}>
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={handleBack}
+            aria-label="Назад"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <ArrowLeft size={18} color="var(--text-main)" />
+          </motion.button>
+        </div>
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}

@@ -5,6 +5,7 @@ import { ArrowLeft, Crown } from 'lucide-react'
 import { UserData, Mission, Reward } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { useClub } from '../contexts/ClubContext'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 
 import {
   MembershipCard,
@@ -93,6 +94,7 @@ const ClubHeader = memo(function ClubHeader({ onBack }: { onBack: () => void }) 
 function ClubPage({ user }: ClubPageProps) {
   const navigate = useNavigate()
   const club = useClub()
+  const handleBack = useSafeBackNavigation('/')
 
   // UI State
   const [showRules, setShowRules] = useState(false)
@@ -112,10 +114,6 @@ function ClubPage({ user }: ClubPageProps) {
   }), [club.xp, club.level, club.dailyBonus.streakDay, club.points, club.missions, club.activeVouchers])
 
   // Handlers
-  const handleBack = useCallback(() => {
-    navigate('/')
-  }, [navigate])
-
   const handleViewPrivileges = useCallback(() => {
     navigate('/club/privileges')
   }, [navigate])

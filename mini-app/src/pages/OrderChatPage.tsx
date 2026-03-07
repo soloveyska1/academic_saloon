@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -26,6 +26,7 @@ import { ChatMessage } from '../types'
 import { fetchOrderMessages, sendOrderMessage, uploadChatFile, uploadVoiceMessage } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { FloatingParticles } from '../components/ui/PremiumDesign'
 
 // File type icons
@@ -48,9 +49,9 @@ const MessageStatus = ({ isRead }: { isRead: boolean }) => {
 export function OrderChatPage() {
   const { id } = useParams<{ id: string }>()
   const orderId = parseInt(id || '0', 10)
-  const navigate = useNavigate()
   const { haptic } = useTelegram()
   const { addMessageHandler } = useWebSocketContext()
+  const safeBack = useSafeBackNavigation(orderId ? `/order/${orderId}` : '/orders')
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState('')
@@ -153,8 +154,8 @@ export function OrderChatPage() {
 
   const handleBack = useCallback(() => {
     haptic?.('light')
-    navigate(`/order/${orderId}`)
-  }, [haptic, navigate, orderId])
+    safeBack()
+  }, [haptic, safeBack])
 
   const handleRetry = useCallback(() => {
     setError(null)

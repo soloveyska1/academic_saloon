@@ -4,6 +4,7 @@ import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-
 import { Home, List, Crown, User, LucideIcon } from 'lucide-react'
 import { useHapticFeedback } from '../hooks/useHapticFeedback'
 import { useNavigation } from '../contexts/NavigationContext'
+import { isNavigationItemActive, shouldHideBottomNavigation } from '../utils/navigation'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  PREMIUM ISLAND NAVIGATION — "The Floating Command Center"
@@ -24,11 +25,14 @@ interface NavItem {
 
 function MagneticItem({
   children,
-  onClick
+  onClick,
+  isActive,
+  label,
 }: {
   children: React.ReactNode
   onClick: () => void
   isActive: boolean
+  label: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -47,6 +51,9 @@ function MagneticItem({
 
   return (
     <motion.div
+      role="button"
+      aria-label={label}
+      aria-current={isActive ? 'page' : undefined}
       ref={ref}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -78,31 +85,42 @@ export const Navigation = () => {
   const { impactOccurred: haptic } = useHapticFeedback()
 
   // Context & Scroll State
-  const { isHidden: isForcedHidden, isModalOpen } = useNavigation()
+  const { isHidden, isForcedHidden, isModalOpen } = useNavigation()
   const { scrollY } = useScroll()
   const [isVisible, setIsVisible] = useState(true)
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
   const lastScrollY = useRef(0)
+  const initialViewportHeight = useRef(
+    typeof window !== 'undefined'
+      ? window.visualViewport?.height ?? window.innerHeight
+      : 0
+  )
 
   // Pages where nav is completely removed
-  const isHiddenPage = ['/order/', '/create-order', '/support', '/batch-payment'].some(path => location.pathname.startsWith(path)) && location.pathname !== '/orders'
+  const isHiddenPage = shouldHideBottomNavigation(location.pathname)
+  const shouldHideNav = isHiddenPage || isHidden || isForcedHidden || isModalOpen || isKeyboardOpen
 
-  const isNavItemActive = (path: string) => {
-    if (path === '/') return location.pathname === '/'
-    if (path === '/orders') return location.pathname === '/orders'
-    if (path === '/club') return location.pathname === '/club' || location.pathname.startsWith('/club/')
-    if (path === '/profile') {
-      return (
-        location.pathname === '/profile' ||
-        location.pathname === '/referral' ||
-        location.pathname === '/achievements'
-      )
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const updateKeyboardState = () => {
+      const baselineHeight = Math.max(initialViewportHeight.current, window.innerHeight)
+      const currentHeight = viewport.height
+      setIsKeyboardOpen(baselineHeight - currentHeight > 160)
     }
-    return location.pathname === path
-  }
+
+    updateKeyboardState()
+    viewport.addEventListener('resize', updateKeyboardState)
+
+    return () => {
+      viewport.removeEventListener('resize', updateKeyboardState)
+    }
+  }, [])
 
   // Smart Hide Logic (Throttled for performance)
   useMotionValueEvent(scrollY, "change", (latest) => {
-    if (isHiddenPage || isForcedHidden || isModalOpen) {
+    if (shouldHideNav) {
       if (isVisible) setIsVisible(false)
       return
     }
@@ -124,12 +142,12 @@ export const Navigation = () => {
 
   // Recalculate visibility on location/context change
   useEffect(() => {
-    if (isHiddenPage || isForcedHidden || isModalOpen) {
+    if (shouldHideNav) {
       setIsVisible(false)
     } else {
       setIsVisible(true)
     }
-  }, [isHiddenPage, isForcedHidden, isModalOpen, location.pathname])
+  }, [location.pathname, shouldHideNav])
 
   const navItems: NavItem[] = [
     { id: 'home', icon: Home, label: 'Главная', path: '/' },
@@ -138,10 +156,10 @@ export const Navigation = () => {
     { id: 'profile', icon: User, label: 'Профиль', path: '/profile' }
   ]
 
-  if (isHiddenPage && !isVisible) return null
+  if (shouldHideNav && !isVisible) return null
 
   // Find active index for spotlight
-  const activeIndex = navItems.findIndex(item => isNavItemActive(item.path))
+  const activeIndex = navItems.findIndex(item => isNavigationItemActive(location.pathname, item.path))
 
   return (
     <AnimatePresence>
@@ -228,7 +246,7 @@ export const Navigation = () => {
             )}
 
             {navItems.map((item) => {
-              const isActive = isNavItemActive(item.path)
+              const isActive = isNavigationItemActive(location.pathname, item.path)
               const Icon = item.icon
 
               return (
@@ -252,8 +270,14 @@ export const Navigation = () => {
 
                   <MagneticItem
                     isActive={isActive}
+                    label={item.label}
                     onClick={() => {
                       haptic(isActive ? 'soft' : 'light')
+                      if (isActive && location.pathname === item.path) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                        return
+                      }
+
                       navigate(item.path)
                     }}
                   >
@@ -278,25 +302,21 @@ export const Navigation = () => {
                         User asked for "maximum convenience". Labels help convenience.
                         We will keep them but very small and premium.
                     */}
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.span
-                          key={`${item.id}-label`}
-                          initial={{ opacity: 0, scale: 0.5, y: 5 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.5, y: 5 }}
-                          style={{
-                            fontSize: 9,
-                            fontWeight: 700,
-                            letterSpacing: '0.05em',
-                            marginTop: 3,
-                            color: '#D4AF37'
-                          }}
-                        >
-                          {item.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
+                    <motion.span
+                      animate={{
+                        opacity: isActive ? 1 : 0.72,
+                        y: isActive ? 0 : 1,
+                        color: isActive ? '#D4AF37' : '#9a9aa6'
+                      }}
+                      style={{
+                        fontSize: 9,
+                        fontWeight: isActive ? 700 : 600,
+                        letterSpacing: '0.04em',
+                        marginTop: 3,
+                      }}
+                    >
+                      {item.label}
+                    </motion.span>
 
                     {/* Active Dot - optional if we have the pill. 
                         Let's stick to the Pill + Icon Fill for elegance. 

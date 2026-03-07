@@ -5,6 +5,7 @@ import { ArrowLeft, History, Gift, Target, ShoppingBag, Ticket, TrendingUp } fro
 import { ClubHistoryEntry } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { useClub } from '../contexts/ClubContext'
+import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  CLUB HISTORY PAGE - Реальная история баллов и начислений
@@ -131,6 +132,7 @@ const HistoryHeader = memo(function HistoryHeader({
 function ClubHistoryPage() {
   const navigate = useNavigate()
   const club = useClub()
+  const handleBack = useSafeBackNavigation('/club')
 
   // Получаем реальную историю из состояния клуба
   const history = club.history
@@ -139,10 +141,6 @@ function ClubHistoryPage() {
     history.filter(e => e.points > 0).reduce((sum, e) => sum + e.points, 0),
     [history]
   )
-
-  const handleBack = useCallback(() => {
-    navigate('/club')
-  }, [navigate])
 
   return (
     <div

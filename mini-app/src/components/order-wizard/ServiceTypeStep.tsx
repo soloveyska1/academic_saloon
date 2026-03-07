@@ -12,6 +12,7 @@ import {
   formatOrderCount,
   SocialProofData
 } from './useSocialProof'
+import { useModalRegistration } from '../../contexts/NavigationContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SERVICE TYPE STEP v3.0 — LUXURY EDITION
@@ -455,6 +456,7 @@ function ServiceQuiz({ onClose, onResult }: {
 }) {
   const [step, setStep] = useState(1)
   const [answers, setAnswers] = useState({ type: '', urgency: '' })
+  useModalRegistration(true, 'service-quiz-modal')
 
   const typeOptions = [
     { id: 'graduation', label: 'Выпускная работа', desc: 'Диплом, магистерская', icon: GraduationCap },
