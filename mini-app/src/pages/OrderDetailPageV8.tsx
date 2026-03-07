@@ -373,8 +373,6 @@ const OrderAppBar = memo(function OrderAppBar({
   onArchive,
 }: OrderAppBarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
-  const StatusIcon = statusConfig.icon
   const workTypeLabel = order.work_type_label || WORK_TYPE_LABELS[order.work_type] || 'Заказ'
 
   const menuItems = [
@@ -392,14 +390,14 @@ const OrderAppBar = memo(function OrderAppBar({
           display: 'flex',
           alignItems: 'center',
           gap: DS.space.md,
-          padding: `${DS.space.lg}px ${DS.space.lg}px`,
-          background: DS.colors.bgCard,
-          borderBottom: `1px solid ${DS.colors.border}`,
+          padding: `12px ${DS.space.lg}px`,
+          background: 'linear-gradient(180deg, rgba(13,13,18,0.96), rgba(10,10,14,0.92))',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
         }}
       >
         {/* Back Button */}
@@ -407,11 +405,11 @@ const OrderAppBar = memo(function OrderAppBar({
           whileTap={{ scale: 0.92 }}
           onClick={onBack}
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: DS.radius.md,
-            background: DS.colors.bgElevated,
-            border: `1px solid ${DS.colors.border}`,
+            width: 44,
+            height: 44,
+            borderRadius: 16,
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -424,41 +422,30 @@ const OrderAppBar = memo(function OrderAppBar({
 
         {/* Title + Order Number */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
-            <span
-              style={{
-                fontSize: DS.fontSize.xl,
-                fontWeight: 700,
-                color: DS.colors.textPrimary,
-                fontFamily: 'var(--font-serif)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {workTypeLabel}
-            </span>
-            {/* Order ID Chip */}
-            <div
-              style={{
-                padding: `${DS.space.xs}px ${DS.space.sm}px`,
-                borderRadius: DS.radius.sm,
-                background: 'rgba(212,175,55,0.12)',
-                border: `1px solid ${DS.colors.borderGold}`,
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: DS.fontSize.sm,
-                  fontWeight: 700,
-                  fontFamily: 'var(--font-mono)',
-                  color: DS.colors.gold,
-                }}
-              >
-                #{order.id}
-              </span>
-            </div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'rgba(212,175,55,0.72)',
+              marginBottom: 4,
+            }}
+          >
+            Заказ #{order.id}
+          </div>
+          <div
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: DS.colors.textPrimary,
+              lineHeight: 1.25,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {workTypeLabel}
           </div>
         </div>
 
@@ -467,11 +454,11 @@ const OrderAppBar = memo(function OrderAppBar({
           whileTap={{ scale: 0.92 }}
           onClick={() => setMenuOpen(true)}
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: DS.radius.md,
-            background: DS.colors.bgElevated,
-            border: `1px solid ${DS.colors.border}`,
+            width: 44,
+            height: 44,
+            borderRadius: 16,
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

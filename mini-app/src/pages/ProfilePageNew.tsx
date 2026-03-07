@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -6,6 +6,7 @@ import {
   BadgePercent,
   BellRing,
   BookOpen,
+  ChevronDown,
   CircleHelp,
   Clock3,
   Copy,
@@ -47,6 +48,8 @@ interface OrderActionMeta {
   color: string
   icon: LucideIcon
 }
+
+type ProfileSectionId = 'quick' | 'status' | 'bonuses' | 'referral' | 'service'
 
 const ACTIONABLE_ORDER_META: Record<string, OrderActionMeta> = {
   confirmed: {
@@ -534,6 +537,102 @@ function ActionTile({
   )
 }
 
+function AccordionSection({
+  title,
+  summary,
+  isOpen,
+  onToggle,
+  children,
+  bottomSpace = 12,
+}: {
+  title: string
+  summary: string
+  isOpen: boolean
+  onToggle: () => void
+  children: ReactNode
+  bottomSpace?: number
+}) {
+  return (
+    <section style={{ marginBottom: bottomSpace }}>
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.99 }}
+        onClick={onToggle}
+        className={homeStyles.voidGlass}
+        style={{
+          width: '100%',
+          padding: '16px 18px',
+          borderRadius: 22,
+          border: `1px solid ${isOpen ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.06)'}`,
+          background: isOpen
+            ? 'linear-gradient(180deg, rgba(212,175,55,0.08), rgba(255,255,255,0.03))'
+            : 'rgba(255,255,255,0.03)',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 15.5,
+              fontWeight: 700,
+              color: 'var(--text-main)',
+              marginBottom: 4,
+            }}>
+              {title}
+            </div>
+            <div style={{
+              fontSize: 12.5,
+              lineHeight: 1.55,
+              color: 'var(--text-secondary)',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2,
+              overflow: 'hidden',
+            }}>
+              {summary}
+            </div>
+          </div>
+
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 14,
+            background: isOpen ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${isOpen ? 'rgba(212,175,55,0.18)' : 'rgba(255,255,255,0.06)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <ChevronDown
+              size={16}
+              color={isOpen ? 'var(--gold-300)' : 'var(--text-secondary)'}
+              style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}
+            />
+          </div>
+        </div>
+      </motion.button>
+
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ paddingTop: 12 }}>
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  )
+}
+
 function TransactionRow({
   icon: Icon,
   title,
@@ -686,6 +785,7 @@ export function ProfilePageNew({ user }: Props) {
   const club = useClub()
   const [showQR, setShowQR] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
+  const [expandedSection, setExpandedSection] = useState<ProfileSectionId | null>('quick')
 
   if (!user) {
     return null
@@ -845,6 +945,11 @@ export function ProfilePageNew({ user }: Props) {
     hapticSuccess()
     navigate('/god')
   }, [hapticSuccess, navigate])
+
+  const handleToggleSection = useCallback((sectionId: ProfileSectionId) => {
+    haptic('light')
+    setExpandedSection(prev => (prev === sectionId ? null : sectionId))
+  }, [haptic])
 
   return (
     <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
@@ -1065,11 +1170,12 @@ export function ProfilePageNew({ user }: Props) {
           </div>
         </motion.section>
 
-        <section style={{ marginBottom: 18 }}>
-          <SectionTitle
-            title="Быстрый доступ"
-            caption="Ключевые разделы, к которым вы возвращаетесь чаще всего."
-          />
+        <AccordionSection
+          title="Быстрый доступ"
+          summary="Заказы, поддержка, ваучеры и каталог бонусов всегда под рукой без лишних переходов."
+          isOpen={expandedSection === 'quick'}
+          onToggle={() => handleToggleSection('quick')}
+        >
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))',
@@ -1101,13 +1207,14 @@ export function ProfilePageNew({ user }: Props) {
               onClick={handleOpenRewards}
             />
           </div>
-        </section>
+        </AccordionSection>
 
-        <section style={{ marginBottom: 18 }}>
-          <SectionTitle
-            title="Статус и условия"
-            caption="Скидка, кэшбэк, бонусы и текущие условия клиента."
-          />
+        <AccordionSection
+          title="Статус и условия"
+          summary={`${displayRankName} • скидка ${loyaltyDiscount}% • кэшбэк ${cashbackPercent}% • бонусный баланс ${formatMoney(bonusBalance)}.`}
+          isOpen={expandedSection === 'status'}
+          onToggle={() => handleToggleSection('status')}
+        >
           <div style={{ display: 'grid', gap: 12 }}>
             <div style={{ ...getSurfaceStyle(), padding: '18px' }}>
               <div style={{
@@ -1204,13 +1311,14 @@ export function ProfilePageNew({ user }: Props) {
               />
             </div>
           </div>
-        </section>
+        </AccordionSection>
 
-        <section style={{ marginBottom: 18 }}>
-          <SectionTitle
-            title="Бонусы и ваучеры"
-            caption="Что доступно сейчас и что можно применить в следующем заказе."
-          />
+        <AccordionSection
+          title="Бонусы и ваучеры"
+          summary={`${formatMoney(bonusBalance)} на балансе • ${club.activeVouchers.length} ваучеров • ${formatCountWithWord(latestTransactions.length, 'операция', 'операции', 'операций')} в истории.`}
+          isOpen={expandedSection === 'bonuses'}
+          onToggle={() => handleToggleSection('bonuses')}
+        >
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
@@ -1437,13 +1545,14 @@ export function ProfilePageNew({ user }: Props) {
               </div>
             </div>
           </div>
-        </section>
+        </AccordionSection>
 
-        <section style={{ marginBottom: 18 }}>
-          <SectionTitle
-            title="Реферальная программа"
-            caption="Отсюда можно сразу скопировать ссылку, отправить её в Telegram или показать QR."
-          />
+        <AccordionSection
+          title="Реферальная программа"
+          summary={`Код ${user.referral_code} • приглашено ${referralsCount} • начислено ${formatMoney(referralEarnings)}.`}
+          isOpen={expandedSection === 'referral'}
+          onToggle={() => handleToggleSection('referral')}
+        >
           <div style={{ ...getSurfaceStyle(), padding: '18px' }}>
             <div style={{
               display: 'flex',
@@ -1515,13 +1624,15 @@ export function ProfilePageNew({ user }: Props) {
               <ActionMiniButton icon={Users} label="О программе" onClick={handleOpenReferralPage} />
             </div>
           </div>
-        </section>
+        </AccordionSection>
 
-        <section style={{ marginBottom: 104 }}>
-          <SectionTitle
-            title="Поддержка и сервис"
-            caption="Помощь по заказам, условия клуба и история бонусной активности."
-          />
+        <AccordionSection
+          title="Поддержка и сервис"
+          summary="Помощь по заказам, условия клуба, ежедневный бонус и история бонусной активности."
+          isOpen={expandedSection === 'service'}
+          onToggle={() => handleToggleSection('service')}
+          bottomSpace={104}
+        >
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
@@ -1556,7 +1667,7 @@ export function ProfilePageNew({ user }: Props) {
               }}
             />
           </div>
-        </section>
+        </AccordionSection>
       </div>
 
       <AnimatePresence>

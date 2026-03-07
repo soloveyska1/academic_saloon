@@ -114,11 +114,11 @@ export function GuaranteesModal({ isOpen, onClose }: GuaranteesModalProps) {
                   <item.icon size={20} color="#d4af37" />
                 </div>
 
-                <div>
-                  <div style={{ fontSize: 15.5, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15.5, fontWeight: 700, color: '#fff', marginBottom: 6, lineHeight: 1.35 }}>
                     {item.title}
                   </div>
-                  <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)', wordBreak: 'break-word' }}>
                     {item.desc}
                   </div>
                 </div>
