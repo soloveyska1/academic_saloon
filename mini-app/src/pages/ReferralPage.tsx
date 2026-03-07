@@ -4,6 +4,7 @@ import { Users, Copy, Share2, Gift, Check, QrCode, ChevronRight, Crown, Sparkles
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { useToast } from '../components/ui/Toast'
+import { copyTextSafely } from '../utils/clipboard'
 
 interface Props {
   user: UserData | null
@@ -91,7 +92,7 @@ function InvitedFriendCard({ name, bonus, date }: { name: string; bonus: number;
 }
 
 export function ReferralPage({ user }: Props) {
-  const { haptic, hapticSuccess, botUsername } = useTelegram()
+  const { tg, haptic, hapticSuccess, hapticError, botUsername } = useTelegram()
   const { showToast } = useToast()
   const [copied, setCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
@@ -116,8 +117,9 @@ export function ReferralPage({ user }: Props) {
 
   const copyLink = async () => {
     haptic('medium')
-    try {
-      await navigator.clipboard.writeText(referralLink)
+    const copiedSuccessfully = await copyTextSafely(referralLink)
+
+    if (copiedSuccessfully) {
       setCopied(true)
       hapticSuccess()
       showToast({
@@ -126,26 +128,42 @@ export function ReferralPage({ user }: Props) {
         message: 'Ссылка в буфере обмена',
       })
       setTimeout(() => setCopied(false), 2000)
-    } catch {
-      showToast({
-        type: 'error',
-        title: 'Ошибка',
-        message: 'Не удалось скопировать',
-      })
+      return
     }
+
+    hapticError()
+    showToast({
+      type: 'error',
+      title: 'Ошибка',
+      message: 'Не удалось скопировать',
+    })
   }
 
-  const shareLink = () => {
+  const shareLink = async () => {
     haptic('medium')
     if (navigator.share) {
-      navigator.share({
-        title: 'Присоединяйся к Academic Saloon!',
-        text: `Используй мой код ${referralCode} и получи бонус на первый заказ!`,
-        url: referralLink,
-      })
-    } else {
-      copyLink()
+      try {
+        await navigator.share({
+          title: 'Присоединяйся к Academic Saloon!',
+          text: `Используй мой код ${referralCode} и получи бонус на первый заказ!`,
+          url: referralLink,
+        })
+        return
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return
+        }
+        // Fallback below
+      }
     }
+
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`Используй мой код ${referralCode} и получи бонус на первый заказ!`)}`
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(shareUrl)
+      return
+    }
+
+    window.open(shareUrl, '_blank', 'noopener,noreferrer')
   }
 
   return (

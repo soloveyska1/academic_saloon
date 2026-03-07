@@ -33,6 +33,8 @@ import {
   RulesSheet,
 } from '../components/profile'
 import { QRCodeModal } from '../components/ui/QRCode'
+import { useToast } from '../components/ui/Toast'
+import { copyTextSafely } from '../utils/clipboard'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  NEW PROFILE PAGE - Premium tabbed interface
@@ -131,8 +133,9 @@ const AGENT_EARNINGS: AgentEarning[] = []
 
 export function ProfilePageNew({ user }: Props) {
   const navigate = useNavigate()
-  const { haptic, hapticSuccess, botUsername, user: tgUser } = useTelegram()
+  const { tg, haptic, hapticSuccess, hapticError, botUsername, user: tgUser } = useTelegram()
   const club = useClub()
+  const { showToast } = useToast()
 
   // Tab state - define tabs based on user role
   const isAgent = user ? user.referrals_count > 0 : false
@@ -205,14 +208,35 @@ export function ProfilePageNew({ user }: Props) {
     navigate('/orders')
   }, [haptic, navigate])
 
-  const handleInviteFriend = useCallback(() => {
-    haptic('medium')
-    if (user && botUsername) {
-      const inviteLink = `https://t.me/${botUsername}/app?startapp=ref_${user.telegram_id}`
-      navigator.clipboard.writeText(inviteLink)
+  const copyInviteLink = useCallback(async () => {
+    if (!user || !botUsername) return false
+
+    const inviteLink = `https://t.me/${botUsername}/app?startapp=ref_${user.telegram_id}`
+    const copied = await copyTextSafely(inviteLink)
+
+    if (copied) {
       hapticSuccess()
+      showToast({
+        type: 'success',
+        title: 'Ссылка скопирована',
+        message: 'Приглашение готово к отправке',
+      })
+      return true
     }
-  }, [haptic, hapticSuccess, user, botUsername])
+
+    hapticError()
+    showToast({
+      type: 'error',
+      title: 'Не удалось скопировать ссылку',
+      message: 'Попробуйте ещё раз',
+    })
+    return false
+  }, [botUsername, hapticError, hapticSuccess, showToast, user])
+
+  const handleInviteFriend = useCallback(async () => {
+    haptic('medium')
+    return await copyInviteLink()
+  }, [copyInviteLink, haptic])
 
   const handleContactConcierge = useCallback(() => {
     haptic('medium')
@@ -245,21 +269,25 @@ export function ProfilePageNew({ user }: Props) {
     navigate('/club/rewards')
   }, [haptic, navigate])
 
-  const handleShareReferral = useCallback((platform: 'telegram' | 'copy' | 'qr') => {
+  const handleShareReferral = useCallback(async (platform: 'telegram' | 'copy' | 'qr') => {
     haptic('medium')
     if (!user || !botUsername) return
 
     const inviteLink = `https://t.me/${botUsername}/app?startapp=ref_${user.telegram_id}`
 
     if (platform === 'copy') {
-      navigator.clipboard.writeText(inviteLink)
-      hapticSuccess()
+      await copyInviteLink()
     } else if (platform === 'telegram') {
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent('Присоединяйся!')}`, '_blank')
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent('Присоединяйся!')}`
+      if (tg?.openTelegramLink) {
+        tg.openTelegramLink(shareUrl)
+      } else {
+        window.open(shareUrl, '_blank', 'noopener,noreferrer')
+      }
     } else if (platform === 'qr') {
       setShowQR(true)
     }
-  }, [haptic, hapticSuccess, user, botUsername])
+  }, [botUsername, copyInviteLink, haptic, tg, user])
 
   const handleToggleSetting = useCallback((section: keyof ProfileSettings, key: string, value: boolean) => {
     haptic('light')

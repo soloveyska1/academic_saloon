@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Check, AlertCircle, Send, ChevronRight, Loader2,
   Tag, Clock, Zap, Flame, Rocket, Timer, Hourglass
 } from 'lucide-react'
-import { WorkType, OrderCreateRequest } from '../types'
+import { WorkType, OrderCreateRequest, Voucher } from '../types'
 import { createOrder, uploadOrderFiles } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
@@ -49,6 +49,28 @@ interface PrefillData {
   deadline?: string
   topic?: string
   voucherId?: string
+}
+
+function buildOrderDescription(requirements: string, selectedVoucher: Voucher | null): string | undefined {
+  const parts: string[] = []
+  const trimmedRequirements = requirements.trim()
+
+  if (selectedVoucher) {
+    parts.push(
+      [
+        '[Ваучер клиента]',
+        selectedVoucher.title,
+        selectedVoucher.description,
+        `Условия: ${selectedVoucher.applyRules}`,
+      ].join('\n')
+    )
+  }
+
+  if (trimmedRequirements) {
+    parts.push(trimmedRequirements)
+  }
+
+  return parts.length > 0 ? parts.join('\n\n') : undefined
 }
 
 export function CreateOrderPage() {
@@ -98,6 +120,11 @@ export function CreateOrderPage() {
     serviceTypeId,
     currentData: { topic, requirements, subject },
   })
+
+  const selectedVoucher = useMemo(
+    () => club.activeVouchers.find(voucher => voucher.id === selectedVoucherId) ?? null,
+    [club.activeVouchers, selectedVoucherId]
+  )
 
   // UI
   const [submitting, setSubmitting] = useState(false)
@@ -224,11 +251,17 @@ export function CreateOrderPage() {
 
   const goBack = useCallback(() => {
     haptic('light')
-    if (step === 1) navigate(-1)
-    else {
-      setDirection(-1)
-      setStep((s) => s - 1)
+    if (step === 1) {
+      if (window.history.length > 1) {
+        navigate(-1)
+        return
+      }
+      navigate('/')
+      return
     }
+
+    setDirection(-1)
+    setStep((s) => s - 1)
   }, [step, navigate, haptic])
 
   const handleServiceTypeSelect = useCallback((id: string) => {
@@ -331,7 +364,7 @@ export function CreateOrderPage() {
         subject: subject.trim(),
         topic: topic.trim() || undefined,
         deadline,
-        description: requirements.trim() || undefined,
+        description: buildOrderDescription(requirements, selectedVoucher),
         promo_code: promoToUse,
       }
 
@@ -365,8 +398,11 @@ export function CreateOrderPage() {
         if (res.promo_failed && res.promo_failure_reason) {
           finalMsg = `Заказ создан, но промокод не применён: ${res.promo_failure_reason}`
         }
-        if (voucherUsed) {
-          finalMsg = finalMsg + ' Ваучер применён!'
+        if (selectedVoucher) {
+          finalMsg = `${finalMsg} Информация о выбранном ваучере передана менеджеру вместе с заявкой.`
+        }
+        if (selectedVoucher && !voucherUsed) {
+          finalMsg = `${finalMsg} Ваучер останется доступен в профиле до подтверждения вручную.`
         }
 
         if (files.length > 0 && res.order_id) {
@@ -414,7 +450,7 @@ export function CreateOrderPage() {
         setStep(4)
       }
     }
-  }, [serviceTypeId, deadline, subject, topic, requirements, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, selectedVoucherId, club, files])
+  }, [serviceTypeId, deadline, subject, topic, requirements, selectedVoucher, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, selectedVoucherId, club, files])
 
   const handlePromoWarningContinue = useCallback(() => {
     setShowPromoWarning(false)
@@ -439,7 +475,7 @@ export function CreateOrderPage() {
       : 0
 
     return (
-      <div style={{ padding: 24, paddingBottom: 100, minHeight: '100vh', background: 'var(--bg-main)' }}>
+      <div style={{ padding: 24, paddingBottom: 100, minHeight: '100vh', height: '100dvh', background: 'var(--bg-main)' }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -485,7 +521,7 @@ export function CreateOrderPage() {
             color: result.ok ? 'var(--text-main)' : 'var(--error-text)',
             marginBottom: 16,
           }}>
-            {result.ok ? 'Заказ создан!' : 'Ошибка'}
+            {result.ok ? 'Заявка отправлена' : 'Ошибка'}
           </h2>
 
           <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: result.ok && promoUsed ? 20 : 40, maxWidth: 300, lineHeight: 1.6 }}>
@@ -589,7 +625,7 @@ export function CreateOrderPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: promoUsed ? 0.7 : 0.4 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => navigate('/')}
+              onClick={() => navigate(result.ok ? '/orders' : '/')}
               style={{
                 padding: '16px 28px',
                 fontSize: 16,
@@ -601,7 +637,7 @@ export function CreateOrderPage() {
                 cursor: 'pointer',
               }}
             >
-              На главную
+              {result.ok ? 'В мои заказы' : 'На главную'}
             </motion.button>
           </div>
         </motion.div>
@@ -619,6 +655,7 @@ export function CreateOrderPage() {
   return (
     <div style={{
       minHeight: '100vh',
+      height: '100dvh',
       background: 'var(--bg-main)',
       display: 'flex',
       flexDirection: 'column',
@@ -930,6 +967,27 @@ export function CreateOrderPage() {
                     selectedVoucherId={selectedVoucherId}
                     onSelect={handleVoucherSelect}
                   />
+
+                  {selectedVoucher && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{
+                        marginTop: 14,
+                        padding: '14px 16px',
+                        borderRadius: 16,
+                        background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.05))',
+                        border: '1px solid rgba(212,175,55,0.18)',
+                      }}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-300)', marginBottom: 6 }}>
+                        Ваучер добавим к этой заявке
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                        Менеджер увидит выбранный ваучер вместе с условиями и подтвердит его при согласовании заказа.
+                      </div>
+                    </motion.div>
+                  )}
 
                   {estimate && (
                     <EstimateCard

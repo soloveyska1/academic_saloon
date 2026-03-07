@@ -12,7 +12,7 @@ interface QuickActionsGridProps {
   onPrivileges: () => void
   onSupport: () => void
   onMyOrders: () => void
-  onInviteFriend: () => void
+  onInviteFriend: () => Promise<boolean> | boolean
   isFirstOrder?: boolean
 }
 
@@ -151,8 +151,10 @@ export const QuickActionsGrid = memo(function QuickActionsGrid({
 }: QuickActionsGridProps) {
   const [copiedState, setCopiedState] = useState(false)
 
-  const handleInvite = useCallback(() => {
-    onInviteFriend()
+  const handleInvite = useCallback(async () => {
+    const copied = await onInviteFriend()
+    if (!copied) return
+
     setCopiedState(true)
     setTimeout(() => setCopiedState(false), 2000)
   }, [onInviteFriend])

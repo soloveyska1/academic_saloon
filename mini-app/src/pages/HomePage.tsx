@@ -36,7 +36,6 @@ const CashbackModal = lazy(() => import('../components/modals/CashbackModal').th
 const RanksModal = lazy(() => import('../components/modals/RanksModal').then(m => ({ default: m.RanksModal })))
 const GuaranteesModal = lazy(() => import('../components/modals/GuaranteesModal').then(m => ({ default: m.GuaranteesModal })))
 const TransactionsModal = lazy(() => import('../components/modals/TransactionsModal').then(m => ({ default: m.TransactionsModal })))
-const WelcomePromoModal = lazy(() => import('../components/ui/WelcomePromoModal').then(m => ({ default: m.WelcomePromoModal })))
 
 interface Props {
   user: UserData | null
@@ -111,28 +110,6 @@ export function HomePage({ user }: Props) {
   // Daily bonus data
   const canClaimBonus = state.dailyBonus.info?.can_claim ?? false
   const dailyStreak = state.dailyBonus.info?.streak ?? 1
-
-  // Welcome promo modal for new users
-  const WELCOME_MODAL_SHOWN_KEY = 'academic_saloon_welcome_shown'
-  useEffect(() => {
-    if (!user) return
-
-    const isSimulatingNewUser = admin.simulateNewUser
-    const shouldShow = isSimulatingNewUser
-    const alreadyShown = localStorage.getItem(WELCOME_MODAL_SHOWN_KEY) === 'true'
-
-    if (alreadyShown && !isSimulatingNewUser) return
-
-    if (shouldShow) {
-      const timer = setTimeout(() => {
-        actions.openModal('welcome')
-        if (!isSimulatingNewUser) {
-          localStorage.setItem(WELCOME_MODAL_SHOWN_KEY, 'true')
-        }
-      }, 1500)
-      return () => clearTimeout(timer)
-    }
-  }, [user, admin.simulateNewUser, actions])
 
   // Memoized calculations
   const activeOrders = useMemo(
@@ -355,13 +332,6 @@ export function HomePage({ user }: Props) {
           isOpen={state.modals.ranks}
           onClose={() => actions.closeModal('ranks')}
           user={user}
-        />
-        <WelcomePromoModal
-          isOpen={state.modals.welcome}
-          onClose={() => actions.closeModal('welcome')}
-          promoCode="WELCOME10"
-          discount={10}
-          onApplyPromo={() => navigate('/create-order')}
         />
       </Suspense>
     </main>
