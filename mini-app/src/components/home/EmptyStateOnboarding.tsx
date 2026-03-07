@@ -1,33 +1,31 @@
 import { motion } from 'framer-motion'
-import { ArrowUpRight, Clock3, FileText, MessageCircleMore, ShieldCheck } from 'lucide-react'
+import { Clock3, FileText, MessageCircleMore, ShieldCheck } from 'lucide-react'
 import { glassGoldStyle } from './shared'
 
 interface EmptyStateOnboardingProps {
-  onCreateOrder: () => void
   primaryActionLabel?: string
 }
 
 const steps = [
   {
-    title: 'Нажмите на главное действие',
-    description: 'Откроется короткая заявка без длинного брифа и лишних экранов.',
+    title: 'Откройте полную заявку',
+    description: 'Сначала выберите формат работы. Это основной и самый понятный путь.',
     icon: FileText,
   },
   {
-    title: 'Заполните предмет, тему и срок',
-    description: 'Этого достаточно для старта. Файлы можно приложить сразу или уже позже.',
+    title: 'Добавьте тему, комментарии и файлы',
+    description: 'Чем точнее детали на входе, тем быстрее менеджер сориентируется по задаче.',
     icon: Clock3,
   },
   {
-    title: 'Получите расчёт и сопровождение',
-    description: 'Менеджер быстро подключится в чате, уточнит детали и поведёт заказ дальше.',
+    title: 'Укажите срок и отправьте заявку',
+    description: 'После отправки мы подтвердим детали, стоимость и дальнейшие шаги в чате.',
     icon: MessageCircleMore,
   },
 ] as const
 
 export function EmptyStateOnboarding({
-  onCreateOrder,
-  primaryActionLabel = 'Открыть первую заявку',
+  primaryActionLabel = 'Перейти к заявке',
 }: EmptyStateOnboardingProps) {
   return (
     <motion.section
@@ -73,7 +71,7 @@ export function EmptyStateOnboarding({
               lineHeight: 1.12,
             }}
           >
-            Как пройдёт первый заказ
+            Как устроен основной путь
           </h2>
 
           <p
@@ -85,8 +83,9 @@ export function EmptyStateOnboarding({
               maxWidth: 480,
             }}
           >
-            Вся логика сведена к одному главному действию. Дальше путь короткий и прозрачный:
-            короткая заявка, расчёт и сопровождение до результата.
+            Главная кнопка ведёт в полную заявку. Это основной сценарий: сначала формат работы,
+            потом детали и срок. Если понадобится быстрый запрос без полного выбора, он доступен
+            уже внутри формы отдельным режимом, а не вторым действием на home.
           </p>
         </div>
 
@@ -164,31 +163,11 @@ export function EmptyStateOnboarding({
         >
           <ShieldCheck size={18} color="var(--gold-400)" strokeWidth={2.2} style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-            До согласования цены и деталей вы ничем не рискуете. Главная кнопка выше уже ведёт в этот сценарий.
+            До согласования цены и деталей вы ничем не рискуете. Нажатие на{' '}
+            <span style={{ color: 'var(--gold-100)', fontWeight: 700 }}>{primaryActionLabel}</span>{' '}
+            уже ведёт в этот сценарий.
           </div>
         </div>
-
-        <motion.button
-          type="button"
-          onClick={onCreateOrder}
-          whileTap={{ scale: 0.98 }}
-          style={{
-            marginTop: 14,
-            padding: 0,
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--gold-100)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          {primaryActionLabel}
-          <ArrowUpRight size={16} strokeWidth={2.4} />
-        </motion.button>
       </div>
     </motion.section>
   )

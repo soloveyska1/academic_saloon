@@ -215,8 +215,7 @@ export function HomePage({ user }: Props) {
             <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
 
             <EmptyStateOnboarding
-              onCreateOrder={handleNewOrder}
-              primaryActionLabel="Открыть первую заявку"
+              primaryActionLabel="Перейти к полной заявке"
             />
           </>
         ) : (

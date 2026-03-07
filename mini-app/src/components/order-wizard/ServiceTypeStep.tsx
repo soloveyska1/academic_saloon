@@ -31,13 +31,15 @@ interface ServiceTypeStepProps {
   onSelect: (id: string) => void
   onAssistRequest?: () => void
   onUrgentRequest?: () => void
+  minimal?: boolean
 }
 
 export function ServiceTypeStep({
   selected,
   onSelect,
   onAssistRequest,
-  onUrgentRequest
+  onUrgentRequest,
+  minimal = false,
 }: ServiceTypeStepProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
@@ -81,6 +83,39 @@ export function ServiceTypeStep({
       express: SERVICE_TYPES.filter(s => s.category === 'express'),
     }
   }, [searchQuery, activeFilter])
+
+  if (minimal && groupedServices) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+        <CategorySection
+          category="premium"
+          title="Выпускные работы"
+          services={groupedServices.premium}
+          selected={selected}
+          onSelect={onSelect}
+          socialProofMap={socialProofMap}
+        />
+
+        <CategorySection
+          category="standard"
+          title="Учебные работы"
+          services={groupedServices.standard}
+          selected={selected}
+          onSelect={onSelect}
+          socialProofMap={socialProofMap}
+        />
+
+        <CategorySection
+          category="express"
+          title="Экспресс"
+          services={groupedServices.express}
+          selected={selected}
+          onSelect={onSelect}
+          socialProofMap={socialProofMap}
+        />
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

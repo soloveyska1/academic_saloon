@@ -1,13 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import {
-  ArrowRight,
-  Clock3,
-  MessageCircleMore,
-  Plus,
-  Rocket,
-  ShieldCheck,
-} from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 
 interface NewTaskCTAProps {
@@ -18,30 +11,18 @@ interface NewTaskCTAProps {
 
 const CTA_CONFIG = {
   'first-order': {
-    eyebrow: 'ПЕРВЫЙ СЦЕНАРИЙ',
-    title: 'Первый заказ',
-    subtitle: 'Опишите предмет, тему и срок. Остальное менеджер спокойно соберёт с вами уже после заявки.',
-    ctaLabel: 'Открыть первую заявку',
-    note: 'Без оплаты до согласования цены и деталей.',
-    icon: Rocket,
-    proofs: [
-      { icon: Clock3, label: '3 поля без перегруза' },
-      { icon: MessageCircleMore, label: 'Ответ в чате после отправки' },
-      { icon: ShieldCheck, label: 'Файлы можно дослать позже' },
-    ],
+    eyebrow: 'ОСНОВНОЙ СЦЕНАРИЙ',
+    title: 'Оформить первый заказ',
+    subtitle: 'Полная заявка: сначала формат работы, затем детали и срок.',
+    ctaLabel: 'Перейти к полной заявке',
+    note: 'После отправки мы подтвердим детали, стоимость и дальнейшие шаги.',
   },
   'repeat-order': {
     eyebrow: 'ГЛАВНОЕ ДЕЙСТВИЕ',
-    title: 'Новый заказ',
-    subtitle: 'Откройте ещё одну заявку, если нужна новая работа, срочная задача или доработка.',
-    ctaLabel: 'Открыть новую заявку',
-    note: 'Короткая форма, дальше всё сопровождает менеджер.',
-    icon: Plus,
-    proofs: [
-      { icon: Clock3, label: 'Запуск за пару минут' },
-      { icon: MessageCircleMore, label: 'Живой менеджер на связи' },
-      { icon: ShieldCheck, label: 'Подходит и для срочных задач' },
-    ],
+    title: 'Оформить заказ',
+    subtitle: 'Основной путь для новой работы, срочной задачи или доработки.',
+    ctaLabel: 'Открыть полную заявку',
+    note: 'После отправки заявки менеджер подтвердит детали и дальнейшие шаги.',
   },
 } as const
 
@@ -51,7 +32,6 @@ export const NewTaskCTA = memo(function NewTaskCTA({
   variant = 'repeat-order',
 }: NewTaskCTAProps) {
   const config = CTA_CONFIG[variant]
-  const AccentIcon = config.icon
 
   const handleClick = () => {
     haptic?.('heavy')
@@ -59,18 +39,15 @@ export const NewTaskCTA = memo(function NewTaskCTA({
   }
 
   return (
-    <motion.button
+    <motion.section
       className={`${s.voidGlass} ${s.primaryActionCard} ${variant === 'first-order' ? s.firstOrderActionCard : s.returningOrderActionCard}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileTap={{ scale: 0.985 }}
-      onClick={handleClick}
       style={{
         position: 'relative',
         width: '100%',
         padding: '26px 22px 22px',
         borderRadius: '28px',
-        cursor: 'pointer',
         marginBottom: '20px',
         overflow: 'hidden',
         border: '1px solid rgba(212,175,55,0.16)',
@@ -82,17 +59,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
       <div className={s.primaryActionShine} aria-hidden="true" />
       <div className={s.primaryActionOrb} aria-hidden="true" />
 
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 14,
-          marginBottom: 18,
-        }}
-      >
+      <div style={{ position: 'relative', zIndex: 1, marginBottom: 18 }}>
         <div
           style={{
             display: 'inline-flex',
@@ -121,10 +88,6 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             }}
           />
           {config.eyebrow}
-        </div>
-
-        <div className={s.heroActionIcon}>
-          <AccentIcon size={20} color="#09090b" strokeWidth={2.7} />
         </div>
       </div>
 
@@ -157,28 +120,20 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           {config.subtitle}
         </div>
 
-        <div className={s.heroProofRail}>
-          {config.proofs.map((proof) => {
-            const ProofIcon = proof.icon
-
-            return (
-              <div key={proof.label} className={s.heroProofItem}>
-                <ProofIcon size={15} color="#d4af37" strokeWidth={2.2} />
-                <span>{proof.label}</span>
-              </div>
-            )
-          })}
-        </div>
-
-        <div className={s.heroPrimaryButton}>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.985 }}
+          onClick={handleClick}
+          className={s.heroPrimaryButton}
+        >
           <span>{config.ctaLabel}</span>
           <div className={s.primaryActionArrow}>
             <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
           </div>
-        </div>
+        </motion.button>
 
         <div className={s.heroFootnote}>{config.note}</div>
       </div>
-    </motion.button>
+    </motion.section>
   )
 })

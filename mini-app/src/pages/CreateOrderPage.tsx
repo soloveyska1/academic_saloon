@@ -37,6 +37,11 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0 }),
 }
 
+const FAST_WIZARD_STEPS = [
+  { num: 1, title: 'Быстрый запрос', subtitle: 'Тема, комментарий и файлы без выбора формата' },
+  { num: 2, title: 'Срок', subtitle: 'Когда нужен ответ?' },
+]
+
 // Prefill data interface for Quick Reorder feature
 interface PrefillData {
   work_type?: WorkType
@@ -67,6 +72,7 @@ export function CreateOrderPage() {
 
   // Check for urgent/panic mode from URL params
   const isUrgentMode = searchParams.get('urgent') === 'true'
+  const isFastMode = searchParams.get('mode') === 'fast'
   const preselectedType = (prefillData?.work_type || searchParams.get('type')) as WorkType | null
 
   // Is this a reorder?
@@ -75,9 +81,11 @@ export function CreateOrderPage() {
   // Wizard
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(0)
+  const totalSteps = isFastMode ? 2 : 3
+  const stepConfig = isFastMode ? FAST_WIZARD_STEPS : WIZARD_STEPS
 
   // Form data - initialize with prefill values if available
-  const [serviceTypeId, setServiceTypeId] = useState<string | null>(preselectedType)
+  const [serviceTypeId, setServiceTypeId] = useState<string | null>(preselectedType || (isFastMode ? 'other' : null))
   const [subject, setSubject] = useState(prefillData?.subject || '')
   const [topic, setTopic] = useState(prefillData?.topic || '')
   const [requirements, setRequirements] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
@@ -184,20 +192,35 @@ export function CreateOrderPage() {
     }
   }, [preselectedType, isUrgentMode])
 
+  useEffect(() => {
+    setStep(1)
+    setDirection(0)
+
+    if (isFastMode) {
+      setSelectedVoucherId(null)
+      setServiceTypeId(preselectedType || 'other')
+      return
+    }
+
+    if (!preselectedType && !isReorder && serviceTypeId === 'other') {
+      setServiceTypeId(null)
+    }
+  }, [isFastMode, isReorder, preselectedType])
+
   // ─────────────────────────────────────────────────────────────────────────
   //  VALIDATION & NAVIGATION
   // ─────────────────────────────────────────────────────────────────────────
 
-  const canStep1 = serviceTypeId !== null
-  const canStep2 = subject.trim().length >= 2
+  const canStep1 = isFastMode ? subject.trim().length >= 2 : serviceTypeId !== null
+  const canStep2 = isFastMode ? deadline !== null : subject.trim().length >= 2
   const canStep3 = deadline !== null
   const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : canStep3
 
   const goNext = useCallback(() => {
     haptic('medium')
     setDirection(1)
-    setStep((s) => Math.min(s + 1, 3))
-  }, [haptic])
+    setStep((s) => Math.min(s + 1, totalSteps))
+  }, [haptic, totalSteps])
 
   const goBack = useCallback(() => {
     haptic('light')
@@ -217,6 +240,21 @@ export function CreateOrderPage() {
     haptic('light')
     setDeadline(value)
   }, [haptic])
+
+  const switchMode = useCallback((mode: 'full' | 'fast') => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (mode === 'fast') {
+      params.set('mode', 'fast')
+    } else {
+      params.delete('mode')
+    }
+
+    const query = params.toString()
+    navigate(`/create-order${query ? `?${query}` : ''}`, { replace: true, state: location.state })
+  }, [location.state, navigate, searchParams])
+
+  const canShowModeSwitch = isFastMode || step === 1
 
   // Voucher selection
   const handleVoucherSelect = useCallback((voucherId: string | null) => {
@@ -575,7 +613,7 @@ export function CreateOrderPage() {
   //  WIZARD
   // ─────────────────────────────────────────────────────────────────────────
 
-  const currentConfig = WIZARD_STEPS[step - 1]
+  const currentConfig = stepConfig[step - 1]
   const estimate = getEstimate()
 
   return (
@@ -697,6 +735,40 @@ export function CreateOrderPage() {
               {currentConfig?.title}
             </h1>
             <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>{currentConfig?.subtitle}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
+              <div style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: isFastMode ? 'rgba(59,130,246,0.12)' : 'rgba(212,175,55,0.1)',
+                border: `1px solid ${isFastMode ? 'rgba(59,130,246,0.25)' : 'var(--border-gold)'}`,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: isFastMode ? '#60a5fa' : 'var(--gold-400)',
+              }}>
+                {isFastMode ? 'Быстрый запрос' : 'Полная заявка'}
+              </div>
+
+              {canShowModeSwitch && (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => switchMode(isFastMode ? 'full' : 'fast')}
+                  style={{
+                    padding: 0,
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isFastMode ? 'Вернуться к полной заявке' : 'Есть срочная задача? Открыть быстрый запрос'}
+                </motion.button>
+              )}
+            </div>
           </div>
 
           <div style={{
@@ -709,13 +781,13 @@ export function CreateOrderPage() {
             color: 'var(--gold-400)',
             fontFamily: "'JetBrains Mono', monospace",
           }}>
-            {step}/3
+            {step}/{totalSteps}
           </div>
         </motion.div>
 
         {/* Progress */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
-          {[1, 2, 3].map((s) => (
+          {Array.from({ length: totalSteps }, (_, index) => index + 1).map((s) => (
             <motion.div
               key={s}
               animate={{
@@ -739,14 +811,64 @@ export function CreateOrderPage() {
               exit="exit"
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
-              <ServiceTypeStep
-                selected={serviceTypeId}
-                onSelect={handleServiceTypeSelect}
-              />
+              {isFastMode ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{
+                    padding: '16px 18px',
+                    borderRadius: 18,
+                    background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.04))',
+                    border: '1px solid rgba(59,130,246,0.18)',
+                  }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#dbeafe', marginBottom: 6 }}>
+                      Быстрый запрос для срочных случаев
+                    </div>
+                    <div style={{ fontSize: 13, color: '#93c5fd', lineHeight: 1.55 }}>
+                      Здесь можно сразу оставить тему, комментарий и файлы, если не хочется
+                      проходить полный выбор услуги. Формат работы менеджер уточнит после отправки.
+                    </div>
+                  </div>
+
+                  <RequirementsStep
+                    serviceTypeId={serviceTypeId}
+                    subject={subject}
+                    onSubjectChange={setSubject}
+                    topic={topic}
+                    onTopicChange={setTopic}
+                    requirements={requirements}
+                    onRequirementsChange={setRequirements}
+                    files={files}
+                    onFilesAdd={addFiles}
+                    onFileRemove={removeFile}
+                    disabled={submitting || isRevalidating}
+                  />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{
+                    padding: '16px 18px',
+                    borderRadius: 18,
+                    background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
+                    border: '1px solid rgba(212,175,55,0.18)',
+                  }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
+                      Основной путь через полную заявку
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                      Сначала выберите формат работы, чтобы заявка сразу пошла по точному сценарию.
+                    </div>
+                  </div>
+
+                  <ServiceTypeStep
+                    selected={serviceTypeId}
+                    onSelect={handleServiceTypeSelect}
+                    minimal
+                  />
+                </div>
+              )}
             </motion.div>
           )}
 
-          {step === 2 && (
+          {step === 2 && !isFastMode && (
             <motion.div
               key="s2"
               custom={direction}
@@ -772,9 +894,9 @@ export function CreateOrderPage() {
             </motion.div>
           )}
 
-          {step === 3 && (
+          {((step === 2 && isFastMode) || (step === 3 && !isFastMode)) && (
             <motion.div
-              key="s3"
+              key={isFastMode ? 's2-fast' : 's3'}
               custom={direction}
               variants={slideVariants}
               initial="enter"
@@ -789,33 +911,35 @@ export function CreateOrderPage() {
               />
 
               {/* Promo Code Section */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                style={{ marginTop: 20 }}
-              >
-                <PromoCodeSection
-                  variant="inline"
-                  basePrice={getBaseEstimate() || undefined}
-                />
-              </motion.div>
+              {!isFastMode && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    style={{ marginTop: 20 }}
+                  >
+                    <PromoCodeSection
+                      variant="inline"
+                      basePrice={getBaseEstimate() || undefined}
+                    />
+                  </motion.div>
 
-              {/* Voucher Selector */}
-              <VoucherSelector
-                vouchers={club.activeVouchers}
-                selectedVoucherId={selectedVoucherId}
-                onSelect={handleVoucherSelect}
-              />
+                  <VoucherSelector
+                    vouchers={club.activeVouchers}
+                    selectedVoucherId={selectedVoucherId}
+                    onSelect={handleVoucherSelect}
+                  />
 
-              {/* Estimate Card */}
-              {estimate && (
-                <EstimateCard
-                  estimate={estimate}
-                  baseEstimate={getBaseEstimate()}
-                  activePromo={activePromo}
-                  isDark={isDark}
-                />
+                  {estimate && (
+                    <EstimateCard
+                      estimate={estimate}
+                      baseEstimate={getBaseEstimate()}
+                      activePromo={activePromo}
+                      isDark={isDark}
+                    />
+                  )}
+                </>
               )}
             </motion.div>
           )}
@@ -825,6 +949,8 @@ export function CreateOrderPage() {
       {/* Floating CTA Dock (Fallback when MainButton not available) */}
       <FloatingCtaDock
         step={step}
+        totalSteps={totalSteps}
+        isFastMode={isFastMode}
         canProceed={canProceed}
         submitting={submitting}
         submittingLabel={submittingLabel}
@@ -1112,6 +1238,8 @@ function EstimateCard({ estimate, baseEstimate, activePromo, isDark }: EstimateC
 
 interface FloatingCtaDockProps {
   step: number
+  totalSteps: number
+  isFastMode: boolean
   canProceed: boolean
   submitting: boolean
   submittingLabel?: string | null
@@ -1123,6 +1251,8 @@ interface FloatingCtaDockProps {
 
 function FloatingCtaDock({
   step,
+  totalSteps,
+  isFastMode,
   canProceed,
   submitting,
   submittingLabel,
@@ -1131,9 +1261,6 @@ function FloatingCtaDock({
   onSubmit,
   selectedServiceLabel,
 }: FloatingCtaDockProps) {
-  // Always use our custom FloatingCtaDock for full design control
-  // Telegram MainButton is disabled in favor of this component
-
   return (
     <AnimatePresence>
       {canProceed && (
@@ -1156,7 +1283,7 @@ function FloatingCtaDock({
           {/* The Floating Dock */}
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={step === 3 ? onSubmit : onNext}
+            onClick={step === totalSteps ? onSubmit : onNext}
             disabled={!canProceed || submitting}
             style={{
               display: 'flex',
@@ -1178,7 +1305,7 @@ function FloatingCtaDock({
             }}
           >
             {/* Left side: Context info */}
-            {step === 1 && selectedServiceLabel && (
+            {!isFastMode && step === 1 && selectedServiceLabel && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -1226,10 +1353,12 @@ function FloatingCtaDock({
             >
               {submitting
                 ? (submittingLabel || (isRevalidating ? 'Проверка...' : 'Отправка...'))
-                : step === 3
-                  ? 'Рассчитать'
-                  : step === 2
+                : step === totalSteps
+                  ? (isFastMode ? 'Отправить быстрый запрос' : 'Отправить заявку')
+                  : step === 2 && !isFastMode
                     ? 'Выбрать сроки'
+                    : step === 1 && isFastMode
+                      ? 'Перейти к сроку'
                     : 'Продолжить'}
             </span>
 
@@ -1250,7 +1379,7 @@ function FloatingCtaDock({
             >
               {submitting ? (
                 <Loader2 size={18} color="#050505" strokeWidth={2.5} />
-              ) : step === 3 ? (
+              ) : step === totalSteps ? (
                 <Send size={16} color="#050505" strokeWidth={2.5} />
               ) : (
                 <ChevronRight size={20} color="#050505" strokeWidth={2.5} />
