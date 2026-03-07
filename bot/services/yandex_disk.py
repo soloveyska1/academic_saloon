@@ -216,19 +216,29 @@ class YandexDiskService:
                 headers=self._get_headers(),
             )
 
-            if response.status_code not in (200, 201):
+            if response.status_code not in (200, 201, 202, 409):
                 logger.warning(f"Failed to publish folder: {response.text}")
                 return None
 
-            # Получаем публичный URL
-            meta_resp = await client.get(
-                f"{YADISK_API_BASE}/resources",
-                params={"path": path},
-                headers=self._get_headers(),
-            )
+            retry_delays = (0.0, 0.4, 0.8, 1.2, 2.0, 3.0)
+            for delay in retry_delays:
+                if delay > 0:
+                    await asyncio.sleep(delay)
 
-            if meta_resp.status_code == 200:
-                return meta_resp.json().get("public_url")
+                meta_resp = await client.get(
+                    f"{YADISK_API_BASE}/resources",
+                    params={"path": path},
+                    headers=self._get_headers(),
+                )
+
+                if meta_resp.status_code != 200:
+                    continue
+
+                public_url = meta_resp.json().get("public_url")
+                if public_url:
+                    return public_url
+
+            logger.warning(f"Folder published but public URL is not ready yet: {path}")
 
             return None
 

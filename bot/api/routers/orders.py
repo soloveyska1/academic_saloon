@@ -728,8 +728,11 @@ async def upload_order_files(
     )
 
     if result.success:
-        order.files_url = result.folder_url
-        await session.commit()
+        if result.folder_url:
+            order.files_url = result.folder_url
+            await session.commit()
+
+        uploaded_count = result.uploaded_count or len(file_data)
 
         try:
             bot = get_bot()
@@ -740,7 +743,7 @@ async def upload_order_files(
                 session=session,
                 client_username=user.username,
                 client_name=user.fullname,
-                extra_text=f"📎 {len(file_data)} файл(ов) загружено",
+                extra_text=f"📎 {uploaded_count} файл(ов) загружено",
             )
         except Exception:
             pass
@@ -751,13 +754,12 @@ async def upload_order_files(
             await notify_file_delivery(
                 telegram_id=order.user_id,
                 order_id=order.id,
-                file_count=len(file_data),
+                file_count=uploaded_count,
                 files_url=result.folder_url
             )
         except Exception:
             pass
 
-        uploaded_count = result.uploaded_count or len(file_data)
         rejected_count = len(blocked_files) + len(oversized_files)
         storage_failed_count = max(len(file_data) - uploaded_count, 0)
 
@@ -769,6 +771,8 @@ async def upload_order_files(
             issue_notes.append(f"пропущены файлы больше 50 МБ ({len(oversized_files)})")
         if storage_failed_count > 0:
             issue_notes.append(f"не загрузились {storage_failed_count} файл(ов)")
+        if not result.folder_url:
+            issue_notes.append("ссылка на папку обновится в заказе с небольшой задержкой")
         elif rejected_count == 0 and uploaded_count == len(file_data):
             message = f"✅ Загружено {uploaded_count} файл(ов)"
 

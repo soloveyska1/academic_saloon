@@ -2,6 +2,7 @@
 Сервис бонусной системы — начисление и списание бонусов
 """
 import logging
+import math
 from datetime import datetime
 from enum import Enum
 from zoneinfo import ZoneInfo
@@ -542,11 +543,12 @@ class BonusService:
             if expiry_date.tzinfo is None:
                 expiry_date = expiry_date.replace(tzinfo=MSK_TZ)
 
-            days_left = (expiry_date - now).days
+            remaining_seconds = (expiry_date - now).total_seconds()
+            days_left = max(1, math.ceil(remaining_seconds / 86400)) if remaining_seconds > 0 else 0
             burn_amount = int(user.balance * User.BONUS_EXPIRY_PERCENT / 100)
 
             # Бонусы истекли - сжигаем
-            if days_left <= 0:
+            if remaining_seconds <= 0:
                 burned = await BonusService.expire_bonus(session, bot, user)
                 stats["bonuses_expired"] += 1
                 stats["total_burned"] += burned

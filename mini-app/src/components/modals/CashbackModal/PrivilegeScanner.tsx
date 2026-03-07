@@ -21,15 +21,15 @@ const containerVariants = {
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, x: -12 },
-  visible: { opacity: 1, x: 0 },
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
 }
 
 function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
   const benefits = useMemo(() => [
     {
       icon: Gift,
-      label: 'Кешбэк на все заказы',
+      label: 'Кэшбэк на все заказы',
       value: `${rank.cashback}%`,
       highlight: true,
     },
@@ -87,6 +87,7 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                gap: 12,
                 padding: '12px 14px',
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.03)',
@@ -94,13 +95,13 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
                 <Icon
                   size={14}
                   color={isLocked ? '#27272a' : benefit.highlight ? '#d4af37' : '#3f3f46'}
                   style={!isLocked && benefit.highlight ? { filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.3))' } : undefined}
                 />
-                <span style={{ fontSize: 13, color: isLocked ? '#27272a' : '#71717a' }}>
+                <span style={{ fontSize: 13, color: isLocked ? '#27272a' : '#71717a', minWidth: 0 }}>
                   {benefit.label}
                 </span>
               </div>
@@ -109,6 +110,7 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
                 fontSize: 13,
                 fontWeight: 600,
                 letterSpacing: benefit.highlight ? '0.03em' : undefined,
+                flexShrink: 0,
                 color: isLocked
                   ? '#27272a'
                   : benefit.highlight

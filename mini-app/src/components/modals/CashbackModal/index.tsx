@@ -187,7 +187,7 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
       title="Кэшбэк и статус"
       accentColor={displayRank.color}
     >
-      <div style={{ padding: '0 20px 20px' }}>
+      <div style={{ padding: '0 20px 20px', overflowX: 'hidden' }}>
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -232,8 +232,8 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
             border: '1px solid rgba(212,175,55,0.16)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
-            <div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+            <div style={{ flex: '1 1 220px', minWidth: 0 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(212,175,55,0.72)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
                 Ваш статус
               </div>
@@ -247,6 +247,7 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
 
             <div
               style={{
+                flex: '0 0 auto',
                 minWidth: 88,
                 padding: '10px 12px',
                 borderRadius: 16,
@@ -290,7 +291,7 @@ export function CashbackModal({ isOpen, onClose, user }: CashbackModalProps) {
           <HolographicCard rank={displayRank} isLocked={isLockedView} />
         </SurfaceCard>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 16 }}>
           {RANKS.map((rank, index) => (
             <RankPill
               key={rank.id}

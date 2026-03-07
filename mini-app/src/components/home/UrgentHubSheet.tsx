@@ -15,6 +15,7 @@ function UrgentActionCard({
   title,
   description,
   badge,
+  actionLabel,
   accent,
   onClick,
 }: {
@@ -22,6 +23,7 @@ function UrgentActionCard({
   title: string
   description: string
   badge: string
+  actionLabel: string
   accent: string
   onClick: () => void
 }) {
@@ -40,52 +42,90 @@ function UrgentActionCard({
         `,
         border: `1px solid ${accent}22`,
         display: 'flex',
-        alignItems: 'center',
-        gap: 14,
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: 12,
         textAlign: 'left',
         boxShadow: `0 18px 34px -30px ${accent}66`,
       }}
     >
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: 16,
-          background: `${accent}18`,
-          border: `1px solid ${accent}28`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Icon size={22} color={accent} />
-      </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
-          {title}
-        </div>
-        <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-secondary)' }}>
-          {description}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
         <div
           style={{
-            padding: '6px 10px',
-            borderRadius: 999,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            fontSize: 11,
-            fontWeight: 700,
-            color: accent,
+            width: 52,
+            height: 52,
+            borderRadius: 18,
+            background: `${accent}18`,
+            border: `1px solid ${accent}28`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
           }}
         >
-          {badge}
+          <Icon size={22} color={accent} />
         </div>
-        <ArrowRight size={16} color="rgba(255,255,255,0.34)" />
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>
+              {title}
+            </div>
+            <div
+              style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                fontSize: 11,
+                fontWeight: 700,
+                color: accent,
+                flexShrink: 0,
+              }}
+            >
+              {badge}
+            </div>
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+            {description}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          paddingTop: 12,
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: '#fff',
+          }}
+        >
+          {actionLabel}
+        </div>
+        <div
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            flexShrink: 0,
+          }}
+        >
+          <ArrowRight size={16} color={accent} />
+        </div>
       </div>
     </m.button>
   )
@@ -150,8 +190,9 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
           <UrgentActionCard
             icon={Zap}
             title="Срочная заявка"
-            description="Для задач, где уже понятны тема и дедлайн. Откроется полный маршрут оформления со срочным режимом."
+            description="Для задач, где уже понятны формат, тема и дедлайн. Откроется полный маршрут оформления, но сразу в срочном режиме."
             badge="от 24 ч"
+            actionLabel="Открыть срочный маршрут"
             accent="#f59e0b"
             onClick={() => handleOptionClick('/create-order?urgent=true')}
           />
@@ -159,10 +200,11 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
           <UrgentActionCard
             icon={Camera}
             title="Фото задания"
-            description="Если удобнее отправить скрин, фото или методичку. Подойдёт, когда нужно быстро оценить объём и стоимость."
+            description="Если проще прислать фото, скрин или методичку. Подойдёт, когда нужно быстро оценить объём и стоимость без длинного заполнения."
             badge="5 минут"
+            actionLabel="Отправить на быструю оценку"
             accent="#d4af37"
-            onClick={() => handleOptionClick('/create-order?type=photo_task&urgent=true')}
+            onClick={() => handleOptionClick('/create-order?type=photo_task&urgent=true&mode=fast')}
           />
         </div>
 
@@ -179,7 +221,7 @@ export const UrgentHubSheet = memo(function UrgentHubSheet({
         >
           <Shield size={16} color="#d4af37" style={{ marginTop: 1, flexShrink: 0 }} />
           <div style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-            Срочный режим только ускоряет вход в работу. Гарантии, поддержка и сопровождение остаются теми же, что и в обычной заявке.
+            Срочный режим сразу подставляет ближайший срок и ускоряет оценку. Гарантии, поддержка и сопровождение остаются теми же, что и в обычной заявке.
           </div>
         </div>
       </div>

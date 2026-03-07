@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from database.db import Base
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import math
 
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
@@ -327,12 +328,13 @@ class User(Base):
             }
 
         now = datetime.now(MSK_TZ)
-        days_left = (expiry_date - now).days
+        seconds_left = (expiry_date - now).total_seconds()
+        days_left = max(1, math.ceil(seconds_left / 86400)) if seconds_left > 0 else 0
 
         # Сколько сгорит
         burn_amount = int(self.balance * self.BONUS_EXPIRY_PERCENT / 100)
 
-        if days_left <= 0:
+        if seconds_left <= 0:
             return {
                 "has_expiry": True,
                 "balance": self.balance,

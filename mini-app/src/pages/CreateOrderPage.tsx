@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -93,10 +93,17 @@ function buildAttachmentUploadMessage(uploadResult: FileUploadResponse, selected
   const blockedFiles = uploadResult.blocked_files ?? []
   const oversizedFiles = uploadResult.oversized_files ?? []
   const rejectedCount = blockedFiles.length + oversizedFiles.length
+  const hasVisibleFolderLink = Boolean(uploadResult.files_url)
   const parts: string[] = []
 
   if (uploadResult.success && uploadResult.uploaded_count > 0) {
-    if (uploadResult.uploaded_count === selectedCount && rejectedCount === 0) {
+    if (!hasVisibleFolderLink) {
+      if (uploadResult.uploaded_count === selectedCount && rejectedCount === 0) {
+        parts.push('Файлы загружены. Ссылка на папку появится в заказе в течение нескольких секунд.')
+      } else {
+        parts.push(`Загрузили ${uploadResult.uploaded_count} из ${selectedCount} файлов. Ссылка на папку может появиться с небольшой задержкой.`)
+      }
+    } else if (uploadResult.uploaded_count === selectedCount && rejectedCount === 0) {
       parts.push('Файлы прикреплены к заказу.')
     } else {
       parts.push(`К заказу прикрепили ${uploadResult.uploaded_count} из ${selectedCount} файлов.`)
@@ -111,8 +118,12 @@ function buildAttachmentUploadMessage(uploadResult: FileUploadResponse, selected
     parts.push(`Не приняли файлы больше 50 МБ: ${formatFileNamesPreview(oversizedFiles)}.`)
   }
 
-  if ((uploadResult.success && uploadResult.uploaded_count < selectedCount) || (!uploadResult.success && selectedCount > 0)) {
-    parts.push('Остальное можно дослать позже в чате заказа.')
+  if (
+    (uploadResult.success && uploadResult.uploaded_count < selectedCount) ||
+    (!uploadResult.success && selectedCount > 0) ||
+    (uploadResult.success && uploadResult.uploaded_count > 0 && !hasVisibleFolderLink)
+  ) {
+    parts.push('Если что-то не появится в заказе, файлы можно дослать позже в чате.')
   }
 
   if (parts.length > 0) {
@@ -157,6 +168,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   // Wizard
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState(0)
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const totalSteps = isFastMode ? 2 : 3
   const stepConfig = isFastMode ? FAST_WIZARD_STEPS : WIZARD_STEPS
 
@@ -273,10 +285,10 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 
   // Auto-advance to step 2 if type is pre-selected (urgent mode)
   useEffect(() => {
-    if (preselectedType && isUrgentMode) {
+    if (preselectedType && isUrgentMode && !isFastMode) {
       setStep(2)
     }
-  }, [preselectedType, isUrgentMode])
+  }, [preselectedType, isUrgentMode, isFastMode])
 
   useEffect(() => {
     setStep(1)
@@ -292,6 +304,15 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       setServiceTypeId(null)
     }
   }, [isFastMode, isReorder, preselectedType])
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      scrollContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [step, isFastMode])
 
   // ─────────────────────────────────────────────────────────────────────────
   //  VALIDATION & NAVIGATION
@@ -730,6 +751,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     }}>
       {/* Scrollable Content */}
       <div
+        ref={scrollContainerRef}
         style={{
           flex: 1,
           padding: 24,
