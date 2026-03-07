@@ -49,6 +49,8 @@ interface StatusMeta {
   actionLabel?: string
 }
 
+type OrderLike = Partial<Order> | null | undefined
+
 const WORK_TYPE_ICONS: Record<string, LucideIcon> = {
   masters: GraduationCap,
   diploma: GraduationCap,
@@ -64,6 +66,18 @@ const WORK_TYPE_ICONS: Record<string, LucideIcon> = {
 }
 
 const STATUS_META: Record<string, StatusMeta> = {
+  draft: {
+    label: 'Черновик',
+    hint: 'Заявка сохранена и ждёт завершения оформления.',
+    color: '#a1a1aa',
+    chipBackground: 'rgba(161, 161, 170, 0.10)',
+    chipBorder: 'rgba(161, 161, 170, 0.18)',
+    icon: FileText,
+    priority: 6,
+    needsAction: true,
+    step: 1,
+    actionLabel: 'Продолжить',
+  },
   pending: {
     label: 'Оценка',
     hint: 'Собираем вводные и готовим расчет.',
@@ -217,6 +231,81 @@ const prefersReducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false
 
+const KNOWN_ORDER_STATUSES = new Set(Object.keys(STATUS_META))
+
+function toSafeString(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+
+  return null
+}
+
+function toSafeNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const normalized = Number(value.replace(',', '.'))
+    if (Number.isFinite(normalized)) {
+      return normalized
+    }
+  }
+
+  return fallback
+}
+
+function toSafeBoolean(value: unknown): boolean {
+  return value === true
+}
+
+function normalizeOrder(order: OrderLike, index = 0): Order {
+  const safeOrder = order && typeof order === 'object' ? order : {}
+  const safeId = Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).id, index + 1)))
+  const statusValue = toSafeString((safeOrder as Partial<Order>).status)?.toLowerCase() || 'pending'
+  const workTypeValue = toSafeString((safeOrder as Partial<Order>).work_type)?.toLowerCase() || 'other'
+
+  return {
+    id: safeId,
+    user_id: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).user_id, 0))),
+    subject: toSafeString((safeOrder as Partial<Order>).subject),
+    topic: toSafeString((safeOrder as Partial<Order>).topic),
+    deadline: toSafeString((safeOrder as Partial<Order>).deadline),
+    status: (KNOWN_ORDER_STATUSES.has(statusValue) ? statusValue : 'pending') as Order['status'],
+    price: toSafeNumber((safeOrder as Partial<Order>).price, 0),
+    paid_amount: toSafeNumber((safeOrder as Partial<Order>).paid_amount, 0),
+    discount: toSafeNumber((safeOrder as Partial<Order>).discount, 0),
+    promo_code: toSafeString((safeOrder as Partial<Order>).promo_code),
+    promo_discount: toSafeNumber((safeOrder as Partial<Order>).promo_discount, 0),
+    created_at: toSafeString((safeOrder as Partial<Order>).created_at) || new Date(0).toISOString(),
+    updated_at: toSafeString((safeOrder as Partial<Order>).updated_at),
+    files_url: toSafeString((safeOrder as Partial<Order>).files_url),
+    description: toSafeString((safeOrder as Partial<Order>).description),
+    work_type: workTypeValue,
+    work_type_label: toSafeString((safeOrder as Partial<Order>).work_type_label) || undefined,
+    final_price: toSafeNumber((safeOrder as Partial<Order>).final_price, toSafeNumber((safeOrder as Partial<Order>).price, 0)),
+    progress: toSafeNumber((safeOrder as Partial<Order>).progress, 0),
+    bonus_used: toSafeNumber((safeOrder as Partial<Order>).bonus_used, 0),
+    payment_scheme: ((safeOrder as Partial<Order>).payment_scheme === 'half' || (safeOrder as Partial<Order>).payment_scheme === 'full')
+      ? (safeOrder as Partial<Order>).payment_scheme
+      : null,
+    revision_count: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).revision_count, 0))),
+    completed_at: toSafeString((safeOrder as Partial<Order>).completed_at),
+    delivered_at: toSafeString((safeOrder as Partial<Order>).delivered_at),
+    fullname: toSafeString((safeOrder as Partial<Order>).fullname) || undefined,
+    username: toSafeString((safeOrder as Partial<Order>).username),
+    telegram_id: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).telegram_id, 0))) || undefined,
+    review_submitted: toSafeBoolean((safeOrder as Partial<Order>).review_submitted),
+    is_archived: toSafeBoolean((safeOrder as Partial<Order>).is_archived),
+  }
+}
+
 function parseDateSafe(dateString: string | null | undefined): Date | null {
   if (!dateString || dateString.trim() === '') return null
   const date = new Date(dateString)
@@ -287,13 +376,16 @@ function getStatusMeta(status: string): StatusMeta {
 }
 
 function getDisplayTitle(order: Order): string {
-  return order.topic?.trim() || order.subject?.trim() || order.work_type_label || `Заказ #${order.id}`
+  return toSafeString(order.topic) || toSafeString(order.subject) || toSafeString(order.work_type_label) || `Заказ #${order.id}`
 }
 
 function getDisplaySubtitle(order: Order): string {
+  const topic = toSafeString(order.topic)
+  const subject = toSafeString(order.subject)
+
   const parts = [
-    order.topic?.trim() && order.subject?.trim() && order.topic.trim() !== order.subject.trim() ? order.subject.trim() : null,
-    order.work_type_label || null,
+    topic && subject && topic !== subject ? subject : null,
+    toSafeString(order.work_type_label),
   ].filter(Boolean)
 
   return parts.join(' • ') || `Заказ #${order.id}`
@@ -321,7 +413,10 @@ function compareOrders(a: Order, b: Order): number {
     return deadlineA - deadlineB
   }
 
-  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  const createdAtA = parseDateSafe(a.created_at)?.getTime() ?? 0
+  const createdAtB = parseDateSafe(b.created_at)?.getTime() ?? 0
+
+  return createdAtB - createdAtA
 }
 
 function getSectionedOrders(orders: Order[], filter: FilterType, query: string) {
@@ -1095,13 +1190,18 @@ export function OrdersPage({ orders }: Props) {
   const [filter, setFilter] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const nonArchivedOrders = useMemo(
-    () => orders.filter(order => !order.is_archived).sort(compareOrders),
+  const normalizedOrders = useMemo(
+    () => (Array.isArray(orders) ? orders : []).map((order, index) => normalizeOrder(order, index)),
     [orders]
   )
 
+  const nonArchivedOrders = useMemo(
+    () => normalizedOrders.filter(order => !order.is_archived).sort(compareOrders),
+    [normalizedOrders]
+  )
+
   const stats = useMemo(() => {
-    const archived = orders.filter(order => order.is_archived)
+    const archived = normalizedOrders.filter(order => order.is_archived)
     const action = nonArchivedOrders.filter(order => getStatusMeta(order.status).needsAction)
     const active = nonArchivedOrders.filter(order => isActiveStatus(order.status))
     const completed = nonArchivedOrders.filter(order => order.status === 'completed')
@@ -1120,7 +1220,7 @@ export function OrdersPage({ orders }: Props) {
       archived: archived.length,
       totalValue,
     }
-  }, [orders, nonArchivedOrders])
+  }, [normalizedOrders, nonArchivedOrders])
 
   const payableOrders = useMemo(
     () => nonArchivedOrders.filter(order => ['confirmed', 'waiting_payment'].includes(order.status) && getRemainingAmount(order) > 0),
@@ -1151,9 +1251,9 @@ export function OrdersPage({ orders }: Props) {
       .filter((order) => {
         if (!normalizedQuery) return true
         return [
-          order.subject,
-          order.topic,
-          order.work_type_label,
+          toSafeString(order.subject),
+          toSafeString(order.topic),
+          toSafeString(order.work_type_label),
           String(order.id),
         ].some(value => value?.toLowerCase().includes(normalizedQuery))
       })
@@ -1162,19 +1262,19 @@ export function OrdersPage({ orders }: Props) {
   const archivedOrders = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
 
-    return orders
+    return normalizedOrders
       .filter(order => order.is_archived)
       .sort(compareOrders)
       .filter((order) => {
         if (!normalizedQuery) return true
         return [
-          order.subject,
-          order.topic,
-          order.work_type_label,
+          toSafeString(order.subject),
+          toSafeString(order.topic),
+          toSafeString(order.work_type_label),
           String(order.id),
         ].some(value => value?.toLowerCase().includes(normalizedQuery))
       })
-  }, [orders, searchQuery])
+  }, [normalizedOrders, searchQuery])
 
   const visibleOrders = filter === 'archived' ? archivedOrders : filteredOrders
   const sections = getSectionedOrders(visibleOrders, filter, searchQuery)
@@ -1197,6 +1297,7 @@ export function OrdersPage({ orders }: Props) {
   }
 
   const handleOpenOrder = (order: Order, path?: string) => {
+    if (!order?.id) return
     haptic('light')
     navigate(path || `/order/${order.id}`)
   }
