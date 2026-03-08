@@ -93,6 +93,16 @@ import { useWebSocketContext } from '../hooks/useWebSocket'
 import { useModalRegistration } from '../contexts/NavigationContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { useToast } from '../components/ui/Toast'
+import { SectionErrorBoundary } from '../components/ui/SectionErrorBoundary'
+import {
+  formatOrderDeadlineRu,
+  formatOrderTimelineDateSafe,
+  getOrderHeadlineSafe,
+  getOrderSublineSafe,
+  normalizeOrder,
+  ORDER_WORK_TYPE_LABELS,
+  parseOrderDateSafe,
+} from '../lib/orderView'
 import homeStyles from './HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -187,18 +197,6 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   rejected: { label: 'Отклонён', color: DS.colors.error, bgColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.24)', icon: XCircle, step: -1 },
 }
 
-const WORK_TYPE_LABELS: Record<string, string> = {
-  masters: 'Магистерская',
-  diploma: 'Дипломная',
-  coursework: 'Курсовая',
-  essay: 'Эссе',
-  report: 'Реферат',
-  control: 'Контрольная',
-  presentation: 'Презентация',
-  practice: 'Практика',
-  other: 'Работа',
-}
-
 const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
   masters: Award,
   diploma: FileCheck,
@@ -211,23 +209,6 @@ const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
   photo_task: Image,
   other: FileText,
 }
-
-const KNOWN_ORDER_STATUSES = new Set<OrderStatus>([
-  'draft',
-  'pending',
-  'waiting_estimation',
-  'waiting_payment',
-  'verification_pending',
-  'confirmed',
-  'paid',
-  'paid_full',
-  'in_progress',
-  'review',
-  'revision',
-  'completed',
-  'cancelled',
-  'rejected',
-])
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              UTILITIES
@@ -265,64 +246,33 @@ async function copyTextSafely(text: string): Promise<boolean> {
   }
 }
 
-// Format deadline to Russian
-const formatDeadlineRu = (deadline: string): string => {
-  if (!deadline) return ''
+const normalizeOrderForView = (order: Order): Order => normalizeOrder(order)
 
-  const lower = deadline.toLowerCase().trim()
-
-  // Handle common English words
-  if (lower === 'today' || lower === 'сегодня') return 'Сегодня'
-  if (lower === 'tomorrow' || lower === 'завтра') return 'Завтра'
-  if (lower === 'yesterday' || lower === 'вчера') return 'Вчера'
-  if (lower === '3days') return '2-3 дня'
-  if (lower === 'week') return 'Неделя'
-  if (lower === '2weeks') return '2 недели'
-  if (lower === 'month') return 'Месяц+'
-
-  // Try to parse as date
-  const date = new Date(deadline)
-  if (!isNaN(date.getTime())) {
-    return date.toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-    })
-  }
-
-  // Return as-is if can't parse
-  return deadline
-}
-
-const getOrderHeadline = (order: Order): string =>
-  order.topic?.trim() || order.subject?.trim() || 'Тема уточняется в заявке'
-
-const getOrderSubline = (order: Order): string => {
-  const parts: string[] = []
-
-  if (order.work_type_label) {
-    parts.push(order.work_type_label)
-  }
-
-  if (order.subject?.trim() && order.subject.trim() !== getOrderHeadline(order)) {
-    parts.push(`Предмет: ${order.subject.trim()}`)
-  }
-
-  return parts.join(' • ') || 'Все детали можно уточнить в чате заказа'
-}
-
-const normalizeOrderForView = (order: Order): Order => ({
-  ...order,
-  status: KNOWN_ORDER_STATUSES.has(order.status) ? order.status : 'pending',
-  work_type: order.work_type || 'other',
-  work_type_label: order.work_type_label || WORK_TYPE_LABELS[order.work_type] || 'Заказ',
-  created_at: order.created_at || '',
-})
-
-const formatTimelineDate = (value?: string | null): string | undefined => {
-  if (!value) return undefined
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return undefined
-  return parsed.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+function SectionFallbackCard({
+  title,
+  message,
+}: {
+  title: string
+  message: string
+}) {
+  return (
+    <div
+      style={{
+        margin: `0 ${DS.space.lg}px ${DS.space.lg}px`,
+        padding: DS.space.lg,
+        borderRadius: DS.radius.xl,
+        background: DS.colors.bgCard,
+        border: `1px solid ${DS.colors.border}`,
+      }}
+    >
+      <div style={{ fontSize: DS.fontSize.lg, fontWeight: 700, color: DS.colors.textPrimary, marginBottom: 8 }}>
+        {title}
+      </div>
+      <div style={{ fontSize: DS.fontSize.sm, lineHeight: 1.6, color: DS.colors.textSecondary }}>
+        {message}
+      </div>
+    </div>
+  )
 }
 
 // Countdown hook
@@ -340,12 +290,15 @@ function usePaymentCountdown(deadline: string | null, hoursLimit = 24): Countdow
   const [result, setResult] = useState<CountdownResult | null>(null)
 
   useEffect(() => {
-    if (!deadline) return
+    if (!deadline) {
+      setResult(null)
+      return
+    }
 
     const calculate = (): CountdownResult | null => {
       // Таймер строим от момента последнего обновления заказа в платёжном статусе.
-      const target = new Date(deadline)
-      if (isNaN(target.getTime())) return null
+      const target = parseOrderDateSafe(deadline)
+      if (!target) return null
 
       const paymentDeadline = new Date(target.getTime() + hoursLimit * 60 * 60 * 1000)
       const diff = paymentDeadline.getTime() - Date.now()
@@ -408,7 +361,7 @@ const OrderAppBar = memo(function OrderAppBar({
   const [menuOpen, setMenuOpen] = useState(false)
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const StatusIcon = statusConfig.icon
-  const workTypeLabel = order.work_type_label || WORK_TYPE_LABELS[order.work_type] || 'Заказ'
+  const workTypeLabel = order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || 'Заказ'
 
   const menuItems = [
     { icon: Copy, label: 'Скопировать номер', onClick: () => { onCopyOrderId(); setMenuOpen(false) } },
@@ -620,9 +573,9 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const StatusIcon = statusConfig.icon
   const WorkTypeIcon = WORK_TYPE_ICONS[order.work_type] || WORK_TYPE_ICONS.other
-  const workTypeLabel = order.work_type_label || WORK_TYPE_LABELS[order.work_type] || 'Заказ'
-  const headline = getOrderHeadline(order)
-  const subline = getOrderSubline(order)
+  const workTypeLabel = order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || 'Заказ'
+  const headline = getOrderHeadlineSafe(order)
+  const subline = getOrderSublineSafe(order)
   const totalPrice = order.final_price || order.price || 0
   const remainingAmount = Math.max(totalPrice - (order.paid_amount || 0), 0)
 
@@ -733,7 +686,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
         {order.deadline && (
           <div className={homeStyles.heroProofItem}>
             <Clock size={15} color="#d4af37" />
-            Срок: {formatDeadlineRu(order.deadline)}
+            Срок: {formatOrderDeadlineRu(order.deadline)}
           </div>
         )}
         {totalPrice > 0 && (
@@ -3196,7 +3149,7 @@ const getTimelineSteps = (order: Order): TimelineStep[] => {
       label: 'Заказ создан',
       icon: Package,
       status: statusStep >= 0 ? 'completed' : 'upcoming',
-      date: formatTimelineDate(order.created_at),
+      date: formatOrderTimelineDateSafe(order.created_at),
     },
     {
       id: 'estimated',
@@ -3581,15 +3534,22 @@ export function OrderDetailPageV8() {
 
     setError(null)
     try {
+      setPaymentInfo(null)
       const data = await fetchOrderDetail(orderId)
-      setOrder(normalizeOrderForView(data))
+      const normalizedOrder = normalizeOrderForView(data)
+
+      if (!normalizedOrder.id) {
+        throw new Error('Не удалось прочитать данные заказа')
+      }
+
+      setOrder(normalizedOrder)
 
       // Load payment info if needed
       if (
-        data.final_price &&
-        data.final_price > 0 &&
-        (data.paid_amount || 0) < data.final_price &&
-        ['confirmed', 'waiting_payment', 'paid'].includes(data.status)
+        normalizedOrder.final_price &&
+        normalizedOrder.final_price > 0 &&
+        (normalizedOrder.paid_amount || 0) < normalizedOrder.final_price &&
+        ['confirmed', 'waiting_payment', 'paid'].includes(normalizedOrder.status)
       ) {
         try {
           const payment = await fetchPaymentInfo(orderId)
@@ -3599,6 +3559,11 @@ export function OrderDetailPageV8() {
         }
       }
     } catch (err) {
+      console.error('[OrderDetailPageV8] loadOrder failed', {
+        orderId,
+        route: `/order/${orderId}`,
+        error: err,
+      })
       setError(err instanceof Error ? err.message : 'Ошибка загрузки')
     } finally {
       setLoading(false)
@@ -3840,74 +3805,160 @@ export function OrderDetailPageV8() {
     )
   }
 
+  const sectionResetKey = `${order.id}:${order.status}:${order.updated_at || order.created_at || 'static'}`
+  const sectionContext = {
+    orderId: order.id,
+    status: order.status,
+    route: `/order/${order.id}`,
+  }
+
   return (
     <div className="premium-club-page" style={{ paddingBottom: 100 }}>
-      {/* AppBar */}
-      <OrderAppBar
-        order={order}
-        onBack={handleBack}
-        onCopyOrderId={handleCopyOrderId}
-        onContactManager={handleContactManager}
-        onOpenFAQ={handleOpenFAQ}
-        onArchive={handleArchive}
-      />
+      <SectionErrorBoundary
+        sectionName="order-app-bar"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={<SectionFallbackCard title={`Заказ #${order.id}`} message="Шапка заказа временно недоступна. Остальные действия ниже работают." />}
+      >
+        <OrderAppBar
+          order={order}
+          onBack={handleBack}
+          onCopyOrderId={handleCopyOrderId}
+          onContactManager={handleContactManager}
+          onOpenFAQ={handleOpenFAQ}
+          onArchive={handleArchive}
+        />
+      </SectionErrorBoundary>
 
-      {/* Hero Summary */}
-      <HeroSummary order={order} countdown={countdown} />
+      <SectionErrorBoundary
+        sectionName="order-hero"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={<SectionFallbackCard title="Карточка заказа" message="Основные детали временно не отрисовались. Попробуйте открыть заказ ещё раз через пару секунд." />}
+      >
+        <HeroSummary order={order} countdown={countdown} />
+      </SectionErrorBoundary>
 
       {/* Verification Pending Banner */}
-      {isVerificationPending && <VerificationPendingBanner />}
+      {isVerificationPending && (
+        <SectionErrorBoundary
+          sectionName="order-verification-banner"
+          resetKey={sectionResetKey}
+          context={sectionContext}
+          fallback={null}
+        >
+          <VerificationPendingBanner />
+        </SectionErrorBoundary>
+      )}
 
       {/* Trust Section - показываем для платёжного flow */}
-      {(isPaymentFlow || isVerificationPending) && <TrustSection isPaymentFlow={isPaymentFlow} />}
+      {(isPaymentFlow || isVerificationPending) && (
+        <SectionErrorBoundary
+          sectionName="order-trust"
+          resetKey={sectionResetKey}
+          context={sectionContext}
+          fallback={null}
+        >
+          <TrustSection isPaymentFlow={isPaymentFlow} />
+        </SectionErrorBoundary>
+      )}
 
       {/* Files Section */}
-      <FilesSection
-        order={order}
-        onDownloadFile={handleDownloadFile}
-        onDownloadAll={handleDownloadAllFiles}
-      />
+      <SectionErrorBoundary
+        sectionName="order-files"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={null}
+      >
+        <FilesSection
+          order={order}
+          onDownloadFile={handleDownloadFile}
+          onDownloadAll={handleDownloadAllFiles}
+        />
+      </SectionErrorBoundary>
 
       {/* Support Card */}
-      <SupportCard onOpenChat={handleOpenChat} />
+      <SectionErrorBoundary
+        sectionName="order-support"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={null}
+      >
+        <SupportCard onOpenChat={handleOpenChat} />
+      </SectionErrorBoundary>
 
       {/* Guarantees Row */}
-      <GuaranteesRow />
+      <SectionErrorBoundary
+        sectionName="order-guarantees"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={null}
+      >
+        <GuaranteesRow />
+      </SectionErrorBoundary>
 
       {/* Order Timeline */}
-      <OrderTimeline order={order} />
+      <SectionErrorBoundary
+        sectionName="order-timeline"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={<SectionFallbackCard title="Ход выполнения" message="История этапов временно недоступна, но сам заказ остаётся доступен." />}
+      >
+        <OrderTimeline order={order} />
+      </SectionErrorBoundary>
 
       {/* Payment Sheet */}
-      <PaymentSheet
-        isOpen={paymentSheetOpen}
-        onClose={() => setPaymentSheetOpen(false)}
-        order={order}
-        paymentInfo={paymentInfo}
-        paymentMethod={paymentMethod}
-        paymentScheme={paymentScheme}
-        setPaymentMethod={setPaymentMethod}
-        setPaymentScheme={setPaymentScheme}
-        onConfirmPayment={handleOpenConfirmModal}
-      />
+      <SectionErrorBoundary
+        sectionName="order-payment-sheet"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={null}
+      >
+        <PaymentSheet
+          isOpen={paymentSheetOpen}
+          onClose={() => setPaymentSheetOpen(false)}
+          order={order}
+          paymentInfo={paymentInfo}
+          paymentMethod={paymentMethod}
+          paymentScheme={paymentScheme}
+          setPaymentMethod={setPaymentMethod}
+          setPaymentScheme={setPaymentScheme}
+          onConfirmPayment={handleOpenConfirmModal}
+        />
+      </SectionErrorBoundary>
 
       {/* Sticky Action Bar */}
-      <StickyActionBar
-        order={order}
-        paymentScheme={paymentScheme}
-        paymentExpired={Boolean(paymentCountdown && paymentCountdown.urgency === 'expired')}
-        onPaymentClick={handlePaymentClick}
-        onContactManager={handleContactManager}
-        onDownloadFiles={handleDownloadFiles}
-      />
+      <SectionErrorBoundary
+        sectionName="order-sticky-action"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={null}
+      >
+        <StickyActionBar
+          order={order}
+          paymentScheme={paymentScheme}
+          paymentExpired={Boolean(paymentCountdown && paymentCountdown.urgency === 'expired')}
+          onPaymentClick={handlePaymentClick}
+          onContactManager={handleContactManager}
+          onDownloadFiles={handleDownloadFiles}
+        />
+      </SectionErrorBoundary>
 
       {/* Confirm Payment Modal */}
-      <ConfirmPaymentModal
-        isOpen={confirmModalOpen}
-        onClose={() => setConfirmModalOpen(false)}
-        order={order}
-        paymentAmount={todayAmount}
-        onSubmit={handleSubmitPaymentConfirmation}
-      />
+      <SectionErrorBoundary
+        sectionName="order-confirm-modal"
+        resetKey={sectionResetKey}
+        context={sectionContext}
+        fallback={null}
+      >
+        <ConfirmPaymentModal
+          isOpen={confirmModalOpen}
+          onClose={() => setConfirmModalOpen(false)}
+          order={order}
+          paymentAmount={todayAmount}
+          onSubmit={handleSubmitPaymentConfirmation}
+        />
+      </SectionErrorBoundary>
     </div>
   )
 }

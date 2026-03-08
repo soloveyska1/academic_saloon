@@ -1,9 +1,33 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models.levels import RankLevel, LoyaltyLevel
-from database.models.orders import Order
+from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS
 from .schemas import RankInfo, LoyaltyInfo, OrderResponse
 from .cache import get_cached_rank_levels, get_cached_loyalty_levels
+
+KNOWN_ORDER_STATUSES = {status.value for status in OrderStatus}
+KNOWN_WORK_TYPES = {work_type.value for work_type in WorkType}
+
+
+def _normalize_text(value) -> str | None:
+    if isinstance(value, str):
+        cleaned = value.strip()
+        return cleaned or None
+    return None
+
+
+def _normalize_enum_value(value, valid_values: set[str], fallback: str) -> str:
+    raw = value.value if hasattr(value, 'value') else value
+    if raw is None:
+        return fallback
+    normalized = str(raw).strip().lower()
+    return normalized if normalized in valid_values else fallback
+
+
+def _normalize_optional_iso(value) -> str | None:
+    if value is None or not hasattr(value, 'isoformat'):
+        return None
+    return value.isoformat()
 
 async def get_rank_levels(session: AsyncSession) -> list[RankLevel]:
     """Get rank levels with caching (5 minute TTL)"""
@@ -77,31 +101,44 @@ def get_loyalty_info(orders_count: int, loyalty_levels: list[LoyaltyLevel]) -> L
 
 def order_to_response(order: Order) -> OrderResponse:
     """Convert Order model to response schema"""
-    final_price = order.final_price if order.final_price is not None else (order.price or 0)
+    normalized_status = _normalize_enum_value(getattr(order, 'status', None), KNOWN_ORDER_STATUSES, OrderStatus.PENDING.value)
+    normalized_work_type = _normalize_enum_value(getattr(order, 'work_type', None), KNOWN_WORK_TYPES, WorkType.OTHER.value)
+    final_price = order.final_price if getattr(order, 'final_price', None) is not None else (order.price or 0)
+
+    try:
+        work_type_enum = WorkType(normalized_work_type)
+        default_work_type_label = WORK_TYPE_LABELS.get(work_type_enum, 'Заказ')
+    except ValueError:
+        default_work_type_label = 'Заказ'
+
+    payment_scheme_raw = getattr(order, 'payment_scheme', None)
+    payment_scheme = payment_scheme_raw.value if hasattr(payment_scheme_raw, 'value') else payment_scheme_raw
+    if payment_scheme not in {'full', 'half'}:
+        payment_scheme = None
 
     return OrderResponse(
         id=order.id,
-        status=order.status.value if hasattr(order.status, 'value') else str(order.status),
-        work_type=order.work_type.value if hasattr(order.work_type, 'value') else str(order.work_type),
-        work_type_label=order.work_type_label,
-        subject=order.subject,
-        topic=order.topic,
-        deadline=order.deadline,
+        status=normalized_status,
+        work_type=normalized_work_type,
+        work_type_label=_normalize_text(getattr(order, 'work_type_label', None)) or default_work_type_label,
+        subject=_normalize_text(getattr(order, 'subject', None)),
+        topic=_normalize_text(getattr(order, 'topic', None)),
+        deadline=_normalize_text(getattr(order, 'deadline', None)),
         price=round(float(order.price or 0), 2),
         final_price=round(float(final_price or 0), 2),
         paid_amount=round(float(order.paid_amount or 0), 2),
         discount=round(float(order.discount or 0), 2),
-        promo_code=getattr(order, 'promo_code', None),
+        promo_code=_normalize_text(getattr(order, 'promo_code', None)),
         promo_discount=round(float(getattr(order, 'promo_discount', 0) or 0), 2),
         bonus_used=round(float(order.bonus_used or 0), 2),
-        progress=order.progress or 0,
-        payment_scheme=order.payment_scheme,  # full / half
-        files_url=getattr(order, 'files_url', None),  # Work files URL (Yandex.Disk)
+        progress=max(0, min(100, int(order.progress or 0))),
+        payment_scheme=payment_scheme,
+        files_url=_normalize_text(getattr(order, 'files_url', None)),
         review_submitted=getattr(order, 'review_submitted', False),  # Whether review was submitted
         is_archived=getattr(order, 'is_archived', False),  # Whether order is archived
         revision_count=getattr(order, 'revision_count', 0) or 0,
         created_at=order.created_at.isoformat() if order.created_at else "",
-        updated_at=order.updated_at.isoformat() if getattr(order, 'updated_at', None) else None,
-        completed_at=order.completed_at.isoformat() if order.completed_at else None,
-        delivered_at=order.delivered_at.isoformat() if getattr(order, 'delivered_at', None) else None
+        updated_at=_normalize_optional_iso(getattr(order, 'updated_at', None)),
+        completed_at=_normalize_optional_iso(getattr(order, 'completed_at', None)),
+        delivered_at=_normalize_optional_iso(getattr(order, 'delivered_at', None))
     )

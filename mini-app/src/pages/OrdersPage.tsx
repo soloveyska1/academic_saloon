@@ -29,6 +29,13 @@ import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { useCapability } from '../contexts/DeviceCapabilityContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
+import {
+  getOrderDisplaySubtitle,
+  getOrderDisplayTitle,
+  normalizeOrders,
+  parseOrderDateSafe,
+  toSafeString,
+} from '../lib/orderView'
 
 interface Props {
   orders: Order[]
@@ -48,8 +55,6 @@ interface StatusMeta {
   step: number
   actionLabel?: string
 }
-
-type OrderLike = Partial<Order> | null | undefined
 
 const WORK_TYPE_ICONS: Record<string, LucideIcon> = {
   masters: GraduationCap,
@@ -231,96 +236,15 @@ const prefersReducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false
 
-const KNOWN_ORDER_STATUSES = new Set(Object.keys(STATUS_META))
-
-function toSafeString(value: unknown): string | null {
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value)
-  }
-
-  return null
-}
-
-function toSafeNumber(value: unknown, fallback = 0): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value
-  }
-
-  if (typeof value === 'string') {
-    const normalized = Number(value.replace(',', '.'))
-    if (Number.isFinite(normalized)) {
-      return normalized
-    }
-  }
-
-  return fallback
-}
-
-function toSafeBoolean(value: unknown): boolean {
-  return value === true
-}
-
-function normalizeOrder(order: OrderLike, index = 0): Order {
-  const safeOrder = order && typeof order === 'object' ? order : {}
-  const safeId = Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).id, index + 1)))
-  const statusValue = toSafeString((safeOrder as Partial<Order>).status)?.toLowerCase() || 'pending'
-  const workTypeValue = toSafeString((safeOrder as Partial<Order>).work_type)?.toLowerCase() || 'other'
-
-  return {
-    id: safeId,
-    user_id: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).user_id, 0))),
-    subject: toSafeString((safeOrder as Partial<Order>).subject),
-    topic: toSafeString((safeOrder as Partial<Order>).topic),
-    deadline: toSafeString((safeOrder as Partial<Order>).deadline),
-    status: (KNOWN_ORDER_STATUSES.has(statusValue) ? statusValue : 'pending') as Order['status'],
-    price: toSafeNumber((safeOrder as Partial<Order>).price, 0),
-    paid_amount: toSafeNumber((safeOrder as Partial<Order>).paid_amount, 0),
-    discount: toSafeNumber((safeOrder as Partial<Order>).discount, 0),
-    promo_code: toSafeString((safeOrder as Partial<Order>).promo_code),
-    promo_discount: toSafeNumber((safeOrder as Partial<Order>).promo_discount, 0),
-    created_at: toSafeString((safeOrder as Partial<Order>).created_at) || new Date(0).toISOString(),
-    updated_at: toSafeString((safeOrder as Partial<Order>).updated_at),
-    files_url: toSafeString((safeOrder as Partial<Order>).files_url),
-    description: toSafeString((safeOrder as Partial<Order>).description),
-    work_type: workTypeValue,
-    work_type_label: toSafeString((safeOrder as Partial<Order>).work_type_label) || undefined,
-    final_price: toSafeNumber((safeOrder as Partial<Order>).final_price, toSafeNumber((safeOrder as Partial<Order>).price, 0)),
-    progress: toSafeNumber((safeOrder as Partial<Order>).progress, 0),
-    bonus_used: toSafeNumber((safeOrder as Partial<Order>).bonus_used, 0),
-    payment_scheme: ((safeOrder as Partial<Order>).payment_scheme === 'half' || (safeOrder as Partial<Order>).payment_scheme === 'full')
-      ? (safeOrder as Partial<Order>).payment_scheme
-      : null,
-    revision_count: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).revision_count, 0))),
-    completed_at: toSafeString((safeOrder as Partial<Order>).completed_at),
-    delivered_at: toSafeString((safeOrder as Partial<Order>).delivered_at),
-    fullname: toSafeString((safeOrder as Partial<Order>).fullname) || undefined,
-    username: toSafeString((safeOrder as Partial<Order>).username),
-    telegram_id: Math.max(0, Math.trunc(toSafeNumber((safeOrder as Partial<Order>).telegram_id, 0))) || undefined,
-    review_submitted: toSafeBoolean((safeOrder as Partial<Order>).review_submitted),
-    is_archived: toSafeBoolean((safeOrder as Partial<Order>).is_archived),
-  }
-}
-
-function parseDateSafe(dateString: string | null | undefined): Date | null {
-  if (!dateString || dateString.trim() === '') return null
-  const date = new Date(dateString)
-  return Number.isNaN(date.getTime()) ? null : date
-}
-
 function getDaysUntilDeadline(deadline: string | null | undefined): number | null {
-  const date = parseDateSafe(deadline)
+  const date = parseOrderDateSafe(deadline)
   if (!date) return null
   const now = new Date()
   return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 function getHoursUntilDeadline(deadline: string | null | undefined): number | null {
-  const date = parseDateSafe(deadline)
+  const date = parseOrderDateSafe(deadline)
   if (!date) return null
   const now = new Date()
   return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60))
@@ -335,7 +259,7 @@ function formatDeadline(deadline: string | null | undefined): string {
   if (hours !== null && hours <= 24) return `${hours} ч`
   if (days <= 7) return `${days} дн`
 
-  const date = parseDateSafe(deadline)
+  const date = parseOrderDateSafe(deadline)
   if (!date) return 'Без срока'
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
@@ -375,22 +299,6 @@ function getStatusMeta(status: string): StatusMeta {
   return STATUS_META[status] || STATUS_META.pending
 }
 
-function getDisplayTitle(order: Order): string {
-  return toSafeString(order.topic) || toSafeString(order.subject) || toSafeString(order.work_type_label) || `Заказ #${order.id}`
-}
-
-function getDisplaySubtitle(order: Order): string {
-  const topic = toSafeString(order.topic)
-  const subject = toSafeString(order.subject)
-
-  const parts = [
-    topic && subject && topic !== subject ? subject : null,
-    toSafeString(order.work_type_label),
-  ].filter(Boolean)
-
-  return parts.join(' • ') || `Заказ #${order.id}`
-}
-
 function getPrimaryActionPath(order: Order): string {
   if (['confirmed', 'waiting_payment'].includes(order.status)) {
     return `/order/${order.id}?action=pay`
@@ -413,8 +321,8 @@ function compareOrders(a: Order, b: Order): number {
     return deadlineA - deadlineB
   }
 
-  const createdAtA = parseDateSafe(a.created_at)?.getTime() ?? 0
-  const createdAtB = parseDateSafe(b.created_at)?.getTime() ?? 0
+  const createdAtA = parseOrderDateSafe(a.created_at)?.getTime() ?? 0
+  const createdAtB = parseOrderDateSafe(b.created_at)?.getTime() ?? 0
 
   return createdAtB - createdAtA
 }
@@ -902,7 +810,7 @@ function ActionSpotlight({
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}>
-            {getDisplayTitle(order)}
+            {getOrderDisplayTitle(order)}
           </div>
           <div style={{
             fontSize: 13,
@@ -1050,7 +958,7 @@ function OrderCard({
             WebkitLineClamp: 2,
             overflow: 'hidden',
           }}>
-            {getDisplayTitle(order)}
+            {getOrderDisplayTitle(order)}
           </div>
 
           <div style={{
@@ -1063,7 +971,7 @@ function OrderCard({
             WebkitLineClamp: 1,
             overflow: 'hidden',
           }}>
-            {getDisplaySubtitle(order)}
+            {getOrderDisplaySubtitle(order)}
           </div>
 
           <div style={{
@@ -1191,7 +1099,7 @@ export function OrdersPage({ orders }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
 
   const normalizedOrders = useMemo(
-    () => (Array.isArray(orders) ? orders : []).map((order, index) => normalizeOrder(order, index)),
+    () => normalizeOrders(orders),
     [orders]
   )
 
