@@ -2,6 +2,10 @@ import type { Order, OrderStatus } from '../types'
 
 export type OrderLike = Partial<Order> | null | undefined
 
+/** Strip emoji characters from API labels (e.g. "🎩 Магистерская" → "Магистерская") */
+export const stripEmoji = (text: string): string =>
+  text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim()
+
 export const ORDER_WORK_TYPE_LABELS: Record<string, string> = {
   masters: 'Магистерская',
   diploma: 'Дипломная',
@@ -145,7 +149,7 @@ export function normalizeOrder(order: OrderLike, index = 0): Order {
     files_url: toSafeString((safeOrder as Partial<Order>).files_url),
     description: toSafeString((safeOrder as Partial<Order>).description),
     work_type: normalizedWorkType,
-    work_type_label: toSafeString((safeOrder as Partial<Order>).work_type_label) || ORDER_WORK_TYPE_LABELS[normalizedWorkType],
+    work_type_label: stripEmoji(toSafeString((safeOrder as Partial<Order>).work_type_label) || ORDER_WORK_TYPE_LABELS[normalizedWorkType]),
     final_price: toSafeNumber(
       (safeOrder as Partial<Order>).final_price,
       toSafeNumber((safeOrder as Partial<Order>).price, 0)
@@ -173,16 +177,18 @@ export function normalizeOrders(orders: OrderLike[] | null | undefined): Order[]
 }
 
 export function getOrderDisplayTitle(order: Order): string {
-  return toSafeString(order.topic) || toSafeString(order.subject) || toSafeString(order.work_type_label) || `Заказ #${order.id}`
+  const wtl = toSafeString(order.work_type_label)
+  return toSafeString(order.topic) || toSafeString(order.subject) || (wtl ? stripEmoji(wtl) : null) || `Заказ #${order.id}`
 }
 
 export function getOrderDisplaySubtitle(order: Order): string {
   const topic = toSafeString(order.topic)
   const subject = toSafeString(order.subject)
+  const wtl = toSafeString(order.work_type_label)
 
   const parts = [
     topic && subject && topic !== subject ? subject : null,
-    toSafeString(order.work_type_label),
+    wtl ? stripEmoji(wtl) : null,
   ].filter(Boolean)
 
   return parts.join(' • ') || `Заказ #${order.id}`
@@ -194,12 +200,12 @@ export function getOrderHeadlineSafe(order: Order): string {
 
 export function getOrderSublineSafe(order: Order): string {
   const parts: string[] = []
-  const workTypeLabel = toSafeString(order.work_type_label)
+  const wtl = toSafeString(order.work_type_label)
   const subject = toSafeString(order.subject)
   const headline = getOrderHeadlineSafe(order)
 
-  if (workTypeLabel) {
-    parts.push(workTypeLabel)
+  if (wtl) {
+    parts.push(stripEmoji(wtl))
   }
 
   if (subject && subject !== headline) {

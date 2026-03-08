@@ -215,6 +215,10 @@ const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
 //                              UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Strip emoji from labels (API sends "🎩 Магистерская" etc.)
+const stripEmoji = (text: string): string =>
+  text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim()
+
 const formatPrice = (amount: number | undefined | null): string => {
   if (amount == null || typeof amount !== 'number' || !Number.isFinite(amount)) return '0'
   return amount.toLocaleString('ru-RU')
@@ -360,9 +364,6 @@ const OrderAppBar = memo(function OrderAppBar({
   onArchive,
 }: OrderAppBarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
-  const StatusIcon = statusConfig.icon
-  const workTypeLabel = order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || 'Заказ'
 
   const menuItems = [
     { icon: Copy, label: 'Скопировать номер', onClick: () => { onCopyOrderId(); setMenuOpen(false) } },
@@ -373,18 +374,17 @@ const OrderAppBar = memo(function OrderAppBar({
 
   return (
     <>
-      {/* Main AppBar */}
+      {/* Main AppBar — minimal, just order number */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: DS.space.md,
-          padding: `12px ${DS.space.lg}px`,
-          background: 'linear-gradient(180deg, rgba(13,13,18,0.96), rgba(10,10,14,0.92))',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          padding: `14px ${DS.space.lg}px`,
           position: 'sticky',
           top: 0,
           zIndex: 100,
+          background: 'rgba(5,5,7,0.92)',
           backdropFilter: 'blur(18px)',
           WebkitBackdropFilter: 'blur(18px)',
         }}
@@ -394,47 +394,26 @@ const OrderAppBar = memo(function OrderAppBar({
           whileTap={{ scale: 0.92 }}
           onClick={onBack}
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 16,
+            width: 40, height: 40, borderRadius: 14,
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', flexShrink: 0,
           }}
         >
-          <ArrowLeft size={20} color={DS.colors.textSecondary} />
+          <ArrowLeft size={18} color="rgba(255,255,255,0.55)" />
         </motion.button>
 
-        {/* Title + Order Number */}
+        {/* Just order number — no work type (shown in hero) */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'rgba(212,175,55,0.72)',
-              marginBottom: 4,
+              fontSize: 15, fontWeight: 700,
+              fontFamily: "'Manrope', sans-serif",
+              color: '#E8D5A3',
             }}
           >
             Заказ #{order.id}
-          </div>
-          <div
-            style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: DS.colors.textPrimary,
-              lineHeight: 1.25,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {workTypeLabel}
           </div>
         </div>
 
@@ -539,9 +518,14 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const paymentExpired = Boolean(isAwaitingPayment && countdown?.urgency === 'expired')
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const StatusIcon = statusConfig.icon
-  const workTypeLabel = order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || 'Заказ'
-  const headline = getOrderHeadlineSafe(order)
-  const subline = getOrderSublineSafe(order)
+  const workTypeRaw = order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || 'Заказ'
+  const workTypeLabel = stripEmoji(workTypeRaw)
+  const headline = stripEmoji(getOrderHeadlineSafe(order))
+
+  // Build subline WITHOUT work type (it's already in the status row)
+  const rawSubject = order.subject?.trim() || ''
+  const subject = stripEmoji(rawSubject)
+  const subline = subject && subject !== headline ? `Предмет: ${subject}` : ''
   const totalPrice = order.final_price || order.price || 0
   const remainingAmount = Math.max(totalPrice - (order.paid_amount || 0), 0)
 
