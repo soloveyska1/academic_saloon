@@ -1,38 +1,38 @@
-/* 🏛️ ELITE GOLD EDITION — "The Void & The Gold" */
-/* Design Philosophy: Unobtrusive Luxury, Deepest Black, Liquid Metal */
+/* Premium Dark UI — "Quiet Luxury" */
+/* Principle: ONE star element (hero), everything else deliberately quiet. */
+/* Subtraction > Addition. Whitespace = confidence. */
 
 .container {
-  padding: 16px;
+  padding: 20px;
+  padding-top: 12px;
   min-height: 100vh;
-  /* Complex entering animation sequence */
-  animation: pageEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pageEnter 0.4s ease-out forwards;
 }
 
 @keyframes pageEnter {
   0% {
     opacity: 0;
-    filter: blur(10px);
-    transform: scale(0.98);
+    transform: translateY(8px);
   }
 
   100% {
     opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
 
-/* ==================== GLOBAL UTILS FOR THIS PAGE ==================== */
+/* ==================== MATERIALS HIERARCHY ==================== */
 
-/* The "Void Glass" Material */
+/* Primary surface — ONLY for hero CTA card */
 .voidGlass {
-  background: rgba(9, 9, 11, 0.6);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  background: rgba(15, 13, 8, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(212, 175, 55, 0.1);
   box-shadow:
-    0 20px 40px -10px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 8px 24px -6px rgba(0, 0, 0, 0.4);
 }
 
 .primaryActionCard {
@@ -41,31 +41,30 @@
 
 .firstOrderActionCard {
   background:
-    radial-gradient(circle at 85% -10%, rgba(252, 246, 186, 0.18), transparent 35%),
-    radial-gradient(circle at 15% 110%, rgba(212, 175, 55, 0.12), transparent 40%),
-    linear-gradient(145deg, rgba(43, 31, 7, 0.94) 0%, rgba(15, 12, 5, 0.96) 40%, rgba(9, 9, 11, 0.98) 70%, rgba(20, 16, 6, 0.96) 100%);
-  border-color: rgba(212, 175, 55, 0.28) !important;
+    radial-gradient(circle at 80% -5%, rgba(212, 175, 55, 0.14), transparent 40%),
+    linear-gradient(165deg, rgba(30, 24, 10, 0.92) 0%, rgba(12, 10, 6, 0.96) 50%, rgba(9, 9, 11, 0.98) 100%);
+  border-color: rgba(212, 175, 55, 0.15) !important;
   box-shadow:
-    0 28px 56px -16px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(212, 175, 55, 0.06),
-    0 0 50px rgba(212, 175, 55, 0.08),
-    inset 0 1px 0 rgba(252, 246, 186, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 4px 8px -2px rgba(0, 0, 0, 0.3),
+    0 20px 40px -10px rgba(0, 0, 0, 0.5);
 }
 
 .returningOrderActionCard {
   background:
-    radial-gradient(circle at top right, rgba(212, 175, 55, 0.16), transparent 34%),
-    linear-gradient(145deg, rgba(14, 14, 17, 0.92) 0%, rgba(9, 9, 11, 0.95) 100%);
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.10), transparent 40%),
+    linear-gradient(165deg, rgba(14, 14, 17, 0.92) 0%, rgba(9, 9, 11, 0.95) 100%);
 }
 
 .primaryActionGlow {
   position: absolute;
-  inset: auto auto -32px -24px;
-  width: 200px;
-  height: 200px;
+  inset: auto auto -28px -20px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.06) 40%, transparent 68%);
-  filter: blur(14px);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.10) 0%, transparent 65%);
+  filter: blur(16px);
   pointer-events: none;
   z-index: 0;
 }
@@ -73,24 +72,14 @@
 .primaryActionShine {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 15%, transparent 40%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 30%);
   pointer-events: none;
   z-index: 0;
 }
 
+/* Kill the floating orb — distracting, not premium */
 .primaryActionOrb {
-  position: absolute;
-  top: -50px;
-  right: -28px;
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(252,246,186,0.2) 0%, rgba(212,175,55,0.08) 40%, transparent 70%);
-  filter: blur(12px);
-  opacity: 0.85;
-  animation: primaryOrbFloat 6s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .primaryActionArrow {
@@ -100,17 +89,18 @@
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #f5d061 0%, #d4af37 55%, #9c7721 100%);
-  border: 1px solid rgba(255, 245, 198, 0.18);
-  animation: primaryArrowPulse 1.8s ease-in-out infinite;
+  background: linear-gradient(180deg, #E8C84A 0%, #C9A436 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(201, 164, 54, 0.25);
+  animation: primaryArrowPulse 2.4s ease-in-out infinite;
 }
 
 .heroActionIcon {
   width: 52px;
   height: 52px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #f7d25c 0%, #d4af37 45%, #8e6e27 100%);
-  box-shadow: 0 14px 32px rgba(212, 175, 55, 0.28);
+  background: linear-gradient(180deg, #E8C84A 0%, #C9A436 100%);
+  box-shadow: 0 8px 20px rgba(201, 164, 54, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -130,8 +120,8 @@
   min-height: 38px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   color: #ececf0;
   font-family: 'Manrope', sans-serif;
   font-size: 12px;
@@ -144,19 +134,18 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  min-height: 64px;
+  min-height: 56px;
   padding: 12px 14px 12px 20px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.03) 100%);
-  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 16px;
+  background: rgba(212, 175, 55, 0.06);
+  border: 1px solid rgba(212, 175, 55, 0.15);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 12px 32px rgba(0, 0, 0, 0.28),
-    0 0 20px rgba(212, 175, 55, 0.05);
-  color: #faf7e3;
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.2);
+  color: #F0E6C8;
   font-family: 'Manrope', sans-serif;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.01em;
   text-align: left;
   cursor: pointer;
@@ -176,34 +165,16 @@
   0%,
   100% {
     transform: translateX(0);
-    box-shadow: 0 0 0 rgba(212, 175, 55, 0);
   }
 
   50% {
     transform: translateX(3px);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
   }
 }
 
-@keyframes primaryOrbFloat {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  50% {
-    transform: translate3d(-8px, 6px, 0) scale(1.06);
-  }
-}
-
-/* The "Liquid Gold" Accent */
+/* Static warm gold — NOT animated shimmer */
 .goldAccent {
-  background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%);
-  background-size: 200% auto;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shine 4s linear infinite;
+  color: #E8D5A3;
 }
 
 @keyframes shine {
@@ -224,8 +195,8 @@
 
 .avatarContainer {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   padding: 2px;
   display: flex;
@@ -233,27 +204,24 @@
   justify-content: center;
 }
 
-/* Spinning gold border ring */
+/* Static gold ring — no spinning */
 .avatarContainer::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0%, #d4af37 20%, transparent 40%);
-  animation: rotateBorder 4s linear infinite;
-  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.5) 0%, rgba(212, 175, 55, 0.15) 100%);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px));
   z-index: 1;
 }
 
-/* The actual image container inside the spinning ring, obscured by mask above so we need a sibling */
 .avatar {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  border: 2px solid rgba(212, 175, 55, 0.1);
+  border: none;
   overflow: hidden;
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
   position: relative;
   z-index: 2;
 }
@@ -273,35 +241,36 @@
   margin-left: 14px;
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .userName {
   font-family: 'Manrope', sans-serif;
-  font-weight: 700;
-  font-size: 17px;
-  color: #f2f2f2;
-  letter-spacing: 0.01em;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  font-weight: 800;
+  font-size: 20px;
+  color: #E8E8ED;
+  letter-spacing: -0.01em;
 }
 
 .userStatus {
-  font-family: 'Cinzel', serif;
+  font-family: 'Manrope', sans-serif;
   font-size: 11px;
-  color: #d4af37;
-  letter-spacing: 0.05em;
-  opacity: 0.9;
+  font-weight: 600;
+  font-variant: small-caps;
+  color: rgba(212, 175, 55, 0.65);
+  letter-spacing: 0.06em;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .statusDot {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: #d4af37;
-  box-shadow: 0 0 8px #d4af37;
-  animation: pulse 2s infinite;
+  background: rgba(212, 175, 55, 0.7);
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.4);
+  animation: pulse 2.5s infinite;
 }
 
 @keyframes pulse {
@@ -314,7 +283,7 @@
 
   50% {
     opacity: 1;
-    transform: scale(1.5);
+    transform: scale(1.3);
   }
 }
 
@@ -327,14 +296,12 @@
 }
 
 .statCard {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.02) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 16px;
   padding: 16px;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  /* Interactive glow on hover is handled in JS/Framer usually, but here's a CSS fallback */
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 
@@ -342,35 +309,32 @@
   transform: scale(0.98);
 }
 
-/* Premium top highlight */
 .statCard::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  left: 20%;
+  right: 20%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
-  opacity: 0.5;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
 }
 
 .statLabel {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   font-size: 11px;
   font-weight: 500;
   color: #71717a;
-  /* text-muted */
   text-transform: uppercase;
   letter-spacing: 0.02em;
   margin-bottom: 6px;
 }
 
 .statValue {
-  font-family: 'Cinzel', serif;
+  font-family: 'Manrope', sans-serif;
   font-size: 20px;
-  font-weight: 600;
-  color: #f2f2f2;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  color: #E8E8ED;
+  letter-spacing: -0.01em;
 }
 
 /* ==================== HERO / DAILY BONUS ==================== */
@@ -379,7 +343,6 @@
   position: relative;
 }
 
-/* The Glow Behind */
 .heroGlow {
   position: absolute;
   top: 50%;
@@ -387,19 +350,19 @@
   transform: translate(-50%, -50%);
   width: 140%;
   height: 100%;
-  background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
 
 /* ==================== SECTIONS ==================== */
 .sectionTitle {
-  font-family: 'Cinzel', serif;
-  font-size: 13px;
-  color: #52525b;
-  /* deep muted */
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.06em;
   margin-bottom: 16px;
   margin-left: 4px;
   display: flex;
@@ -411,7 +374,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, rgba(82, 82, 91, 0.3), transparent);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
 }
 
 /* ==================== SCROLL CONTAINER FOR HORIZONTAL ITEMS ==================== */
@@ -420,10 +383,8 @@
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 4px;
-  /* Space for scrollbar if any */
-  margin: 0 -16px;
-  padding: 0 16px;
-  /* Hide scrollbar */
+  margin: 0 -20px;
+  padding: 0 20px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

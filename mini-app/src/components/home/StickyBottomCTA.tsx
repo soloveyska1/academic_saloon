@@ -4,9 +4,8 @@ import { ArrowRight } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  STICKY BOTTOM CTA — Fixed thumb-zone conversion bar
-//  Research: +55% clicks vs inline CTAs. Always visible.
-//  Only rendered for new users.
-//  Premium: deeper glass, richer gold gradient, layered shadows
+//  Fully opaque bar. 2-stop vertical gold gradient. No border on button.
+//  Clean shadow edge for separation. Premium but quiet.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface StickyBottomCTAProps {
@@ -25,13 +24,10 @@ export const StickyBottomCTA = memo(function StickyBottomCTA({ onClick }: Sticky
         left: 0,
         right: 0,
         zIndex: 800,
-        padding: '14px 16px',
-        paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
-        background: 'linear-gradient(180deg, rgba(9,9,11,0.85) 0%, rgba(9,9,11,0.96) 100%)',
-        backdropFilter: 'blur(24px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(200%)',
-        borderTop: '1px solid rgba(212,175,55,0.15)',
-        boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
+        padding: '16px 20px',
+        paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+        background: '#09090b',
+        boxShadow: '0 -1px 0 rgba(255,255,255,0.04), 0 -20px 40px rgba(0,0,0,0.5)',
       }}
     >
       <motion.button
@@ -44,19 +40,18 @@ export const StickyBottomCTA = memo(function StickyBottomCTA({ onClick }: Sticky
           justifyContent: 'center',
           gap: 10,
           width: '100%',
-          padding: '17px 20px',
-          borderRadius: 16,
-          background: 'linear-gradient(135deg, #f5d061 0%, #d4af37 40%, #b8962e 70%, #9c7721 100%)',
-          border: '1px solid rgba(255,245,198,0.25)',
-          boxShadow:
-            '0 8px 28px rgba(212,175,55,0.35), 0 2px 8px rgba(212,175,55,0.15), inset 0 1px 0 rgba(255,255,255,0.2)',
+          padding: '18px 24px',
+          borderRadius: 14,
+          background: 'linear-gradient(180deg, #E8C84A 0%, #C9A436 100%)',
+          border: 'none',
+          boxShadow: '0 4px 16px rgba(201,164,54,0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
           cursor: 'pointer',
           appearance: 'none',
           fontFamily: "'Manrope', sans-serif",
-          fontSize: 16,
-          fontWeight: 700,
+          fontSize: 15,
+          fontWeight: 600,
           color: '#09090b',
-          letterSpacing: '0.01em',
+          letterSpacing: '0.02em',
         }}
       >
         <span>Узнать стоимость</span>

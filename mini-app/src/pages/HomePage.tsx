@@ -149,10 +149,10 @@ export function HomePage({ user }: Props) {
       role="main"
       className={s.container}
       style={{
-        background: '#09090b', // Deepest Onyx (Void)
+        background: '#09090b',
         position: 'relative',
         overflow: 'hidden',
-        paddingBottom: isNewUser ? 200 : 140, // Extra space for sticky CTA on new user flow
+        paddingBottom: isNewUser ? 140 : 100,
       }}>
       {/* Premium Background - Full width, fixed position */}
       <div className="page-background" aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>

@@ -4,12 +4,10 @@ import { ArrowRight, ShieldCheck, Clock, RotateCcw } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  NEW TASK CTA — The primary conversion element
-//
-//  first-order:  Full hero with integrated guarantee trio, premium gold
-//  repeat-order: Compact one-line CTA
-//
-//  Design: cohesive gold card, no clashing colors, guarantees woven in
+//  NEW TASK CTA — The ONE star element on the page
+//  Everything else is deliberately quiet so this stands out.
+//  Static gold text. No animated shimmer. No floating orbs.
+//  Generous padding. Tight letter-spacing at display sizes.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface NewTaskCTAProps {
@@ -43,44 +41,43 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         style={{
           position: 'relative',
           width: '100%',
-          padding: '28px 22px 22px',
-          borderRadius: 28,
-          marginBottom: 16,
+          padding: '32px 24px 24px',
+          borderRadius: 24,
+          marginBottom: 24,
           overflow: 'hidden',
-          border: '1px solid rgba(212,175,55,0.18)',
           isolation: 'isolate',
           textAlign: 'left',
         }}
       >
         <div className={s.primaryActionGlow} aria-hidden="true" />
         <div className={s.primaryActionShine} aria-hidden="true" />
-        <div className={s.primaryActionOrb} aria-hidden="true" />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* ── Eyebrow: serif, premium, no clashing colors ── */}
+          {/* Eyebrow */}
           <div
             style={{
-              fontFamily: "var(--font-serif, 'Cinzel', serif)",
-              fontSize: 10,
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: 11,
               fontWeight: 600,
-              letterSpacing: '0.18em',
+              letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: 'rgba(212,175,55,0.6)',
-              marginBottom: 14,
+              color: 'rgba(212,175,55,0.5)',
+              marginBottom: 16,
             }}
           >
             Академический Салун
           </div>
 
-          {/* ── Main headline ── */}
+          {/* Headline — static warm gold, no animation */}
           <div
             className={s.goldAccent}
             style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: 'clamp(30px, 8vw, 38px)',
+              fontSize: 'clamp(34px, 9vw, 44px)',
               fontWeight: 800,
-              lineHeight: 1.0,
-              marginBottom: 12,
+              lineHeight: 0.95,
+              letterSpacing: '-0.02em',
+              marginBottom: 16,
             }}
           >
             Сделаем{'\n'}за тебя
@@ -88,23 +85,23 @@ export const NewTaskCTA = memo(function NewTaskCTA({
 
           <div
             style={{
-              color: 'rgba(255,255,255,0.45)',
+              color: 'rgba(255,255,255,0.50)',
               fontSize: 14,
               fontWeight: 500,
-              lineHeight: 1.45,
-              marginBottom: 22,
+              lineHeight: 1.5,
+              marginBottom: 24,
             }}
           >
             Курсовые, дипломы, рефераты и ещё 10+ видов работ
           </div>
 
-          {/* ── Guarantee trio: inline, subtle, gold-themed ── */}
+          {/* Guarantee pills — more space, less cramped */}
           <div
             style={{
               display: 'flex',
-              gap: 6,
+              gap: 8,
               flexWrap: 'wrap',
-              marginBottom: 20,
+              marginBottom: 24,
             }}
           >
             {GUARANTEES.map((g) => {
@@ -116,19 +113,18 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 5,
-                    padding: '5px 10px',
-                    borderRadius: 999,
-                    background: 'rgba(212,175,55,0.06)',
-                    border: '1px solid rgba(212,175,55,0.12)',
+                    padding: '6px 12px',
+                    borderRadius: 10,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
-                  <Icon size={12} color="rgba(212,175,55,0.7)" strokeWidth={2.2} />
+                  <Icon size={12} color="rgba(212,175,55,0.6)" strokeWidth={2.2} />
                   <span
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
                       color: 'rgba(255,255,255,0.55)',
-                      letterSpacing: '0.01em',
                     }}
                   >
                     {g.text}
@@ -138,16 +134,12 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             })}
           </div>
 
-          {/* ── Primary CTA ── */}
+          {/* Primary CTA */}
           <motion.button
             type="button"
             whileTap={{ scale: 0.985 }}
             onClick={handleClick}
             className={s.heroPrimaryButton}
-            style={{
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)',
-              borderColor: 'rgba(212,175,55,0.25)',
-            }}
           >
             <span>Узнать стоимость</span>
             <div className={s.primaryActionArrow}>
@@ -155,12 +147,12 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             </div>
           </motion.button>
 
-          {/* ── Reassurance under CTA ── */}
+          {/* Reassurance */}
           <div
             style={{
-              marginTop: 10,
-              fontSize: 11,
-              color: 'rgba(255,255,255,0.28)',
+              marginTop: 12,
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.25)',
               fontWeight: 500,
               textAlign: 'center',
             }}
@@ -182,10 +174,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         position: 'relative',
         width: '100%',
         padding: '18px 18px 18px 20px',
-        borderRadius: 22,
+        borderRadius: 20,
         marginBottom: 16,
         overflow: 'hidden',
-        border: '1px solid rgba(212,175,55,0.12)',
         isolation: 'isolate',
       }}
     >
@@ -219,12 +210,13 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               fontSize: 20,
               fontWeight: 800,
               lineHeight: 1.15,
+              letterSpacing: '-0.01em',
               marginBottom: 3,
             }}
           >
             Новый заказ
           </div>
-          <div style={{ fontSize: 13, color: '#71717a', fontWeight: 500 }}>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)', fontWeight: 500 }}>
             Любая работа · от 1 дня
           </div>
         </div>

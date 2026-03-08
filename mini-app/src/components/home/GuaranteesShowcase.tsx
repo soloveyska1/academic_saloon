@@ -1,12 +1,11 @@
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ShieldCheck, RefreshCcw, EyeOff } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  GUARANTEES SHOWCASE — Specific risk-reversal guarantees
-//  ONLY promises the operator CAN actually deliver.
-//  No grade guarantees (grades depend on the professor, not us).
-//  No "автор" references — solo operation.
+//  GUARANTEES SHOWCASE — Horizontal scrolling guarantee cards
+//  Visually DIFFERENT from HowItWorks (scroll vs stack).
+//  Wider cards with generous padding. Stronger text hierarchy.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const GUARANTEES = [
@@ -34,107 +33,105 @@ interface GuaranteesShowcaseProps {
 export const GuaranteesShowcase = memo(function GuaranteesShowcase({
   onOpenGuaranteesModal,
 }: GuaranteesShowcaseProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.32 }}
-      style={{ marginBottom: 16 }}
+      transition={{ delay: 0.28 }}
+      style={{ marginBottom: 20 }}
     >
       <div
         style={{
-          fontFamily: "var(--font-serif, 'Cinzel', serif)",
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.14em',
+          fontFamily: "'Manrope', sans-serif",
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
           textTransform: 'uppercase',
-          color: 'rgba(212,175,55,0.45)',
-          marginBottom: 10,
-          paddingLeft: 4,
+          color: 'rgba(255,255,255,0.30)',
+          marginBottom: 12,
+          paddingLeft: 2,
         }}
       >
         Гарантии
       </div>
 
-      <div style={{ display: 'grid', gap: 10 }}>
+      {/* Horizontal scroll container */}
+      <div
+        ref={scrollRef}
+        style={{
+          display: 'flex',
+          gap: 12,
+          overflowX: 'auto',
+          margin: '0 -20px',
+          padding: '0 20px 4px',
+          scrollSnapType: 'x mandatory',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
         {GUARANTEES.map((g, i) => {
           const Icon = g.icon
           return (
             <motion.div
               key={g.title}
-              initial={{ opacity: 0, x: -10 }}
+              initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.36 + i * 0.06 }}
+              transition={{ delay: 0.32 + i * 0.06 }}
               style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 14,
-                padding: '16px 18px',
+                minWidth: 240,
+                maxWidth: 280,
+                padding: '20px 20px',
                 borderRadius: 18,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(255,255,255,0.015) 100%)',
-                border: '1px solid rgba(212,175,55,0.08)',
-                position: 'relative',
-                overflow: 'hidden',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                scrollSnapAlign: 'start',
+                flexShrink: 0,
               }}
             >
-              {/* Top highlight */}
-              <div
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: '15%',
-                  right: '15%',
-                  height: 1,
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)',
-                }}
-              />
-
               <div
                 style={{
-                  width: 38,
-                  height: 38,
+                  width: 40,
+                  height: 40,
                   borderRadius: 12,
-                  background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)',
-                  border: '1px solid rgba(212,175,55,0.15)',
+                  background: 'rgba(212,175,55,0.06)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  marginBottom: 14,
                 }}
               >
-                <Icon size={17} color="rgba(212,175,55,0.75)" strokeWidth={2} />
+                <Icon size={18} color="rgba(212,175,55,0.6)" strokeWidth={1.8} />
               </div>
-              <div style={{ paddingTop: 1 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: '#EDEDED',
-                    lineHeight: 1.3,
-                    marginBottom: 3,
-                  }}
-                >
-                  {g.title}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: 'rgba(255,255,255,0.4)',
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {g.description}
-                </div>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: '#F0F0F0',
+                  lineHeight: 1.3,
+                  letterSpacing: '-0.01em',
+                  marginBottom: 6,
+                }}
+              >
+                {g.title}
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: 'rgba(255,255,255,0.42)',
+                  lineHeight: 1.5,
+                }}
+              >
+                {g.description}
               </div>
             </motion.div>
           )
         })}
       </div>
 
-      {/* Footer link */}
+      {/* Footer link — actual tappable area */}
       <motion.button
         type="button"
         whileTap={{ scale: 0.98 }}
@@ -142,8 +139,8 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
         style={{
           display: 'block',
           width: '100%',
-          marginTop: 12,
-          padding: '8px 0',
+          marginTop: 14,
+          padding: '10px 0',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -152,7 +149,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
           fontFamily: "'Manrope', sans-serif",
           fontSize: 12,
           fontWeight: 600,
-          color: 'rgba(212,175,55,0.55)',
+          color: 'rgba(212,175,55,0.5)',
           letterSpacing: '0.02em',
         }}
       >
