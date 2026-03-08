@@ -4,25 +4,12 @@ import { CheckCircle, Zap, Crown, Gift } from 'lucide-react'
 import type { RankData } from '../../../lib/ranks'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PRIVILEGE SCANNER — "The Void & The Gold" Edition
+//  PRIVILEGE LIST — Quiet Luxury (no Cinzel, clean rows)
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface PrivilegeScannerProps {
   rank: RankData
   isLocked: boolean
-}
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
 }
 
 function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
@@ -55,71 +42,78 @@ function PrivilegeScannerComponent({ rank, isLocked }: PrivilegeScannerProps) {
 
   return (
     <div style={{ marginTop: 16 }}>
-      {/* Header — Cinzel serif like home page section titles */}
+      {/* Header — Manrope small-caps (matches home page) */}
       <div style={{
-        fontFamily: "'Cinzel', serif",
+        fontFamily: "'Manrope', sans-serif",
         fontSize: 11,
-        fontWeight: 600,
-        color: '#3f3f46',
+        fontWeight: 700,
+        color: 'rgba(255,255,255,0.35)',
         textTransform: 'uppercase',
-        letterSpacing: '0.1em',
+        letterSpacing: '0.08em',
         marginBottom: 10,
         paddingLeft: 2,
       }}>
         Привилегии уровня
       </div>
 
-      {/* Benefits List — voidGlass rows */}
+      {/* Benefits */}
       <m.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1, staggerChildren: 0.05 }}
         style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
       >
         {benefits.map((benefit) => {
           const Icon = benefit.icon
-          const valueAvailable = benefit.value !== 'Нет'
           return (
-            <m.div
+            <div
               key={benefit.label}
-              variants={itemVariants}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 12,
                 padding: '12px 14px',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.03)',
+                background: benefit.highlight && !isLocked
+                  ? 'rgba(212,175,55,0.03)'
+                  : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${benefit.highlight && !isLocked
+                  ? 'rgba(212,175,55,0.06)'
+                  : 'rgba(255,255,255,0.03)'}`,
                 borderRadius: 12,
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                gap: 10, minWidth: 0, flex: 1,
+              }}>
                 <Icon
                   size={14}
-                  color={isLocked ? '#27272a' : benefit.highlight ? '#d4af37' : '#3f3f46'}
-                  style={!isLocked && benefit.highlight ? { filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.3))' } : undefined}
+                  color={isLocked
+                    ? 'rgba(255,255,255,0.12)'
+                    : benefit.highlight
+                      ? 'rgba(212,175,55,0.55)'
+                      : 'rgba(255,255,255,0.25)'}
                 />
-                <span style={{ fontSize: 13, color: isLocked ? '#27272a' : '#71717a', minWidth: 0 }}>
+                <span style={{
+                  fontSize: 13,
+                  color: isLocked ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.55)',
+                }}>
                   {benefit.label}
                 </span>
               </div>
               <span style={{
-                fontFamily: benefit.highlight ? "'Cinzel', serif" : undefined,
-                fontSize: 13,
-                fontWeight: 600,
-                letterSpacing: benefit.highlight ? '0.03em' : undefined,
+                fontSize: 13, fontWeight: 600,
                 flexShrink: 0,
                 color: isLocked
-                  ? '#27272a'
+                  ? 'rgba(255,255,255,0.10)'
                   : benefit.highlight
-                    ? '#d4af37'
-                    : valueAvailable ? '#a1a1aa' : '#3f3f46',
+                    ? '#E8D5A3'
+                    : 'rgba(255,255,255,0.42)',
               }}>
                 {benefit.value}
               </span>
-            </m.div>
+            </div>
           )
         })}
       </m.div>

@@ -3,7 +3,8 @@ import { m } from 'framer-motion'
 import type { RankData } from '../../../lib/ranks'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  HOLOGRAPHIC CARD — Premium "Black Card" Effect
+//  STATUS CARD — Quiet Luxury (no holographic shimmer)
+//  Static premium card, warm gold palette, clean typography.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface HolographicCardProps {
@@ -12,123 +13,102 @@ interface HolographicCardProps {
   onClick?: () => void
 }
 
-// Мемоизированные стили
-const cardGradient = 'linear-gradient(135deg, rgba(20, 20, 23, 1) 0%, rgba(30, 30, 35, 1) 100%)'
-
 function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardProps) {
   const Icon = rank.icon
 
-  // Мемоизация стилей
   const cardStyle = useMemo(() => ({
     position: 'relative' as const,
     width: '100%',
     aspectRatio: '2/1',
-    maxHeight: 180,
+    maxHeight: 170,
     borderRadius: 20,
-    background: cardGradient,
-    border: `1px solid ${isLocked ? 'rgba(255,255,255,0.1)' : 'rgba(212,175,55,0.3)'}`,
+    background: 'linear-gradient(145deg, rgba(22,22,26,1) 0%, rgba(14,14,18,1) 100%)',
+    border: `1px solid ${isLocked ? 'rgba(255,255,255,0.06)' : 'rgba(212,175,55,0.18)'}`,
     overflow: 'hidden',
     cursor: onClick ? 'pointer' : undefined,
     boxShadow: isLocked
-      ? '0 10px 30px -10px rgba(0,0,0,0.5)'
-      : `0 20px 50px -20px ${rank.color}40`,
-  }), [isLocked, rank.color, onClick])
-
-  const iconContainerStyle = useMemo(() => ({
-    padding: 8,
-    borderRadius: 12,
-    background: isLocked ? 'rgba(255,255,255,0.05)' : `${rank.color}20`,
-    backdropFilter: 'blur(10px)',
-    border: `1px solid ${isLocked ? 'rgba(255,255,255,0.1)' : rank.color + '40'}`,
-  }), [isLocked, rank.color])
+      ? '0 8px 24px -8px rgba(0,0,0,0.4)'
+      : '0 16px 40px -16px rgba(212,175,55,0.15)',
+  }), [isLocked, onClick])
 
   return (
     <m.div
       onClick={onClick}
-      whileHover={onClick ? { scale: 1.02 } : undefined}
       whileTap={onClick ? { scale: 0.98 } : undefined}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       style={cardStyle}
     >
-      {/* Holographic Foil Effect - GPU-accelerated */}
-      {!isLocked && (
-        <m.div
-          animate={{ x: ['-100%', '100%'] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'linear', repeatDelay: 2 }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: `linear-gradient(115deg, transparent 30%, ${rank.color}30 50%, transparent 70%)`,
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
-      )}
+      {/* Subtle top highlight — no animation */}
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        height: 1,
+        background: isLocked
+          ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)'
+          : 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)',
+        zIndex: 1,
+      }} />
 
       {/* Content */}
       <div style={{
-        position: 'relative',
-        zIndex: 2,
-        height: '100%',
-        padding: '16px 20px',
-        display: 'flex',
-        flexDirection: 'column',
+        position: 'relative', zIndex: 2,
+        height: '100%', padding: '16px 20px',
+        display: 'flex', flexDirection: 'column',
         justifyContent: 'space-between',
       }}>
-        {/* Top Row */}
+        {/* Top row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={iconContainerStyle}>
-              <Icon size={20} color={isLocked ? '#71717a' : rank.color} />
+            <div style={{
+              padding: 7, borderRadius: 11,
+              background: isLocked ? 'rgba(255,255,255,0.04)' : 'rgba(212,175,55,0.08)',
+              border: `1px solid ${isLocked ? 'rgba(255,255,255,0.06)' : 'rgba(212,175,55,0.12)'}`,
+            }}>
+              <Icon size={18} color={isLocked ? '#52525b' : 'rgba(212,175,55,0.60)'} />
             </div>
             <span style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: isLocked ? '#71717a' : '#fff',
-              letterSpacing: '0.05em',
+              fontSize: 13, fontWeight: 700,
+              color: isLocked ? '#52525b' : 'rgba(255,255,255,0.65)',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
             }}>
-              {rank.displayName.toUpperCase()}
+              {rank.displayName}
             </span>
           </div>
 
           <div style={{ textAlign: 'right' }}>
             <div style={{
-              fontSize: 10,
-              color: isLocked ? '#52525b' : rank.color,
-              fontWeight: 600,
+              fontSize: 10, fontWeight: 700,
+              color: isLocked ? '#3f3f46' : 'rgba(212,175,55,0.45)',
               textTransform: 'uppercase',
-              letterSpacing: '0.1em',
+              letterSpacing: '0.08em', marginBottom: 2,
             }}>
-              КЕШБЭК
+              Кэшбэк
             </div>
             <div style={{
-              fontSize: 24,
-              fontWeight: 800,
-              color: isLocked ? '#71717a' : '#fff',
-              textShadow: isLocked ? 'none' : `0 0 20px ${rank.color}60`,
+              fontSize: 24, fontWeight: 800,
+              color: isLocked ? '#52525b' : '#E8D5A3',
             }}>
               {rank.cashback}%
             </div>
           </div>
         </div>
 
-        {/* Bottom Row */}
+        {/* Bottom row */}
         <div>
           <div style={{
-            fontSize: 11,
-            color: '#52525b',
-            textTransform: 'uppercase',
-            letterSpacing: '0.15em',
-            marginBottom: 6,
+            fontSize: 10, fontWeight: 600,
+            color: '#3f3f46', textTransform: 'uppercase',
+            letterSpacing: '0.12em', marginBottom: 5,
           }}>
             ACADEMIC SALOON
           </div>
           <div style={{
-            fontSize: 14,
-            color: isLocked ? '#71717a' : '#e4e4e7',
-            fontFamily: 'monospace',
-            letterSpacing: '0.1em',
+            fontSize: 13,
+            color: isLocked ? '#3f3f46' : 'rgba(255,255,255,0.30)',
+            fontFamily: "'JetBrains Mono', monospace",
+            letterSpacing: '0.08em',
           }}>
             •••• •••• •••• {isLocked ? '••••' : '8888'}
           </div>

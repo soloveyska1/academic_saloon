@@ -509,9 +509,9 @@ function OrderCard({
   const amount = order.final_price || order.price || 0
   const subtitle = getOrderDisplaySubtitle(order)
   const deadlineText = formatDeadline(order.deadline)
-  const isOverdue = getHoursUntilDeadline(order.deadline) !== null
-    && getHoursUntilDeadline(order.deadline)! <= 0
-    && isActiveStatus(order.status)
+  const hoursLeft = getHoursUntilDeadline(order.deadline)
+  const isOverdue = hoursLeft !== null && hoursLeft <= 0 && isActiveStatus(order.status)
+  const isUrgent = hoursLeft !== null && hoursLeft > 0 && hoursLeft <= 48 && isActiveStatus(order.status)
 
   return (
     <motion.button
@@ -523,118 +523,150 @@ function OrderCard({
       onClick={() => onOpenOrder(order)}
       style={{
         width: '100%',
-        padding: 16,
-        borderRadius: 18,
+        padding: '18px',
+        borderRadius: 20,
         background: meta.needsAction
-          ? 'rgba(212,175,55,0.03)'
+          ? 'linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(212,175,55,0.01) 100%)'
           : 'rgba(255,255,255,0.02)',
         border: `1px solid ${meta.needsAction
           ? 'rgba(212,175,55,0.10)'
           : 'rgba(255,255,255,0.04)'}`,
         cursor: 'pointer',
         textAlign: 'left',
-        marginBottom: 8,
+        marginBottom: 10,
         position: 'relative',
         overflow: 'hidden',
       }}
     >
+      {/* Action indicator — thin gold top line */}
+      {meta.needsAction && (
+        <div aria-hidden="true" style={{
+          position: 'absolute',
+          top: 0, left: 24, right: 24,
+          height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)',
+        }} />
+      )}
+
       {/* Progress bar — thin line at bottom */}
       {order.progress > 0 && order.progress < 100 && (
         <div style={{
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
           height: 2,
-          background: 'rgba(255,255,255,0.04)',
+          background: 'rgba(255,255,255,0.03)',
         }}>
           <div style={{
             height: '100%',
             width: `${order.progress}%`,
             background: meta.color,
-            opacity: 0.5,
+            opacity: 0.45,
             borderRadius: 1,
           }} />
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-        {/* Work type icon */}
+      {/* Row 1: Icon + Title + Price */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 14,
+        marginBottom: 12,
+      }}>
         <div style={{
-          width: 42, height: 42, borderRadius: 13,
-          background: 'rgba(212,175,55,0.06)',
+          width: 44, height: 44, borderRadius: 14,
+          background: meta.needsAction
+            ? 'rgba(212,175,55,0.07)'
+            : 'rgba(212,175,55,0.05)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <WorkIcon size={20} color="rgba(212,175,55,0.50)" strokeWidth={1.5} />
+          <WorkIcon
+            size={20}
+            color={meta.needsAction
+              ? 'rgba(212,175,55,0.60)'
+              : 'rgba(212,175,55,0.45)'}
+            strokeWidth={1.5}
+          />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Row 1: Title + Status badge */}
           <div style={{
-            display: 'flex', alignItems: 'center',
-            justifyContent: 'space-between', gap: 8,
-            marginBottom: 4,
+            fontSize: 15, fontWeight: 700,
+            color: 'rgba(255,255,255,0.88)',
+            letterSpacing: '-0.01em',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            marginBottom: 3,
           }}>
-            <div style={{
-              fontSize: 15, fontWeight: 700,
-              color: 'rgba(255,255,255,0.88)',
-              letterSpacing: '-0.01em',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              flex: 1, minWidth: 0,
-            }}>
-              {getOrderDisplayTitle(order)}
-            </div>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '3px 8px', borderRadius: 99,
-              background: meta.chipBg,
-              flexShrink: 0,
-            }}>
-              <div style={{
-                width: 5, height: 5, borderRadius: '50%',
-                background: meta.color,
-                boxShadow: meta.needsAction ? `0 0 6px ${meta.color}` : 'none',
-              }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: meta.color }}>
-                {meta.label}
-              </span>
-            </div>
+            {getOrderDisplayTitle(order)}
           </div>
-
-          {/* Row 2: Subtitle */}
           <div style={{
-            fontSize: 13, color: 'rgba(255,255,255,0.38)',
-            marginBottom: 8,
+            fontSize: 13, color: 'rgba(255,255,255,0.35)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {subtitle}
           </div>
+        </div>
 
-          {/* Row 3: Deadline · Price · Arrow */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-            <span style={{
-              fontSize: 12.5, fontWeight: 500,
-              color: isOverdue ? '#ef4444' : 'rgba(255,255,255,0.42)',
-            }}>
-              {deadlineText}
-            </span>
-            <span style={{
-              width: 3, height: 3, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.18)',
-              margin: '0 8px',
-              flexShrink: 0,
-            }} />
-            <span style={{
-              fontSize: 13, fontWeight: 600, color: '#E8D5A3',
-            }}>
-              {formatMoney(amount)}
-            </span>
-            <ChevronRight
-              size={14}
-              color="rgba(255,255,255,0.20)"
-              style={{ marginLeft: 'auto', flexShrink: 0 }}
-            />
+        {/* Price — prominent, right-aligned */}
+        <div style={{ flexShrink: 0, textAlign: 'right' }}>
+          <div style={{
+            fontSize: 16, fontWeight: 700, color: '#E8D5A3',
+            letterSpacing: '-0.01em',
+          }}>
+            {formatMoney(amount)}
           </div>
         </div>
+      </div>
+
+      {/* Separator */}
+      <div style={{
+        height: 1, marginBottom: 12,
+        background: meta.needsAction
+          ? 'rgba(212,175,55,0.06)'
+          : 'rgba(255,255,255,0.03)',
+      }} />
+
+      {/* Row 2: Status + Deadline + Arrow */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Status badge */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '4px 9px', borderRadius: 8,
+          background: meta.chipBg,
+        }}>
+          <div style={{
+            width: 5, height: 5, borderRadius: '50%',
+            background: meta.color,
+            boxShadow: meta.needsAction ? `0 0 6px ${meta.color}` : 'none',
+          }} />
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: meta.color }}>
+            {meta.label}
+          </span>
+        </div>
+
+        {/* Deadline */}
+        <span style={{
+          fontSize: 12.5, fontWeight: 500,
+          color: isOverdue
+            ? '#ef4444'
+            : isUrgent
+              ? '#fbbf24'
+              : 'rgba(255,255,255,0.35)',
+        }}>
+          {deadlineText}
+        </span>
+
+        {/* Order ID */}
+        <span style={{
+          fontSize: 11, color: 'rgba(255,255,255,0.18)',
+        }}>
+          #{order.id}
+        </span>
+
+        <ChevronRight
+          size={14}
+          color="rgba(255,255,255,0.18)"
+          style={{ marginLeft: 'auto', flexShrink: 0 }}
+        />
       </div>
     </motion.button>
   )
