@@ -19,9 +19,9 @@ interface NewTaskCTAProps {
 }
 
 const GUARANTEES = [
-  { icon: ShieldCheck, text: 'Уникальность' },
-  { icon: Clock, text: 'Точно в срок' },
-  { icon: RotateCcw, text: 'Правки бесплатно' },
+  { icon: ShieldCheck, text: 'Антиплагиат от 70%' },
+  { icon: Clock, text: 'Сдадим точно в срок' },
+  { icon: RotateCcw, text: '3 правки бесплатно' },
 ] as const
 
 export const NewTaskCTA = memo(function NewTaskCTA({
@@ -95,7 +95,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               marginBottom: 22,
             }}
           >
-            Курсовые, дипломы, рефераты — с гарантией
+            Курсовые, дипломы, рефераты и ещё 10+ видов работ
           </div>
 
           {/* ── Guarantee trio: inline, subtle, gold-themed ── */}
@@ -149,7 +149,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               borderColor: 'rgba(212,175,55,0.25)',
             }}
           >
-            <span>Оформить заказ</span>
+            <span>Узнать стоимость</span>
             <div className={s.primaryActionArrow}>
               <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
             </div>
@@ -165,7 +165,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               textAlign: 'center',
             }}
           >
-            Оплата после согласования деталей
+            Оплата только после согласования деталей
           </div>
         </div>
       </motion.section>

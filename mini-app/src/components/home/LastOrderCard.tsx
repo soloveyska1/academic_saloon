@@ -117,7 +117,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
               color: '#a1a1aa',
               lineHeight: 1.5,
             }}>
-              Откройте заказ, чтобы посмотреть этап, сроки и следующие действия.
+              Нажмите, чтобы увидеть статус и написать менеджеру
             </div>
           </div>
 

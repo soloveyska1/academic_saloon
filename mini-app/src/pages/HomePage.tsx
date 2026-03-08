@@ -24,7 +24,12 @@ import {
   NewTaskCTA,
   LastOrderCard,
   UrgentHubSheet,
-  EmptyStateOnboarding,
+  TrustStatsStrip,
+  LiveActivityFeed,
+  HowItWorks,
+  GuaranteesShowcase,
+  StickyBottomCTA,
+  SaloonFooter,
   DailyBonusError,
   ModalLoadingFallback,
 } from '../components/home'
@@ -147,7 +152,7 @@ export function HomePage({ user }: Props) {
         background: '#09090b', // Deepest Onyx (Void)
         position: 'relative',
         overflow: 'hidden',
-        paddingBottom: 140, // Ensure content clears the floating navigation
+        paddingBottom: isNewUser ? 200 : 140, // Extra space for sticky CTA on new user flow
       }}>
       {/* Premium Background - Full width, fixed position */}
       <div className="page-background" aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
@@ -176,6 +181,7 @@ export function HomePage({ user }: Props) {
           userPhoto={userPhoto}
           onSecretTap={handleSecretTap}
           onOpenLounge={handleOpenLounge}
+          isNewUser={isNewUser}
         />
 
         {/* ═══════════════════════════════════════════════════════════════════
@@ -185,7 +191,12 @@ export function HomePage({ user }: Props) {
         {isNewUser ? (
           <>
             <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
-            <EmptyStateOnboarding />
+            <TrustStatsStrip />
+            <LiveActivityFeed />
+            <HowItWorks />
+            <GuaranteesShowcase
+              onOpenGuaranteesModal={() => { haptic('light'); actions.openModal('guarantees') }}
+            />
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════════════════
@@ -252,12 +263,17 @@ export function HomePage({ user }: Props) {
         {state.dailyBonus.error && !state.dailyBonus.loading && (
           <DailyBonusError onRetry={retryDailyBonus} />
         )}
+
+        <SaloonFooter />
       </div>{/* End content wrapper */}
 
       {/* ═══════════════════════════════════════════════════════════════════
           URGENT HUB SHEET — Bottom sheet with 2 urgent options
           Fixes the duplicate "Urgent" issue
           ═══════════════════════════════════════════════════════════════════ */}
+      {/* Sticky bottom CTA for new users — thumb-zone conversion */}
+      {isNewUser && <StickyBottomCTA onClick={handleNewOrder} />}
+
       <UrgentHubSheet
         isOpen={state.modals.urgentSheet}
         onClose={() => actions.closeModal('urgentSheet')}

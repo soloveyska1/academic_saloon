@@ -18,9 +18,10 @@ interface HomeHeaderProps {
   userPhoto?: string
   onSecretTap: () => void
   onOpenLounge: () => void
+  isNewUser?: boolean
 }
 
-export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap, onOpenLounge }: HomeHeaderProps) {
+export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap, onOpenLounge, isNewUser }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
   const firstName = user.fullname?.split(' ')[0] || 'ГОСТЬ'
   const isPremiumClub = user.rank.is_max
@@ -90,7 +91,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           <div className={s.userName}>{firstName.toUpperCase()}</div>
           <div className={s.userStatus}>
             <div className={s.statusDot} />
-            {isPremiumClub ? 'ПРЕМИУМ КЛУБ' : 'КЛУБ ПРИВИЛЕГИЙ'}
+            {isNewUser ? 'ДОБРО ПОЖАЛОВАТЬ' : isPremiumClub ? 'ПРЕМИУМ КЛУБ' : 'КЛУБ ПРИВИЛЕГИЙ'}
           </div>
         </div>
       </div>
