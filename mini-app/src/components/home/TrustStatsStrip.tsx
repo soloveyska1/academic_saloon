@@ -1,16 +1,16 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Star, UserCheck } from 'lucide-react'
+import { Clock, Layers, Headphones } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  TRUST STATS STRIP — 3 social proof metrics in a compact gold row
-//  Psychology: specific numbers ("5 800+") beat vague ("thousands")
+//  TRUST STATS STRIP — 3 key selling metrics in a premium gold row
+//  No fake team/rating data. Focus on speed, variety, availability.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STATS = [
-  { icon: Users, value: '5 800+', label: 'работ сдано', pulse: false },
-  { icon: Star, value: '4.9', label: 'оценка', pulse: false },
-  { icon: UserCheck, value: '23', label: 'автора онлайн', pulse: true },
+  { icon: Clock, value: 'от 1 дня', label: 'срок', pulse: false },
+  { icon: Layers, value: '10+', label: 'видов работ', pulse: false },
+  { icon: Headphones, value: '24/7', label: 'на связи', pulse: true },
 ] as const
 
 export const TrustStatsStrip = memo(function TrustStatsStrip() {
@@ -23,13 +23,28 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '12px 16px',
-        borderRadius: 14,
-        background: 'rgba(212,175,55,0.04)',
-        border: '1px solid rgba(212,175,55,0.12)',
+        padding: '14px 4px',
+        borderRadius: 18,
+        background: 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)',
+        border: '1px solid rgba(212,175,55,0.14)',
         marginBottom: 16,
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      {/* Top highlight line */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: '10%',
+          right: '10%',
+          height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
+        }}
+      />
+
       {STATS.map((stat, i) => {
         const Icon = stat.icon
         return (
@@ -46,14 +61,15 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
               position: 'relative',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-              <Icon size={13} color="rgba(212,175,55,0.6)" strokeWidth={2} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+              <Icon size={13} color="rgba(212,175,55,0.65)" strokeWidth={2.2} />
               <span
                 style={{
                   fontFamily: "'Manrope', sans-serif",
                   fontSize: 15,
                   fontWeight: 800,
                   color: '#EDEDED',
+                  letterSpacing: '0.01em',
                 }}
               >
                 {stat.value}
@@ -90,10 +106,10 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
                 style={{
                   position: 'absolute',
                   right: 0,
-                  top: '20%',
-                  height: '60%',
+                  top: '15%',
+                  height: '70%',
                   width: 1,
-                  background: 'rgba(212,175,55,0.15)',
+                  background: 'linear-gradient(180deg, transparent, rgba(212,175,55,0.2), transparent)',
                 }}
               />
             )}

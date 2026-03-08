@@ -1,18 +1,19 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { ShieldCheck, RefreshCcw, Lock } from 'lucide-react'
+import { ShieldCheck, RefreshCcw, EyeOff } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GUARANTEES SHOWCASE — Specific risk-reversal guarantees
-//  Psychology: specific promises ("Вернём 100%") beat generic
-//  ("гарантия качества"). Fear elimination without naming the fear.
+//  ONLY promises the operator CAN actually deliver.
+//  No grade guarantees (grades depend on the professor, not us).
+//  No "автор" references — solo operation.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const GUARANTEES = [
   {
     icon: ShieldCheck,
-    title: 'Оценка ниже заявленной?',
-    description: 'Вернём 100% стоимости без вопросов',
+    title: 'Антиплагиат ниже обещанного?',
+    description: 'Бесплатно доработаем до нужного процента',
   },
   {
     icon: RefreshCcw,
@@ -20,9 +21,9 @@ const GUARANTEES = [
     description: '3 раунда бесплатных доработок',
   },
   {
-    icon: Lock,
-    title: 'Конфиденциальность',
-    description: 'Данные только между вами и автором',
+    icon: EyeOff,
+    title: 'Полная конфиденциальность',
+    description: 'Никто не узнает, что вы обращались к нам',
   },
 ] as const
 
@@ -42,11 +43,12 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
     >
       <div
         style={{
+          fontFamily: "var(--font-serif, 'Cinzel', serif)",
           fontSize: 10,
           fontWeight: 700,
-          letterSpacing: '0.1em',
+          letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.3)',
+          color: 'rgba(212,175,55,0.45)',
           marginBottom: 10,
           paddingLeft: 4,
         }}
@@ -66,36 +68,52 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                gap: 12,
-                padding: '14px 16px',
-                borderRadius: 16,
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                gap: 14,
+                padding: '16px 18px',
+                borderRadius: 18,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(255,255,255,0.015) 100%)',
+                border: '1px solid rgba(212,175,55,0.08)',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
+              {/* Top highlight */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '15%',
+                  right: '15%',
+                  height: 1,
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)',
+                }}
+              />
+
               <div
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: 'rgba(212,175,55,0.08)',
-                  border: '1px solid rgba(212,175,55,0.12)',
+                  width: 38,
+                  height: 38,
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)',
+                  border: '1px solid rgba(212,175,55,0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 }}
               >
-                <Icon size={16} color="rgba(212,175,55,0.7)" strokeWidth={2} />
+                <Icon size={17} color="rgba(212,175,55,0.75)" strokeWidth={2} />
               </div>
-              <div>
+              <div style={{ paddingTop: 1 }}>
                 <div
                   style={{
                     fontSize: 13,
                     fontWeight: 700,
                     color: '#EDEDED',
                     lineHeight: 1.3,
-                    marginBottom: 2,
+                    marginBottom: 3,
                   }}
                 >
                   {g.title}
@@ -105,7 +123,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
                     fontSize: 12,
                     fontWeight: 500,
                     color: 'rgba(255,255,255,0.4)',
-                    lineHeight: 1.3,
+                    lineHeight: 1.35,
                   }}
                 >
                   {g.description}
@@ -124,8 +142,8 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
         style={{
           display: 'block',
           width: '100%',
-          marginTop: 10,
-          padding: 0,
+          marginTop: 12,
+          padding: '8px 0',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -134,7 +152,8 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
           fontFamily: "'Manrope', sans-serif",
           fontSize: 12,
           fontWeight: 600,
-          color: 'rgba(212,175,55,0.6)',
+          color: 'rgba(212,175,55,0.55)',
+          letterSpacing: '0.02em',
         }}
       >
         Все гарантии подробно →

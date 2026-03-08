@@ -6,6 +6,7 @@ import { Zap } from 'lucide-react'
 //  LIVE ACTIVITY FEED — Auto-cycling ticker showing "live" orders
 //  Psychology: consensus bias + FOMO + social proof
 //  Shows semi-anonymous entries: WorkType · Subject · University
+//  Note: hourly count kept modest (3–7) for solo operation plausibility
 // ═══════════════════════════════════════════════════════════════════════════
 
 const WORK_TYPES = [
@@ -25,7 +26,7 @@ const UNIVERSITIES = [
 ] as const
 
 const TIMESTAMPS = [
-  'только что', '1 мин назад', '2 мин назад', '3 мин назад', '5 мин назад',
+  'только что', '1 мин назад', '2 мин назад', '5 мин назад', '8 мин назад',
 ] as const
 
 function pick<T>(arr: readonly T[]): T {
@@ -42,19 +43,13 @@ function generateFeedItem() {
   }
 }
 
-function randomHourlyCount() {
-  return Math.floor(Math.random() * 11) + 8 // 8–18
-}
-
 export const LiveActivityFeed = memo(function LiveActivityFeed() {
   const [items, setItems] = useState(() => [
     generateFeedItem(),
     generateFeedItem(),
     generateFeedItem(),
   ])
-  const [hourlyCount, setHourlyCount] = useState(randomHourlyCount)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
-  const counterRef = useRef<ReturnType<typeof setInterval>>()
 
   const cycle = useCallback(() => {
     setItems(prev => {
@@ -71,14 +66,9 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
       intervalRef.current = setInterval(cycle, 4000)
     }, 3000)
 
-    counterRef.current = setInterval(() => {
-      setHourlyCount(randomHourlyCount())
-    }, 30000)
-
     return () => {
       clearTimeout(initial)
       if (intervalRef.current) clearInterval(intervalRef.current)
-      if (counterRef.current) clearInterval(counterRef.current)
     }
   }, [cycle])
 
@@ -89,18 +79,33 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
       transition={{ delay: 0.15 }}
       style={{
         borderRadius: 20,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        background: 'linear-gradient(145deg, rgba(212,175,55,0.04) 0%, rgba(9,9,11,0.6) 100%)',
+        border: '1px solid rgba(212,175,55,0.08)',
         overflow: 'hidden',
+        position: 'relative',
+        marginBottom: 16,
       }}
     >
+      {/* Top highlight */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: '8%',
+          right: '8%',
+          height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.18), transparent)',
+        }}
+      />
+
       {/* Header */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          padding: '12px 16px 8px',
+          padding: '14px 18px 8px',
         }}
       >
         <div
@@ -115,21 +120,20 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
         />
         <span
           style={{
+            fontFamily: "var(--font-serif, 'Cinzel', serif)",
             fontSize: 10,
             fontWeight: 700,
-            letterSpacing: '0.1em',
+            letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.35)',
+            color: 'rgba(212,175,55,0.45)',
           }}
         >
           Заказывают сейчас
-          <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>·</span>
-          <span style={{ color: 'rgba(212,175,55,0.5)' }}>{hourlyCount} за последний час</span>
         </span>
       </div>
 
       {/* Feed items */}
-      <div style={{ padding: '0 16px 12px', minHeight: 108 }}>
+      <div style={{ padding: '0 18px 14px', minHeight: 108 }}>
         <AnimatePresence mode="popLayout" initial={false}>
           {items.map((item, i) => (
             <motion.div
@@ -143,7 +147,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '9px 0',
+                padding: '10px 0',
                 borderBottom:
                   i < items.length - 1
                     ? '1px solid rgba(255,255,255,0.04)'
@@ -163,11 +167,11 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
                   }}
                 >
                   {item.type}
-                  <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>·</span>
+                  <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 5px' }}>·</span>
                   <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>
                     {item.subject}
                   </span>
-                  <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>·</span>
+                  <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 5px' }}>·</span>
                   <span style={{ fontWeight: 600, color: 'rgba(212,175,55,0.45)' }}>
                     {item.university}
                   </span>

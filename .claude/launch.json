@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mini-app-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "mini-app"],
+      "port": 5173
+    },
+    {
+      "name": "backend-api",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["main.py"],
+      "port": 8000
+    }
+  ]
+}
