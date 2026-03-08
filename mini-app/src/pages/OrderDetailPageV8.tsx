@@ -3937,7 +3937,7 @@ export function OrderDetailPageV8() {
         <StickyActionBar
           order={order}
           paymentScheme={paymentScheme}
-          paymentExpired={Boolean(paymentCountdown && paymentCountdown.urgency === 'expired')}
+          paymentExpired={Boolean(countdown && countdown.urgency === 'expired')}
           onPaymentClick={handlePaymentClick}
           onContactManager={handleContactManager}
           onDownloadFiles={handleDownloadFiles}
