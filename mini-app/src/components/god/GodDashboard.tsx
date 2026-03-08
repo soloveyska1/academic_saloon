@@ -2,8 +2,8 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  DollarSign, Package, Users, Tag, Activity,
-  Bell, Check, X, AlertTriangle, RefreshCw,
+  DollarSign, Package, Users, Tag, Check, X,
+  Bell, AlertTriangle, ChevronRight,
 } from 'lucide-react'
 import {
   fetchGodDashboard,
@@ -14,7 +14,7 @@ import {
 import type { GodDashboard as GodDashboardData, GodOrder } from '../../types'
 import { formatMoney, withRouteParams, STATUS_CONFIG } from './godHelpers'
 import type { TabId } from './godHelpers'
-import { SectionHeader, StateCard, StatCard, FocusCard, LoadingSpinner } from './GodShared'
+import { StatCard, StateCard, LoadingSpinner } from './GodShared'
 import s from '../../pages/GodModePage.module.css'
 
 export const GodDashboard = memo(function GodDashboard() {
@@ -24,19 +24,14 @@ export const GodDashboard = memo(function GodDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
-  const previousPendingCountRef = useRef(0)
+  const prevPendingRef = useRef(0)
 
   const openRoute = useCallback(
     (tab: TabId, updates: Record<string, string | null | undefined>) => {
-      const next = withRouteParams(searchParams, {
-        tab,
-        order_status: null,
-        order_q: null,
-        user_filter: null,
-        user_q: null,
-        ...updates,
-      })
-      setSearchParams(next, { replace: true })
+      setSearchParams(
+        withRouteParams(searchParams, { tab, order_status: null, order_q: null, user_filter: null, user_q: null, ...updates }),
+        { replace: true },
+      )
     },
     [searchParams, setSearchParams],
   )
@@ -44,386 +39,197 @@ export const GodDashboard = memo(function GodDashboard() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [dashboardResult, ordersResult] = await Promise.all([
+      const [dash, ordRes] = await Promise.all([
         fetchGodDashboard(),
         fetchGodOrders({ status: 'verification_pending', limit: 10 }),
       ])
-      setData(dashboardResult)
-      setPendingOrders(ordersResult.orders)
+      setData(dash)
+      setPendingOrders(ordRes.orders)
       setError(null)
-
-      if (
-        ordersResult.orders.length > 0 &&
-        previousPendingCountRef.current < ordersResult.orders.length
-      ) {
-        try {
-          const audio = new Audio(
-            'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp2ckIB0aGRqeIyeo52SgHBjYGd3jJ+pqJuKd2hkaHqOnqmomox4aGVofI+gqqmai3doZWl9kKGrq5qKeGhlanySoaurmop4aGVqfZKhq6yainhoZWp9kqGrrJqKeGhlbH6SoausmYp4aGZsfpOiq6yZinhpZm1/k6KsrJmJeGlmbYCToqysmon/',
-          )
-          audio.volume = 0.3
-          audio.play().catch(() => {})
-        } catch {
-          /* silent */
-        }
+      if (ordRes.orders.length > prevPendingRef.current) {
+        try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp2ckIB0aGRqeIyeo52SgHBjYGd3jJ+pqJuKd2hkaHqOnqmomox4aGVofI+gqqmai3doZWl9kKGrq5qKeGhlanySoaurmop4aGVqfZKhq6yainhoZWp9kqGrrJqKeGhlbH6SoausmYp4aGZsfpOiq6yZinhpZm1/k6KsrJmJeGlmbYCToqysmon/').play().catch(() => {}) } catch {}
       }
-      previousPendingCountRef.current = ordersResult.orders.length
+      prevPendingRef.current = ordRes.orders.length
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Не удалось загрузить сводку'
-      setError(message)
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить')
     }
     setLoading(false)
   }, [])
 
   useEffect(() => {
     void load()
-    const interval = window.setInterval(() => void load(), 15000)
-    return () => window.clearInterval(interval)
+    const i = setInterval(() => void load(), 15000)
+    return () => clearInterval(i)
   }, [load])
 
-  const handleQuickConfirm = async (orderId: number) => {
+  const quickAction = async (orderId: number, action: 'confirm' | 'reject') => {
     setActionLoading(orderId)
     try {
-      await confirmGodPayment(orderId)
+      if (action === 'confirm') await confirmGodPayment(orderId)
+      else await rejectGodPayment(orderId, 'Платёж не найден')
       setPendingOrders((prev) => prev.filter((o) => o.id !== orderId))
       await load()
-      if (navigator.vibrate) navigator.vibrate(100)
-    } catch {
-      /* silent */
-    }
-    setActionLoading(null)
-  }
-
-  const handleQuickReject = async (orderId: number) => {
-    setActionLoading(orderId)
-    try {
-      await rejectGodPayment(orderId, 'Платёж не найден')
-      setPendingOrders((prev) => prev.filter((o) => o.id !== orderId))
-      await load()
-    } catch {
-      /* silent */
-    }
+      if (navigator.vibrate) navigator.vibrate(80)
+    } catch { /* silent */ }
     setActionLoading(null)
   }
 
   if (loading && !data) return <LoadingSpinner />
-
-  if (!data) {
-    return (
-      <StateCard
-        tone="error"
-        title="Сводка центра сейчас недоступна"
-        description={error || 'Не удалось собрать показатели админки.'}
-        actionLabel="Загрузить ещё раз"
-        onAction={() => void load()}
-      />
-    )
-  }
+  if (!data) return <StateCard tone="error" title="Сводка недоступна" description={error || 'Ошибка'} actionLabel="Повторить" onAction={() => void load()} />
 
   const focusQueues = [
-    {
-      id: 'pending',
-      label: 'Новые заявки',
-      count: data.orders.by_status.pending || 0,
-      description: 'Сразу забрать в работу и оценить объём.',
-      accent: '#f59e0b',
-      onClick: () => openRoute('orders', { order_status: 'pending' }),
-    },
-    {
-      id: 'waiting_estimation',
-      label: 'На оценке',
-      count: data.orders.by_status.waiting_estimation || 0,
-      description: 'Назначить цену и не потерять горячий спрос.',
-      accent: '#8b5cf6',
-      onClick: () => openRoute('orders', { order_status: 'waiting_estimation' }),
-    },
-    {
-      id: 'verification_pending',
-      label: 'Проверка оплаты',
-      count: data.orders.by_status.verification_pending || 0,
-      description: 'Подтвердить платёж и запустить заказ без задержки.',
-      accent: '#ec4899',
-      onClick: () => openRoute('orders', { order_status: 'verification_pending' }),
-    },
-    {
-      id: 'watched',
-      label: 'Клиенты под наблюдением',
-      count: data.users.watched || 0,
-      description: 'Проблемные и ценные клиенты в отдельной очереди.',
-      accent: '#D4AF37',
-      onClick: () => openRoute('users', { user_filter: 'watched' }),
-    },
+    { id: 'pending', label: 'Новые', count: data.orders.by_status.pending || 0, color: '#f59e0b', tab: 'orders' as TabId, filter: 'pending' },
+    { id: 'estimation', label: 'На оценке', count: data.orders.by_status.waiting_estimation || 0, color: '#8b5cf6', tab: 'orders' as TabId, filter: 'waiting_estimation' },
+    { id: 'verification', label: 'Оплата', count: data.orders.by_status.verification_pending || 0, color: '#ec4899', tab: 'orders' as TabId, filter: 'verification_pending' },
+    { id: 'watched', label: 'Наблюдение', count: data.users.watched || 0, color: '#d4af37', tab: 'users' as TabId, filter: 'watched' },
   ]
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className={`${s.flexColumn} ${s.gap16}`}
-    >
-      <SectionHeader
-        eyebrow="Контроль"
-        title="Центр управления"
-        description="Ключевые показатели, горячие очереди и быстрые действия, чтобы ничего не терялось между статусами."
-        meta={error ? 'Последняя загрузка прошла с предупреждением' : `Онлайн: ${data.users.online}`}
-      />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`${s.flexCol} ${s.gap8}`}>
 
-      {/* Quick Payment Verification */}
+      {/* Pending Payments */}
       {pendingOrders.length > 0 && (
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className={s.pendingAlert}
-        >
-          <div className={s.pendingAlertHeader}>
-            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }}>
-              <Bell size={20} color="#ec4899" />
-            </motion.div>
-            <span className={s.pendingAlertTitle}>Проверка оплаты ({pendingOrders.length})</span>
+        <div className={s.alertCard}>
+          <div className={s.alertHeader}>
+            <Bell size={14} /> Проверка оплаты — {pendingOrders.length}
           </div>
-          <div className={`${s.flexColumn} ${s.gap10}`} style={{ padding: 12 }}>
-            {pendingOrders.slice(0, 5).map((order) => (
-              <PendingOrderItem
-                key={order.id}
-                order={order}
-                loading={actionLoading === order.id}
-                onConfirm={() => handleQuickConfirm(order.id)}
-                onReject={() => handleQuickReject(order.id)}
-              />
-            ))}
+          <div className={s.alertBody}>
+            <AnimatePresence>
+              {pendingOrders.slice(0, 5).map((order) => (
+                <motion.div key={order.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: 20 }} className={s.alertItem}>
+                  <div className={s.flex1}>
+                    <div className={`${s.flexRow} ${s.gap6}`}>
+                      <span className={`${s.textWhite} ${s.bold}`} style={{ fontSize: 13 }}>#{order.id}</span>
+                      <span className={s.textGold} style={{ fontSize: 13, fontWeight: 700 }}>{order.final_price.toLocaleString()}₽</span>
+                      {order.promo_code && <span className={s.tagBlue} style={{ fontSize: 10 }}>{order.promo_code}</span>}
+                    </div>
+                    <div className={s.muted}>{order.user_fullname} · {order.work_type_label}</div>
+                  </div>
+                  <div className={`${s.flexRow} ${s.gap4}`}>
+                    <button type="button" onClick={() => quickAction(order.id, 'confirm')} disabled={actionLoading === order.id} className={s.iconBtn} style={{ background: '#16a34a', opacity: actionLoading === order.id ? 0.4 : 1 }}>
+                      <Check size={16} color="#fff" />
+                    </button>
+                    <button type="button" onClick={() => quickAction(order.id, 'reject')} disabled={actionLoading === order.id} className={s.iconBtn} style={{ background: '#dc2626', opacity: actionLoading === order.id ? 0.4 : 1 }}>
+                      <X size={16} color="#fff" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
-        </motion.div>
+        </div>
       )}
 
-      {/* Attention Alert */}
+      {/* Attention */}
       {data.orders.needing_attention > 0 && (
-        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className={s.attentionAlert}>
-          <AlertTriangle size={24} color="#ef4444" />
-          <div className={s.flex1}>
-            <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 14 }}>
-              Требуют внимания: {data.orders.needing_attention}
-            </div>
-            <div className={s.muted}>Новые, на оценке и на проверке оплаты</div>
-          </div>
-        </motion.div>
+        <div className={s.attentionBar}>
+          <AlertTriangle size={14} /> Требуют внимания: {data.orders.needing_attention}
+        </div>
       )}
 
       {/* Focus queues */}
-      <div className={s.statGrid2}>
+      <div className={`${s.flexCol} ${s.gap4}`}>
         {focusQueues.map((q) => (
-          <FocusCard key={q.id} {...q} />
+          <button
+            key={q.id}
+            type="button"
+            className={s.focusItem}
+            onClick={() => openRoute(q.tab, q.tab === 'users' ? { user_filter: q.filter } : { order_status: q.filter })}
+          >
+            <div className={s.focusCount} style={{ background: `${q.color}18`, color: q.color }}>{q.count}</div>
+            <div className={s.flex1}>
+              <div className={s.focusLabel}>{q.label}</div>
+            </div>
+            <ChevronRight size={14} color="#52525b" />
+          </button>
         ))}
       </div>
 
       {/* Revenue */}
       <div className={s.card}>
-        <div className={s.sectionIcon}>
-          <DollarSign size={20} color="#D4AF37" />
-          <span className={s.sectionIconLabel}>Выручка</span>
-          <button type="button" onClick={load} className={s.ghostBtn} style={{ marginLeft: 'auto' }}>
-            <RefreshCw size={16} color="rgba(255,255,255,0.4)" />
-          </button>
+        <div className={s.sectionTitle}>
+          <DollarSign size={13} className={s.sectionTitleIcon} /> Выручка
         </div>
-        <div className={s.statGrid2}>
+        <div className={s.statRow}>
           <StatCard label="Сегодня" value={`${data.revenue.today.toLocaleString()}₽`} color="#22c55e" />
           <StatCard label="Неделя" value={`${data.revenue.week.toLocaleString()}₽`} color="#3b82f6" />
           <StatCard label="Месяц" value={`${data.revenue.month.toLocaleString()}₽`} color="#8b5cf6" />
-          <StatCard label="Всего" value={`${data.revenue.total.toLocaleString()}₽`} color="#D4AF37" />
+          <StatCard label="Всего" value={`${data.revenue.total.toLocaleString()}₽`} color="#d4af37" />
         </div>
-        <div className={s.cardSubtext} style={{ marginTop: 12 }}>
-          Средний чек: {data.revenue.average_order.toLocaleString()}₽
-        </div>
+        <div className={s.mutedSmall} style={{ marginTop: 6 }}>Средний чек: {data.revenue.average_order.toLocaleString()}₽</div>
       </div>
 
       {/* Orders */}
       <div className={s.card}>
-        <div className={s.sectionIcon}>
-          <Package size={20} color="#D4AF37" />
-          <span className={s.sectionIconLabel}>Заказы</span>
+        <div className={s.sectionTitle}>
+          <Package size={13} className={s.sectionTitleIcon} /> Заказы
         </div>
-        <div className={s.statGrid2}>
+        <div className={s.statRow}>
           <StatCard label="Активных" value={data.orders.active} color="#3b82f6" />
           <StatCard label="Сегодня" value={data.orders.today} color="#22c55e" />
-          <StatCard label="Завершено сегодня" value={data.orders.completed_today} color="#8b5cf6" />
-          <StatCard label="Всего" value={data.orders.total} color="#D4AF37" />
+          <StatCard label="Готово" value={data.orders.completed_today} color="#8b5cf6" />
+          <StatCard label="Всего" value={data.orders.total} color="#d4af37" />
         </div>
       </div>
 
       {/* Users */}
       <div className={s.card}>
-        <div className={s.sectionIcon}>
-          <Users size={20} color="#D4AF37" />
-          <span className={s.sectionIconLabel}>Пользователи</span>
+        <div className={s.sectionTitle}>
+          <Users size={13} className={s.sectionTitleIcon} /> Пользователи
         </div>
-        <div className={s.statGrid2}>
+        <div className={s.statRow}>
           <StatCard label="Онлайн" value={data.users.online} color="#22c55e" />
           <StatCard label="Сегодня" value={data.users.today} color="#3b82f6" />
-          <StatCard label="За неделю" value={data.users.week} color="#8b5cf6" />
-          <StatCard label="Всего" value={data.users.total} color="#D4AF37" />
+          <StatCard label="Неделя" value={data.users.week} color="#8b5cf6" />
+          <StatCard label="Всего" value={data.users.total} color="#d4af37" />
         </div>
-        <div className={s.flexRow} style={{ marginTop: 12, gap: 16 }}>
-          <span className={s.cardSubtext}>Забанено: {data.users.banned}</span>
-          <span className={s.cardSubtext}>Под наблюдением: {data.users.watched}</span>
-        </div>
-        <div className={s.cardSubtextGold} style={{ marginTop: 8 }}>
-          Общий баланс бонусов: {data.users.total_bonus_balance.toLocaleString()}₽
+        <div className={`${s.flexRow} ${s.gap12}`} style={{ marginTop: 6 }}>
+          <span className={s.mutedSmall}>Бан: {data.users.banned}</span>
+          <span className={s.mutedSmall}>Наблюдение: {data.users.watched}</span>
+          <span className={s.mutedSmall} style={{ color: '#d4af37' }}>Бонусы: {data.users.total_bonus_balance.toLocaleString()}₽</span>
         </div>
       </div>
 
       {/* Promos */}
       <div className={s.card}>
-        <div className={s.sectionIcon}>
-          <Tag size={20} color="#D4AF37" />
-          <span className={s.sectionIconLabel}>Промокоды</span>
+        <div className={s.sectionTitle}>
+          <Tag size={13} className={s.sectionTitleIcon} /> Промо
         </div>
-        <div className={s.statGrid2}>
-          <StatCard label="Всего" value={data.promos.total} color="#D4AF37" />
+        <div className={s.statRow}>
+          <StatCard label="Всего" value={data.promos.total} color="#d4af37" />
           <StatCard label="Активных" value={data.promos.active} color="#22c55e" />
-          <StatCard label="Использований" value={data.promos.total_uses} color="#3b82f6" />
-          <StatCard label="Сэкономлено" value={`${data.promos.total_discount_given.toLocaleString()}₽`} color="#8b5cf6" />
+          <StatCard label="Исп." value={data.promos.total_uses} color="#3b82f6" />
+          <StatCard label="Скидки" value={`${data.promos.total_discount_given.toLocaleString()}₽`} color="#8b5cf6" />
         </div>
         {data.promos.popular.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div className={s.muted} style={{ marginBottom: 8 }}>Популярные промокоды:</div>
-            <div className={`${s.flexColumn} ${s.gap8}`}>
-              {data.promos.popular.map((promo, idx) => (
-                <div
-                  key={promo.code}
-                  className={s.flexRow}
-                  style={{
-                    gap: 8,
-                    padding: '6px 10px',
-                    background: 'rgba(212,175,55,0.1)',
-                    borderRadius: 6,
-                    borderLeft: `3px solid ${idx === 0 ? '#D4AF37' : idx === 1 ? '#c0c0c0' : '#cd7f32'}`,
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
-                  <span style={{ color: '#D4AF37', fontWeight: 600, fontSize: 13 }}>{promo.code}</span>
-                  <span className={s.mlAuto} style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-                    {promo.uses} исп.
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div className={`${s.flexRow} ${s.flexWrap} ${s.gap4}`} style={{ marginTop: 6 }}>
+            {data.promos.popular.map((p, i) => (
+              <span key={p.code} className={s.tagGold} style={{ fontSize: 10 }}>
+                {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {p.code} ({p.uses})
+              </span>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Orders by status */}
+      {/* By status */}
       <div className={s.card}>
-        <div className={s.sectionIcon}>
-          <Activity size={20} color="#D4AF37" />
-          <span className={s.sectionIconLabel}>По статусам</span>
-        </div>
-        <div className={`${s.flexColumn} ${s.gap8}`}>
+        <div className={s.sectionTitle}>По статусам</div>
+        <div className={`${s.flexCol} ${s.gap4}`}>
           {Object.entries(data.orders.by_status)
-            .filter(([, count]) => count > 0)
+            .filter(([, c]) => c > 0)
             .sort(([, a], [, b]) => b - a)
-            .map(([status, count]) => {
-              const cfg = STATUS_CONFIG[status] || { label: status, emoji: '📋', color: '#fff', bg: 'rgba(255,255,255,0.1)' }
+            .map(([st, count]) => {
+              const cfg = STATUS_CONFIG[st] || { label: st, emoji: '📋', color: '#fff', bg: 'rgba(255,255,255,0.06)' }
               return (
-                <div
-                  key={status}
-                  className={s.flexRow}
-                  style={{ gap: 10, padding: '8px 12px', background: cfg.bg, borderRadius: 8 }}
-                >
-                  <span>{cfg.emoji}</span>
-                  <span style={{ color: cfg.color, fontWeight: 500, flex: 1 }}>{cfg.label}</span>
-                  <span style={{ color: '#fff', fontWeight: 700 }}>{count}</span>
+                <div key={st} className={`${s.flexRow} ${s.gap8}`} style={{ padding: '4px 8px', borderRadius: 6, background: cfg.bg }}>
+                  <span style={{ fontSize: 12 }}>{cfg.emoji}</span>
+                  <span style={{ color: cfg.color, fontSize: 12, fontWeight: 500, flex: 1 }}>{cfg.label}</span>
+                  <span className={`${s.textWhite} ${s.bold}`} style={{ fontSize: 12 }}>{count}</span>
                 </div>
               )
             })}
         </div>
-      </div>
-    </motion.div>
-  )
-})
-
-/* ─── Pending Order Item ─── */
-
-const PendingOrderItem = memo(function PendingOrderItem({
-  order,
-  loading,
-  onConfirm,
-  onReject,
-}: {
-  order: GodOrder
-  loading: boolean
-  onConfirm: () => void
-  onReject: () => void
-}) {
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      className={s.pendingItem}
-    >
-      <div className={s.flex1}>
-        <div className={s.flexRow} style={{ color: '#fff', fontWeight: 600, fontSize: 14, gap: 8, flexWrap: 'wrap' }}>
-          <span>
-            #{order.id} •{' '}
-            {order.promo_code && order.price !== order.final_price && (
-              <span style={{ textDecoration: 'line-through', color: 'rgba(255,255,255,0.4)', marginRight: 4 }}>
-                {order.price.toLocaleString()}
-              </span>
-            )}
-            <span style={{ color: order.promo_code ? '#22c55e' : '#fff' }}>
-              {order.final_price.toLocaleString()}₽
-            </span>
-          </span>
-          {order.promo_code && (
-            <span
-              style={{
-                padding: '3px 8px',
-                background: 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(34,197,94,0.2))',
-                border: '1px solid rgba(139,92,246,0.5)',
-                color: '#a78bfa',
-                borderRadius: 6,
-                fontSize: 10,
-                fontWeight: 700,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              🎟️ {order.promo_code} −{order.promo_discount}%
-            </span>
-          )}
-        </div>
-        <div className={s.muted}>
-          {order.user_fullname} • {order.work_type_label}
-        </div>
-      </div>
-      <div className={s.flexRow} style={{ gap: 8 }}>
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.9 }}
-          onClick={onConfirm}
-          disabled={loading}
-          className={s.iconBtn}
-          style={{
-            background: 'linear-gradient(180deg, #22c55e, #16a34a)',
-            opacity: loading ? 0.5 : 1,
-          }}
-        >
-          <Check size={20} color="#fff" />
-        </motion.button>
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.9 }}
-          onClick={onReject}
-          disabled={loading}
-          className={s.iconBtn}
-          style={{
-            background: 'linear-gradient(180deg, #ef4444, #dc2626)',
-            opacity: loading ? 0.5 : 1,
-          }}
-        >
-          <X size={20} color="#fff" />
-        </motion.button>
       </div>
     </motion.div>
   )

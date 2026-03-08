@@ -32,9 +32,7 @@ export function useGodWebSocket(
       }
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => {})
-    } catch {
-      /* silent */
-    }
+    } catch { /* silent */ }
   }, [soundEnabled])
 
   const addNotification = useCallback(
@@ -52,7 +50,6 @@ export function useGodWebSocket(
     [playSound],
   )
 
-  // WebSocket connection
   useEffect(() => {
     if (!isAdmin || !telegramId) return
 
@@ -60,31 +57,26 @@ export function useGodWebSocket(
 
     const connectWs = () => {
       const ws = new WebSocket(`${API_WS_URL}?telegram_id=${telegramId}`)
-
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
           if (data.type === 'admin_new_order') {
-            const order = data.order
             addNotification({
               type: 'new_order',
-              title: '🆕 Новый заказ',
-              message: `#${order.id} - ${order.work_type_label}\n${order.subject}\nОт: ${order.user_fullname}`,
-              data: order,
+              title: 'Новый заказ',
+              message: `#${data.order.id} — ${data.order.work_type_label}\n${data.order.user_fullname}`,
+              data: data.order,
             })
           } else if (data.type === 'admin_payment_pending') {
             addNotification({
               type: 'payment_pending',
-              title: '💳 Ожидает оплаты',
-              message: `Заказ #${data.order_id}\nСумма: ${data.amount}₽\nОт: ${data.user_fullname}`,
+              title: 'Проверка оплаты',
+              message: `#${data.order_id} — ${data.amount}₽\n${data.user_fullname}`,
               data,
             })
           }
-        } catch {
-          /* ignore parse errors */
-        }
+        } catch { /* ignore */ }
       }
-
       ws.onclose = () => setTimeout(connectWs, 3000)
       ws.onerror = () => ws.close()
       wsRef.current = ws
@@ -94,34 +86,20 @@ export function useGodWebSocket(
 
     return () => {
       unsubscribeGodNotifications().catch(() => {})
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
+      if (wsRef.current) { wsRef.current.close(); wsRef.current = null }
     }
   }, [isAdmin, telegramId, addNotification])
 
-  // Clear unread on dashboard
   useEffect(() => {
     if (activeTab === 'dashboard') setUnreadCount(0)
   }, [activeTab])
-
-  const dismissFirst = useCallback(
-    () => setNotifications((prev) => prev.slice(1)),
-    [],
-  )
-
-  const toggleSound = useCallback(
-    () => setSoundEnabled((v) => !v),
-    [],
-  )
 
   return {
     notifications,
     soundEnabled,
     unreadCount,
-    toggleSound,
-    dismissFirst,
+    toggleSound: useCallback(() => setSoundEnabled((v) => !v), []),
+    dismissFirst: useCallback(() => setNotifications((prev) => prev.slice(1)), []),
   }
 }
 
@@ -140,64 +118,42 @@ export function NotificationToast({ notifications, onDismiss }: NotifToastProps)
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, y: -20, height: 0 }}
-          animate={{ opacity: 1, y: 0, height: 'auto' }}
-          exit={{ opacity: 0, y: -20, height: 0 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
           className={s.notifToast}
           style={{
-            background:
-              latest.type === 'new_order'
-                ? 'rgba(34,197,94,0.15)'
-                : 'rgba(236,72,153,0.15)',
-            border: `1px solid ${
-              latest.type === 'new_order'
-                ? 'rgba(34,197,94,0.3)'
-                : 'rgba(236,72,153,0.3)'
-            }`,
+            background: latest.type === 'new_order'
+              ? 'rgba(34,197,94,0.15)' : 'rgba(236,72,153,0.15)',
+            border: `1px solid ${latest.type === 'new_order'
+              ? 'rgba(34,197,94,0.3)' : 'rgba(236,72,153,0.3)'}`,
           }}
         >
-          <div className={s.flexRow} style={{ alignItems: 'flex-start', gap: 12 }}>
-            <div
-              className={s.notifIcon}
-              style={{
-                background:
-                  latest.type === 'new_order'
-                    ? 'rgba(34,197,94,0.2)'
-                    : 'rgba(236,72,153,0.2)',
-              }}
-            >
-              {latest.type === 'new_order' ? (
-                <Package size={16} color="#22c55e" />
-              ) : (
-                <CreditCard size={16} color="#ec4899" />
-              )}
-            </div>
-            <div className={s.flex1}>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: latest.type === 'new_order' ? '#22c55e' : '#ec4899',
-                  marginBottom: 4,
-                }}
-              >
-                {latest.title}
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'rgba(255,255,255,0.7)',
-                  whiteSpace: 'pre-line',
-                  lineHeight: 1.4,
-                }}
-              >
-                {latest.message}
-              </div>
-            </div>
-            <button type="button" onClick={onDismiss} className={s.ghostBtn}>
-              <X size={14} />
-            </button>
+          <div
+            className={s.notifIcon}
+            style={{
+              background: latest.type === 'new_order'
+                ? 'rgba(34,197,94,0.2)' : 'rgba(236,72,153,0.2)',
+            }}
+          >
+            {latest.type === 'new_order'
+              ? <Package size={14} color="#22c55e" />
+              : <CreditCard size={14} color="#ec4899" />}
           </div>
+          <div className={s.flex1}>
+            <div style={{
+              fontSize: 12, fontWeight: 600, marginBottom: 2,
+              color: latest.type === 'new_order' ? '#22c55e' : '#ec4899',
+            }}>
+              {latest.title}
+            </div>
+            <div style={{ fontSize: 11, color: '#a1a1aa', whiteSpace: 'pre-line', lineHeight: 1.4 }}>
+              {latest.message}
+            </div>
+          </div>
+          <button type="button" onClick={onDismiss} className={s.ghostBtn}>
+            <X size={14} />
+          </button>
         </motion.div>
       )}
     </AnimatePresence>

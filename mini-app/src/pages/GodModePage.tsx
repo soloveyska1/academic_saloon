@@ -1,21 +1,18 @@
 /**
- * GOD MODE - Full Admin Control Panel (Orchestrator)
- * ===================================================
- * Thin shell: auth guards, header, tabs, WebSocket → delegates to tab components.
- * Access restricted to ADMIN_IDS only (verified via Telegram initData).
+ * GOD MODE v2 — Compact Admin Panel
+ * Thin orchestrator: auth → topbar → tabs → content
  */
 
 import { useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import {
-  Crown, Home, Users, Bell, Shield,
-  Volume2, VolumeX,
+  Crown, ArrowLeft, Users, Volume2, VolumeX, Bell, Shield,
 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAdmin } from '../contexts/AdminContext'
 import { getLastAppRoute } from '../utils/navigation'
 
-import { getActiveTab, withRouteParams, formatPageLabel, TAB_META } from '../components/god/godHelpers'
+import { getActiveTab, withRouteParams } from '../components/god/godHelpers'
 import type { TabId } from '../components/god/godHelpers'
 import { LoadingSpinner } from '../components/god/GodShared'
 import { GodTabBar } from '../components/god/GodTabBar'
@@ -37,51 +34,31 @@ export function GodModePage() {
   const { isAdmin, telegramId, simulateNewUser, toggleSimulateNewUser, accessResolved } = useAdmin()
   const activeTab = useMemo(() => getActiveTab(searchParams), [searchParams])
   const appReturnPath = useMemo(() => getLastAppRoute(), [])
-  const appReturnLabel = useMemo(
-    () => formatPageLabel(appReturnPath.split('?')[0] || '/'),
-    [appReturnPath],
-  )
-
-  /* ═══════ WebSocket ═══════ */
 
   const {
-    notifications,
-    soundEnabled,
-    unreadCount,
-    toggleSound,
-    dismissFirst,
+    notifications, soundEnabled, unreadCount, toggleSound, dismissFirst,
   } = useGodWebSocket(isAdmin, telegramId, activeTab)
-
-  /* ═══════ Handlers ═══════ */
 
   const handleTabChange = useCallback(
     (tab: TabId) => {
-      const next = withRouteParams(searchParams, {
-        tab,
-        order_q: null,
-        order_status: null,
-        user_q: null,
-        user_filter: null,
-      })
-      setSearchParams(next, { replace: true })
+      setSearchParams(
+        withRouteParams(searchParams, {
+          tab,
+          order_q: null, order_status: null,
+          user_q: null, user_filter: null,
+        }),
+        { replace: true },
+      )
     },
     [searchParams, setSearchParams],
   )
 
-  const handleReturnToApp = useCallback(() => {
-    navigate(appReturnPath || '/')
-  }, [appReturnPath, navigate])
-
-  /* ═══════ Auth guards ═══════ */
-
+  /* Auth guards */
   if (!accessResolved) {
     return (
       <div className={s.loadingScreen}>
         <LoadingSpinner />
-        <div className={s.loadingLabel}>Проверяем доступ к операционному центру</div>
-        <div className={s.loadingSub}>
-          Подтягиваем Telegram-сессию и права администратора.
-        </div>
+        <div className={s.loadingLabel}>Проверка доступа…</div>
       </div>
     )
   }
@@ -89,117 +66,85 @@ export function GodModePage() {
   if (!isAdmin) {
     return (
       <div className={s.deniedScreen}>
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={s.deniedIcon}>
-          <Shield size={40} color="#ef4444" />
-        </motion.div>
+        <div className={s.deniedIcon}><Shield size={28} color="#ef4444" /></div>
         <h1 className={s.deniedTitle}>Доступ закрыт</h1>
-        <p className={s.deniedText}>
-          У вас нет доступа к админ-панели. Если это ошибка, проверьте права доступа.
-        </p>
+        <p className={s.deniedText}>Нет прав администратора.</p>
       </div>
     )
   }
 
-  /* ═══════ Render ═══════ */
-
   return (
     <div className={s.adminPage}>
-      {/* ── Sticky header ── */}
+      {/* ── Compact top bar ── */}
       <div className={s.stickyHeader}>
-        <div className={s.headerCard}>
-          <div className={s.headerTop}>
-            <div className={s.headerInfo}>
-              <div className={s.headerCrown}>
-                <Crown size={24} color="#0a0a0c" />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div className={s.headerEyebrow}>Админка салона</div>
-                <h1 className={s.headerTitle}>Операционный центр</h1>
-                <p className={s.headerDescription}>
-                  Заказы, клиенты, промокоды и вся операционная работа в одном ритме с приложением.
-                </p>
-              </div>
-            </div>
-
-            <div className={s.headerActions}>
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={handleReturnToApp}
-                className={s.secondaryBtn}
-                title={`Вернуться на экран "${appReturnLabel}"`}
-              >
-                <Home size={16} /> Вернуться в приложение
-              </motion.button>
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={toggleSimulateNewUser}
-                className={s.secondaryBtn}
-                style={{
-                  background: simulateNewUser
-                    ? 'linear-gradient(180deg, rgba(168,85,247,0.22), rgba(124,58,237,0.16))'
-                    : undefined,
-                  border: simulateNewUser ? '1px solid rgba(196,181,253,0.32)' : '1px solid rgba(255,255,255,0.08)',
-                  color: simulateNewUser ? '#ddd6fe' : '#fff',
-                }}
-                title={simulateNewUser ? 'Выключить полный сценарий новичка' : 'Включить полный сценарий новичка'}
-              >
-                <Users size={16} />
-                {simulateNewUser ? 'Тест новичка активен' : 'Сценарий новичка'}
-              </motion.button>
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={toggleSound}
-                className={s.secondaryBtn}
-                style={{
-                  background: soundEnabled
-                    ? 'linear-gradient(180deg, rgba(34,197,94,0.18), rgba(21,128,61,0.12))'
-                    : 'linear-gradient(180deg, rgba(239,68,68,0.16), rgba(153,27,27,0.12))',
-                  border: `1px solid ${soundEnabled ? 'rgba(34,197,94,0.26)' : 'rgba(239,68,68,0.26)'}`,
-                  color: soundEnabled ? '#bbf7d0' : '#fecaca',
-                }}
-              >
-                {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                {soundEnabled ? 'Звук включён' : 'Звук выключен'}
-              </motion.button>
-            </div>
+        <div className={s.topBar}>
+          <div className={s.topBarLogo}>
+            <Crown size={14} color="#0a0a0c" strokeWidth={2.5} />
           </div>
+          <span className={s.topBarTitle}>God Mode</span>
 
-          {/* Badges */}
-          <div className={s.headerBadges}>
-            <span className={s.badgeGoldEyebrow}>
-              Раздел: {TAB_META.find((t) => t.id === activeTab)?.label}
-            </span>
-            <span className={s.badgeNeutral}>Возврат: {appReturnLabel}</span>
-            <span
-              className={unreadCount > 0 ? s.badgeDanger : s.badgeSuccess}
+          <div className={s.topBarActions}>
+            {/* Sound */}
+            <button
+              type="button"
+              onClick={toggleSound}
+              className={soundEnabled ? s.topBarBtnActive : s.topBarBtn}
+              title={soundEnabled ? 'Звук вкл' : 'Звук выкл'}
             >
-              <Bell size={14} />
-              {unreadCount > 0 ? `${unreadCount} новых сигналов` : 'Сигналы под контролем'}
-            </span>
-          </div>
+              {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+            </button>
 
-          {/* Notification toast */}
-          <NotificationToast notifications={notifications} onDismiss={dismissFirst} />
+            {/* Simulate new user */}
+            <button
+              type="button"
+              onClick={toggleSimulateNewUser}
+              className={simulateNewUser ? s.topBarBtnActive : s.topBarBtn}
+              title="Тест новичка"
+            >
+              <Users size={15} />
+            </button>
+
+            {/* Notifications */}
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => handleTabChange('dashboard')}
+                className={unreadCount > 0 ? s.topBarBtnDanger : s.topBarBtn}
+              >
+                <Bell size={15} />
+              </button>
+              {unreadCount > 0 && <span className={s.unreadBadge}>{unreadCount}</span>}
+            </div>
+
+            {/* Back */}
+            <button
+              type="button"
+              onClick={() => navigate(appReturnPath || '/')}
+              className={s.topBarBtn}
+              title="Назад"
+            >
+              <ArrowLeft size={15} />
+            </button>
+          </div>
         </div>
 
-        {/* Tabs */}
         <GodTabBar activeTab={activeTab} onTabChange={handleTabChange} />
       </div>
+
+      {/* Toast */}
+      <NotificationToast notifications={notifications} onDismiss={dismissFirst} />
 
       {/* ── Content ── */}
       <div className={s.content}>
         <AnimatePresence mode="wait">
-          {activeTab === 'dashboard' && <GodDashboard key="dashboard" />}
-          {activeTab === 'orders' && <GodOrders key="orders" />}
-          {activeTab === 'users' && <GodUsers key="users" />}
-          {activeTab === 'promos' && <GodPromos key="promos" />}
-          {activeTab === 'live' && <GodLive key="live" />}
-          {activeTab === 'logs' && <GodLogs key="logs" />}
-          {activeTab === 'sql' && <GodSQL key="sql" />}
-          {activeTab === 'broadcast' && <GodBroadcast key="broadcast" />}
+          {activeTab === 'dashboard' && <GodDashboard key="d" />}
+          {activeTab === 'orders' && <GodOrders key="o" />}
+          {activeTab === 'users' && <GodUsers key="u" />}
+          {activeTab === 'promos' && <GodPromos key="p" />}
+          {activeTab === 'live' && <GodLive key="l" />}
+          {activeTab === 'logs' && <GodLogs key="lg" />}
+          {activeTab === 'sql' && <GodSQL key="s" />}
+          {activeTab === 'broadcast' && <GodBroadcast key="b" />}
         </AnimatePresence>
       </div>
     </div>

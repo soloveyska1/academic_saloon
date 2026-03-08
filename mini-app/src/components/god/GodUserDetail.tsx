@@ -1,285 +1,133 @@
 import { memo, useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Check, Ban, Eye, EyeOff, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
-import {
-  fetchGodUserDetails,
-  modifyGodUserBalance,
-  toggleGodUserBan,
-  toggleGodUserWatch,
-  updateGodUserNotes,
-} from '../../api/userApi'
+import { fetchGodUserDetails, modifyGodUserBalance, toggleGodUserBan, toggleGodUserWatch, updateGodUserNotes } from '../../api/userApi'
 import type { GodUser, GodOrder } from '../../types'
 import { useToast } from '../ui/Toast'
 import { STATUS_CONFIG, TRANSACTION_REASON_LABELS, formatMoney, formatDateTime } from './godHelpers'
 import s from '../../pages/GodModePage.module.css'
 
-interface Props {
-  user: GodUser
-  onClose: () => void
-  onUpdate: () => void
-}
-
-interface Transaction {
-  id: number
-  amount: number
-  type: string
-  reason: string
-  description: string | null
-  created_at: string | null
-}
+interface Props { user: GodUser; onClose: () => void; onUpdate: () => void }
+interface Transaction { id: number; amount: number; type: string; reason: string; description: string | null; created_at: string | null }
 
 export const GodUserDetail = memo(function GodUserDetail({ user, onClose, onUpdate }: Props) {
   const { showToast } = useToast()
-  const [detailUser, setDetailUser] = useState<GodUser>(user)
+  const [det, setDet] = useState<GodUser>(user)
   const [orders, setOrders] = useState<GodOrder[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [detailsLoading, setDetailsLoading] = useState(true)
-  const [balanceAmount, setBalanceAmount] = useState('')
+  const [detLoading, setDetLoading] = useState(true)
+  const [balanceAmt, setBalanceAmt] = useState('')
   const [balanceReason, setBalanceReason] = useState('')
   const [notes, setNotes] = useState(user.admin_notes || '')
   const [saving, setSaving] = useState(false)
 
   const loadDetails = useCallback(async () => {
-    setDetailsLoading(true)
-    try {
-      const data = await fetchGodUserDetails(user.telegram_id)
-      setDetailUser(data.user as GodUser)
-      setOrders(data.orders as GodOrder[])
-      setTransactions(data.transactions)
-      setNotes((data.user as GodUser).admin_notes || '')
-    } catch {
-      showToast({ type: 'error', title: 'Не удалось открыть клиента', message: 'Попробуйте обновить данные ещё раз' })
-    } finally {
-      setDetailsLoading(false)
-    }
+    setDetLoading(true)
+    try { const data = await fetchGodUserDetails(user.telegram_id); setDet(data.user as GodUser); setOrders(data.orders as GodOrder[]); setTransactions(data.transactions); setNotes((data.user as GodUser).admin_notes || '') }
+    catch { showToast({ type: 'error', title: 'Ошибка', message: 'Не удалось загрузить' }) }
+    finally { setDetLoading(false) }
   }, [showToast, user.telegram_id])
 
-  useEffect(() => {
-    setDetailUser(user)
-    setNotes(user.admin_notes || '')
-    setOrders([])
-    setTransactions([])
-  }, [user])
-
+  useEffect(() => { setDet(user); setNotes(user.admin_notes || ''); setOrders([]); setTransactions([]) }, [user])
   useEffect(() => { loadDetails() }, [loadDetails])
+  const refreshAll = useCallback(async () => { await Promise.all([loadDetails(), Promise.resolve(onUpdate())]) }, [loadDetails, onUpdate])
 
-  const refreshAll = useCallback(async () => {
-    await Promise.all([loadDetails(), Promise.resolve(onUpdate())])
-  }, [loadDetails, onUpdate])
+  const act = async (fn: () => Promise<void>, ok: string) => { setSaving(true); try { await fn(); showToast({ type: 'success', title: ok }); await refreshAll() } catch { showToast({ type: 'error', title: 'Ошибка' }) } setSaving(false) }
 
-  const handleBalance = async (add: boolean) => {
-    if (!balanceAmount) return
-    setSaving(true)
-    try {
-      const amount = add ? parseFloat(balanceAmount) : -parseFloat(balanceAmount)
-      await modifyGodUserBalance(detailUser.telegram_id, amount, balanceReason || 'Ручная корректировка', true)
-      setBalanceAmount('')
-      setBalanceReason('')
-      showToast({ type: 'success', title: 'Баланс обновлён' })
-      await refreshAll()
-    } catch {
-      showToast({ type: 'error', title: 'Не удалось изменить баланс' })
-    }
-    setSaving(false)
+  const handleBalance = (add: boolean) => {
+    if (!balanceAmt) return
+    const amount = add ? parseFloat(balanceAmt) : -parseFloat(balanceAmt)
+    act(async () => { await modifyGodUserBalance(det.telegram_id, amount, balanceReason || 'Ручная корректировка', true); setBalanceAmt(''); setBalanceReason('') }, 'Баланс ✓')
   }
-
-  const handleBan = async () => {
-    setSaving(true)
-    try {
-      await toggleGodUserBan(detailUser.telegram_id, !detailUser.is_banned)
-      showToast({ type: 'success', title: detailUser.is_banned ? 'Блокировка снята' : 'Клиент заблокирован' })
-      await refreshAll()
-      if (!detailUser.is_banned) onClose()
-    } catch {
-      showToast({ type: 'error', title: 'Не удалось изменить блокировку' })
-    }
-    setSaving(false)
-  }
-
-  const handleWatch = async () => {
-    setSaving(true)
-    try {
-      await toggleGodUserWatch(detailUser.telegram_id, !detailUser.is_watched)
-      showToast({ type: 'success', title: detailUser.is_watched ? 'Наблюдение снято' : 'Клиент добавлен под наблюдение' })
-      await refreshAll()
-    } catch {
-      showToast({ type: 'error', title: 'Не удалось изменить наблюдение' })
-    }
-    setSaving(false)
-  }
-
-  const handleSaveNotes = async () => {
-    setSaving(true)
-    try {
-      await updateGodUserNotes(detailUser.telegram_id, notes)
-      showToast({ type: 'success', title: 'Заметки сохранены' })
-      await refreshAll()
-    } catch {
-      showToast({ type: 'error', title: 'Не удалось сохранить заметки' })
-    }
-    setSaving(false)
-  }
-
-  const recentOrders = orders.slice(0, 5)
-  const recentTransactions = transactions.slice(0, 5)
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-      className={s.modalOverlay}
-    >
-      <motion.div
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        exit={{ y: 100 }}
-        onClick={(e) => e.stopPropagation()}
-        className={s.modalSheet}
-      >
-        {/* Header */}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className={s.modalOverlay}>
+      <motion.div initial={{ y: 80 }} animate={{ y: 0 }} exit={{ y: 80 }} onClick={(e) => e.stopPropagation()} className={s.modalSheet}>
+
         <div className={s.modalHeader}>
-          <div style={{ fontSize: 32 }}>{detailUser.rank_emoji}</div>
+          <span style={{ fontSize: 24 }}>{det.rank_emoji}</span>
           <div className={s.flex1}>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>
-              {detailUser.fullname || 'Клиент без имени'}
-            </div>
-            <div className={s.muted}>
-              {detailUser.username ? `@${detailUser.username}` : 'Без username'} • ID: {detailUser.telegram_id}
-            </div>
+            <div className={`${s.textWhite} ${s.bold}`} style={{ fontSize: 15 }}>{det.fullname || 'Без имени'}</div>
+            <div className={s.mutedSmall}>{det.username ? `@${det.username}` : 'Без username'} · ID: {det.telegram_id}</div>
           </div>
-          <button type="button" onClick={onClose} className={s.ghostBtn}>
-            <X size={24} color="rgba(255,255,255,0.5)" />
-          </button>
+          <button type="button" onClick={onClose} className={s.ghostBtn}><X size={20} /></button>
         </div>
 
-        {/* Top stats */}
-        <div className={s.statGrid3} style={{ marginBottom: 18 }}>
-          <div className={s.statCenter}>
-            <div className={s.statValueGold}>{formatMoney(detailUser.balance)}</div>
-            <div className={s.statLabel}>Баланс</div>
-          </div>
-          <div className={s.statCenter}>
-            <div className={s.statValue}>{detailUser.orders_count}</div>
-            <div className={s.statLabel}>Заказов</div>
-          </div>
-          <div className={s.statCenter}>
-            <div className={s.statValue}>{formatMoney(detailUser.total_spent)}</div>
-            <div className={s.statLabel}>Потрачено</div>
-          </div>
+        {/* Stats */}
+        <div className={s.statRow3} style={{ marginBottom: 14 }}>
+          <div className={s.statCenter}><div className={s.statValueSmall} style={{ color: '#d4af37' }}>{formatMoney(det.balance)}</div><div className={s.statLabel}>Баланс</div></div>
+          <div className={s.statCenter}><div className={s.statValueSmall}>{det.orders_count}</div><div className={s.statLabel}>Заказов</div></div>
+          <div className={s.statCenter}><div className={s.statValueSmall}>{formatMoney(det.total_spent)}</div><div className={s.statLabel}>Потрачено</div></div>
         </div>
 
-        {/* Rank & Referrals */}
-        <div className={s.statGrid2} style={{ marginBottom: 18 }}>
-          <div className={s.statCard} style={{ borderRadius: 12 }}>
+        {/* Rank */}
+        <div className={s.statRow2} style={{ marginBottom: 14 }}>
+          <div className={s.stat} style={{ '--accent': '#d4af37' } as React.CSSProperties}>
             <div className={s.statLabel}>Статус</div>
-            <div style={{ color: '#fff', fontWeight: 700 }}>{detailUser.rank_name}</div>
-            <div className={s.muted} style={{ marginTop: 4 }}>
-              Лояльность: {detailUser.loyalty_status} • скидка {detailUser.loyalty_discount}%
-            </div>
+            <div className={s.statValueSmall}>{det.rank_name}</div>
+            <div className={s.mutedSmall}>{det.loyalty_status} · −{det.loyalty_discount}%</div>
           </div>
-          <div className={s.statCard} style={{ borderRadius: 12 }}>
+          <div className={s.stat} style={{ '--accent': '#3b82f6' } as React.CSSProperties}>
             <div className={s.statLabel}>Рефералы</div>
-            <div style={{ color: '#fff', fontWeight: 700 }}>{detailUser.referrals_count}</div>
-            <div className={s.muted} style={{ marginTop: 4 }}>
-              Заработано: {formatMoney(detailUser.referral_earnings)}
-            </div>
+            <div className={s.statValueSmall}>{det.referrals_count}</div>
+            <div className={s.mutedSmall}>Заработано: {formatMoney(det.referral_earnings)}</div>
           </div>
         </div>
 
         {/* Bonus expiry */}
-        {detailUser.bonus_expiry?.has_expiry && (
-          <div className={s.card} style={{ marginBottom: 18, padding: 14, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
-            <div style={{ color: '#fbbf24', fontWeight: 700, marginBottom: 4 }}>Бонусный баланс под контролем</div>
-            <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 1.55 }}>
-              {detailUser.bonus_expiry.status_text} • cгорит {formatMoney(detailUser.bonus_expiry.burn_amount)}
-            </div>
+        {det.bonus_expiry?.has_expiry && (
+          <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 8, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
+            <div style={{ color: '#fbbf24', fontWeight: 600, fontSize: 12 }}>Бонусы сгорают</div>
+            <div className={s.mutedSmall}>{det.bonus_expiry.status_text} · −{formatMoney(det.bonus_expiry.burn_amount)}</div>
           </div>
         )}
 
         {/* Balance modifier */}
-        <div style={{ marginBottom: 20 }}>
-          <label className={s.formLabel}>Изменить баланс</label>
-          <div className={s.flexRow} style={{ gap: 8, marginBottom: 8 }}>
-            <input type="number" value={balanceAmount} onChange={(e) => setBalanceAmount(e.target.value)} placeholder="Сумма" className={s.input} style={{ flex: 1 }} />
-            <button type="button" onClick={() => handleBalance(true)} disabled={saving || !balanceAmount} className={s.successBtn}>
-              <TrendingUp size={16} />
-            </button>
-            <button type="button" onClick={() => handleBalance(false)} disabled={saving || !balanceAmount} className={s.dangerBtn}>
-              <TrendingDown size={16} />
-            </button>
+        <div className={s.formSection}>
+          <label className={s.formLabel}>Баланс</label>
+          <div className={`${s.flexRow} ${s.gap6}`} style={{ marginBottom: 6 }}>
+            <input type="number" value={balanceAmt} onChange={(e) => setBalanceAmt(e.target.value)} placeholder="Сумма" className={s.input} style={{ flex: 1 }} />
+            <button type="button" onClick={() => handleBalance(true)} disabled={saving || !balanceAmt} className={s.successBtn}><TrendingUp size={14} /></button>
+            <button type="button" onClick={() => handleBalance(false)} disabled={saving || !balanceAmt} className={s.dangerBtn}><TrendingDown size={14} /></button>
           </div>
-          <input type="text" value={balanceReason} onChange={(e) => setBalanceReason(e.target.value)} placeholder="Причина изменения" className={s.input} />
+          <input type="text" value={balanceReason} onChange={(e) => setBalanceReason(e.target.value)} placeholder="Причина" className={s.input} />
         </div>
 
         {/* Ban / Watch */}
-        <div className={s.flexRow} style={{ gap: 10, marginBottom: 20 }}>
-          <button
-            type="button"
-            onClick={handleBan}
-            disabled={saving}
-            className={detailUser.is_banned ? s.successBtn : s.dangerBtn}
-            style={{ flex: 1 }}
-          >
-            {detailUser.is_banned ? <Check size={16} /> : <Ban size={16} />}
-            {detailUser.is_banned ? 'Разблокировать' : 'Заблокировать'}
+        <div className={`${s.flexRow} ${s.gap6}`} style={{ marginBottom: 14 }}>
+          <button type="button" onClick={() => act(async () => { await toggleGodUserBan(det.telegram_id, !det.is_banned); if (!det.is_banned) onClose() }, det.is_banned ? 'Разбанен' : 'Забанен')} disabled={saving} className={det.is_banned ? s.successBtn : s.dangerBtn} style={{ flex: 1 }}>
+            {det.is_banned ? <><Check size={14} /> Разбанить</> : <><Ban size={14} /> Забанить</>}
           </button>
-          <button
-            type="button"
-            onClick={handleWatch}
-            disabled={saving}
-            className={s.secondaryBtn}
-            style={{
-              flex: 1,
-              background: detailUser.is_watched ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)',
-            }}
-          >
-            {detailUser.is_watched ? <EyeOff size={16} /> : <Eye size={16} />}
-            {detailUser.is_watched ? 'Снять наблюдение' : 'Наблюдать'}
+          <button type="button" onClick={() => act(() => toggleGodUserWatch(det.telegram_id, !det.is_watched), det.is_watched ? 'Снято' : 'Под наблюдением')} disabled={saving} className={s.secondaryBtn} style={{ flex: 1, background: det.is_watched ? 'rgba(245,158,11,0.15)' : undefined }}>
+            {det.is_watched ? <><EyeOff size={14} /> Снять</> : <><Eye size={14} /> Наблюдать</>}
           </button>
         </div>
 
         {/* Notes */}
-        <div style={{ marginBottom: 18 }}>
-          <label className={s.formLabel}>Заметки по клиенту</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Что важно помнить о клиенте" rows={3} className={s.textarea} />
-          <button type="button" onClick={handleSaveNotes} disabled={saving} className={s.primaryBtn} style={{ marginTop: 8, width: '100%', justifyContent: 'center' }}>
-            Сохранить заметки
-          </button>
+        <div className={s.formSection}>
+          <label className={s.formLabel}>Заметки</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Заметка" rows={2} className={s.textarea} />
+          <button type="button" onClick={() => act(() => updateGodUserNotes(det.telegram_id, notes), 'Сохранено')} disabled={saving} className={s.primaryBtn} style={{ marginTop: 6, width: '100%', justifyContent: 'center' }}>Сохранить</button>
         </div>
 
         {/* Recent orders */}
-        <div className={s.cardCompact} style={{ marginBottom: 14 }}>
-          <div className={s.flexRow} style={{ justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-            <div className={s.cardLabel} style={{ margin: 0 }}>Последние заказы</div>
-            <button type="button" onClick={loadDetails} className={s.ghostBtn}>
-              <RefreshCw size={14} color="rgba(255,255,255,0.45)" />
-            </button>
+        <div className={s.cardCompact} style={{ marginBottom: 10 }}>
+          <div className={`${s.flexRow} ${s.gap8}`} style={{ marginBottom: 8 }}>
+            <span className={`${s.textWhite} ${s.bold}`} style={{ fontSize: 12 }}>Заказы</span>
+            <button type="button" onClick={loadDetails} className={`${s.ghostBtn} ${s.mlAuto}`}><RefreshCw size={12} /></button>
           </div>
-          {detailsLoading ? (
-            <div className={s.muted}>Загружаем историю клиента…</div>
-          ) : recentOrders.length === 0 ? (
-            <div className={s.muted}>У клиента пока нет заказов.</div>
-          ) : (
-            <div className={`${s.flexColumn} ${s.gap8}`}>
-              {recentOrders.map((item) => {
-                const statusMeta = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending
+          {detLoading ? <div className={s.muted}>Загрузка…</div> : orders.length === 0 ? <div className={s.muted}>Нет заказов</div> : (
+            <div className={`${s.flexCol} ${s.gap6}`}>
+              {orders.slice(0, 5).map((o) => {
+                const st = STATUS_CONFIG[o.status] || STATUS_CONFIG.pending
                 return (
-                  <div key={item.id} className={s.messageClient}>
-                    <div className={`${s.flexRow} ${s.flexWrap}`} style={{ gap: 8, marginBottom: 4 }}>
-                      <span style={{ color: '#fff', fontWeight: 600 }}>#{item.id}</span>
-                      <span className={s.tagSmall} style={{ background: statusMeta.bg, color: statusMeta.color }}>
-                        {statusMeta.label}
-                      </span>
-                      <span className={s.mlAuto} style={{ color: '#D4AF37', fontWeight: 700 }}>
-                        {formatMoney(item.final_price)}
-                      </span>
+                  <div key={o.id} className={s.messageClient}>
+                    <div className={`${s.flexRow} ${s.gap6}`}>
+                      <span className={`${s.textWhite} ${s.bold}`} style={{ fontSize: 12 }}>#{o.id}</span>
+                      <span className={s.statusBadge} style={{ background: st.bg, color: st.color, fontSize: 10 }}>{st.label}</span>
+                      <span className={`${s.textGold} ${s.bold} ${s.mlAuto}`} style={{ fontSize: 12 }}>{formatMoney(o.final_price)}</span>
                     </div>
-                    <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>{item.work_type_label}</div>
-                    <div className={s.muted} style={{ marginTop: 4 }}>
-                      {item.subject || 'Предмет не указан'} • {formatDateTime(item.created_at)}
-                    </div>
+                    <div className={s.mutedSmall}>{o.work_type_label} · {o.subject || 'Без предмета'} · {formatDateTime(o.created_at)}</div>
                   </div>
                 )
               })}
@@ -289,26 +137,16 @@ export const GodUserDetail = memo(function GodUserDetail({ user, onClose, onUpda
 
         {/* Recent transactions */}
         <div className={s.cardCompact}>
-          <div className={s.cardLabel}>Последние операции</div>
-          {detailsLoading ? (
-            <div className={s.muted}>Загружаем операции…</div>
-          ) : recentTransactions.length === 0 ? (
-            <div className={s.muted}>Операций пока нет.</div>
-          ) : (
-            <div className={`${s.flexColumn} ${s.gap8}`}>
-              {recentTransactions.map((item) => (
-                <div key={item.id} className={s.messageClient}>
-                  <div className={s.flexRow} style={{ justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
-                    <div style={{ color: '#fff', fontWeight: 600 }}>
-                      {TRANSACTION_REASON_LABELS[item.reason] || item.description || 'Операция'}
-                    </div>
-                    <div style={{ color: item.amount >= 0 ? '#86efac' : '#fca5a5', fontWeight: 700 }}>
-                      {item.amount >= 0 ? '+' : ''}{formatMoney(item.amount)}
-                    </div>
+          <div className={`${s.textWhite} ${s.bold}`} style={{ fontSize: 12, marginBottom: 8 }}>Операции</div>
+          {detLoading ? <div className={s.muted}>Загрузка…</div> : transactions.length === 0 ? <div className={s.muted}>Нет операций</div> : (
+            <div className={`${s.flexCol} ${s.gap6}`}>
+              {transactions.slice(0, 5).map((t) => (
+                <div key={t.id} className={s.messageClient}>
+                  <div className={`${s.flexRow} ${s.gap6}`}>
+                    <span className={s.textWhite} style={{ fontSize: 12, fontWeight: 600 }}>{TRANSACTION_REASON_LABELS[t.reason] || t.description || 'Операция'}</span>
+                    <span className={`${s.bold} ${s.mlAuto}`} style={{ fontSize: 12, color: t.amount >= 0 ? '#4ade80' : '#f87171' }}>{t.amount >= 0 ? '+' : ''}{formatMoney(t.amount)}</span>
                   </div>
-                  <div className={s.muted}>
-                    {item.description || 'Без комментария'} • {formatDateTime(item.created_at)}
-                  </div>
+                  <div className={s.mutedSmall}>{t.description || '—'} · {formatDateTime(t.created_at)}</div>
                 </div>
               ))}
             </div>

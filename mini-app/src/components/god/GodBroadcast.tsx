@@ -11,77 +11,42 @@ export const GodBroadcast = memo(function GodBroadcast() {
   const [result, setResult] = useState<{ sent: number; failed: number } | null>(null)
 
   const send = async () => {
-    if (!text.trim()) return
-    if (!confirm(`Отправить рассылку ${target}?`)) return
-
+    if (!text.trim() || !confirm(`Отправить рассылку → ${target}?`)) return
     setSending(true)
-    try {
-      const res = await sendGodBroadcast(text, target)
-      setResult({ sent: res.sent, failed: res.failed })
-      setText('')
-    } catch {
-      /* silent */
-    }
+    try { const r = await sendGodBroadcast(text, target); setResult({ sent: r.sent, failed: r.failed }); setText('') }
+    catch { /* silent */ }
     setSending(false)
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className={`${s.flexColumn} ${s.gap16}`}
-    >
-      {/* Warning */}
-      <div className={s.broadcastWarning}>
-        <AlertTriangle size={18} />
-        <span>Осторожно! Сообщение будет отправлено всем выбранным пользователям.</span>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`${s.flexCol} ${s.gap8}`}>
+
+      <div className={s.warningBarRed}>
+        <AlertTriangle size={14} /> Сообщение уйдёт всем выбранным пользователям
       </div>
 
-      {/* Target */}
       <div>
         <label className={s.formLabel}>Получатели</label>
-        <select
-          value={target}
-          onChange={(e) => setTarget(e.target.value as 'all' | 'active' | 'with_orders')}
-          className={s.input}
-        >
-          <option value="all">Все пользователи</option>
-          <option value="active">Активные (7 дней)</option>
+        <select value={target} onChange={(e) => setTarget(e.target.value as typeof target)} className={s.input}>
+          <option value="all">Все</option>
+          <option value="active">Активные (7 дн)</option>
           <option value="with_orders">С заказами</option>
         </select>
       </div>
 
-      {/* Message */}
       <div>
-        <label className={s.formLabel}>Сообщение (поддерживает HTML)</label>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={'<b>Заголовок</b>\n\nТекст сообщения...'}
-          rows={6}
-          className={s.textarea}
-        />
+        <label className={s.formLabel}>Сообщение (HTML)</label>
+        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'<b>Заголовок</b>\n\nТекст…'} rows={5} className={s.textarea} />
       </div>
 
-      {/* Send */}
-      <button
-        type="button"
-        onClick={send}
-        disabled={sending || !text.trim()}
-        className={s.dangerBtn}
-        style={{ justifyContent: 'center' }}
-      >
-        <Send size={18} /> {sending ? 'Отправка...' : 'Отправить рассылку'}
+      <button type="button" onClick={send} disabled={sending || !text.trim()} className={s.dangerBtn} style={{ justifyContent: 'center' }}>
+        <Send size={14} /> {sending ? 'Отправка…' : 'Отправить'}
       </button>
 
-      {/* Result */}
       {result && (
         <div className={s.broadcastResult}>
-          <div style={{ color: '#22c55e', fontWeight: 600 }}>Отправлено: {result.sent}</div>
-          {result.failed > 0 && (
-            <div style={{ color: '#ef4444', fontSize: 12 }}>Ошибок: {result.failed}</div>
-          )}
+          <div style={{ color: '#4ade80', fontWeight: 600, fontSize: 13 }}>Отправлено: {result.sent}</div>
+          {result.failed > 0 && <div style={{ color: '#f87171', fontSize: 12 }}>Ошибок: {result.failed}</div>}
         </div>
       )}
     </motion.div>

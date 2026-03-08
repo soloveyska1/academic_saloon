@@ -1,21 +1,20 @@
 import React, { memo } from 'react'
-import { motion } from 'framer-motion'
 import {
-  Home, Package, Users, Tag, Radio,
-  ScrollText, Terminal, Bell,
+  LayoutDashboard, Package, Users, Tag, Radio,
+  ScrollText, Terminal, Megaphone,
 } from 'lucide-react'
 import type { TabId } from './godHelpers'
 import s from '../../pages/GodModePage.module.css'
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard', label: 'Центр', icon: <Home size={18} /> },
-  { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
-  { id: 'users', label: 'Клиенты', icon: <Users size={18} /> },
-  { id: 'promos', label: 'Промокоды', icon: <Tag size={18} /> },
-  { id: 'live', label: 'Онлайн', icon: <Radio size={18} /> },
-  { id: 'logs', label: 'Журнал', icon: <ScrollText size={18} /> },
-  { id: 'sql', label: 'Запросы', icon: <Terminal size={18} /> },
-  { id: 'broadcast', label: 'Рассылка', icon: <Bell size={18} /> },
+  { id: 'dashboard', label: 'Сводка', icon: <LayoutDashboard size={14} /> },
+  { id: 'orders', label: 'Заказы', icon: <Package size={14} /> },
+  { id: 'users', label: 'Клиенты', icon: <Users size={14} /> },
+  { id: 'promos', label: 'Промо', icon: <Tag size={14} /> },
+  { id: 'live', label: 'Онлайн', icon: <Radio size={14} /> },
+  { id: 'logs', label: 'Лог', icon: <ScrollText size={14} /> },
+  { id: 'sql', label: 'SQL', icon: <Terminal size={14} /> },
+  { id: 'broadcast', label: 'Рассылка', icon: <Megaphone size={14} /> },
 ]
 
 interface Props {
@@ -27,16 +26,15 @@ export const GodTabBar = memo(function GodTabBar({ activeTab, onTabChange }: Pro
   return (
     <div className={s.tabBar}>
       {TABS.map((tab) => (
-        <motion.button
+        <button
           key={tab.id}
           type="button"
-          whileTap={{ scale: 0.95 }}
           onClick={() => onTabChange(tab.id)}
           className={`${s.tabButton} ${activeTab === tab.id ? s.tabActive : ''}`}
         >
           {tab.icon}
           {tab.label}
-        </motion.button>
+        </button>
       ))}
     </div>
   )
