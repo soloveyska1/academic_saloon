@@ -1,9 +1,8 @@
-import { useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
+import { useCallback, useRef, useMemo, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { fetchDailyBonusInfo, claimDailyBonus } from '../api/userApi'
 import { useHomePageState, ModalName } from '../hooks/useHomePageState'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
 import { usePromo } from '../contexts/PromoContext'
@@ -18,7 +17,6 @@ import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 // New Home Components
 import {
   HomeHeader,
-  DailyBonusBanner,
   QuickActionsRow,
   NextActionCard,
   NewTaskCTA,
@@ -30,13 +28,11 @@ import {
   GuaranteesShowcase,
   StickyBottomCTA,
   SaloonFooter,
-  DailyBonusError,
   ModalLoadingFallback,
 } from '../components/home'
 
 // Lazy load modal components — all use shared ModalWrapper / CenteredModalWrapper
 const QRCodeModal = lazy(() => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal })))
-const DailyBonusModal = lazy(() => import('../components/ui/DailyBonus').then(m => ({ default: m.DailyBonusModal })))
 const CashbackModal = lazy(() => import('../components/modals/CashbackModal').then(m => ({ default: m.CashbackModal })))
 const RanksModal = lazy(() => import('../components/modals/RanksModal').then(m => ({ default: m.RanksModal })))
 const GuaranteesModal = lazy(() => import('../components/modals/GuaranteesModal').then(m => ({ default: m.GuaranteesModal })))
@@ -58,32 +54,6 @@ export function HomePage({ user }: Props) {
   // State management via reducer
   const { state, actions } = useHomePageState()
 
-  // Fetch daily bonus info
-  useEffect(() => {
-    let retryCount = 0
-    const maxRetries = 3
-
-    const loadDailyBonus = async () => {
-      actions.setDailyBonusLoading(true)
-      try {
-        const info = await fetchDailyBonusInfo()
-        actions.setDailyBonusInfo(info)
-        actions.setDailyBonusError(false)
-      } catch {
-        retryCount++
-        if (retryCount < maxRetries) {
-          setTimeout(loadDailyBonus, 1000 * retryCount)
-        } else {
-          actions.setDailyBonusError(true)
-        }
-      } finally {
-        actions.setDailyBonusLoading(false)
-      }
-    }
-
-    loadDailyBonus()
-  }, [actions])
-
   // Secret admin activation (5 quick taps on logo badge)
   const tapCountRef = useRef(0)
   const lastTapTimeRef = useRef(0)
@@ -104,10 +74,6 @@ export function HomePage({ user }: Props) {
     }
     lastTapTimeRef.current = now
   }, [admin.isAdmin, haptic])
-
-  // Daily bonus data
-  const canClaimBonus = state.dailyBonus.info?.can_claim ?? false
-  const dailyStreak = state.dailyBonus.info?.streak ?? 1
 
   // Memoized calculations
   const activeOrders = useMemo(
@@ -131,18 +97,6 @@ export function HomePage({ user }: Props) {
     haptic('light')
     navigate('/club')
   }, [haptic, navigate])
-
-  const retryDailyBonus = useCallback(() => {
-    actions.setDailyBonusError(false)
-    actions.setDailyBonusLoading(true)
-    fetchDailyBonusInfo()
-      .then(info => {
-        actions.setDailyBonusInfo(info)
-        actions.setDailyBonusError(false)
-      })
-      .catch(() => actions.setDailyBonusError(true))
-      .finally(() => actions.setDailyBonusLoading(false))
-  }, [actions])
 
   return (
     <main
@@ -233,13 +187,53 @@ export function HomePage({ user }: Props) {
               haptic={haptic}
             />
 
-            <DailyBonusBanner
-              canClaim={canClaimBonus && !state.dailyBonus.error && !state.dailyBonus.loading}
-              currentStreak={dailyStreak}
-              potentialBonus={state.dailyBonus.info?.bonuses?.[0] ?? 100}
-              onClaim={() => { actions.openModal('dailyBonus'); haptic('medium') }}
-              haptic={haptic}
-            />
+            {/* Referral CTA */}
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.985 }}
+              onClick={handleOpenLounge}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.22 }}
+              className={s.voidGlass}
+              style={{
+                width: '100%',
+                padding: '16px 18px',
+                borderRadius: 22,
+                border: '1px solid rgba(212,175,55,0.12)',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                marginBottom: 16,
+                cursor: 'pointer',
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 16,
+                  background: 'rgba(212,175,55,0.1)',
+                  border: '1px solid rgba(212,175,55,0.16)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  fontSize: 20,
+                }}
+              >
+                🎁
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#E8D5A3', marginBottom: 3 }}>
+                  Пригласи друга — получи бонус
+                </div>
+                <div style={{ fontSize: 12.5, color: 'rgba(228,213,163,0.5)', lineHeight: 1.5 }}>
+                  Кэшбэк {user.rank.cashback}% · Баланс {Math.round(user.bonus_balance).toLocaleString('ru-RU')} ₽
+                </div>
+              </div>
+            </motion.button>
           </>
         )}
 
@@ -258,11 +252,6 @@ export function HomePage({ user }: Props) {
             defaultExpanded={!!activePromo}
           />
         </motion.div>
-
-        {/* Show error UI when daily bonus fails to load */}
-        {state.dailyBonus.error && !state.dailyBonus.loading && (
-          <DailyBonusError onRetry={retryDailyBonus} />
-        )}
 
         <SaloonFooter />
       </div>{/* End content wrapper */}
@@ -297,25 +286,6 @@ export function HomePage({ user }: Props) {
           shareText={buildReferralShareText(user.referral_code)}
           downloadFileName={`academic-saloon-${user.referral_code}`}
         />
-
-        {state.dailyBonus.info && (
-          <DailyBonusModal
-            isOpen={state.modals.dailyBonus}
-            streak={dailyStreak}
-            canClaim={canClaimBonus}
-            bonuses={state.dailyBonus.info.bonuses}
-            cooldownRemaining={state.dailyBonus.info.cooldown_remaining}
-            onClaim={async () => {
-              const result = await claimDailyBonus()
-              if (result.won) {
-                actions.setConfetti(true)
-              }
-              actions.updateDailyBonusAfterClaim('24ч')
-              return result
-            }}
-            onClose={() => actions.closeModal('dailyBonus')}
-          />
-        )}
 
         <Confetti
           active={state.showConfetti}

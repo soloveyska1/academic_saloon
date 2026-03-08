@@ -4,29 +4,24 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowUpRight,
   BadgePercent,
-  BellRing,
   BookOpen,
   ChevronDown,
-  CircleHelp,
   Clock3,
   Copy,
   CreditCard,
   Crown,
   Gift,
-  GraduationCap,
   LifeBuoy,
   LucideIcon,
   Medal,
   QrCode,
   ShieldCheck,
   Sparkles,
-  Ticket,
   Users,
   Wallet2,
 } from 'lucide-react'
-import { Order, OrderStatus, Transaction, UserData, Voucher } from '../types'
+import { Order, OrderStatus, Transaction, UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { useClub } from '../contexts/ClubContext'
 import { useAdmin } from '../contexts/AdminContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { QRCodeModal } from '../components/ui/QRCode'
@@ -86,12 +81,6 @@ const ACTIONABLE_ORDER_META: Record<string, OrderActionMeta> = {
     icon: Sparkles,
   },
 }
-
-const CLUB_LEVEL_LABELS = {
-  silver: 'Стартовый уровень',
-  gold: 'Усиленный уровень',
-  platinum: 'Максимальный уровень',
-} as const
 
 const TRANSACTION_REASON_LABELS: Record<string, string> = {
   order_created: 'Бонус за новый заказ',
@@ -192,11 +181,6 @@ function getProfileRankName(rankName: string | null | undefined) {
   const mapped = getDisplayName(rankName || '')
   if (!mapped || mapped.trim() === '') return 'Статус клиента'
   return mapped === 'Премиум' ? 'Премиум клуб' : mapped
-}
-
-function getClubLevelLabel(level: string | null | undefined) {
-  if (!level) return 'Уровень клуба'
-  return CLUB_LEVEL_LABELS[level as keyof typeof CLUB_LEVEL_LABELS] || 'Уровень клуба'
 }
 
 function getMemberSince(user: UserData) {
@@ -714,77 +698,11 @@ function TransactionRow({
   )
 }
 
-function VoucherCard({
-  title,
-  description,
-  expiresAt,
-  applyRules,
-}: {
-  title: string
-  description: string
-  expiresAt: string
-  applyRules?: string
-}) {
-  return (
-    <div className={homeStyles.voidGlass} style={{
-      padding: '14px',
-      borderRadius: 22,
-      border: '1px solid rgba(255,255,255,0.06)',
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 8,
-      }}>
-        <Ticket size={15} color="var(--gold-300)" />
-        <span style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: 'var(--gold-300)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-        }}>
-          Активный ваучер
-        </span>
-      </div>
-      <div style={{
-        fontSize: 15,
-        fontWeight: 700,
-        color: 'var(--text-main)',
-        marginBottom: 6,
-      }}>
-        {title}
-      </div>
-      <div style={{
-        fontSize: 12.5,
-        lineHeight: 1.55,
-        color: 'var(--text-secondary)',
-        marginBottom: 8,
-      }}>
-        {description}
-      </div>
-      {applyRules && (
-        <div style={{
-          fontSize: 11.5,
-          lineHeight: 1.5,
-          color: 'var(--text-muted)',
-          marginBottom: 10,
-        }}>
-          {applyRules}
-        </div>
-      )}
-      <MetaPill icon={Clock3} label={`действует до ${formatCompactDate(expiresAt)}`} accent="var(--gold-300)" />
-    </div>
-  )
-}
-
 export function ProfilePageNew({ user }: Props) {
   const navigate = useNavigate()
   const { tg, haptic, hapticSuccess, hapticError, botUsername, user: tgUser } = useTelegram()
   const { isAdmin } = useAdmin()
   const { showToast } = useToast()
-  const club = useClub()
   const [showQR, setShowQR] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
   const [expandedSection, setExpandedSection] = useState<ProfileSectionId | null>('quick')
@@ -801,7 +719,6 @@ export function ProfilePageNew({ user }: Props) {
   const cashbackPercent = toSafeNumber(user.rank.cashback)
   const loyaltyDiscount = toSafeNumber(user.loyalty.discount || user.discount)
   const displayRankName = getProfileRankName(user.rank.name)
-  const clubLevelLabel = getClubLevelLabel(club.level)
   const activeOrders = useMemo(
     () => [...user.orders].filter(order => !['completed', 'cancelled', 'rejected'].includes(order.status)).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [user.orders]
@@ -818,11 +735,6 @@ export function ProfilePageNew({ user }: Props) {
     () => [...user.transactions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 3),
     [user.transactions]
   )
-  const activeVouchers = useMemo(
-    () => club.activeVouchers.slice(0, 2),
-    [club.activeVouchers]
-  )
-
   const inviteLink = buildReferralLink(botUsername, user.telegram_id)
   const mainActionMeta = actionableOrder ? ACTIONABLE_ORDER_META[actionableOrder.status] : null
   const primaryActionTitle = mainActionMeta
@@ -863,21 +775,6 @@ export function ProfilePageNew({ user }: Props) {
     navigate('/support?view=chat')
   }, [haptic, navigate])
 
-  const handleOpenRewards = useCallback(() => {
-    haptic('medium')
-    navigate('/club/rewards')
-  }, [haptic, navigate])
-
-  const handleOpenVouchers = useCallback(() => {
-    haptic('light')
-    navigate('/club/vouchers')
-  }, [haptic, navigate])
-
-  const handleOpenPrivileges = useCallback(() => {
-    haptic('light')
-    navigate('/club/privileges')
-  }, [haptic, navigate])
-
   const handleOpenTransactions = useCallback(() => {
     haptic('light')
     setShowTransactions(true)
@@ -890,7 +787,7 @@ export function ProfilePageNew({ user }: Props) {
 
   const handleOpenReferralPage = useCallback(() => {
     haptic('light')
-    navigate('/referral')
+    navigate('/club')
   }, [haptic, navigate])
 
   const handleOpenActionableOrder = useCallback(() => {
@@ -1116,9 +1013,7 @@ export function ProfilePageNew({ user }: Props) {
               </div>
               <div className={homeStyles.heroProofItem}>
                 <Gift size={15} color="#d4af37" />
-                {club.dailyBonus.status === 'available'
-                  ? 'Ежедневный бонус уже можно забрать'
-                  : `${club.points} бонусных баллов и ${club.activeVouchers.length} ваучеров`}
+                Кэшбэк {cashbackPercent}% · баланс {formatMoney(bonusBalance)}
               </div>
             </div>
 
@@ -1196,16 +1091,10 @@ export function ProfilePageNew({ user }: Props) {
               onClick={handleOpenSupport}
             />
             <ActionTile
-              icon={Ticket}
-              label="Ваучеры"
-              hint={`${club.activeVouchers.length} активных сейчас`}
-              onClick={handleOpenVouchers}
-            />
-            <ActionTile
               icon={Gift}
-              label="Каталог бонусов"
-              hint="Баллы, ваучеры и доступные предложения"
-              onClick={handleOpenRewards}
+              label="Бонусы"
+              hint="Кэшбэк, реферальная программа и баланс"
+              onClick={handleOpenClub}
             />
           </div>
         </AccordionSection>
@@ -1283,14 +1172,6 @@ export function ProfilePageNew({ user }: Props) {
                 helper="Начисляется после оплаченных заказов"
               />
               <StatCard
-                label="Баллы"
-                value={String(club.points)}
-                accent="#fcd34d"
-                helper={club.dailyBonus.status === 'available'
-                  ? 'Ежедневный бонус уже доступен'
-                  : `${clubLevelLabel} • серия ${formatCountWithWord(club.dailyBonus.streakDay, 'день', 'дня', 'дней')}`}
-              />
-              <StatCard
                 label="Бонусный баланс"
                 value={formatMoney(bonusBalance)}
                 accent="#93c5fd"
@@ -1304,19 +1185,13 @@ export function ProfilePageNew({ user }: Props) {
                 accent="#93c5fd"
                 helper={referralsCount > 0 ? `${referralsCount} приглашено` : 'Пока без приглашений'}
               />
-              <StatCard
-                label="Ваучеры"
-                value={String(club.activeVouchers.length)}
-                accent="#fcd34d"
-                helper={club.activeVouchers.length > 0 ? 'Можно применить в новой заявке' : 'Появятся после обмена баллов'}
-              />
             </div>
           </div>
         </AccordionSection>
 
         <AccordionSection
-          title="Бонусы и ваучеры"
-          summary={`${formatMoney(bonusBalance)} на балансе • ${club.activeVouchers.length} ваучеров • ${formatCountWithWord(latestTransactions.length, 'операция', 'операции', 'операций')} в истории.`}
+          title="Бонусы"
+          summary={`${formatMoney(bonusBalance)} на балансе • кэшбэк ${cashbackPercent}% • ${formatCountWithWord(latestTransactions.length, 'операция', 'операции', 'операций')} в истории.`}
           isOpen={expandedSection === 'bonuses'}
           onToggle={() => handleToggleSection('bonuses')}
         >
@@ -1454,96 +1329,44 @@ export function ProfilePageNew({ user }: Props) {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
                 gap: 10,
                 marginBottom: 12,
-                flexWrap: 'wrap',
               }}>
-                <div>
-                  <div style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: 'var(--text-main)',
-                    marginBottom: 4,
-                  }}>
-                    Ваучеры к следующему заказу
-                  </div>
-                  <div style={{
-                    fontSize: 12.5,
-                    color: 'var(--text-muted)',
-                    lineHeight: 1.5,
-                  }}>
-                    Сохранённые предложения, которые можно применить в новой заявке.
-                  </div>
-                </div>
-                <MetaPill icon={Ticket} label={`${club.activeVouchers.length} доступно`} accent="var(--gold-300)" />
-              </div>
-
-              {activeVouchers.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-                  {activeVouchers.map((voucher: Voucher) => (
-                    <VoucherCard
-                      key={voucher.id}
-                      title={voucher.title}
-                      description={voucher.description}
-                      expiresAt={voucher.expiresAt}
-                      applyRules={voucher.applyRules}
-                    />
-                  ))}
-                </div>
-              ) : (
+                <Gift size={18} color="var(--gold-300)" />
                 <div style={{
-                  padding: '14px 0 16px',
-                  fontSize: 13,
-                  lineHeight: 1.6,
-                  color: 'var(--text-secondary)',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: 'var(--text-main)',
                 }}>
-                  Пока нет активных ваучеров. Их можно получить в каталоге бонусов и применить в следующем заказе.
+                  Программа лояльности
                 </div>
-              )}
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 10,
-              }}>
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleOpenVouchers}
-                  style={{
-                    minHeight: 42,
-                    padding: '0 14px',
-                    borderRadius: 14,
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    background: 'rgba(255,255,255,0.04)',
-                    color: 'var(--text-main)',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Все ваучеры
-                </motion.button>
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleOpenRewards}
-                  style={{
-                    minHeight: 42,
-                    padding: '0 14px',
-                    borderRadius: 14,
-                    border: '1px solid rgba(212,175,55,0.18)',
-                    background: 'rgba(212,175,55,0.10)',
-                    color: 'var(--gold-300)',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Каталог бонусов
-                </motion.button>
               </div>
+              <div style={{
+                fontSize: 13,
+                lineHeight: 1.6,
+                color: 'var(--text-secondary)',
+                marginBottom: 14,
+              }}>
+                Кэшбэк {cashbackPercent}%, реферальная программа и история операций — всё в разделе «Бонусы».
+              </div>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.97 }}
+                onClick={handleOpenClub}
+                style={{
+                  minHeight: 42,
+                  padding: '0 14px',
+                  borderRadius: 14,
+                  border: '1px solid rgba(212,175,55,0.18)',
+                  background: 'rgba(212,175,55,0.10)',
+                  color: 'var(--gold-300)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Открыть бонусы
+              </motion.button>
             </div>
           </div>
         </AccordionSection>
@@ -1629,7 +1452,7 @@ export function ProfilePageNew({ user }: Props) {
 
         <AccordionSection
           title="Поддержка и сервис"
-          summary="Помощь по заказам, условия клуба, ежедневный бонус и история бонусной активности."
+          summary="Помощь по заказам, условия и бонусная программа."
           isOpen={expandedSection === 'service'}
           onToggle={() => handleToggleSection('service')}
           bottomSpace={104}
@@ -1646,26 +1469,10 @@ export function ProfilePageNew({ user }: Props) {
               onClick={handleOpenSupport}
             />
             <ActionTile
-              icon={GraduationCap}
-              label="Условия клуба"
-              hint="Текущий статус, кэшбэк, бонусы и доступные условия"
-              onClick={handleOpenPrivileges}
-            />
-            <ActionTile
-              icon={BellRing}
-              label="Ежедневный бонус"
-              hint={club.dailyBonus.status === 'available' ? 'Бонус уже можно забрать' : 'Проверить текущую серию и награды'}
+              icon={Gift}
+              label="Бонусы и кэшбэк"
+              hint="Кэшбэк, реферальная программа и история операций"
               onClick={handleOpenClub}
-              accent={club.dailyBonus.status === 'available' ? 'var(--gold-300)' : undefined}
-            />
-            <ActionTile
-              icon={CircleHelp}
-              label="История бонусов"
-              hint="Начисления, списания, обмены и вся бонусная активность"
-              onClick={() => {
-                haptic('light')
-                navigate('/club/history')
-              }}
             />
           </div>
         </AccordionSection>
@@ -1679,7 +1486,7 @@ export function ProfilePageNew({ user }: Props) {
           balance={bonusBalance}
           onViewAll={() => {
             setShowTransactions(false)
-            navigate('/club/history')
+            navigate('/club')
           }}
         />
 

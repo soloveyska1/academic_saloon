@@ -10,21 +10,16 @@ export { BenefitsCard } from './BenefitsCard'
 export { UrgentHubSheet } from './UrgentHubSheet'
 export { OrderStatsCard } from './OrderStatsCard'
 export { SaloonFooter } from './SaloonFooter'
-export { DailyBonusButton } from './DailyBonusButton'
 export { EmptyStateOnboarding } from './EmptyStateOnboarding'
 export { TrustStatsStrip } from './TrustStatsStrip'
 export { LiveActivityFeed } from './LiveActivityFeed'
 export { HowItWorks } from './HowItWorks'
 export { GuaranteesShowcase } from './GuaranteesShowcase'
 export { StickyBottomCTA } from './StickyBottomCTA'
-export { DailyBonusError } from './DailyBonusError'
-export { CompactAchievements } from './CompactAchievements'
 export { ReputationCard } from './ReputationCard'
 export { LevelProgressCard } from './LevelProgressCard'
 export { RankUpCelebration } from './RankUpCelebration'
 export { ExamSeasonBanner } from './ExamSeasonBanner'
-export { DailyBonusBanner } from './DailyBonusBanner'
-
 // Skeleton Loaders
 export {
   BenefitsCardSkeleton,

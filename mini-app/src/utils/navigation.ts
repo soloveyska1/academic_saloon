@@ -15,9 +15,9 @@ export function shouldHideBottomNavigation(pathname: string): boolean {
 export function isNavigationItemActive(pathname: string, path: string): boolean {
   if (path === '/') return pathname === '/'
   if (path === '/orders') return pathname === '/orders'
-  if (path === '/club') return pathname === '/club' || pathname.startsWith('/club/')
+  if (path === '/club') return pathname === '/club'
   if (path === '/profile') {
-    return pathname === '/profile' || pathname === '/referral' || pathname === '/achievements'
+    return pathname === '/profile'
   }
   return pathname === path
 }
@@ -32,9 +32,7 @@ export function getBackFallback(pathname: string): string {
   if (pathname.startsWith('/create-order')) return '/'
   if (pathname.startsWith('/batch-payment')) return '/orders'
   if (pathname.startsWith('/support')) return '/'
-  if (pathname.startsWith('/club/')) return '/club'
   if (pathname === '/club') return '/'
-  if (pathname === '/referral' || pathname === '/achievements') return '/profile'
   if (pathname.startsWith('/profile')) return '/'
   if (isAdminRoute(pathname)) return getLastAppRoute()
 

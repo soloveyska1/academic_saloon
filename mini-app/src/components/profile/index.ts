@@ -13,9 +13,6 @@ export { WalletHeader } from './WalletHeader'
 export { TransactionList } from './TransactionList'
 export { TransactionDetailsSheet } from './TransactionDetailsSheet'
 
-// Vouchers Tab
-export { ProfileVoucherList } from './ProfileVoucherList'
-
 // Agent Tab
 export { AgentDashboard } from './AgentDashboard'
 export { ReferralTools } from './ReferralTools'

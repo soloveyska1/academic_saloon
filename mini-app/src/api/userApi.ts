@@ -197,27 +197,6 @@ export async function applyPromoCode(code: string): Promise<PromoResult> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  DAILY BONUS
-// ═══════════════════════════════════════════════════════════════════════════
-
-export interface DailyBonusInfo {
-  can_claim: boolean; streak: number; next_bonus: number; cooldown_remaining: string | null; bonuses: number[]
-}
-export interface DailyBonusClaimResult {
-  success: boolean; won: boolean; bonus: number; streak: number; message: string; next_claim_at: string | null
-}
-
-export async function fetchDailyBonusInfo(): Promise<DailyBonusInfo> {
-  if (!hasTelegramContext() && IS_DEV) return { can_claim: true, streak: 1, next_bonus: 10, cooldown_remaining: null, bonuses: [10, 20] }
-  return await apiFetch<DailyBonusInfo>('/daily-bonus/info')
-}
-
-export async function claimDailyBonus(): Promise<DailyBonusClaimResult> {
-  if (!hasTelegramContext() && IS_DEV) return { success: true, won: true, bonus: 10, streak: 1, message: 'Won', next_claim_at: null }
-  return await apiFetch<DailyBonusClaimResult>('/daily-bonus/claim', { method: 'POST' })
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
 //  ADMIN: Daily Bonus Testing
 // ═══════════════════════════════════════════════════════════════════════════
 

@@ -5,12 +5,11 @@ import {
   ArrowLeft, Check, AlertCircle, Send, ChevronRight, Loader2,
   Tag, Clock, Zap, Flame, Rocket, Timer, Hourglass
 } from 'lucide-react'
-import { UserData, WorkType, OrderCreateRequest, Voucher } from '../types'
+import { UserData, WorkType, OrderCreateRequest } from '../types'
 import { createOrder, uploadOrderFiles, FileUploadResponse } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePromo } from '../contexts/PromoContext'
-import { useClub } from '../contexts/ClubContext'
 import { useModalRegistration } from '../contexts/NavigationContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
@@ -18,7 +17,6 @@ import { Confetti } from '../components/ui/Confetti'
 import {
   ServiceTypeStep,
   RequirementsStep,
-  VoucherSelector,
   useDrafts,
   SERVICE_TYPES,
   DEADLINES,
@@ -54,20 +52,9 @@ interface PrefillData {
   voucherId?: string
 }
 
-function buildOrderDescription(requirements: string, selectedVoucher: Voucher | null): string | undefined {
+function buildOrderDescription(requirements: string): string | undefined {
   const parts: string[] = []
   const trimmedRequirements = requirements.trim()
-
-  if (selectedVoucher) {
-    parts.push(
-      [
-        '[Ваучер клиента]',
-        selectedVoucher.title,
-        selectedVoucher.description,
-        `Условия: ${selectedVoucher.applyRules}`,
-      ].join('\n')
-    )
-  }
 
   if (trimmedRequirements) {
     parts.push(trimmedRequirements)
@@ -144,7 +131,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const { haptic, hapticSuccess, hapticError } = useTelegram()
   const { isDark } = useTheme()
   const { activePromo, clearPromo, revalidatePromo, isValidating: isRevalidating } = usePromo()
-  const club = useClub()
   const safeBack = useSafeBackNavigation('/')
 
   // State for promo warning modal
@@ -153,9 +139,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 
   // Check for prefill data from navigation state (Quick Reorder)
   const prefillData = (location.state as { prefill?: PrefillData })?.prefill
-
-  // Check for voucherId from navigation (coming from MyVouchersPage)
-  const preselectedVoucherId = (location.state as { voucherId?: string })?.voucherId || prefillData?.voucherId
 
   // Check for urgent/panic mode from URL params
   const isUrgentMode = searchParams.get('urgent') === 'true'
@@ -179,18 +162,12 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const [requirements, setRequirements] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
   const [files, setFiles] = useState<File[]>([])
   const [deadline, setDeadline] = useState<string | null>(isUrgentMode ? 'today' : null)
-  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(preselectedVoucherId || null)
 
   // Drafts per service type
   const { saveDraft, loadDraft, clearAllDrafts, hasDraft } = useDrafts({
     serviceTypeId,
     currentData: { topic, requirements, subject },
   })
-
-  const selectedVoucher = useMemo(
-    () => club.activeVouchers.find(voucher => voucher.id === selectedVoucherId) ?? null,
-    [club.activeVouchers, selectedVoucherId]
-  )
 
   // UI
   const [submitting, setSubmitting] = useState(false)
@@ -295,7 +272,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     setDirection(0)
 
     if (isFastMode) {
-      setSelectedVoucherId(null)
       setServiceTypeId(preselectedType || 'other')
       return
     }
@@ -364,12 +340,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   }, [location.state, navigate, searchParams])
 
   const canShowModeSwitch = isFastMode || step === 1
-
-  // Voucher selection
-  const handleVoucherSelect = useCallback((voucherId: string | null) => {
-    haptic('light')
-    setSelectedVoucherId(voucherId)
-  }, [haptic])
 
   // Files
   const addFiles = useCallback((newFiles: File[]) => {
@@ -449,7 +419,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
         subject: subject.trim(),
         topic: topic.trim() || undefined,
         deadline,
-        description: buildOrderDescription(requirements, selectedVoucher),
+        description: buildOrderDescription(requirements),
         promo_code: promoToUse,
       }
 
@@ -461,13 +431,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
         } : null)
 
         const basePrice = getBaseEstimate()
-
-        // Use voucher if selected
-        let voucherUsed = false
-        if (selectedVoucherId && res.order_id) {
-          const voucherResult = club.useVoucher(selectedVoucherId, res.order_id)
-          voucherUsed = voucherResult.success
-        }
 
         // Clear drafts on success
         localStorage.removeItem(DRAFT_KEY)
@@ -483,13 +446,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
         if (res.promo_failed && res.promo_failure_reason) {
           finalMsg = `Заказ создан, но промокод не применён: ${res.promo_failure_reason}`
         }
-        if (selectedVoucher) {
-          finalMsg = `${finalMsg} Информация о выбранном ваучере передана менеджеру вместе с заявкой.`
-        }
-        if (selectedVoucher && !voucherUsed) {
-          finalMsg = `${finalMsg} Ваучер останется доступен в профиле до подтверждения вручную.`
-        }
-
         if (files.length > 0 && res.order_id) {
           try {
             setSubmittingLabel('Загружаем файлы...')
@@ -531,7 +487,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
         setStep(4)
       }
     }
-  }, [serviceTypeId, deadline, subject, topic, requirements, selectedVoucher, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, selectedVoucherId, club, files])
+  }, [serviceTypeId, deadline, subject, topic, requirements, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, files])
 
   const handlePromoWarningContinue = useCallback(() => {
     setShowPromoWarning(false)
@@ -1039,33 +995,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                       basePrice={getEstimateBaseAfterLoyalty() || undefined}
                     />
                   </motion.div>
-
-                  <VoucherSelector
-                    vouchers={club.activeVouchers}
-                    selectedVoucherId={selectedVoucherId}
-                    onSelect={handleVoucherSelect}
-                  />
-
-                  {selectedVoucher && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      style={{
-                        marginTop: 14,
-                        padding: '14px 16px',
-                        borderRadius: 16,
-                        background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.05))',
-                        border: '1px solid rgba(212,175,55,0.18)',
-                      }}
-                    >
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-300)', marginBottom: 6 }}>
-                        Ваучер добавим к этой заявке
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-                        Менеджер увидит выбранный ваучер вместе с условиями и подтвердит его при согласовании заказа.
-                      </div>
-                    </motion.div>
-                  )}
 
                   {estimate && (
                     <EstimateCard
