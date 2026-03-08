@@ -27,8 +27,6 @@ import {
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
-import { useCapability } from '../contexts/DeviceCapabilityContext'
-import { PremiumBackground } from '../components/ui/PremiumBackground'
 import {
   getOrderDisplaySubtitle,
   getOrderDisplayTitle,
@@ -37,18 +35,25 @@ import {
   toSafeString,
 } from '../lib/orderView'
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  ORDERS PAGE — Quiet Luxury Redesign
+//  Philosophy: utility screen, fast scanning, clear status at a glance.
+//  No visual noise — just clean info hierarchy + gold accents for actions.
+// ═══════════════════════════════════════════════════════════════════════════
+
 interface Props {
   orders: Order[]
 }
 
 type FilterType = 'all' | 'action' | 'active' | 'completed' | 'archived'
 
+// ─── Status system ───────────────────────────────────────────────────────
+
 interface StatusMeta {
   label: string
   hint: string
   color: string
-  chipBackground: string
-  chipBorder: string
+  chipBg: string
   icon: LucideIcon
   priority: number
   needsAction: boolean
@@ -75,8 +80,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     label: 'Черновик',
     hint: 'Заявка сохранена и ждёт завершения оформления.',
     color: '#a1a1aa',
-    chipBackground: 'rgba(161, 161, 170, 0.10)',
-    chipBorder: 'rgba(161, 161, 170, 0.18)',
+    chipBg: 'rgba(161,161,170,0.10)',
     icon: FileText,
     priority: 6,
     needsAction: true,
@@ -85,10 +89,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   pending: {
     label: 'Оценка',
-    hint: 'Собираем вводные и готовим расчет.',
+    hint: 'Собираем вводные и готовим расчёт.',
     color: '#fbbf24',
-    chipBackground: 'rgba(251, 191, 36, 0.12)',
-    chipBorder: 'rgba(251, 191, 36, 0.22)',
+    chipBg: 'rgba(251,191,36,0.12)',
     icon: Clock3,
     priority: 3,
     needsAction: false,
@@ -96,10 +99,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   waiting_estimation: {
     label: 'Оценка',
-    hint: 'Собираем вводные и готовим расчет.',
+    hint: 'Собираем вводные и готовим расчёт.',
     color: '#fbbf24',
-    chipBackground: 'rgba(251, 191, 36, 0.12)',
-    chipBorder: 'rgba(251, 191, 36, 0.22)',
+    chipBg: 'rgba(251,191,36,0.12)',
     icon: Clock3,
     priority: 3,
     needsAction: false,
@@ -109,8 +111,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     label: 'К оплате',
     hint: 'После оплаты сразу запускаем заказ в работу.',
     color: '#d4af37',
-    chipBackground: 'rgba(212, 175, 55, 0.14)',
-    chipBorder: 'rgba(212, 175, 55, 0.24)',
+    chipBg: 'rgba(212,175,55,0.14)',
     icon: CreditCard,
     priority: 1,
     needsAction: true,
@@ -121,8 +122,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     label: 'К оплате',
     hint: 'После оплаты сразу запускаем заказ в работу.',
     color: '#d4af37',
-    chipBackground: 'rgba(212, 175, 55, 0.14)',
-    chipBorder: 'rgba(212, 175, 55, 0.24)',
+    chipBg: 'rgba(212,175,55,0.14)',
     icon: CreditCard,
     priority: 1,
     needsAction: true,
@@ -131,10 +131,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   verification_pending: {
     label: 'Проверяем оплату',
-    hint: 'Платеж получен, сейчас подтверждаем зачисление.',
+    hint: 'Платёж получен, сейчас подтверждаем зачисление.',
     color: '#60a5fa',
-    chipBackground: 'rgba(96, 165, 250, 0.12)',
-    chipBorder: 'rgba(96, 165, 250, 0.22)',
+    chipBg: 'rgba(96,165,250,0.12)',
     icon: Activity,
     priority: 4,
     needsAction: false,
@@ -142,10 +141,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   paid: {
     label: 'В работе',
-    hint: 'Команда уже работает над задачей.',
+    hint: 'Уже работаем над задачей.',
     color: '#60a5fa',
-    chipBackground: 'rgba(96, 165, 250, 0.12)',
-    chipBorder: 'rgba(96, 165, 250, 0.22)',
+    chipBg: 'rgba(96,165,250,0.12)',
     icon: Activity,
     priority: 5,
     needsAction: false,
@@ -153,10 +151,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   paid_full: {
     label: 'В работе',
-    hint: 'Команда уже работает над задачей.',
+    hint: 'Уже работаем над задачей.',
     color: '#60a5fa',
-    chipBackground: 'rgba(96, 165, 250, 0.12)',
-    chipBorder: 'rgba(96, 165, 250, 0.22)',
+    chipBg: 'rgba(96,165,250,0.12)',
     icon: Activity,
     priority: 5,
     needsAction: false,
@@ -164,21 +161,19 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   in_progress: {
     label: 'В работе',
-    hint: 'Команда уже работает над задачей.',
+    hint: 'Уже работаем над задачей.',
     color: '#60a5fa',
-    chipBackground: 'rgba(96, 165, 250, 0.12)',
-    chipBorder: 'rgba(96, 165, 250, 0.22)',
+    chipBg: 'rgba(96,165,250,0.12)',
     icon: Activity,
     priority: 5,
     needsAction: false,
     step: 3,
   },
   review: {
-    label: 'Готов к проверке',
+    label: 'Готов',
     hint: 'Нужно открыть заказ и посмотреть готовый результат.',
     color: '#4ade80',
-    chipBackground: 'rgba(74, 222, 128, 0.12)',
-    chipBorder: 'rgba(74, 222, 128, 0.22)',
+    chipBg: 'rgba(74,222,128,0.12)',
     icon: CheckCircle2,
     priority: 2,
     needsAction: true,
@@ -189,8 +184,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     label: 'На доработке',
     hint: 'Посмотрите комментарии и подтвердите следующий шаг.',
     color: '#fb923c',
-    chipBackground: 'rgba(251, 146, 60, 0.12)',
-    chipBorder: 'rgba(251, 146, 60, 0.22)',
+    chipBg: 'rgba(251,146,60,0.12)',
     icon: AlertCircle,
     priority: 2,
     needsAction: true,
@@ -198,11 +192,10 @@ const STATUS_META: Record<string, StatusMeta> = {
     actionLabel: 'Открыть',
   },
   completed: {
-    label: 'Завершен',
+    label: 'Завершён',
     hint: 'Заказ закрыт и доступен в истории.',
     color: '#4ade80',
-    chipBackground: 'rgba(74, 222, 128, 0.10)',
-    chipBorder: 'rgba(74, 222, 128, 0.18)',
+    chipBg: 'rgba(74,222,128,0.10)',
     icon: CheckCircle2,
     priority: 10,
     needsAction: false,
@@ -210,10 +203,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   cancelled: {
     label: 'Закрыт',
-    hint: 'Заказ остановлен и перенесен в историю.',
+    hint: 'Заказ остановлен и перенесён в историю.',
     color: '#71717a',
-    chipBackground: 'rgba(113, 113, 122, 0.10)',
-    chipBorder: 'rgba(113, 113, 122, 0.18)',
+    chipBg: 'rgba(113,113,122,0.10)',
     icon: XCircle,
     priority: 11,
     needsAction: false,
@@ -221,10 +213,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
   rejected: {
     label: 'Закрыт',
-    hint: 'Заказ остановлен и перенесен в историю.',
+    hint: 'Заказ остановлен и перенесён в историю.',
     color: '#71717a',
-    chipBackground: 'rgba(113, 113, 122, 0.10)',
-    chipBorder: 'rgba(113, 113, 122, 0.18)',
+    chipBg: 'rgba(113,113,122,0.10)',
     icon: XCircle,
     priority: 11,
     needsAction: false,
@@ -232,33 +223,39 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
 }
 
+// ─── Utility functions ───────────────────────────────────────────────────
+
 const prefersReducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false
 
+function getStatusMeta(status: string): StatusMeta {
+  return STATUS_META[status] || STATUS_META.pending
+}
+
+function isActiveStatus(status: string): boolean {
+  return !['completed', 'cancelled', 'rejected'].includes(status)
+}
+
 function getDaysUntilDeadline(deadline: string | null | undefined): number | null {
   const date = parseOrderDateSafe(deadline)
   if (!date) return null
-  const now = new Date()
-  return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 }
 
 function getHoursUntilDeadline(deadline: string | null | undefined): number | null {
   const date = parseOrderDateSafe(deadline)
   if (!date) return null
-  const now = new Date()
-  return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60))
+  return Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60))
 }
 
 function formatDeadline(deadline: string | null | undefined): string {
   const hours = getHoursUntilDeadline(deadline)
   const days = getDaysUntilDeadline(deadline)
-
   if (days === null) return 'Без срока'
-  if (hours !== null && hours <= 0) return 'Срок прошел'
+  if (hours !== null && hours <= 0) return 'Просрочен'
   if (hours !== null && hours <= 24) return `${hours} ч`
   if (days <= 7) return `${days} дн`
-
   const date = parseOrderDateSafe(deadline)
   if (!date) return 'Без срока'
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
@@ -268,22 +265,12 @@ function formatMoney(amount: number | null | undefined): string {
   return `${Math.max(0, Math.round(amount || 0)).toLocaleString('ru-RU')} ₽`
 }
 
-function pluralize(value: number, forms: [string, string, string]): string {
-  const absValue = Math.abs(value) % 100
-  const remainder = absValue % 10
-
-  if (absValue > 10 && absValue < 20) {
-    return forms[2]
-  }
-
-  if (remainder > 1 && remainder < 5) {
-    return forms[1]
-  }
-
-  if (remainder === 1) {
-    return forms[0]
-  }
-
+function pluralize(n: number, forms: [string, string, string]): string {
+  const abs = Math.abs(n) % 100
+  const r = abs % 10
+  if (abs > 10 && abs < 20) return forms[2]
+  if (r > 1 && r < 5) return forms[1]
+  if (r === 1) return forms[0]
   return forms[2]
 }
 
@@ -291,185 +278,64 @@ function getRemainingAmount(order: Order): number {
   return Math.max((order.final_price || order.price || 0) - (order.paid_amount || 0), 0)
 }
 
-function isActiveStatus(status: string): boolean {
-  return !['completed', 'cancelled', 'rejected'].includes(status)
-}
-
-function getStatusMeta(status: string): StatusMeta {
-  return STATUS_META[status] || STATUS_META.pending
-}
-
 function getPrimaryActionPath(order: Order): string {
   if (['confirmed', 'waiting_payment'].includes(order.status)) {
     return `/order/${order.id}?action=pay`
   }
-
   return `/order/${order.id}`
 }
 
 function compareOrders(a: Order, b: Order): number {
   const metaA = getStatusMeta(a.status)
   const metaB = getStatusMeta(b.status)
-
-  if (metaA.priority !== metaB.priority) {
-    return metaA.priority - metaB.priority
-  }
-
-  const deadlineA = getHoursUntilDeadline(a.deadline)
-  const deadlineB = getHoursUntilDeadline(b.deadline)
-  if (deadlineA !== null && deadlineB !== null && deadlineA !== deadlineB) {
-    return deadlineA - deadlineB
-  }
-
-  const createdAtA = parseOrderDateSafe(a.created_at)?.getTime() ?? 0
-  const createdAtB = parseOrderDateSafe(b.created_at)?.getTime() ?? 0
-
-  return createdAtB - createdAtA
+  if (metaA.priority !== metaB.priority) return metaA.priority - metaB.priority
+  const dA = getHoursUntilDeadline(a.deadline)
+  const dB = getHoursUntilDeadline(b.deadline)
+  if (dA !== null && dB !== null && dA !== dB) return dA - dB
+  const cA = parseOrderDateSafe(a.created_at)?.getTime() ?? 0
+  const cB = parseOrderDateSafe(b.created_at)?.getTime() ?? 0
+  return cB - cA
 }
+
+// ─── Section grouping ────────────────────────────────────────────────────
 
 function getSectionedOrders(orders: Order[], filter: FilterType, query: string) {
   if (query.trim() || filter !== 'all') {
-    return [
-      {
-        key: filter,
-        title: getFilterTitle(filter),
-        caption: getFilterCaption(filter),
-        orders,
-      },
-    ]
+    return [{
+      key: filter,
+      title: getFilterTitle(filter),
+      orders,
+    }]
   }
 
-  const actionOrders = orders.filter(order => getStatusMeta(order.status).needsAction)
-  const activeOrders = orders.filter(order => !getStatusMeta(order.status).needsAction && isActiveStatus(order.status))
-  const recentCompleted = orders.filter(order => order.status === 'completed').slice(0, 3)
-  const closedOrders = orders.filter(order => ['cancelled', 'rejected'].includes(order.status)).slice(0, 3)
+  const action = orders.filter(o => getStatusMeta(o.status).needsAction)
+  const active = orders.filter(o => !getStatusMeta(o.status).needsAction && isActiveStatus(o.status))
+  const completed = orders.filter(o => o.status === 'completed').slice(0, 3)
+  const closed = orders.filter(o => ['cancelled', 'rejected'].includes(o.status)).slice(0, 3)
 
   const sections = [
-    {
-      key: 'action',
-      title: 'Требуют вашего решения',
-      caption: 'Здесь собраны заказы, где нужен ваш следующий шаг.',
-      orders: actionOrders,
-    },
-    {
-      key: 'active',
-      title: 'В работе',
-      caption: 'Все активные заказы с текущим этапом, сроком и суммой.',
-      orders: activeOrders,
-    },
-    {
-      key: 'completed',
-      title: 'Недавно завершено',
-      caption: 'Готовые работы, которые можно открыть и пересмотреть.',
-      orders: recentCompleted,
-    },
-    {
-      key: 'closed',
-      title: 'История',
-      caption: 'Закрытые и отменённые заявки для справки.',
-      orders: closedOrders,
-    },
-  ].filter(section => section.orders.length > 0)
+    { key: 'action', title: 'Требуют внимания', orders: action },
+    { key: 'active', title: 'В работе', orders: active },
+    { key: 'completed', title: 'Завершено', orders: completed },
+    { key: 'closed', title: 'История', orders: closed },
+  ].filter(s => s.orders.length > 0)
 
-  if (sections.length > 0) {
-    return sections
-  }
-
-  return [
-    {
-      key: 'all',
-      title: 'Все заказы',
-      caption: 'Полный список без дополнительной группировки.',
-      orders,
-    },
-  ]
+  return sections.length > 0 ? sections : [{ key: 'all', title: 'Все заказы', orders }]
 }
 
 function getFilterTitle(filter: FilterType): string {
   switch (filter) {
-    case 'action':
-      return 'Требуют решения'
-    case 'active':
-      return 'Активные'
-    case 'completed':
-      return 'Завершенные'
-    case 'archived':
-      return 'Архив'
-    case 'all':
-    default:
-      return 'Все заказы'
+    case 'action': return 'Требуют внимания'
+    case 'active': return 'В работе'
+    case 'completed': return 'Завершённые'
+    case 'archived': return 'Архив'
+    default: return 'Все заказы'
   }
 }
 
-function getFilterCaption(filter: FilterType): string {
-  switch (filter) {
-    case 'action':
-      return 'Платежи, подтверждения и проверки, где нужен ваш ответ.'
-    case 'active':
-      return 'Все заказы, которые ещё находятся в работе.'
-    case 'completed':
-      return 'Готовые работы и завершённые задачи.'
-    case 'archived':
-      return 'Скрытые и архивные заказы.'
-    case 'all':
-    default:
-      return 'Весь список заказов, сроков и следующих шагов.'
-  }
-}
+// ─── UI Components ───────────────────────────────────────────────────────
 
-function getSurfaceStyle(active = false) {
-  return {
-    position: 'relative' as const,
-    overflow: 'hidden' as const,
-    borderRadius: 24,
-    background: `
-      radial-gradient(circle at top right, rgba(212, 175, 55, ${active ? '0.12' : '0.08'}), transparent 36%),
-      linear-gradient(180deg, rgba(19, 18, 24, 0.97), rgba(10, 10, 16, 0.96))
-    `,
-    border: `1px solid ${active ? 'rgba(212, 175, 55, 0.22)' : 'rgba(255, 255, 255, 0.06)'}`,
-    boxShadow: active ? '0 22px 50px -36px rgba(212, 175, 55, 0.25)' : '0 20px 42px -36px rgba(0, 0, 0, 0.82)',
-  }
-}
-
-function StatPill({
-  label,
-  value,
-  accent,
-}: {
-  label: string
-  value: string
-  accent: string
-}) {
-  return (
-    <div style={{
-      padding: '12px 14px',
-      borderRadius: 18,
-      background: 'rgba(255, 255, 255, 0.035)',
-      border: '1px solid rgba(255, 255, 255, 0.05)',
-      minWidth: 0,
-    }}>
-      <div style={{
-        fontSize: 11,
-        fontWeight: 700,
-        color: 'rgba(255,255,255,0.45)',
-        textTransform: 'uppercase',
-        letterSpacing: '0.08em',
-        marginBottom: 6,
-      }}>
-        {label}
-      </div>
-      <div style={{
-        fontSize: 17,
-        fontWeight: 700,
-        color: accent,
-      }}>
-        {value}
-      </div>
-    </div>
-  )
-}
-
-function FilterPill({
+function FilterChip({
   label,
   count,
   active,
@@ -487,51 +353,312 @@ function FilterPill({
       onClick={onClick}
       style={{
         flexShrink: 0,
-        height: 40,
+        height: 36,
         padding: '0 14px',
-        borderRadius: 999,
-        border: `1px solid ${active ? 'rgba(212, 175, 55, 0.28)' : 'rgba(255, 255, 255, 0.08)'}`,
-        background: active ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-        color: active ? 'var(--gold-300)' : 'var(--text-secondary)',
+        borderRadius: 99,
+        border: `1px solid ${active ? 'rgba(212,175,55,0.25)' : 'rgba(255,255,255,0.06)'}`,
+        background: active ? 'rgba(212,175,55,0.10)' : 'transparent',
+        color: active ? '#E8D5A3' : 'rgba(255,255,255,0.45)',
         cursor: 'pointer',
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
         fontSize: 13,
         fontWeight: 600,
       }}
     >
       <span>{label}</span>
       {count > 0 && (
-        <span style={{
-          fontSize: 11,
-          color: active ? 'var(--gold-300)' : 'rgba(255,255,255,0.44)',
-        }}>
-          {count}
-        </span>
+        <span style={{ fontSize: 11, opacity: 0.7 }}>{count}</span>
       )}
     </motion.button>
   )
 }
 
-function StepTrack({ step, color }: { step: number; color: string }) {
+function ActionBanner({
+  order,
+  payableCount,
+  payableTotal,
+  onOpenOrder,
+  onBatchPay,
+}: {
+  order: Order | null
+  payableCount: number
+  payableTotal: number
+  onOpenOrder: (order: Order, path?: string) => void
+  onBatchPay: () => void
+}) {
+  // Batch payment banner
+  if (payableCount > 1) {
+    return (
+      <motion.button
+        type="button"
+        initial={prefersReducedMotion ? {} : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileTap={{ scale: 0.985 }}
+        onClick={onBatchPay}
+        style={{
+          width: '100%',
+          padding: '14px 16px',
+          marginBottom: 16,
+          borderRadius: 16,
+          background: 'rgba(212,175,55,0.05)',
+          border: '1px solid rgba(212,175,55,0.12)',
+          cursor: 'pointer',
+          textAlign: 'left',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+        }}
+      >
+        <div style={{
+          width: 40, height: 40, borderRadius: 12,
+          background: 'rgba(212,175,55,0.10)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <CreditCard size={18} color="#E8D5A3" />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#E8D5A3', marginBottom: 2 }}>
+            Оплатить {payableCount} {pluralize(payableCount, ['заказ', 'заказа', 'заказов'])}
+          </div>
+          <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.42)' }}>
+            Одним платежом · {formatMoney(payableTotal)}
+          </div>
+        </div>
+        <div style={{
+          width: 36, height: 36, borderRadius: 12,
+          background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <ArrowUpRight size={16} color="#090909" />
+        </div>
+      </motion.button>
+    )
+  }
+
+  // Single action banner
+  if (!order) return null
+  const meta = getStatusMeta(order.status)
+
   return (
-    <div style={{ display: 'flex', gap: 6, flex: 1 }}>
-      {Array.from({ length: 4 }, (_, index) => {
-        const active = index < step
-        return (
-          <div
-            key={index}
-            style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 999,
-              background: active ? color : 'rgba(255, 255, 255, 0.08)',
-              boxShadow: active ? `0 0 12px ${color}33` : 'none',
-            }}
-          />
-        )
-      })}
+    <motion.button
+      type="button"
+      initial={prefersReducedMotion ? {} : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileTap={{ scale: 0.985 }}
+      onClick={() => onOpenOrder(order, getPrimaryActionPath(order))}
+      style={{
+        width: '100%',
+        padding: '14px 16px',
+        marginBottom: 16,
+        borderRadius: 16,
+        background: 'rgba(212,175,55,0.05)',
+        border: '1px solid rgba(212,175,55,0.12)',
+        cursor: 'pointer',
+        textAlign: 'left',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+      }}
+    >
+      <div style={{
+        width: 40, height: 40, borderRadius: 12,
+        background: meta.chipBg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <meta.icon size={18} color={meta.color} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {meta.actionLabel}: {getOrderDisplayTitle(order)}
+        </div>
+        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>
+          {meta.hint}
+        </div>
+      </div>
+      <div style={{
+        height: 32, padding: '0 12px', borderRadius: 10,
+        background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#090909',
+      }}>
+        {meta.actionLabel || 'Открыть'}
+      </div>
+    </motion.button>
+  )
+}
+
+function OrderCard({
+  order,
+  index,
+  onOpenOrder,
+}: {
+  order: Order
+  index: number
+  onOpenOrder: (order: Order) => void
+}) {
+  const meta = getStatusMeta(order.status)
+  const WorkIcon = WORK_TYPE_ICONS[order.work_type] || FileText
+  const amount = order.final_price || order.price || 0
+  const subtitle = getOrderDisplaySubtitle(order)
+  const deadlineText = formatDeadline(order.deadline)
+  const isOverdue = getHoursUntilDeadline(order.deadline) !== null
+    && getHoursUntilDeadline(order.deadline)! <= 0
+    && isActiveStatus(order.status)
+
+  return (
+    <motion.button
+      type="button"
+      initial={prefersReducedMotion ? {} : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.04, 0.2), duration: 0.35 }}
+      whileTap={{ scale: 0.985 }}
+      onClick={() => onOpenOrder(order)}
+      style={{
+        width: '100%',
+        padding: 16,
+        borderRadius: 18,
+        background: meta.needsAction
+          ? 'rgba(212,175,55,0.03)'
+          : 'rgba(255,255,255,0.02)',
+        border: `1px solid ${meta.needsAction
+          ? 'rgba(212,175,55,0.10)'
+          : 'rgba(255,255,255,0.04)'}`,
+        cursor: 'pointer',
+        textAlign: 'left',
+        marginBottom: 8,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Progress bar — thin line at bottom */}
+      {order.progress > 0 && order.progress < 100 && (
+        <div style={{
+          position: 'absolute',
+          bottom: 0, left: 0, right: 0,
+          height: 2,
+          background: 'rgba(255,255,255,0.04)',
+        }}>
+          <div style={{
+            height: '100%',
+            width: `${order.progress}%`,
+            background: meta.color,
+            opacity: 0.5,
+            borderRadius: 1,
+          }} />
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+        {/* Work type icon */}
+        <div style={{
+          width: 42, height: 42, borderRadius: 13,
+          background: 'rgba(212,175,55,0.06)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <WorkIcon size={20} color="rgba(212,175,55,0.50)" strokeWidth={1.5} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Row 1: Title + Status badge */}
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', gap: 8,
+            marginBottom: 4,
+          }}>
+            <div style={{
+              fontSize: 15, fontWeight: 700,
+              color: 'rgba(255,255,255,0.88)',
+              letterSpacing: '-0.01em',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              flex: 1, minWidth: 0,
+            }}>
+              {getOrderDisplayTitle(order)}
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '3px 8px', borderRadius: 99,
+              background: meta.chipBg,
+              flexShrink: 0,
+            }}>
+              <div style={{
+                width: 5, height: 5, borderRadius: '50%',
+                background: meta.color,
+                boxShadow: meta.needsAction ? `0 0 6px ${meta.color}` : 'none',
+              }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: meta.color }}>
+                {meta.label}
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2: Subtitle */}
+          <div style={{
+            fontSize: 13, color: 'rgba(255,255,255,0.38)',
+            marginBottom: 8,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {subtitle}
+          </div>
+
+          {/* Row 3: Deadline · Price · Arrow */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+            <span style={{
+              fontSize: 12.5, fontWeight: 500,
+              color: isOverdue ? '#ef4444' : 'rgba(255,255,255,0.42)',
+            }}>
+              {deadlineText}
+            </span>
+            <span style={{
+              width: 3, height: 3, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.18)',
+              margin: '0 8px',
+              flexShrink: 0,
+            }} />
+            <span style={{
+              fontSize: 13, fontWeight: 600, color: '#E8D5A3',
+            }}>
+              {formatMoney(amount)}
+            </span>
+            <ChevronRight
+              size={14}
+              color="rgba(255,255,255,0.20)"
+              style={{ marginLeft: 'auto', flexShrink: 0 }}
+            />
+          </div>
+        </div>
+      </div>
+    </motion.button>
+  )
+}
+
+function SectionHeader({ title, count }: { title: string; count: number }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      marginBottom: 10, marginTop: 4,
+    }}>
+      <span style={{
+        fontSize: 14, fontWeight: 700,
+        color: 'rgba(255,255,255,0.55)',
+        letterSpacing: '-0.01em',
+      }}>
+        {title}
+      </span>
+      <span style={{
+        fontSize: 11, fontWeight: 600,
+        color: 'rgba(255,255,255,0.25)',
+      }}>
+        {count}
+      </span>
     </div>
   )
 }
@@ -547,77 +674,63 @@ function EmptyState({
 }) {
   return (
     <div style={{
-      ...getSurfaceStyle(),
-      padding: '24px 20px',
+      padding: '40px 20px',
       textAlign: 'center',
     }}>
       <div style={{
-        width: 60,
-        height: 60,
-        borderRadius: 20,
-        margin: '0 auto 16px',
-        background: 'rgba(212, 175, 55, 0.10)',
-        border: '1px solid rgba(212, 175, 55, 0.16)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        width: 56, height: 56, borderRadius: 18,
+        margin: '0 auto 20px',
+        background: 'rgba(212,175,55,0.06)',
+        border: '1px solid rgba(212,175,55,0.10)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <FolderOpen size={26} color="var(--gold-300)" />
+        <FolderOpen size={24} color="rgba(212,175,55,0.50)" />
       </div>
 
       <div style={{
-        fontSize: 20,
-        fontWeight: 700,
-        color: 'var(--text-main)',
+        fontSize: 18, fontWeight: 700,
+        color: 'rgba(255,255,255,0.88)',
         marginBottom: 8,
       }}>
         {hasSearch ? 'Ничего не нашли' : 'Пока нет заказов'}
       </div>
       <div style={{
-        fontSize: 14,
-        lineHeight: 1.6,
-        color: 'var(--text-secondary)',
-        marginBottom: 18,
+        fontSize: 13, lineHeight: 1.6,
+        color: 'rgba(255,255,255,0.42)',
+        marginBottom: 24,
+        maxWidth: 260,
+        margin: '0 auto 24px',
       }}>
         {hasSearch
-          ? 'Попробуйте изменить запрос или открыть другой фильтр.'
-          : 'Когда создадите первый заказ, здесь появится его статус, сроки и все следующие шаги.'}
+          ? 'Попробуйте изменить запрос или фильтр.'
+          : 'Когда создадите первый заказ, он появится здесь.'}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
         <motion.button
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={onCreateOrder}
           style={{
-            minHeight: 46,
-            padding: '0 18px',
-            borderRadius: 14,
+            height: 44, padding: '0 20px', borderRadius: 14,
             border: 'none',
-            background: 'var(--gold-metallic)',
-            color: '#090909',
-            fontSize: 14,
-            fontWeight: 700,
+            background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
+            color: '#090909', fontSize: 14, fontWeight: 700,
             cursor: 'pointer',
           }}
         >
           Создать заказ
         </motion.button>
-
         {hasSearch && (
           <motion.button
             type="button"
             whileTap={{ scale: 0.97 }}
             onClick={onReset}
             style={{
-              minHeight: 46,
-              padding: '0 18px',
-              borderRadius: 14,
+              height: 44, padding: '0 20px', borderRadius: 14,
               border: '1px solid rgba(255,255,255,0.08)',
-              background: 'rgba(255,255,255,0.03)',
-              color: 'var(--text-secondary)',
-              fontSize: 14,
-              fontWeight: 600,
+              background: 'transparent',
+              color: 'rgba(255,255,255,0.55)', fontSize: 14, fontWeight: 600,
               cursor: 'pointer',
             }}
           >
@@ -629,497 +742,30 @@ function EmptyState({
   )
 }
 
-function OrdersSection({
-  title,
-  caption,
-  children,
-}: {
-  title: string
-  caption: string
-  children: ReactNode
-}) {
-  return (
-    <section style={{ marginBottom: 22 }}>
-      <div style={{ marginBottom: 12 }}>
-        <div style={{
-          fontSize: 16,
-          fontWeight: 700,
-          color: 'var(--text-main)',
-          marginBottom: 4,
-        }}>
-          {title}
-        </div>
-        <div style={{
-          fontSize: 12.5,
-          lineHeight: 1.5,
-          color: 'var(--text-muted)',
-        }}>
-          {caption}
-        </div>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function ActionSpotlight({
-  order,
-  payableCount,
-  payableTotal,
-  onOpenOrder,
-  onBatchPay,
-}: {
-  order: Order | null
-  payableCount: number
-  payableTotal: number
-  onOpenOrder: (order: Order, path?: string) => void
-  onBatchPay: () => void
-}) {
-  if (payableCount > 1) {
-    return (
-      <motion.button
-        type="button"
-        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileTap={{ scale: 0.985 }}
-        onClick={onBatchPay}
-        style={{
-          ...getSurfaceStyle(true),
-          width: '100%',
-          padding: '18px 18px 16px',
-          marginBottom: 18,
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}
-      >
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 16,
-            background: 'rgba(212, 175, 55, 0.14)',
-            border: '1px solid rgba(212, 175, 55, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <CreditCard size={22} color="var(--gold-300)" />
-          </div>
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'rgba(212,175,55,0.75)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              marginBottom: 6,
-            }}>
-              Приоритетное действие
-            </div>
-            <div style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: 'var(--text-main)',
-              marginBottom: 4,
-            }}>
-              Оплатить {payableCount} {pluralize(payableCount, ['заказ', 'заказа', 'заказов'])} одним платежом
-            </div>
-            <div style={{
-              fontSize: 13,
-              lineHeight: 1.55,
-              color: 'var(--text-secondary)',
-            }}>
-              Один переход вместо нескольких оплат. Общая сумма: {formatMoney(payableTotal)}.
-            </div>
-          </div>
-
-          <div style={{
-            width: 40,
-            height: 40,
-            borderRadius: 14,
-            background: 'var(--gold-metallic)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <ArrowUpRight size={18} color="#090909" />
-          </div>
-        </div>
-      </motion.button>
-    )
-  }
-
-  if (!order) {
-    return null
-  }
-
-  const meta = getStatusMeta(order.status)
-  const Icon = meta.icon
-
-  return (
-    <motion.button
-      type="button"
-      initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileTap={{ scale: 0.985 }}
-      onClick={() => onOpenOrder(order, getPrimaryActionPath(order))}
-      style={{
-        ...getSurfaceStyle(true),
-        width: '100%',
-        padding: '18px 18px 16px',
-        marginBottom: 18,
-        cursor: 'pointer',
-        textAlign: 'left',
-      }}
-    >
-      <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-        <div style={{
-          width: 48,
-          height: 48,
-          borderRadius: 16,
-          background: meta.chipBackground,
-          border: `1px solid ${meta.chipBorder}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <Icon size={22} color={meta.color} />
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: meta.color,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            marginBottom: 6,
-          }}>
-            Главное действие
-          </div>
-          <div style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text-main)',
-            marginBottom: 4,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}>
-            {getOrderDisplayTitle(order)}
-          </div>
-          <div style={{
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: 'var(--text-secondary)',
-          }}>
-            {meta.actionLabel ? `${meta.actionLabel} и перейдите к следующему этапу.` : meta.hint}
-          </div>
-        </div>
-
-        <div style={{
-          padding: '0 14px',
-          height: 40,
-          borderRadius: 14,
-          background: 'var(--gold-metallic)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          color: '#090909',
-          fontSize: 13,
-          fontWeight: 700,
-        }}>
-          {meta.actionLabel || 'Открыть'}
-        </div>
-      </div>
-    </motion.button>
-  )
-}
-
-function OrderCard({
-  order,
-  index,
-  onOpenOrder,
-}: {
-  order: Order
-  index: number
-  onOpenOrder: (order: Order, path?: string) => void
-}) {
-  const meta = getStatusMeta(order.status)
-  const Icon = meta.icon
-  const WorkIcon = WORK_TYPE_ICONS[order.work_type] || FileText
-  const amount = ['confirmed', 'waiting_payment'].includes(order.status)
-    ? getRemainingAmount(order)
-    : (order.final_price || order.price || 0)
-  const amountLabel = ['confirmed', 'waiting_payment'].includes(order.status) ? 'К оплате' : 'Стоимость'
-  const progressValue = typeof order.progress === 'number' && order.progress > 0 ? `${Math.round(order.progress)}%` : null
-  const stepLabel = meta.step > 0 ? `Этап ${Math.min(meta.step, 4)} из 4` : 'История'
-
-  return (
-    <motion.button
-      type="button"
-      initial={prefersReducedMotion ? {} : { opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.04, 0.24), duration: 0.32 }}
-      whileTap={{ scale: 0.99 }}
-      onClick={() => onOpenOrder(order)}
-      style={{
-        ...getSurfaceStyle(meta.needsAction),
-        width: '100%',
-        padding: '14px',
-        marginBottom: 10,
-        cursor: 'pointer',
-        textAlign: 'left',
-      }}
-    >
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-        <div style={{
-          width: 42,
-          height: 42,
-          borderRadius: 14,
-          background: meta.chipBackground,
-          border: `1px solid ${meta.chipBorder}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <WorkIcon size={20} color={meta.color} />
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            justifyContent: 'space-between',
-            marginBottom: 8,
-            flexWrap: 'wrap',
-          }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              minWidth: 0,
-            }}>
-              <span style={{
-                fontSize: 10.5,
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.45)',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}>
-                {order.work_type_label || 'Заказ'}
-              </span>
-              <span style={{
-                width: 4,
-                height: 4,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.22)',
-              }} />
-              <span style={{
-                fontSize: 11,
-                color: 'rgba(255,255,255,0.45)',
-              }}>
-                #{order.id}
-              </span>
-            </div>
-
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '7px 10px',
-              borderRadius: 999,
-              background: meta.chipBackground,
-              border: `1px solid ${meta.chipBorder}`,
-              color: meta.color,
-              fontSize: 11,
-              fontWeight: 700,
-            }}>
-              <Icon size={13} />
-              {meta.label}
-            </div>
-          </div>
-
-          <div style={{
-            fontSize: 16,
-            fontWeight: 700,
-            color: 'var(--text-main)',
-            lineHeight: 1.35,
-            marginBottom: 4,
-            display: '-webkit-box',
-            WebkitBoxOrient: 'vertical',
-            WebkitLineClamp: 2,
-            overflow: 'hidden',
-          }}>
-            {getOrderDisplayTitle(order)}
-          </div>
-
-          <div style={{
-            fontSize: 12.5,
-            lineHeight: 1.55,
-            color: 'var(--text-secondary)',
-            marginBottom: 10,
-            display: '-webkit-box',
-            WebkitBoxOrient: 'vertical',
-            WebkitLineClamp: 1,
-            overflow: 'hidden',
-          }}>
-            {getOrderDisplaySubtitle(order)}
-          </div>
-
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 8,
-            marginBottom: 12,
-          }}>
-            <MetaChip icon={Clock3} label={formatDeadline(order.deadline)} />
-            <MetaChip icon={meta.needsAction ? CreditCard : FolderOpen} label={`${amountLabel}: ${formatMoney(amount)}`} />
-            <MetaChip icon={Activity} label={stepLabel} />
-            {order.files_url && <MetaChip icon={FileText} label="Есть файлы" />}
-            {progressValue && <MetaChip icon={Activity} label={`Готовность ${progressValue}`} />}
-          </div>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-              <StepTrack step={meta.step} color={meta.color} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'rgba(255,255,255,0.42)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  marginBottom: 2,
-                }}>
-                  Следующий шаг
-                </div>
-                <div style={{
-                  fontSize: 12.5,
-                  lineHeight: 1.5,
-                  color: 'var(--text-main)',
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 2,
-                  overflow: 'hidden',
-                }}>
-                  {meta.hint}
-                </div>
-              </div>
-            </div>
-
-            {meta.needsAction ? (
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onOpenOrder(order, getPrimaryActionPath(order))
-                }}
-                style={{
-                  height: 38,
-                  padding: '0 14px',
-                  borderRadius: 14,
-                  border: 'none',
-                  background: 'var(--gold-metallic)',
-                  color: '#090909',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
-                {meta.actionLabel || 'Открыть'}
-              </motion.button>
-            ) : (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                color: 'var(--text-muted)',
-                fontSize: 13,
-                fontWeight: 600,
-                flexShrink: 0,
-              }}>
-                Открыть
-                <ChevronRight size={16} />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </motion.button>
-  )
-}
-
-function MetaChip({
-  icon: Icon,
-  label,
-}: {
-  icon: LucideIcon
-  label: string
-}) {
-  return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6,
-      padding: '7px 10px',
-      borderRadius: 999,
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.05)',
-      color: 'var(--text-muted)',
-      fontSize: 11.5,
-      fontWeight: 600,
-      lineHeight: 1,
-    }}>
-      <Icon size={12} />
-      {label}
-    </span>
-  )
-}
+// ─── Main Page ───────────────────────────────────────────────────────────
 
 export function OrdersPage({ orders }: Props) {
   const navigate = useNavigate()
   const { haptic } = useTelegram()
-  const capability = useCapability()
   const [filter, setFilter] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const normalizedOrders = useMemo(
-    () => normalizeOrders(orders),
-    [orders]
-  )
+  const normalizedOrders = useMemo(() => normalizeOrders(orders), [orders])
 
   const nonArchivedOrders = useMemo(
-    () => normalizedOrders.filter(order => !order.is_archived).sort(compareOrders),
-    [normalizedOrders]
+    () => normalizedOrders.filter(o => !o.is_archived).sort(compareOrders),
+    [normalizedOrders],
   )
 
   const stats = useMemo(() => {
-    const archived = normalizedOrders.filter(order => order.is_archived)
-    const action = nonArchivedOrders.filter(order => getStatusMeta(order.status).needsAction)
-    const active = nonArchivedOrders.filter(order => isActiveStatus(order.status))
-    const completed = nonArchivedOrders.filter(order => order.status === 'completed')
-    const totalValue = nonArchivedOrders.reduce((sum, order) => {
-      if (['cancelled', 'rejected'].includes(order.status)) {
-        return sum
-      }
-      return sum + (order.final_price || order.price || 0)
+    const archived = normalizedOrders.filter(o => o.is_archived)
+    const action = nonArchivedOrders.filter(o => getStatusMeta(o.status).needsAction)
+    const active = nonArchivedOrders.filter(o => isActiveStatus(o.status))
+    const completed = nonArchivedOrders.filter(o => o.status === 'completed')
+    const totalValue = nonArchivedOrders.reduce((sum, o) => {
+      if (['cancelled', 'rejected'].includes(o.status)) return sum
+      return sum + (o.final_price || o.price || 0)
     }, 0)
-
     return {
       all: nonArchivedOrders.length,
       action: action.length,
@@ -1131,263 +777,161 @@ export function OrdersPage({ orders }: Props) {
   }, [normalizedOrders, nonArchivedOrders])
 
   const payableOrders = useMemo(
-    () => nonArchivedOrders.filter(order => ['confirmed', 'waiting_payment'].includes(order.status) && getRemainingAmount(order) > 0),
-    [nonArchivedOrders]
+    () => nonArchivedOrders.filter(o =>
+      ['confirmed', 'waiting_payment'].includes(o.status) && getRemainingAmount(o) > 0),
+    [nonArchivedOrders],
   )
 
   const batchPaymentTotal = useMemo(
-    () => payableOrders.reduce((sum, order) => sum + getRemainingAmount(order), 0),
-    [payableOrders]
+    () => payableOrders.reduce((sum, o) => sum + getRemainingAmount(o), 0),
+    [payableOrders],
   )
 
   const spotlightOrder = useMemo(
-    () => nonArchivedOrders.find(order => getStatusMeta(order.status).needsAction) || null,
-    [nonArchivedOrders]
+    () => nonArchivedOrders.find(o => getStatusMeta(o.status).needsAction) || null,
+    [nonArchivedOrders],
   )
 
   const filteredOrders = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase()
-
+    const q = searchQuery.trim().toLowerCase()
     return nonArchivedOrders
-      .filter((order) => {
-        if (filter === 'action') return getStatusMeta(order.status).needsAction
-        if (filter === 'active') return isActiveStatus(order.status)
-        if (filter === 'completed') return order.status === 'completed'
+      .filter(o => {
+        if (filter === 'action') return getStatusMeta(o.status).needsAction
+        if (filter === 'active') return isActiveStatus(o.status)
+        if (filter === 'completed') return o.status === 'completed'
         if (filter === 'archived') return false
         return true
       })
-      .filter((order) => {
-        if (!normalizedQuery) return true
+      .filter(o => {
+        if (!q) return true
         return [
-          toSafeString(order.subject),
-          toSafeString(order.topic),
-          toSafeString(order.work_type_label),
-          String(order.id),
-        ].some(value => value?.toLowerCase().includes(normalizedQuery))
+          toSafeString(o.subject),
+          toSafeString(o.topic),
+          toSafeString(o.work_type_label),
+          String(o.id),
+        ].some(v => v?.toLowerCase().includes(q))
       })
   }, [filter, nonArchivedOrders, searchQuery])
 
   const archivedOrders = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase()
-
+    const q = searchQuery.trim().toLowerCase()
     return normalizedOrders
-      .filter(order => order.is_archived)
+      .filter(o => o.is_archived)
       .sort(compareOrders)
-      .filter((order) => {
-        if (!normalizedQuery) return true
+      .filter(o => {
+        if (!q) return true
         return [
-          toSafeString(order.subject),
-          toSafeString(order.topic),
-          toSafeString(order.work_type_label),
-          String(order.id),
-        ].some(value => value?.toLowerCase().includes(normalizedQuery))
+          toSafeString(o.subject),
+          toSafeString(o.topic),
+          toSafeString(o.work_type_label),
+          String(o.id),
+        ].some(v => v?.toLowerCase().includes(q))
       })
   }, [normalizedOrders, searchQuery])
 
   const visibleOrders = filter === 'archived' ? archivedOrders : filteredOrders
   const sections = getSectionedOrders(visibleOrders, filter, searchQuery)
 
-  const heroTitle = stats.action > 0
-    ? `${stats.action} ${pluralize(stats.action, ['заказ ждёт', 'заказа ждут', 'заказов ждут'])} вашего шага`
-    : stats.active > 0
-      ? `${stats.active} ${pluralize(stats.active, ['заказ в работе', 'заказа в работе', 'заказов в работе'])}`
-      : stats.all > 0
-        ? `${stats.all} ${pluralize(stats.all, ['заказ под контролем', 'заказа под контролем', 'заказов под контролем'])}`
-        : 'Здесь появятся ваши заказы'
-
-  const heroSubtitle = stats.action > 0
-    ? 'Сначала показываем главное действие, затем полный список по этапам, срокам и суммам.'
-    : 'Открывайте нужный заказ, смотрите его этап и переходите к следующему действию без лишних поисков.'
-
-  const handleCreateOrder = () => {
-    haptic('medium')
-    navigate('/create-order')
-  }
-
+  const handleCreateOrder = () => { haptic('medium'); navigate('/create-order') }
   const handleOpenOrder = (order: Order, path?: string) => {
     if (!order?.id) return
     haptic('light')
     navigate(path || `/order/${order.id}`)
   }
-
   const handleBatchPay = () => {
     if (payableOrders.length < 2) return
     haptic('medium')
-    navigate(`/batch-payment?orders=${payableOrders.map(order => order.id).join(',')}`)
+    navigate(`/batch-payment?orders=${payableOrders.map(o => o.id).join(',')}`)
   }
-
-  const handleReset = () => {
-    haptic('light')
-    setSearchQuery('')
-    setFilter('all')
-  }
+  const handleReset = () => { haptic('light'); setSearchQuery(''); setFilter('all') }
 
   const filterItems = [
     { key: 'all' as FilterType, label: 'Все', count: stats.all },
-    { key: 'action' as FilterType, label: 'Нужно сейчас', count: stats.action },
+    { key: 'action' as FilterType, label: 'Важное', count: stats.action },
     { key: 'active' as FilterType, label: 'В работе', count: stats.active },
     { key: 'completed' as FilterType, label: 'Готово', count: stats.completed },
     ...(stats.archived > 0 ? [{ key: 'archived' as FilterType, label: 'Архив', count: stats.archived }] : []),
   ]
 
   return (
-    <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
-      <div className="page-background">
-        <PremiumBackground
-          variant="gold"
-          intensity="subtle"
-          interactive={capability.tier >= 3}
-        />
-      </div>
+    <div style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
+      <div style={{ padding: '16px 20px', paddingBottom: 100 }}>
 
-      <div className="page-content">
+        {/* ═══════ Header: Title + New Order ═══════ */}
         <motion.div
-          initial={prefersReducedMotion ? {} : { opacity: 0, y: -10 }}
+          initial={prefersReducedMotion ? {} : { opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           style={{
-            display: 'flex',
-            alignItems: 'flex-start',
+            display: 'flex', alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 14,
-            marginBottom: 18,
+            marginBottom: 20,
           }}
         >
-          <div>
-            <div style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'rgba(212,175,55,0.72)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              marginBottom: 6,
-            }}>
-              Мои заказы
-            </div>
-            <h1 style={{
-              margin: 0,
-              fontSize: 30,
-              lineHeight: 1.05,
-              fontWeight: 700,
-              fontFamily: "'Playfair Display', serif",
-              background: 'var(--gold-metallic)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
-              Ваши заказы
-            </h1>
-            <div style={{
-              marginTop: 8,
-              fontSize: 13,
-              lineHeight: 1.5,
-              color: 'var(--text-secondary)',
-              maxWidth: 340,
-            }}>
-              Статусы, сроки и все следующие шаги по каждому заказу в одном месте.
-            </div>
-          </div>
+          <h1 style={{
+            margin: 0,
+            fontSize: 24,
+            fontWeight: 800,
+            color: '#E8D5A3',
+            fontFamily: "'Manrope', sans-serif",
+            letterSpacing: '-0.02em',
+          }}>
+            Заказы
+          </h1>
 
           <motion.button
             type="button"
-            whileTap={{ scale: 0.97 }}
+            whileTap={{ scale: 0.92 }}
             onClick={handleCreateOrder}
             style={{
-              minHeight: 46,
-              padding: '0 16px',
-              borderRadius: 16,
-              border: 'none',
-              background: 'var(--gold-metallic)',
-              color: '#090909',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 14,
-              fontWeight: 700,
+              width: 42, height: 42, borderRadius: 14,
+              background: 'rgba(212,175,55,0.08)',
+              border: '1px solid rgba(212,175,55,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
-              flexShrink: 0,
             }}
           >
-            <Plus size={18} />
-            Новый заказ
+            <Plus size={20} color="#E8D5A3" />
           </motion.button>
         </motion.div>
 
-        <motion.section
-          initial={prefersReducedMotion ? {} : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            ...getSurfaceStyle(true),
-            padding: '20px',
-            marginBottom: 18,
-          }}
-        >
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 14,
-            marginBottom: 18,
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: 'var(--text-main)',
-                lineHeight: 1.15,
-                marginBottom: 8,
-              }}>
-                {heroTitle}
-              </div>
-              <div style={{
-                fontSize: 14,
-                lineHeight: 1.6,
-                color: 'var(--text-secondary)',
-              }}>
-                {heroSubtitle}
-              </div>
-            </div>
-
-            <div style={{
-              padding: '10px 12px',
-              borderRadius: 16,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              minWidth: 96,
-              flexShrink: 0,
+        {/* ═══════ Summary line ═══════ */}
+        {stats.all > 0 && (
+          <motion.div
+            initial={prefersReducedMotion ? {} : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              marginBottom: 16,
+              padding: '12px 16px',
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.04)',
+            }}
+          >
+            {stats.action > 0 && (
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#E8D5A3' }}>
+                {stats.action} {pluralize(stats.action, ['ждёт', 'ждут', 'ждут'])} вас
+              </span>
+            )}
+            {stats.action > 0 && stats.active > 0 && (
+              <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.15)' }} />
+            )}
+            {stats.active > 0 && (
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.42)' }}>
+                {stats.active} в работе
+              </span>
+            )}
+            <span style={{
+              marginLeft: 'auto',
+              fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.35)',
             }}>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.42)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                marginBottom: 6,
-              }}>
-                Стоимость
-              </div>
-              <div style={{
-                fontSize: 15,
-                fontWeight: 700,
-                color: 'var(--gold-300)',
-                lineHeight: 1.25,
-              }}>
-                {formatMoney(stats.totalValue)}
-              </div>
-            </div>
-          </div>
+              {formatMoney(stats.totalValue)}
+            </span>
+          </motion.div>
+        )}
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: 10,
-          }}>
-            <StatPill label="Нужно сейчас" value={String(stats.action)} accent="var(--gold-300)" />
-            <StatPill label="В работе" value={String(stats.active)} accent="#93c5fd" />
-            <StatPill label="Завершено" value={String(stats.completed)} accent="#86efac" />
-          </div>
-        </motion.section>
-
-        <ActionSpotlight
+        {/* ═══════ Action banner ═══════ */}
+        <ActionBanner
           order={spotlightOrder}
           payableCount={payableOrders.length}
           payableTotal={batchPaymentTotal}
@@ -1395,55 +939,48 @@ export function OrdersPage({ orders }: Props) {
           onBatchPay={handleBatchPay}
         />
 
-        <div style={{ marginBottom: 18 }}>
-          <div style={{
-            ...getSurfaceStyle(),
-            padding: '12px 14px',
-            marginBottom: 12,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}>
-            <Search size={18} color="rgba(212,175,55,0.62)" />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="По номеру, предмету или теме"
-              style={{
-                flex: 1,
-                minWidth: 0,
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: 'var(--text-main)',
-                fontSize: 14,
-              }}
-            />
-          </div>
-
-          <div style={{
-            display: 'flex',
-            gap: 8,
-            overflowX: 'auto',
-            paddingBottom: 4,
-            scrollbarWidth: 'none',
-          }}>
-            {filterItems.map((item) => (
-              <FilterPill
-                key={item.key}
-                label={item.label}
-                count={item.count}
-                active={filter === item.key}
-                onClick={() => {
-                  haptic('light')
-                  setFilter(item.key)
-                }}
-              />
-            ))}
-          </div>
+        {/* ═══════ Search ═══════ */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 14px',
+          borderRadius: 14,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.04)',
+          marginBottom: 12,
+        }}>
+          <Search size={16} color="rgba(212,175,55,0.45)" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Номер, предмет или тема"
+            style={{
+              flex: 1, minWidth: 0,
+              background: 'transparent', border: 'none', outline: 'none',
+              color: 'rgba(255,255,255,0.88)', fontSize: 14,
+            }}
+          />
         </div>
 
+        {/* ═══════ Filters ═══════ */}
+        <div style={{
+          display: 'flex', gap: 8,
+          overflowX: 'auto', paddingBottom: 4,
+          scrollbarWidth: 'none',
+          marginBottom: 20,
+        }}>
+          {filterItems.map(item => (
+            <FilterChip
+              key={item.key}
+              label={item.label}
+              count={item.count}
+              active={filter === item.key}
+              onClick={() => { haptic('light'); setFilter(item.key) }}
+            />
+          ))}
+        </div>
+
+        {/* ═══════ Orders list ═══════ */}
         {visibleOrders.length === 0 ? (
           <EmptyState
             onCreateOrder={handleCreateOrder}
@@ -1451,17 +988,18 @@ export function OrdersPage({ orders }: Props) {
             onReset={handleReset}
           />
         ) : (
-          sections.map((section) => (
-            <OrdersSection key={section.key} title={section.title} caption={section.caption}>
-              {section.orders.map((order, index) => (
+          sections.map(section => (
+            <section key={section.key} style={{ marginBottom: 20 }}>
+              <SectionHeader title={section.title} count={section.orders.length} />
+              {section.orders.map((order, i) => (
                 <OrderCard
                   key={order.id}
                   order={order}
-                  index={index}
-                  onOpenOrder={handleOpenOrder}
+                  index={i}
+                  onOpenOrder={(o) => handleOpenOrder(o)}
                 />
               ))}
-            </OrdersSection>
+            </section>
           ))
         )}
       </div>
