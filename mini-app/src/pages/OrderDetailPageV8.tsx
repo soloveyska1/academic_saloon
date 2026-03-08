@@ -103,7 +103,7 @@ import {
   ORDER_WORK_TYPE_LABELS,
   parseOrderDateSafe,
 } from '../lib/orderView'
-import homeStyles from './HomePage.module.css'
+// homeStyles removed — all styles inline for quiet luxury consistency
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              DESIGN SYSTEM V8
@@ -180,21 +180,22 @@ interface StatusConfig {
   step: number
 }
 
+// Gold monochrome status palette — quiet luxury, no rainbow
 const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
-  draft: { label: 'Черновик', color: '#6b7280', bgColor: 'rgba(107,114,128,0.15)', borderColor: 'rgba(107,114,128,0.25)', icon: Clock, step: 0 },
-  pending: { label: 'На оценке', color: DS.colors.warning, bgColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.24)', icon: Clock, step: 1 },
-  waiting_estimation: { label: 'На оценке', color: DS.colors.warning, bgColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.24)', icon: Clock, step: 1 },
-  waiting_payment: { label: 'К оплате', color: DS.colors.gold, bgColor: 'rgba(212,175,55,0.15)', borderColor: 'rgba(212,175,55,0.24)', icon: CreditCard, step: 2 },
-  confirmed: { label: 'К оплате', color: DS.colors.gold, bgColor: 'rgba(212,175,55,0.15)', borderColor: 'rgba(212,175,55,0.24)', icon: CreditCard, step: 2 },
-  verification_pending: { label: 'Проверка оплаты', color: DS.colors.cyan, bgColor: 'rgba(6,182,212,0.15)', borderColor: 'rgba(6,182,212,0.24)', icon: Loader2, step: 2 },
-  paid: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.24)', icon: Loader2, step: 3 },
-  paid_full: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.24)', icon: Loader2, step: 3 },
-  in_progress: { label: 'В работе', color: DS.colors.info, bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.24)', icon: Loader2, step: 3 },
-  revision: { label: 'На доработке', color: '#f97316', bgColor: 'rgba(249,115,22,0.15)', borderColor: 'rgba(249,115,22,0.24)', icon: Clock, step: 3 },
-  review: { label: 'На проверке', color: DS.colors.purple, bgColor: 'rgba(139,92,246,0.15)', borderColor: 'rgba(139,92,246,0.24)', icon: Clock, step: 4 },
-  completed: { label: 'Выполнен', color: DS.colors.success, bgColor: 'rgba(34,197,94,0.15)', borderColor: 'rgba(34,197,94,0.24)', icon: CheckCircle2, step: 5 },
-  cancelled: { label: 'Отменён', color: DS.colors.error, bgColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.24)', icon: XCircle, step: -1 },
-  rejected: { label: 'Отклонён', color: DS.colors.error, bgColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.24)', icon: XCircle, step: -1 },
+  draft:                { label: 'Черновик',         color: 'rgba(255,255,255,0.45)', bgColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', icon: Clock,        step: 0 },
+  pending:              { label: 'На оценке',        color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.08)',  borderColor: 'rgba(212,175,55,0.15)', icon: Clock,        step: 1 },
+  waiting_estimation:   { label: 'На оценке',        color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.08)',  borderColor: 'rgba(212,175,55,0.15)', icon: Clock,        step: 1 },
+  waiting_payment:      { label: 'К оплате',         color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.10)',  borderColor: 'rgba(212,175,55,0.18)', icon: CreditCard,   step: 2 },
+  confirmed:            { label: 'К оплате',         color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.10)',  borderColor: 'rgba(212,175,55,0.18)', icon: CreditCard,   step: 2 },
+  verification_pending: { label: 'Проверка оплаты',  color: 'rgba(212,175,55,0.70)', bgColor: 'rgba(212,175,55,0.06)',  borderColor: 'rgba(212,175,55,0.12)', icon: Loader2,      step: 2 },
+  paid:                 { label: 'В работе',         color: 'rgba(255,255,255,0.65)', bgColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', icon: Loader2,     step: 3 },
+  paid_full:            { label: 'В работе',         color: 'rgba(255,255,255,0.65)', bgColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', icon: Loader2,     step: 3 },
+  in_progress:          { label: 'В работе',         color: 'rgba(255,255,255,0.65)', bgColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', icon: Loader2,     step: 3 },
+  revision:             { label: 'На доработке',     color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.08)',  borderColor: 'rgba(212,175,55,0.15)', icon: Clock,        step: 3 },
+  review:               { label: 'На проверке',      color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.08)',  borderColor: 'rgba(212,175,55,0.15)', icon: Clock,        step: 4 },
+  completed:            { label: 'Выполнен',         color: 'rgba(34,197,94,0.85)',   bgColor: 'rgba(34,197,94,0.08)',   borderColor: 'rgba(34,197,94,0.15)', icon: CheckCircle2, step: 5 },
+  cancelled:            { label: 'Отменён',          color: 'rgba(239,68,68,0.70)',   bgColor: 'rgba(239,68,68,0.06)',   borderColor: 'rgba(239,68,68,0.12)', icon: XCircle,      step: -1 },
+  rejected:             { label: 'Отклонён',         color: 'rgba(239,68,68,0.70)',   bgColor: 'rgba(239,68,68,0.06)',   borderColor: 'rgba(239,68,68,0.12)', icon: XCircle,      step: -1 },
 }
 
 const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
@@ -458,42 +459,8 @@ const OrderAppBar = memo(function OrderAppBar({
         </motion.button>
       </div>
 
-      {/* Status Pill - Below AppBar */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          padding: `${DS.space.md}px ${DS.space.lg}px`,
-          background: `linear-gradient(180deg, ${DS.colors.bgCard} 0%, transparent 100%)`,
-        }}
-      >
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: DS.space.sm,
-            padding: `${DS.space.sm}px ${DS.space.lg}px`,
-            borderRadius: DS.radius.full,
-            background: statusConfig.bgColor,
-            border: `1px solid ${statusConfig.color}40`,
-          }}
-        >
-          <StatusIcon
-            size={14}
-            color={statusConfig.color}
-            className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''}
-          />
-          <span
-            style={{
-              fontSize: DS.fontSize.sm,
-              fontWeight: 600,
-              color: statusConfig.color,
-            }}
-          >
-            {statusConfig.label}
-          </span>
-        </div>
-      </div>
+      {/* Subtle spacing below AppBar */}
+      <div style={{ height: 8 }} />
 
       {/* Menu Overlay */}
       <AnimatePresence>
@@ -572,191 +539,138 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const paymentExpired = Boolean(isAwaitingPayment && countdown?.urgency === 'expired')
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
   const StatusIcon = statusConfig.icon
-  const WorkTypeIcon = WORK_TYPE_ICONS[order.work_type] || WORK_TYPE_ICONS.other
   const workTypeLabel = order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || 'Заказ'
   const headline = getOrderHeadlineSafe(order)
   const subline = getOrderSublineSafe(order)
   const totalPrice = order.final_price || order.price || 0
   const remainingAmount = Math.max(totalPrice - (order.paid_amount || 0), 0)
 
-  // Urgency colors for countdown
-  const urgencyColors = {
-    safe: DS.colors.success,
-    warning: DS.colors.warning,
-    critical: DS.colors.error,
-    expired: DS.colors.error,
-  }
+  // Countdown: gold-tinted urgency, not rainbow
+  const urgencyColor = countdown?.urgency === 'expired' || countdown?.urgency === 'critical'
+    ? 'rgba(239,68,68,0.75)' : '#E8D5A3'
 
   return (
     <div
       style={{
         margin: `0 ${DS.space.lg}px ${DS.space.lg}px`,
         padding: 20,
-        borderRadius: 28,
-        background: `
-          radial-gradient(circle at top right, rgba(212,175,55,0.12), transparent 36%),
-          linear-gradient(180deg, rgba(18,18,22,0.97), rgba(10,10,14,0.96))
-        `,
-        border: `1px solid ${DS.colors.border}`,
-        boxShadow: '0 24px 48px -40px rgba(0,0,0,0.82)',
+        borderRadius: 24,
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.06)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 12px',
-              borderRadius: 999,
-              background: 'rgba(9, 9, 11, 0.58)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--gold-100)',
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-            }}
-          >
-            <WorkTypeIcon size={13} color="var(--gold-300)" />
-            {workTypeLabel}
-          </div>
-
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 12px',
-              borderRadius: 999,
-              background: statusConfig.bgColor,
-              border: `1px solid ${statusConfig.borderColor}`,
-              color: statusConfig.color,
-              fontSize: 11.5,
-              fontWeight: 700,
-            }}
-          >
-            <StatusIcon size={13} className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''} />
-            {statusConfig.label}
-          </div>
-        </div>
-
+      {/* Status + work type — single clean row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <div
           style={{
-            padding: '8px 12px',
-            borderRadius: 16,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            color: 'var(--gold-300)',
-            fontSize: 14,
-            fontWeight: 700,
-            flexShrink: 0,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 12px', borderRadius: 999,
+            background: statusConfig.bgColor,
+            border: `1px solid ${statusConfig.borderColor}`,
           }}
         >
-          #{order.id}
+          <StatusIcon
+            size={12}
+            color={statusConfig.color}
+            className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''}
+          />
+          <span style={{ fontSize: 11, fontWeight: 700, color: statusConfig.color }}>
+            {statusConfig.label}
+          </span>
         </div>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)' }}>
+          {workTypeLabel}
+        </span>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <div
-          style={{
-            fontSize: 24,
-            fontWeight: 800,
-            color: DS.colors.textPrimary,
-            lineHeight: 1.15,
-            marginBottom: 8,
-          }}
-        >
-          {headline}
-        </div>
-
-        <div
-          style={{
-            fontSize: 14,
-            lineHeight: 1.6,
-            color: DS.colors.textSecondary,
-          }}
-        >
+      {/* Title */}
+      <div
+        style={{
+          fontSize: 22, fontWeight: 800,
+          fontFamily: "'Manrope', sans-serif",
+          color: '#E8D5A3', lineHeight: 1.2,
+          marginBottom: 6,
+        }}
+      >
+        {headline}
+      </div>
+      {subline && (
+        <div style={{ fontSize: 14, lineHeight: 1.5, color: 'rgba(255,255,255,0.42)', marginBottom: 18 }}>
           {subline}
         </div>
-      </div>
+      )}
 
-      <div className={homeStyles.heroProofRail} style={{ marginBottom: isAwaitingPayment && countdown ? 14 : 0 }}>
+      {/* Info rows — clean list */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {order.deadline && (
-          <div className={homeStyles.heroProofItem}>
-            <Clock size={15} color="#d4af37" />
-            Срок: {formatOrderDeadlineRu(order.deadline)}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 14px', borderRadius: 14,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.04)',
+          }}>
+            <Clock size={15} color="rgba(212,175,55,0.55)" />
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.60)' }}>
+              Срок: {formatOrderDeadlineRu(order.deadline)}
+            </span>
           </div>
         )}
         {totalPrice > 0 && (
-          <div className={homeStyles.heroProofItem}>
-            <Banknote size={15} color="#d4af37" />
-            {remainingAmount > 0 && remainingAmount !== totalPrice
-              ? `Осталось оплатить ${formatPrice(remainingAmount)} ₽`
-              : `Стоимость ${formatPrice(totalPrice)} ₽`}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 14px', borderRadius: 14,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.04)',
+          }}>
+            <Banknote size={15} color="rgba(212,175,55,0.55)" />
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.60)' }}>
+              {remainingAmount > 0 && remainingAmount !== totalPrice
+                ? `Осталось оплатить ${formatPrice(remainingAmount)} ₽`
+                : `Стоимость ${formatPrice(totalPrice)} ₽`}
+            </span>
           </div>
         )}
-        <div className={homeStyles.heroProofItem}>
-          <Sparkles size={15} color="#d4af37" />
-          {order.files_url ? 'Файлы будут в этом заказе' : 'Все детали и правки ведём внутри заказа'}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 14px', borderRadius: 14,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.04)',
+        }}>
+          <Sparkles size={15} color="rgba(212,175,55,0.55)" />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.60)' }}>
+            {order.files_url ? 'Файлы будут в этом заказе' : 'Все детали и правки ведём внутри заказа'}
+          </span>
         </div>
       </div>
 
+      {/* Payment countdown */}
       {isAwaitingPayment && countdown && (
-        <div>
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 20,
-              background: `linear-gradient(135deg, ${urgencyColors[countdown.urgency]}15, rgba(255,255,255,0.03))`,
-              border: `1px solid ${urgencyColors[countdown.urgency]}30`,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {paymentExpired ? (
-                  <AlertTriangle size={16} color={urgencyColors.expired} />
-                ) : countdown.urgency === 'critical' ? (
-                  <Flame size={16} color={urgencyColors[countdown.urgency]} />
-                ) : countdown.urgency === 'warning' ? (
-                  <AlertTriangle size={16} color={urgencyColors[countdown.urgency]} />
-                ) : (
-                  <Clock size={16} color={urgencyColors[countdown.urgency]} />
-                )}
-                <span style={{ fontSize: 13, fontWeight: 700, color: DS.colors.textPrimary }}>
-                  {paymentExpired ? 'Срок оплаты истёк' : `Оплатить до ${countdown.formatted}`}
-                </span>
-              </div>
-              <span style={{ fontSize: 12.5, color: DS.colors.textSecondary }}>
-                {paymentExpired
-                  ? 'Напишите в поддержку, чтобы подтвердить актуальность расчёта и срока.'
-                  : 'После оплаты сразу запускаем заказ'}
-              </span>
-            </div>
-
-            {!paymentExpired && (
-              <div
-                style={{
-                  borderRadius: 999,
-                  background: 'rgba(255,255,255,0.08)',
-                  height: 5,
-                  overflow: 'hidden',
-                }}
-              >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${countdown.progress}%` }}
-                  transition={{ duration: 0.5 }}
-                  style={{
-                    height: '100%',
-                    borderRadius: 999,
-                    background: `linear-gradient(90deg, ${urgencyColors[countdown.urgency]}, ${urgencyColors[countdown.urgency]}80)`,
-                  }}
-                />
-              </div>
-            )}
+        <div style={{
+          marginTop: 14, padding: 14, borderRadius: 16,
+          background: 'rgba(212,175,55,0.04)',
+          border: '1px solid rgba(212,175,55,0.10)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <Clock size={14} color={urgencyColor} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: urgencyColor }}>
+              {paymentExpired ? 'Срок оплаты истёк' : `Оплатить до ${countdown.formatted}`}
+            </span>
           </div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginBottom: !paymentExpired ? 10 : 0 }}>
+            {paymentExpired
+              ? 'Напишите в поддержку, чтобы подтвердить актуальность расчёта.'
+              : 'После оплаты сразу запускаем заказ'}
+          </div>
+          {!paymentExpired && (
+            <div style={{ borderRadius: 999, background: 'rgba(255,255,255,0.06)', height: 4, overflow: 'hidden' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${countdown.progress}%` }}
+                transition={{ duration: 0.5 }}
+                style={{ height: '100%', borderRadius: 999, background: '#D4AF37', opacity: 0.6 }}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -863,7 +777,7 @@ const StickyActionBar = memo(function StickyActionBar({
       buttonText: 'Проверить работу',
       buttonIcon: CheckCircle2,
       buttonColor: '#0a0a0c',
-      buttonBg: `linear-gradient(135deg, ${DS.colors.purple}, #7c3aed)`,
+      buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
       disabled: false,
       onClick: onContactManager,
     },
@@ -872,7 +786,7 @@ const StickyActionBar = memo(function StickyActionBar({
       buttonText: 'Скачать файлы',
       buttonIcon: Download,
       buttonColor: '#0a0a0c',
-      buttonBg: `linear-gradient(135deg, #4ade80, ${DS.colors.success})`,
+      buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
       disabled: !order.files_url,
       onClick: onDownloadFiles,
     },
@@ -965,7 +879,7 @@ const StickyActionBar = memo(function StickyActionBar({
             cursor: config.disabled ? 'not-allowed' : 'pointer',
             opacity: config.disabled ? 0.6 : 1,
             minHeight: 52,
-            boxShadow: variant === 'payment' ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
+            boxShadow: ['payment', 'review', 'completed'].includes(variant) ? '0 8px 24px -4px rgba(212,175,55,0.25)' : 'none',
           }}
         >
           <ButtonIcon
@@ -2303,16 +2217,16 @@ const TRUST_CHIPS: TrustChip[] = [
     id: 'secure',
     icon: Shield,
     label: 'Реквизиты по заказу',
-    color: DS.colors.success,
-    bgColor: 'rgba(34,197,94,0.12)',
+    color: 'rgba(212,175,55,0.65)',
+    bgColor: 'rgba(212,175,55,0.06)',
     details: 'Показываем только реквизиты и сумму по текущему заказу. После отправки перевода платёж уходит на ручную проверку.',
   },
   {
     id: 'fast',
     icon: Timer,
     label: '5-15 мин',
-    color: DS.colors.purple,
-    bgColor: 'rgba(139,92,246,0.12)',
+    color: 'rgba(255,255,255,0.50)',
+    bgColor: 'rgba(255,255,255,0.04)',
     details: 'Обычно подтверждаем оплату за 5-15 минут. Если нужно дольше, статус всё равно обновится автоматически.',
   },
 ]
@@ -2456,44 +2370,42 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
         margin: `0 ${DS.space.lg}px`,
         marginBottom: DS.space.lg,
         padding: 18,
-        borderRadius: 24,
-        background: `
-          radial-gradient(circle at top right, rgba(6,182,212,0.16), transparent 34%),
-          linear-gradient(180deg, rgba(14,20,26,0.98), rgba(10,12,18,0.96))
-        `,
-        border: `1px solid rgba(6,182,212,0.22)`,
+        borderRadius: 20,
+        background: 'rgba(212,175,55,0.04)',
+        border: '1px solid rgba(212,175,55,0.10)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
         <div
           style={{
-            width: 46,
-            height: 46,
-            borderRadius: 16,
-            background: 'rgba(6,182,212,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: 44, height: 44, borderRadius: 14,
+            background: 'rgba(212,175,55,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}
         >
-          <Loader2 size={24} color={DS.colors.cyan} className="animate-spin" />
+          <Loader2 size={22} color="rgba(212,175,55,0.60)" className="animate-spin" />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: DS.colors.textPrimary, marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.88)', marginBottom: 4 }}>
             Платёж на проверке
           </div>
-          <div style={{ fontSize: 13, lineHeight: 1.55, color: DS.colors.textSecondary }}>
-            Деньги уже отправлены. Обычно подтверждаем оплату за {estimatedMinutes} минут и переводим заказ в работу автоматически.
+          <div style={{ fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.42)' }}>
+            Обычно подтверждаем за {estimatedMinutes} минут и переводим заказ в работу автоматически.
           </div>
         </div>
       </div>
 
-      <div className={homeStyles.heroProofRail} style={{ marginBottom: 0 }}>
-        <div className={homeStyles.heroProofItem}>
-          <ShieldCheck size={14} color="#06b6d4" />
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 12px', borderRadius: 12,
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        <ShieldCheck size={14} color="rgba(212,175,55,0.50)" />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)' }}>
           Статус обновится сам, ничего дополнительно отправлять не нужно
-        </div>
+        </span>
       </div>
     </motion.div>
   )
@@ -2854,42 +2766,32 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
       </div>
 
       <div
-        className={homeStyles.voidGlass}
         style={{
           padding: 18,
-          borderRadius: 24,
-          border: `1px solid ${DS.colors.border}`,
+          borderRadius: 20,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
           <div
             style={{
-              width: 54,
-              height: 54,
-              borderRadius: 18,
-              background: `linear-gradient(135deg, ${DS.colors.gold}26, ${DS.colors.goldDark}18)`,
-              border: `1px solid ${DS.colors.borderGold}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: 48, height: 48, borderRadius: 16,
+              background: 'rgba(212,175,55,0.06)',
+              border: '1px solid rgba(212,175,55,0.10)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <MessageCircle size={22} color={DS.colors.gold} />
+            <MessageCircle size={20} color="rgba(212,175,55,0.55)" />
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: DS.colors.textPrimary, marginBottom: 4 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.88)', marginBottom: 4 }}>
               Поддержка по заказу
             </div>
-            <div style={{ fontSize: 13, lineHeight: 1.55, color: DS.colors.textSecondary, marginBottom: 8 }}>
-              По оплате, срокам, правкам и всем уточнениям по текущему заказу.
-            </div>
-            <div className={homeStyles.heroProofRail} style={{ marginBottom: 0 }}>
-              <div className={homeStyles.heroProofItem}>
-                <Clock size={14} color="#22c55e" />
-                Ответ обычно {SUPPORT_CONFIG.responseTime}
-              </div>
+            <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.42)' }}>
+              По оплате, срокам, правкам и уточнениям
             </div>
           </div>
         </div>
@@ -2902,21 +2804,14 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
               onOpenChat()
             }}
             style={{
-              minHeight: 52,
-              borderRadius: 18,
+              minHeight: 48, borderRadius: 16,
               background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              color: '#0a0a0c',
-              fontSize: 15,
-              fontWeight: 700,
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              color: '#0a0a0c', fontSize: 14, fontWeight: 700,
             }}
           >
-            <MessageCircle size={18} color="#0a0a0c" />
+            <MessageCircle size={16} color="#0a0a0c" />
             Написать в чат
           </motion.button>
 
@@ -2924,22 +2819,16 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
             whileTap={{ scale: 0.98 }}
             onClick={handleTelegramClick}
             style={{
-              minHeight: 52,
-              borderRadius: 18,
-              background: 'rgba(255,255,255,0.04)',
-              border: `1px solid ${DS.colors.borderLight}`,
+              minHeight: 48, borderRadius: 16,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              color: DS.colors.textSecondary,
-              fontSize: 14,
-              fontWeight: 600,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: 600,
             }}
           >
-            <Send size={16} color={DS.colors.info} />
-            @{SUPPORT_CONFIG.telegramUsername}
+            <Send size={14} color="rgba(212,175,55,0.50)" />
+            Telegram
           </motion.button>
         </div>
       </div>
@@ -2959,27 +2848,28 @@ interface Guarantee {
   color: string
 }
 
+// Gold monochrome guarantees — no rainbow icons
 const GUARANTEES: Guarantee[] = [
   {
     id: 'refund',
     icon: Banknote,
     title: 'Возврат до старта',
     description: 'Полный возврат возможен только если работа ещё не начата. После старта заказа доводим результат до требований.',
-    color: DS.colors.success,
+    color: 'rgba(212,175,55,0.60)',
   },
   {
     id: 'revisions',
     icon: RotateCcw,
     title: '3 круга правок',
     description: 'В стоимость включены 3 бесплатных круга правок. Дальнейшие доработки обсуждаем отдельно.',
-    color: DS.colors.info,
+    color: 'rgba(212,175,55,0.60)',
   },
   {
     id: 'deadline',
     icon: CalendarCheck,
     title: 'Срок под контролем',
     description: 'Срок фиксируем при подтверждении заказа и ведём работу с приоритетом под него.',
-    color: DS.colors.purple,
+    color: 'rgba(212,175,55,0.60)',
   },
 ]
 
@@ -3272,28 +3162,29 @@ const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps)
             const isLast = index === steps.length - 1
 
             // Colors based on status
+            // Quiet luxury timeline colors — gold monochrome
             const getColors = () => {
               switch (step.status) {
                 case 'completed':
                   return {
-                    bg: DS.colors.success,
-                    border: DS.colors.success,
-                    text: DS.colors.textPrimary,
-                    line: DS.colors.success,
+                    bg: 'rgba(212,175,55,0.55)',
+                    border: 'rgba(212,175,55,0.55)',
+                    text: 'rgba(255,255,255,0.75)',
+                    line: 'rgba(212,175,55,0.20)',
                   }
                 case 'current':
                   return {
-                    bg: DS.colors.gold,
-                    border: DS.colors.gold,
-                    text: DS.colors.textPrimary,
-                    line: DS.colors.border,
+                    bg: '#D4AF37',
+                    border: '#D4AF37',
+                    text: '#E8D5A3',
+                    line: 'rgba(255,255,255,0.06)',
                   }
                 default:
                   return {
                     bg: 'transparent',
-                    border: DS.colors.textMuted,
-                    text: DS.colors.textMuted,
-                    line: DS.colors.border,
+                    border: 'rgba(255,255,255,0.12)',
+                    text: 'rgba(255,255,255,0.25)',
+                    line: 'rgba(255,255,255,0.06)',
                   }
               }
             }
