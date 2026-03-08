@@ -1,26 +1,20 @@
-// Profile Components - Premium Profile System
-export { ProfileHeader } from './ProfileHeader'
-export { SegmentedTabs } from './SegmentedTabs'
+// Profile Components — Quiet Luxury Profile System v2
+export { ProfileHero } from './ProfileHero'
+export { StatusCard } from './StatusCard'
+export { ProfileQuickActions } from './ProfileQuickActions'
+export { ActionableOrderBanner } from './ActionableOrderBanner'
+export { BonusWallet } from './BonusWallet'
+export { ReferralCard } from './ReferralCard'
+export { ProfileFooter } from './ProfileFooter'
 
-// Overview Tab
-export { MembershipCard } from './MembershipCard'
-export { BenefitsSummary } from './BenefitsSummary'
-export { QuickActionsGrid } from './QuickActionsGrid'
-export { ConciergeCard } from './ConciergeCard'
-
-// Wallet Tab
-export { WalletHeader } from './WalletHeader'
-export { TransactionList } from './TransactionList'
-export { TransactionDetailsSheet } from './TransactionDetailsSheet'
-
-// Agent Tab
-export { AgentDashboard } from './AgentDashboard'
-export { ReferralTools } from './ReferralTools'
-export { EarningsHistory } from './EarningsHistory'
-
-// Settings Tab
-export { SettingsList } from './SettingsList'
-export { RulesSheet } from './RulesSheet'
-
-// Keep legacy export for backwards compatibility
-export { TransactionHistory } from './TransactionHistory'
+// Helpers
+export {
+  formatMoney,
+  formatMemberSince,
+  formatCountWithWord,
+  formatExpiryHint,
+  getProfileRankName,
+  getActionableOrder,
+  getTransactionPresentation,
+  toSafeNumber,
+} from './profileHelpers'
