@@ -270,13 +270,13 @@ export async function uploadOrderFiles(orderId: number, files: File[], onProgres
         try {
           resolve(JSON.parse(xhr.responseText))
         } catch {
-          reject(new Error('Invalid server response'))
+          reject(new Error('Некорректный ответ сервера'))
         }
       } else {
-        reject(new Error('Upload failed'))
+        reject(new Error('Ошибка загрузки'))
       }
     }
-    xhr.onerror = () => reject(new Error('Network error'))
+    xhr.onerror = () => reject(new Error('Ошибка сети'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/upload-files`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
@@ -343,13 +343,13 @@ export async function uploadChatFile(orderId: number, file: File, onProgress?: (
         try {
           resolve(JSON.parse(xhr.responseText))
         } catch {
-          reject(new Error('Invalid server response'))
+          reject(new Error('Некорректный ответ сервера'))
         }
       } else {
-        reject(new Error('Upload failed'))
+        reject(new Error('Ошибка загрузки'))
       }
     }
-    xhr.onerror = () => reject(new Error('Error'))
+    xhr.onerror = () => reject(new Error('Ошибка сети'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/file`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)
@@ -368,13 +368,13 @@ export async function uploadVoiceMessage(orderId: number, audioBlob: Blob, onPro
         try {
           resolve(JSON.parse(xhr.responseText))
         } catch {
-          reject(new Error('Invalid server response'))
+          reject(new Error('Некорректный ответ сервера'))
         }
       } else {
-        reject(new Error('Upload failed'))
+        reject(new Error('Ошибка загрузки'))
       }
     }
-    xhr.onerror = () => reject(new Error('Error'))
+    xhr.onerror = () => reject(new Error('Ошибка сети'))
     xhr.open('POST', `${API_BASE_URL}/orders/${orderId}/messages/voice`)
     xhr.setRequestHeader('X-Telegram-Init-Data', initData)
     xhr.send(formData)

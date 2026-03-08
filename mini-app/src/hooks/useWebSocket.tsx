@@ -267,18 +267,18 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
               connect()
             }, backoffDelay)
           } else {
-            setConnectionError('Connection lost. Please refresh the page.')
+            setConnectionError('Соединение потеряно. Обновите страницу.')
           }
         }
       }
 
       ws.onerror = () => {
-        setConnectionError('Connection error')
+        setConnectionError('Ошибка соединения')
       }
 
       wsRef.current = ws
     } catch {
-      setConnectionError('Failed to connect')
+      setConnectionError('Не удалось подключиться')
     }
   }, [telegramId, handleMessage, autoReconnect, reconnectInterval, sendMessage])
 

@@ -635,9 +635,14 @@ async def update_order_price(
                 order.promo_code = None
                 order.promo_discount = 0.0
                 # Keep only loyalty discount (capped at 50%)
-                from database.models import User
                 user = await session.get(User, order.user_id)
-                loyalty_discount = user.discount_percent if user else 0.0
+                # User model has no discount_percent; use rank-based lookup
+                if user:
+                    from bot.api.dependencies import get_rank_info
+                    rank_info = await get_rank_info(session, user.telegram_id)
+                    loyalty_discount = float(rank_info.cashback or 0)
+                else:
+                    loyalty_discount = 0.0
                 order.discount = min(loyalty_discount, 50.0)
             else:
                 promo_discount = float(applied_discount)

@@ -61,7 +61,7 @@ def get_rank_info(total_spent: float, rank_levels: list[RankLevel]) -> RankInfo:
         progress_range = (next_rank.min_spent or 0) - (current.min_spent or 0)
         progress_current = total_spent - (current.min_spent or 0)
         progress = min(100, int((progress_current / progress_range) * 100)) if progress_range else 100
-        spent_to_next = int((next_rank.min_spent or 0) - total_spent)
+        spent_to_next = max(0, int((next_rank.min_spent or 0) - total_spent))
 
     return RankInfo(
         name=current.name,

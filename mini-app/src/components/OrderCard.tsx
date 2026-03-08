@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   GraduationCap, FileText, BookOpen, Briefcase, PenTool,
   ClipboardCheck, Presentation, Scroll, Camera, Sparkles,
-  Clock, CheckCircle, XCircle, CreditCard, Loader, ChevronRight,
+  Clock, CheckCircle, XCircle, CreditCard, Loader, ChevronRight, Edit3, FileEdit,
 } from 'lucide-react'
 import { Order } from '../types'
 import { usePremiumGesture } from '../hooks/usePremiumGesture'
@@ -49,6 +49,8 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
   completed: { label: 'Завершён', color: '#22c55e', bgColor: 'rgba(34,197,94,0.15)', icon: CheckCircle },
   cancelled: { label: 'Отменён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.15)', icon: XCircle },
   rejected: { label: 'Отклонён', color: '#ef4444', bgColor: 'rgba(239,68,68,0.15)', icon: XCircle },
+  draft: { label: 'Черновик', color: '#6b7280', bgColor: 'rgba(107,114,128,0.15)', icon: Edit3 },
+  revision: { label: 'На правках', color: '#f97316', bgColor: 'rgba(249,115,22,0.15)', icon: FileEdit },
 }
 
 interface OrderCardProps {

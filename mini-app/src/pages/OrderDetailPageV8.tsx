@@ -215,7 +215,7 @@ const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const formatPrice = (amount: number | undefined | null): string => {
-  if (!amount || typeof amount !== 'number') return '0'
+  if (amount == null || typeof amount !== 'number' || !Number.isFinite(amount)) return '0'
   return amount.toLocaleString('ru-RU')
 }
 
@@ -1628,11 +1628,11 @@ const PaymentSheet = memo(function PaymentSheet({
                           color: DS.colors.textPrimary,
                           letterSpacing: '0.02em',
                         }}>
-                          +7 (919) 673-91-20
+                          {paymentInfo?.sbp_phone ? paymentInfo.sbp_phone.replace(/(\d)(\d{3})(\d{3})(\d{2})(\d{2})$/, '+7 ($1$2) $3-$4-$5') : '—'}
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => handleCopy('+79196739120', 'sbp_phone')}
+                          onClick={() => handleCopy(paymentInfo?.sbp_phone || '', 'sbp_phone')}
                           style={{
                             width: 40,
                             height: 40,
@@ -1667,7 +1667,7 @@ const PaymentSheet = memo(function PaymentSheet({
                         fontSize: DS.fontSize.base,
                         color: DS.colors.textPrimary,
                       }}>
-                        Сбербанк · Т-Банк
+                        {paymentInfo?.sbp_bank || 'Банк получателя'}
                       </div>
                     </div>
 
@@ -3578,7 +3578,9 @@ export function OrderDetailPageV8() {
   useEffect(() => {
     if (!isValidOrderId) return
     const unsubscribe = addMessageHandler((message) => {
-      if (message.type === 'order_update' || message.type === 'refresh') {
+      if (message.type === 'refresh') {
+        loadOrder()
+      } else if (message.type === 'order_update' && (message as Record<string, unknown>).order_id === orderId) {
         loadOrder()
       }
     })

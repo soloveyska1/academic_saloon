@@ -68,7 +68,7 @@ async def get_order_messages(
     return ChatMessagesListResponse(
         order_id=order_id,
         messages=formatted_messages,
-        unread_count=sum(1 for m in messages if m.sender_type == 'admin' and not m.is_read),
+        unread_count=unread_count,
     )
 
 
@@ -238,7 +238,7 @@ async def get_or_create_support_order(session: AsyncSession, user: User) -> Orde
             order = Order(
                 user_id=user.telegram_id, work_type='support_chat', subject='Техническая Поддержка',
                 topic='Чат с поддержкой из Mini App', description='Автоматически созданный диалог для поддержки',
-                status=str(OrderStatus.DRAFT), price=0, paid_amount=0, discount=0
+                status=OrderStatus.DRAFT.value, price=0, paid_amount=0, discount=0
             )
             session.add(order)
             await session.commit()
