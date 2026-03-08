@@ -1,14 +1,15 @@
+/**
+ * God Mode v3 — Custom Hooks
+ * useGodWebSocket · useGodData · useHaptic
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Package, CreditCard, X } from 'lucide-react'
 import {
   subscribeGodNotifications,
   unsubscribeGodNotifications,
   API_WS_URL,
 } from '../../api/userApi'
-import { NOTIFICATION_SOUND } from './godHelpers'
-import type { AdminNotification } from './godHelpers'
-import s from '../../pages/GodModePage.module.css'
+import { NOTIFICATION_SOUND } from './godConstants'
+import type { AdminNotification } from './godConstants'
 
 /* ═══════ useGodWebSocket ═══════ */
 
@@ -37,12 +38,12 @@ export function useGodWebSocket(
 
   const addNotification = useCallback(
     (notif: Omit<AdminNotification, 'id' | 'timestamp'>) => {
-      const newNotif: AdminNotification = {
+      const n: AdminNotification = {
         ...notif,
         id: Math.random().toString(36).slice(2),
         timestamp: new Date(),
       }
-      setNotifications((prev) => [newNotif, ...prev.slice(0, 19)])
+      setNotifications((prev) => [n, ...prev.slice(0, 19)])
       setUnreadCount((prev) => prev + 1)
       playSound()
       if (navigator.vibrate) navigator.vibrate([100, 50, 100])
@@ -91,7 +92,7 @@ export function useGodWebSocket(
   }, [isAdmin, telegramId, addNotification])
 
   useEffect(() => {
-    if (activeTab === 'dashboard') setUnreadCount(0)
+    if (activeTab === 'center') setUnreadCount(0)
   }, [activeTab])
 
   return {
@@ -103,59 +104,63 @@ export function useGodWebSocket(
   }
 }
 
-/* ═══════ NotificationToast ═══════ */
+/* ═══════ useGodData — generic data fetching hook ═══════ */
 
-interface NotifToastProps {
-  notifications: AdminNotification[]
-  onDismiss: () => void
+interface UseGodDataOptions {
+  interval?: number
+  enabled?: boolean
 }
 
-export function NotificationToast({ notifications, onDismiss }: NotifToastProps) {
-  const latest = notifications[0]
-  const isVisible = latest && latest.timestamp > new Date(Date.now() - 5000)
+export function useGodData<T>(
+  fetchFn: () => Promise<T>,
+  options: UseGodDataOptions = {},
+) {
+  const { interval, enabled = true } = options
+  const [data, setData] = useState<T | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className={s.notifToast}
-          style={{
-            background: latest.type === 'new_order'
-              ? 'rgba(34,197,94,0.15)' : 'rgba(236,72,153,0.15)',
-            border: `1px solid ${latest.type === 'new_order'
-              ? 'rgba(34,197,94,0.3)' : 'rgba(236,72,153,0.3)'}`,
-          }}
-        >
-          <div
-            className={s.notifIcon}
-            style={{
-              background: latest.type === 'new_order'
-                ? 'rgba(34,197,94,0.2)' : 'rgba(236,72,153,0.2)',
-            }}
-          >
-            {latest.type === 'new_order'
-              ? <Package size={14} color="#22c55e" />
-              : <CreditCard size={14} color="#ec4899" />}
-          </div>
-          <div className={s.flex1}>
-            <div style={{
-              fontSize: 12, fontWeight: 600, marginBottom: 2,
-              color: latest.type === 'new_order' ? '#22c55e' : '#ec4899',
-            }}>
-              {latest.title}
-            </div>
-            <div style={{ fontSize: 11, color: '#a1a1aa', whiteSpace: 'pre-line', lineHeight: 1.4 }}>
-              {latest.message}
-            </div>
-          </div>
-          <button type="button" onClick={onDismiss} className={s.ghostBtn}>
-            <X size={14} />
-          </button>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
+  const load = useCallback(async () => {
+    try {
+      const result = await fetchFn()
+      setData(result)
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка')
+    }
+    setLoading(false)
+  }, [fetchFn])
+
+  useEffect(() => {
+    if (!enabled) return
+    load()
+    if (interval) {
+      const id = setInterval(load, interval)
+      return () => clearInterval(id)
+    }
+  }, [load, interval, enabled])
+
+  return { data, loading, error, refresh: load }
+}
+
+/* ═══════ useHaptic — Telegram haptic feedback ═══════ */
+
+export function useHaptic() {
+  const hf = typeof window !== 'undefined'
+    ? (window as any).Telegram?.WebApp?.HapticFeedback
+    : null
+
+  return {
+    impact: useCallback((style: 'light' | 'medium' | 'heavy' = 'light') => {
+      if (hf) hf.impactOccurred(style)
+      else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 50 : 20)
+    }, [hf]),
+    notify: useCallback((type: 'success' | 'warning' | 'error' = 'success') => {
+      if (hf) hf.notificationOccurred(type)
+      else if (navigator.vibrate) navigator.vibrate(type === 'error' ? [50, 30, 50] : 30)
+    }, [hf]),
+    selection: useCallback(() => {
+      if (hf) hf.selectionChanged()
+    }, [hf]),
+  }
 }

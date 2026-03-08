@@ -1,30 +1,24 @@
 /**
- * GOD MODE v2 — Compact Admin Panel
- * Thin orchestrator: auth → topbar → tabs → content
+ * GOD MODE v3 — Thin Orchestrator
+ * Auth guard → GodShell → 7 tabs → WebSocket notifications
  */
-
 import { useCallback, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import {
-  Crown, ArrowLeft, Users, Volume2, VolumeX, Bell, Shield,
-} from 'lucide-react'
+import { Shield } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAdmin } from '../contexts/AdminContext'
 import { getLastAppRoute } from '../utils/navigation'
 
-import { getActiveTab, withRouteParams } from '../components/god/godHelpers'
-import type { TabId } from '../components/god/godHelpers'
-import { LoadingSpinner } from '../components/god/GodShared'
-import { GodTabBar } from '../components/god/GodTabBar'
-import { useGodWebSocket, NotificationToast } from '../components/god/GodNotifications'
-import { GodDashboard } from '../components/god/GodDashboard'
-import { GodOrders } from '../components/god/GodOrders'
-import { GodUsers } from '../components/god/GodUsers'
-import { GodPromos } from '../components/god/GodPromos'
-import { GodLive } from '../components/god/GodLive'
-import { GodLogs } from '../components/god/GodLogs'
-import { GodSQL } from '../components/god/GodSQL'
-import { GodBroadcast } from '../components/god/GodBroadcast'
+import { getActiveTab, withRouteParams, type TabId } from '../components/god/godConstants'
+import { useGodWebSocket } from '../components/god/godHooks'
+import { GodShell, NotificationToast } from '../components/god/GodShell'
+import { CenterTab } from '../components/god/CenterTab'
+import { OrdersTab } from '../components/god/OrdersTab'
+import { ClientsTab } from '../components/god/ClientsTab'
+import { AnalyticsTab } from '../components/god/AnalyticsTab'
+import { MarketingTab } from '../components/god/MarketingTab'
+import { RadarTab } from '../components/god/RadarTab'
+import { ToolsTab } from '../components/god/ToolsTab'
 
 import s from './GodModePage.module.css'
 
@@ -35,30 +29,30 @@ export function GodModePage() {
   const activeTab = useMemo(() => getActiveTab(searchParams), [searchParams])
   const appReturnPath = useMemo(() => getLastAppRoute(), [])
 
-  const {
-    notifications, soundEnabled, unreadCount, toggleSound, dismissFirst,
-  } = useGodWebSocket(isAdmin, telegramId, activeTab)
+  // WebSocket notifications
+  const { notifications, soundEnabled, unreadCount, toggleSound, dismissFirst } =
+    useGodWebSocket(isAdmin, telegramId, activeTab)
 
   const handleTabChange = useCallback(
     (tab: TabId) => {
       setSearchParams(
-        withRouteParams(searchParams, {
-          tab,
-          order_q: null, order_status: null,
-          user_q: null, user_filter: null,
-        }),
+        withRouteParams(searchParams, { tab, order_q: null, order_status: null, user_q: null, user_filter: null }),
         { replace: true },
       )
     },
     [searchParams, setSearchParams],
   )
 
+  const handleBack = useCallback(
+    () => navigate(appReturnPath || '/'),
+    [navigate, appReturnPath],
+  )
+
   /* Auth guards */
   if (!accessResolved) {
     return (
       <div className={s.loadingScreen}>
-        <LoadingSpinner />
-        <div className={s.loadingLabel}>Проверка доступа…</div>
+        <div className={s.mutedSmall} style={{ padding: 40, textAlign: 'center' }}>Проверка доступа…</div>
       </div>
     )
   }
@@ -74,80 +68,31 @@ export function GodModePage() {
   }
 
   return (
-    <div className={s.adminPage}>
-      {/* ── Compact top bar ── */}
-      <div className={s.stickyHeader}>
-        <div className={s.topBar}>
-          <div className={s.topBarLogo}>
-            <Crown size={14} color="#0a0a0c" strokeWidth={2.5} />
-          </div>
-          <span className={s.topBarTitle}>God Mode</span>
-
-          <div className={s.topBarActions}>
-            {/* Sound */}
-            <button
-              type="button"
-              onClick={toggleSound}
-              className={soundEnabled ? s.topBarBtnActive : s.topBarBtn}
-              title={soundEnabled ? 'Звук вкл' : 'Звук выкл'}
-            >
-              {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-            </button>
-
-            {/* Simulate new user */}
-            <button
-              type="button"
-              onClick={toggleSimulateNewUser}
-              className={simulateNewUser ? s.topBarBtnActive : s.topBarBtn}
-              title="Тест новичка"
-            >
-              <Users size={15} />
-            </button>
-
-            {/* Notifications */}
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                onClick={() => handleTabChange('dashboard')}
-                className={unreadCount > 0 ? s.topBarBtnDanger : s.topBarBtn}
-              >
-                <Bell size={15} />
-              </button>
-              {unreadCount > 0 && <span className={s.unreadBadge}>{unreadCount}</span>}
-            </div>
-
-            {/* Back */}
-            <button
-              type="button"
-              onClick={() => navigate(appReturnPath || '/')}
-              className={s.topBarBtn}
-              title="Назад"
-            >
-              <ArrowLeft size={15} />
-            </button>
-          </div>
-        </div>
-
-        <GodTabBar activeTab={activeTab} onTabChange={handleTabChange} />
-      </div>
-
-      {/* Toast */}
-      <NotificationToast notifications={notifications} onDismiss={dismissFirst} />
-
-      {/* ── Content ── */}
-      <div className={s.content}>
+    <>
+      <GodShell
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        soundEnabled={soundEnabled}
+        onToggleSound={toggleSound}
+        simulateNewUser={simulateNewUser}
+        onToggleSimulate={toggleSimulateNewUser}
+        unreadCount={unreadCount}
+        onBack={handleBack}
+      >
         <AnimatePresence mode="wait">
-          {activeTab === 'dashboard' && <GodDashboard key="d" />}
-          {activeTab === 'orders' && <GodOrders key="o" />}
-          {activeTab === 'users' && <GodUsers key="u" />}
-          {activeTab === 'promos' && <GodPromos key="p" />}
-          {activeTab === 'live' && <GodLive key="l" />}
-          {activeTab === 'logs' && <GodLogs key="lg" />}
-          {activeTab === 'sql' && <GodSQL key="s" />}
-          {activeTab === 'broadcast' && <GodBroadcast key="b" />}
+          {activeTab === 'center' && <CenterTab key="center" />}
+          {activeTab === 'orders' && <OrdersTab key="orders" />}
+          {activeTab === 'clients' && <ClientsTab key="clients" />}
+          {activeTab === 'analytics' && <AnalyticsTab key="analytics" />}
+          {activeTab === 'marketing' && <MarketingTab key="marketing" />}
+          {activeTab === 'radar' && <RadarTab key="radar" />}
+          {activeTab === 'tools' && <ToolsTab key="tools" />}
         </AnimatePresence>
-      </div>
-    </div>
+      </GodShell>
+
+      {/* Floating notification toast */}
+      <NotificationToast notifications={notifications} onDismiss={dismissFirst} />
+    </>
   )
 }
 
