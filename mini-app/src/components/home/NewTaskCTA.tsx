@@ -3,137 +3,199 @@ import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  NEW TASK CTA — The primary conversion element
+//
+//  Two variants:
+//  • first-order  — Hero mode: big headline, value proposition, trust stat
+//  • repeat-order — Compact mode: direct CTA for returning users
+//
+//  Psychology: outcome-first headline, single action, zero friction
+// ═══════════════════════════════════════════════════════════════════════════
+
 interface NewTaskCTAProps {
   onClick: () => void
   haptic?: (style: 'light' | 'medium' | 'heavy') => void
   variant?: 'first-order' | 'repeat-order'
 }
 
-const CTA_CONFIG = {
-  'first-order': {
-    eyebrow: 'ОСНОВНОЙ СЦЕНАРИЙ',
-    title: 'Оформить первый заказ',
-    subtitle: 'Полная заявка: сначала формат работы, затем детали и срок.',
-    ctaLabel: 'Перейти к полной заявке',
-    note: 'После отправки мы подтвердим детали, стоимость и дальнейшие шаги.',
-  },
-  'repeat-order': {
-    eyebrow: 'ГЛАВНОЕ ДЕЙСТВИЕ',
-    title: 'Оформить заказ',
-    subtitle: 'Основной путь для новой работы, срочной задачи или доработки.',
-    ctaLabel: 'Открыть полную заявку',
-    note: 'После отправки заявки менеджер подтвердит детали и дальнейшие шаги.',
-  },
-} as const
-
 export const NewTaskCTA = memo(function NewTaskCTA({
   onClick,
   haptic,
   variant = 'repeat-order',
 }: NewTaskCTAProps) {
-  const config = CTA_CONFIG[variant]
-
   const handleClick = () => {
     haptic?.('heavy')
     onClick()
   }
 
+  if (variant === 'first-order') {
+    return (
+      <motion.section
+        className={`${s.voidGlass} ${s.primaryActionCard} ${s.firstOrderActionCard}`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          position: 'relative',
+          width: '100%',
+          padding: '28px 22px 24px',
+          borderRadius: 28,
+          marginBottom: 16,
+          overflow: 'hidden',
+          border: '1px solid rgba(212,175,55,0.16)',
+          isolation: 'isolate',
+          textAlign: 'left',
+        }}
+      >
+        <div className={s.primaryActionGlow} aria-hidden="true" />
+        <div className={s.primaryActionShine} aria-hidden="true" />
+        <div className={s.primaryActionOrb} aria-hidden="true" />
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Stat line — ambient social proof */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '5px 10px',
+              borderRadius: 999,
+              marginBottom: 16,
+              background: 'rgba(34,197,94,0.1)',
+              border: '1px solid rgba(34,197,94,0.2)',
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#4ade80',
+              letterSpacing: '0.02em',
+            }}
+          >
+            <span
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                background: '#4ade80',
+                boxShadow: '0 0 8px rgba(74,222,128,0.6)',
+              }}
+            />
+            Принимаем заказы
+          </div>
+
+          {/* Main headline — outcome-first, not process-first */}
+          <div
+            className={s.goldAccent}
+            style={{
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: 'clamp(28px, 7vw, 36px)',
+              fontWeight: 800,
+              lineHeight: 1.05,
+              marginBottom: 10,
+              maxWidth: 320,
+            }}
+          >
+            Сделаем за тебя
+          </div>
+
+          <div
+            style={{
+              color: '#a1a1aa',
+              fontSize: 14,
+              fontWeight: 500,
+              lineHeight: 1.5,
+              marginBottom: 20,
+              maxWidth: 300,
+            }}
+          >
+            Курсовые, дипломы, рефераты и любые учебные задачи — с гарантией результата
+          </div>
+
+          {/* Primary CTA */}
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.985 }}
+            onClick={handleClick}
+            className={s.heroPrimaryButton}
+            style={{
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.06) 100%)',
+              borderColor: 'rgba(212,175,55,0.3)',
+            }}
+          >
+            <span>Оформить заказ</span>
+            <div className={s.primaryActionArrow}>
+              <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
+            </div>
+          </motion.button>
+        </div>
+      </motion.section>
+    )
+  }
+
+  // ── Returning user: compact CTA ──
   return (
     <motion.section
-      className={`${s.voidGlass} ${s.primaryActionCard} ${variant === 'first-order' ? s.firstOrderActionCard : s.returningOrderActionCard}`}
-      initial={{ opacity: 0, y: 20 }}
+      className={`${s.voidGlass} ${s.primaryActionCard} ${s.returningOrderActionCard}`}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
         position: 'relative',
         width: '100%',
-        padding: '26px 22px 22px',
-        borderRadius: '28px',
-        marginBottom: '20px',
+        padding: '18px 18px 18px 20px',
+        borderRadius: 22,
+        marginBottom: 16,
         overflow: 'hidden',
-        border: '1px solid rgba(212,175,55,0.16)',
+        border: '1px solid rgba(212,175,55,0.12)',
         isolation: 'isolate',
-        textAlign: 'left',
       }}
     >
       <div className={s.primaryActionGlow} aria-hidden="true" />
-      <div className={s.primaryActionShine} aria-hidden="true" />
-      <div className={s.primaryActionOrb} aria-hidden="true" />
 
-      <div style={{ position: 'relative', zIndex: 1, marginBottom: 18 }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 12px',
-            borderRadius: 999,
-            background: 'rgba(9, 9, 11, 0.58)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            fontFamily: "'Manrope', sans-serif",
-            fontSize: '11px',
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: 'var(--gold-100)',
-          }}
-        >
-          <span
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.985 }}
+        onClick={handleClick}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          width: '100%',
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          appearance: 'none',
+          textAlign: 'left',
+        }}
+      >
+        <div>
+          <div
+            className={s.goldAccent}
             style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: '#d4af37',
-              boxShadow: '0 0 12px rgba(212,175,55,0.72)',
-              flexShrink: 0,
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: 20,
+              fontWeight: 800,
+              lineHeight: 1.15,
+              marginBottom: 3,
             }}
-          />
-          {config.eyebrow}
-        </div>
-      </div>
-
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div
-          className={s.goldAccent}
-          style={{
-            fontFamily: "'Manrope', sans-serif",
-            fontSize: 'clamp(30px, 7vw, 40px)',
-            fontWeight: 800,
-            lineHeight: 1.02,
-            marginBottom: 12,
-            maxWidth: 420,
-          }}
-        >
-          {config.title}
-        </div>
-
-        <div
-          style={{
-            maxWidth: 470,
-            color: '#d4d4d8',
-            fontFamily: "'Manrope', sans-serif",
-            fontSize: '15px',
-            fontWeight: 500,
-            lineHeight: 1.6,
-            marginBottom: 18,
-          }}
-        >
-          {config.subtitle}
-        </div>
-
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.985 }}
-          onClick={handleClick}
-          className={s.heroPrimaryButton}
-        >
-          <span>{config.ctaLabel}</span>
-          <div className={s.primaryActionArrow}>
-            <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
+          >
+            Новый заказ
           </div>
-        </motion.button>
-
-        <div className={s.heroFootnote}>{config.note}</div>
-      </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: '#71717a',
+              fontWeight: 500,
+            }}
+          >
+            Любая работа · от 1 дня
+          </div>
+        </div>
+        <div className={s.primaryActionArrow} style={{ flexShrink: 0 }}>
+          <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
+        </div>
+      </motion.button>
     </motion.section>
   )
 })

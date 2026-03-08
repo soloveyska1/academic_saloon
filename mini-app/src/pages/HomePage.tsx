@@ -179,19 +179,17 @@ export function HomePage({ user }: Props) {
         />
 
         {/* ═══════════════════════════════════════════════════════════════════
-          NEW USER FLOW — Streamlined, trust-first experience
+          NEW USER FLOW — Trust-first, fear-elimination, single CTA
+          No process instructions. Just: value → trust → proof → action.
           ═══════════════════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
             <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
-
-            <EmptyStateOnboarding
-              primaryActionLabel="Перейти к полной заявке"
-            />
+            <EmptyStateOnboarding />
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════════════════
-             RETURNING USER FLOW — Full feature set
+             RETURNING USER FLOW — Compact CTA + active orders + tools
              ═══════════════════════════════════════════════════════════════════ */
           <>
             <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
