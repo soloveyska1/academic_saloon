@@ -83,23 +83,32 @@ jobs:
 
             # 2. Stop systemd service FIRST (prevents auto-restart after kill)
             echo "Stopping systemd service..."
-            timeout 15 systemctl stop saloon-bot 2>/dev/null || true
+            systemctl stop saloon-bot 2>/dev/null || true
+            sleep 2
 
             # 3. Kill any remaining processes on port 8000
             echo "Cleaning up port 8000..."
             fuser -k -9 8000/tcp 2>/dev/null || true
-            sleep 2
+            sleep 3
 
-            # 4. Verify port is free
-            for i in {1..5}; do
+            # 4. Verify port is free (up to 10 attempts × 2s = 20s max)
+            PORT_FREE=false
+            for i in {1..10}; do
                 if ! fuser 8000/tcp 2>/dev/null; then
-                    echo "  Port 8000 is free."
+                    echo "  ✓ Port 8000 is free (attempt $i)."
+                    PORT_FREE=true
                     break
                 fi
-                echo "  Still occupied, waiting (attempt $i)..."
+                echo "  Port 8000 still occupied (attempt $i/10)..."
                 fuser -k -9 8000/tcp 2>/dev/null || true
-                sleep 3
+                sleep 2
             done
+
+            if [ "$PORT_FREE" = "false" ]; then
+                echo "  ⚠️ Port 8000 still occupied after 10 attempts, forcing..."
+                kill -9 $(lsof -t -i:8000) 2>/dev/null || true
+                sleep 3
+            fi
 
             # 5. Start systemd service
             echo "Starting systemd service..."
