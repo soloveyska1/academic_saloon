@@ -115,7 +115,7 @@ async def cmd_status(message: Message, session: AsyncSession):
 
     orders_query = (
         select(Order)
-        .where(Order.user_id == user.id, Order.status.notin_(final_statuses))
+        .where(Order.user_id == telegram_id, Order.status.notin_(final_statuses))
         .order_by(Order.created_at.desc())
         .limit(5)
     )
@@ -283,10 +283,12 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
 
     telegram_id = message.from_user.id
 
-    # Set persistent reply keyboard
+    # Set persistent reply keyboard (visible at bottom of chat)
     try:
-        menu_msg = await message.answer("⏳", reply_markup=get_persistent_menu())
-        await menu_msg.delete()
+        await message.answer(
+            "Используйте кнопки внизу для быстрого доступа.",
+            reply_markup=get_persistent_menu()
+        )
     except Exception:
         pass
 
