@@ -81,29 +81,25 @@ jobs:
             # 1. Stop the service
             echo "Stopping systemd service..."
             systemctl stop saloon-bot || true
-            
-            # 2. Kill loop (Try 5 times to clear port 8000)
+            sleep 2
+
+            # 2. Kill ALL processes on port 8000
             echo "Killing processes on port 8000..."
-            for i in {1..5}; do
-                if fuser 8000/tcp >/dev/null 2>&1; then
-                    fuser -k -9 8000/tcp >/dev/null 2>&1 || true
-                    echo "  Killed process on port 8000 (attempt $i)"
-                    sleep 2
-                else
-                    echo "  Port 8000 is free."
+            fuser -k -9 8000/tcp 2>/dev/null || true
+            lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+            sleep 3
+
+            # 3. Verify port is free
+            for i in {1..10}; do
+                if ! lsof -ti:8000 >/dev/null 2>&1 && ! fuser 8000/tcp >/dev/null 2>&1; then
+                    echo "  Port 8000 is free (attempt $i)."
                     break
                 fi
+                echo "  Port 8000 still busy, killing again (attempt $i)..."
+                lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+                fuser -k -9 8000/tcp 2>/dev/null || true
+                sleep 2
             done
-            
-            # 3. Final Verification and Wait
-            if fuser 8000/tcp >/dev/null 2>&1; then
-                echo "❌ CRITICAL: Port 8000 still in use. Force killing again..."
-                fuser -k -9 8000/tcp || true
-            fi
-            
-            # FORCE WAIT so socket can clear TIME_WAIT
-            echo "Waiting 10s for socket cleanup..."
-            sleep 10
 
             # 4. Start systemd service
             echo "Starting systemd service..."
