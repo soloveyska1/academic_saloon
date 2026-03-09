@@ -1,13 +1,11 @@
-import { ReactNode, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowUpRight,
   Check,
   ChevronRight,
-  Clock3,
   Crown,
   Search,
-  Sparkles,
   Star,
   X,
   Zap,
@@ -15,11 +13,6 @@ import {
 } from 'lucide-react'
 import { ServiceCategory, ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
-import {
-  formatOrderCount,
-  SocialProofData,
-  useSocialProofBatch,
-} from './useSocialProof'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SERVICE TYPE STEP — «Золотая Печать» Design v2
@@ -107,17 +100,6 @@ export function ServiceTypeStep({
   const search = searchQuery.trim().toLowerCase()
   const handleUrgentRequest = onUrgentRequest || onAssistRequest
 
-  const proofTargets = useMemo(
-    () => SERVICE_TYPES.map(service => ({
-      id: service.id,
-      category: service.category,
-      popular: service.popular,
-    })),
-    []
-  )
-
-  const socialProofMap = useSocialProofBatch(proofTargets)
-
   const sections = useMemo(() => {
     return SECTION_ORDER.map((category) => {
       const meta = SECTION_META[category]
@@ -153,7 +135,6 @@ export function ServiceTypeStep({
               section={section}
               selected={selected}
               onSelect={onSelect}
-              socialProofMap={socialProofMap}
               index={index}
             />
           ))}
@@ -242,13 +223,11 @@ function ServiceSection({
   section,
   selected,
   onSelect,
-  socialProofMap,
   index,
 }: {
   section: SectionMeta & { services: ServiceType[] }
   selected: string | null
   onSelect: (id: string) => void
-  socialProofMap: Map<string, SocialProofData>
   index: number
 }) {
   const SectionIcon = section.icon
@@ -311,11 +290,9 @@ function ServiceSection({
           <ServiceRow
             key={service.id}
             service={service}
-            category={section.category}
             sectionMeta={section}
             selected={selected === service.id}
             onSelect={() => onSelect(service.id)}
-            socialProof={socialProofMap.get(service.id)!}
             isLast={i === section.services.length - 1}
           />
         ))}
@@ -330,19 +307,15 @@ function ServiceSection({
 
 function ServiceRow({
   service,
-  category,
   sectionMeta,
   selected,
   onSelect,
-  socialProof,
   isLast,
 }: {
   service: ServiceType
-  category: ServiceCategory
   sectionMeta: SectionMeta
   selected: boolean
   onSelect: () => void
-  socialProof: SocialProofData
   isLast: boolean
 }) {
   const Icon = service.icon
@@ -490,35 +463,21 @@ function ServiceRow({
         </AnimatePresence>
       </div>
 
-      {/* Bottom line: meta info + price (aligned right) */}
+      {/* Bottom line: duration + price */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 8,
         paddingLeft: 47, /* 36px icon + 11px gap */
-        minWidth: 0,
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
+        <span style={{
           fontSize: 12,
           color: 'var(--text-muted)',
           lineHeight: 1,
-          minWidth: 0,
-          overflow: 'hidden',
-          whiteSpace: 'nowrap',
         }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{service.duration}</span>
-          <span style={{ opacity: 0.3, flexShrink: 0 }}>·</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-            <Star size={9} fill="var(--gold-300)" color="var(--gold-300)" />
-            {socialProof.rating}
-          </span>
-          <span style={{ opacity: 0.3, flexShrink: 0 }}>·</span>
-          <span style={{ flexShrink: 0 }}>{formatOrderCount(socialProof.totalOrders)}</span>
-        </div>
+          {service.duration}
+        </span>
 
         <span style={{
           fontSize: 13,
@@ -527,7 +486,6 @@ function ServiceRow({
           color: selected ? sectionMeta.accent : 'var(--text-secondary)',
           lineHeight: 1,
           transition: 'color 0.2s ease',
-          flexShrink: 0,
           whiteSpace: 'nowrap',
         }}>
           {service.price}
