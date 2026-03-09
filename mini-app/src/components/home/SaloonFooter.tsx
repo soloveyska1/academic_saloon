@@ -22,7 +22,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
           letterSpacing: '0.15em',
           fontWeight: 500,
         }}>
-          ACADEMIC SALOON
+          АКАДЕМИЧЕСКИЙ САЛОН
         </span>
         <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.4)' }}>&#x2726;</span>
         <span style={{

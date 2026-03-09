@@ -46,7 +46,7 @@ export const LuxuryLoader = () => {
                                 fill="url(#goldGradient)"
                                 textLength="470"
                             >
-                                ACADEMIC • SALOON • ACADEMIC • SALOON •
+                                АКАДЕМИЧЕСКИЙ • САЛОН • АКАДЕМИЧЕСКИЙ • САЛОН •
                             </textPath>
                         </text>
                     </svg>
@@ -65,7 +65,7 @@ export const LuxuryLoader = () => {
                     <div className="relative">
                         {/* Monogram Text */}
                         <h1 className="font-serif text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#BF953F] via-[#FCF6BA] to-[#B38728] drop-shadow-lg">
-                            AS
+                            АС
                         </h1>
 
                         {/* Subtle Inner Ring */}

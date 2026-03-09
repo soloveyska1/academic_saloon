@@ -402,7 +402,7 @@ function AppContent() {
                   letterSpacing: '0.15em',
                   fontFamily: "var(--font-serif, 'Playfair Display', serif)",
                 }}>
-                  ACADEMIC SALOON
+                  АКАДЕМИЧЕСКИЙ САЛОН
                 </span>
                 <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.3)' }}>✦</span>
                 <span style={{

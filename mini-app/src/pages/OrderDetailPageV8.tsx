@@ -2793,7 +2793,7 @@ const FilesSection = memo(function FilesSection({
 // Support contact configuration
 const SUPPORT_CONFIG = {
   name: 'Техподдержка',
-  role: 'Academic Saloon · поддержка по заказам',
+  role: 'Академический Салон · поддержка по заказам',
   telegramUsername: 'Thisissaymoon',
   responseTime: '~10 мин',
 }

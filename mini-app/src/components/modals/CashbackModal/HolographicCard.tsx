@@ -102,7 +102,7 @@ function HolographicCardComponent({ rank, isLocked, onClick }: HolographicCardPr
             color: '#3f3f46', textTransform: 'uppercase',
             letterSpacing: '0.12em', marginBottom: 5,
           }}>
-            ACADEMIC SALOON
+            АКАДЕМИЧЕСКИЙ САЛОН
           </div>
           <div style={{
             fontSize: 13,

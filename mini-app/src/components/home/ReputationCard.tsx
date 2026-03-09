@@ -39,7 +39,7 @@ export const ReputationCard = memo(function ReputationCard({
       onTelegramShare()
     } else {
       // Use Telegram WebApp share if available
-      const shareText = `Привет! Я пользуюсь Academic Saloon для учебных работ. Мой код: ${referralCode} — получишь скидку, а я 5% с твоих заказов 📚`
+      const shareText = `Привет! Я пользуюсь Академическим Салоном для учебных работ. Мой код: ${referralCode} — получишь скидку, а я 5% с твоих заказов 📚`
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/AcademicSaloonBot')}&text=${encodeURIComponent(shareText)}`
       window.open(shareUrl, '_blank')
     }

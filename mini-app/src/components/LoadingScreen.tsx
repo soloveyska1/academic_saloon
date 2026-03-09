@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 /**
  * STRICT PREMIUM LOADING SCREEN
  * Absolute minimalism. Deep black. Gold inputs.
- * Brand: "ACADEMIC SALOON"
+ * Brand: "Академический Салон"
  */
 export function LoadingScreen() {
   return (
@@ -85,7 +85,7 @@ export function LoadingScreen() {
             textShadow: '0 2px 10px rgba(212,175,55,0.1)'
           }}
         >
-          Academic Saloon
+          Академический Салон
         </h1>
 
         <p style={{

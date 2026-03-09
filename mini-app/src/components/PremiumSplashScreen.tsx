@@ -303,10 +303,10 @@ function BrandLetter({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Brand Name "ACADEMIC SALOON"
+// COMPONENT: Brand Name "АКАДЕМИЧЕСКИЙ САЛОН"
 // ═══════════════════════════════════════════════════════════════════════════
 function BrandName({ phase }: { phase: number }) {
-  const letters = ['S', 'A', 'L', 'O', 'O', 'N']
+  const letters = ['С', 'А', 'Л', 'О', 'Н']
   const isVisible = phase >= 1.2
 
   return (
@@ -320,7 +320,7 @@ function BrandName({ phase }: { phase: number }) {
         textAlign: 'center',
       }}
     >
-      {/* Academic eyebrow */}
+      {/* Eyebrow */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={isVisible ? { opacity: 1, y: 0 } : {}}
@@ -336,7 +336,7 @@ function BrandName({ phase }: { phase: number }) {
           textTransform: 'uppercase',
         }}
       >
-        ACADEMIC
+        АКАДЕМИЧЕСКИЙ
       </motion.div>
 
       {/* Main brand text */}
@@ -425,7 +425,7 @@ function BrandName({ phase }: { phase: number }) {
           textTransform: 'uppercase',
         }}
       >
-        Премиум сервис
+        Премиальный сервис
       </motion.p>
     </motion.div>
   )

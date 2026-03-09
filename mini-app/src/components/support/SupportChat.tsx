@@ -196,7 +196,7 @@ export function SupportChat() {
                       <ShieldCheck size={14} color="#d4af37" />
                     </div>
                     <div>
-                      <div className={s.supportName}>Техподдержка Academic Saloon</div>
+                      <div className={s.supportName}>Техподдержка Академического Салона</div>
                       <div className={s.supportSub}>Отвечаем в чате и в Telegram</div>
                     </div>
                   </div>

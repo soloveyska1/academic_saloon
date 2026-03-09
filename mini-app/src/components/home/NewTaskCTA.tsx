@@ -65,7 +65,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               marginBottom: 16,
             }}
           >
-            Academic Saloon
+            Академический Салон
           </div>
 
           {/* Headline — static warm gold, no animation */}

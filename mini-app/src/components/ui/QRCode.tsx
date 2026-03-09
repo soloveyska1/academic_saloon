@@ -29,7 +29,7 @@ export function QRCodeModal({
   onClose,
   title = 'QR-код приглашения',
   subtitle = 'Покажите QR, отправьте изображение или откройте ссылку в Telegram.',
-  shareTitle = 'Приглашение в Academic Saloon',
+  shareTitle = 'Приглашение в Академический Салон',
   shareText = 'Открывай сервис по ссылке ниже.',
   downloadFileName = 'academic-saloon-referral',
 }: Props) {

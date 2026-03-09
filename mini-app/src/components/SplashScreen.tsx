@@ -347,7 +347,7 @@ const ShimmeringBrandName = ({ active }: { active: boolean }) => {
                     textShadow: '0 4px 20px rgba(0,0,0,0.8)',
                 }}
             >
-                ACADEMIC SALOON
+                АКАДЕМИЧЕСКИЙ САЛОН
             </h1>
 
             {/* Gradient text with shimmer */}
@@ -365,7 +365,7 @@ const ShimmeringBrandName = ({ active }: { active: boolean }) => {
                 animate={active ? { backgroundPosition: ['150% 0', '-150% 0'] } : { backgroundPosition: '-150% 0' }}
                 transition={{ duration: 3, ease: 'easeInOut', repeat: active ? Infinity : 0, repeatDelay: 1 }}
             >
-                ACADEMIC SALOON
+                АКАДЕМИЧЕСКИЙ САЛОН
             </motion.h1>
 
             {/* Glow effect */}
@@ -459,7 +459,7 @@ const QuickMonogram = () => (
                     color: 'transparent',
                 }}
             >
-                AS
+                АС
             </span>
         </div>
     </motion.div>
