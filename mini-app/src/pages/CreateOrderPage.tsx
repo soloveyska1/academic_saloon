@@ -1053,8 +1053,12 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  DEADLINE STEP
+//  DEADLINE STEP — v3 Clean Design
 // ═══════════════════════════════════════════════════════════════════════════
+
+const dlCardBorder = 'rgba(255, 255, 255, 0.08)'
+const dlCardBg = 'rgba(255, 255, 255, 0.02)'
+const dlGoldBorder = 'rgba(212, 175, 55, 0.30)'
 
 interface DeadlineStepProps {
   selected: string | null
@@ -1066,227 +1070,144 @@ function DeadlineStep({ selected, onSelect, isDark }: DeadlineStepProps) {
   void isDark
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{
-          padding: '16px 16px 14px',
-          borderRadius: 20,
-          background: `
-            radial-gradient(circle at top right, rgba(212, 175, 55, 0.10), transparent 32%),
-            linear-gradient(180deg, rgba(19, 18, 24, 0.96), rgba(10, 10, 16, 0.94))
-          `,
-          border: '1px solid rgba(212, 175, 55, 0.14)',
-          boxShadow: '0 18px 36px -34px rgba(0, 0, 0, 0.88)',
-        }}
-      >
-        <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: 'var(--text-main)',
-          marginBottom: 6,
-        }}>
-          Выберите комфортный темп
-        </div>
-        <div style={{
-          fontSize: 13,
-          lineHeight: 1.55,
-          color: 'var(--text-secondary)',
-        }}>
-          Срочные варианты повышают приоритет команды и стоимость. Если запас по времени есть,
-          лучше брать спокойный режим без лишней наценки.
-        </div>
-      </motion.div>
-
-      {DEADLINES.map((dl, i) => (
-        <DeadlineCard
-          key={dl.value}
-          config={dl}
-          selected={selected === dl.value}
-          onSelect={() => onSelect(dl.value)}
-          index={i}
-          isDark={isDark}
-        />
-      ))}
-    </div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  DEADLINE CARD
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface DeadlineCardProps {
-  config: typeof DEADLINES[0]
-  selected: boolean
-  onSelect: () => void
-  index: number
-  isDark: boolean
-}
-
-function DeadlineCard({ config, selected, onSelect, index, isDark }: DeadlineCardProps) {
-  void isDark
-
-  const getIcon = () => {
-    if (config.urgency >= 85) return Flame
-    if (config.urgency >= 60) return Rocket
-    if (config.urgency >= 40) return Zap
-    if (config.urgency >= 20) return Timer
-    return Hourglass
-  }
-  const Icon = getIcon()
-  const meta = getDeadlineMeta(config.value)
-
-  return (
-    <motion.button
-      type="button"
-      initial={{ opacity: 0, y: 20, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onSelect}
-      style={{
-        width: '100%',
-        padding: '15px 16px',
-        background: `
-          radial-gradient(circle at top right, rgba(212, 175, 55, ${selected ? '0.12' : '0.07'}), transparent 34%),
-          linear-gradient(180deg, rgba(19, 18, 24, 0.96), rgba(10, 10, 16, 0.94))
-        `,
-        border: `1px solid ${selected ? 'rgba(212, 175, 55, 0.28)' : 'rgba(255, 255, 255, 0.06)'}`,
-        borderRadius: 22,
-        cursor: 'pointer',
-        position: 'relative',
-        overflow: 'hidden',
-        WebkitTapHighlightColor: 'transparent',
-        boxShadow: selected ? '0 20px 44px -36px rgba(212, 175, 55, 0.24)' : '0 18px 34px -34px rgba(0, 0, 0, 0.85)',
-      }}
-    >
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 16,
-            background: `linear-gradient(180deg, ${config.color}1c, ${config.color}10)`,
-            border: `1px solid ${selected ? `${config.color}50` : `${config.color}30`}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <Icon
-            size={22}
-            color={config.color}
-            strokeWidth={selected ? 2.4 : 2}
-            style={{ filter: selected ? `drop-shadow(0 0 10px ${config.color}40)` : 'none' }}
-          />
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            marginBottom: 6,
-            flexWrap: 'wrap',
-          }}>
-            <span style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: 'var(--text-main)',
-            }}>
-              {config.label}
-            </span>
-          </div>
-
-          <div style={{
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: 'var(--text-secondary)',
-            marginBottom: 12,
-          }}>
-            {meta.description}
-          </div>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            flexWrap: 'wrap',
-          }}>
-            <DeadlineMetaPill label={meta.pace} accent={selected ? 'var(--gold-300)' : config.color} />
-            <DeadlineMetaPill label={config.multiplier === 'Базовая' ? 'без доплаты' : config.multiplier} />
-            {meta.recommended && <DeadlineMetaPill label="оптимально" accent="var(--gold-300)" />}
-            {selected && <DeadlineMetaPill label="выбрано" accent="var(--gold-300)" />}
-          </div>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Hint */}
+      <div style={{
+        fontSize: 13,
+        lineHeight: 1.5,
+        color: 'rgba(255,255,255,0.38)',
+        padding: '0 4px',
+        marginBottom: 2,
+      }}>
+        Срочные варианты с наценкой, спокойные — без доплаты
       </div>
-    </motion.button>
+
+      {DEADLINES.map((dl, i) => {
+        const isSel = selected === dl.value
+        const meta = getDeadlineMeta(dl.value)
+
+        return (
+          <motion.button
+            key={dl.value}
+            type="button"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.03, type: 'spring', stiffness: 400, damping: 30 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onSelect(dl.value)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              padding: '14px 16px',
+              background: isSel ? 'rgba(212, 175, 55, 0.06)' : dlCardBg,
+              border: `1px solid ${isSel ? dlGoldBorder : dlCardBorder}`,
+              borderLeft: `3px solid ${dl.color}`,
+              borderRadius: 16,
+              cursor: 'pointer',
+              position: 'relative',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {/* Left: label + description */}
+            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                <span style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: isSel ? '#E8D5A3' : 'rgba(255,255,255,0.88)',
+                  fontFamily: "'Manrope', sans-serif",
+                }}>
+                  {dl.label}
+                </span>
+                {meta.recommended && (
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: 'rgba(212, 175, 55, 0.70)',
+                    padding: '2px 7px',
+                    borderRadius: 999,
+                    background: 'rgba(212, 175, 55, 0.10)',
+                    border: '1px solid rgba(212, 175, 55, 0.15)',
+                    lineHeight: '14px',
+                  }}>
+                    оптимально
+                  </span>
+                )}
+              </div>
+              <div style={{
+                fontSize: 12,
+                lineHeight: 1.4,
+                color: 'rgba(255,255,255,0.38)',
+              }}>
+                {meta.pace}
+              </div>
+            </div>
+
+            {/* Right: multiplier badge */}
+            <div style={{
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span style={{
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: dl.multiplier === 'Базовая'
+                  ? 'rgba(34,197,94,0.80)'
+                  : `${dl.color}cc`,
+                padding: '4px 10px',
+                borderRadius: 999,
+                background: dl.multiplier === 'Базовая'
+                  ? 'rgba(34,197,94,0.10)'
+                  : `${dl.color}15`,
+                border: `1px solid ${dl.multiplier === 'Базовая' ? 'rgba(34,197,94,0.15)' : `${dl.color}25`}`,
+              }}>
+                {dl.multiplier === 'Базовая' ? '×1' : dl.multiplier}
+              </span>
+
+              {/* Check indicator */}
+              {isSel && (
+                <div style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  background: 'rgba(212, 175, 55, 0.18)',
+                  border: '1px solid rgba(212, 175, 55, 0.30)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Check size={13} color="#D4AF37" strokeWidth={2.5} />
+                </div>
+              )}
+            </div>
+          </motion.button>
+        )
+      })}
+    </div>
   )
 }
 
 function getDeadlineMeta(value: string) {
   switch (value) {
     case 'today':
-      return {
-        pace: 'экстренно',
-        description: 'Максимальный приоритет, если результат действительно нужен сегодня.',
-      }
+      return { pace: 'Экстренный приоритет', recommended: false }
     case 'tomorrow':
-      return {
-        pace: 'очень быстро',
-        description: 'Подходит, когда дедлайн уже близко, но нужен небольшой запас на работу.',
-      }
+      return { pace: 'Сдача на следующий день', recommended: false }
     case '3days':
-      return {
-        pace: 'сбалансировано',
-        description: 'Хороший баланс между скоростью, качеством проработки и стоимостью.',
-        recommended: true,
-      }
+      return { pace: 'Баланс скорости и качества', recommended: true }
     case 'week':
-      return {
-        pace: 'спокойный темп',
-        description: 'Комфортный срок для большинства задач без лишней спешки.',
-      }
+      return { pace: 'Комфортный темп', recommended: false }
     case '2weeks':
-      return {
-        pace: 'с запасом',
-        description: 'Дает больше времени на правки, согласования и спокойную доработку.',
-      }
+      return { pace: 'С запасом на правки', recommended: false }
     case 'month':
     default:
-      return {
-        pace: 'базовый расчет',
-        description: 'Наиболее мягкий режим без срочной надбавки и с полным запасом по времени.',
-      }
+      return { pace: 'Без срочной надбавки', recommended: false }
   }
-}
-
-function DeadlineMetaPill({
-  label,
-  accent,
-}: {
-  label: string
-  accent?: string
-}) {
-  return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '7px 10px',
-      borderRadius: 999,
-      background: accent ? 'rgba(212, 175, 55, 0.10)' : 'rgba(255, 255, 255, 0.04)',
-      border: `1px solid ${accent ? 'rgba(212, 175, 55, 0.18)' : 'rgba(255, 255, 255, 0.06)'}`,
-      color: accent || 'var(--text-muted)',
-      fontSize: 11,
-      fontWeight: 700,
-      lineHeight: 1,
-    }}>
-      {label}
-    </span>
-  )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
