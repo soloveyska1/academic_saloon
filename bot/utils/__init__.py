@@ -4,7 +4,7 @@ from bot.utils.formatting import (
     format_price,
     format_price_short,
     round_to_nearest,
-    parse_callback,
+    parse_callback_data,
     parse_callback_int,
     pluralize,
     pluralize_files,
