@@ -5,18 +5,13 @@ from core.config import settings
 
 def get_persistent_menu() -> ReplyKeyboardMarkup:
     """
-    Persistent Reply keyboard — always visible under message input.
-    Users tap buttons instead of typing commands.
+    Persistent Reply keyboard — one button leading to Mini App.
+    Always visible under message input. Minimal, no confusion.
     """
     return ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="Приложение", web_app=WebAppInfo(url=settings.WEBAPP_URL)),
-                KeyboardButton(text="Мои заказы"),
-            ],
-            [
-                KeyboardButton(text="Поддержка"),
-                KeyboardButton(text="Оформить заказ"),
+                KeyboardButton(text="Открыть приложение", web_app=WebAppInfo(url=settings.WEBAPP_URL)),
             ],
         ],
         resize_keyboard=True,
@@ -26,38 +21,14 @@ def get_persistent_menu() -> ReplyKeyboardMarkup:
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура главного меню — Intelligent Luxury подход.
-    Одна главная кнопка открывает Mini App.
-
-    Layout:
-    Row 1: [ Личный кабинет ] — Primary CTA, WebApp
-    Row 2: [ Отзывы ] [ Гарантии ]
-    Row 3: [ Поддержка ]
+    Клавиатура главного меню — одна кнопка в Mini App.
+    Минимум кнопок = максимум конверсии.
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        # Row 1: Primary CTA — Mini App главная страница
         [
             InlineKeyboardButton(
                 text="Открыть приложение",
                 web_app=WebAppInfo(url=settings.WEBAPP_URL)
-            )
-        ],
-        # Row 2: Отзывы и Гарантии
-        [
-            InlineKeyboardButton(
-                text="Отзывы",
-                url=settings.REVIEWS_CHANNEL
-            ),
-            InlineKeyboardButton(
-                text="Условия и гарантии",
-                callback_data="codex"
-            ),
-        ],
-        # Row 3: Поддержка
-        [
-            InlineKeyboardButton(
-                text="Поддержка",
-                url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             )
         ],
     ])

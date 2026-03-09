@@ -201,29 +201,6 @@ async def cmd_support(message: Message):
     await message.answer(text, reply_markup=keyboard)
 
 
-# ══════════════════════════════════════════════════════════════
-#  REPLY KEYBOARD HANDLERS — "Мои заказы", "Поддержка", "Оформить заказ"
-# ══════════════════════════════════════════════════════════════
-
-@router.message(F.text == "Мои заказы")
-async def reply_my_orders(message: Message, session: AsyncSession):
-    """Reply keyboard: same as /status."""
-    await cmd_status(message, session)
-
-
-@router.message(F.text == "Поддержка")
-async def reply_support(message: Message):
-    """Reply keyboard: same as /support."""
-    await cmd_support(message)
-
-
-@router.message(F.text == "Оформить заказ")
-async def reply_create_order(message: Message, state: FSMContext):
-    """Reply keyboard: start order creation."""
-    from bot.handlers.order_flow.notify import start_order_creation
-    await start_order_creation(message, state=state)
-
-
 async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
     """
     Отправляет статус сервиса с интерактивными кнопками.
@@ -282,15 +259,6 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     await state.clear()
 
     telegram_id = message.from_user.id
-
-    # Set persistent reply keyboard (visible at bottom of chat)
-    try:
-        await message.answer(
-            "Используйте кнопки внизу для быстрого доступа.",
-            reply_markup=get_persistent_menu()
-        )
-    except Exception:
-        pass
 
     # Поиск пользователя
     query = select(User).where(User.telegram_id == telegram_id)
@@ -481,6 +449,15 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
             text=welcome_text,
             reply_markup=get_main_menu_keyboard()
         )
+
+    # 4. Set persistent reply keyboard (one button — "Открыть приложение")
+    try:
+        await message.answer(
+            "👇",
+            reply_markup=get_persistent_menu()
+        )
+    except Exception:
+        pass
 
 
 # ══════════════════════════════════════════════════════════════
