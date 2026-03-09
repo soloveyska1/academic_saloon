@@ -81,27 +81,24 @@ jobs:
             # 1. Create deploy lock (prevents health check from restarting during deploy)
             touch /tmp/saloon-deploy.lock
 
-            # 2. Kill port 8000 FIRST (don't wait for systemctl stop to hang)
-            echo "Killing processes on port 8000..."
-            fuser -k 8000/tcp 2>/dev/null || true
-            sleep 1
-            fuser -k -9 8000/tcp 2>/dev/null || true
-            sleep 1
-
-            # 3. Stop systemd (fast since process already killed)
+            # 2. Stop systemd service FIRST (prevents auto-restart after kill)
             echo "Stopping systemd service..."
-            systemctl stop saloon-bot 2>/dev/null || true
-            sleep 1
+            timeout 15 systemctl stop saloon-bot 2>/dev/null || true
 
-            # 4. Final verification port is free
-            for i in {1..3}; do
+            # 3. Kill any remaining processes on port 8000
+            echo "Cleaning up port 8000..."
+            fuser -k -9 8000/tcp 2>/dev/null || true
+            sleep 2
+
+            # 4. Verify port is free
+            for i in {1..5}; do
                 if ! fuser 8000/tcp 2>/dev/null; then
                     echo "  Port 8000 is free."
                     break
                 fi
-                echo "  Still occupied, force-killing (attempt $i)..."
+                echo "  Still occupied, waiting (attempt $i)..."
                 fuser -k -9 8000/tcp 2>/dev/null || true
-                sleep 2
+                sleep 3
             done
 
             # 5. Start systemd service
@@ -109,7 +106,7 @@ jobs:
             systemctl start saloon-bot
             sleep 8
 
-            # 5. Remove deploy lock
+            # 6. Remove deploy lock
             rm -f /tmp/saloon-deploy.lock
 
             # Verify bot is running
