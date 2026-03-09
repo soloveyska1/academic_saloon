@@ -1,6 +1,27 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, KeyboardButtonRequestUsers
 
 from core.config import settings
+
+
+def get_persistent_menu() -> ReplyKeyboardMarkup:
+    """
+    Persistent Reply keyboard — always visible under message input.
+    Users tap buttons instead of typing commands.
+    """
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text="Приложение", web_app=WebAppInfo(url=settings.WEBAPP_URL)),
+                KeyboardButton(text="Мои заказы"),
+            ],
+            [
+                KeyboardButton(text="Поддержка"),
+                KeyboardButton(text="Оформить заказ"),
+            ],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
 
 
 def get_main_menu_keyboard() -> InlineKeyboardMarkup:

@@ -4,6 +4,7 @@ from database.models.levels import RankLevel, LoyaltyLevel
 from database.models.orders import Order, OrderStatus, WorkType, WORK_TYPE_LABELS
 from .schemas import RankInfo, LoyaltyInfo, OrderResponse
 from .cache import get_cached_rank_levels, get_cached_loyalty_levels
+from core.ranks import RANK_TIERS
 
 KNOWN_ORDER_STATUSES = {status.value for status in OrderStatus}
 KNOWN_WORK_TYPES = {work_type.value for work_type in WorkType}
@@ -37,37 +38,32 @@ async def get_loyalty_levels(session: AsyncSession) -> list[LoyaltyLevel]:
     """Get loyalty levels with caching (5 minute TTL)"""
     return await get_cached_loyalty_levels(session)
 
-def get_rank_info(total_spent: float, rank_levels: list[RankLevel]) -> RankInfo:
-    """Calculate user rank based on total spent"""
+def get_rank_info(total_spent: float, rank_levels: list[RankLevel] = None) -> RankInfo:
+    """Calculate user rank based on total spent. Uses core/ranks.py as source of truth."""
+    tiers = RANK_TIERS
+
     current_level = 0
-    for i, level in enumerate(rank_levels):
-        if total_spent >= (level.min_spent or 0):
+    for i, tier in enumerate(tiers):
+        if total_spent >= tier.min_spent:
             current_level = i
 
-    current = rank_levels[current_level] if rank_levels else None
-    next_rank = (
-        rank_levels[current_level + 1]
-        if rank_levels and current_level < len(rank_levels) - 1
-        else None
-    )
-
-    if current is None:
-        return RankInfo(name="", emoji="", level=0, cashback=0, next_rank=None, progress=0, spent_to_next=0, is_max=False)
+    current = tiers[current_level]
+    next_rank = tiers[current_level + 1] if current_level < len(tiers) - 1 else None
 
     progress = 100
     spent_to_next = 0
     is_max = next_rank is None
     if next_rank:
-        progress_range = (next_rank.min_spent or 0) - (current.min_spent or 0)
-        progress_current = total_spent - (current.min_spent or 0)
+        progress_range = next_rank.min_spent - current.min_spent
+        progress_current = total_spent - current.min_spent
         progress = min(100, int((progress_current / progress_range) * 100)) if progress_range else 100
-        spent_to_next = max(0, int((next_rank.min_spent or 0) - total_spent))
+        spent_to_next = max(0, int(next_rank.min_spent - total_spent))
 
     return RankInfo(
         name=current.name,
-        emoji=current.emoji,
+        emoji="",
         level=current_level + 1,
-        cashback=int(current.cashback_percent or 0),
+        cashback=current.cashback_percent,
         bonus=current.bonus,
         next_rank=next_rank.name if next_rank else None,
         progress=progress,

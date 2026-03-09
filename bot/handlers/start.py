@@ -1,6 +1,8 @@
+import logging
+
 from aiogram import Router, Bot, F
 from aiogram.filters import CommandStart, CommandObject, Command
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -9,7 +11,7 @@ from sqlalchemy import select
 
 from database.models.users import User
 from database.models.orders import Order, OrderStatus, ConversationType
-from bot.keyboards.inline import get_main_menu_keyboard, get_pinned_message_keyboard
+from bot.keyboards.inline import get_main_menu_keyboard, get_pinned_message_keyboard, get_persistent_menu
 from bot.keyboards.terms import get_terms_short_keyboard
 from bot.texts.terms import TERMS_SHORT
 from bot.services.logger import log_action, LogEvent, LogLevel
@@ -20,6 +22,8 @@ from core.media_cache import send_cached_photo
 from bot.handlers.channel_cards import send_payment_notification
 from bot.states.chat import ChatStates
 from bot.handlers.order_chat import get_exit_chat_keyboard
+
+logger = logging.getLogger(__name__)
 
 
 # FSM для ввода своей цены
@@ -102,16 +106,16 @@ async def cmd_status(message: Message, session: AsyncSession):
         )
         return
 
-    # Get active orders
-    from database.models.orders import ORDER_STATUS_META
-    active_statuses = [
-        s.value for s, meta in ORDER_STATUS_META.items()
-        if meta.get("is_active") and not meta.get("is_final")
+    # Get active orders — same logic as Mini App (everything except final statuses)
+    final_statuses = [
+        OrderStatus.COMPLETED.value,
+        OrderStatus.CANCELLED.value,
+        OrderStatus.REJECTED.value,
     ]
 
     orders_query = (
         select(Order)
-        .where(Order.user_id == user.id, Order.status.in_(active_statuses))
+        .where(Order.user_id == user.id, Order.status.notin_(final_statuses))
         .order_by(Order.created_at.desc())
         .limit(5)
     )
@@ -127,7 +131,7 @@ async def cmd_status(message: Message, session: AsyncSession):
         return
 
     # Build compact cards
-    from database.models.orders import WORK_TYPE_LABELS, WorkType
+    from database.models.orders import ORDER_STATUS_META, WORK_TYPE_LABELS, WorkType
     lines = [f"<b>Активные заказы</b> ({len(orders)})\n"]
 
     for order in orders:
@@ -164,7 +168,13 @@ async def cmd_status(message: Message, session: AsyncSession):
 
 @router.message(Command("support"))
 async def cmd_support(message: Message):
-    """Direct link to support chat."""
+    """Direct link to support chat — time-aware response."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    msk_now = datetime.now(ZoneInfo("Europe/Moscow"))
+    hour = msk_now.hour
+
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="Написать менеджеру",
@@ -176,12 +186,42 @@ async def cmd_support(message: Message):
         )],
     ])
 
-    await message.answer(
-        "<b>Поддержка</b>\n\n"
-        "Менеджер ответит в течение 15 минут.\n"
-        "Время работы: ежедневно, 9:00–23:00 МСК.",
-        reply_markup=keyboard
-    )
+    if 9 <= hour < 23:
+        text = (
+            "<b>Поддержка</b>\n\n"
+            "Менеджер на связи. Ответим в течение 15 минут."
+        )
+    else:
+        text = (
+            "<b>Поддержка</b>\n\n"
+            "Сейчас нерабочее время. Оставьте сообщение — "
+            "ответим утром после 9:00 МСК."
+        )
+
+    await message.answer(text, reply_markup=keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#  REPLY KEYBOARD HANDLERS — "Мои заказы", "Поддержка", "Оформить заказ"
+# ══════════════════════════════════════════════════════════════
+
+@router.message(F.text == "Мои заказы")
+async def reply_my_orders(message: Message, session: AsyncSession):
+    """Reply keyboard: same as /status."""
+    await cmd_status(message, session)
+
+
+@router.message(F.text == "Поддержка")
+async def reply_support(message: Message):
+    """Reply keyboard: same as /support."""
+    await cmd_support(message)
+
+
+@router.message(F.text == "Оформить заказ")
+async def reply_create_order(message: Message, state: FSMContext):
+    """Reply keyboard: start order creation."""
+    from bot.handlers.order_flow.notify import start_order_creation
+    await start_order_creation(message, state=state)
 
 
 async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
@@ -243,12 +283,12 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
 
     telegram_id = message.from_user.id
 
-    # Очистка старых Reply-кнопок
+    # Set persistent reply keyboard
     try:
-        cleanup_msg = await message.answer("⏳", reply_markup=ReplyKeyboardRemove())
-        await cleanup_msg.delete()
+        menu_msg = await message.answer("⏳", reply_markup=get_persistent_menu())
+        await menu_msg.delete()
     except Exception:
-        pass  # Может не удалиться если нет прав или бот ограничен
+        pass
 
     # Поиск пользователя
     query = select(User).where(User.telegram_id == telegram_id)
