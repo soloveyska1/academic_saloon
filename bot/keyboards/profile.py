@@ -214,7 +214,15 @@ def get_orders_list_keyboard(
 
 def get_order_detail_keyboard(order: Order) -> InlineKeyboardMarkup:
     """Детали заказа — упрощённая клавиатура"""
+    from aiogram.types import WebAppInfo
     buttons = []
+
+    # Row 0: Открыть в приложении
+    mini_app_url = f"{settings.WEBAPP_URL}/order/{order.id}"
+    buttons.append([InlineKeyboardButton(
+        text="📱 Открыть в приложении",
+        web_app=WebAppInfo(url=mini_app_url)
+    )])
 
     # Row 1: Написать по заказу (контекстная ссылка)
     buttons.append([InlineKeyboardButton(
@@ -222,7 +230,14 @@ def get_order_detail_keyboard(order: Order) -> InlineKeyboardMarkup:
         url=f"https://t.me/{settings.SUPPORT_USERNAME}?text=Дело%20%23{order.id}"
     )])
 
-    # Row 2 (опционально): Действия по статусу
+    # Row: Файлы — если есть ссылка
+    if order.files_url:
+        buttons.append([InlineKeyboardButton(
+            text="📎 Файлы заказа",
+            url=order.files_url
+        )])
+
+    # Row (опционально): Действия по статусу
     meta = get_status_meta(order.status)
 
     # Повторить — для завершённых/отменённых

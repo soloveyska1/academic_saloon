@@ -619,9 +619,14 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
 Статус и детали всегда доступны в приложении."""
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Открыть мои заказы", callback_data="my_orders")],
-        [InlineKeyboardButton(text="Реферальная программа", callback_data="profile_referral")],
-        [InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")],
+        [InlineKeyboardButton(
+            text="📱 Открыть заказ",
+            web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/order/{order.id}")
+        )],
+        [InlineKeyboardButton(
+            text="📋 Мои заказы",
+            web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/orders")
+        )],
     ])
 
     try:
@@ -829,12 +834,14 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
 со скриншотом чека, разберёмся!</i>"""
 
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Вернуться к оплате", callback_data=f"pay_order:{order_id}")],
+        [InlineKeyboardButton(
+            text="💳 Вернуться к оплате",
+            web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/order/{order_id}?action=pay")
+        )],
         [InlineKeyboardButton(
             text="Открыть поддержку",
             url=f"https://t.me/{settings.SUPPORT_USERNAME}"
         )],
-        [InlineKeyboardButton(text="В главное меню", callback_data="back_to_menu")],
     ])
 
     try:

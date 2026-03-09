@@ -4,7 +4,7 @@ Order Flow Payment - payment and receipt handlers.
 import logging
 
 from aiogram import F, Bot
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, WebAppInfo
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -214,11 +214,11 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
 
 <i>Как только деньги придут — бот пришлет чек.</i>"""
 
-    # Only "To menu" button — no extra actions
+    # Open order in mini-app
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="🔙 В меню",
-            callback_data="back_to_menu"
+            text="📱 Открыть заказ",
+            web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}/order/{order.id}")
         )],
     ])
 

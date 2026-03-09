@@ -714,6 +714,12 @@ def build_order_detail_caption(order: Order) -> str:
     else:
         lines.append("<i>Стоимость рассчитывается...</i>")
 
+    # ═══ ФАЙЛЫ ═══
+    if order.files_url:
+        lines.append("")
+        lines.append(f"<b>📎 Файлы</b>")
+        lines.append(f"<a href='{order.files_url}'>Открыть файлы заказа</a>")
+
     return "\n".join(lines)
 
 

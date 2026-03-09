@@ -3684,16 +3684,22 @@ export function OrderDetailPageV8() {
 
     haptic?.('success')
     setConfirmModalOpen(false)
-    setOrder((prev) =>
-      prev
-        ? normalizeOrderForView({
-            ...prev,
-            status: result.new_status as OrderStatus,
-            payment_method: paymentMethod,
-            payment_scheme: paymentScheme,
-          } as Order)
-        : prev
-    )
+    setPaymentSheetOpen(false)
+
+    // Reload order from server instead of optimistic update to avoid render crashes
+    try {
+      await loadOrder()
+    } catch {
+      // Fallback: apply minimal safe status update
+      setOrder((prev) =>
+        prev
+          ? normalizeOrderForView({
+              ...prev,
+              status: (result.new_status || 'verification_pending') as OrderStatus,
+            } as Order)
+          : prev
+      )
+    }
 
     if (receiptUploadFailed) {
       showToast({
@@ -3709,7 +3715,7 @@ export function OrderDetailPageV8() {
       title: 'Отправлено на проверку',
       message: receiptAttached ? 'Подтверждение и скриншот переданы менеджеру.' : 'Мы уведомим вас о результате.',
     })
-  }, [order, paymentMethod, paymentScheme, haptic, showToast])
+  }, [order, paymentMethod, paymentScheme, haptic, showToast, loadOrder])
 
   // Calculate today's payment amount
   const calculateTodayAmount = useCallback((): number => {
@@ -3815,7 +3821,7 @@ export function OrderDetailPageV8() {
   }
 
   return (
-    <div className="premium-club-page" style={{ paddingBottom: 100 }}>
+    <div className="premium-club-page" style={{ paddingBottom: 140 }}>
       <SectionErrorBoundary
         sectionName="order-app-bar"
         resetKey={sectionResetKey}
