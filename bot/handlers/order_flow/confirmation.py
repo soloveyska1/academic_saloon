@@ -256,58 +256,53 @@ async def show_order_confirmation(callback, state: FSMContext, bot: Bot, session
             break
 
     # ═══════════════════════════════════════════════════════════════
-    #   SCENARIO A: SPECIAL ORDER (🕵️‍♂️ Dossier Style)
+    #   SCENARIO A: SPECIAL ORDER — нестандартная задача
     # ═══════════════════════════════════════════════════════════════
     if is_special:
-        # Format comment as quote
         comment_block = ""
         if user_comment:
             comment_block = f"\n\n<i>«{user_comment[:200]}{'...' if len(user_comment) > 200 else ''}»</i>"
 
-        caption = f"""📂 <b>МАТЕРИАЛЫ ДЕЛА</b>
+        caption = f"""<b>Нестандартный заказ</b>
 
-<b>Статус:</b> 🦄 Спецзадача
-<b>Дедлайн:</b> <code>{deadline_display}</code>
-<b>Улики:</b> {file_count} файл(ов){comment_block}
+Тип: индивидуальная задача
+Срок: <code>{deadline_display}</code>
+Файлов: {file_count}{comment_block}
 
-<i>Так, я всё зафиксировал. Проверь, не упустили ли мы чего...</i>"""
+<i>Проверьте данные перед отправкой.</i>"""
 
-        confirm_btn_text = "📮 Отправить шифровку"
+        confirm_btn_text = "Отправить заявку"
         image_path = CONFIRM_SPECIAL_IMAGE_PATH
 
     # ═══════════════════════════════════════════════════════════════
-    #   SCENARIO B: URGENT ORDER (🚀 Launch Protocol)
+    #   SCENARIO B: URGENT ORDER — срочная заявка
     # ═══════════════════════════════════════════════════════════════
     elif is_urgent:
-        caption = f"""🚀 <b>ПРЕДПОЛЁТНАЯ ПРОВЕРКА</b>
+        caption = f"""<b>Срочный заказ</b>
 
-✅ <b>Задача:</b> {work_label}
-⏱ <b>Таймер:</b> <code>{deadline_display}</code>
-📦 <b>Груз:</b> {file_count} файл(ов)
+Задача: {work_label}
+Срок: <code>{deadline_display}</code>
+Файлов: {file_count}
 
-⚠️ <b>Режим:</b> ФОРСАЖ <code>(Priority High)</code>
+<i>Проверьте данные перед отправкой.</i>"""
 
-<i>Времени в обрез. Проверь вводные беглым взглядом...</i>"""
-
-        confirm_btn_text = "🚀 ПУСК (Отправить)"
+        confirm_btn_text = "Отправить заявку"
         image_path = CONFIRM_URGENT_IMAGE_PATH
 
     # ═══════════════════════════════════════════════════════════════
-    #   SCENARIO C: STANDARD ORDER (📄 Contract Style)
+    #   SCENARIO C: STANDARD ORDER — стандартная заявка
     # ═══════════════════════════════════════════════════════════════
     else:
-        # Discount shown ONLY for standard orders
-        discount_line = f"\n🎁 <b>Бонус:</b> Скидка {discount}%" if discount > 0 else ""
+        discount_line = f"\nСкидка: {discount}%" if discount > 0 else ""
 
-        caption = f"""📄 <b>ЧЕРНОВИК КОНТРАКТА</b>
+        caption = f"""<b>Подтверждение заказа</b>
 
-📌 <b>Тип:</b> {work_label}
-📅 <b>Срок:</b> <code>{deadline_display}</code>{discount_line}
+Тип: {work_label}
+Срок: <code>{deadline_display}</code>{discount_line}
 
-<i>Проверь, всё ли верно записано...</i>"""
+<i>Проверьте данные перед отправкой.</i>"""
 
-        confirm_btn_text = "✅ Всё верно (Отправить)"
-        # Use checklist for draft, NOT handshake (handshake = only for final invoice)
+        confirm_btn_text = "Отправить заявку"
         image_path = IMG_DRAFT_REVIEW if IMG_DRAFT_REVIEW.exists() else CONFIRM_STD_IMAGE_PATH
 
     # Log step (non-critical)
@@ -398,11 +393,11 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         pass
 
     if is_special:
-        loading_text = "<b>Принимаем заказ...</b>\n\n<i>Секунду</i>"
+        loading_text = "<b>Оформляем заказ...</b>"
     elif is_auto_pay_allowed:
-        loading_text = "⚖️ <b>Робот считает смету...</b>\n\n<i>Секунду</i>"
+        loading_text = "<b>Рассчитываем стоимость...</b>"
     else:
-        loading_text = "🛡 <b>Анализируем задачу...</b>\n\n<i>Секунду</i>"
+        loading_text = "<b>Оформляем заказ...</b>"
 
     loading_msg = await bot.send_message(chat_id=chat_id, text=loading_text)
 
@@ -491,10 +486,10 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         try:
             await bot.send_message(
                 chat_id=chat_id,
-                text="❌ Произошла ошибка при создании заказа. Попробуй ещё раз или напиши в поддержку.",
+                text="Произошла ошибка при создании заказа. Попробуйте ещё раз или напишите в поддержку.",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🔄 Попробовать снова", callback_data="create_order")],
-                    [InlineKeyboardButton(text="💬 Поддержка", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
+                    [InlineKeyboardButton(text="Попробовать снова", callback_data="create_order")],
+                    [InlineKeyboardButton(text="Поддержка", url=f"https://t.me/{settings.SUPPORT_USERNAME}")],
                 ])
             )
         except Exception as send_err:
@@ -537,8 +532,8 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     #   STEP 4: Logging
     # ═══════════════════════════════════════════════════════════════
 
-    urgent_prefix = "🚨 СРОЧНЫЙ " if is_urgent else ""
-    special_prefix = "🦄 СПЕЦЗАКАЗ " if is_special else ""
+    urgent_prefix = "Срочный " if is_urgent else ""
+    special_prefix = "Нестандартный " if is_special else ""
     extra_data = {
         "Тип": work_label,
         "Направление": data.get("subject_label", "—"),
@@ -573,51 +568,42 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
     try:
         if is_special:
-            # 🦄 SPECIAL ORDER — awaiting manual evaluation (auto-calc skipped!)
-            text = f"""🕵️ <b>СПЕЦЗАКАЗ <code>#{order.id}</code> ПРИНЯТ</b>
+            text = f"""<b>Заявка <code>#{order.id}</code> принята</b>
 
-Это задача нестандартная. Авто-калькулятор тут бессилен.
+Задача нестандартная — менеджер оценит требования и назовёт стоимость.
+Обычно это занимает до 2 часов в рабочее время.
 
-Менеджер оценит требования и назовёт стоимость.
-Обычно это занимает <b>до 2 часов</b> (в рабочее время).
-
-⏳ <i>Жди сообщения...</i>"""
+<i>Вы получите уведомление, когда цена будет готова.</i>"""
 
             logger.info(f"confirm_order: Creating special order keyboard with order.id={order.id}")
             keyboard = get_special_order_kb(order.id)
             image_path = CONFIRM_SPECIAL_IMAGE_PATH
 
         elif is_auto_pay_allowed:
-            # === GREEN FLOW: Automatic invoice (Deal ready) ===
             price_formatted = format_price(final_price, False)
 
-            text = f"""⚖️ <b>СМЕТА ГОТОВА</b> | Заказ <code>#{order.id}</code>
+            text = f"""<b>Стоимость рассчитана</b> · заказ <code>#{order.id}</code>
 
-📁 <b>Тип:</b> {work_label}
-⏳ <b>Срок:</b> {deadline_label}
+Тип: {work_label}
+Срок: {deadline_label}
 
-➖➖➖➖➖➖➖➖➖➖➖
-💰 <b>К ОПЛАТЕ: {price_formatted} ₽</b>
-➖➖➖➖➖➖➖➖➖➖➖
+<b>К оплате: {price_formatted} ₽</b>
 
-<i>Цена зафиксирована. Робот гарантирует.</i>"""
+<i>Цена зафиксирована. Выберите способ оплаты.</i>"""
 
             logger.info(f"confirm_order: GREEN FLOW - invoice keyboard for order #{order.id}, price={final_price}")
             keyboard = get_invoice_keyboard(order.id, final_price)
             image_path = IMG_DEAL_READY if IMG_DEAL_READY.exists() else CONFIRM_STD_IMAGE_PATH
 
         else:
-            # === YELLOW FLOW: Requires sheriff evaluation (without price!) ===
-            # DON'T show robot price — this creates anchoring effect and disappointment
+            text = f"""<b>Заявка <code>#{order.id}</code> на оценке</b>
 
-            text = f"""🛡 <b>ЗАКАЗ <code>#{order.id}</code> НА ПРОВЕРКЕ</b>
+Менеджер оценит задачу индивидуально и назовёт точную стоимость.
 
-Задача нестандартная или срочная. Автоматический калькулятор здесь может ошибиться, поэтому Менеджер оценит её индивидуально.
+Тип: {work_label}
+Срок: {deadline_label}
 
-📁 <b>Тип:</b> {work_label}
-⏳ <b>Срок:</b> {deadline_label}
-
-⏱ <i>Ожидай точную цену в течение 15-30 минут (в рабочее время).</i>"""
+<i>Ожидайте ответ в течение 15–30 минут (в рабочее время).</i>"""
 
             logger.info(f"confirm_order: YELLOW FLOW - manual review for order #{order.id}, factors={risk_factors}")
             keyboard = get_manual_review_keyboard(order.id)

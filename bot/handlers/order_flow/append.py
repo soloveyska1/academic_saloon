@@ -28,21 +28,21 @@ from .utils import get_progress_bar
 def format_append_status_message(files: list, order_id: int) -> str:
     """Format status message for append files flow."""
     if not files:
-        return f"""📎 <b>ДОСЛАТЬ МАТЕРИАЛЫ К ЗАКАЗУ #{order_id}</b>
+        return f"""<b>Дослать материалы к заказу #{order_id}</b>
 
-Отправляй файлы — фото, документы, голосовые.
+Отправьте файлы — фото, документы, голосовые.
 Максимум {MAX_APPEND_FILES} файлов за раз.
 
-<i>Когда закончишь — нажми «Отправить»</i>"""
+<i>Когда закончите — нажмите «Отправить».</i>"""
 
     progress = get_progress_bar(len(files), MAX_APPEND_FILES)
-    return f"""📎 <b>ДОСЛАТЬ МАТЕРИАЛЫ К ЗАКАЗУ #{order_id}</b>
+    return f"""<b>Дослать материалы к заказу #{order_id}</b>
 
-✅ <b>Загружено:</b> {len(files)} файл(ов)
+Загружено: {len(files)} файл(ов)
 
 {progress}
 
-<i>Ещё файлы или жми «Отправить»</i>"""
+<i>Ещё файлы или нажмите «Отправить».</i>"""
 
 
 def get_append_confirm_text(attachment: dict, count: int, order_id: int) -> str:
@@ -66,7 +66,7 @@ def get_append_confirm_text(attachment: dict, count: int, order_id: int) -> str:
 
 {progress}
 
-<i>Ещё или жми «Отправить»</i>"""
+<i>Ещё файлы или нажмите «Отправить».</i>"""
 
 
 # ══════════════════════════════════════════════════════════════
@@ -268,7 +268,7 @@ async def append_file_universal(message: Message, state: FSMContext, bot: Bot, s
 {progress}"""
 
             if total_count >= MAX_APPEND_FILES:
-                text += "\n\n✓ Лимит — жми «Отправить»"
+                text += "\n\nЛимит достигнут — нажмите «Отправить»."
 
             await bot.send_message(
                 chat_id,

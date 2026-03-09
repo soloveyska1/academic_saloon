@@ -345,8 +345,8 @@ def build_gamified_profile_caption(user: User | None, telegram_id: int) -> str:
     lines.append("")
 
     # ═══════════════ SECTION 3: CALL TO ACTION ═══════════════
-    lines.append("<b>Нужно больше золота?</b>")
-    lines.append("Крути барабан раз в сутки или грабь дилижансы с друзьями.")
+    lines.append("<b>Бонусы</b>")
+    lines.append("Ежедневный бонус и реферальная программа.")
 
     return "\n".join(lines)
 
@@ -1188,12 +1188,12 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
         if not user.can_claim_daily_bonus:
             cooldown = user.daily_bonus_cooldown
             await callback.answer(
-                f"⏳ Барабан остывает! Жди ещё {cooldown['remaining_text']}",
+                f"Бонус уже получен. Попробуйте через {cooldown['remaining_text']}",
                 show_alert=True
             )
             return
 
-    await callback.answer("🎰 Крутим барабан...")
+    await callback.answer("Получаем бонус...")
 
     # ═══════════════ STEP 3: DELETE OLD & SEND ANIMATION ═══════════════
     try:
@@ -1300,12 +1300,12 @@ async def daily_luck_cooldown_handler(callback: CallbackQuery, session: AsyncSes
         cooldown = user.daily_bonus_cooldown
         if not cooldown["available"]:
             await callback.answer(
-                f"⏳ Барабан перезаряжается. Попробуй через {cooldown['remaining_text']}",
+                f"Бонус уже получен. Попробуйте через {cooldown['remaining_text']}",
                 show_alert=True
             )
             return
 
-    await callback.answer("Барабан готов! Жми на кнопку.", show_alert=True)
+    await callback.answer("Бонус доступен.", show_alert=True)
 
 
 @router.callback_query(F.data == "profile_gang")
@@ -1619,7 +1619,7 @@ async def process_coupon_code(message: Message, session: AsyncSession, state: FS
             "",
             f"❌ Код <code>{code}</code> недействителен.",
             "",
-            "Проверь правильность ввода или попробуй другой код.",
+            "Проверьте правильность ввода или попробуйте другой код.",
         ]
 
         await message.answer(

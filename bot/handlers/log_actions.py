@@ -338,7 +338,7 @@ async def reply_to_log(message: Message, bot: Bot):
     try:
         sent = await bot.send_message(
             chat_id=user_id,
-            text=f"💬  <b>Сообщение от Хозяина:</b>\n\n{admin_text}"
+            text=f"<b>Сообщение от менеджера:</b>\n\n{admin_text}"
         )
         await message.reply(f"✅ Отправлено пользователю {user_id}")
 

@@ -119,7 +119,7 @@ def get_append_confirm_text(
     if remaining == 1:
         warning = "\n\n⚠️ Осталось 1 место!"
     elif remaining <= 0:
-        warning = "\n\n✓ Лимит достигнут — жми «Отправить»"
+        warning = "\n\nЛимит достигнут — нажмите «Отправить»"
 
     return f"""{confirm}{extra}
 
@@ -237,7 +237,7 @@ def format_materials_received_message(attachments: list) -> str:
         lines.append("📝 <b>ТЗ:</b> <i>(из файлов)</i>")
 
     lines.append("")
-    lines.append("<i>Если это всё — жми «Готово», чтобы узнать цену.</i>")
+    lines.append("<i>Если это всё — нажмите «Готово».</i>")
 
     return "\n".join(lines)
 
@@ -251,24 +251,24 @@ def format_append_status_message(
     Shows what's uploaded + progress bar.
     """
     if not attachments:
-        return f"""📎 <b>Дослать к заказу #{order_id}</b>
+        return f"""<b>Дослать к заказу #{order_id}</b>
 
-Кидай файлы, фото или голосовое.
+Прикрепите файлы, фото или голосовое сообщение.
 
 {get_progress_bar(0, MAX_APPEND_FILES)}
 
-<i>💡 Нажми 📎 внизу экрана</i>"""
+<i>Нажмите 📎 внизу экрана.</i>"""
 
     preview = format_attachments_preview(attachments)
     progress = get_progress_bar(len(attachments), MAX_APPEND_FILES)
 
-    return f"""📎 <b>Дослать к заказу #{order_id}</b>
+    return f"""<b>Дослать к заказу #{order_id}</b>
 
 {preview}
 
 {progress}
 
-<i>Ещё файлы или жми «Отправить»</i>"""
+<i>Ещё файлы или нажмите «Отправить».</i>"""
 
 
 # ══════════════════════════════════════════════════════════════

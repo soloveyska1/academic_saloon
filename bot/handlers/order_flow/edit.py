@@ -88,12 +88,10 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
 
     # For small works — show small works list
     if work_type_value in SMALL_WORK_TYPES:
-        caption = """⚡️ <b>Быстрые задачи</b>
+        caption = """<b>Быстрые задачи</b>
 
-Закроем долги по мелочи, пока ты занимаешься важными делами.
-Обычно сдаём за 1-3 дня.
-
-<i>Выбирай, что нужно закрыть:</i> 👇"""
+Стандартный срок выполнения — 1–3 дня.
+Выберите тип работы."""
 
         if SMALL_TASKS_IMAGE_PATH.exists():
             try:
@@ -146,12 +144,9 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
 
     # For diplomas — show diploma list
     if work_type_value in LARGE_WORK_TYPES:
-        caption = """🏆 <b>Большой куш</b>
+        caption = """<b>Крупные работы</b>
 
-Главная битва за твою свободу. Ставки высоки.
-Мы сделаем чисто: комар носу не подточит.
-
-<i>Выбирай калибр:</i> 👇"""
+Выберите тип работы."""
 
         if DIPLOMA_IMAGE_PATH.exists():
             try:
@@ -179,11 +174,11 @@ async def back_to_type(callback: CallbackQuery, state: FSMContext, session: Asyn
     user = user_result.scalar_one_or_none()
 
     discount = calculate_user_discount(user)
-    discount_line = f"\n\n🎁 Твоя скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
+    discount_line = f"\n\nВаша скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
-    text = f"""🎯 <b>Оформление заказа</b>
+    text = f"""<b>Оформление заказа</b>
 
-Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
+Выберите тип работы.{discount_line}"""
 
     await send_cached_photo(
         bot=bot,
@@ -219,7 +214,7 @@ async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: A
     # For large works — show direction selection
     await state.set_state(OrderState.choosing_subject)
 
-    caption = """🎯 <b>Выбирай мишень</b>
+    caption = """<b>Выберите направление</b>
 
 Укажите направление — мы подберём специалиста."""
 
@@ -276,7 +271,7 @@ async def back_to_task(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
 {progress}
 
-<i>Ещё или жми «Готово»</i>"""
+<i>Ещё файлы или нажмите «Готово».</i>"""
         await safe_edit_or_send(callback, text, reply_markup=get_task_continue_keyboard(files_count=count), bot=bot)
     else:
         await show_task_input_screen(callback.message, work_type=work_type)

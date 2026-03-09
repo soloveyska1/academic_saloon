@@ -326,7 +326,7 @@ def build_price_list_caption() -> str:
         "• Контрольная .......... <code>от 2 500 ₽</code>",
         "",
         "📸 <b>ЗАДАЧИ ПО ФОТО</b>",
-        "Скидывай задание — оценим индивидуально.",
+        "Отправьте задание — оценим индивидуально.",
         "",
         "⚠️ <i>Цены за стандартный срок. Нужно «вчера»? +30...100%</i>",
     ]
@@ -449,7 +449,7 @@ async def call_support(callback: CallbackQuery, bot: Bot):
 
 @router.callback_query(F.data == "codex")
 async def show_codex(callback: CallbackQuery, bot: Bot):
-    """Кодекс Чести — манифест с фото и ссылкой на Telegraph"""
+    """Условия сервиса — правила с фото и ссылкой на Telegraph"""
     await callback.answer()
 
     # Логируем
@@ -457,7 +457,7 @@ async def show_codex(callback: CallbackQuery, bot: Bot):
         bot=bot,
         event=LogEvent.NAV_BUTTON,
         user=callback.from_user,
-        details="Открыл «Кодекс»",
+        details="Открыл «Условия сервиса»",
     )
 
     caption = build_codex_caption()

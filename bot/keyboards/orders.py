@@ -150,7 +150,7 @@ def get_small_works_keyboard() -> InlineKeyboardMarkup:
 
 def get_medium_works_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура для Курсовых/Практики — крупный калибр.
+    Клавиатура для Курсовых/Практики — крупные работы.
     Чистые кнопки без цен.
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -310,7 +310,7 @@ def get_work_type_keyboard() -> InlineKeyboardMarkup:
     # Другое
     buttons.append([
         InlineKeyboardButton(
-            text="🦄 Спецзаказ",
+            text="Другое",
             callback_data=f"order_type:{WorkType.OTHER.value}"
         ),
     ])
@@ -516,7 +516,7 @@ def get_urgent_order_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_urgent_task_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура после выбора дедлайна в срочном заказе — Режим Форсаж"""
+    """Клавиатура после выбора дедлайна в срочном заказе"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="🔙 Назад", callback_data="panic_back_to_urgency"),

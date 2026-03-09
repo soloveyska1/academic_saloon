@@ -76,18 +76,18 @@ async def pay_order_callback(callback: CallbackQuery, session: AsyncSession, bot
     advance = price // 2  # 50% advance
 
     # Payment details from config — clean design
-    text = f"""💳 <b>ОПЛАТА ЗАКАЗА #{order.id}</b>
+    text = f"""<b>Оплата заказа #{order.id}</b>
 
-💰 <b>К оплате: {format_price(price)}</b>
+К оплате: <b>{format_price(price)}</b>
 <i>(Аванс 50%: {format_price(advance)})</i>
 
-<b>Реквизиты (нажми, чтобы скопировать):</b>
+<b>Реквизиты (нажмите, чтобы скопировать):</b>
 
 СБП: <code>{settings.PAYMENT_PHONE}</code>
 Карта: <code>{settings.PAYMENT_CARD}</code>
 Получатель: {settings.PAYMENT_NAME}
 
-⚠️ <i>После перевода нажми кнопку ниже.</i>"""
+<i>После перевода нажмите кнопку ниже.</i>"""
 
     buttons = [
         [InlineKeyboardButton(
@@ -251,13 +251,13 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
     username = callback.from_user.username
     user_link = f"@{username}" if username else f"<a href='tg://user?id={callback.from_user.id}'>Пользователь</a>"
 
-    admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
+    admin_text = f"""<b>Проверка оплаты</b>
 
 Заказ: <code>#{order.id}</code>
 Клиент: {user_link}
 Сумма: <b>{format_price(order.price)}</b>
 
-<i>Клиент нажал "Я оплатил". Проверь банк.</i>"""
+<i>Клиент подтвердил оплату. Проверьте поступление.</i>"""
 
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -395,7 +395,7 @@ async def _process_receipt(message: Message, state: FSMContext, session: AsyncSe
     order_id = data.get("receipt_order_id")
 
     if not order_id:
-        await message.answer("❌ Ошибка: заказ не найден. Попробуй ещё раз.")
+        await message.answer("Ошибка: заказ не найден. Попробуйте ещё раз.")
         await state.clear()
         return
 
@@ -614,18 +614,18 @@ async def process_promo_code(message: Message, state: FSMContext, session: Async
     discounted_price = int(order.final_price)
     advance = discounted_price // 2
     
-    text = f'''💳 <b>ОПЛАТА ЗАКАЗА #{order.id}</b>
+    text = f'''<b>Оплата заказа #{order.id}</b>
 
-💰 <b>Цена со скидкой: <s>{format_price(price, False)}</s> → {format_price(discounted_price)}</b>
+Цена со скидкой: <b><s>{format_price(price, False)}</s> → {format_price(discounted_price)}</b>
 <i>(Аванс 50%: {format_price(advance)})</i>
 
-<b>Реквизиты (нажми, чтобы скопировать):</b>
+<b>Реквизиты (нажмите, чтобы скопировать):</b>
 
 СБП: <code>{settings.PAYMENT_PHONE}</code>
 Карта: <code>{settings.PAYMENT_CARD}</code>
 Получатель: {settings.PAYMENT_NAME}
 
-⚠️ <i>После перевода нажми кнопку ниже.</i>'''
+<i>После перевода нажмите кнопку ниже.</i>'''
 
     buttons = [
         [InlineKeyboardButton(

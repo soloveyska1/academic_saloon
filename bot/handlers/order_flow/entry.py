@@ -146,8 +146,8 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
     # Rate limiting
     if not await check_rate_limit(callback.from_user.id):
         await callback.message.answer(
-            "⏳ <b>Подожди немного</b>\n\n"
-            "Слишком много запросов. Попробуй через минуту."
+            "<b>Подождите</b>\n\n"
+            "Слишком много запросов. Попробуйте через минуту."
         )
         return
 
@@ -162,13 +162,12 @@ async def start_order(callback: CallbackQuery, state: FSMContext, bot: Bot, sess
 
     if len(pending_orders) >= MAX_PENDING_ORDERS:
         limit_text = (
-            f"🤔 <b>У тебя уже {len(pending_orders)} заявок в очереди</b>\n\n"
-            f"Они ещё не обработаны — скоро посмотрю!\n\n"
-            f"Можешь подождать или создать ещё одну 👇"
+            f"<b>У вас уже {len(pending_orders)} заявок в очереди</b>\n\n"
+            f"Они ещё в обработке. Можете подождать или создать ещё одну."
         )
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="➕ Всё равно создать", callback_data="force_create_order")],
-            [InlineKeyboardButton(text="⏳ Подожду", callback_data="back_to_menu")],
+            [InlineKeyboardButton(text="Создать ещё", callback_data="force_create_order")],
+            [InlineKeyboardButton(text="Подожду", callback_data="back_to_menu")],
         ])
 
         await safe_edit_or_send(callback, limit_text, reply_markup=keyboard, bot=bot)
@@ -225,11 +224,11 @@ async def _proceed_to_order_creation(callback: CallbackQuery, state: FSMContext,
     except Exception as e:
         logger.warning(f"Ошибка получения скидки: {e}")
 
-    discount_line = f"\n\n🎁 Твоя скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
+    discount_line = f"\n\nВаша скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
     text = f"""🎯 <b>Оформление заказа</b>
 
-Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
+Выберите тип работы.{discount_line}"""
 
     try:
         await callback.message.delete()
@@ -283,12 +282,10 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
 
     # Small works - special layout
     if category_key == "small":
-        caption = """⚡️ <b>Быстрые задачи</b>
+        caption = """<b>Быстрые задачи</b>
 
-Закроем долги по мелочи, пока ты занимаешься важными делами.
-Обычно сдаём за 1-3 дня.
-
-<i>Выбирай, что нужно закрыть:</i> 👇"""
+Стандартный срок выполнения — 1–3 дня.
+Выберите тип работы."""
 
         try:
             await callback.message.delete()
@@ -351,12 +348,9 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
 
     # Large works
     if category_key == "large":
-        caption = """🏆 <b>Большой куш</b>
+        caption = """<b>Крупные работы</b>
 
-Главная битва за твою свободу. Ставки высоки.
-Мы сделаем чисто: комар носу не подточит.
-
-<i>Выбирай калибр:</i> 👇"""
+Выберите тип работы."""
 
         try:
             await callback.message.delete()
@@ -441,11 +435,11 @@ async def back_to_categories(callback: CallbackQuery, state: FSMContext, session
     user = user_result.scalar_one_or_none()
 
     discount = calculate_user_discount(user)
-    discount_line = f"\n\n🎁 Твоя скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
+    discount_line = f"\n\nВаша скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
     text = f"""🎯 <b>Оформление заказа</b>
 
-Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
+Выберите тип работы.{discount_line}"""
 
     try:
         await callback.message.delete()
@@ -530,7 +524,7 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
     # Large works - ask for direction
     await state.set_state(OrderState.choosing_subject)
 
-    caption = f"""🎯 <b>Выбирай мишень</b>
+    caption = f"""<b>Выберите направление</b>
 
 Укажите направление — мы подберём специалиста."""
 
@@ -571,11 +565,11 @@ async def order_back_to_type(callback: CallbackQuery, state: FSMContext, session
     user_result = await session.execute(user_query)
     user = user_result.scalar_one_or_none()
     discount = calculate_user_discount(user)
-    discount_line = f"\n\n🎁 Твоя скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
+    discount_line = f"\n\nВаша скидка <b>−{discount}%</b> будет применена автоматически." if discount > 0 else ""
 
     text = f"""🎯 <b>Оформление заказа</b>
 
-Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете.{discount_line}"""
+Выберите тип работы.{discount_line}"""
 
     try:
         await callback.message.delete()
@@ -598,7 +592,7 @@ async def order_back_to_subject(callback: CallbackQuery, state: FSMContext, bot:
     await state.set_state(OrderState.choosing_subject)
     await state.update_data(attachments=[], has_attachments=False, risk_short_description=None)
 
-    caption = """🎯 <b>Выбирай мишень</b>
+    caption = """<b>Выберите направление</b>
 
 Укажите направление — мы подберём специалиста."""
 

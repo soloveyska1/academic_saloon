@@ -182,15 +182,15 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
 
     # Different headers for urgent/special/normal orders
     if is_special:
-        header = f"""💀💀💀  <b>СПЕЦЗАКАЗ #{order.id}</b>  💀💀💀
+        header = f"""<b>Нестандартный заказ #{order.id}</b>
 
-⚠️ <b>ЦЕНУ НУЖНО ВЫСТАВИТЬ ВРУЧНУЮ!</b>"""
+Требуется ручная оценка стоимости."""
     elif is_urgent:
-        header = f"""🚨🚨🚨  <b>СРОЧНАЯ ЗАЯВКА #{order.id}</b>  🚨🚨🚨
+        header = f"""<b>Срочная заявка #{order.id}</b>
 
-⚡ <b>ТРЕБУЕТ БЫСТРОГО ОТВЕТА!</b>"""
+Требует быстрого ответа."""
     else:
-        header = f"""🆕  <b>Новая заявка #{order.id}</b>"""
+        header = f"""<b>Новая заявка #{order.id}</b>"""
 
     # Yandex Disk link string
     yadisk_line = f"\n📁 <b>Файлы:</b> <a href=\"{yadisk_link}\">Яндекс Диск</a>\n" if yadisk_link else ""
@@ -273,13 +273,13 @@ async def notify_admins_new_order(bot: Bot, user, order: Order, data: dict, sess
 async def start_order_creation(message, state=None):
     """Start order creation — for Reply keyboard"""
     if state is None:
-        text = """📝  <b>Заказать работу</b>
+        text = """<b>Оформить заказ</b>
 
-Чтобы оформить заказ, напиши Хозяину напрямую:
+Напишите менеджеру напрямую:
 
 @""" + settings.SUPPORT_USERNAME + """
 
-Или нажми /start и выбери «📝 Оформить заказ»"""
+Или нажмите /start и выберите «Оформить заказ»."""
         await message.answer(text)
         return
 
@@ -290,8 +290,8 @@ async def start_order_creation(message, state=None):
     await state.set_state(OrderState.choosing_type)
     await state.update_data(attachments=[])
 
-    text = """🎯 <b>Оформление заказа</b>
+    text = """<b>Оформление заказа</b>
 
-Партнер, выбирай калибр задачи. Справимся с любой — от эссе на салфетке до диплома в твердом переплете."""
+Выберите тип работы."""
 
     await message.answer(text, reply_markup=get_work_category_keyboard())

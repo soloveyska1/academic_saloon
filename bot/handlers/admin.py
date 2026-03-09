@@ -430,7 +430,7 @@ async def cmd_orders(message: Message, session: AsyncSession, state: FSMContext)
         text += "\n"
 
     if waiting_estimation:
-        text += f"🔥 <b>Спецзаказы — оцени! ({len(waiting_estimation)}):</b>\n"
+        text += f"<b>Нестандартные заказы ({len(waiting_estimation)}):</b>\n"
         for o in waiting_estimation[:5]:
             work = WORK_TYPE_LABELS.get(WorkType(o.work_type), o.work_type) if o.work_type else "?"
             time_str = o.created_at.strftime("%d.%m %H:%M") if o.created_at else ""
@@ -572,7 +572,7 @@ async def show_orders_list(callback: CallbackQuery, session: AsyncSession):
         text += "\n"
 
     if waiting_estimation:
-        text += f"🔥 <b>Спецзаказы — оцени! ({len(waiting_estimation)}):</b>\n"
+        text += f"<b>Нестандартные заказы ({len(waiting_estimation)}):</b>\n"
         for o in waiting_estimation[:5]:
             work = WORK_TYPE_LABELS.get(WorkType(o.work_type), o.work_type) if o.work_type else "?"
             time_str = o.created_at.strftime("%d.%m %H:%M") if o.created_at else ""
@@ -2049,7 +2049,7 @@ async def process_bonus_amount(message: Message, state: FSMContext, session: Asy
     user_id = data.get("bonus_user_id")
 
     if not user_id:
-        await message.answer("❌ Ошибка. Попробуй снова: /bonus")
+        await message.answer("Ошибка. Попробуйте снова: /bonus")
         await state.clear()
         return
 
@@ -2850,12 +2850,12 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
     except Exception as e:
         logger.error(f"Failed to update card for order #{order_id}: {e}")
         # Fallback: отправляем в админский DM если карточка не обновилась
-        admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
+        admin_text = f"""<b>Проверка оплаты</b>
 
 Заказ: <code>#{order.id}</code>
 Сумма: <b>{format_price(int(amount))}</b>
 
-<i>Клиент нажал "Я оплатил". Проверь банк.</i>"""
+<i>Клиент подтвердил оплату. Проверьте поступление.</i>"""
 
         admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [
@@ -2945,7 +2945,7 @@ async def process_payment_receipt(message: Message, state: FSMContext, session: 
     method = data.get("payment_method")
 
     if not order_id:
-        await message.answer("❌ Ошибка: заказ не найден. Попробуй снова.")
+        await message.answer("Ошибка: заказ не найден. Попробуйте снова.")
         return
 
     # Если пришли через клиентский flow (receipt_order_id), нужно получить данные из заказа
@@ -5542,12 +5542,12 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
 Мы проверили счёт, но пока не видим поступления.
 
 <b>Возможные причины:</b>
-• Перевод ещё в обработке (подожди 5-15 минут)
+• Перевод ещё в обработке (подождите 5–15 минут)
 • Неверные реквизиты
 • Перевод на другую сумму
 
-Если ты точно перевёл — напиши в поддержку со скриншотом чека.
-Или попробуй ещё раз 👇"""
+Если вы уверены в оплате — напишите в поддержку со скриншотом чека.
+Или попробуйте ещё раз."""
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(

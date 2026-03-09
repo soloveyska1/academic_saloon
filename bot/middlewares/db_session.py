@@ -33,7 +33,7 @@ class DbSessionMiddleware(BaseMiddleware):
                 try:
                     if event.message:
                         await event.message.answer(
-                            "⚠️ Технические неполадки. Попробуй через минуту."
+                            "Технические неполадки. Попробуйте через минуту."
                         )
                     elif event.callback_query:
                         await event.callback_query.answer(

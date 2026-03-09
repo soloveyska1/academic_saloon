@@ -107,7 +107,7 @@ async def spin_roulette(
         except Exception as e:
             logger.warning(f"Roulette Log Error: {e}")
 
-    message = f"Поздравляем! Ты выиграл {selected['value']}₽!" if selected["value"] > 0 else "Не повезло! Попробуй ещё раз!"
+    message = f"Поздравляем! Вы выиграли {selected['value']} ₽!" if selected["value"] > 0 else "Не повезло. Попробуйте снова завтра."
 
     return RouletteResponse(
         success=True,

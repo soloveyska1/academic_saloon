@@ -256,9 +256,9 @@ async def card_reject_order_execute(callback: CallbackQuery, session: AsyncSessi
     # Уведомляем клиента
     await notify_client(
         bot, order.user_id,
-        f"😔 <b>Заказ #{order.id} отклонён</b>\n\n"
+        f"<b>Заказ #{order.id} отклонён</b>\n\n"
         "К сожалению, мы не можем взять этот заказ в работу.\n"
-        "Попробуй оформить новый заказ с более подробным описанием."
+        "Попробуйте оформить новый заказ с более подробным описанием."
     )
 
     # ═══ WEBSOCKET УВЕДОМЛЕНИЕ ОБ ОТКЛОНЕНИИ ═══

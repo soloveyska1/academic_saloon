@@ -114,11 +114,11 @@ async def panic_urgency_selected(callback: CallbackQuery, state: FSMContext, bot
     urgency_key = callback.data.split(":")[1]
     urgency_info = PANIC_URGENCY_MAP.get(urgency_key, PANIC_URGENCY_MAP["medium"])
 
-    caption = f"""📤 <b>ЗАГРУЗИ ЗАДАНИЕ</b>
+    caption = f"""<b>Загрузка задания</b>
 
 Срочность: <b>{urgency_info["label"]}</b> ({urgency_info["tag"]})
 
-Кидай сюда всё сразу: методички, скрины, голосовые. Я разберусь.
+Прикрепите все материалы: методички, скриншоты, голосовые.
 
 <i>✅ Принято: 0 файлов</i>"""
 
@@ -304,11 +304,11 @@ async def update_panic_upload_ui(bot: Bot, chat_id: int, msg_id: int, panic_file
 
     summary = ", ".join(summary_parts) if summary_parts else "0 файлов"
 
-    caption = f"""📤 <b>ЗАГРУЗИ ЗАДАНИЕ</b>
+    caption = f"""<b>Загрузка задания</b>
 
 Срочность: <b>{urgency_label}</b>
 
-Кидай сюда всё сразу: методички, скрины, голосовые. Я разберусь.
+Прикрепите все материалы: методички, скриншоты, голосовые.
 
 <i>✅ Принято: {summary}</i>"""
 
@@ -674,7 +674,7 @@ async def panic_clear_files(callback: CallbackQuery, state: FSMContext, bot: Bot
 
     await state.update_data(panic_files=[])
 
-    caption = f"""📤 <b>ЗАГРУЗИ ЗАДАНИЕ</b>
+    caption = f"""<b>Загрузка задания</b>
 
 Срочность: <b>{urgency_label}</b>
 
@@ -717,11 +717,11 @@ async def panic_append_files(callback: CallbackQuery, state: FSMContext, bot: Bo
         panic_append=True,
     )
 
-    caption = f"""📎 <b>ДОСЛАТЬ МАТЕРИАЛЫ К ЗАКАЗУ #{order_id}</b>
+    caption = f"""<b>Дослать материалы к заказу #{order_id}</b>
 
-Отправляй дополнительные файлы — всё передадим исполнителю.
+Отправьте дополнительные файлы — всё передадим исполнителю.
 
-<i>Когда закончишь — нажми «Готово»</i>"""
+<i>Когда закончите — нажмите «Готово».</i>"""
 
     try:
         await callback.message.delete()
