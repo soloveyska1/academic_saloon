@@ -1,7 +1,6 @@
 """
-Продающий обработчик ошибок.
-Превращает ошибку в возможность продажи.
-+ Retry механизм для сетевых ошибок.
+Error handler middleware.
+Graceful error recovery with user compensation and retry logic.
 """
 
 import asyncio
@@ -37,18 +36,17 @@ ERROR_BONUS_COOLDOWN = timedelta(hours=1)
 
 
 def get_error_message(user_name: str) -> str:
-    """Генерирует успокаивающее сообщение об ошибке"""
-    return f"""🚧 <b>Салун временно закрыт на ремонт!</b>
+    """Генерирует сообщение об ошибке в премиум-стиле"""
+    return f"""<b>Временные неполадки</b>
 
-{user_name}, без паники. Мы просто обновляем мебель и протираем стаканы.
+{user_name}, приносим извинения. Мы уже работаем над решением.
 
-✅ <b>Твои заказы и баланс в полной безопасности.</b> Работа по ним продолжается в штатном режиме.
+Ваши заказы и баланс в безопасности.
 
-За доставленные неудобства мы уже начислили тебе компенсацию:
-💰 <b>+{ERROR_COMPENSATION_BONUS}₽</b> на баланс.
-🎁 <b>Скидку 10%</b> на следующий заказ (если оформишь его вручную через Шерифа, пока бот отдыхает).
+За неудобства начислена компенсация:
+<b>+{ERROR_COMPENSATION_BONUS} ₽</b> на баланс.
 
-<i>Если дело срочное и не терпит — стучись в личку, примем заказ по старинке.</i>"""
+<i>Если вопрос срочный — напишите менеджеру.</i>"""
 
 
 def get_error_keyboard() -> InlineKeyboardMarkup:
@@ -56,7 +54,7 @@ def get_error_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="🔥 Заказ горит! Написать Шерифу →",
+                text="Написать менеджеру",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             )
         ]
@@ -66,11 +64,10 @@ def get_error_keyboard() -> InlineKeyboardMarkup:
 class ErrorHandlerMiddleware(BaseMiddleware):
     """
     Middleware для перехвата ошибок.
-    Превращает ошибку в продажу:
-    - Показывает продающее сообщение с картинкой
-    - Начисляет бонус за ожидание
-    - Направляет к живому контакту
-    - Отправляет детальный лог админу
+    - Показывает сообщение пользователю
+    - Начисляет компенсацию
+    - Направляет к менеджеру
+    - Отправляет лог админу
     """
 
     async def __call__(
@@ -224,10 +221,10 @@ class ErrorHandlerMiddleware(BaseMiddleware):
         user: TgUser,
         bonus_added: bool
     ) -> None:
-        """Отправляет продающее сообщение с картинкой"""
+        """Отправляет сообщение об ошибке пользователю"""
         try:
             # Имя пользователя для персонализации
-            user_name = user.first_name or "партнёр"
+            user_name = user.first_name or "друг"
 
             # Текст сообщения
             message_text = get_error_message(user_name)
@@ -286,7 +283,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
         traceback_str: str,
         bonus_added: bool,
     ) -> None:
-        """Отправляет улучшенное уведомление админу"""
+        """Отправляет уведомление админу об ошибке"""
         try:
             bot_logger = BotLogger(bot)
 

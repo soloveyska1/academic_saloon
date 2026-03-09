@@ -47,7 +47,7 @@ def build_main_menu_text(user_name: str) -> str:
     Returns:
         HTML-форматированный текст меню
     """
-    return """<b>АКАДЕМИЧЕСКИЙ САЛУН</b>
+    return """<b>Academic Saloon</b>
 
 С возвращением. Приложение ждёт.
 
@@ -144,7 +144,7 @@ def get_menu_text() -> str:
     greeting = random.choice(MENU_GREETINGS)
     quote = random.choice(MENU_QUOTES)
 
-    return f"""🏚  <b>Академический Салун</b>
+    return f"""<b>Academic Saloon</b>
 
 {greeting}
 
@@ -154,7 +154,7 @@ router = Router()
 
 
 # ══════════════════════════════════════════════════════════════
-#                    МАНИФЕСТ ШЕРИФА (КОДЕКС)
+#                    УСЛОВИЯ
 # ══════════════════════════════════════════════════════════════
 
 def build_codex_caption() -> str:
@@ -299,7 +299,7 @@ async def show_contact_owner(callback: CallbackQuery, bot: Bot):
 def build_price_list_caption() -> str:
     """Формирует caption для прайс-листа — премиальный дизайн с blockquote"""
     lines = [
-        "📜 <b>ТАРИФЫ И ГАРАНТИИ САЛУНА</b>",
+        "<b>Тарифы и гарантии</b>",
         "",
         "<blockquote>🛡 <b>МЫ РАБОТАЕМ НА СОВЕСТЬ</b>",
         "",
@@ -309,7 +309,7 @@ def build_price_list_caption() -> str:
         "",
         "📝 <b>Оформление:</b> Сразу делаем по ГОСТ или методичке.</blockquote>",
         "",
-        "<i>Минимальный чек Салуна — 2 500 ₽</i>",
+        "<i>Минимальная стоимость — 2 500 ₽</i>",
         "",
         "🎓 <b>ВЫСШАЯ ЛИГА</b>",
         "• Магистерская ........ <code>от 50 000 ₽</code>",
@@ -385,7 +385,7 @@ async def show_price_list(callback: CallbackQuery, bot: Bot):
 
 @router.callback_query(F.data == "finance")
 async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Казна пользователя"""
+    """Баланс пользователя"""
     await callback.answer("⏳")
 
     # Логируем
@@ -393,7 +393,7 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
         bot=bot,
         event=LogEvent.NAV_BUTTON,
         user=callback.from_user,
-        details="Открыл «Казна»",
+        details="Открыл «Баланс»",
         session=session,
     )
 
@@ -404,7 +404,7 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     balance = user.balance if user else 0
 
-    text = f"""💰  <b>Казна</b>
+    text = f"""<b>Баланс</b>
 
 
 Баланс: <b>{balance:.0f} ₽</b>
@@ -421,9 +421,9 @@ async def show_finance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 @router.callback_query(F.data == "support")
 async def call_support(callback: CallbackQuery, bot: Bot):
     """Связь с поддержкой — единый центр помощи"""
-    from bot.keyboards.inline import get_sheriff_choice_keyboard
+    from bot.keyboards.inline import get_support_keyboard
 
-    await callback.answer("🤠")
+    await callback.answer()
 
     # Логируем
     await log_action(
@@ -444,7 +444,7 @@ async def call_support(callback: CallbackQuery, bot: Bot):
 <i>Открой чат поддержки, и мы сразу подхватим диалог.</i>"""
 
     await safe_delete_message(callback)
-    await callback.message.answer(text, reply_markup=get_sheriff_choice_keyboard(), disable_web_page_preview=True)
+    await callback.message.answer(text, reply_markup=get_support_keyboard(), disable_web_page_preview=True)
 
 
 @router.callback_query(F.data == "codex")
@@ -513,7 +513,23 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
         session=session,
     )
 
-    text = f"""🤝  <b>Привести друга</b>
+    # Tiered referral info
+    from bot.services.bonus import get_referral_tier_info
+    tier_info = get_referral_tier_info(referrals_count)
+    current_pct = tier_info["current_percent"]
+
+    # Build tier progress line
+    tier_lines = []
+    for t in tier_info["tiers"]:
+        marker = "▸" if t["percent"] == current_pct else " "
+        tier_lines.append(f"{marker} {t['range']} друзей — {t['percent']}%")
+    tiers_text = "\n".join(tier_lines)
+
+    next_hint = ""
+    if tier_info["refs_to_next"] > 0:
+        next_hint = f"\n\nЕщё {tier_info['refs_to_next']} — и процент вырастет."
+
+    text = f"""🤝  <b>Внутренний круг</b>
 
 
 Твоя ссылка:
@@ -523,13 +539,20 @@ async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot
 <b>Как это работает</b>
 
 Друг переходит по ссылке и делает заказ.
-Ты получаешь 5% от суммы на баланс.
+Ты получаешь <b>{current_pct}%</b> от суммы на баланс.
 Друг получает скидку 5% на первый заказ.
+
+<b>Уровни бонусов</b>
+
+{tiers_text}
+
+Бонус 2-го уровня: 2% от заказов друзей твоих друзей.{next_hint}
 
 
 <b>Твоя статистика</b>
 
 ◈  Приглашено: {referrals_count}
+◈  Твой бонус: {current_pct}%
 ◈  Заработано: {referral_earnings:.0f} ₽"""
 
     await safe_delete_message(callback)
@@ -585,7 +608,7 @@ async def back_to_menu(callback: CallbackQuery, bot: Bot):
     await safe_delete_message(callback)
 
     # Отправляем персонализированное меню
-    user_name = callback.from_user.full_name or "Партнёр"
+    user_name = callback.from_user.full_name or "друг"
     chat_id = callback.message.chat.id if callback.message else callback.from_user.id
 
     await send_main_menu(
@@ -662,13 +685,13 @@ async def show_free_stuff(callback: CallbackQuery, bot: Bot):
 async def handle_text_message(message: Message, bot: Bot, session: AsyncSession):
     """
     Обработка текстовых сообщений вне контекста.
-    Направляем пользователя к чату с шерифом.
+    Направляем пользователя к чату поддержки.
     """
-    from bot.keyboards.inline import get_sheriff_choice_keyboard
+    from bot.keyboards.inline import get_support_keyboard
 
-    # Показываем меню связи с шерифом
+    # Показываем меню поддержки
     await message.answer(
         "🤔 <b>Нужна помощь?</b>\n\n"
         "Откройте чат поддержки кнопкой ниже. Это самый быстрый способ решить вопрос по заказу или оплате.",
-        reply_markup=get_sheriff_choice_keyboard()
+        reply_markup=get_support_keyboard()
     )

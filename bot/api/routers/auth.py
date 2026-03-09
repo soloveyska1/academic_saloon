@@ -104,8 +104,10 @@ async def get_user_profile(
     rank_info = get_rank_info(actual_total_spent, rank_levels)
     loyalty_info = get_loyalty_info(completed_orders, loyalty_levels)
 
-    # Generate referral code from telegram_id
+    # Referral tier info
+    from bot.services.bonus import get_referral_tier_info
     referral_code = f"REF{user.telegram_id}"
+    ref_tier = get_referral_tier_info(user.referrals_count or 0)
 
     # Recent balance transactions
     tx_result = await session.execute(
@@ -145,6 +147,9 @@ async def get_user_profile(
         referral_code=referral_code,
         referrals_count=user.referrals_count or 0,
         referral_earnings=round(float(user.referral_earnings or 0), 2),
+        referral_percent=ref_tier["current_percent"],
+        referral_next_percent=ref_tier["next_tier"]["percent"] if ref_tier["next_tier"] else None,
+        referral_refs_to_next=ref_tier["refs_to_next"],
         daily_luck_available=can_spin,
         daily_bonus_streak=user.daily_bonus_streak or 0,
         rank=rank_info,  # Use actual total spent

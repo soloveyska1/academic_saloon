@@ -221,8 +221,7 @@ async def back_to_subject(callback: CallbackQuery, state: FSMContext, session: A
 
     caption = """🎯 <b>Выбирай мишень</b>
 
-В какой сфере проблема, ковбой?
-Укажи тему, чтобы я знал, какого специалиста поднимать с постели."""
+Укажите направление — мы подберём специалиста."""
 
     # Delete old (might be photo)
     try:
@@ -473,8 +472,7 @@ async def cancel_confirmed_order_callback(callback: CallbackQuery, session: Asyn
 
     text = f"""❌ <b>Заказ #{order.id} отменён</b>
 
-Жаль, что не сложилось. Но двери салуна всегда открыты.
-Возвращайся, когда понадобится помощь. 🤠"""
+Если понадобится помощь — мы на связи."""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -482,7 +480,7 @@ async def cancel_confirmed_order_callback(callback: CallbackQuery, session: Asyn
             callback_data="create_order"
         )],
         [InlineKeyboardButton(
-            text="🌵 В салун",
+            text="В меню",
             callback_data="back_to_menu"
         )],
     ])
@@ -576,7 +574,7 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
     order.status = OrderStatus.WAITING_ESTIMATION.value
     await session.commit()
 
-    await callback.answer("🤠 Заказ отправлен шерифу!")
+    await callback.answer("Заказ отправлен на оценку")
 
     # Delete old message
     try:
@@ -588,7 +586,7 @@ async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext,
     from bot.keyboards.orders import get_special_order_keyboard as get_special_order_kb
     text = f"""🛡 <b>ЗАКАЗ <code>#{order.id}</code> НА ПРОВЕРКЕ</b>
 
-Шериф лично посмотрит твою задачу и назовёт точную цену.
+Менеджер оценит задачу и назовёт стоимость.
 Обычно это занимает <b>до 2 часов</b> (в рабочее время).
 
 ⏳ <i>Жди сообщения с ценой...</i>"""

@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     YOOKASSA_SHOP_ID: str | None = None         # ID магазина
     YOOKASSA_SECRET_KEY: str | None = None      # Секретный ключ
     YOOKASSA_RETURN_URL: str = "https://t.me/{bot_username}"  # URL возврата после оплаты
+    YOOKASSA_WEBHOOK_SECRET: str | None = None  # Для верификации webhook подписей (опционально)
 
     # Яндекс Диск (хранение файлов заказов)
     YANDEX_DISK_TOKEN: str | None = None        # OAuth токен

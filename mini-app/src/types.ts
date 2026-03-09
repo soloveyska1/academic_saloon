@@ -17,6 +17,9 @@ export interface UserData {
   referral_code: string
   referrals_count: number  // Number of referrals
   referral_earnings: number
+  referral_percent: number  // Current tier bonus %
+  referral_next_percent?: number | null  // Next tier %
+  referral_refs_to_next: number  // Refs needed for next tier
   orders: Order[]
   daily_luck_available: boolean
   daily_bonus_streak: number  // Days in a row claimed daily bonus

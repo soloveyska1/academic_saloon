@@ -4,9 +4,9 @@ Order Flow Utilities - shared helper functions.
 import random
 import re
 from datetime import datetime, timedelta
-from typing import Optional
 
 from database.models.users import User
+from bot.utils.formatting import parse_callback_data, parse_callback_int, pluralize_files
 
 from .router import (
     MSK_TZ,
@@ -17,40 +17,6 @@ from .router import (
     FILE_TYPE_CONFIRMATIONS,
     APPEND_CONFIRMATIONS,
 )
-
-
-# ══════════════════════════════════════════════════════════════
-#                    CALLBACK DATA PARSING
-# ══════════════════════════════════════════════════════════════
-
-def parse_callback_data(data: str, index: int, separator: str = ":") -> Optional[str]:
-    """Safely parse callback_data by index."""
-    parts = data.split(separator)
-    return parts[index] if len(parts) > index else None
-
-
-def parse_callback_int(data: str, index: int, separator: str = ":") -> Optional[int]:
-    """Safely parse callback_data with int conversion."""
-    value = parse_callback_data(data, index, separator)
-    if value is None:
-        return None
-    try:
-        return int(value)
-    except ValueError:
-        return None
-
-
-# ══════════════════════════════════════════════════════════════
-#                    TEXT FORMATTING
-# ══════════════════════════════════════════════════════════════
-
-def pluralize_files(n: int) -> str:
-    """Proper Russian declension for 'file'."""
-    if n % 10 == 1 and n % 100 != 11:
-        return f"{n} файл"
-    elif 2 <= n % 10 <= 4 and not (12 <= n % 100 <= 14):
-        return f"{n} файла"
-    return f"{n} файлов"
 
 
 # ══════════════════════════════════════════════════════════════

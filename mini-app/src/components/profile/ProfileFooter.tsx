@@ -41,7 +41,7 @@ export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport }: Prop
           letterSpacing: '0.15em',
           fontFamily: "var(--font-serif, 'Playfair Display', serif)",
         }}>
-          САЛУН
+          ACADEMIC SALOON
         </span>
         <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.3)' }}>✦</span>
         <span style={{

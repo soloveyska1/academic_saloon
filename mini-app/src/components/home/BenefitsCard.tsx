@@ -30,14 +30,6 @@ interface BenefitsCardProps {
   haptic: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-// Premium rank name mapping
-const RANK_DISPLAY_NAMES: Record<string, string> = {
-  'Салага': 'Резидент',
-  'Ковбой': 'Партнёр',
-  'Головорез': 'Приоритет',
-  'Легенда Запада': 'Премиум клуб',
-}
-
 // Animated counter component
 const AnimatedCounter = memo(function AnimatedCounter({
   value,
@@ -80,7 +72,7 @@ export const BenefitsCard = memo(function BenefitsCard({
   onRankClick,
   haptic,
 }: BenefitsCardProps) {
-  const displayRankName = RANK_DISPLAY_NAMES[rank.name] || rank.name
+  const displayRankName = rank.name
 
   // Show warning if bonus expires within 7 days and balance > 0
   const showExpiryWarning = bonusExpiry?.has_expiry &&

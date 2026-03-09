@@ -39,6 +39,7 @@ from bot.states.admin import AdminStates
 from bot.states.order import OrderState
 from core.media_cache import send_cached_photo
 from bot.utils.message_helpers import safe_edit_or_send
+from bot.utils.formatting import format_price, parse_callback_data, parse_callback_int
 from bot.handlers.start import process_start
 from bot.services.live_cards import update_card_status
 from bot.services.order_progress import (
@@ -100,22 +101,6 @@ def is_admin(user_id: int) -> bool:
     return user_id in settings.ADMIN_IDS
 
 
-def parse_callback_data(data: str, index: int, separator: str = ":") -> Optional[str]:
-    """Безопасный парсинг callback_data по индексу"""
-    parts = data.split(separator)
-    return parts[index] if len(parts) > index else None
-
-
-def parse_callback_int(data: str, index: int, separator: str = ":") -> Optional[int]:
-    """Безопасный парсинг callback_data с преобразованием в int"""
-    value = parse_callback_data(data, index, separator)
-    if value is None:
-        return None
-    try:
-        return int(value)
-    except ValueError:
-        return None
-
 
 def build_price_offer_text(
     order_id: int,
@@ -167,7 +152,7 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast"),
         ],
         [
-            InlineKeyboardButton(text="🔧 Статус Салуна", callback_data="admin_status_menu"),
+            InlineKeyboardButton(text="Статус сервиса", callback_data="admin_status_menu"),
         ],
         [
             InlineKeyboardButton(text="👶 Режим новичка", callback_data="admin_newbie_mode"),
@@ -346,7 +331,7 @@ async def cmd_admin(message: Message, state: FSMContext):
 
 ◈  <b>Заявки</b> — список активных заказов
 
-◈  <b>Статус Салуна</b> — управление загруженностью,
+◈  <b>Статус сервиса</b> — управление загруженностью,
     клиентами и закрепом
 
 ◈  <b>Режим новичка</b> — сбросит принятие оферты,
@@ -367,7 +352,7 @@ async def cmd_error_preview(message: Message, bot: Bot):
     await send_error_preview(
         bot=bot,
         chat_id=message.chat.id,
-        user_name=message.from_user.first_name or "Партнёр"
+        user_name=message.from_user.first_name or "друг"
     )
 
 
@@ -385,7 +370,7 @@ async def admin_error_preview(callback: CallbackQuery, bot: Bot):
     await send_error_preview(
         bot=bot,
         chat_id=callback.message.chat.id,
-        user_name=callback.from_user.first_name or "Партнёр"
+        user_name=callback.from_user.first_name or "друг"
     )
 
 
@@ -515,7 +500,7 @@ async def show_admin_panel(callback: CallbackQuery, state: FSMContext):
 
     text = """⚙️  <b>Админ-панель</b>
 
-◈  <b>Статус Салуна</b> — управление загруженностью,
+◈  <b>Статус сервиса</b> — управление загруженностью,
     клиентами и закрепом
 
 ◈  <b>Режим новичка</b> — сбросит принятие оферты,
@@ -1329,7 +1314,7 @@ async def open_order_topic_from_log(callback: CallbackQuery, session: AsyncSessi
 
 
 # ══════════════════════════════════════════════════════════════
-#                    МЕНЮ СТАТУСА САЛУНА
+#                    МЕНЮ СТАТУСА
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "admin_status_menu")
@@ -1346,7 +1331,7 @@ async def show_status_menu(callback: CallbackQuery, state: FSMContext):
 
     text = f"""📊  <b>УПРАВЛЕНИЕ ЗАКРЕПОМ</b>
 
-<b>Статус:</b> 🌟 Салун ОТКРЫТ 24/7
+<b>Статус:</b> Сервис работает 24/7
 
 <i>Закреп показывает статичное сообщение
 (без динамических статистик и offline статуса)</i>
@@ -2859,7 +2844,7 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
             session=session,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text=f"🔔 ПРОВЕРЬ ОПЛАТУ!\n{user_link} · {int(amount):,}₽ · {order.payment_method or 'способ не указан'}".replace(",", " "),
+            extra_text=f"🔔 ПРОВЕРЬ ОПЛАТУ!\n{user_link} · {format_price(int(amount))} · {order.payment_method or 'способ не указан'}",
         )
         logger.info(f"Order #{order_id}: card updated with verification buttons")
     except Exception as e:
@@ -2868,9 +2853,9 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
         admin_text = f"""🔔 <b>ПРОВЕРЬ ПОСТУПЛЕНИЕ!</b>
 
 Заказ: <code>#{order.id}</code>
-Сумма: <b>{int(amount):,} ₽</b>
+Сумма: <b>{format_price(int(amount))}</b>
 
-<i>Клиент нажал "Я оплатил". Проверь банк.</i>""".replace(",", " ")
+<i>Клиент нажал "Я оплатил". Проверь банк.</i>"""
 
         admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [
@@ -3170,7 +3155,7 @@ async def admin_confirm_robot_price_callback(callback: CallbackQuery, session: A
             session=session,
             client_username=user.username if user else None,
             client_name=user.fullname if user else None,
-            extra_text=f"💰 Цена назначена: {int(price):,}₽".replace(",", " "),
+            extra_text=f"💰 Цена назначена: {format_price(int(price))}",
         )
     except Exception as e:
         logger.warning(f"Failed to update live card for order #{order.id}: {e}")
@@ -3522,9 +3507,9 @@ async def admin_confirm_payment_callback(callback: CallbackQuery, session: Async
     client_text = f"""🎉 <b>Оплата подтверждена</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
-💰 Аванс получен: <b>{int(order.paid_amount):,} ₽</b>
+💰 Аванс получен: <b>{format_price(int(order.paid_amount))}</b>
 
-Работа уже запущена. О следующем этапе сообщим сюда и покажем детали в приложении.{bonus_line}""".replace(",", " ")
+Работа уже запущена. О следующем этапе сообщим сюда и покажем детали в приложении.{bonus_line}"""
 
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Открыть мои заказы", callback_data="my_orders")],
@@ -4928,22 +4913,22 @@ async def show_statistics(callback: CallbackQuery, session: AsyncSession):
     )
     completed_orders = (await session.execute(completed_query)).scalar() or 0
 
-    text = f"""📊 <b>БУХГАЛТЕРИЯ САЛУНА</b>
+    text = f"""<b>Финансовая сводка</b>
 
 <b>👥 Пользователи:</b>
-├ Всего: <code>{users_count:,}</code>
+├ Всего: <code>{format_price(users_count, False)}</code>
 └ Сегодня: <code>+{today_users}</code>
 
 <b>📋 Заказы:</b>
 ├ Активных: <code>{active_orders}</code>
-├ Завершено: <code>{completed_orders:,}</code>
+├ Завершено: <code>{format_price(completed_orders, False)}</code>
 └ Сегодня: <code>+{today_orders}</code>
 
 <b>💰 Финансы:</b>
-├ Выручка всего: <code>{total_revenue:,.0f} ₽</code>
-└ Сегодня: <code>+{today_revenue:,.0f} ₽</code>
+├ Выручка всего: <code>{format_price(total_revenue)}</code>
+└ Сегодня: <code>+{format_price(today_revenue)}</code>
 
-<i>Обновлено: {datetime.now(MSK_TZ).strftime('%d.%m.%Y %H:%M')}</i>""".replace(",", " ")
+<i>Обновлено: {datetime.now(MSK_TZ).strftime('%d.%m.%Y %H:%M')}</i>"""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_statistics")],
@@ -5008,13 +4993,13 @@ async def receive_broadcast_text(message: Message, state: FSMContext, session: A
 
     preview_text = f"""📢 <b>ПРЕВЬЮ РАССЫЛКИ</b>
 
-<b>Получателей:</b> {users_count:,} чел.
+<b>Получателей:</b> {format_price(users_count, False)} чел.
 
 ━━━━━━━━━━━━━━━━━━━━━
 {broadcast_text}
 ━━━━━━━━━━━━━━━━━━━━━
 
-Отправить?""".replace(",", " ")
+Отправить?"""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Отправить", callback_data="admin_confirm_broadcast")],
@@ -5155,8 +5140,8 @@ async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
 
     await state.clear()
 
-    # Форматируем сообщение от шерифа
-    sheriff_msg = f"""💬 <b>Сообщение поддержки</b>
+    # Форматируем сообщение от менеджера
+    sheriff_msg = f"""<b>Сообщение поддержки</b>
 
 {msg_text}
 
@@ -5360,7 +5345,7 @@ async def secret_stash_placeholder(callback: CallbackQuery):
 Следи за обновлениями! 🤠"""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")],
+        [InlineKeyboardButton(text="В меню", callback_data="back_to_menu")],
     ])
 
     await callback.answer("🎁 Скоро!")
@@ -5443,10 +5428,10 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     user_text = f"""🎉 <b>Оплата подтверждена</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
-💰 Аванс получен: <b>{int(order.paid_amount):,} ₽</b>
+💰 Аванс получен: <b>{format_price(int(order.paid_amount))}</b>
 
 Работа уже запущена. Когда появится следующий этап, мы сразу сообщим сюда.
-Следить за деталями можно в приложении.""".replace(",", " ")
+Следить за деталями можно в приложении."""
 
     user_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Открыть мои заказы", callback_data="my_orders")],
@@ -5475,9 +5460,9 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
 
 📋 Заказ: <code>#{order.id}</code>
 📂 Тип: {work_label}
-💰 Аванс: <b>{int(order.paid_amount):,} ₽</b>
+💰 Аванс: <b>{format_price(int(order.paid_amount))}</b>
 
-<i>Клиент уведомлён. Заказ в работе.</i>""".replace(",", " ")
+<i>Клиент уведомлён. Заказ в работе.</i>"""
 
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📋 К заказу", callback_data=f"admin_order_detail:{order_id}")],
@@ -5574,7 +5559,7 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
             url=f"https://t.me/{settings.SUPPORT_USERNAME}"
         )],
         [InlineKeyboardButton(
-            text="🌵 В салун",
+            text="В меню",
             callback_data="back_to_menu"
         )],
     ])
@@ -5588,10 +5573,10 @@ async def admin_reject_payment_callback(callback: CallbackQuery, session: AsyncS
     admin_text = f"""❌ <b>ОПЛАТА НЕ НАЙДЕНА</b>
 
 📋 Заказ: <code>#{order.id}</code>
-💰 Сумма: <b>{int(order.price):,} ₽</b>
+💰 Сумма: <b>{format_price(int(order.price))}</b>
 
 Заказ возвращён в статус «Ждёт оплаты».
-<i>Клиент уведомлён.</i>""".replace(",", " ")
+<i>Клиент уведомлён.</i>"""
 
     admin_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📋 К заказу", callback_data=f"admin_order_detail:{order_id}")],

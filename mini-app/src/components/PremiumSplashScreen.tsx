@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion'
  *
  * KEY PRINCIPLES:
  * - NEVER freeze: Every frame has subtle motion
- * - Brand is the HERO: Focus on "САЛУН" typography
+ * - Brand is the HERO: Focus on brand typography
  * - Organic reveal: Letters are born from living gold mist
  * - Short & memorable: 3.2 seconds total
  *
@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion'
  * │ 0.0s → Golden particle appears in center (immediate feedback!)          │
  * │ 0.3s → Particle expands into breathing golden mist                      │
  * │ 0.8s → Mist begins forming letter shapes (still soft, dreamy)           │
- * │ 1.2s → Letters "САЛУН" emerge from mist, crystallizing                  │
+ * │ 1.2s → Letters emerge from mist, crystallizing                           │
  * │ 1.8s → Letters settle, shimmer with internal light                      │
  * │ 2.5s → Subtle breathing continues, brand absorbs                        │
  * │ 3.2s → Graceful transition to app                                       │
@@ -303,10 +303,10 @@ function BrandLetter({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPONENT: Brand Name "САЛУН"
+// COMPONENT: Brand Name "ACADEMIC SALOON"
 // ═══════════════════════════════════════════════════════════════════════════
 function BrandName({ phase }: { phase: number }) {
-  const letters = ['С', 'А', 'Л', 'У', 'Н']
+  const letters = ['S', 'A', 'L', 'O', 'O', 'N']
   const isVisible = phase >= 1.2
 
   return (
@@ -320,6 +320,25 @@ function BrandName({ phase }: { phase: number }) {
         textAlign: 'center',
       }}
     >
+      {/* Academic eyebrow */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={isVisible ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.6, delay: 0.1, ease: EASING.crystal }}
+        style={{
+          fontFamily: "'Manrope', sans-serif",
+          fontSize: 'clamp(11px, 3vw, 15px)',
+          fontWeight: 600,
+          letterSpacing: '0.35em',
+          color: GOLD.primary,
+          opacity: 0.6,
+          marginBottom: 8,
+          textTransform: 'uppercase',
+        }}
+      >
+        ACADEMIC
+      </motion.div>
+
       {/* Main brand text */}
       <motion.h1
         animate={isVisible ? {

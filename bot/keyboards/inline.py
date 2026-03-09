@@ -64,11 +64,11 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🎯 Новый заказ", callback_data="create_order")
         ],
         [
-            InlineKeyboardButton(text="🤠 Досье", callback_data="my_profile"),
-            InlineKeyboardButton(text="💰 Казна", callback_data="finance")
+            InlineKeyboardButton(text="Профиль", callback_data="my_profile"),
+            InlineKeyboardButton(text="Баланс", callback_data="finance")
         ],
         [
-            InlineKeyboardButton(text="🐎 Позвать друга", callback_data="referral"),
+            InlineKeyboardButton(text="Пригласить друга", callback_data="referral"),
             InlineKeyboardButton(text="📜 Условия", callback_data="codex")
         ],
         [
@@ -78,7 +78,7 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
-def get_sheriff_choice_keyboard() -> InlineKeyboardMarkup:
+def get_support_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура центра помощи с основным входом в чат поддержки"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -107,7 +107,7 @@ def get_sheriff_choice_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_codex_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура для Кодекса — URL на Telegraph + навигация"""
+    """Клавиатура для условий — URL на Telegraph + навигация"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
@@ -181,8 +181,8 @@ def get_price_list_keyboard() -> InlineKeyboardMarkup:
     return kb
 
 
-def get_saloon_status_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура для закреплённого сообщения — simplified, no refresh"""
+def get_pinned_message_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура для закреплённого сообщения"""
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="📝 РАССЧИТАТЬ СТОИМОСТЬ", callback_data="create_order")

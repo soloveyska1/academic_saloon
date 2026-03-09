@@ -41,6 +41,7 @@ from bot.services.order_message_formatter import (
     format_deadline_for_admin,
     format_plain_text,
 )
+from bot.utils.formatting import format_price
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -924,7 +925,7 @@ async def backup_chat_to_yadisk(
             return True
 
         work_type = order.work_type_label if hasattr(order, 'work_type_label') else order.work_type
-        price_str = f"{int(order.price):,}₽".replace(",", " ") if order.price and order.price > 0 else "не установлена"
+        price_str = format_price(order.price) if order.price and order.price > 0 else "не установлена"
         deadline_str = order.deadline if order.deadline else "не указаны"
 
         chat_lines = [
@@ -1164,12 +1165,12 @@ async def cmd_price_in_topic(message: Message, session: AsyncSession, bot: Bot, 
             final_price = order.final_price
             if bonus_used > 0:
                 extra_text = (
-                    f"💵 Тариф: {price:,}₽\n"
-                    f"💎 Бонусы: −{bonus_used:.0f}₽\n"
-                    f"👉 К оплате: {final_price:,.0f}₽"
-                ).replace(",", " ")
+                    f"💵 Тариф: {format_price(price)}\n"
+                    f"💎 Бонусы: −{format_price(bonus_used)}\n"
+                    f"👉 К оплате: {format_price(final_price)}"
+                )
             else:
-                extra_text = f"💵 Цена: {price:,}₽".replace(",", " ")
+                extra_text = f"💵 Цена: {format_price(price)}"
 
             await send_or_update_card(
                 bot=bot,
@@ -1196,9 +1197,8 @@ async def cmd_price_in_topic(message: Message, session: AsyncSession, bot: Bot, 
             except Exception as ws_err:
                 logger.debug(f"WebSocket notification failed: {ws_err}")
 
-            price_formatted = f"{price:,}".replace(",", " ")
             status = "клиент получил счёт!" if sent else "(уведомление не доставлено)"
-            await message.reply(f"✅ Цена {price_formatted}₽ установлена, {status}")
+            await message.reply(f"✅ Цена {format_price(price)} установлена, {status}")
 
         except ValueError:
             await message.reply("❌ Неверный формат цены. Пример: /price 5000")
@@ -1213,7 +1213,7 @@ async def cmd_price_in_topic(message: Message, session: AsyncSession, bot: Bot, 
         if robot_price > 0:
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"✅ Подтвердить {robot_price:,}₽".replace(",", " "),
+                    text=f"✅ Подтвердить {format_price(robot_price)}",
                     callback_data=f"topic_setprice:{conv.order_id}:{robot_price}"
                 )
             ])
@@ -1222,7 +1222,7 @@ async def cmd_price_in_topic(message: Message, session: AsyncSession, bot: Bot, 
         row = []
         for price in preset_prices:
             row.append(InlineKeyboardButton(
-                text=f"{price:,}₽".replace(",", " "),
+                text=format_price(price),
                 callback_data=f"topic_setprice:{conv.order_id}:{price}"
             ))
             if len(row) == 3:
@@ -1294,12 +1294,12 @@ async def topic_set_price_callback(callback: CallbackQuery, session: AsyncSessio
     final_price = order.final_price
     if bonus_used > 0:
         extra_text = (
-            f"💵 Тариф: {price:,}₽\n"
-            f"💎 Бонусы: −{bonus_used:.0f}₽\n"
-            f"👉 К оплате: {final_price:,.0f}₽"
-        ).replace(",", " ")
+            f"💵 Тариф: {format_price(price)}\n"
+            f"💎 Бонусы: −{format_price(bonus_used)}\n"
+            f"👉 К оплате: {format_price(final_price)}"
+        )
     else:
-        extra_text = f"💵 Цена: {price:,}₽".replace(",", " ")
+        extra_text = f"💵 Цена: {format_price(price)}"
 
     await send_or_update_card(
         bot=bot,
@@ -1325,8 +1325,7 @@ async def topic_set_price_callback(callback: CallbackQuery, session: AsyncSessio
     except Exception as ws_err:
         logger.debug(f"WebSocket notification failed: {ws_err}")
 
-    price_formatted = f"{price:,}".replace(",", " ")
-    await callback.answer(f"✅ Цена {price_formatted}₽ установлена!", show_alert=True)
+    await callback.answer(f"✅ Цена {format_price(price)} установлена!", show_alert=True)
 
     # Удаляем меню выбора цены
     try:

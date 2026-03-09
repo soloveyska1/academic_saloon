@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery
@@ -26,14 +25,9 @@ from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from bot.handlers.menu import send_main_menu
 from core.media_cache import send_cached_photo, get_cached_input_media_photo
+from bot.utils.formatting import parse_callback_data
 
 router = Router()
-
-
-def parse_callback_data(data: str, index: int) -> Optional[str]:
-    """Безопасный парсинг callback_data по индексу"""
-    parts = data.split(":")
-    return parts[index] if len(parts) > index else None
 
 
 # ══════════════════════════════════════════════════════════════
@@ -113,7 +107,7 @@ async def noop_handler(callback: CallbackQuery):
 @router.callback_query(F.data.in_({"terms_accept", "accept_rules"}))
 async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot, state: FSMContext):
     """
-    Принятие условий оферты (Кодекса Салуна).
+    Принятие условий сервиса.
 
     Логика:
     1. Чистка: Удаляем сообщение с офертой (или редактируем если старое)
@@ -124,7 +118,7 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot,
 
     telegram_id = callback.from_user.id
     chat_id = callback.message.chat.id if callback.message else callback.from_user.id
-    user_name = callback.from_user.full_name or "Партнёр"
+    user_name = callback.from_user.full_name or "друг"
 
     # ═══ ШАГ А: ЧИСТКА — удаляем/редактируем сообщение с офертой ═══
     if callback.message:
@@ -177,7 +171,7 @@ async def accept_terms(callback: CallbackQuery, session: AsyncSession, bot: Bot,
             bot=bot,
             event=LogEvent.USER_NEW,
             user=callback.from_user,
-            details="Принял оферту, новый партнёр",
+            details="Принял условия, новый пользователь",
             extra_data=ref_info,
             session=session,
             level=LogLevel.ACTION,

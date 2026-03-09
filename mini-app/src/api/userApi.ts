@@ -285,6 +285,21 @@ export async function confirmPayment(orderId: number, paymentMethod: string, pay
   })
 }
 
+// YooKassa online payment
+export interface CreateOnlinePaymentResponse {
+  success: boolean
+  payment_url: string | null
+  payment_id: string | null
+  amount: number
+  error: string | null
+}
+
+export async function createOnlinePayment(orderId: number, paymentScheme: string): Promise<CreateOnlinePaymentResponse> {
+  return await apiFetch<CreateOnlinePaymentResponse>('/payments/create', {
+    method: 'POST', body: JSON.stringify({ order_id: orderId, payment_scheme: paymentScheme })
+  })
+}
+
 export async function createOrder(data: OrderCreateRequest): Promise<OrderCreateResponse> {
   return await apiFetch<OrderCreateResponse>('/orders/create', { method: 'POST', body: JSON.stringify(data) })
 }
@@ -519,6 +534,54 @@ export async function confirmBatchPayment(
       payment_scheme: paymentScheme,
     }),
   })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  AI ASSISTANT API
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface FaqItem {
+  id: string
+  question: string
+  answer: string
+  category: string
+}
+
+export interface AskAssistantResponse {
+  found: boolean
+  answer: string | null
+  confidence: number
+  suggest_human: boolean
+  related: FaqItem[]
+}
+
+export async function askAssistant(query: string): Promise<AskAssistantResponse> {
+  return await apiFetch<AskAssistantResponse>('/assistant/ask', {
+    method: 'POST', body: JSON.stringify({ query })
+  })
+}
+
+export interface ComplexityResponse {
+  level: string
+  score: number
+  price_range: string
+  typical_deadline: string
+  recommendation: string
+}
+
+export async function estimateComplexity(workType: string, deadline?: string, pages?: number): Promise<ComplexityResponse> {
+  return await apiFetch<ComplexityResponse>('/assistant/complexity', {
+    method: 'POST', body: JSON.stringify({ work_type: workType, deadline, pages })
+  })
+}
+
+export interface FaqListResponse {
+  categories: string[]
+  items: FaqItem[]
+}
+
+export async function fetchFaqList(): Promise<FaqListResponse> {
+  return await apiFetch<FaqListResponse>('/assistant/faq')
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

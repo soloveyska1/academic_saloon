@@ -385,13 +385,13 @@ async def process_work_category(callback: CallbackQuery, state: FSMContext, bot:
 
     # Special order / non-standard
     if category_key == "other":
-        caption = """<b>💀 Спецзаказ / Неформат</b>
+        caption = """<b>Нестандартная задача</b>
 
-Не нашёл свою тему в списке? Или препод задал что-то совсем дикое?
+Не нашли подходящий тип? Не проблема.
 
-Не беда. Мы в этом салуне видали всякое. Если это можно написать или начертить — мы это сделаем.
+Если задачу можно описать — мы её решим.
 
-<i>Выбирай, как удобнее: оформить заявку тут или сразу написать главному.</i>"""
+<i>Оформите заявку или напишите менеджеру напрямую.</i>"""
 
         try:
             await callback.message.delete()
@@ -532,8 +532,7 @@ async def process_work_type(callback: CallbackQuery, state: FSMContext, bot: Bot
 
     caption = f"""🎯 <b>Выбирай мишень</b>
 
-В какой сфере проблема, ковбой?
-Укажи тему, чтобы я знал, какого специалиста поднимать с постели."""
+Укажите направление — мы подберём специалиста."""
 
     chat_id = callback.message.chat.id
     try:
@@ -601,8 +600,7 @@ async def order_back_to_subject(callback: CallbackQuery, state: FSMContext, bot:
 
     caption = """🎯 <b>Выбирай мишень</b>
 
-В какой сфере проблема, ковбой?
-Укажи тему, чтобы я знал, какого специалиста поднимать с постели."""
+Укажите направление — мы подберём специалиста."""
 
     try:
         await callback.message.delete()

@@ -77,6 +77,7 @@ import {
   Package,
   FileCheck,
   Sparkles,
+  Globe,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
 import {
@@ -87,6 +88,7 @@ import {
   unarchiveOrder,
   confirmPayment,
   uploadChatFile,
+  createOnlinePayment,
 } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
@@ -881,7 +883,7 @@ const StickyActionBar = memo(function StickyActionBar({
 //                              PAYMENT SHEET
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type PaymentMethod = 'card' | 'sbp'
+type PaymentMethod = 'card' | 'sbp' | 'online'
 
 interface PaymentSheetProps {
   isOpen: boolean
@@ -893,6 +895,8 @@ interface PaymentSheetProps {
   setPaymentMethod: (method: PaymentMethod) => void
   setPaymentScheme: (scheme: 'full' | 'half') => void
   onConfirmPayment: () => void
+  onOnlinePayment: () => void
+  onlinePaymentLoading: boolean
 }
 
 const PaymentSheet = memo(function PaymentSheet({
@@ -905,6 +909,8 @@ const PaymentSheet = memo(function PaymentSheet({
   setPaymentMethod,
   setPaymentScheme,
   onConfirmPayment,
+  onOnlinePayment,
+  onlinePaymentLoading,
 }: PaymentSheetProps) {
   const [cardNumberVisible, setCardNumberVisible] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
@@ -1219,42 +1225,44 @@ const PaymentSheet = memo(function PaymentSheet({
                   background: DS.colors.bgElevated,
                   borderRadius: DS.radius.md,
                 }}>
-                  {(['card', 'sbp'] as PaymentMethod[]).map((method) => (
-                    <motion.button
-                      key={method}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setPaymentMethod(method)}
-                      style={{
-                        flex: 1,
-                        padding: `${DS.space.md}px ${DS.space.lg}px`,
-                        borderRadius: DS.radius.sm,
-                        background: paymentMethod === method ? DS.colors.bgCard : 'transparent',
-                        border: paymentMethod === method ? `1px solid ${DS.colors.borderLight}` : '1px solid transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: DS.space.sm,
-                      }}
-                    >
-                      {method === 'card' ? (
-                        <CreditCard size={16} color={paymentMethod === method ? DS.colors.textPrimary : DS.colors.textMuted} />
-                      ) : (
-                        <Smartphone size={16} color={paymentMethod === method ? DS.colors.textPrimary : DS.colors.textMuted} />
-                      )}
-                      <span style={{
-                        fontSize: DS.fontSize.base,
-                        fontWeight: 600,
-                        color: paymentMethod === method ? DS.colors.textPrimary : DS.colors.textMuted,
-                      }}>
-                        {method === 'card' ? 'Карта' : 'СБП'}
-                      </span>
-                    </motion.button>
-                  ))}
+                  {(['online', 'card', 'sbp'] as PaymentMethod[]).map((method) => {
+                    const isActive = paymentMethod === method
+                    const iconColor = isActive ? DS.colors.textPrimary : DS.colors.textMuted
+                    const label = method === 'online' ? 'Онлайн' : method === 'card' ? 'Карта' : 'СБП'
+                    const Icon = method === 'online' ? Globe : method === 'card' ? CreditCard : Smartphone
+                    return (
+                      <motion.button
+                        key={method}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setPaymentMethod(method)}
+                        style={{
+                          flex: 1,
+                          padding: `${DS.space.md}px ${DS.space.sm}px`,
+                          borderRadius: DS.radius.sm,
+                          background: isActive ? DS.colors.bgCard : 'transparent',
+                          border: isActive ? `1px solid ${DS.colors.borderLight}` : '1px solid transparent',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <Icon size={15} color={iconColor} />
+                        <span style={{
+                          fontSize: DS.fontSize.sm,
+                          fontWeight: 600,
+                          color: isActive ? DS.colors.textPrimary : DS.colors.textMuted,
+                        }}>
+                          {label}
+                        </span>
+                      </motion.button>
+                    )
+                  })}
                 </div>
               </div>
 
-              {/* Step C: Payment Details */}
+              {/* Step C: Payment Details / Online */}
               <div style={{ marginBottom: DS.space['2xl'] }}>
                 <div style={{
                   fontSize: DS.fontSize.xs,
@@ -1264,10 +1272,90 @@ const PaymentSheet = memo(function PaymentSheet({
                   letterSpacing: '0.05em',
                   marginBottom: DS.space.md,
                 }}>
-                  Шаг 3 · Реквизиты
+                  {paymentMethod === 'online' ? 'Шаг 3 · Оплата' : 'Шаг 3 · Реквизиты'}
                 </div>
 
-                {paymentMethod === 'card' ? (
+                {paymentMethod === 'online' ? (
+                  <div style={{
+                    padding: DS.space.xl,
+                    borderRadius: DS.radius.lg,
+                    background: DS.colors.bgElevated,
+                    border: `1px solid ${DS.colors.border}`,
+                    textAlign: 'center',
+                  }}>
+                    <div style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto',
+                      marginBottom: DS.space.lg,
+                    }}>
+                      <ShieldCheck size={28} color="#0a0a0c" />
+                    </div>
+                    <div style={{
+                      fontSize: DS.fontSize.lg,
+                      fontWeight: 700,
+                      color: DS.colors.textPrimary,
+                      marginBottom: DS.space.sm,
+                    }}>
+                      Безопасная оплата
+                    </div>
+                    <div style={{
+                      fontSize: DS.fontSize.sm,
+                      color: DS.colors.textMuted,
+                      marginBottom: DS.space.lg,
+                      lineHeight: 1.5,
+                    }}>
+                      Вы будете перенаправлены на страницу ЮKassa для ввода данных карты. Мы не храним данные вашей карты.
+                    </div>
+                    <div style={{
+                      fontSize: DS.fontSize.xl,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)',
+                      color: DS.colors.gold,
+                      marginBottom: DS.space.xl,
+                    }}>
+                      {formatPrice(todayAmount)} ₽
+                    </div>
+                    <motion.button
+                      whileTap={onlinePaymentLoading ? undefined : { scale: 0.98 }}
+                      onClick={onlinePaymentLoading ? undefined : onOnlinePayment}
+                      disabled={onlinePaymentLoading}
+                      style={{
+                        width: '100%',
+                        padding: `${DS.space.lg}px ${DS.space.xl}px`,
+                        borderRadius: DS.radius.lg,
+                        background: onlinePaymentLoading
+                          ? DS.colors.bgCard
+                          : `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
+                        border: 'none',
+                        cursor: onlinePaymentLoading ? 'wait' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: DS.space.sm,
+                        boxShadow: onlinePaymentLoading ? 'none' : '0 8px 24px -4px rgba(212,175,55,0.4)',
+                      }}
+                    >
+                      {onlinePaymentLoading ? (
+                        <Loader2 size={20} color={DS.colors.textMuted} style={{ animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <Globe size={20} color="#0a0a0c" />
+                      )}
+                      <span style={{
+                        fontSize: DS.fontSize.lg,
+                        fontWeight: 700,
+                        color: onlinePaymentLoading ? DS.colors.textMuted : '#0a0a0c',
+                      }}>
+                        {onlinePaymentLoading ? 'Создаём платёж...' : 'Перейти к оплате'}
+                      </span>
+                    </motion.button>
+                  </div>
+                ) : paymentMethod === 'card' ? (
                   <div style={{
                     padding: DS.space.lg,
                     borderRadius: DS.radius.lg,
@@ -1657,53 +1745,55 @@ const PaymentSheet = memo(function PaymentSheet({
               </div>
             </div>
 
-            {/* Footer with CTA */}
-            <div style={{
-              padding: DS.space.lg,
-              paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
-              borderTop: `1px solid ${DS.colors.border}`,
-              background: DS.colors.bgSurface,
-            }}>
-              {!hasPaymentInfo && (
-                <div style={{
-                  marginBottom: DS.space.md,
-                  fontSize: DS.fontSize.sm,
-                  color: DS.colors.textMuted,
-                  textAlign: 'center',
-                }}>
-                  Реквизиты еще загружаются. Подождите пару секунд.
-                </div>
-              )}
-              <motion.button
-                whileTap={hasPaymentInfo ? { scale: 0.98 } : undefined}
-                onClick={hasPaymentInfo ? onConfirmPayment : undefined}
-                disabled={!hasPaymentInfo}
-                style={{
-                  width: '100%',
-                  padding: `${DS.space.lg}px ${DS.space.xl}px`,
-                  borderRadius: DS.radius.lg,
-                  background: hasPaymentInfo
-                    ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
-                    : DS.colors.bgElevated,
-                  border: hasPaymentInfo ? 'none' : `1px solid ${DS.colors.border}`,
-                  cursor: hasPaymentInfo ? 'pointer' : 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: DS.space.sm,
-                  boxShadow: hasPaymentInfo ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
-                }}
-              >
-                <CheckCircle2 size={20} color={hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted} />
-                <span style={{
-                  fontSize: DS.fontSize.lg,
-                  fontWeight: 700,
-                  color: hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted,
-                }}>
-                  Я оплатил(а)
-                </span>
-              </motion.button>
-            </div>
+            {/* Footer with CTA — hidden for online payment (CTA is inside Step C) */}
+            {paymentMethod !== 'online' && (
+              <div style={{
+                padding: DS.space.lg,
+                paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
+                borderTop: `1px solid ${DS.colors.border}`,
+                background: DS.colors.bgSurface,
+              }}>
+                {!hasPaymentInfo && (
+                  <div style={{
+                    marginBottom: DS.space.md,
+                    fontSize: DS.fontSize.sm,
+                    color: DS.colors.textMuted,
+                    textAlign: 'center',
+                  }}>
+                    Реквизиты еще загружаются. Подождите пару секунд.
+                  </div>
+                )}
+                <motion.button
+                  whileTap={hasPaymentInfo ? { scale: 0.98 } : undefined}
+                  onClick={hasPaymentInfo ? onConfirmPayment : undefined}
+                  disabled={!hasPaymentInfo}
+                  style={{
+                    width: '100%',
+                    padding: `${DS.space.lg}px ${DS.space.xl}px`,
+                    borderRadius: DS.radius.lg,
+                    background: hasPaymentInfo
+                      ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
+                      : DS.colors.bgElevated,
+                    border: hasPaymentInfo ? 'none' : `1px solid ${DS.colors.border}`,
+                    cursor: hasPaymentInfo ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: DS.space.sm,
+                    boxShadow: hasPaymentInfo ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
+                  }}
+                >
+                  <CheckCircle2 size={20} color={hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted} />
+                  <span style={{
+                    fontSize: DS.fontSize.lg,
+                    fontWeight: 700,
+                    color: hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted,
+                  }}>
+                    Я оплатил(а)
+                  </span>
+                </motion.button>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
@@ -3384,10 +3474,11 @@ export function OrderDetailPageV8() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('online')
   const [paymentScheme, setPaymentScheme] = useState<'full' | 'half'>('full')
   const [paymentSheetOpen, setPaymentSheetOpen] = useState(false)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [onlinePaymentLoading, setOnlinePaymentLoading] = useState(false)
 
   // Parse order ID
   const orderId = id ? parseInt(id, 10) : NaN
@@ -3533,6 +3624,40 @@ export function OrderDetailPageV8() {
     setPaymentSheetOpen(false)
     setConfirmModalOpen(true)
   }, [haptic])
+
+  // Online payment via YooKassa
+  const handleOnlinePayment = useCallback(async () => {
+    if (!order || onlinePaymentLoading) return
+    haptic?.('medium')
+    setOnlinePaymentLoading(true)
+
+    try {
+      const result = await createOnlinePayment(order.id, paymentScheme)
+      if (!result.success || !result.payment_url) {
+        throw new Error(result.error || 'Не удалось создать платёж')
+      }
+
+      // Open YooKassa payment page
+      window.open(result.payment_url, '_blank', 'noopener,noreferrer')
+
+      haptic?.('success')
+      showToast({
+        type: 'success',
+        title: 'Платёж создан',
+        message: 'Откроется страница оплаты. После оплаты статус обновится автоматически.',
+      })
+      setPaymentSheetOpen(false)
+    } catch (err) {
+      haptic?.('error')
+      showToast({
+        type: 'error',
+        title: 'Ошибка оплаты',
+        message: err instanceof Error ? err.message : 'Попробуйте ещё раз',
+      })
+    } finally {
+      setOnlinePaymentLoading(false)
+    }
+  }, [order, paymentScheme, onlinePaymentLoading, haptic, showToast])
 
   // Submit payment confirmation
   const handleSubmitPaymentConfirmation = useCallback(async (receipt: File | null) => {
@@ -3801,6 +3926,8 @@ export function OrderDetailPageV8() {
           setPaymentMethod={setPaymentMethod}
           setPaymentScheme={setPaymentScheme}
           onConfirmPayment={handleOpenConfirmModal}
+          onOnlinePayment={handleOnlinePayment}
+          onlinePaymentLoading={onlinePaymentLoading}
         />
       </SectionErrorBoundary>
 

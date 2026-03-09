@@ -28,6 +28,7 @@ from bot.services.logger import init_logger
 from bot.services.abandoned_detector import init_abandoned_tracker
 from bot.services.daily_stats import init_daily_stats
 from bot.services.silence_reminder import init_silence_reminder
+from bot.services.notification_scheduler import init_notification_scheduler
 from bot.services.unified_hub import init_unified_hub
 from database.db import async_session_maker
 from core.redis_pool import close_redis
@@ -106,6 +107,8 @@ async def run_bot():
     logger.info("Daily stats service started")
     silence_reminder = init_silence_reminder(bot, async_session_maker)
     logger.info("Silence reminder service started")
+    notification_scheduler = init_notification_scheduler(bot, async_session_maker)
+    logger.info("Notification scheduler started")
     # --------------------------------
 
     # --- РЕГИСТРАЦИЯ РОУТЕРОВ ---
@@ -126,9 +129,11 @@ async def run_bot():
         # Удаляем вебхук, чтобы не было конфликтов
         await bot.delete_webhook(drop_pending_updates=True)
 
-        # Настраиваем команды бота — минималистичный App-First подход
+        # Настраиваем команды бота — гибридный подход
         commands = [
             BotCommand(command="start", description="Открыть приложение"),
+            BotCommand(command="status", description="Статус заказов"),
+            BotCommand(command="support", description="Поддержка"),
             BotCommand(command="help", description="Помощь"),
         ]
         await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
@@ -152,6 +157,7 @@ async def run_bot():
         abandoned_tracker.stop()
         daily_stats.stop()
         silence_reminder.stop()
+        notification_scheduler.stop()
         # Закрываем Redis пул
         await close_redis()
         await close_bot()

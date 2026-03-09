@@ -56,6 +56,7 @@ from core.config import settings
 from core.media_cache import send_cached_photo
 from core.redis_pool import get_redis
 from bot.utils.message_helpers import safe_edit_or_send
+from bot.utils.formatting import format_price
 
 
 # Константы для кэша купонов в Redis
@@ -207,7 +208,7 @@ def format_date(dt: datetime) -> str:
     return dt.strftime("%d.%m.%Y")
 
 
-def format_price(order: Order) -> str:
+def format_order_price_summary(order: Order) -> str:
     """Краткое форматирование цены"""
     if order.price <= 0:
         return "Цена: ожидает"
@@ -254,20 +255,15 @@ async def get_order_counts(session: AsyncSession, user_id: int) -> dict:
 #                    ДАШБОРД
 # ══════════════════════════════════════════════════════════════
 
-def format_number(n: float) -> str:
-    """Форматирование числа с разделителями тысяч"""
-    return f"{n:,.0f}".replace(",", " ")
-
-
 def build_profile_caption(user: User | None, first_name: str, counts: dict) -> str:
     """Legacy: Формирует caption для Личного кабинета"""
     if not user:
-        return f"🤠 <b>Приветствую, {first_name}!</b>\n\nДобро пожаловать в салун!"
+        return f"<b>Добро пожаловать, {first_name}!</b>"
 
     status, discount = user.loyalty_status
     progress = user.loyalty_progress
 
-    lines = [f"🤠 <b>Приветствую, {first_name}!</b>", ""]
+    lines = [f"<b>Добро пожаловать, {first_name}!</b>", ""]
 
     # Статус и скидка
     if discount > 0:
@@ -288,11 +284,11 @@ def build_profile_caption(user: User | None, first_name: str, counts: dict) -> s
     lines.append("")
 
     # Финансы
-    lines.append(f"💳 В казне: <b>{format_number(user.balance)}₽</b>")
+    lines.append(f"Баланс: <b>{format_price(user.balance, False)}₽</b>")
 
     saved = user.total_saved
     if saved > 100:
-        lines.append(f"💰 Добыча: <b>~{format_number(saved)}₽</b>")
+        lines.append(f"💰 Добыча: <b>~{format_price(saved, False)}₽</b>")
 
     # Активные заказы
     if counts["active"] > 0:
@@ -314,42 +310,38 @@ def build_gamified_profile_caption(user: User | None, telegram_id: int) -> str:
     """
     if not user:
         return (
-            f"🤠 <b>ПАСПОРТ КОВБОЯ</b> | ID: {telegram_id}\n"
-            f"<i>Твой авторитет в Салуне.</i>\n\n"
-            f"Добро пожаловать, незнакомец!"
+            f"<b>Личный кабинет</b> | ID: {telegram_id}\n\n"
+            f"Добро пожаловать!"
         )
 
     # Get rank info
     rank = user.rank_info
     progress = user.rank_progress
 
-    # Map old rank name "Салага" to new "Путник"
     rank_name = rank['name']
-    if rank_name == "Салага":
-        rank_name = "Путник"
 
     lines = []
 
     # ═══════════════ HEADER ═══════════════
-    lines.append(f"🤠 <b>ПАСПОРТ КОВБОЯ</b> | ID: {telegram_id}")
-    lines.append("<i>Твой авторитет в Салуне.</i>")
+    lines.append(f"<b>Личный кабинет</b> | ID: {telegram_id}")
+    lines.append("")
     lines.append("")
 
     # ═══════════════ SECTION 1: PROGRESSION ═══════════════
     lines.append(f"🏆 <b>Ранг:</b> {rank_name}")
-    lines.append(f"💼 <b>Оборот:</b> {format_number(user.total_spent)} / {format_number(progress.get('next_threshold', user.total_spent))} ₽")
+    lines.append(f"💼 <b>Оборот:</b> {format_price(user.total_spent, False)} / {format_price(progress.get('next_threshold', user.total_spent), False)} ₽")
     lines.append(f"[{progress['progress_bar']}] {progress['progress_text']}")
 
     # Progress hint
     if progress["has_next"]:
-        lines.append(f"До следующего уровня: заказать на {format_number(progress['spent_needed'])} ₽")
+        lines.append(f"До следующего уровня: заказать на {format_price(progress['spent_needed'], False)} ₽")
     else:
         lines.append("<i>Ты достиг вершины, легенда!</i>")
 
     lines.append("")
 
     # ═══════════════ SECTION 2: TREASURY ═══════════════
-    lines.append(f"💰 <b>Казна:</b> {format_number(user.balance)} 🟡 <i>(1🟡 = 1₽)</i>")
+    lines.append(f"<b>Баланс:</b> {format_price(user.balance, False)} ₽")
     lines.append("")
 
     # ═══════════════ SECTION 3: CALL TO ACTION ═══════════════
@@ -382,7 +374,7 @@ def build_muse_profile_caption(user: User | None, telegram_id: int, user_name: s
             "<i>Добро пожаловать в личное пространство.</i>"
         )
 
-    balance_display = f"{format_number(user.balance)}" if user.balance > 0 else "∞"
+    balance_display = f"{format_price(user.balance, False)}" if user.balance > 0 else "∞"
 
     lines = [
         "<code>✧ M U S E — S U I T E ✧</code>",
@@ -702,23 +694,23 @@ def build_order_detail_caption(order: Order) -> str:
     lines.append(f"<b>💳 Оплата</b>")
 
     if order.price > 0:
-        lines.append(f"Стоимость: {format_number(order.price)} ₽")
+        lines.append(f"Стоимость: {format_price(order.price, False)} ₽")
 
         if order.discount > 0:
             discount_amount = order.price * order.discount / 100
-            lines.append(f"Скидка: –{format_number(discount_amount)} ₽")
+            lines.append(f"Скидка: –{format_price(discount_amount, False)} ₽")
 
         if order.bonus_used > 0:
-            lines.append(f"Бонусы: –{format_number(order.bonus_used)} ₽")
+            lines.append(f"Бонусы: –{format_price(order.bonus_used, False)} ₽")
 
         if order.paid_amount >= order.final_price and order.paid_amount > 0:
-            lines.append(f"<b>Итого оплачено: {format_number(order.paid_amount)} ₽</b> ✅")
+            lines.append(f"<b>Итого оплачено: {format_price(order.paid_amount, False)} ₽</b> ✅")
         elif order.paid_amount > 0:
             remaining = order.final_price - order.paid_amount
-            lines.append(f"Оплачено: {format_number(order.paid_amount)} ₽")
-            lines.append(f"<b>Осталось: {format_number(remaining)} ₽</b>")
+            lines.append(f"Оплачено: {format_price(order.paid_amount, False)} ₽")
+            lines.append(f"<b>Осталось: {format_price(remaining, False)} ₽</b>")
         else:
-            lines.append(f"<b>К оплате: {format_number(order.final_price)} ₽</b>")
+            lines.append(f"<b>К оплате: {format_price(order.final_price, False)} ₽</b>")
     else:
         lines.append("<i>Стоимость рассчитывается...</i>")
 
@@ -973,10 +965,10 @@ def build_balance_caption(balance: float, earnings: float) -> str:
     lines = ["🏦 <b>Твой личный сейф</b>", ""]
 
     # Hero — баланс крупно
-    lines.append(f"💰 Баланс: <b>{format_number(balance)} ₽</b>")
+    lines.append(f"💰 Баланс: <b>{format_price(balance, False)} ₽</b>")
 
     if earnings > 0:
-        lines.append(f"<i>(из них {format_number(earnings)}₽ с друзей)</i>")
+        lines.append(f"<i>(из них {format_price(earnings, False)}₽ с друзей)</i>")
 
     lines.append("")
 
@@ -986,7 +978,7 @@ def build_balance_caption(balance: float, earnings: float) -> str:
     lines.append("🤝 Приводи друзей — получай % с их заказов")
 
     lines.append("")
-    lines.append("<i>Копи монеты, шериф!</i>")
+    lines.append("<i>Используйте бонусы при оплате заказов.</i>")
 
     return "\n".join(lines)
 
@@ -1046,29 +1038,32 @@ async def show_balance(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 #                    ДРУЗЬЯ
 # ══════════════════════════════════════════════════════════════
 
-def build_referral_caption(ref_link: str, count: int, earnings: float) -> str:
-    """Формирует caption для реферальной программы — стиль 'Банда'"""
+def build_referral_caption(ref_link: str, count: int, earnings: float, current_pct: int = 5) -> str:
+    """Формирует caption для реферальной программы"""
+    from bot.services.bonus import get_referral_tier_info
+    tier_info = get_referral_tier_info(count)
+    pct = tier_info["current_percent"]
+
     lines = [
-        "🤠 <b>Сколоти свою банду!</b>",
+        "<b>Внутренний круг</b>",
         "",
-        "В одиночку на Диком Западе сложно.",
-        "Зови друзей — будем грабить знания вместе!",
+        f"<b>Другу:</b> Скидка <b>5%</b> на первый заказ",
+        f"<b>Тебе:</b> <b>{pct}%</b> с каждого заказа друга",
         "",
-        "💎 <b>Другу:</b> Скидка <b>5%</b> на первый заказ",
-        "💰 <b>Тебе:</b> Пожизненные <b>5%</b> с его оплат",
+        "1–2 друзей — 5% | 3–5 — 7% | 6+ — 10%",
     ]
 
-    # Статистика (если есть)
     if count > 0 or earnings > 0:
         lines.append("")
-        lines.append(f"📊 В банде: <b>{count}</b> | Добыча: <b>{format_number(earnings)}₽</b>")
+        lines.append(f"Приглашено: <b>{count}</b> | Бонус: <b>{pct}%</b> | Заработано: <b>{format_price(earnings, False)}₽</b>")
+
+    if tier_info["refs_to_next"] > 0:
+        lines.append(f"<i>+{tier_info['refs_to_next']} друзей до следующего уровня</i>")
 
     lines.extend([
         "",
-        "👇 <i>Твоя ссылка (жми, чтобы скопировать):</i>",
+        "👇 <i>Ссылка (жми, чтобы скопировать):</i>",
         f"<code>{ref_link}</code>",
-        "",
-        "<i>Чем больше банда, тем больше добыча!</i>",
     ])
 
     return "\n".join(lines)
@@ -1076,7 +1071,7 @@ def build_referral_caption(ref_link: str, count: int, earnings: float) -> str:
 
 @router.callback_query(F.data == "profile_referral")
 async def show_referral(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Реферальная программа — фото с caption в стиле 'Банда'"""
+    """Реферальная программа"""
     await callback.answer()
 
     telegram_id = callback.from_user.id
@@ -1138,7 +1133,7 @@ DAILY_LUCK_REWARDS = [
     (10, 25, "Неплохой улов"),        # 10-25₽
     (25, 50, "Добрая добыча!"),       # 25-50₽
     (50, 100, "Удачный день!"),       # 50-100₽
-    (100, 200, "Джекпот, ковбой!"),   # 100-200₽ (редко)
+    (100, 200, "Отличный бонус!"),     # 100-200₽ (редко)
 ]
 
 DAILY_LUCK_WEIGHTS = [40, 30, 20, 8, 2]  # Вероятности (%)
@@ -1264,7 +1259,7 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
             "",
             f"💰 <b>+{bonus_amount}</b> монет",
             "",
-            f"<i>Баланс: {format_number(user.balance)} 🌕</i>",
+            f"<i>Баланс: {format_price(user.balance, False)} 🌕</i>",
         ]
         keyboard = get_muse_luck_result_keyboard()
     else:
@@ -1274,7 +1269,7 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
             f"🎉 <b>{flavor_text}</b>",
             "",
             f"💰 Ты получил: <b>+{bonus_amount} 🌕</b>",
-            f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
+            f"Теперь в сейфе: <b>{format_price(user.balance, False)} 🌕</b>",
             "",
             "<i>Приходи завтра за новой порцией золота!</i>",
         ]
@@ -1315,7 +1310,7 @@ async def daily_luck_cooldown_handler(callback: CallbackQuery, session: AsyncSes
 
 @router.callback_query(F.data == "profile_gang")
 async def show_gang(callback: CallbackQuery, session: AsyncSession, bot: Bot):
-    """Моя Банда - расширенный экран рефералки"""
+    """Реферальная программа - расширенный экран рефералки"""
     await callback.answer()
 
     telegram_id = callback.from_user.id
@@ -1331,30 +1326,25 @@ async def show_gang(callback: CallbackQuery, session: AsyncSession, bot: Bot):
 
     try:
         await log_action(bot=bot, event=LogEvent.NAV_BUTTON, user=callback.from_user,
-                        details="Моя банда", session=session)
+                        details="Реферальная программа", session=session)
     except Exception:
         pass
 
     # Build Gang caption
     lines = [
-        "🔫 <b>МОЯ БАНДА</b>",
+        "<b>Реферальная программа</b>",
         "",
-        "В одиночку на Диком Западе не выжить.",
-        "Собирай свою банду — вместе грабить веселее!",
+        "Приглашайте друзей — получайте бонусы.",
         "",
-        "━━━━━━━━━━━━━━━━━━━━",
-        f"👥 <b>Бандитов завербовано:</b> {count}",
-        f"💰 <b>Общая добыча с банды:</b> {format_number(earnings)} 🌕",
-        "━━━━━━━━━━━━━━━━━━━━",
+        f"Приглашено: <b>{count}</b>",
+        f"Заработано: <b>{format_price(earnings, False)} ₽</b>",
         "",
-        "💎 <b>Условия вербовки:</b>",
-        "• Друг получает <b>5% скидку</b> на первый заказ",
-        "• Ты получаешь <b>5%</b> с каждой его оплаты — навсегда!",
+        "<b>Условия:</b>",
+        "Друг получает <b>скидку 5%</b> на первый заказ.",
+        "Вы получаете <b>5%</b> с каждой его оплаты.",
         "",
-        "👇 <i>Твоя ссылка (жми, чтобы скопировать):</i>",
+        "<i>Ваша ссылка:</i>",
         f"<code>{ref_link}</code>",
-        "",
-        "<i>Чем больше банда, тем больше золота!</i>",
     ]
 
     caption = "\n".join(lines)
@@ -1472,16 +1462,16 @@ async def show_history_page(callback: CallbackQuery, session: AsyncSession, bot:
                 work_type = work_type[2:].strip()
 
             lines.append(f"• <b>#{order.id}</b> | {date_str}")
-            lines.append(f"  {work_type}: <b>{format_number(order.paid_amount)}₽</b>")
+            lines.append(f"  {work_type}: <b>{format_price(order.paid_amount, False)}₽</b>")
             if order.bonus_used > 0:
-                lines.append(f"  <i>Бонусов использовано: {format_number(order.bonus_used)}₽</i>")
+                lines.append(f"  <i>Бонусов использовано: {format_price(order.bonus_used, False)}₽</i>")
 
         if total_pages > 1:
             lines.append("")
             lines.append(f"<i>Страница {page + 1} из {total_pages}</i>")
 
     lines.append("")
-    lines.append(f"💳 <b>Текущий баланс:</b> {format_number(user.balance)} 🌕")
+    lines.append(f"💳 <b>Текущий баланс:</b> {format_price(user.balance, False)} 🌕")
 
     caption = "\n".join(lines)
     keyboard = get_history_keyboard(page, total_pages)
@@ -1536,7 +1526,7 @@ async def activate_coupon_start(callback: CallbackQuery, state: FSMContext, bot:
 VALID_COUPONS = {
     "WELCOME50": {"amount": 50, "description": "Приветственный бонус"},
     "BONUS100": {"amount": 100, "description": "Праздничный бонус"},
-    "SALOON25": {"amount": 25, "description": "Бонус от Салуна"},
+    "SALOON25": {"amount": 25, "description": "Бонус Academic Saloon"},
 }
 
 
@@ -1612,7 +1602,7 @@ async def process_coupon_code(message: Message, session: AsyncSession, state: FS
             f"💎 {description}",
             "",
             f"💰 Начислено: <b>+{bonus_amount} 🌕</b>",
-            f"Теперь в сейфе: <b>{format_number(user.balance)} 🌕</b>",
+            f"Теперь в сейфе: <b>{format_price(user.balance, False)} 🌕</b>",
             "",
             "<i>Золото зачислено на твой счёт!</i>",
         ]

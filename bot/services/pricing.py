@@ -1,6 +1,6 @@
 """
 Сервис автоматического расчёта цены заказа.
-"Money While Sleeping" Engine - Шериф считает смету без участия админа.
+Автоматический калькулятор стоимости.
 """
 import logging
 from dataclasses import dataclass
@@ -8,6 +8,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
 from database.models.orders import WorkType
+from bot.utils.formatting import format_price
 
 logger = logging.getLogger(__name__)
 
@@ -152,23 +153,23 @@ def format_price_breakdown(calc: PriceCalculation, work_label: str, deadline_lab
         Красиво отформатированная строка с breakdown'ом цены
     """
     lines = [
-        f"📂 <b>Тип:</b> {work_label}",
-        f"⏳ <b>Срок:</b> {deadline_label}",
+        f"<b>Тип:</b> {work_label}",
+        f"<b>Срок:</b> {deadline_label}",
         "",
-        f"💵 <b>База:</b> {calc.base_price:,} ₽".replace(",", " "),
-        f"⚡ <b>Срочность:</b> {calc.urgency_label}",
+        f"<b>База:</b> {format_price(calc.base_price)}",
+        f"<b>Срочность:</b> {calc.urgency_label}",
     ]
 
     if calc.discount_percent > 0:
         lines.extend([
-            f"🎁 <b>Скидка:</b> −{calc.discount_percent}% (−{calc.discount_amount:,} ₽)".replace(",", " "),
+            f"<b>Скидка:</b> −{calc.discount_percent}% (−{format_price(calc.discount_amount)})",
             "",
-            f"💰 <b>ИТОГО:</b> <code>{calc.price_after_discount:,} ₽</code>".replace(",", " "),
+            f"<b>Итого:</b> <code>{format_price(calc.price_after_discount)}</code>",
         ])
     else:
         lines.extend([
             "",
-            f"💰 <b>ИТОГО:</b> <code>{calc.final_price:,} ₽</code>".replace(",", " "),
+            f"<b>Итого:</b> <code>{format_price(calc.final_price)}</code>",
         ])
 
     return "\n".join(lines)
@@ -190,25 +191,25 @@ def get_invoice_text(
     # Breakdown
     breakdown = format_price_breakdown(calc, work_label, deadline_label)
 
-    text = f"""⚖️ <b>СМЕТА ГОТОВА</b>
+    text = f"""<b>Стоимость рассчитана</b>
 
 {order_line}{breakdown}
 
-<i>Цена рассчитана автоматически. Шериф может скорректировать для сложных случаев.</i>"""
+<i>Цена рассчитана автоматически. Менеджер может скорректировать для сложных случаев.</i>"""
 
     return text
 
 
 def get_special_order_text() -> str:
     """Текст для спецзаказа (ручная оценка)"""
-    return """🦄 <b>СПЕЦЗАКАЗ ПРИНЯТ</b>
+    return """<b>Нестандартный заказ принят</b>
 
-Это задача для спецназа. Тут нужен индивидуальный подход.
+Требуется индивидуальная оценка.
 
-Шериф лично изучит материалы и вернётся с ценой.
+Менеджер изучит материалы и назначит стоимость.
 Обычно это занимает <b>до 2 часов</b> (в рабочее время).
 
-<i>Статус: ожидает оценки 🔍</i>"""
+<i>Статус: ожидает оценки</i>"""
 
 
 # ══════════════════════════════════════════════════════════════
@@ -228,12 +229,12 @@ def format_price_update_notification(
 
     reason_line = f"\n\n<i>Причина: {reason}</i>" if reason else ""
 
-    return f"""⚠️ <b>Шериф уточнил сложность работы</b>
+    return f"""<b>Стоимость скорректирована</b>
 
-Была: <s>{old_price:,} ₽</s>
-Стала: <b>{new_price:,} ₽</b> ({diff_sign}{diff:,} ₽){reason_line}
+Была: <s>{format_price(old_price)}</s>
+Стала: <b>{format_price(new_price)}</b> ({diff_sign}{format_price(abs(diff))}){reason_line}
 
-<i>Обновлённая смета уже в твоём заказе.</i>""".replace(",", " ")
+<i>Обновлённая стоимость уже в вашем заказе.</i>"""
 
 
 # ══════════════════════════════════════════════════════════════

@@ -266,11 +266,10 @@ async def send_order_status_notification(
             bonus_used = extra_data.get("bonus_used", 0)
             if final_price:
                 # Форматируем цену с пробелами для читаемости
-                price_formatted = f"{final_price:,.0f}".replace(",", " ")
-                msg_text = f"К оплате: {price_formatted} ₽"
+                from bot.utils.formatting import format_price
+                msg_text = f"К оплате: {format_price(final_price)}"
                 if bonus_used > 0:
-                    bonus_formatted = f"{bonus_used:,.0f}".replace(",", " ")
-                    msg_text += f" (бонусы: −{bonus_formatted} ₽)"
+                    msg_text += f" (бонусы: −{format_price(bonus_used)})"
 
         # Формируем сообщение
         message = {

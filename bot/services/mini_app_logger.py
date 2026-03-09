@@ -201,7 +201,8 @@ async def log_order_created(
         "Предмет": subject[:30] + "..." if len(subject) > 30 else subject,
     }
     if price:
-        extra["Цена"] = f"{price:,.0f}₽".replace(",", " ")
+        from bot.utils.formatting import format_price
+        extra["Цена"] = format_price(price)
 
     await log_mini_app_event(
         bot=bot,

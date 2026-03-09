@@ -2,7 +2,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class OrderState(StatesGroup):
-    """Состояния для создания заказа — флоу 'Ленивый Ковбой'"""
+    """Состояния для создания заказа"""
 
     # Шаг 1: Выбор типа работы (с ценами)
     choosing_type = State()

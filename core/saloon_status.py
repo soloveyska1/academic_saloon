@@ -1,7 +1,7 @@
 """
-Модуль для управления статусом Салуна.
+Модуль для управления статусом сервиса.
 Хранит данные в Redis для pinned message tracking.
-Bot is ALWAYS shown as available 24/7 - no offline or load status displayed.
+Bot is ALWAYS shown as available 24/7.
 """
 import json
 from dataclasses import dataclass, asdict
@@ -11,7 +11,7 @@ from core.redis_pool import get_redis
 
 @dataclass
 class SaloonStatus:
-    """Структура статуса салуна — simplified, always available 24/7"""
+    """Структура статуса сервиса — always available 24/7"""
     pinned_message_id: int | None = None
     pinned_chat_id: int | None = None
 
@@ -28,12 +28,12 @@ class SaloonStatus:
 
 
 class SaloonStatusManager:
-    """Менеджер статуса салуна с хранением в Redis"""
+    """Менеджер статуса сервиса с хранением в Redis"""
 
     REDIS_KEY = "saloon:status"
 
     async def get_status(self) -> SaloonStatus:
-        """Получить текущий статус салуна"""
+        """Получить текущий статус"""
         redis = await get_redis()
         data = await redis.get(self.REDIS_KEY)
 
@@ -44,7 +44,7 @@ class SaloonStatusManager:
         return SaloonStatus()
 
     async def save_status(self, status: SaloonStatus) -> None:
-        """Сохранить статус салуна"""
+        """Сохранить статус"""
         redis = await get_redis()
         await redis.set(self.REDIS_KEY, json.dumps(status.to_dict()))
 
@@ -63,12 +63,11 @@ def generate_status_message(status: SaloonStatus = None) -> str:
     Always shows bot as available 24/7 with strong CTA.
     No dynamic load stats, no offline status.
     """
-    message = """🌟 <b>АКАДЕМИЧЕСКИЙ САЛУН — ОТКРЫТО 24/7</b>
+    message = """<b>Academic Saloon</b>
 
-⚡️ Оперативная помощь студентам. Без лишних вопросов.
-🏆 1000+ успешных сделок. Гарантия результата.
+Помощь студентам 24/7. Более 1 000 выполненных заказов.
 
-👇 Жми кнопку «РАССЧИТАТЬ СТОИМОСТЬ» внизу, чтобы узнать цену."""
+Нажмите кнопку ниже, чтобы рассчитать стоимость."""
 
     return message
 

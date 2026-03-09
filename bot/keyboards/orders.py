@@ -5,6 +5,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from database.models.orders import WorkType, WORK_TYPE_LABELS, WORK_TYPE_PRICES, WORK_TYPE_DEADLINES
 from core.config import settings
+from bot.utils.formatting import format_price
 
 MSK_TZ = ZoneInfo("Europe/Moscow")
 
@@ -42,7 +43,7 @@ WORK_CATEGORIES = {
         "types": [WorkType.DIPLOMA, WorkType.MASTERS],
     },
     "other": {
-        "label": "💀 Спецзаказ / Неформат",
+        "label": "Нестандартная задача",
         "description": "Нестандартные и уникальные задачи",
         "types": [WorkType.OTHER],
     },
@@ -76,7 +77,7 @@ def get_work_category_keyboard() -> InlineKeyboardMarkup:
         ],
         # Row 4: Спецзаказ
         [
-            InlineKeyboardButton(text="💀 Спецзаказ / Другое", callback_data="work_category:other"),
+            InlineKeyboardButton(text="Нестандартная задача", callback_data="work_category:other"),
         ],
         # Row 5: Отмена
         [
@@ -203,19 +204,19 @@ def get_large_works_keyboard() -> InlineKeyboardMarkup:
 
 def get_special_type_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура выбора типа для категории Спецзаказа / Неформата.
-    Две опции: стандартный flow или прямой контакт с Шерифом.
+    Клавиатура выбора типа для нестандартных задач.
+    Две опции: стандартный flow или связь с менеджером.
     """
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="🦄 Уникальная задача",
+                text="Нестандартная задача",
                 callback_data=f"order_type:{WorkType.OTHER.value}"
             ),
         ],
         [
             InlineKeyboardButton(
-                text="💬 Перетереть с Шерифом",
+                text="Написать менеджеру",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             ),
         ],
@@ -352,7 +353,7 @@ SUBJECTS = {
     "humanities": "📚 Гуманитарные",
     "natural": "🧪 Естеств. науки",
     "medicine": "🏥 Медицина",
-    "other": "🤠 Другое / Не нашел",
+    "other": "Другое",
 }
 
 
@@ -390,7 +391,7 @@ def get_subject_keyboard() -> InlineKeyboardMarkup:
         ],
         # Row 6: Другое (full width)
         [
-            InlineKeyboardButton(text="🤠 Другое / Не нашел", callback_data="subject:other"),
+            InlineKeyboardButton(text="Другое", callback_data="subject:other"),
         ],
         # Row 7: Навигация
         [
@@ -481,8 +482,8 @@ def get_panic_upload_keyboard(has_files: bool = False) -> InlineKeyboardMarkup:
 
 def get_panic_final_keyboard(user_id: int) -> InlineKeyboardMarkup:
     """
-    Клавиатура Panic Flow — Финал.
-    Дослать материалы + написать Шерифу лично.
+    Клавиатура срочного заказа — финал.
+    Дослать материалы + связаться с менеджером.
     """
     from core.config import settings
 
@@ -495,13 +496,13 @@ def get_panic_final_keyboard(user_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(
-                text="🆘 Написать Шерифу лично",
+                text="Написать менеджеру",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             )
         ],
         [
             InlineKeyboardButton(
-                text="🏠 В главное меню",
+                text="В меню",
                 callback_data="back_to_menu"
             )
         ],
@@ -641,7 +642,7 @@ def get_deadline_options() -> list[tuple[str, str, str]]:
     # 2-3 дня
     in_3_days = today + timedelta(days=3)
     in_3_days_dt = datetime.combine(in_3_days, datetime.min.time())
-    options.append(("3_days", f"🐎 В темпе (2-3 дня, до {format_date_short(in_3_days_dt)})", "deadline:3_days"))
+    options.append(("3_days", f"2-3 дня (до {format_date_short(in_3_days_dt)})", "deadline:3_days"))
 
     # Неделя
     in_week = today + timedelta(days=7)
@@ -826,7 +827,7 @@ def get_invoice_keyboard(order_id: int, price: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text=f"💳 Оплатить {price:,} ₽".replace(",", " "),
+                text=f"💳 Оплатить {format_price(price)}",
                 callback_data=f"pay_order:{order_id}"
             )
         ],
@@ -847,13 +848,13 @@ def get_invoice_keyboard(order_id: int, price: int) -> InlineKeyboardMarkup:
 
 def get_manual_review_keyboard(order_id: int) -> InlineKeyboardMarkup:
     """
-    YELLOW FLOW: Клавиатура для ручной проверки шерифом.
+    Клавиатура для ручной оценки менеджером.
     Показывается когда заказ сложный (файлы, срочность, сложный тип).
     """
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="🤠 Отправить на утверждение",
+                text="Отправить на оценку",
                 callback_data=f"submit_for_review:{order_id}"
             )
         ],
@@ -889,13 +890,13 @@ def get_special_order_keyboard(order_id: int) -> InlineKeyboardMarkup:
                 callback_data=f"order_detail:{order_id}"
             ),
             InlineKeyboardButton(
-                text="💬 Написать шерифу",
+                text="Написать менеджеру",
                 url=f"https://t.me/{settings.SUPPORT_USERNAME}"
             ),
         ],
         [
             InlineKeyboardButton(
-                text="🌵 В салун",
+                text="В меню",
                 callback_data="back_to_menu"
             )
         ],
@@ -909,7 +910,7 @@ def get_waiting_payment_keyboard(order_id: int, price: int) -> InlineKeyboardMar
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text=f"✅ Оплатить {price:,} ₽".replace(",", " "),
+                text=f"✅ Оплатить {format_price(price)}",
                 callback_data=f"pay_order:{order_id}"
             )
         ],
@@ -951,7 +952,7 @@ def get_order_success_keyboard(order_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(
-                text="🌵 В салун",
+                text="В меню",
                 callback_data="back_to_menu"
             )
         ],

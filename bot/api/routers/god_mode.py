@@ -1307,7 +1307,7 @@ async def ban_user(
             await bot.send_message(
                 user_id,
                 f"✅ <b>Ваш аккаунт разблокирован!</b>\n\n"
-                f"Добро пожаловать обратно в Салун!",
+                f"Добро пожаловать обратно!",
             )
     except Exception:
         pass

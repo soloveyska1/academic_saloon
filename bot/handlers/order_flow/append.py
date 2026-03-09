@@ -343,7 +343,7 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
 
 К заказу <code>#{order.id}</code> добавлено: {len(appended_files)} файл(ов).
 
-Шериф уже в курсе. 🤠"""
+Менеджер уведомлён."""
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -351,7 +351,7 @@ async def finish_append_callback(callback: CallbackQuery, state: FSMContext, ses
             callback_data=f"order_detail:{order.id}"
         )],
         [InlineKeyboardButton(
-            text="🌵 В салун",
+            text="В меню",
             callback_data="back_to_menu"
         )],
     ])
@@ -527,7 +527,7 @@ async def cancel_append_callback(callback: CallbackQuery, state: FSMContext, ses
                 callback_data=f"order_detail:{order.id}"
             )],
             [InlineKeyboardButton(
-                text="🌵 В салун",
+                text="В меню",
                 callback_data="back_to_menu"
             )],
         ])

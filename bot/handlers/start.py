@@ -1,6 +1,6 @@
 from aiogram import Router, Bot, F
 from aiogram.filters import CommandStart, CommandObject, Command
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
+from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -9,10 +9,11 @@ from sqlalchemy import select
 
 from database.models.users import User
 from database.models.orders import Order, OrderStatus, ConversationType
-from bot.keyboards.inline import get_main_menu_keyboard, get_saloon_status_keyboard
+from bot.keyboards.inline import get_main_menu_keyboard, get_pinned_message_keyboard
 from bot.keyboards.terms import get_terms_short_keyboard
 from bot.texts.terms import TERMS_SHORT
 from bot.services.logger import log_action, LogEvent, LogLevel
+from bot.utils.formatting import format_price
 from core.config import settings
 from core.saloon_status import saloon_manager, generate_status_message
 from core.media_cache import send_cached_photo
@@ -79,9 +80,113 @@ async def cmd_help(message: Message):
     )
 
 
+# ══════════════════════════════════════════════════════════════
+#  /status COMMAND — Quick order status check
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("status"))
+async def cmd_status(message: Message, session: AsyncSession):
+    """Quick check of active orders — no Mini App needed."""
+    telegram_id = message.from_user.id
+
+    # Get user
+    user_query = select(User).where(User.telegram_id == telegram_id)
+    user_result = await session.execute(user_query)
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        await message.answer(
+            "У вас пока нет заказов.\n\n"
+            "<i>Откройте приложение, чтобы создать первый.</i>",
+            reply_markup=get_main_menu_keyboard()
+        )
+        return
+
+    # Get active orders
+    from database.models.orders import ORDER_STATUS_META
+    active_statuses = [
+        s.value for s, meta in ORDER_STATUS_META.items()
+        if meta.get("is_active") and not meta.get("is_final")
+    ]
+
+    orders_query = (
+        select(Order)
+        .where(Order.user_id == user.id, Order.status.in_(active_statuses))
+        .order_by(Order.created_at.desc())
+        .limit(5)
+    )
+    orders_result = await session.execute(orders_query)
+    orders = orders_result.scalars().all()
+
+    if not orders:
+        await message.answer(
+            "Нет активных заказов.\n\n"
+            "<i>Всё спокойно.</i>",
+            reply_markup=get_main_menu_keyboard()
+        )
+        return
+
+    # Build compact cards
+    from database.models.orders import WORK_TYPE_LABELS, WorkType
+    lines = [f"<b>Активные заказы</b> ({len(orders)})\n"]
+
+    for order in orders:
+        meta = ORDER_STATUS_META.get(OrderStatus(order.status), {})
+        emoji = meta.get("emoji", "📋")
+        label = meta.get("short_label", order.status)
+
+        try:
+            work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type)
+        except (ValueError, KeyError):
+            work_label = order.work_type or "Заказ"
+
+        price_str = f" · {format_price(order.price)}" if order.price and order.price > 0 else ""
+        deadline_str = f" · {order.deadline}" if order.deadline else ""
+
+        lines.append(f"{emoji} <b>#{order.id}</b> {work_label}{price_str}{deadline_str}")
+        lines.append(f"   <i>{label}</i>")
+
+    lines.append("\n<i>Подробнее — в приложении.</i>")
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="Открыть приложение",
+            web_app=WebAppInfo(url=settings.WEBAPP_URL)
+        )]
+    ])
+
+    await message.answer("\n".join(lines), reply_markup=keyboard)
+
+
+# ══════════════════════════════════════════════════════════════
+#  /support COMMAND — Direct support access
+# ══════════════════════════════════════════════════════════════
+
+@router.message(Command("support"))
+async def cmd_support(message: Message):
+    """Direct link to support chat."""
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="Написать менеджеру",
+            url=f"https://t.me/{settings.SUPPORT_USERNAME}"
+        )],
+        [InlineKeyboardButton(
+            text="Открыть приложение",
+            web_app=WebAppInfo(url=settings.WEBAPP_URL)
+        )],
+    ])
+
+    await message.answer(
+        "<b>Поддержка</b>\n\n"
+        "Менеджер ответит в течение 15 минут.\n"
+        "Время работы: ежедневно, 9:00–23:00 МСК.",
+        reply_markup=keyboard
+    )
+
+
 async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
     """
-    Отправляет статус салуна с интерактивными кнопками.
+    Отправляет статус сервиса с интерактивными кнопками.
     Закрепляет только если pin=True (для новых пользователей).
     """
     status = await saloon_manager.get_status()
@@ -91,7 +196,7 @@ async def send_and_pin_status(chat_id: int, bot: Bot, pin: bool = False):
     status_msg = await bot.send_message(
         chat_id=chat_id,
         text=status_text,
-        reply_markup=get_saloon_status_keyboard()
+        reply_markup=get_pinned_message_keyboard()
     )
 
     # Закрепляем только если явно указано
@@ -227,7 +332,7 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
                     await state.set_state(SetPriceState.waiting_for_price)
                     await state.update_data(order_id=order_id)
 
-                    current_price = f"{int(order.price):,}₽".replace(",", " ") if order.price > 0 else "не установлена"
+                    current_price = format_price(order.price) if order.price > 0 else "не установлена"
                     await message.answer(
                         f"💵 <b>Установка цены для заказа #{order_id}</b>\n\n"
                         f"Текущая цена: {current_price}\n\n"
@@ -397,12 +502,12 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
     # Формируем текст с информацией о бонусах
     if bonus_used > 0:
         card_extra_text = (
-            f"💵 Тариф: {price:,}₽\n"
+            f"💵 Тариф: {format_price(price)}\n"
             f"💎 Бонусы: −{bonus_used:.0f}₽ (баланс клиента)\n"
-            f"👉 К оплате: {final_price:,.0f}₽"
-        ).replace(",", " ")
+            f"👉 К оплате: {format_price(final_price)}"
+        )
     else:
-        card_extra_text = f"💵 Цена: {price:,}₽ (бонусов нет)".replace(",", " ")
+        card_extra_text = f"💵 Цена: {format_price(price)} (бонусов нет)"
 
     try:
         await update_card_status(
@@ -432,8 +537,8 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
     # Очищаем FSM
     await state.clear()
 
-    price_formatted = f"{price:,}".replace(",", " ")
-    final_formatted = f"{final_price:,.0f}".replace(",", " ")
+    price_formatted = format_price(price, False)
+    final_formatted = format_price(final_price, False)
 
     if sent:
         await message.answer(
@@ -452,7 +557,7 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
 
 
 # ══════════════════════════════════════════════════════════════
-#                    ОБНОВЛЕНИЕ СТАТУСА САЛУНА
+#                    ОБНОВЛЕНИЕ СТАТУСА
 # ══════════════════════════════════════════════════════════════
 
 @router.callback_query(F.data == "refresh_saloon_status")
@@ -466,7 +571,7 @@ async def refresh_saloon_status(callback: CallbackQuery):
     try:
         await callback.message.edit_text(
             text=status_text,
-            reply_markup=get_saloon_status_keyboard()
+            reply_markup=get_pinned_message_keyboard()
         )
         await callback.answer("✅ Статус обновлён!")
     except Exception:

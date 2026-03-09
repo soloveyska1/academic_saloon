@@ -100,6 +100,9 @@ class UserResponse(BaseModel):
     referral_code: str
     referrals_count: int = 0  # Number of referrals invited
     referral_earnings: float = 0
+    referral_percent: int = 5  # Current tier bonus %
+    referral_next_percent: Optional[int] = None  # Next tier %
+    referral_refs_to_next: int = 0  # Refs needed for next tier
     daily_luck_available: bool
     daily_bonus_streak: int = 0  # Days in a row claimed daily bonus
     free_spins: int = 0  # Legacy roulette field (kept for frontend compat)

@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
+from bot.utils.formatting import format_price
 from database.models.orders import Order, OrderStatus, Conversation, get_status_meta
 from bot.services.order_message_formatter import (
     build_price_breakdown_lines,
@@ -753,9 +754,9 @@ async def render_dashboard(session: AsyncSession) -> str:
 ━━━━━━━━━━━━━━━━━━━━
 
 📈 <b>Всего активных:</b> {total_active}
-💰 <b>Сумма в работе:</b> {total_sum:,.0f}₽
+💰 <b>Сумма в работе:</b> {format_price(total_sum, False)}₽
 
-#dashboard #status_dashboard""".replace(",", " ")
+#dashboard #status_dashboard"""
 
     return text
 

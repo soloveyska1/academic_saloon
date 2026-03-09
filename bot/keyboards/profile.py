@@ -1,7 +1,5 @@
 """
 Клавиатуры для Личного кабинета.
-Стиль салуна — тёплый и дружелюбный.
-Gamified Retention Hub layout.
 """
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -59,7 +57,7 @@ def get_gamified_profile_keyboard(
 
     buttons.append([
         luck_button,
-        InlineKeyboardButton(text="🔫 Моя Банда (Рефералка)", callback_data="profile_gang")
+        InlineKeyboardButton(text="Реферальная программа", callback_data="profile_gang")
     ])
 
     # Row 3: Utilities - My orders | Activate coupon
@@ -271,10 +269,10 @@ def get_referral_keyboard(ref_link: str) -> InlineKeyboardMarkup:
     """Реферальная программа — кнопки для шаринга"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="📨 Переслать приглашение",
-            switch_inline_query=f"🤠 Заходи в Академический Салун!\n\n💎 Скидка 5% на первый заказ по моей ссылке:\n{ref_link}"
+            text="Переслать приглашение",
+            switch_inline_query=f"Academic Saloon — сервис подготовки учебных материалов.\n\nСкидка 5% на первый заказ по ссылке:\n{ref_link}"
         )],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="my_profile")],
+        [InlineKeyboardButton(text="Назад", callback_data="my_profile")],
     ])
 
 
@@ -290,22 +288,22 @@ def get_back_to_profile_keyboard() -> InlineKeyboardMarkup:
 # ══════════════════════════════════════════════════════════════
 
 def get_gang_keyboard(ref_link: str) -> InlineKeyboardMarkup:
-    """Клавиатура для экрана 'Моя Банда' (рефералка)"""
+    """Клавиатура реферальной программы"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="📨 Завербовать бандита",
-            switch_inline_query=f"🤠 Заходи в Академический Салун!\n\n💎 Скидка 5% на первый заказ по моей ссылке:\n{ref_link}"
+            text="Пригласить друга",
+            switch_inline_query=f"Academic Saloon — сервис подготовки учебных материалов.\n\nСкидка 5% на первый заказ по ссылке:\n{ref_link}"
         )],
-        [InlineKeyboardButton(text="📋 Скопировать ссылку", callback_data="copy_ref_link")],
-        [InlineKeyboardButton(text="🔙 Назад в кабинет", callback_data="my_profile")],
+        [InlineKeyboardButton(text="Скопировать ссылку", callback_data="copy_ref_link")],
+        [InlineKeyboardButton(text="Назад", callback_data="my_profile")],
     ])
 
 
 def get_daily_luck_result_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура после получения ежедневного бонуса"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔫 Завербовать друга (+бонус)", callback_data="profile_gang")],
-        [InlineKeyboardButton(text="🔙 Назад в кабинет", callback_data="my_profile")],
+        [InlineKeyboardButton(text="Пригласить друга", callback_data="profile_gang")],
+        [InlineKeyboardButton(text="Назад", callback_data="my_profile")],
     ])
 
 
@@ -328,7 +326,7 @@ def get_muse_profile_keyboard(active_orders: int = 0) -> InlineKeyboardMarkup:
     [🎰 Испытать удачу] - VIP рулетка без кулдауна
     [📦 Мои заказы] - стандартный функционал
     [📜 История] [🎟 Купон]
-    [🔫 Моя Банда]
+    [Реферальная программа]
     [⬅️ В меню]
     """
     buttons = []
@@ -352,9 +350,9 @@ def get_muse_profile_keyboard(active_orders: int = 0) -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="🎟 Купон", callback_data="activate_coupon"),
     ])
 
-    # Row 4: Gang (referral)
+    # Row 4: Referral
     buttons.append([
-        InlineKeyboardButton(text="🔫 Моя Банда", callback_data="profile_gang")
+        InlineKeyboardButton(text="Реферальная программа", callback_data="profile_gang")
     ])
 
     # Row 5: Back

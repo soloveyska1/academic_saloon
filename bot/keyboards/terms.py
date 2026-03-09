@@ -5,11 +5,11 @@ from core.config import settings
 
 
 def get_terms_short_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура для экрана Кодекса Салуна — только 2 кнопки"""
+    """Клавиатура для экрана условий — только 2 кнопки"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="✅ Ударить по рукам (Принять)",
+                text="Принять условия",
                 callback_data="accept_rules"
             )
         ],

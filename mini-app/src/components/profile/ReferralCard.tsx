@@ -8,6 +8,8 @@ interface Props {
   referralCode: string
   referralsCount: number
   referralEarnings: number
+  referralPercent: number
+  referralRefsToNext: number
   inviteLink: string
   onCopy: () => void
   onShare: () => void
@@ -15,10 +17,18 @@ interface Props {
   onOpenProgram: () => void
 }
 
+const TIERS = [
+  { range: '1–2', percent: 5 },
+  { range: '3–5', percent: 7 },
+  { range: '6+', percent: 10 },
+]
+
 export const ReferralCard = memo(function ReferralCard({
   referralCode,
   referralsCount,
   referralEarnings,
+  referralPercent,
+  referralRefsToNext,
   inviteLink,
   onCopy,
   onShare,
@@ -27,6 +37,7 @@ export const ReferralCard = memo(function ReferralCard({
 }: Props) {
   const count = toSafeNumber(referralsCount)
   const earnings = toSafeNumber(referralEarnings)
+  const pct = referralPercent || 5
   const hasLink = Boolean(inviteLink)
 
   return (
@@ -36,7 +47,7 @@ export const ReferralCard = memo(function ReferralCard({
       transition={{ duration: 0.5, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 20 }}
     >
-      <div className={s.sectionTitle}>Реферальная программа</div>
+      <div className={s.sectionTitle}>Внутренний круг</div>
 
       <div className={`${s.glassCard}`} style={{ padding: 18 }}>
         {/* Header */}
@@ -65,7 +76,7 @@ export const ReferralCard = memo(function ReferralCard({
               color: 'var(--text-main)',
               marginBottom: 2,
             }}>
-              Пригласите друзей
+              Ваш бонус: {pct}%
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
               Код {referralCode}
@@ -73,36 +84,72 @@ export const ReferralCard = memo(function ReferralCard({
           </div>
         </div>
 
-        {/* Description */}
+        {/* Tier progress */}
         <div style={{
-          fontSize: 13,
-          lineHeight: 1.6,
-          color: 'var(--text-secondary)',
+          display: 'flex',
+          gap: 6,
           marginBottom: 14,
         }}>
-          Делитесь ссылкой — получайте бонусы за каждого приглашённого друга.
+          {TIERS.map((tier) => (
+            <div
+              key={tier.percent}
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                borderRadius: 8,
+                textAlign: 'center',
+                fontSize: 11.5,
+                fontWeight: tier.percent === pct ? 700 : 500,
+                color: tier.percent === pct ? '#c4b5fd' : 'var(--text-muted)',
+                background: tier.percent === pct
+                  ? 'rgba(196, 181, 253, 0.12)'
+                  : 'rgba(255,255,255,0.04)',
+                border: tier.percent === pct
+                  ? '1px solid rgba(196, 181, 253, 0.25)'
+                  : '1px solid transparent',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {tier.range} — {tier.percent}%
+            </div>
+          ))}
         </div>
+
+        {referralRefsToNext > 0 && (
+          <div style={{
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            marginBottom: 12,
+            textAlign: 'center',
+          }}>
+            +{referralRefsToNext} друзей до следующего уровня
+          </div>
+        )}
 
         {/* Stats row */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
           gap: 10,
           marginBottom: 14,
         }}>
           <div className={s.statCard}>
-            <div className={s.statLabel}>Приглашено</div>
+            <div className={s.statLabel}>Друзей</div>
             <div className={s.statValue} style={{ color: '#c4b5fd' }}>{count}</div>
           </div>
           <div className={s.statCard}>
-            <div className={s.statLabel}>Начислено</div>
+            <div className={s.statLabel}>Бонус</div>
+            <div className={s.statValue} style={{ color: '#a78bfa' }}>{pct}%</div>
+          </div>
+          <div className={s.statCard}>
+            <div className={s.statLabel}>Заработано</div>
             <div className={s.statValue} style={{ color: '#93c5fd' }}>{formatMoney(earnings)}</div>
           </div>
         </div>
 
         {/* Link display */}
         <div className={s.linkBox} style={{ marginBottom: 14 }}>
-          {inviteLink || 'Ссылка появится, когда мини-приложение получит конфигурацию бота.'}
+          {inviteLink || 'Ссылка появится после загрузки конфигурации.'}
         </div>
 
         {/* Action buttons grid */}

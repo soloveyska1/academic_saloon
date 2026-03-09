@@ -21,14 +21,6 @@ interface RankUpCelebrationProps {
   haptic?: (style: 'light' | 'medium' | 'heavy') => void
 }
 
-// Premium rank name mapping
-const RANK_DISPLAY_NAMES: Record<string, string> = {
-  'Салага': 'Резидент',
-  'Ковбой': 'Партнёр',
-  'Головорез': 'Приоритет',
-  'Легенда Запада': 'Премиум клуб',
-}
-
 // Rank perks
 const RANK_PERKS: Record<number, string[]> = {
   1: ['Кэшбэк 3%', 'Доступ к бонусам'],
@@ -45,8 +37,8 @@ export const RankUpCelebration = memo(function RankUpCelebration({
   haptic,
 }: RankUpCelebrationProps) {
   const shouldReduceMotion = useReducedMotion()
-  const displayName = RANK_DISPLAY_NAMES[newRank.name] || newRank.displayName || newRank.name
-  const prevDisplayName = previousRank ? (RANK_DISPLAY_NAMES[previousRank] || previousRank) : null
+  const displayName = newRank.displayName || newRank.name
+  const prevDisplayName = previousRank || null
   const perks = RANK_PERKS[newRank.level] || []
   const isMaxRank = newRank.level === 4
 

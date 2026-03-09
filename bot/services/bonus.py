@@ -50,7 +50,48 @@ class BonusReason(str, Enum):
 
 # Настройки бонусов
 BONUS_FOR_ORDER = 50  # Бонусы за создание заказа
-REFERRAL_PERCENT = 5  # Процент рефереру от оплаты
+
+# Referral 2.0 — tiered bonuses based on referral count
+REFERRAL_TIERS = [
+    (6, 10),   # 6+ referrals → 10%
+    (3, 7),    # 3-5 referrals → 7%
+    (1, 5),    # 1-2 referrals → 5%
+]
+REFERRAL_SECOND_LEVEL_PERCENT = 2  # 2% from referral's referrals
+
+
+def get_referral_percent(referrals_count: int) -> int:
+    """Get referral bonus percentage based on number of referrals."""
+    for min_refs, percent in REFERRAL_TIERS:
+        if referrals_count >= min_refs:
+            return percent
+    return 5  # default
+
+
+def get_referral_tier_info(referrals_count: int) -> dict:
+    """Get full tier info for display in UI."""
+    current_percent = get_referral_percent(referrals_count)
+
+    # Find next tier
+    next_tier = None
+    for min_refs, percent in reversed(REFERRAL_TIERS):
+        if referrals_count < min_refs:
+            next_tier = {"min_refs": min_refs, "percent": percent}
+
+    tiers = [
+        {"name": "Старт", "min_refs": 1, "percent": 5, "range": "1–2"},
+        {"name": "Рост", "min_refs": 3, "percent": 7, "range": "3–5"},
+        {"name": "Лидер", "min_refs": 6, "percent": 10, "range": "6+"},
+    ]
+
+    return {
+        "current_percent": current_percent,
+        "referrals_count": referrals_count,
+        "next_tier": next_tier,
+        "refs_to_next": (next_tier["min_refs"] - referrals_count) if next_tier else 0,
+        "tiers": tiers,
+        "second_level_percent": REFERRAL_SECOND_LEVEL_PERCENT,
+    }
 
 class BonusService:
     """Сервис управления бонусами"""
@@ -273,51 +314,72 @@ class BonusService:
         referred_user_id: int,
     ) -> float:
         """
-        Начисляет бонус рефереру за оплаченный заказ
-
-        Args:
-            referrer_id: ID того, кто пригласил
-            order_amount: Сумма заказа
-            referred_user_id: ID приглашённого пользователя
+        Начисляет бонус рефереру за оплаченный заказ.
+        Tiered: 5% (1-2 refs), 7% (3-5), 10% (6+).
+        Also awards 2% to second-level referrer if exists.
 
         Returns:
-            Сумма начисленных бонусов
+            Сумма начисленных бонусов (первый уровень)
         """
-        bonus_amount = order_amount * REFERRAL_PERCENT / 100
-
-        if bonus_amount < 1:
-            return 0.0
-
-        # Получаем информацию о приглашённом для лога
-        query = select(User).where(User.telegram_id == referred_user_id)
-        result = await session.execute(query)
-        referred_user = result.scalar_one_or_none()
-        # Fix operator precedence: check referred_user first, then access fullname
-        referred_name = (referred_user.fullname or f"ID:{referred_user_id}") if referred_user else f"ID:{referred_user_id}"
-
-        # Get referrer first to update earnings in same transaction
+        # Get referrer
         ref_query = select(User).where(User.telegram_id == referrer_id)
         ref_result = await session.execute(ref_query)
         referrer = ref_result.scalar_one_or_none()
 
-        # Add bonus without auto-commit to batch with referral_earnings update
+        if not referrer:
+            return 0.0
+
+        # Tiered percentage based on referrer's referral count
+        percent = get_referral_percent(referrer.referrals_count)
+        bonus_amount = order_amount * percent / 100
+
+        if bonus_amount < 1:
+            return 0.0
+
+        # Get referred user name for log
+        query = select(User).where(User.telegram_id == referred_user_id)
+        result = await session.execute(query)
+        referred_user = result.scalar_one_or_none()
+        referred_name = (referred_user.fullname or f"ID:{referred_user_id}") if referred_user else f"ID:{referred_user_id}"
+
+        # Level 1 bonus
         await BonusService.add_bonus(
             session=session,
             user_id=referrer_id,
             amount=bonus_amount,
             reason=BonusReason.REFERRAL_BONUS,
-            description=f"Реферал {referred_name} оплатил заказ ({REFERRAL_PERCENT}% от {order_amount:.0f}₽)",
+            description=f"Реферал {referred_name} оплатил заказ ({percent}% от {order_amount:.0f}₽)",
             bot=bot,
-            auto_commit=False,  # Don't commit yet - we'll commit after updating referral_earnings
+            auto_commit=False,
         )
 
-        # Увеличиваем счётчик заработка с рефералов
-        if referrer:
-            referrer.referral_earnings += bonus_amount
+        referrer.referral_earnings += bonus_amount
 
-        # Single commit for both operations
+        # Level 2 bonus — 2% to referrer's referrer
+        if referrer.referrer_id:
+            l2_bonus = order_amount * REFERRAL_SECOND_LEVEL_PERCENT / 100
+            if l2_bonus >= 1:
+                l2_query = select(User).where(User.telegram_id == referrer.referrer_id)
+                l2_result = await session.execute(l2_query)
+                l2_referrer = l2_result.scalar_one_or_none()
+
+                if l2_referrer:
+                    await BonusService.add_bonus(
+                        session=session,
+                        user_id=referrer.referrer_id,
+                        amount=l2_bonus,
+                        reason=BonusReason.REFERRAL_BONUS,
+                        description=f"Реферал 2-го уровня: {referred_name} ({REFERRAL_SECOND_LEVEL_PERCENT}% от {order_amount:.0f}₽)",
+                        bot=bot,
+                        auto_commit=False,
+                    )
+                    l2_referrer.referral_earnings += l2_bonus
+                    logger.info(
+                        f"[Referral L2] {referrer.referrer_id} earned {l2_bonus:.0f}₽ "
+                        f"from {referred_user_id}'s order"
+                    )
+
         await session.commit()
-
         return bonus_amount
 
     @staticmethod

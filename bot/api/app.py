@@ -96,7 +96,7 @@ def create_app() -> FastAPI:
     )
 
     # Include routers
-    from .routers import auth, orders, daily, chat, admin, god_mode
+    from .routers import auth, orders, daily, chat, admin, god_mode, payments, assistant
 
     app.include_router(auth.router, prefix="/api")
     app.include_router(orders.router, prefix="/api")
@@ -104,6 +104,8 @@ def create_app() -> FastAPI:
     app.include_router(chat.router, prefix="/api")
     app.include_router(admin.router, prefix="/api")
     app.include_router(god_mode.router, prefix="/api")  # God Mode admin panel
+    app.include_router(payments.router, prefix="/api")  # YooKassa payments
+    app.include_router(assistant.router, prefix="/api")  # AI assistant (FAQ + complexity)
     app.include_router(ws_router)  # WebSocket for real-time updates
 
     # Health check

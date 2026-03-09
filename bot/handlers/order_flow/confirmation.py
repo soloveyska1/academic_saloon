@@ -26,6 +26,7 @@ from bot.services.logger import log_action, LogEvent, LogLevel
 from bot.services.abandoned_detector import get_abandoned_tracker
 from core.config import settings
 from core.media_cache import send_cached_photo
+from bot.utils.formatting import format_price
 
 from .router import (
     order_router,
@@ -397,7 +398,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         pass
 
     if is_special:
-        loading_text = "🕵️ <b>Шериф принимает спецзаказ...</b>\n\n<i>Секунду</i>"
+        loading_text = "<b>Принимаем заказ...</b>\n\n<i>Секунду</i>"
     elif is_auto_pay_allowed:
         loading_text = "⚖️ <b>Робот считает смету...</b>\n\n<i>Секунду</i>"
     else:
@@ -547,8 +548,8 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     }
 
     if not is_special and price_calc:
-        extra_data["💰 Цена"] = f"{final_price:,} ₽".replace(",", " ")
-        extra_data["База"] = f"{price_calc.base_price:,} ₽".replace(",", " ")
+        extra_data["💰 Цена"] = format_price(final_price)
+        extra_data["База"] = format_price(price_calc.base_price)
         extra_data["Множитель"] = f"x{price_calc.urgency_multiplier}"
 
     # Logging (non-critical if fails)
@@ -577,7 +578,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
 Это задача нестандартная. Авто-калькулятор тут бессилен.
 
-Шериф лично посмотрит требования и назовёт цену.
+Менеджер оценит требования и назовёт стоимость.
 Обычно это занимает <b>до 2 часов</b> (в рабочее время).
 
 ⏳ <i>Жди сообщения...</i>"""
@@ -588,7 +589,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
         elif is_auto_pay_allowed:
             # === GREEN FLOW: Automatic invoice (Deal ready) ===
-            price_formatted = f"{final_price:,}".replace(",", " ")
+            price_formatted = format_price(final_price, False)
 
             text = f"""⚖️ <b>СМЕТА ГОТОВА</b> | Заказ <code>#{order.id}</code>
 
@@ -611,7 +612,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
 
             text = f"""🛡 <b>ЗАКАЗ <code>#{order.id}</code> НА ПРОВЕРКЕ</b>
 
-Задача нестандартная или срочная. Автоматический калькулятор здесь может ошибиться, поэтому Шериф оценит её лично.
+Задача нестандартная или срочная. Автоматический калькулятор здесь может ошибиться, поэтому Менеджер оценит её индивидуально.
 
 📁 <b>Тип:</b> {work_label}
 ⏳ <b>Срок:</b> {deadline_label}
@@ -628,7 +629,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
         text = f"✅ <b>Заказ #{order.id} создан!</b>\n\nПодробности в разделе «Мои заказы»."
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📋 Мои заказы", callback_data="profile_orders")],
-            [InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")],
+            [InlineKeyboardButton(text="В меню", callback_data="back_to_menu")],
         ])
         image_path = None
 
@@ -657,7 +658,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
                 text=f"✅ Заказ #{order.id} создан!\n\nПодробности в разделе «Мои заказы».",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="📋 Мои заказы", callback_data="profile_orders")],
-                    [InlineKeyboardButton(text="🌵 В салун", callback_data="back_to_menu")],
+                    [InlineKeyboardButton(text="В меню", callback_data="back_to_menu")],
                 ])
             )
         except Exception:

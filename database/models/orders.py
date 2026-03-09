@@ -117,7 +117,7 @@ ORDER_STATUS_META = {
         "emoji": "🔍",
         "label": "Оценивается",
         "short_label": "Оценка",
-        "description": "Спецзаказ: шериф оценивает",
+        "description": "Менеджер оценивает стоимость",
         "is_active": True,
         "is_final": False,
         "user_can_cancel": True,

@@ -18,7 +18,7 @@ export interface RankData {
 export const RANKS: RankData[] = [
   {
     id: 'resident',
-    name: 'Салага',
+    name: 'Резидент',
     displayName: 'Резидент',
     cashback: 3,
     minSpent: 0,
@@ -28,7 +28,7 @@ export const RANKS: RankData[] = [
   },
   {
     id: 'partner',
-    name: 'Ковбой',
+    name: 'Партнёр',
     displayName: 'Партнёр',
     cashback: 5,
     minSpent: 5000,
@@ -38,7 +38,7 @@ export const RANKS: RankData[] = [
   },
   {
     id: 'vip',
-    name: 'Головорез',
+    name: 'Приоритет',
     displayName: 'Приоритет',
     cashback: 7,
     minSpent: 15000,
@@ -48,7 +48,7 @@ export const RANKS: RankData[] = [
   },
   {
     id: 'premium',
-    name: 'Легенда Запада',
+    name: 'Премиум клуб',
     displayName: 'Премиум клуб',
     cashback: 10,
     minSpent: 50000,

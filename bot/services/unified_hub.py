@@ -371,7 +371,8 @@ async def post_to_feed(
     # Цена
     price_str = ""
     if order.price > 0:
-        price_str = f" • {int(order.price):,}₽".replace(",", " ")
+        from bot.utils.formatting import format_price
+        price_str = f" • {format_price(order.price)}"
 
     # Файлы
     files_str = f"\n📁 <a href=\"{yadisk_link}\">Файлы</a>" if yadisk_link else ""

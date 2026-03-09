@@ -61,46 +61,31 @@ class User(Base):
     #                    РАНГОВАЯ СИСТЕМА (XP/SPEND BASED)
     # ══════════════════════════════════════════════════════════════
 
-    # Ранги на основе суммы трат: (мин. сумма ₽, название, emoji, кэшбэк %, доп. бонусы)
-    # ВАЖНО: Синхронизировано с таблицей rank_levels в БД (миграция s7t8u9v0w1)
-    RANK_LEVELS = [
-        (50000, "Легенда Запада", "👑", 10, "Персональный менеджер"),
-        (20000, "Головорез", "🔫", 5, "Приоритетная поддержка"),
-        (5000, "Ковбой", "🤠", 3, None),
-        (0, "Салага", "🐣", 0, None),
-    ]
-
+    # Ранги — единый источник правды в core/ranks.py
+    # Backward compat: RANK_LEVELS используется в legacy-коде
     @property
     def rank_info(self) -> dict:
         """Возвращает полную информацию о ранге пользователя"""
-        current_level = None
-        next_level = None
-
-        for i, (min_spent, name, emoji, cashback, bonus) in enumerate(self.RANK_LEVELS):
-            if self.total_spent >= min_spent:
-                current_level = (min_spent, name, emoji, cashback, bonus)
-                if i > 0:
-                    next_level = self.RANK_LEVELS[i - 1]
-                break
-
-        if not current_level:
-            current_level = self.RANK_LEVELS[-1]
+        from core.ranks import get_rank_for_spent, get_rank_progress
+        rank = get_rank_for_spent(self.total_spent)
+        progress = get_rank_progress(self.total_spent)
 
         result = {
-            "name": current_level[1],
-            "emoji": current_level[2],
-            "cashback": current_level[3],
-            "bonus": current_level[4],
-            "min_spent": current_level[0],
+            "name": rank.name,
+            "emoji": "",
+            "cashback": rank.cashback_percent,
+            "bonus": rank.bonus,
+            "min_spent": rank.min_spent,
         }
 
-        if next_level:
+        if progress["has_next"]:
+            next_tier = progress["next"]
             result["has_next"] = True
-            result["next_name"] = next_level[1]
-            result["next_emoji"] = next_level[2]
-            result["next_cashback"] = next_level[3]
-            result["next_threshold"] = next_level[0]
-            result["spent_needed"] = next_level[0] - self.total_spent
+            result["next_name"] = next_tier.name
+            result["next_emoji"] = ""
+            result["next_cashback"] = next_tier.cashback_percent
+            result["next_threshold"] = next_tier.min_spent
+            result["spent_needed"] = progress["spent_to_next"]
         else:
             result["has_next"] = False
 
@@ -109,9 +94,10 @@ class User(Base):
     @property
     def rank_progress(self) -> dict:
         """Прогресс до следующего ранга с визуальным прогресс-баром"""
-        rank = self.rank_info
+        from core.ranks import get_rank_progress
+        progress = get_rank_progress(self.total_spent)
 
-        if not rank["has_next"]:
+        if not progress["has_next"]:
             return {
                 "has_next": False,
                 "progress_bar": "■■■■■■■■■■",
@@ -119,21 +105,8 @@ class User(Base):
                 "progress_text": "MAX",
             }
 
-        current_min = rank["min_spent"]
-        next_threshold = rank["next_threshold"]
-        level_size = next_threshold - current_min
-        progress_in_level = self.total_spent - current_min
-
-        # Процент прогресса
-        if level_size > 0:
-            progress_percent = int((progress_in_level / level_size) * 100)
-            progress_percent = min(progress_percent, 100)
-        else:
-            progress_percent = 0
-
-        # Визуальный прогресс-бар (10 символов)
-        filled = int(progress_percent / 10)
-        filled = min(filled, 10)
+        progress_percent = progress["progress_percent"]
+        filled = min(int(progress_percent / 10), 10)
         progress_bar = "■" * filled + "□" * (10 - filled)
 
         return {
@@ -142,74 +115,59 @@ class User(Base):
             "progress_percent": progress_percent,
             "progress_text": f"{progress_percent}%",
             "current_spent": self.total_spent,
-            "next_threshold": next_threshold,
-            "spent_needed": rank["spent_needed"],
+            "next_threshold": progress["next"].min_spent,
+            "spent_needed": progress["spent_to_next"],
         }
 
     # ══════════════════════════════════════════════════════════════
     #                    ПРЕМИАЛЬНАЯ СИСТЕМА ЛОЯЛЬНОСТИ
     # ══════════════════════════════════════════════════════════════
 
-    # Пороги лояльности: (мин. заказов, название, emoji, скидка %)
-    # Резидент -> Партнёр -> VIP-Клиент -> Премиум
-    # ВАЖНО: Синхронизировано с таблицей loyalty_levels в БД (миграция s7t8u9v0w1)
-    LOYALTY_LEVELS = [
-        (15, "Премиум", "👑", 10),
-        (7, "VIP-Клиент", "⭐", 5),
-        (3, "Партнёр", "🤝", 3),
-        (0, "Резидент", "🌵", 0),
-    ]
+    # Лояльность — единый источник правды в core/ranks.py
 
     @property
     def loyalty_status(self) -> tuple[str, int]:
         """Возвращает статус лояльности и процент скидки"""
-        for min_orders, name, emoji, discount in self.LOYALTY_LEVELS:
-            if self.orders_count >= min_orders:
-                return f"{emoji} {name}", discount
-        return "🌵 Резидент", 0
+        from core.ranks import get_loyalty_for_orders
+        tier = get_loyalty_for_orders(self.orders_count)
+        return tier.name, tier.discount_percent
 
     @property
     def loyalty_progress(self) -> dict:
         """Прогресс до следующего статуса лояльности"""
-        current_level = None
-        next_level = None
+        from core.ranks import get_loyalty_progress
+        progress = get_loyalty_progress(self.orders_count)
+        current = progress["current"]
 
-        for i, (min_orders, name, emoji, discount) in enumerate(self.LOYALTY_LEVELS):
-            if self.orders_count >= min_orders:
-                current_level = (min_orders, name, emoji, discount)
-                if i > 0:
-                    next_level = self.LOYALTY_LEVELS[i - 1]
-                break
-
-        if not next_level:
+        if not progress["has_next"]:
             return {
                 "has_next": False,
-                "current_name": current_level[1] if current_level else "Резидент",
+                "current_name": current.name,
                 "progress_bar": "▓▓▓▓▓▓▓▓▓▓",
                 "progress_text": "MAX",
             }
 
-        orders_needed = next_level[0] - self.orders_count
-        current_min = current_level[0] if current_level else 0
+        next_tier = progress["next"]
+        orders_needed = progress["orders_to_next"]
+        current_min = current.min_orders
         progress_in_level = self.orders_count - current_min
-        level_size = next_level[0] - current_min
+        level_size = next_tier.min_orders - current_min
 
-        # Визуальный прогресс-бар (10 символов)
         filled = int((progress_in_level / level_size) * 10) if level_size > 0 else 0
         filled = min(filled, 10)
         progress_bar = "▓" * filled + "░" * (10 - filled)
 
         return {
             "has_next": True,
-            "current_name": current_level[1] if current_level else "Резидент",
-            "next_name": next_level[1],
-            "next_emoji": next_level[2],
-            "next_discount": next_level[3],
+            "current_name": current.name,
+            "next_name": next_tier.name,
+            "next_emoji": "",
+            "next_discount": next_tier.discount_percent,
             "orders_needed": orders_needed,
             "orders_current": self.orders_count,
-            "orders_target": next_level[0],
+            "orders_target": next_tier.min_orders,
             "progress_bar": progress_bar,
-            "progress_text": f"{self.orders_count}/{next_level[0]}",
+            "progress_text": f"{self.orders_count}/{next_tier.min_orders}",
         }
 
     @property

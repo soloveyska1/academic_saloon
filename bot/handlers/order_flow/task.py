@@ -240,7 +240,7 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
         # Reject garbage (< 2 chars)
         if len(text_content) < 2:
             await message.answer(
-                "🤔 Слишком коротко, партнёр. Опиши задание подробнее.",
+                "Слишком коротко. Опишите задание подробнее.",
                 reply_markup=get_task_continue_keyboard(files_count=len(attachments))
             )
             return
@@ -316,7 +316,7 @@ async def process_task_input(message: Message, state: FSMContext, bot: Bot, sess
             existing_ids = {att.get("file_id") for att in attachments if att.get("file_id")}
             if file_id in existing_ids:
                 await message.answer(
-                    "☝️ Этот файл уже в деле, партнёр!",
+                    "Этот файл уже добавлен.",
                     reply_markup=get_task_continue_keyboard(files_count=len(attachments))
                 )
                 return

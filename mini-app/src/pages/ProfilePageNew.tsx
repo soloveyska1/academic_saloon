@@ -171,6 +171,8 @@ export function ProfilePageNew({ user }: Props) {
           referralCode={user.referral_code}
           referralsCount={user.referrals_count}
           referralEarnings={user.referral_earnings}
+          referralPercent={user.referral_percent}
+          referralRefsToNext={user.referral_refs_to_next}
           inviteLink={inviteLink}
           onCopy={handleCopyReferral}
           onShare={handleShareReferral}

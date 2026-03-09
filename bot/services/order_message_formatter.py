@@ -6,6 +6,7 @@ from typing import Iterable
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
+from bot.utils.formatting import format_price
 from core.config import settings
 from database.models.orders import (
     WORK_TYPE_LABELS,
@@ -30,8 +31,7 @@ DEADLINE_LABELS = {
 
 
 def format_money(amount: float | int | None) -> str:
-    value = int(round(float(amount or 0)))
-    return f"{value:,}".replace(",", " ") + " ₽"
+    return format_price(float(amount or 0))
 
 
 def format_plain_text(value: str | None, fallback: str = "—") -> str:

@@ -32,6 +32,7 @@ from bot.services.mini_app_logger import (
     log_order_created, log_mini_app_event, MiniAppEvent
 )
 from bot.bot_instance import get_bot
+from bot.utils.formatting import format_price
 from bot.services.order_message_formatter import (
     build_client_order_created_text,
     build_order_keyboard,
@@ -280,7 +281,7 @@ async def confirm_batch_payment(
                 )
             await bot.send_message(
                 chat_id=user.telegram_id,
-                text=f"✅ <b>Заявка на оплату принята!</b>\n\nЗаказы: <code>{order_ids_str}</code>\nСумма: <b>{total_amount:,.0f}₽</b>\nСпособ: {method_text}\n\nМенеджер проверит поступление и подтвердит все заказы.".replace(",", " ")
+                text=f"✅ <b>Заявка на оплату принята!</b>\n\nЗаказы: <code>{order_ids_str}</code>\nСумма: <b>{format_price(total_amount)}</b>\nСпособ: {method_text}\n\nМенеджер проверит поступление и подтвердит все заказы."
             )
         except Exception as e:
             logger.error(f"Batch payment notification error: {e}")
@@ -879,11 +880,11 @@ async def confirm_payment(
         method_text = {"card": "Карта", "sbp": "СБП", "transfer": "Перевод"}.get(data.payment_method, data.payment_method)
         await send_or_update_card(
             bot=bot, order=order, session=session, client_username=user.username, client_name=user.fullname,
-            extra_text=f"💳 Ожидает проверки: {scheme_text} ({method_text})\n💰 Сумма: {amount_to_pay:,.0f}₽".replace(",", " ")
+            extra_text=f"💳 Ожидает проверки: {scheme_text} ({method_text})\n💰 Сумма: {format_price(amount_to_pay)}"
         )
         await bot.send_message(
             chat_id=user.telegram_id,
-            text=f"✅ <b>Заявка на оплату принята!</b>\n\nЗаказ <code>#{order.id}</code>\nСумма: <b>{amount_to_pay:,.0f}₽</b>\n\nМенеджер проверит поступление и подтвердит.".replace(",", " ")
+            text=f"✅ <b>Заявка на оплату принята!</b>\n\nЗаказ <code>#{order.id}</code>\nСумма: <b>{format_price(amount_to_pay)}</b>\n\nМенеджер проверит поступление и подтвердит."
         )
     except Exception:
         pass
@@ -891,7 +892,7 @@ async def confirm_payment(
     try:
         await log_mini_app_event(
             bot=get_bot(), event=MiniAppEvent.ORDER_VIEW, user_id=user.telegram_id, username=user.username,
-            order_id=order.id, details=f"Подтвердил оплату: {amount_to_pay:,.0f}₽".replace(",", " ")
+            order_id=order.id, details=f"Подтвердил оплату: {format_price(amount_to_pay)}"
         )
     except Exception:
         pass

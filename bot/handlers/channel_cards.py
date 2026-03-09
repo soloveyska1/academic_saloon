@@ -39,6 +39,7 @@ from bot.services.order_message_formatter import (
     build_payment_keyboard as build_order_payment_keyboard,
 )
 from bot.utils import parse_order_id
+from bot.utils.formatting import format_price
 from core.media_cache import send_cached_photo
 
 # Изображение для счёта/инвойса
@@ -415,7 +416,7 @@ async def card_set_price_menu(callback: CallbackQuery, session: AsyncSession):
         if robot_price > 0:
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"✅ Подтвердить {robot_price:,}₽".replace(",", " "),
+                    text=f"✅ Подтвердить {format_price(robot_price)}",
                     callback_data=f"card_setprice:{order_id}:{robot_price}"
                 )
             ])
@@ -424,7 +425,7 @@ async def card_set_price_menu(callback: CallbackQuery, session: AsyncSession):
         row = []
         for price in preset_prices:
             row.append(InlineKeyboardButton(
-                text=f"{price:,}₽".replace(",", " "),
+                text=format_price(price),
                 callback_data=f"card_setprice:{order_id}:{price}"
             ))
             if len(row) == 3:
@@ -496,12 +497,12 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     # Формируем текст с информацией о бонусах
     if bonus_used > 0:
         extra_text = (
-            f"💵 Тариф: {price:,}₽\n"
+            f"💵 Тариф: {format_price(price)}\n"
             f"💎 Бонусы: −{bonus_used:.0f}₽ (баланс клиента)\n"
-            f"👉 К оплате: {final_price:,.0f}₽"
-        ).replace(",", " ")
+            f"👉 К оплате: {format_price(int(final_price))}"
+        )
     else:
-        extra_text = f"💵 Цена: {price:,}₽ (бонусов нет)".replace(",", " ")
+        extra_text = f"💵 Цена: {format_price(price)} (бонусов нет)"
 
     await update_card_status(
         bot, order, session,
@@ -525,7 +526,7 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     except Exception as ws_err:
         logger.debug(f"WebSocket notification failed: {ws_err}")
 
-    price_formatted = f"{price:,}".replace(",", " ")
+    price_formatted = format_price(price, False)
     if sent:
         await callback.answer(f"✅ Цена {price_formatted}₽ — клиент получил счёт!", show_alert=True)
     else:
@@ -597,7 +598,7 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     )
 
     # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ ═══
-    paid_formatted = f"{int(order.paid_amount):,}".replace(",", " ")
+    paid_formatted = format_price(int(order.paid_amount), False)
 
     if payment_type == "half":
         remaining = int(final_price - order.paid_amount)
@@ -676,7 +677,7 @@ async def card_request_final_payment(callback: CallbackQuery, session: AsyncSess
         await callback.answer("Заказ уже полностью оплачен", show_alert=True)
         return
 
-    remaining_formatted = f"{int(remaining):,}".replace(",", " ")
+    remaining_formatted = format_price(int(remaining), False)
 
     # Уведомляем клиента о необходимости доплаты
     user_text = f"""💳 <b>РАБОТА ГОТОВА — НУЖНА ДОПЛАТА</b>
@@ -815,7 +816,7 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
 
     client_text = f"""⚠️ <b>Оплата не найдена</b>
 
-Заказ <code>#{order.id}</code> • <b>{int(final_price):,} ₽</b>
+Заказ <code>#{order.id}</code> • <b>{format_price(int(final_price))}</b>
 
 Мы проверили счёт, но пока не видим поступления.
 
@@ -825,7 +826,7 @@ async def card_reject_payment(callback: CallbackQuery, session: AsyncSession, bo
 • Ошибка при переводе
 
 <i>Если ты точно перевёл — напиши в поддержку
-со скриншотом чека, разберёмся!</i>""".replace(",", " ")
+со скриншотом чека, разберёмся!</i>"""
 
     client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Вернуться к оплате", callback_data=f"pay_order:{order_id}")],

@@ -4,7 +4,6 @@
 """
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, Message
@@ -17,14 +16,9 @@ from database.models.users import User
 from bot.services.logger import log_action, LogEvent, LogLevel, BotLogger
 from bot.middlewares.ban_check import invalidate_ban_cache
 from core.config import settings
+from bot.utils.formatting import parse_callback_data
 
 router = Router()
-
-
-def parse_callback_data(data: str, index: int) -> Optional[str]:
-    """Безопасный парсинг callback_data по индексу"""
-    parts = data.split(":")
-    return parts[index] if len(parts) > index else None
 
 
 class NoteState(StatesGroup):
