@@ -386,15 +386,11 @@ async def exit_chat(message: Message, state: FSMContext):
     """Клиент выходит из чата"""
     await state.clear()
 
-    from bot.keyboards.inline import get_main_menu_keyboard
+    from bot.keyboards.inline import get_persistent_menu
     await message.answer(
         "✅ Вы вышли из чата.\n\n"
         "Если понадобится связаться — всегда можете написать снова!",
-        reply_markup=ReplyKeyboardRemove(),
-    )
-    await message.answer(
-        "🏠 <b>Главное меню</b>",
-        reply_markup=get_main_menu_keyboard(),
+        reply_markup=get_persistent_menu(),
     )
 
 

@@ -20,7 +20,7 @@ from bot.keyboards.terms import (
     get_terms_full_keyboard,
     get_terms_section_keyboard,
 )
-from bot.keyboards.inline import get_start_keyboard, get_main_menu_keyboard
+from bot.keyboards.inline import get_start_keyboard
 from bot.services.logger import log_action, LogEvent, LogLevel
 from core.config import settings
 from bot.handlers.menu import send_main_menu

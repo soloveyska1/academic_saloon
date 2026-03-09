@@ -2,7 +2,7 @@ import logging
 
 from aiogram import Router, Bot, F
 from aiogram.filters import CommandStart, CommandObject, Command
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import Message, CallbackQuery
 from aiogram.enums import ChatAction
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from database.models.users import User
 from database.models.orders import Order, OrderStatus, ConversationType
-from bot.keyboards.inline import get_main_menu_keyboard, get_pinned_message_keyboard, get_persistent_menu
+from bot.keyboards.inline import get_pinned_message_keyboard, get_persistent_menu
 from bot.keyboards.terms import get_terms_short_keyboard
 from bot.texts.terms import TERMS_SHORT
 from bot.services.logger import log_action, LogEvent, LogLevel
@@ -80,7 +80,7 @@ async def cmd_help(message: Message):
     """Обработчик команды /help"""
     await message.answer(
         HELP_MESSAGE,
-        reply_markup=get_main_menu_keyboard()
+        reply_markup=get_persistent_menu()
     )
 
 
@@ -102,7 +102,7 @@ async def cmd_status(message: Message, session: AsyncSession):
         await message.answer(
             "У вас пока нет заказов.\n\n"
             "<i>Откройте приложение, чтобы создать первый.</i>",
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=get_persistent_menu()
         )
         return
 
@@ -126,7 +126,7 @@ async def cmd_status(message: Message, session: AsyncSession):
         await message.answer(
             "Нет активных заказов.\n\n"
             "<i>Всё спокойно.</i>",
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=get_persistent_menu()
         )
         return
 
@@ -152,14 +152,7 @@ async def cmd_status(message: Message, session: AsyncSession):
 
     lines.append("\n<i>Подробнее — в приложении.</i>")
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="Открыть приложение",
-            web_app=WebAppInfo(url=settings.WEBAPP_URL)
-        )]
-    ])
-
-    await message.answer("\n".join(lines), reply_markup=keyboard)
+    await message.answer("\n".join(lines), reply_markup=get_persistent_menu())
 
 
 # ══════════════════════════════════════════════════════════════
@@ -175,14 +168,11 @@ async def cmd_support(message: Message):
     msk_now = datetime.now(ZoneInfo("Europe/Moscow"))
     hour = msk_now.hour
 
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="Написать менеджеру",
             url=f"https://t.me/{settings.SUPPORT_USERNAME}"
-        )],
-        [InlineKeyboardButton(
-            text="Открыть приложение",
-            web_app=WebAppInfo(url=settings.WEBAPP_URL)
         )],
     ])
 
@@ -434,30 +424,21 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     else:
         welcome_text = WELCOME_BACK_MESSAGE
 
-    # 3. Отправляем картинку с текстом и кнопками
+    # 3. Отправляем картинку с текстом + persistent keyboard (одна кнопка — Mini App)
     if settings.WELCOME_IMAGE.exists():
         await send_cached_photo(
             bot=bot,
             chat_id=message.chat.id,
             photo_path=settings.WELCOME_IMAGE,
             caption=welcome_text,
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=get_persistent_menu()
         )
     else:
         await bot.send_message(
             chat_id=message.chat.id,
             text=welcome_text,
-            reply_markup=get_main_menu_keyboard()
-        )
-
-    # 4. Set persistent reply keyboard (one button — "Открыть приложение")
-    try:
-        await message.answer(
-            "👇",
             reply_markup=get_persistent_menu()
         )
-    except Exception:
-        pass
 
 
 # ══════════════════════════════════════════════════════════════

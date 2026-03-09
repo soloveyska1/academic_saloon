@@ -17,7 +17,7 @@ from bot.keyboards.inline import (
     get_codex_keyboard,
     get_referral_keyboard,
     get_back_keyboard,
-    get_main_menu_keyboard,
+    get_persistent_menu,
     get_price_list_keyboard
 )
 from bot.services.logger import log_action, LogEvent, LogLevel
@@ -76,7 +76,7 @@ async def send_main_menu(
         pin: Закрепить сообщение (для новых пользователей)
     """
     text = build_main_menu_text(user_name)
-    keyboard = get_main_menu_keyboard()
+    keyboard = get_persistent_menu()
     sent_message = None
 
     # Пытаемся отправить с новой картинкой (saloon_first.jpg)
