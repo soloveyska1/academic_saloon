@@ -40,7 +40,8 @@ class Settings(BaseSettings):
     YANDEX_DISK_FOLDER: str = "Academic_Saloon_Orders"  # Корневая папка для заказов
 
     # Медиа файлы
-    WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "saloon_first.jpg"  # New onboarding image
+    WELCOME_ANIMATION: Path = BASE_DIR / "bot" / "media" / "welcome_animated.gif"  # Animated welcome
+    WELCOME_IMAGE: Path = BASE_DIR / "bot" / "media" / "welcome_static.jpg"  # Static fallback
     OFFER_IMAGE: Path = BASE_DIR / "bot" / "media" / "saloon_welcome.jpg"
     ORDER_IMAGE: Path = BASE_DIR / "bot" / "media" / "bar_saloon.jpg"
     MENU_IMAGE: Path = BASE_DIR / "bot" / "media" / "back_saloon.jpg"

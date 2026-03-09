@@ -75,12 +75,26 @@ async def send_main_menu(
         user_name: Имя пользователя (not used in simplified message)
         pin: Закрепить сообщение (для новых пользователей)
     """
+    from aiogram.types import FSInputFile
     text = build_main_menu_text(user_name)
     keyboard = get_persistent_menu()
     sent_message = None
 
-    # Пытаемся отправить с новой картинкой (saloon_first.jpg)
-    if settings.WELCOME_IMAGE.exists():
+    # Try animated GIF first
+    if settings.WELCOME_ANIMATION.exists():
+        try:
+            animation = FSInputFile(settings.WELCOME_ANIMATION)
+            sent_message = await bot.send_animation(
+                chat_id=chat_id,
+                animation=animation,
+                caption=text,
+                reply_markup=keyboard,
+            )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить анимацию: {e}")
+
+    # Fallback: static image
+    if sent_message is None and settings.WELCOME_IMAGE.exists():
         try:
             sent_message = await send_cached_photo(
                 bot=bot,
@@ -90,9 +104,9 @@ async def send_main_menu(
                 reply_markup=keyboard,
             )
         except Exception as e:
-            logger.warning(f"Не удалось отправить картинку меню: {e}")
+            logger.warning(f"Не удалось отправить картинку: {e}")
 
-    # Fallback: просто текст
+    # Fallback: text only
     if sent_message is None:
         sent_message = await bot.send_message(
             chat_id=chat_id,

@@ -424,16 +424,37 @@ async def process_start(message: Message, session: AsyncSession, bot: Bot, state
     else:
         welcome_text = WELCOME_BACK_MESSAGE
 
-    # 3. Отправляем картинку с текстом + persistent keyboard (одна кнопка — Mini App)
-    if settings.WELCOME_IMAGE.exists():
-        await send_cached_photo(
-            bot=bot,
-            chat_id=message.chat.id,
-            photo_path=settings.WELCOME_IMAGE,
-            caption=welcome_text,
-            reply_markup=get_persistent_menu()
-        )
-    else:
+    # 3. Отправляем анимацию (GIF) или фото + persistent keyboard
+    from aiogram.types import FSInputFile
+    sent = False
+
+    if settings.WELCOME_ANIMATION.exists():
+        try:
+            animation = FSInputFile(settings.WELCOME_ANIMATION)
+            await bot.send_animation(
+                chat_id=message.chat.id,
+                animation=animation,
+                caption=welcome_text,
+                reply_markup=get_persistent_menu(),
+            )
+            sent = True
+        except Exception as e:
+            logger.warning(f"Failed to send welcome animation: {e}")
+
+    if not sent and settings.WELCOME_IMAGE.exists():
+        try:
+            await send_cached_photo(
+                bot=bot,
+                chat_id=message.chat.id,
+                photo_path=settings.WELCOME_IMAGE,
+                caption=welcome_text,
+                reply_markup=get_persistent_menu()
+            )
+            sent = True
+        except Exception:
+            pass
+
+    if not sent:
         await bot.send_message(
             chat_id=message.chat.id,
             text=welcome_text,
