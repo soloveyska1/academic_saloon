@@ -78,33 +78,34 @@ jobs:
             # ============================================
             echo "=== Restarting bot service ==="
 
-            # 1. Stop the service
+            # 1. Create deploy lock (prevents health check from restarting during deploy)
+            touch /tmp/saloon-deploy.lock
+
+            # 2. Stop everything
             echo "Stopping systemd service..."
             systemctl stop saloon-bot || true
             sleep 2
 
-            # 2. Kill ALL processes on port 8000
+            # 3. Kill ALL processes on port 8000 aggressively
             echo "Killing processes on port 8000..."
-            fuser -k -9 8000/tcp 2>/dev/null || true
-            lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
-            sleep 3
-
-            # 3. Verify port is free
-            for i in {1..10}; do
-                if ! lsof -ti:8000 >/dev/null 2>&1 && ! fuser 8000/tcp >/dev/null 2>&1; then
-                    echo "  Port 8000 is free (attempt $i)."
+            for i in {1..5}; do
+                PID=$(lsof -ti:8000 2>/dev/null || fuser 8000/tcp 2>/dev/null | tr -d ' ')
+                if [ -z "$PID" ]; then
+                    echo "  Port 8000 is free."
                     break
                 fi
-                echo "  Port 8000 still busy, killing again (attempt $i)..."
-                lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
-                fuser -k -9 8000/tcp 2>/dev/null || true
+                echo "  Killing PID $PID (attempt $i)..."
+                kill -9 $PID 2>/dev/null || true
                 sleep 2
             done
 
             # 4. Start systemd service
             echo "Starting systemd service..."
             systemctl start saloon-bot
-            sleep 5
+            sleep 8
+
+            # 5. Remove deploy lock
+            rm -f /tmp/saloon-deploy.lock
 
             # Verify bot is running
             if systemctl is-active --quiet saloon-bot; then

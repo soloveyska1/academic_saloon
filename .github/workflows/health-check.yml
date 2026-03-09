@@ -25,6 +25,12 @@ jobs:
             ISSUES=""
             RESTARTED=""
 
+            # 0. Check deploy lock — skip if deploy is in progress
+            if [ -f /tmp/saloon-deploy.lock ]; then
+              echo "⏸️ Deploy in progress, skipping health check"
+              exit 0
+            fi
+
             # 1. Проверяем бота
             echo "Checking saloon-bot service..."
             if ! systemctl is-active --quiet saloon-bot; then
