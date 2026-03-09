@@ -780,108 +780,119 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
           )}
         </AnimatePresence>
 
-        {/* Header */}
+        {/* Header — compact premium */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}
+          style={{ marginBottom: 20 }}
         >
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={goBack}
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: 14,
-              background: 'var(--bg-glass)',
-              border: '1px solid var(--border-default)',
+          {/* Top row: back + step counter */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 16,
+          }}>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={goBack}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <ArrowLeft size={18} color="var(--text-secondary)" />
+            </motion.button>
+
+            {/* Step dots + counter */}
+            <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <ArrowLeft size={22} color="var(--text-secondary)" />
-          </motion.button>
-
-          <div style={{ flex: 1 }}>
-            <h1 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 26,
-              fontWeight: 700,
-              background: 'var(--gold-metallic)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              marginBottom: 4,
+              gap: 8,
             }}>
-              {currentConfig?.title}
-            </h1>
-            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>{currentConfig?.subtitle}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
-              <div style={{
-                padding: '6px 10px',
-                borderRadius: 999,
-                background: isFastMode ? 'rgba(59,130,246,0.12)' : 'rgba(212,175,55,0.1)',
-                border: `1px solid ${isFastMode ? 'rgba(59,130,246,0.25)' : 'var(--border-gold)'}`,
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: isFastMode ? '#60a5fa' : 'var(--gold-400)',
-              }}>
-                {isFastMode ? 'Быстрый запрос' : 'Основной маршрут'}
+              <div style={{ display: 'flex', gap: 4 }}>
+                {Array.from({ length: totalSteps }, (_, index) => index + 1).map((s) => (
+                  <motion.div
+                    key={s}
+                    animate={{
+                      background: s <= step
+                        ? 'linear-gradient(90deg, #d4af37, #f5d061)'
+                        : 'rgba(255, 255, 255, 0.08)',
+                      boxShadow: s === step ? '0 0 8px rgba(212, 175, 55, 0.4)' : 'none',
+                    }}
+                    style={{
+                      width: s === step ? 24 : 8,
+                      height: 8,
+                      borderRadius: 4,
+                      transition: 'width 0.3s ease',
+                    }}
+                  />
+                ))}
               </div>
-
-              {canShowModeSwitch && isFastMode && (
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => switchMode(isFastMode ? 'full' : 'fast')}
-                  style={{
-                    padding: 0,
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-secondary)',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {isFastMode ? 'Вернуться к полной заявке' : 'Есть срочная задача? Открыть быстрый запрос'}
-                </motion.button>
-              )}
+              <span style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
+                {step}/{totalSteps}
+              </span>
             </div>
           </div>
 
+          {/* Title row */}
           <div style={{
-              padding: '10px 16px',
-              background: 'rgba(212,175,55,0.1)',
-              border: '1px solid var(--border-gold)',
-              borderRadius: 12,
-              fontSize: 12,
-              fontWeight: 700,
-              color: 'var(--gold-400)',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-            }}>
-            Шаг {step} из {totalSteps}
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: 'var(--text-main)',
+                fontFamily: "'Manrope', sans-serif",
+                lineHeight: 1.2,
+                marginBottom: 4,
+              }}>
+                {currentConfig?.title}
+              </h1>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                {currentConfig?.subtitle}
+              </p>
+            </div>
+
+            {canShowModeSwitch && isFastMode && (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.97 }}
+                onClick={() => switchMode('full')}
+                style={{
+                  padding: '8px 12px',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 10,
+                  color: 'var(--text-secondary)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                Полная заявка
+              </motion.button>
+            )}
           </div>
         </motion.div>
-
-        {/* Progress */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
-          {Array.from({ length: totalSteps }, (_, index) => index + 1).map((s) => (
-            <motion.div
-              key={s}
-              animate={{
-                background: s <= step ? 'linear-gradient(90deg, #d4af37, #f5d061)' : 'rgba(255,255,255,0.08)',
-                boxShadow: s <= step ? '0 0 12px rgba(212,175,55,0.5)' : 'none',
-              }}
-              style={{ flex: 1, height: 5, borderRadius: 3 }}
-            />
-          ))}
-        </div>
 
         {/* Steps */}
         <AnimatePresence mode="wait" custom={direction}>

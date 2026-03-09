@@ -2,16 +2,16 @@ import { ReactNode, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowUpRight,
-  BookOpen,
   Check,
+  ChevronRight,
   Clock3,
   Crown,
   Search,
-  ShieldCheck,
   Sparkles,
   Star,
   X,
   Zap,
+  BookOpen,
 } from 'lucide-react'
 import { ServiceCategory, ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
@@ -20,6 +20,11 @@ import {
   SocialProofData,
   useSocialProofBatch,
 } from './useSocialProof'
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SERVICE TYPE STEP — «Золотая Печать» Design v2
+   Premium service catalog with category sections and compact service rows.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 interface ServiceTypeStepProps {
   selected: string | null
@@ -33,7 +38,6 @@ type SectionMeta = {
   category: ServiceCategory
   title: string
   subtitle: string
-  eyebrow: string
   accent: string
   accentSoft: string
   accentBorder: string
@@ -46,8 +50,7 @@ const SECTION_META: Record<ServiceCategory, SectionMeta> = {
   premium: {
     category: 'premium',
     title: 'Выпускные работы',
-    subtitle: 'Долгие проекты с сопровождением, правками и спокойной защитой.',
-    eyebrow: 'Флагманские форматы',
+    subtitle: 'Сопровождение до защиты',
     accent: 'var(--gold-400)',
     accentSoft: 'rgba(212, 175, 55, 0.14)',
     accentBorder: 'rgba(212, 175, 55, 0.28)',
@@ -56,8 +59,7 @@ const SECTION_META: Record<ServiceCategory, SectionMeta> = {
   standard: {
     category: 'standard',
     title: 'Учебные работы',
-    subtitle: 'Курсовые и практика с точным сценарием, структурой и понятным сроком.',
-    eyebrow: 'Основной академический поток',
+    subtitle: 'Структура и методичка',
     accent: '#d9c09a',
     accentSoft: 'rgba(217, 192, 154, 0.10)',
     accentBorder: 'rgba(217, 192, 154, 0.22)',
@@ -66,8 +68,7 @@ const SECTION_META: Record<ServiceCategory, SectionMeta> = {
   express: {
     category: 'express',
     title: 'Экспресс-форматы',
-    subtitle: 'Короткие задачи и быстрый запуск, когда результат нужен без лишних кругов.',
-    eyebrow: 'Срочные и компактные задачи',
+    subtitle: 'Быстрый запуск',
     accent: '#76c5ab',
     accentSoft: 'rgba(118, 197, 171, 0.10)',
     accentBorder: 'rgba(118, 197, 171, 0.24)',
@@ -81,30 +82,19 @@ function getOrderedServices(services: ServiceType[], category: ServiceCategory) 
   return [...services].sort((left, right) => {
     if (category !== 'premium') {
       const popularityDiff = Number(Boolean(right.popular)) - Number(Boolean(left.popular))
-      if (popularityDiff !== 0) {
-        return popularityDiff
-      }
+      if (popularityDiff !== 0) return popularityDiff
     }
-
     return (SERVICE_ORDER.get(left.id) ?? 0) - (SERVICE_ORDER.get(right.id) ?? 0)
   })
-}
-
-function getCategoryStatusLabel(category: ServiceCategory) {
-  if (category === 'premium') {
-    return 'Сопровождение и правки'
-  }
-
-  if (category === 'standard') {
-    return 'Структура и методичка'
-  }
-
-  return 'Быстрый запуск'
 }
 
 function getSearchableText(service: ServiceType) {
   return `${service.label} ${service.description} ${service.price} ${service.duration}`.toLowerCase()
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ROOT
+   ───────────────────────────────────────────────────────────────────────── */
 
 export function ServiceTypeStep({
   selected,
@@ -144,12 +134,8 @@ export function ServiceTypeStep({
   }, [search])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: minimal ? 22 : 20 }}>
-      <SelectionPrelude
-        minimal={minimal}
-        onUrgentRequest={handleUrgentRequest}
-      />
-
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* ── Search ── */}
       {!minimal && (
         <CatalogSearch
           value={searchQuery}
@@ -158,8 +144,9 @@ export function ServiceTypeStep({
         />
       )}
 
+      {/* ── Sections ── */}
       {sections.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           {sections.map((section, index) => (
             <ServiceSection
               key={section.category}
@@ -174,177 +161,18 @@ export function ServiceTypeStep({
       ) : (
         <EmptySearchState onReset={() => setSearchQuery('')} />
       )}
+
+      {/* ── Urgent request CTA ── */}
+      {handleUrgentRequest && (
+        <UrgentRequestCard onPress={handleUrgentRequest} />
+      )}
     </div>
   )
 }
 
-function SelectionPrelude({
-  minimal,
-  onUrgentRequest,
-}: {
-  minimal: boolean
-  onUrgentRequest?: () => void
-}) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        padding: minimal ? '18px 18px 16px' : '20px 20px 18px',
-        borderRadius: 24,
-        background: `
-          radial-gradient(circle at top right, rgba(212, 175, 55, 0.16), transparent 34%),
-          linear-gradient(145deg, rgba(255, 255, 255, 0.03), transparent 55%),
-          linear-gradient(145deg, var(--bg-elevated), var(--bg-surface))
-        `,
-        border: '1px solid rgba(212, 175, 55, 0.16)',
-        boxShadow: `
-          0 18px 48px -30px rgba(0, 0, 0, 0.75),
-          inset 0 1px 0 rgba(255, 255, 255, 0.04)
-        `,
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          left: -40,
-          bottom: -60,
-          width: 180,
-          height: 180,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(212, 175, 55, 0.14), transparent 72%)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            alignSelf: 'flex-start',
-            padding: '7px 12px',
-            borderRadius: 999,
-            background: 'rgba(212, 175, 55, 0.08)',
-            border: '1px solid rgba(212, 175, 55, 0.18)',
-          }}>
-            <Sparkles size={14} color="var(--gold-300)" />
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--gold-300)',
-            }}>
-              Основной маршрут
-            </span>
-          </div>
-
-          <div>
-            <div style={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: 'var(--text-main)',
-              lineHeight: 1.2,
-              fontFamily: "'Manrope', sans-serif",
-              marginBottom: 8,
-            }}>
-              Выберите формат работы, а остальное соберём дальше.
-            </div>
-            <div style={{
-              fontSize: 14,
-              lineHeight: 1.6,
-              color: 'var(--text-secondary)',
-              maxWidth: 540,
-            }}>
-              На следующем шаге уточним тему, требования и срок. Если в процессе окажется,
-              что нужен другой формат, его можно сменить без потери логики заявки.
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          <PreludeFact icon={Clock3} label="3 спокойных шага" />
-          <PreludeFact icon={ShieldCheck} label="менеджер проверит детали" />
-          <PreludeFact icon={Sparkles} label="цена станет точнее дальше" />
-        </div>
-
-        {onUrgentRequest && (
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.98 }}
-            onClick={onUrgentRequest}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              alignSelf: 'flex-start',
-              padding: '13px 16px',
-              minWidth: minimal ? '100%' : undefined,
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 18,
-              color: 'var(--text-main)',
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>
-                Срочная задача без выбора формата?
-              </span>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                Перейдите в быстрый запрос и отправьте тему сразу.
-              </span>
-            </div>
-            <div style={{
-              width: 34,
-              height: 34,
-              borderRadius: '50%',
-              background: 'rgba(212, 175, 55, 0.14)',
-              border: '1px solid rgba(212, 175, 55, 0.22)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <ArrowUpRight size={16} color="var(--gold-300)" />
-            </div>
-          </motion.button>
-        )}
-      </div>
-    </motion.section>
-  )
-}
-
-function PreludeFact({
-  icon: Icon,
-  label,
-}: {
-  icon: typeof Sparkles
-  label: string
-}) {
-  return (
-    <div style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 8,
-      padding: '9px 12px',
-      borderRadius: 999,
-      background: 'rgba(255, 255, 255, 0.04)',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
-      color: 'var(--text-secondary)',
-    }}>
-      <Icon size={14} color="var(--gold-300)" />
-      <span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span>
-    </div>
-  )
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   SEARCH
+   ───────────────────────────────────────────────────────────────────────── */
 
 function CatalogSearch({
   value,
@@ -359,52 +187,56 @@ function CatalogSearch({
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 12,
-      padding: '15px 18px',
-      background: 'var(--bg-surface)',
-      border: '1px solid var(--border-default)',
-      borderRadius: 18,
-      boxShadow: '0 12px 30px -28px rgba(0, 0, 0, 0.65)',
+      gap: 10,
+      padding: '12px 16px',
+      background: 'rgba(255, 255, 255, 0.03)',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      borderRadius: 14,
     }}>
-      <Search size={18} color="var(--text-muted)" />
+      <Search size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
       <input
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Найти нужную услугу"
+        placeholder="Найти услугу..."
         style={{
           flex: 1,
           border: 'none',
           outline: 'none',
           background: 'transparent',
           color: 'var(--text-main)',
-          fontSize: 15,
+          fontSize: 14,
           fontFamily: "'Manrope', sans-serif",
         }}
       />
       {value && (
         <motion.button
           type="button"
-          whileTap={{ scale: 0.94 }}
+          whileTap={{ scale: 0.9 }}
           onClick={onClear}
           style={{
-            width: 26,
-            height: 26,
+            width: 24,
+            height: 24,
             borderRadius: 999,
             border: 'none',
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: 'rgba(255, 255, 255, 0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
+            flexShrink: 0,
           }}
         >
-          <X size={14} color="var(--text-muted)" />
+          <X size={12} color="var(--text-muted)" />
         </motion.button>
       )}
     </div>
   )
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SECTION (Premium / Standard / Express)
+   ───────────────────────────────────────────────────────────────────────── */
 
 function ServiceSection({
   section,
@@ -423,74 +255,68 @@ function ServiceSection({
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, type: 'spring', stiffness: 260, damping: 28 }}
-      style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+      transition={{ delay: index * 0.06, type: 'spring', stiffness: 300, damping: 30 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 0 }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 14 }}>
-        <div style={{ minWidth: 0 }}>
+      {/* Section header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 12,
+        paddingLeft: 2,
+      }}>
+        <div style={{
+          width: 28,
+          height: 28,
+          borderRadius: 8,
+          background: section.accentSoft,
+          border: `1px solid ${section.accentBorder}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <SectionIcon size={14} color={section.accent} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 8,
-            color: section.accent,
-          }}>
-            <SectionIcon size={16} color={section.accent} />
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: section.accent,
-            }}>
-              {section.eyebrow}
-            </span>
-          </div>
-          <div style={{
-            fontSize: section.category === 'premium' ? 22 : 18,
-            lineHeight: 1.15,
+            fontSize: 15,
             fontWeight: 700,
             color: 'var(--text-main)',
-            fontFamily: section.category === 'premium' ? "'Cinzel', serif" : "'Manrope', sans-serif",
-            marginBottom: 6,
+            lineHeight: 1.2,
           }}>
             {section.title}
           </div>
           <div style={{
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: 'var(--text-secondary)',
-            maxWidth: 560,
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            lineHeight: 1.3,
           }}>
             {section.subtitle}
           </div>
         </div>
-
-        <div style={{
-          flexShrink: 0,
-          padding: '8px 12px',
-          borderRadius: 999,
-          background: section.accentSoft,
-          border: `1px solid ${section.accentBorder}`,
-          color: section.accent,
-          fontSize: 12,
-          fontWeight: 700,
-        }}>
-          {section.services.length} услуг
-        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {section.services.map((service) => (
-          <ServiceChoiceCard
+      {/* Service list — unified card container */}
+      <div style={{
+        borderRadius: 18,
+        overflow: 'hidden',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        background: 'rgba(255, 255, 255, 0.02)',
+      }}>
+        {section.services.map((service, i) => (
+          <ServiceRow
             key={service.id}
             service={service}
             category={section.category}
+            sectionMeta={section}
             selected={selected === service.id}
             onSelect={() => onSelect(service.id)}
             socialProof={socialProofMap.get(service.id)!}
+            isLast={i === section.services.length - 1}
           />
         ))}
       </div>
@@ -498,246 +324,287 @@ function ServiceSection({
   )
 }
 
-function ServiceChoiceCard({
+/* ─────────────────────────────────────────────────────────────────────────
+   SERVICE ROW — Compact, elegant row for each service
+   ───────────────────────────────────────────────────────────────────────── */
+
+function ServiceRow({
   service,
   category,
+  sectionMeta,
   selected,
   onSelect,
   socialProof,
+  isLast,
 }: {
   service: ServiceType
   category: ServiceCategory
+  sectionMeta: SectionMeta
   selected: boolean
   onSelect: () => void
   socialProof: SocialProofData
+  isLast: boolean
 }) {
-  const palette = SECTION_META[category]
   const Icon = service.icon
 
   return (
     <motion.button
       type="button"
-      whileTap={{ scale: 0.985 }}
+      whileTap={{ scale: 0.99 }}
       onClick={onSelect}
       style={{
         width: '100%',
-        padding: '18px 18px 18px 16px',
-        borderRadius: 24,
-        border: `1px solid ${selected ? palette.accentBorder : 'var(--border-default)'}`,
+        padding: '13px 14px',
         background: selected
-          ? `linear-gradient(145deg, ${palette.accentSoft}, var(--bg-surface))`
-          : 'linear-gradient(180deg, var(--bg-elevated), var(--bg-surface))',
-        textAlign: 'left',
+          ? `linear-gradient(135deg, ${sectionMeta.accentSoft}, transparent 60%)`
+          : 'transparent',
+        border: 'none',
+        borderBottom: isLast ? 'none' : '1px solid rgba(255, 255, 255, 0.04)',
         cursor: 'pointer',
-        boxShadow: selected
-          ? `0 18px 44px -28px ${palette.accentSoft}, inset 0 1px 0 rgba(255, 255, 255, 0.06)`
-          : '0 14px 34px -28px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
-        position: 'relative',
-        overflow: 'hidden',
+        textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
+        position: 'relative',
+        transition: 'background 0.2s ease',
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: selected
-            ? `radial-gradient(circle at top right, ${palette.accentSoft}, transparent 35%)`
-            : 'none',
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Left edge accent when selected */}
+      {selected && (
+        <motion.div
+          layoutId="service-selected-edge"
+          initial={false}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '15%',
+            bottom: '15%',
+            width: 3,
+            borderRadius: '0 2px 2px 0',
+            background: sectionMeta.accent,
+            boxShadow: `0 0 12px ${sectionMeta.accentSoft}`,
+          }}
+        />
+      )}
 
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+      {/* Top line: Icon + Name + Badge + Check */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        marginBottom: 6,
+      }}>
         <div style={{
-          width: 56,
-          height: 56,
-          borderRadius: 18,
-          background: selected ? palette.accentSoft : 'var(--bg-glass)',
-          border: `1px solid ${selected ? palette.accentBorder : 'var(--border-default)'}`,
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          background: selected ? sectionMeta.accentSoft : 'rgba(255, 255, 255, 0.04)',
+          border: `1px solid ${selected ? sectionMeta.accentBorder : 'rgba(255, 255, 255, 0.06)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
+          transition: 'all 0.2s ease',
         }}>
           <Icon
-            size={26}
-            color={selected ? palette.accent : 'var(--text-secondary)'}
-            strokeWidth={1.65}
+            size={18}
+            color={selected ? sectionMeta.accent : 'var(--text-secondary)'}
+            strokeWidth={1.6}
           />
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 14,
-            marginBottom: 8,
-            flexWrap: 'wrap',
-          }}>
-            <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                {(service.popular || category === 'premium') && (
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    padding: '5px 9px',
-                    borderRadius: 999,
-                    background: selected ? 'rgba(255, 255, 255, 0.08)' : palette.accentSoft,
-                    border: `1px solid ${selected ? 'rgba(255, 255, 255, 0.08)' : palette.accentBorder}`,
-                    color: selected ? 'var(--text-main)' : palette.accent,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}>
-                    <Sparkles size={11} color={selected ? 'var(--gold-300)' : palette.accent} />
-                    {service.popular ? 'Часто выбирают' : 'Премиум'}
-                  </span>
-                )}
-                {selected && (
-                  <span style={{
-                    padding: '5px 9px',
-                    borderRadius: 999,
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    color: 'var(--text-main)',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}>
-                    Выбрано
-                  </span>
-                )}
-              </div>
+        <span style={{
+          flex: 1,
+          fontSize: 15,
+          fontWeight: 600,
+          color: 'var(--text-main)',
+          lineHeight: 1.25,
+          minWidth: 0,
+        }}>
+          {service.label}
+        </span>
 
-              <div style={{
-                fontSize: category === 'premium' ? 24 : 18,
-                lineHeight: 1.15,
-                fontWeight: 700,
-                color: 'var(--text-main)',
-                fontFamily: category === 'premium' ? "'Manrope', sans-serif" : "'Manrope', sans-serif",
-                marginBottom: 6,
-              }}>
-                {service.label}
-              </div>
-
-              <div style={{
-                fontSize: 13,
-                lineHeight: 1.6,
-                color: 'var(--text-secondary)',
-                maxWidth: 520,
-              }}>
-                {service.description}
-              </div>
-            </div>
-
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{
-                fontSize: category === 'premium' ? 22 : 18,
-                fontWeight: 800,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: selected ? palette.accent : 'var(--text-main)',
-                marginBottom: 4,
-              }}>
-                {service.price}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {service.duration}
-              </div>
-            </div>
-          </div>
-
-          <div style={{
-            display: 'flex',
+        {service.popular && (
+          <span style={{
+            display: 'inline-flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            flexWrap: 'wrap',
+            gap: 3,
+            padding: '3px 7px',
+            borderRadius: 999,
+            background: 'rgba(212, 175, 55, 0.10)',
+            border: '1px solid rgba(212, 175, 55, 0.15)',
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'var(--gold-300)',
+            lineHeight: 1,
+            flexShrink: 0,
           }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <MetaPill>
-                <Star size={12} fill="var(--gold-300)" color="var(--gold-300)" />
-                {socialProof.rating}
-              </MetaPill>
-              <MetaPill>{formatOrderCount(socialProof.totalOrders)} завершено</MetaPill>
-              <MetaPill>{getCategoryStatusLabel(category)}</MetaPill>
-            </div>
+            <Star size={8} fill="var(--gold-300)" color="var(--gold-300)" />
+            хит
+          </span>
+        )}
 
-            <AnimatePresence mode="wait">
-              {selected ? (
-                <motion.div
-                  key="selected"
-                  initial={{ opacity: 0, scale: 0.9, x: 10 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, x: 10 }}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    color: palette.accent,
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  <div style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    background: palette.accent,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: `0 0 18px ${palette.accentSoft}`,
-                  }}>
-                    <Check size={15} color="#050505" strokeWidth={2.8} />
-                  </div>
-                  Готово к продолжению
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="idle"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  style={{
-                    color: 'var(--text-muted)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                  }}
-                >
-                  Нажмите, чтобы выбрать
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+        {/* Check / Chevron */}
+        <AnimatePresence mode="wait">
+          {selected ? (
+            <motion.div
+              key="check"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${sectionMeta.accent}, ${sectionMeta.accent}cc)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 0 12px ${sectionMeta.accentSoft}`,
+                flexShrink: 0,
+              }}
+            >
+              <Check size={13} color="#050505" strokeWidth={3} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="chevron"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.03)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <ChevronRight size={13} color="var(--text-muted)" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Bottom line: meta info + price (aligned right) */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        paddingLeft: 47, /* 36px icon + 11px gap */
+        minWidth: 0,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          fontSize: 12,
+          color: 'var(--text-muted)',
+          lineHeight: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+        }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{service.duration}</span>
+          <span style={{ opacity: 0.3, flexShrink: 0 }}>·</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+            <Star size={9} fill="var(--gold-300)" color="var(--gold-300)" />
+            {socialProof.rating}
+          </span>
+          <span style={{ opacity: 0.3, flexShrink: 0 }}>·</span>
+          <span style={{ flexShrink: 0 }}>{formatOrderCount(socialProof.totalOrders)}</span>
         </div>
+
+        <span style={{
+          fontSize: 13,
+          fontWeight: 700,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: selected ? sectionMeta.accent : 'var(--text-secondary)',
+          lineHeight: 1,
+          transition: 'color 0.2s ease',
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+        }}>
+          {service.price}
+        </span>
       </div>
     </motion.button>
   )
 }
 
-function MetaPill({ children }: { children: ReactNode }) {
+/* ─────────────────────────────────────────────────────────────────────────
+   URGENT REQUEST CARD
+   ───────────────────────────────────────────────────────────────────────── */
+
+function UrgentRequestCard({ onPress }: { onPress: () => void }) {
   return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6,
-      padding: '7px 10px',
-      borderRadius: 999,
-      background: 'rgba(255, 255, 255, 0.04)',
-      border: '1px solid rgba(255, 255, 255, 0.05)',
-      color: 'var(--text-secondary)',
-      fontSize: 12,
-      fontWeight: 600,
-      lineHeight: 1,
-    }}>
-      {children}
-    </span>
+    <motion.button
+      type="button"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onPress}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        padding: '14px 16px',
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        borderRadius: 16,
+        cursor: 'pointer',
+        textAlign: 'left',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      <div style={{
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        background: 'rgba(96, 165, 250, 0.10)',
+        border: '1px solid rgba(96, 165, 250, 0.18)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Zap size={18} color="#60a5fa" />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)', marginBottom: 2 }}>
+          Срочная задача?
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          Отправьте тему без выбора формата
+        </div>
+      </div>
+      <div style={{
+        width: 30,
+        height: 30,
+        borderRadius: '50%',
+        background: 'rgba(96, 165, 250, 0.10)',
+        border: '1px solid rgba(96, 165, 250, 0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <ArrowUpRight size={14} color="#60a5fa" />
+      </div>
+    </motion.button>
   )
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   EMPTY SEARCH
+   ───────────────────────────────────────────────────────────────────────── */
 
 function EmptySearchState({ onReset }: { onReset: () => void }) {
   return (
@@ -745,47 +612,47 @@ function EmptySearchState({ onReset }: { onReset: () => void }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        padding: '36px 20px',
-        borderRadius: 22,
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border-default)',
+        padding: '32px 20px',
+        borderRadius: 18,
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
         textAlign: 'center',
       }}
     >
       <div style={{
-        width: 52,
-        height: 52,
+        width: 44,
+        height: 44,
         borderRadius: '50%',
         background: 'rgba(255, 255, 255, 0.04)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 16,
+        marginBottom: 14,
       }}>
-        <Search size={22} color="var(--text-muted)" />
+        <Search size={20} color="var(--text-muted)" />
       </div>
-      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-main)', marginBottom: 8 }}>
-        Не нашли нужный формат
+      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
+        Ничего не найдено
       </div>
-      <div style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 18 }}>
-        Сбросьте поиск и посмотрите весь каталог. Если задача нестандартная, подойдёт пункт «Другое».
+      <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)', marginBottom: 16 }}>
+        Попробуйте другой запрос или посмотрите весь каталог
       </div>
       <motion.button
         type="button"
         whileTap={{ scale: 0.97 }}
         onClick={onReset}
         style={{
-          padding: '11px 16px',
-          borderRadius: 14,
-          border: '1px solid var(--border-gold)',
-          background: 'transparent',
+          padding: '10px 16px',
+          borderRadius: 12,
+          border: '1px solid rgba(212, 175, 55, 0.20)',
+          background: 'rgba(212, 175, 55, 0.08)',
           color: 'var(--gold-300)',
           fontSize: 13,
           fontWeight: 700,
           cursor: 'pointer',
         }}
       >
-        Показать все услуги
+        Показать все
       </motion.button>
     </motion.div>
   )
