@@ -4,20 +4,28 @@ import {
   AlertTriangle,
   ArrowLeft,
   BookOpen,
-  CheckCircle2,
   ChevronRight,
   ClipboardPaste,
   FileText,
   FileUp,
   Paperclip,
   PenTool,
-  ShieldCheck,
   Sparkles,
   Trash2,
   X,
 } from 'lucide-react'
 import { useModalRegistration } from '../../contexts/NavigationContext'
 import { SERVICE_TYPES, REQUIREMENTS_TEMPLATES } from './constants'
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REQUIREMENTS STEP — v3 «Чистая форма»
+
+   Принципы:
+   - Каждая секция — отдельная карточка с чётким лейблом
+   - Без вложенных "inner surface" — один уровень глубины
+   - Инпуты читабельные, крупные, с фокусным accent-бордером
+   - Файлы и требования — кнопки-действия, не сложные карточки
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
 const ACCEPTED_EXTENSIONS = [
@@ -60,36 +68,71 @@ export function RequirementsStep({
   const service = SERVICE_TYPES.find(item => item.id === serviceTypeId)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <DetailsPrelude serviceName={service?.label} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Подсказка */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          padding: '12px 14px',
+          borderRadius: 12,
+          background: 'rgba(212, 175, 55, 0.06)',
+          border: '1px solid rgba(212, 175, 55, 0.12)',
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: 'var(--text-secondary)',
+        }}
+      >
+        {service
+          ? <>Для <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>«{service.label}»</span> укажите предмет и тему — это ускорит оценку.</>
+          : 'Укажите предмет и тему — это ускорит оценку и поможет подобрать автора.'}
+      </motion.div>
 
-      <InputCard
+      {/* Предмет */}
+      <FieldCard
         label="Предмет / дисциплина"
-        value={subject}
-        onChange={onSubjectChange}
-        placeholder="Экономика, маркетинг, Python"
-        icon={BookOpen}
         required
+        icon={BookOpen}
         disabled={disabled}
-      />
+        delay={0.05}
+      >
+        <input
+          type="text"
+          value={subject}
+          onChange={(e) => onSubjectChange(e.target.value)}
+          placeholder="Экономика, маркетинг, Python..."
+          disabled={disabled}
+          style={inputStyle}
+        />
+      </FieldCard>
 
-      <InputCard
+      {/* Тема */}
+      <FieldCard
         label="Тема работы"
-        value={topic}
-        onChange={onTopicChange}
-        placeholder="Если тема уже есть, напишите её"
+        hint="по желанию"
         icon={FileText}
         disabled={disabled}
-        hint="По желанию"
-      />
+        delay={0.1}
+      >
+        <input
+          type="text"
+          value={topic}
+          onChange={(e) => onTopicChange(e.target.value)}
+          placeholder="Если тема уже есть, напишите"
+          disabled={disabled}
+          style={inputStyle}
+        />
+      </FieldCard>
 
-      <RequirementsSummaryCard
+      {/* Требования */}
+      <RequirementsButton
         value={requirements}
         onEdit={() => setShowEditor(true)}
         onClear={() => onRequirementsChange('')}
         disabled={disabled}
       />
 
+      {/* Файлы */}
       <AttachmentsCard
         files={files}
         onAdd={onFilesAdd}
@@ -97,6 +140,7 @@ export function RequirementsStep({
         disabled={disabled}
       />
 
+      {/* Модальный редактор требований */}
       <RequirementsEditorModal
         isOpen={showEditor}
         onClose={() => setShowEditor(false)}
@@ -109,490 +153,284 @@ export function RequirementsStep({
   )
 }
 
-function DetailsPrelude({ serviceName }: { serviceName?: string }) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-      style={{
-        padding: '16px 16px 14px',
-        borderRadius: 20,
-        background: `
-          radial-gradient(circle at top right, rgba(212, 175, 55, 0.10), transparent 32%),
-          linear-gradient(180deg, rgba(20, 18, 12, 0.92), rgba(11, 11, 16, 0.94))
-        `,
-        border: '1px solid rgba(212, 175, 55, 0.14)',
-        boxShadow: '0 16px 36px -34px rgba(0, 0, 0, 0.88)',
-      }}
-    >
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-        <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: 12,
-          background: 'rgba(212, 175, 55, 0.10)',
-          border: '1px solid rgba(212, 175, 55, 0.14)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <Sparkles size={18} color="var(--gold-300)" />
-        </div>
+/* ─────────────────────────────────────────────────────────────────────────
+   SHARED STYLES
+   ───────────────────────────────────────────────────────────────────────── */
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: 'var(--text-main)',
-            marginBottom: 5,
-            lineHeight: 1.35,
-          }}>
-            Контекст для точной оценки
-          </div>
-          <div style={{
-            fontSize: 12.5,
-            lineHeight: 1.55,
-            color: 'var(--text-secondary)',
-          }}>
-            {serviceName
-              ? `Для «${serviceName}» достаточно указать предмет, тему и приложить материалы, если они уже есть.`
-              : 'Предмет, тема и материалы помогают быстрее собрать сценарий, цену и сроки без лишних уточнений.'}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-        <PreludeFact icon={CheckCircle2} label="точная оценка" />
-        <PreludeFact icon={PenTool} label="ясные требования" />
-        <PreludeFact icon={ShieldCheck} label="материалы под рукой" />
-      </div>
-    </motion.section>
-  )
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  fontSize: 15,
+  lineHeight: 1.4,
+  fontWeight: 500,
+  fontFamily: "'Manrope', sans-serif",
+  color: 'var(--text-main)',
+  background: 'transparent',
+  border: 'none',
+  outline: 'none',
+  padding: 0,
 }
 
-function PreludeFact({
-  icon: Icon,
+const cardBorder = 'rgba(255, 255, 255, 0.08)'
+const cardBg = 'rgba(255, 255, 255, 0.025)'
+const goldSoft = 'rgba(212, 175, 55, 0.10)'
+const goldBorder = 'rgba(212, 175, 55, 0.25)'
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FIELD CARD — Simple labeled input wrapper
+   ───────────────────────────────────────────────────────────────────────── */
+
+function FieldCard({
   label,
-}: {
-  icon: typeof Sparkles
-  label: string
-}) {
-  return (
-    <div style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 7,
-      padding: '8px 10px',
-      borderRadius: 999,
-      background: 'rgba(255, 255, 255, 0.04)',
-      border: '1px solid rgba(255, 255, 255, 0.05)',
-      color: 'var(--text-secondary)',
-    }}>
-      <Icon size={13} color="var(--gold-300)" />
-      <span style={{ fontSize: 11, fontWeight: 600 }}>{label}</span>
-    </div>
-  )
-}
-
-function getSectionShellStyle(active = false, subtle = false) {
-  return {
-    position: 'relative' as const,
-    overflow: 'hidden' as const,
-    background: subtle
-      ? 'linear-gradient(180deg, rgba(16, 15, 18, 0.92), rgba(11, 11, 16, 0.94))'
-      : `
-          radial-gradient(circle at top right, rgba(212, 175, 55, 0.07), transparent 34%),
-          linear-gradient(180deg, rgba(18, 17, 22, 0.96), rgba(10, 10, 16, 0.94))
-        `,
-    borderRadius: 22,
-    border: active ? '1px solid rgba(212, 175, 55, 0.28)' : '1px solid rgba(255, 255, 255, 0.06)',
-    boxShadow: active ? '0 0 22px -10px rgba(212, 175, 55, 0.26)' : '0 18px 34px -34px rgba(0, 0, 0, 0.85)',
-  }
-}
-
-function getInnerSurfaceStyle(active = false, dashed = false) {
-  return {
-    background: active
-      ? 'linear-gradient(180deg, rgba(212, 175, 55, 0.10), rgba(255, 255, 255, 0.03))'
-      : 'linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02))',
-    border: dashed
-      ? '1px dashed rgba(212, 175, 55, 0.32)'
-      : `1px solid ${active ? 'rgba(212, 175, 55, 0.18)' : 'rgba(255, 255, 255, 0.05)'}`,
-    borderRadius: 18,
-  }
-}
-
-interface InputCardProps {
-  label: string
-  value: string
-  onChange: (val: string) => void
-  placeholder?: string
-  icon?: typeof FileText
-  required?: boolean
-  disabled?: boolean
-  hint?: string
-  helper?: string
-}
-
-function InputCard({
-  label,
-  value,
-  onChange,
-  placeholder,
+  hint,
   icon: Icon,
   required,
   disabled,
-  hint,
-  helper,
-}: InputCardProps) {
+  delay = 0,
+  children,
+}: {
+  label: string
+  hint?: string
+  icon: typeof BookOpen
+  required?: boolean
+  disabled?: boolean
+  delay?: number
+  children: React.ReactNode
+}) {
   const [focused, setFocused] = useState(false)
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={() => setFocused(false)}
       style={{
-        ...getSectionShellStyle(focused),
+        borderRadius: 14,
+        border: `1px solid ${focused ? goldBorder : cardBorder}`,
+        background: cardBg,
         padding: '14px',
-        opacity: disabled ? 0.65 : 1,
+        opacity: disabled ? 0.6 : 1,
+        transition: 'border-color 0.2s ease',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 36,
-          height: 36,
-          borderRadius: 12,
-          background: focused ? 'rgba(212, 175, 55, 0.12)' : 'rgba(212, 175, 55, 0.08)',
-          border: `1px solid ${focused ? 'rgba(212, 175, 55, 0.20)' : 'rgba(212, 175, 55, 0.12)'}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          {Icon && <Icon size={16} color="var(--gold-400)" strokeWidth={2} />}
-        </div>
-
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            flexWrap: 'wrap',
-            marginBottom: 2,
-          }}>
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--gold-400)',
-            }}>
-              {label} {required && <span style={{ opacity: 0.75 }}>*</span>}
-            </span>
-
-            {hint && <StatusPill tone="muted" label={hint} />}
-          </div>
-
-          {helper && (
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>
-              {helper}
-            </div>
-          )}
-        </div>
-      </div>
-
+      {/* Label row */}
       <div style={{
-        ...getInnerSurfaceStyle(focused),
-        marginTop: 12,
-        padding: '13px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 10,
       }}>
-        <input
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          placeholder={placeholder}
-          disabled={disabled}
-          style={{
-            width: '100%',
-            fontSize: value ? 16 : 15,
-            lineHeight: 1.35,
-            fontWeight: value ? 600 : 500,
-            fontFamily: "'Manrope', sans-serif",
-            color: value ? 'var(--text-main)' : 'var(--text-secondary)',
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            padding: 0,
-            minWidth: 0,
-          }}
+        <Icon
+          size={15}
+          color={focused ? '#d4af37' : 'var(--text-muted)'}
+          strokeWidth={2}
+          style={{ flexShrink: 0, transition: 'color 0.2s' }}
         />
+        <span style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: focused ? '#d4af37' : 'var(--text-muted)',
+          letterSpacing: '0.04em',
+          transition: 'color 0.2s',
+        }}>
+          {label}{required && ' *'}
+        </span>
+        {hint && (
+          <span style={{
+            fontSize: 11,
+            color: 'var(--text-muted)',
+            opacity: 0.6,
+            marginLeft: 'auto',
+          }}>
+            {hint}
+          </span>
+        )}
       </div>
+
+      {/* Input */}
+      {children}
     </motion.div>
   )
 }
 
-interface RequirementsSummaryCardProps {
-  value: string
-  onEdit: () => void
-  onClear: () => void
-  disabled?: boolean
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   REQUIREMENTS BUTTON — Tap to open editor
+   ───────────────────────────────────────────────────────────────────────── */
 
-function RequirementsSummaryCard({
+function RequirementsButton({
   value,
   onEdit,
   onClear,
   disabled,
-}: RequirementsSummaryCardProps) {
-  const trimmedValue = value.trim()
-  const hasContent = trimmedValue.length > 0
-  const lineCount = trimmedValue ? trimmedValue.split('\n').filter(Boolean).length : 0
-  const preview = trimmedValue.split('\n').slice(0, 3).join('\n')
-  const previewTag = hasContent ? `${Math.max(lineCount, 1)} пункт.` : 'По желанию'
+}: {
+  value: string
+  onEdit: () => void
+  onClear: () => void
+  disabled?: boolean
+}) {
+  const hasContent = value.trim().length > 0
+  const preview = value.trim().split('\n').slice(0, 2).join(' · ')
+  const lineCount = value.trim() ? value.trim().split('\n').filter(Boolean).length : 0
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15 }}
       style={{
-        ...getSectionShellStyle(false),
-        padding: '14px',
-        opacity: disabled ? 0.65 : 1,
+        borderRadius: 14,
+        border: `1px solid ${hasContent ? goldBorder : cardBorder}`,
+        background: hasContent ? goldSoft : cardBg,
+        opacity: disabled ? 0.6 : 1,
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <div style={{
-          width: 36,
-          height: 36,
-          borderRadius: 12,
-          background: 'rgba(212, 175, 55, 0.08)',
-          border: '1px solid rgba(212, 175, 55, 0.12)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <PenTool size={16} color="var(--gold-400)" strokeWidth={2} />
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 11,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'var(--gold-400)',
-            marginBottom: 2,
-          }}>
-            Требования
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>
-            Объём, оформление, особые пожелания
-          </div>
-        </div>
-
-        <StatusPill tone={hasContent ? 'accent' : 'muted'} label={previewTag} />
-        {hasContent && !disabled && (
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.94 }}
-            onClick={onClear}
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 10,
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.18)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <Trash2 size={14} color="#ef4444" />
-          </motion.button>
-        )}
-      </div>
-
       <motion.button
         type="button"
         whileTap={disabled ? undefined : { scale: 0.99 }}
         onClick={disabled ? undefined : onEdit}
         style={{
           width: '100%',
-          ...getInnerSurfaceStyle(hasContent, !hasContent),
-          padding: hasContent ? '16px' : '16px',
+          padding: '14px',
+          border: 'none',
+          background: 'transparent',
           cursor: disabled ? 'not-allowed' : 'pointer',
           textAlign: 'left',
           display: 'flex',
           alignItems: 'center',
-          gap: 14,
+          gap: 12,
         }}
       >
         <div style={{
-          width: 44,
-          height: 44,
-          borderRadius: 12,
-          background: hasContent ? 'rgba(212, 175, 55, 0.12)' : 'rgba(212, 175, 55, 0.08)',
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          background: hasContent ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.05)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <PenTool size={18} color="var(--gold-400)" />
+          <PenTool size={16} color={hasContent ? '#d4af37' : 'var(--text-muted)'} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginBottom: 5 }}>
+          <div style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--text-main)',
+            marginBottom: hasContent ? 3 : 0,
+          }}>
             {hasContent ? 'Требования добавлены' : 'Добавить требования'}
           </div>
-          <div style={{
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: hasContent ? 'var(--text-secondary)' : 'var(--text-muted)',
-            whiteSpace: hasContent ? 'pre-wrap' : 'normal',
-            display: '-webkit-box',
-            WebkitLineClamp: hasContent ? 3 : undefined,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}>
-            {hasContent
-              ? preview
-              : 'Опишите объём, формат оформления, особые пожелания и все, что важно учесть в работе.'}
-          </div>
+          {hasContent ? (
+            <div style={{
+              fontSize: 12,
+              color: 'var(--text-muted)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {lineCount} пункт. · {preview}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Объём, оформление, пожелания
+            </div>
+          )}
         </div>
 
-        <div style={{
-          width: 34,
-          height: 34,
-          borderRadius: 12,
-          background: 'rgba(255, 255, 255, 0.04)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <ChevronRight size={18} color="var(--text-muted)" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          {hasContent && !disabled && (
+            <motion.div
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => { e.stopPropagation(); onClear() }}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.18)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Trash2 size={12} color="#ef4444" />
+            </motion.div>
+          )}
+          <ChevronRight size={16} color="var(--text-muted)" style={{ opacity: 0.5 }} />
         </div>
       </motion.button>
     </motion.div>
   )
 }
 
-interface AttachmentsCardProps {
+/* ─────────────────────────────────────────────────────────────────────────
+   ATTACHMENTS CARD
+   ───────────────────────────────────────────────────────────────────────── */
+
+function AttachmentsCard({
+  files,
+  onAdd,
+  onRemove,
+  disabled,
+}: {
   files: File[]
   onAdd: (files: File[]) => void
   onRemove: (index: number) => void
   disabled?: boolean
-}
-
-function AttachmentsCard({ files, onAdd, onRemove, disabled }: AttachmentsCardProps) {
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
   const totalSize = useMemo(
-    () => files.reduce((sum, file) => sum + file.size, 0),
+    () => files.reduce((sum, f) => sum + f.size, 0),
     [files]
   )
 
-  const handleIncomingFiles = useCallback((incomingFiles: File[]) => {
-    const validation = validateIncomingFiles(incomingFiles, files)
-
-    if (validation.accepted.length > 0) {
-      onAdd(validation.accepted)
-    }
-
-    const nextNotice = buildFileNotice(validation)
-    setNotice(nextNotice)
+  const handleIncomingFiles = useCallback((incoming: File[]) => {
+    const validation = validateIncomingFiles(incoming, files)
+    if (validation.accepted.length > 0) onAdd(validation.accepted)
+    setNotice(buildFileNotice(validation))
   }, [files, onAdd])
 
-  const handleDrop = useCallback((event: React.DragEvent) => {
-    event.preventDefault()
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
     setIsDragging(false)
-    if (disabled) {
-      return
-    }
-    handleIncomingFiles(Array.from(event.dataTransfer.files))
+    if (!disabled) handleIncomingFiles(Array.from(e.dataTransfer.files))
   }, [disabled, handleIncomingFiles])
 
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    if (disabled) {
-      return
-    }
-
-    const selectedFiles = event.target.files ? Array.from(event.target.files) : []
-    handleIncomingFiles(selectedFiles)
-    event.target.value = ''
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return
+    handleIncomingFiles(e.target.files ? Array.from(e.target.files) : [])
+    e.target.value = ''
   }, [disabled, handleIncomingFiles])
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
       style={{
-        ...getSectionShellStyle(isDragging),
-        padding: '14px',
-        opacity: disabled ? 0.65 : 1,
+        borderRadius: 14,
+        border: `1px ${isDragging ? 'solid' : 'dashed'} ${isDragging ? goldBorder : cardBorder}`,
+        background: isDragging ? goldSoft : cardBg,
+        opacity: disabled ? 0.6 : 1,
+        transition: 'all 0.2s ease',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <div style={{
-          width: 36,
-          height: 36,
-          borderRadius: 12,
-          background: 'rgba(212, 175, 55, 0.08)',
-          border: '1px solid rgba(212, 175, 55, 0.12)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <Paperclip size={16} color="var(--gold-400)" strokeWidth={2} />
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 11,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'var(--gold-400)',
-            marginBottom: 2,
-          }}>
-            Файлы
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>
-            Методичка, задание, пример или скрин
-          </div>
-        </div>
-
-        <StatusPill
-          tone={files.length > 0 ? 'accent' : 'muted'}
-          label={files.length > 0 ? `${files.length} файл(ов)` : 'По желанию'}
-        />
-      </div>
-
+      {/* Drop zone / Upload button */}
       <motion.div
-        animate={{
-          scale: isDragging ? 0.995 : 1,
-          backgroundColor: isDragging ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255, 255, 255, 0.02)',
-        }}
-        onDragOver={(event) => {
-          event.preventDefault()
-          if (!disabled) setIsDragging(true)
-        }}
+        onDragOver={(e) => { e.preventDefault(); if (!disabled) setIsDragging(true) }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => !disabled && inputRef.current?.click()}
         style={{
-          ...getInnerSurfaceStyle(isDragging, files.length === 0),
-          padding: '15px 16px',
+          padding: '14px',
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
       >
@@ -606,76 +444,80 @@ function AttachmentsCard({ files, onAdd, onRemove, disabled }: AttachmentsCardPr
           disabled={disabled}
         />
 
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            background: 'rgba(212, 175, 55, 0.10)',
-            border: '1px solid rgba(212, 175, 55, 0.14)',
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: files.length > 0 ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.05)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <FileUp size={20} color="var(--gold-400)" />
+            {files.length > 0
+              ? <Paperclip size={16} color="#d4af37" />
+              : <FileUp size={16} color="var(--text-muted)" />}
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginBottom: 5 }}>
-              {files.length > 0 ? 'Добавить ещё файлы' : 'Прикрепить файлы'}
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)', marginBottom: 2 }}>
+              {files.length > 0 ? `${files.length} файл(ов)` : 'Прикрепить файлы'}
             </div>
-            <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-secondary)' }}>
-              Поддерживаем документы, изображения, архивы и медиа. До 50 МБ на файл.
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {files.length > 0
+                ? `${formatFileSize(totalSize)} · Нажмите чтобы добавить ещё`
+                : 'Методичка, задание, пример — до 50 МБ'}
             </div>
           </div>
 
-          <StatusPill tone="accent" label="до 50 МБ" />
+          {files.length > 0 && (
+            <Pill tone="accent" label={`${files.length}`} />
+          )}
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-          <StatusPill tone="muted" label="PDF / DOCX" />
-          <StatusPill tone="muted" label="JPG / PNG" />
-          <StatusPill tone="muted" label="ZIP / XLSX" />
-        </div>
+        {/* File type chips */}
+        {files.length === 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+            <Pill tone="muted" label="PDF" />
+            <Pill tone="muted" label="DOCX" />
+            <Pill tone="muted" label="JPG" />
+            <Pill tone="muted" label="ZIP" />
+          </div>
+        )}
       </motion.div>
 
-      {(files.length > 0 || notice) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-          {files.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <StatusPill tone="accent" label={`${files.length} файл(ов)`} />
-              <StatusPill tone="muted" label={formatFileSize(totalSize)} />
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                Все выбранные материалы загрузим после создания заказа.
-              </span>
-            </div>
-          )}
-
-          {notice && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 10,
-              padding: '12px 14px',
-              borderRadius: 14,
-              background: 'rgba(245, 158, 11, 0.08)',
-              border: '1px solid rgba(245, 158, 11, 0.18)',
-            }}>
-              <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: 1 }} />
-              <span style={{ fontSize: 12, lineHeight: 1.55, color: '#f8c26a' }}>{notice}</span>
-            </div>
-          )}
+      {/* Notice */}
+      {notice && (
+        <div style={{
+          margin: '0 14px 12px',
+          padding: '10px 12px',
+          borderRadius: 10,
+          background: 'rgba(245, 158, 11, 0.08)',
+          border: '1px solid rgba(245, 158, 11, 0.18)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+        }}>
+          <AlertTriangle size={14} color="#f59e0b" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 12, lineHeight: 1.5, color: '#f8c26a' }}>{notice}</span>
         </div>
       )}
 
+      {/* File list */}
       {files.length > 0 && (
-        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {files.map((file, index) => (
-            <AttachedFileRow
-              key={buildFileSignature(file)}
+        <div style={{
+          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          padding: '10px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}>
+          {files.map((file, i) => (
+            <FileRow
+              key={`${file.name}:${file.size}:${file.lastModified}`}
               file={file}
-              onRemove={() => onRemove(index)}
+              onRemove={() => onRemove(i)}
               disabled={disabled}
             />
           ))}
@@ -685,7 +527,11 @@ function AttachmentsCard({ files, onAdd, onRemove, disabled }: AttachmentsCardPr
   )
 }
 
-function AttachedFileRow({
+/* ─────────────────────────────────────────────────────────────────────────
+   FILE ROW
+   ───────────────────────────────────────────────────────────────────────── */
+
+function FileRow({
   file,
   onRemove,
   disabled,
@@ -694,65 +540,57 @@ function AttachedFileRow({
   onRemove: () => void
   disabled?: boolean
 }) {
-  const extension = getFileExtension(file.name)
+  const ext = getFileExtension(file.name)
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 14px',
-        borderRadius: 16,
-        background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02))',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-      }}
-    >
-      <div style={{
-        minWidth: 46,
-        padding: '8px 10px',
-        borderRadius: 12,
-        background: 'rgba(212, 175, 55, 0.10)',
-        color: 'var(--gold-300)',
-        fontSize: 11,
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '8px 10px',
+      borderRadius: 10,
+      background: 'rgba(255, 255, 255, 0.03)',
+    }}>
+      <span style={{
+        padding: '4px 8px',
+        borderRadius: 6,
+        background: goldSoft,
+        color: '#d4af37',
+        fontSize: 10,
         fontWeight: 700,
-        textAlign: 'center',
-        letterSpacing: '0.06em',
+        letterSpacing: '0.05em',
         textTransform: 'uppercase',
+        flexShrink: 0,
       }}>
-        {extension || 'Файл'}
-      </div>
+        {ext || '?'}
+      </span>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: 600,
           color: 'var(--text-main)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          marginBottom: 4,
         }}>
           {file.name}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <StatusPill tone="muted" label={formatFileSize(file.size)} />
-          <StatusPill tone="muted" label={getFileKindLabel(file.name)} />
+        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          {formatFileSize(file.size)}
         </div>
       </div>
 
       {!disabled && (
         <motion.button
           type="button"
-          whileTap={{ scale: 0.94 }}
+          whileTap={{ scale: 0.9 }}
           onClick={onRemove}
           style={{
-            width: 30,
-            height: 30,
-            borderRadius: 10,
-            border: '1px solid rgba(239, 68, 68, 0.18)',
+            width: 26,
+            height: 26,
+            borderRadius: 8,
+            border: '1px solid rgba(239, 68, 68, 0.15)',
             background: 'rgba(239, 68, 68, 0.08)',
             display: 'flex',
             alignItems: 'center',
@@ -761,21 +599,16 @@ function AttachedFileRow({
             flexShrink: 0,
           }}
         >
-          <X size={14} color="#ef4444" />
+          <X size={12} color="#ef4444" />
         </motion.button>
       )}
-    </motion.div>
+    </div>
   )
 }
 
-interface RequirementsEditorModalProps {
-  isOpen: boolean
-  onClose: () => void
-  value: string
-  onChange: (val: string) => void
-  serviceTypeId: string | null
-  serviceName?: string
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   REQUIREMENTS EDITOR MODAL — Full-screen editor
+   ───────────────────────────────────────────────────────────────────────── */
 
 function RequirementsEditorModal({
   isOpen,
@@ -784,7 +617,14 @@ function RequirementsEditorModal({
   onChange,
   serviceTypeId,
   serviceName,
-}: RequirementsEditorModalProps) {
+}: {
+  isOpen: boolean
+  onClose: () => void
+  value: string
+  onChange: (val: string) => void
+  serviceTypeId: string | null
+  serviceName?: string
+}) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [localValue, setLocalValue] = useState(value)
   const [showTemplates, setShowTemplates] = useState(false)
@@ -798,16 +638,12 @@ function RequirementsEditorModal({
   }, [isOpen, value])
 
   useEffect(() => {
-    if (!isOpen) {
-      return
-    }
-
-    const handleViewportResize = () => {
+    if (!isOpen) return
+    const handleResize = () => {
       textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-
-    window.visualViewport?.addEventListener('resize', handleViewportResize)
-    return () => window.visualViewport?.removeEventListener('resize', handleViewportResize)
+    window.visualViewport?.addEventListener('resize', handleResize)
+    return () => window.visualViewport?.removeEventListener('resize', handleResize)
   }, [isOpen])
 
   const handleSave = useCallback(() => {
@@ -815,38 +651,23 @@ function RequirementsEditorModal({
     onClose()
   }, [localValue, onChange, onClose])
 
-  const handleClear = useCallback(() => {
-    setLocalValue('')
-  }, [])
-
   const handlePaste = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText()
       setLocalValue(prev => prev ? `${prev}\n${text}` : text)
-    } catch {
-      // Clipboard API may be unavailable inside Telegram WebView.
-    }
+    } catch { /* Clipboard unavailable in Telegram */ }
   }, [])
 
-  const handleTemplateInsert = useCallback((templateKey: string) => {
-    const template = REQUIREMENTS_TEMPLATES[templateKey] || REQUIREMENTS_TEMPLATES.default
+  const handleTemplateInsert = useCallback((key: string) => {
+    const template = REQUIREMENTS_TEMPLATES[key] || REQUIREMENTS_TEMPLATES.default
     setLocalValue(prev => prev ? `${prev}\n\n${template}` : template)
     setShowTemplates(false)
   }, [])
 
-  const primaryTemplateKey = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId]
-    ? serviceTypeId
-    : 'default'
-  const templatePreview = REQUIREMENTS_TEMPLATES[primaryTemplateKey] || REQUIREMENTS_TEMPLATES.default
-
+  const primaryKey = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId] ? serviceTypeId : 'default'
   const placeholder = serviceTypeId && REQUIREMENTS_TEMPLATES[serviceTypeId]
     ? REQUIREMENTS_TEMPLATES[serviceTypeId]
-    : `Опишите ожидания:
-
-• объём или количество слайдов
-• требования к уникальности
-• оформление по ГОСТ или методичке
-• особые пожелания`
+    : `Опишите ожидания:\n\n• объём или количество слайдов\n• требования к уникальности\n• оформление по ГОСТ или методичке\n• особые пожелания`
 
   const charCount = localValue.trim().length
 
@@ -867,33 +688,25 @@ function RequirementsEditorModal({
             flexDirection: 'column',
           }}
         >
-          <motion.div
-            initial={{ y: -16, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '16px 20px 14px',
-              paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))',
-              background: `
-                radial-gradient(circle at top right, rgba(212, 175, 55, 0.14), transparent 34%),
-                linear-gradient(180deg, rgba(16, 15, 20, 0.98), rgba(10, 10, 14, 0.98))
-              `,
-              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-            }}
-          >
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '14px 16px',
+            paddingTop: 'calc(14px + env(safe-area-inset-top, 0px))',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          }}>
             <motion.button
               type="button"
               whileTap={{ scale: 0.9 }}
               onClick={handleSave}
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
+                width: 38,
+                height: 38,
+                borderRadius: 12,
                 background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.08)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -904,123 +717,49 @@ function RequirementsEditorModal({
             </motion.button>
 
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-main)', marginBottom: 2 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)' }}>
                 Требования
               </div>
-              <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
-                {serviceName || 'Опишите детали в свободной форме'}
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                {serviceName || 'Опишите детали'}
               </div>
             </div>
 
-            <StatusPill tone={charCount > 0 ? 'good' : 'muted'} label={`${charCount} символов`} />
-          </motion.div>
-
-          <div
-            style={{
-              padding: '12px 20px 14px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-              background: 'rgba(10, 10, 14, 0.9)',
-            }}
-          >
-            <div
-              style={{
-                ...getSectionShellStyle(true, true),
-                padding: '14px 14px 12px',
-                borderRadius: 18,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 12,
-                  background: 'rgba(212, 175, 55, 0.10)',
-                  border: '1px solid rgba(212, 175, 55, 0.16)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <Sparkles size={16} color="var(--gold-300)" />
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', marginBottom: 4 }}>
-                    Чем точнее вводные, тем быстрее оценка
-                  </div>
-                  <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-secondary)', marginBottom: 10 }}>
-                    Можно написать требования свободно или вставить готовую структуру и быстро заполнить её под себя.
-                  </div>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    <StatusPill tone="accent" label={serviceName || 'Общий шаблон'} />
-                    <StatusPill tone="muted" label="объём" />
-                    <StatusPill tone="muted" label="оформление" />
-                    <StatusPill tone="muted" label="особые пожелания" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Pill
+              tone={charCount > 40 ? 'good' : charCount > 0 ? 'accent' : 'muted'}
+              label={`${charCount} симв.`}
+            />
           </div>
 
-          <motion.div
-            initial={{ y: -10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.15 }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '12px 20px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-              flexWrap: 'wrap',
-            }}
-          >
-            <ToolbarButton icon={ClipboardPaste} label="Вставить" onClick={handlePaste} />
-            <ToolbarButton
+          {/* Toolbar */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 16px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+          }}>
+            <ToolbarBtn icon={ClipboardPaste} label="Вставить" onClick={handlePaste} />
+            <ToolbarBtn
               icon={Sparkles}
-              label="Шаблоны"
-              onClick={() => setShowTemplates(prev => !prev)}
+              label="Шаблон"
+              onClick={() => setShowTemplates(p => !p)}
               active={showTemplates}
             />
             <div style={{ flex: 1 }} />
-            <ToolbarButton icon={Trash2} label="Очистить" onClick={handleClear} danger />
-          </motion.div>
+            <ToolbarBtn icon={Trash2} label="Очистить" onClick={() => setLocalValue('')} danger />
+          </div>
 
+          {/* Templates dropdown */}
           <AnimatePresence>
             {showTemplates && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                style={{
-                  overflow: 'hidden',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                }}
+                style={{ overflow: 'hidden', borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}
               >
-                <div style={{ padding: '12px 20px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{
-                    ...getInnerSurfaceStyle(true),
-                    padding: '14px 14px 12px',
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gold-300)', marginBottom: 8 }}>
-                      Быстрый каркас
-                    </div>
-                    <div style={{
-                      fontSize: 12.5,
-                      lineHeight: 1.6,
-                      color: 'var(--text-secondary)',
-                      whiteSpace: 'pre-wrap',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 5,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}>
-                      {templatePreview}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ padding: '10px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {Object.keys(REQUIREMENTS_TEMPLATES).map((key) => (
                     <motion.button
                       key={key}
@@ -1028,109 +767,69 @@ function RequirementsEditorModal({
                       whileTap={{ scale: 0.96 }}
                       onClick={() => handleTemplateInsert(key)}
                       style={{
-                        padding: '9px 13px',
+                        padding: '8px 12px',
                         fontSize: 12,
-                        fontWeight: 700,
-                        color: key === primaryTemplateKey ? 'var(--gold-300)' : 'var(--text-secondary)',
-                        background: key === primaryTemplateKey ? 'rgba(212,175,55,0.10)' : 'var(--bg-glass)',
-                        border: `1px solid ${key === primaryTemplateKey ? 'rgba(212,175,55,0.18)' : 'var(--border-default)'}`,
-                        borderRadius: 12,
+                        fontWeight: 600,
+                        color: key === primaryKey ? '#d4af37' : 'var(--text-secondary)',
+                        background: key === primaryKey ? goldSoft : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${key === primaryKey ? goldBorder : cardBorder}`,
+                        borderRadius: 10,
                         cursor: 'pointer',
                       }}
                     >
                       {getTemplateLabel(key)}
                     </motion.button>
                   ))}
-                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div
-            style={{
-              flex: 1,
-              padding: 20,
-              paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
-              overflow: 'auto',
-              WebkitOverflowScrolling: 'touch',
-            }}
-          >
-            <div
+          {/* Textarea */}
+          <div style={{
+            flex: 1,
+            padding: 16,
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            overflow: 'auto',
+            WebkitOverflowScrolling: 'touch',
+          }}>
+            <textarea
+              ref={textareaRef}
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              placeholder={placeholder}
               style={{
-                ...getSectionShellStyle(true),
-                padding: 16,
-                minHeight: '100%',
+                width: '100%',
+                minHeight: '60vh',
+                fontSize: 15,
+                fontFamily: "'Manrope', sans-serif",
+                color: 'var(--text-main)',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                resize: 'none',
+                lineHeight: 1.7,
+                padding: 0,
               }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginBottom: 12,
-                flexWrap: 'wrap',
-              }}>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gold-300)', marginBottom: 4 }}>
-                    Поле описания
-                  </div>
-                  <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                    Напишите своими словами или отредактируйте готовую структуру под задачу.
-                  </div>
-                </div>
-                <StatusPill tone={localValue.trim().length > 40 ? 'good' : 'accent'} label={localValue.trim().length > 40 ? 'Хватает для оценки' : 'Лучше добавить детали'} />
-              </div>
-
-              <div
-                style={{
-                  ...getInnerSurfaceStyle(localValue.trim().length > 0, !localValue.trim()),
-                  padding: '14px 14px 18px',
-                  minHeight: '56vh',
-                }}
-              >
-                <textarea
-                  ref={textareaRef}
-                  value={localValue}
-                  onChange={(event) => setLocalValue(event.target.value)}
-                  placeholder={placeholder}
-                  style={{
-                    width: '100%',
-                    minHeight: 'calc(56vh - 32px)',
-                    fontSize: 15.5,
-                    fontFamily: "'Manrope', sans-serif",
-                    color: 'var(--text-main)',
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    resize: 'none',
-                    lineHeight: 1.72,
-                    padding: 0,
-                  }}
-                  autoCapitalize="sentences"
-                  autoCorrect="on"
-                  spellCheck
-                />
-              </div>
-            </div>
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              spellCheck
+            />
           </div>
 
+          {/* Save button */}
           <div style={{
-            padding: '12px 20px calc(14px + env(safe-area-inset-bottom, 0px))',
-            borderTop: '1px solid rgba(255, 255, 255, 0.04)',
-            background: 'linear-gradient(180deg, rgba(10, 10, 14, 0.92), rgba(8, 8, 12, 0.98))',
+            padding: '12px 16px calc(14px + env(safe-area-inset-bottom, 0px))',
+            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
           }}>
-            <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)', marginBottom: 10 }}>
-              Сохраним текст в заявку и покажем его менеджеру без обрезки.
-            </div>
             <motion.button
               type="button"
               whileTap={{ scale: 0.98 }}
               onClick={handleSave}
               style={{
                 width: '100%',
-                padding: '14px 18px',
-                borderRadius: 16,
+                padding: '14px',
+                borderRadius: 14,
                 border: 'none',
                 background: 'var(--gold-metallic)',
                 color: '#050505',
@@ -1139,7 +838,7 @@ function RequirementsEditorModal({
                 cursor: 'pointer',
               }}
             >
-              Сохранить требования
+              Сохранить
             </motion.button>
           </div>
         </motion.div>
@@ -1148,15 +847,23 @@ function RequirementsEditorModal({
   )
 }
 
-interface ToolbarButtonProps {
+/* ─────────────────────────────────────────────────────────────────────────
+   SMALL COMPONENTS
+   ───────────────────────────────────────────────────────────────────────── */
+
+function ToolbarBtn({
+  icon: Icon,
+  label,
+  onClick,
+  active,
+  danger,
+}: {
   icon: typeof FileText
   label: string
   onClick: () => void
   active?: boolean
   danger?: boolean
-}
-
-function ToolbarButton({ icon: Icon, label, onClick, active, danger }: ToolbarButtonProps) {
+}) {
   return (
     <motion.button
       type="button"
@@ -1165,58 +872,38 @@ function ToolbarButton({ icon: Icon, label, onClick, active, danger }: ToolbarBu
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        padding: '8px 12px',
+        gap: 5,
+        padding: '7px 11px',
         fontSize: 12,
         fontWeight: 600,
-        color: danger ? '#ef4444' : active ? 'var(--gold-400)' : 'var(--text-secondary)',
-        background: active ? 'rgba(212, 175, 55, 0.10)' : 'var(--bg-glass)',
-        border: `1px solid ${active ? 'var(--border-gold)' : 'var(--border-default)'}`,
+        color: danger ? '#ef4444' : active ? '#d4af37' : 'var(--text-secondary)',
+        background: active ? goldSoft : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${active ? goldBorder : cardBorder}`,
         borderRadius: 10,
         cursor: 'pointer',
       }}
     >
-      <Icon size={14} />
+      <Icon size={13} />
       {label}
     </motion.button>
   )
 }
 
-function StatusPill({
-  label,
-  tone,
-}: {
-  label: string
-  tone: 'good' | 'muted' | 'accent'
-}) {
-  const palette = tone === 'good'
-    ? {
-      background: 'rgba(34, 197, 94, 0.10)',
-      border: 'rgba(34, 197, 94, 0.18)',
-      color: '#7dd3a6',
-    }
+function Pill({ label, tone }: { label: string; tone: 'good' | 'muted' | 'accent' }) {
+  const colors = tone === 'good'
+    ? { bg: 'rgba(34, 197, 94, 0.10)', border: 'rgba(34, 197, 94, 0.18)', text: '#7dd3a6' }
     : tone === 'accent'
-      ? {
-        background: 'rgba(212, 175, 55, 0.10)',
-        border: 'rgba(212, 175, 55, 0.20)',
-        color: 'var(--gold-300)',
-      }
-      : {
-        background: 'rgba(255, 255, 255, 0.04)',
-        border: 'rgba(255, 255, 255, 0.06)',
-        color: 'var(--text-muted)',
-      }
+      ? { bg: goldSoft, border: goldBorder, text: '#d4af37' }
+      : { bg: 'rgba(255,255,255,0.04)', border: cardBorder, text: 'var(--text-muted)' }
 
   return (
     <span style={{
       display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6,
-      padding: '7px 10px',
+      padding: '5px 8px',
       borderRadius: 999,
-      background: palette.background,
-      border: `1px solid ${palette.border}`,
-      color: palette.color,
+      background: colors.bg,
+      border: `1px solid ${colors.border}`,
+      color: colors.text,
       fontSize: 11,
       fontWeight: 700,
       lineHeight: 1,
@@ -1226,112 +913,61 @@ function StatusPill({
   )
 }
 
-function buildFileSignature(file: File) {
-  return `${file.name}:${file.size}:${file.lastModified}`
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   UTILITY FUNCTIONS
+   ───────────────────────────────────────────────────────────────────────── */
 
 function getFileExtension(filename: string) {
-  const dotIndex = filename.lastIndexOf('.')
-  if (dotIndex === -1) {
-    return ''
-  }
-  return filename.slice(dotIndex + 1).toUpperCase()
+  const dot = filename.lastIndexOf('.')
+  return dot === -1 ? '' : filename.slice(dot + 1).toUpperCase()
 }
 
 function getFileExtensionWithDot(filename: string) {
-  const dotIndex = filename.lastIndexOf('.')
-  if (dotIndex === -1) {
-    return ''
-  }
-  return filename.slice(dotIndex).toLowerCase()
+  const dot = filename.lastIndexOf('.')
+  return dot === -1 ? '' : filename.slice(dot).toLowerCase()
 }
 
 function formatFileSize(size: number) {
-  if (size >= 1024 * 1024) {
-    return `${(size / (1024 * 1024)).toFixed(size >= 10 * 1024 * 1024 ? 0 : 1)} МБ`
-  }
-
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(size >= 10 * 1024 * 1024 ? 0 : 1)} МБ`
   return `${Math.max(1, Math.round(size / 1024))} КБ`
 }
 
-function getFileKindLabel(filename: string) {
-  const ext = getFileExtensionWithDot(filename)
-  if (['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'].includes(ext)) {
-    return 'изображение'
-  }
-  if (['.zip', '.rar', '.7z', '.tar', '.gz'].includes(ext)) {
-    return 'архив'
-  }
-  if (['.mp3', '.wav'].includes(ext)) {
-    return 'аудио'
-  }
-  if (['.mp4', '.avi', '.mov'].includes(ext)) {
-    return 'видео'
-  }
-  if (['.py', '.ts', '.html', '.css', '.json', '.xml', '.sql'].includes(ext)) {
-    return 'код / данные'
-  }
-  return 'документ'
-}
-
-function validateIncomingFiles(incomingFiles: File[], existingFiles: File[]) {
-  const knownSignatures = new Set(existingFiles.map(buildFileSignature))
+function validateIncomingFiles(incoming: File[], existing: File[]) {
+  const known = new Set(existing.map(f => `${f.name}:${f.size}:${f.lastModified}`))
   const accepted: File[] = []
   const blocked: string[] = []
   const oversized: string[] = []
   const duplicates: string[] = []
 
-  incomingFiles.forEach((file) => {
-    const signature = buildFileSignature(file)
-    const extension = getFileExtensionWithDot(file.name)
+  incoming.forEach(file => {
+    const sig = `${file.name}:${file.size}:${file.lastModified}`
+    const ext = getFileExtensionWithDot(file.name)
 
-    if (knownSignatures.has(signature) || accepted.some(item => buildFileSignature(item) === signature)) {
-      duplicates.push(file.name)
-      return
+    if (known.has(sig) || accepted.some(a => `${a.name}:${a.size}:${a.lastModified}` === sig)) {
+      duplicates.push(file.name); return
     }
-
-    if (extension && !ACCEPTED_EXTENSIONS.includes(extension)) {
-      blocked.push(file.name)
-      return
+    if (ext && !ACCEPTED_EXTENSIONS.includes(ext)) {
+      blocked.push(file.name); return
     }
-
     if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-      oversized.push(file.name)
-      return
+      oversized.push(file.name); return
     }
-
     accepted.push(file)
   })
 
   return { accepted, blocked, oversized, duplicates }
 }
 
-function buildFileNotice(validation: ReturnType<typeof validateIncomingFiles>) {
-  const parts: string[] = []
-
-  if (validation.accepted.length > 0) {
-    parts.push(`Добавили ${validation.accepted.length} файл(ов).`)
-  }
-
-  if (validation.duplicates.length > 0) {
-    parts.push(`Повторы пропустили: ${validation.duplicates.join(', ')}.`)
-  }
-
-  if (validation.blocked.length > 0) {
-    parts.push(`Неподдерживаемый тип: ${validation.blocked.join(', ')}.`)
-  }
-
-  if (validation.oversized.length > 0) {
-    parts.push(`Слишком большие файлы (лимит 50 МБ): ${validation.oversized.join(', ')}.`)
-  }
-
-  return parts.length > 0 ? parts.join(' ') : null
+function buildFileNotice(v: ReturnType<typeof validateIncomingFiles>) {
+  const p: string[] = []
+  if (v.accepted.length > 0) p.push(`Добавили ${v.accepted.length} файл(ов).`)
+  if (v.duplicates.length > 0) p.push(`Повторы пропустили: ${v.duplicates.join(', ')}.`)
+  if (v.blocked.length > 0) p.push(`Неподдерживаемый тип: ${v.blocked.join(', ')}.`)
+  if (v.oversized.length > 0) p.push(`Слишком большие (лимит 50 МБ): ${v.oversized.join(', ')}.`)
+  return p.length > 0 ? p.join(' ') : null
 }
 
 function getTemplateLabel(key: string) {
-  if (key === 'default') {
-    return 'Общий шаблон'
-  }
-
-  return SERVICE_TYPES.find(service => service.id === key)?.label || key
+  if (key === 'default') return 'Общий'
+  return SERVICE_TYPES.find(s => s.id === key)?.label || key
 }
