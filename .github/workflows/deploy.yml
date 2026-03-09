@@ -33,8 +33,11 @@ jobs:
 
             echo "Current commit: $(git rev-parse --short HEAD)"
 
+            # Ensure remote URL is correct
+            git remote set-url origin https://github.com/soloveyska1/academic_saloon.git
+
             # Update code from GitHub
-            git fetch --all --prune
+            git fetch origin --prune
             git checkout main
             git reset --hard origin/main
 
