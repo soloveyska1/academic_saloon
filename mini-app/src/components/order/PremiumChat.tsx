@@ -582,7 +582,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       }
 
       // Handle admin message specifically (legacy format)
-      if (message.type === 'new_message' && targetOrderId === orderId) {
+      if ((message.type as string) === 'new_message' && targetOrderId === orderId) {
         loadMessages(true)
         playNotificationSound()
         hapticSuccess()

@@ -592,7 +592,7 @@ import type { GodDashboard, GodOrder, GodUser, GodPromo, GodLog, GodLiveUser } f
 
 // Dashboard
 export async function fetchGodDashboard(): Promise<GodDashboard> {
-  return apiFetch<GodDashboard>('/god/dashboard')
+  return godFetch<GodDashboard>('/god/dashboard')
 }
 
 // Orders
@@ -608,7 +608,7 @@ export async function fetchGodOrders(params?: {
   if (params?.limit) queryParams.append('limit', params.limit.toString())
   if (params?.offset) queryParams.append('offset', params.offset.toString())
   const query = queryParams.toString()
-  return apiFetch(`/god/orders${query ? `?${query}` : ''}`)
+  return godFetch(`/god/orders${query ? `?${query}` : ''}`)
 }
 
 export async function fetchGodOrderDetails(orderId: number): Promise<{
@@ -616,53 +616,53 @@ export async function fetchGodOrderDetails(orderId: number): Promise<{
   user: GodUser | null
   messages: Array<{ id: number; sender_type: string; message_text: string | null; created_at: string | null }>
 }> {
-  return apiFetch(`/god/orders/${orderId}`)
+  return godFetch(`/god/orders/${orderId}`)
 }
 
 export async function updateGodOrderStatus(orderId: number, status: string): Promise<{ success: boolean }> {
-  return apiFetch(`/god/orders/${orderId}/status`, {
+  return godFetch(`/god/orders/${orderId}/status`, {
     method: 'POST',
     body: JSON.stringify({ status }),
   })
 }
 
 export async function updateGodOrderPrice(orderId: number, price: number): Promise<{ success: boolean }> {
-  return apiFetch(`/god/orders/${orderId}/price`, {
+  return godFetch(`/god/orders/${orderId}/price`, {
     method: 'POST',
     body: JSON.stringify({ price }),
   })
 }
 
 export async function updateGodOrderProgress(orderId: number, progress: number, statusText?: string): Promise<{ success: boolean }> {
-  return apiFetch(`/god/orders/${orderId}/progress`, {
+  return godFetch(`/god/orders/${orderId}/progress`, {
     method: 'POST',
     body: JSON.stringify({ progress, status_text: statusText }),
   })
 }
 
 export async function updateGodOrderNotes(orderId: number, notes: string): Promise<{ success: boolean }> {
-  return apiFetch(`/god/orders/${orderId}/notes`, {
+  return godFetch(`/god/orders/${orderId}/notes`, {
     method: 'POST',
     body: JSON.stringify({ notes }),
   })
 }
 
 export async function confirmGodPayment(orderId: number, amount?: number, isFull?: boolean): Promise<{ success: boolean }> {
-  return apiFetch(`/god/orders/${orderId}/confirm-payment`, {
+  return godFetch(`/god/orders/${orderId}/confirm-payment`, {
     method: 'POST',
     body: JSON.stringify({ amount, is_full: isFull }),
   })
 }
 
 export async function rejectGodPayment(orderId: number, reason?: string): Promise<{ success: boolean }> {
-  return apiFetch(`/god/orders/${orderId}/reject-payment`, {
+  return godFetch(`/god/orders/${orderId}/reject-payment`, {
     method: 'POST',
     body: JSON.stringify({ reason }),
   })
 }
 
 export async function sendGodOrderMessage(orderId: number, text: string): Promise<{ success: boolean }> {
-  return apiFetch(`/god/orders/${orderId}/message`, {
+  return godFetch(`/god/orders/${orderId}/message`, {
     method: 'POST',
     body: JSON.stringify({ text }),
   })
@@ -681,7 +681,7 @@ export async function fetchGodUsers(params?: {
   if (params?.limit) queryParams.append('limit', params.limit.toString())
   if (params?.offset) queryParams.append('offset', params.offset.toString())
   const query = queryParams.toString()
-  return apiFetch(`/god/users${query ? `?${query}` : ''}`)
+  return godFetch(`/god/users${query ? `?${query}` : ''}`)
 }
 
 export async function fetchGodUserDetails(userId: number): Promise<{
@@ -689,32 +689,32 @@ export async function fetchGodUserDetails(userId: number): Promise<{
   orders: GodOrder[]
   transactions: Array<{ id: number; amount: number; type: string; reason: string; description: string | null; created_at: string | null }>
 }> {
-  return apiFetch(`/god/users/${userId}`)
+  return godFetch(`/god/users/${userId}`)
 }
 
 export async function modifyGodUserBalance(userId: number, amount: number, reason: string, notify?: boolean): Promise<{ success: boolean }> {
-  return apiFetch(`/god/users/${userId}/balance`, {
+  return godFetch(`/god/users/${userId}/balance`, {
     method: 'POST',
     body: JSON.stringify({ amount, reason, notify }),
   })
 }
 
 export async function toggleGodUserBan(userId: number, ban: boolean, reason?: string): Promise<{ success: boolean }> {
-  return apiFetch(`/god/users/${userId}/ban`, {
+  return godFetch(`/god/users/${userId}/ban`, {
     method: 'POST',
     body: JSON.stringify({ ban, reason }),
   })
 }
 
 export async function toggleGodUserWatch(userId: number, watch: boolean): Promise<{ success: boolean }> {
-  return apiFetch(`/god/users/${userId}/watch`, {
+  return godFetch(`/god/users/${userId}/watch`, {
     method: 'POST',
     body: JSON.stringify({ watch }),
   })
 }
 
 export async function updateGodUserNotes(userId: number, notes: string): Promise<{ success: boolean }> {
-  return apiFetch(`/god/users/${userId}/notes`, {
+  return godFetch(`/god/users/${userId}/notes`, {
     method: 'POST',
     body: JSON.stringify({ notes }),
   })
@@ -722,7 +722,7 @@ export async function updateGodUserNotes(userId: number, notes: string): Promise
 
 // Promos
 export async function fetchGodPromos(): Promise<{ promos: GodPromo[] }> {
-  return apiFetch('/god/promos')
+  return godFetch('/god/promos')
 }
 
 export async function createGodPromo(data: {
@@ -732,29 +732,29 @@ export async function createGodPromo(data: {
   valid_until?: string
   new_users_only?: boolean
 }): Promise<{ success: boolean; promo_id: number }> {
-  return apiFetch('/god/promos', {
+  return godFetch('/god/promos', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 }
 
 export async function toggleGodPromo(promoId: number): Promise<{ success: boolean; is_active: boolean }> {
-  return apiFetch(`/god/promos/${promoId}/toggle`, { method: 'POST' })
+  return godFetch(`/god/promos/${promoId}/toggle`, { method: 'POST' })
 }
 
 export async function deleteGodPromo(promoId: number): Promise<{ success: boolean }> {
-  return apiFetch(`/god/promos/${promoId}`, { method: 'DELETE' })
+  return godFetch(`/god/promos/${promoId}`, { method: 'DELETE' })
 }
 
 // Live monitoring
 export async function fetchGodLiveActivity(): Promise<{ online_count: number; users: GodLiveUser[] }> {
-  return apiFetch('/god/live')
+  return godFetch('/god/live')
 }
 
 // Report user activity (for tracking)
 export async function reportUserActivity(page: string, action?: string, orderId?: number): Promise<void> {
   try {
-    await apiFetch('/god/activity', {
+    await godFetch('/god/activity', {
       method: 'POST',
       body: JSON.stringify({
         page,
@@ -782,7 +782,7 @@ export async function fetchGodLogs(params?: {
   if (params?.limit) queryParams.append('limit', params.limit.toString())
   if (params?.offset) queryParams.append('offset', params.offset.toString())
   const query = queryParams.toString()
-  return apiFetch(`/god/logs${query ? `?${query}` : ''}`)
+  return godFetch(`/god/logs${query ? `?${query}` : ''}`)
 }
 
 // SQL Console
@@ -793,7 +793,7 @@ export async function executeGodSql(query: string): Promise<{
   error?: string
   total_rows?: number
 }> {
-  return apiFetch('/god/sql', {
+  return godFetch('/god/sql', {
     method: 'POST',
     body: JSON.stringify({ query }),
   })
@@ -806,7 +806,7 @@ export async function sendGodBroadcast(text: string, target: 'all' | 'active' | 
   failed: number
   total: number
 }> {
-  return apiFetch('/god/broadcast', {
+  return godFetch('/god/broadcast', {
     method: 'POST',
     body: JSON.stringify({ text, target }),
   })
@@ -825,6 +825,61 @@ export async function fetchGodSystemInfo(): Promise<{
   return apiFetch('/god/system')
 }
 
+// ─── God Mode 2FA ────────────────────────────────────────────────────
+const GOD_2FA_STORAGE_KEY = 'god_2fa_token'
+
+export function getGod2FAToken(): string | null {
+  try { return sessionStorage.getItem(GOD_2FA_STORAGE_KEY) } catch { return null }
+}
+
+export function setGod2FAToken(token: string): void {
+  try { sessionStorage.setItem(GOD_2FA_STORAGE_KEY, token) } catch { /* ignore */ }
+}
+
+export function clearGod2FAToken(): void {
+  try { sessionStorage.removeItem(GOD_2FA_STORAGE_KEY) } catch { /* ignore */ }
+}
+
+/** Headers that include 2FA token for god_mode requests */
+export function getGod2FAHeaders(): Record<string, string> {
+  const token = getGod2FAToken()
+  return token ? { 'X-God-2FA-Token': token } : {}
+}
+
+/** Wrapper for god_mode API calls that auto-includes the 2FA token */
+async function godFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  return apiFetch<T>(endpoint, {
+    ...options,
+    headers: {
+      ...getGod2FAHeaders(),
+      ...options.headers,
+    },
+  })
+}
+
+export async function requestGod2FACode(): Promise<{ success: boolean; message: string }> {
+  return apiFetch('/god/2fa/request', { method: 'POST' })
+}
+
+export async function verifyGod2FACode(code: string): Promise<{ success: boolean; token: string; expires_in: number }> {
+  const result = await apiFetch<{ success: boolean; token: string; expires_in: number }>('/god/2fa/verify', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  })
+  if (result.success && result.token) {
+    setGod2FAToken(result.token)
+  }
+  return result
+}
+
+export async function checkGod2FAStatus(): Promise<{ authenticated: boolean }> {
+  const token = getGod2FAToken()
+  if (!token) return { authenticated: false }
+  return apiFetch('/god/2fa/status', {
+    headers: { 'X-God-2FA-Token': token },
+  })
+}
+
 // Admin WebSocket subscription
 export async function subscribeGodNotifications(): Promise<{ success: boolean }> {
   return apiFetch('/god/subscribe', { method: 'POST' })
@@ -839,6 +894,7 @@ function getMockUserData(): UserData {
   return {
     id: 1, telegram_id: 123456789, created_at: new Date().toISOString(), username: 'dev', fullname: 'Dev User', balance: 1000, bonus_balance: 100,
     transactions: [], orders: [], orders_count: 0, total_spent: 0, discount: 0, referral_code: 'DEV', referrals_count: 0, referral_earnings: 0,
+    referral_percent: 0, referral_refs_to_next: 3,
     daily_luck_available: true, daily_bonus_streak: 1, free_spins: 0, roulette_onboarding_seen: true,
     rank: { name: 'Player', emoji: '🎲', level: 1, cashback: 0, bonus: null, next_rank: null, progress: 0, spent_to_next: 100, is_max: false },
     loyalty: { status: 'Start', emoji: 'S', level: 1, discount: 0, orders_to_next: 1 }

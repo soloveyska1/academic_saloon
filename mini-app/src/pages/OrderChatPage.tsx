@@ -78,7 +78,7 @@ export function OrderChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const errorCountRef = useRef(0)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -175,19 +175,20 @@ export function OrderChatPage() {
     const textToSend = inputText
     setInputText('')
 
+    // Optimistic update — declared before try so catch can access it
+    const tempMsg: ChatMessage = {
+      id: Date.now(),
+      sender_type: 'client',
+      sender_name: 'Вы',
+      message_text: textToSend,
+      file_type: null,
+      file_name: null,
+      file_url: null,
+      created_at: new Date().toISOString(),
+      is_read: false
+    }
+
     try {
-      // Optimistic update
-      const tempMsg: ChatMessage = {
-        id: Date.now(),
-        sender_type: 'client',
-        sender_name: 'Вы',
-        message_text: textToSend,
-        file_type: null,
-        file_name: null,
-        file_url: null,
-        created_at: new Date().toISOString(),
-        is_read: false
-      }
       setMessages(prev => [...prev, tempMsg])
 
       const response = await sendOrderMessage(orderId, textToSend)

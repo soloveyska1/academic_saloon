@@ -111,7 +111,7 @@ export function useUserData() {
       bonus_expiry: {
         has_expiry: false,
         balance: 0,
-        status: 'ok',
+        status: 'ok' as const,
         status_text: 'Бонусный баланс пока пустой',
         color: '#9ca3af',
       },

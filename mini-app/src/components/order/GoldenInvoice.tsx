@@ -146,7 +146,7 @@ function AnimatedTimer() {
 
 function PriceBreakdown({ order }: { order: Order }) {
     const [isOpen, setIsOpen] = useState(false)
-    const savings = Math.round(order.price - order.final_price)
+    const savings = Math.round(order.price - (order.final_price ?? order.price))
 
     if (!order.promo_code && !(order.discount || 0) && !(order.bonus_used || 0)) {
         return null
@@ -425,7 +425,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
     const { haptic, hapticSuccess, hapticError } = useTelegram()
 
     const isSecondPayment = (order.paid_amount || 0) > 0
-    const remainingAmount = paymentInfo?.remaining || order.final_price - (order.paid_amount || 0)
+    const remainingAmount = paymentInfo?.remaining || (order.final_price ?? order.price) - (order.paid_amount || 0)
 
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'sbp'>('card')
     const [copied, setCopied] = useState<string | null>(null)

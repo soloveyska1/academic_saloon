@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SOCIAL PROOF SYSTEM — Умная генерация убедительных метрик
@@ -8,6 +8,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 //  2. "Живые" показатели обновляются в реальном времени
 //  3. Логическая связь: premium = больше заказов, выше рейтинг
 //  4. Реалистичные неокруглённые числа (847, не 850)
+//  5. Медленные переходы (60-120 сек) — не мельтешит
+//  6. Разнообразные данные: ВУЗы, имена, предметы, форматы
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface SocialProofData {
@@ -20,6 +22,15 @@ export interface SocialProofData {
   viewersNow: number       // 1 - 15 человек смотрят
   ordersToday: number      // 0 - 20 заказов сегодня
   lastOrderAgo: string     // "5 мин назад", "2 часа назад"
+
+  // Лента активности (живые события)
+  recentActivity: ActivityEvent | null
+}
+
+export interface ActivityEvent {
+  type: 'order' | 'review' | 'delivery'
+  text: string
+  timeAgo: string
 }
 
 // Seed-based pseudo-random для стабильных значений
@@ -44,6 +55,68 @@ function realisticNumber(min: number, max: number, random: () => number): number
   const tail = Math.floor(random() * 10)
   return base - (base % 10) + tail
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ДАННЫЕ ДЛЯ РАЗНООБРАЗИЯ
+// ═══════════════════════════════════════════════════════════════════════════
+
+const UNIVERSITIES = [
+  'МГУ', 'СПбГУ', 'ВШЭ', 'МГТУ', 'РЭУ', 'РУДН', 'МФТИ',
+  'МГИМО', 'РАНХиГС', 'ИТМО', 'ФУ при Правительстве',
+  'ГУУ', 'МАИ', 'МИРЭА', 'Финансовый университет',
+  'МПГУ', 'РГГУ', 'НГТУ', 'УрФУ', 'КФУ',
+  'ТГУ', 'НГУ', 'ЮФУ', 'СамГТУ', 'ОмГУ',
+]
+
+const FIRST_NAMES = [
+  'Алексей', 'Дмитрий', 'Анна', 'Мария', 'Иван',
+  'Елена', 'Сергей', 'Ольга', 'Андрей', 'Екатерина',
+  'Михаил', 'Наталья', 'Артём', 'Юлия', 'Максим',
+  'Виктория', 'Даниил', 'Полина', 'Кирилл', 'София',
+  'Никита', 'Дарья', 'Роман', 'Алина', 'Владислав',
+  'Александра', 'Тимур', 'Валерия', 'Егор', 'Ксения',
+]
+
+const SUBJECTS = [
+  'Экономика', 'Менеджмент', 'Маркетинг', 'Финансы', 'Бухучёт',
+  'Юриспруденция', 'Психология', 'Социология', 'Политология', 'Философия',
+  'Информатика', 'Программирование', 'Математика', 'Статистика', 'Физика',
+  'Логистика', 'ГМУ', 'Педагогика', 'Культурология', 'Экология',
+  'История', 'Литература', 'Английский язык', 'Химия', 'Биология',
+  'Банковское дело', 'Страхование', 'Медицина', 'Архитектура', 'Дизайн',
+]
+
+const WORK_TYPE_LABELS: Record<string, string[]> = {
+  masters: ['магистерскую диссертацию', 'диссертацию'],
+  diploma: ['дипломную работу', 'ВКР', 'дипломный проект'],
+  coursework: ['курсовую работу', 'курсовую'],
+  practice: ['отчёт по практике', 'практику'],
+  essay: ['эссе'],
+  presentation: ['презентацию', 'слайды'],
+  control: ['контрольную работу', 'контрольную'],
+  independent: ['самостоятельную работу'],
+  report: ['реферат'],
+  photo_task: ['задачу по фото'],
+  other: ['работу'],
+}
+
+const REVIEW_TEXTS = [
+  'Всё сделали вовремя, спасибо!',
+  'Качество отличное, преподаватель принял',
+  'Быстро и чётко, рекомендую',
+  'Сдал на отлично, ещё обращусь',
+  'Хорошая работа, без замечаний',
+  'Спасибо за оперативность!',
+  'Преподаватель доволен, 5 баллов',
+  'Сделали даже лучше, чем ожидал',
+  'Рекомендую, всё по делу',
+  'Уже третий раз заказываю, доволен',
+  'Защитился благодаря вам',
+  'Быстро, качественно, без правок',
+  'Оформление идеальное, по ГОСТу',
+  'Автор разобрался в теме, впечатлён',
+  'Работу приняли с первого раза',
+]
 
 // Базовые метрики по категориям услуг
 const CATEGORY_MULTIPLIERS = {
@@ -72,6 +145,12 @@ const POPULAR_BOOST = {
   ordersMultiplier: 1.4,
   viewersMultiplier: 1.8,
 }
+
+// ── Timing constants ──
+// Динамические метрики обновляются каждые 60-90 сек (не 30!)
+const DYNAMIC_INTERVAL_MS = 75_000  // 75 секунд — золотая середина
+const ACTIVITY_INTERVAL_MS = 90_000 // 90 секунд — лента событий
+const DYNAMIC_SEED_PERIOD = 90_000  // Сид меняется каждые 90 сек
 
 export interface ServiceMetaForProof {
   id: string
@@ -116,8 +195,8 @@ function generateDynamicProof(
   const now = Date.now() + timeOffset
   const hourOfDay = new Date(now).getHours()
 
-  // Сид меняется каждые 30 секунд для "живости"
-  const timeSeed = Math.floor(now / 30000)
+  // Сид меняется каждые 90 секунд (было 30) — медленнее, реалистичнее
+  const timeSeed = Math.floor(now / DYNAMIC_SEED_PERIOD)
   const random = seededRandom(service.id + '_dynamic_' + timeSeed)
 
   const multipliers = CATEGORY_MULTIPLIERS[service.category]
@@ -145,11 +224,70 @@ function generateDynamicProof(
     (minOrders + random() * (maxOrders - minOrders)) * dayProgress
   )
 
-  // Last order ago
-  const lastOrderMinutes = Math.floor(random() * 180) + 5 // 5 мин - 3 часа
+  // Last order ago — более разнообразно
+  const lastOrderMinutes = Math.floor(random() * 240) + 3 // 3 мин - 4 часа
   const lastOrderAgo = formatTimeAgo(lastOrderMinutes)
 
   return { viewersNow, ordersToday, lastOrderAgo }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ЛЕНТА АКТИВНОСТИ — Реалистичные события
+// ═══════════════════════════════════════════════════════════════════════════
+
+function generateActivityEvent(
+  service: ServiceMetaForProof,
+  index: number
+): ActivityEvent {
+  const seed = `${service.id}_activity_${Math.floor(Date.now() / ACTIVITY_INTERVAL_MS)}_${index}`
+  const random = seededRandom(seed)
+
+  const eventType = random()
+  const nameIdx = Math.floor(random() * FIRST_NAMES.length)
+  const name = FIRST_NAMES[nameIdx]
+  const uniIdx = Math.floor(random() * UNIVERSITIES.length)
+  const uni = UNIVERSITIES[uniIdx]
+  const subjectIdx = Math.floor(random() * SUBJECTS.length)
+  const subject = SUBJECTS[subjectIdx]
+
+  // Выбираем тип работы из доступных для этого сервиса
+  const workLabels = WORK_TYPE_LABELS[service.id] || WORK_TYPE_LABELS.other
+  const workLabel = workLabels[Math.floor(random() * workLabels.length)]
+
+  // Время: 2-180 мин назад
+  const minutesAgo = Math.floor(random() * 178) + 2
+  const timeAgo = formatTimeAgo(minutesAgo)
+
+  if (eventType < 0.45) {
+    // Новый заказ
+    const templates = [
+      `${name} заказал(а) ${workLabel} по «${subject}»`,
+      `Новый заказ: ${workLabel}, ${subject} (${uni})`,
+      `${name} из ${uni} оформил(а) ${workLabel}`,
+      `Заказ на ${workLabel}: ${subject}`,
+      `Студент ${uni} заказал(а) ${workLabel}`,
+    ]
+    const text = templates[Math.floor(random() * templates.length)]
+    return { type: 'order', text, timeAgo }
+  }
+
+  if (eventType < 0.80) {
+    // Отзыв
+    const reviewIdx = Math.floor(random() * REVIEW_TEXTS.length)
+    const review = REVIEW_TEXTS[reviewIdx]
+    const ratingStars = random() > 0.3 ? '5.0' : '4.9'
+    const text = `${name}: «${review}» — ${ratingStars}`
+    return { type: 'review', text, timeAgo }
+  }
+
+  // Выполнен заказ
+  const templates = [
+    `Выполнена ${workLabel} для ${name} (${uni})`,
+    `${workLabel} по «${subject}» сдана клиенту`,
+    `Готова ${workLabel}: ${subject} — ${uni}`,
+  ]
+  const text = templates[Math.floor(random() * templates.length)]
+  return { type: 'delivery', text, timeAgo }
 }
 
 function formatTimeAgo(minutes: number): string {
@@ -171,18 +309,32 @@ export function useSocialProof(service: ServiceMetaForProof): SocialProofData {
   // Статические метрики - вычисляются один раз
   const staticProof = useMemo(() => generateStaticProof(service), [service.id])
 
-  // Динамические метрики - обновляются каждые 30 сек
+  // Динамические метрики - обновляются каждые 75 сек (было 30)
   const [dynamicProof, setDynamicProof] = useState(() => generateDynamicProof(service))
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDynamicProof(generateDynamicProof(service))
-    }, 30000)
+  // Лента активности
+  const [activityIndex, setActivityIndex] = useState(0)
+  const activity = useMemo(
+    () => generateActivityEvent(service, activityIndex),
+    [service.id, activityIndex]
+  )
 
-    return () => clearInterval(interval)
+  useEffect(() => {
+    const dynamicInterval = setInterval(() => {
+      setDynamicProof(generateDynamicProof(service))
+    }, DYNAMIC_INTERVAL_MS)
+
+    const activityInterval = setInterval(() => {
+      setActivityIndex(prev => prev + 1)
+    }, ACTIVITY_INTERVAL_MS)
+
+    return () => {
+      clearInterval(dynamicInterval)
+      clearInterval(activityInterval)
+    }
   }, [service.id])
 
-  return { ...staticProof, ...dynamicProof }
+  return { ...staticProof, ...dynamicProof, recentActivity: activity }
 }
 
 // Хук для всех услуг (оптимизированный)
@@ -207,16 +359,26 @@ export function useSocialProofBatch(
     return map
   })
 
+  // Activity events
+  const [activityIndex, setActivityIndex] = useState(0)
+
   useEffect(() => {
-    const interval = setInterval(() => {
+    const dynamicInterval = setInterval(() => {
       const newMap = new Map()
       services.forEach(service => {
         newMap.set(service.id, generateDynamicProof(service))
       })
       setDynamicProofs(newMap)
-    }, 30000)
+    }, DYNAMIC_INTERVAL_MS)
 
-    return () => clearInterval(interval)
+    const activityInterval = setInterval(() => {
+      setActivityIndex(prev => prev + 1)
+    }, ACTIVITY_INTERVAL_MS)
+
+    return () => {
+      clearInterval(dynamicInterval)
+      clearInterval(activityInterval)
+    }
   }, [services.map(s => s.id).join(',')])
 
   // Комбинируем
@@ -225,10 +387,11 @@ export function useSocialProofBatch(
     services.forEach(service => {
       const staticData = staticProofs.get(service.id)!
       const dynamicData = dynamicProofs.get(service.id)!
-      combined.set(service.id, { ...staticData, ...dynamicData })
+      const activity = generateActivityEvent(service, activityIndex)
+      combined.set(service.id, { ...staticData, ...dynamicData, recentActivity: activity })
     })
     return combined
-  }, [staticProofs, dynamicProofs])
+  }, [staticProofs, dynamicProofs, activityIndex])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

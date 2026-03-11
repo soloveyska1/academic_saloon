@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { m } from 'framer-motion'
 import {
-  ArrowDownRight,
   ArrowUpRight,
   ChevronRight,
   Clock3,

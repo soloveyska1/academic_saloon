@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { OrderStatus } from '../types'
 import {
   formatOrderDeadlineRu,
   getOrderHeadlineSafe,
@@ -11,14 +12,14 @@ describe('orderView', () => {
   it('normalizes malformed order payload safely', () => {
     const order = normalizeOrder({
       id: '242' as unknown as number,
-      status: 'legacy_status' as unknown,
+      status: 'legacy_status' as unknown as OrderStatus,
       work_type: 'legacy_type',
       work_type_label: '   ',
       subject: 123 as unknown as string,
       topic: null,
       deadline: { invalid: true } as unknown as string,
       created_at: 'not-a-date',
-      final_price: null,
+      final_price: null as unknown as number,
       price: '12500.4' as unknown as number,
       paid_amount: '2500' as unknown as number,
       progress: '180' as unknown as number,

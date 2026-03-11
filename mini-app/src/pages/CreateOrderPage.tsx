@@ -2,21 +2,23 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, Check, AlertCircle, Send, ChevronRight, Loader2,
-  Tag, Clock, Zap, Flame, Rocket, Timer, Hourglass
+  AlertCircle, ArrowLeft, Check, ChevronRight, Clock, Tag
 } from 'lucide-react'
 import { UserData, WorkType, OrderCreateRequest } from '../types'
 import { createOrder, uploadOrderFiles, FileUploadResponse } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePromo } from '../contexts/PromoContext'
-import { useModalRegistration } from '../contexts/NavigationContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
 import { Confetti } from '../components/ui/Confetti'
 import {
   ServiceTypeStep,
   RequirementsStep,
+  DeadlineStep,
+  EstimateCard,
+  FloatingCtaDock,
+  PromoWarningModal,
   useDrafts,
   SERVICE_TYPES,
   DEADLINES,
@@ -294,8 +296,10 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   //  VALIDATION & NAVIGATION
   // ─────────────────────────────────────────────────────────────────────────
 
+  const selectedService = SERVICE_TYPES.find(s => s.id === serviceTypeId)
+  const isExpressService = selectedService?.category === 'express'
   const canStep1 = isFastMode ? subject.trim().length >= 2 : serviceTypeId !== null
-  const canStep2 = isFastMode ? deadline !== null : subject.trim().length >= 2
+  const canStep2 = isFastMode ? deadline !== null : (isExpressService ? true : subject.trim().length >= 2)
   const canStep3 = deadline !== null
   const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : canStep3
 
@@ -387,7 +391,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   // ─────────────────────────────────────────────────────────────────────────
 
   const handleSubmit = useCallback(async (forceWithoutPromo: boolean = false) => {
-    if (!serviceTypeId || !deadline || !subject.trim()) return
+    if (!serviceTypeId || !deadline) return
+    if (!isExpressService && !subject.trim()) return
 
     haptic('heavy')
     setSubmitting(true)
@@ -416,7 +421,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       setSubmittingLabel('Создаём заказ...')
       const data: OrderCreateRequest = {
         work_type: serviceTypeId as WorkType,
-        subject: subject.trim(),
+        subject: subject.trim() || (isExpressService ? 'Не указан' : ''),
         topic: topic.trim() || undefined,
         deadline,
         description: buildOrderDescription(requirements),
@@ -990,6 +995,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 selected={deadline}
                 onSelect={handleDeadlineSelect}
                 isDark={isDark}
+                basePrice={SERVICE_TYPES.find(s => s.id === serviceTypeId)?.priceNum}
               />
 
               {/* Promo Code Section */}
@@ -1049,575 +1055,5 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       {/* Confetti */}
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  DEADLINE STEP — v3 Clean Design
-// ═══════════════════════════════════════════════════════════════════════════
-
-const dlCardBorder = 'rgba(255, 255, 255, 0.08)'
-const dlCardBg = 'rgba(255, 255, 255, 0.02)'
-const dlGoldBorder = 'rgba(212, 175, 55, 0.30)'
-
-interface DeadlineStepProps {
-  selected: string | null
-  onSelect: (value: string) => void
-  isDark: boolean
-}
-
-function DeadlineStep({ selected, onSelect, isDark }: DeadlineStepProps) {
-  void isDark
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {/* Hint */}
-      <div style={{
-        fontSize: 13,
-        lineHeight: 1.5,
-        color: 'rgba(255,255,255,0.38)',
-        padding: '0 4px',
-        marginBottom: 2,
-      }}>
-        Срочные варианты с наценкой, спокойные — без доплаты
-      </div>
-
-      {DEADLINES.map((dl, i) => {
-        const isSel = selected === dl.value
-        const meta = getDeadlineMeta(dl.value)
-
-        return (
-          <motion.button
-            key={dl.value}
-            type="button"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.03, type: 'spring', stiffness: 400, damping: 30 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onSelect(dl.value)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              padding: '14px 16px',
-              background: isSel ? 'rgba(212, 175, 55, 0.06)' : dlCardBg,
-              border: `1px solid ${isSel ? dlGoldBorder : dlCardBorder}`,
-              borderLeft: `3px solid ${dl.color}`,
-              borderRadius: 16,
-              cursor: 'pointer',
-              position: 'relative',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            {/* Left: label + description */}
-            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                <span style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: isSel ? '#E8D5A3' : 'rgba(255,255,255,0.88)',
-                  fontFamily: "'Manrope', sans-serif",
-                }}>
-                  {dl.label}
-                </span>
-                {meta.recommended && (
-                  <span style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: 'rgba(212, 175, 55, 0.70)',
-                    padding: '2px 7px',
-                    borderRadius: 999,
-                    background: 'rgba(212, 175, 55, 0.10)',
-                    border: '1px solid rgba(212, 175, 55, 0.15)',
-                    lineHeight: '14px',
-                  }}>
-                    оптимально
-                  </span>
-                )}
-              </div>
-              <div style={{
-                fontSize: 12,
-                lineHeight: 1.4,
-                color: 'rgba(255,255,255,0.38)',
-              }}>
-                {meta.pace}
-              </div>
-            </div>
-
-            {/* Right: multiplier badge */}
-            <div style={{
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}>
-              <span style={{
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: dl.multiplier === 'Базовая'
-                  ? 'rgba(34,197,94,0.80)'
-                  : `${dl.color}cc`,
-                padding: '4px 10px',
-                borderRadius: 999,
-                background: dl.multiplier === 'Базовая'
-                  ? 'rgba(34,197,94,0.10)'
-                  : `${dl.color}15`,
-                border: `1px solid ${dl.multiplier === 'Базовая' ? 'rgba(34,197,94,0.15)' : `${dl.color}25`}`,
-              }}>
-                {dl.multiplier === 'Базовая' ? '×1' : dl.multiplier}
-              </span>
-
-              {/* Check indicator */}
-              {isSel && (
-                <div style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  background: 'rgba(212, 175, 55, 0.18)',
-                  border: '1px solid rgba(212, 175, 55, 0.30)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Check size={13} color="#D4AF37" strokeWidth={2.5} />
-                </div>
-              )}
-            </div>
-          </motion.button>
-        )
-      })}
-    </div>
-  )
-}
-
-function getDeadlineMeta(value: string) {
-  switch (value) {
-    case 'today':
-      return { pace: 'Экстренный приоритет', recommended: false }
-    case 'tomorrow':
-      return { pace: 'Сдача на следующий день', recommended: false }
-    case '3days':
-      return { pace: 'Баланс скорости и качества', recommended: true }
-    case 'week':
-      return { pace: 'Комфортный темп', recommended: false }
-    case '2weeks':
-      return { pace: 'С запасом на правки', recommended: false }
-    case 'month':
-    default:
-      return { pace: 'Без срочной надбавки', recommended: false }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  ESTIMATE CARD
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface EstimateCardProps {
-  estimate: number
-  baseEstimate: number | null
-  loyaltyDiscount: number
-  activePromo: { code: string; discount: number } | null
-  isDark: boolean
-}
-
-function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePromo, isDark }: EstimateCardProps) {
-  const priceAfterLoyalty = baseEstimate
-    ? Math.round(baseEstimate * (1 - loyaltyDiscount / 100))
-    : null
-  const hasLoyaltyDiscount = loyaltyDiscount > 0
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
-      style={{
-        marginTop: 20,
-        padding: '20px 24px',
-        background: isDark
-          ? 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)'
-          : 'linear-gradient(135deg, rgba(180,142,38,0.1) 0%, rgba(180,142,38,0.03) 100%)',
-        border: isDark
-          ? '2px solid rgba(212, 175, 55, 0.3)'
-          : '2px solid rgba(180, 142, 38, 0.25)',
-        borderRadius: 20,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: isDark ? '#a1a1aa' : '#52525b' }}>
-              Ориентировочно
-            </span>
-          </div>
-          {(activePromo || hasLoyaltyDiscount) && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#22c55e', display: 'block', marginTop: 2 }}>
-              {hasLoyaltyDiscount && activePromo
-                ? `Статус ${loyaltyDiscount}% + промокод ${activePromo.discount}%`
-                : hasLoyaltyDiscount
-                  ? `С учетом личной скидки ${loyaltyDiscount}%`
-                  : `С промокодом ${activePromo?.discount}%`}
-            </span>
-          )}
-        </div>
-
-        <div style={{ textAlign: 'right' }}>
-          {(activePromo || hasLoyaltyDiscount) && baseEstimate && (
-            <>
-              <div style={{
-                fontSize: 14,
-                color: 'var(--text-muted)',
-                textDecoration: 'line-through',
-                marginBottom: 4,
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>
-                {baseEstimate.toLocaleString('ru-RU')} ₽
-              </div>
-              {activePromo && hasLoyaltyDiscount && priceAfterLoyalty && (
-                <div style={{
-                  fontSize: 12,
-                  color: 'var(--text-secondary)',
-                  marginBottom: 4,
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}>
-                  После статуса: {priceAfterLoyalty.toLocaleString('ru-RU')} ₽
-                </div>
-              )}
-            </>
-          )}
-          <motion.span
-            key={estimate}
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            style={{
-              fontSize: 24,
-              fontWeight: 800,
-              color: activePromo || hasLoyaltyDiscount ? '#22c55e' : (isDark ? '#d4af37' : '#9e7a1a'),
-              fontFamily: "'JetBrains Mono', monospace",
-            }}
-          >
-            {estimate.toLocaleString('ru-RU')} ₽
-          </motion.span>
-          {(activePromo || hasLoyaltyDiscount) && (
-            <div style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#22c55e',
-              marginTop: 4,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: 6,
-            }}>
-              {activePromo ? (
-                <>
-                  <Tag size={12} />
-                  {activePromo.code} −{activePromo.discount}%
-                </>
-              ) : (
-                `Личная скидка −${loyaltyDiscount}%`
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  FLOATING CTA DOCK — Mac-style floating action button
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface FloatingCtaDockProps {
-  step: number
-  totalSteps: number
-  isFastMode: boolean
-  canProceed: boolean
-  submitting: boolean
-  submittingLabel?: string | null
-  isRevalidating: boolean
-  onNext: () => void
-  onSubmit: () => void
-  selectedServiceLabel?: string
-}
-
-function FloatingCtaDock({
-  step,
-  totalSteps,
-  isFastMode,
-  canProceed,
-  submitting,
-  submittingLabel,
-  isRevalidating,
-  onNext,
-  onSubmit,
-  selectedServiceLabel,
-}: FloatingCtaDockProps) {
-  return (
-    <AnimatePresence>
-      {canProceed && (
-        <motion.div
-          initial={{ y: 100, opacity: 0, scale: 0.9 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 100, opacity: 0, scale: 0.9 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          style={{
-            position: 'fixed',
-            bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
-            left: 0,
-            right: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            zIndex: 100,
-            pointerEvents: 'none',
-          }}
-        >
-          {/* The Floating Dock */}
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={step === totalSteps ? onSubmit : onNext}
-            disabled={!canProceed || submitting}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              padding: '14px 24px',
-              background: 'rgba(10, 10, 12, 0.85)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              border: '1px solid rgba(212, 175, 55, 0.25)',
-              borderRadius: 50,
-              cursor: submitting ? 'wait' : 'pointer',
-              pointerEvents: 'auto',
-              boxShadow: `
-                0 10px 40px -10px rgba(0, 0, 0, 0.6),
-                0 0 30px -5px rgba(212, 175, 55, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05)
-              `,
-            }}
-          >
-            {/* Left side: Context info */}
-            {!isFastMode && step === 1 && selectedServiceLabel && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  paddingRight: 14,
-                  borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-                }}
-              >
-                <div
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #d4af37, #f5d061)',
-                    boxShadow: '0 0 8px rgba(212, 175, 55, 0.5)',
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    maxWidth: 120,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {selectedServiceLabel}
-                </span>
-              </motion.div>
-            )}
-
-            {/* CTA Text */}
-            <span
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: '#d4af37',
-                letterSpacing: '0.01em',
-              }}
-            >
-              {submitting
-                ? (submittingLabel || (isRevalidating ? 'Проверка...' : 'Отправка...'))
-                : step === totalSteps
-                  ? (isFastMode ? 'Отправить быстрый запрос' : 'Отправить заявку')
-                  : step === 1 && !isFastMode
-                    ? 'Перейти к деталям'
-                  : step === 2 && !isFastMode
-                    ? 'Выбрать сроки'
-                  : step === 1 && isFastMode
-                    ? 'Перейти к сроку'
-                  : 'Продолжить'}
-            </span>
-
-            {/* Icon */}
-            <motion.div
-              animate={submitting ? { rotate: 360 } : { rotate: 0 }}
-              transition={submitting ? { repeat: Infinity, duration: 1, ease: 'linear' } : {}}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #d4af37, #b48e26)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 16px rgba(212, 175, 55, 0.4)',
-              }}
-            >
-              {submitting ? (
-                <Loader2 size={18} color="#050505" strokeWidth={2.5} />
-              ) : step === totalSteps ? (
-                <Send size={16} color="#050505" strokeWidth={2.5} />
-              ) : (
-                <ChevronRight size={20} color="#050505" strokeWidth={2.5} />
-              )}
-            </motion.div>
-          </motion.button>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  PROMO WARNING MODAL
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface PromoWarningModalProps {
-  isOpen: boolean
-  reason: string | null
-  onContinue: () => void
-  onCancel: () => void
-  isDark: boolean
-}
-
-function PromoWarningModal({ isOpen, reason, onContinue, onCancel, isDark }: PromoWarningModalProps) {
-  useModalRegistration(isOpen, 'create-order-promo-warning')
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(12px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-          }}
-          onClick={onCancel}
-        >
-          <motion.div
-            initial={{ scale: 0.85, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 10 }}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: isDark
-                ? 'linear-gradient(145deg, #1f1f25 0%, #18181c 100%)'
-                : 'linear-gradient(145deg, #ffffff 0%, #f8f8f8 100%)',
-              borderRadius: 28,
-              padding: '32px 28px',
-              maxWidth: 380,
-              width: '100%',
-              border: '2px solid rgba(239, 68, 68, 0.3)',
-            }}
-          >
-            <div style={{
-              width: 72,
-              height: 72,
-              borderRadius: '50%',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '3px solid rgba(239, 68, 68, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 24px',
-            }}>
-              <AlertCircle size={36} color="#ef4444" strokeWidth={2.5} />
-            </div>
-
-            <h3 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 24,
-              fontWeight: 700,
-              color: isDark ? '#f2f2f2' : '#18181b',
-              textAlign: 'center',
-              marginBottom: 14,
-            }}>
-              Промокод недействителен
-            </h3>
-
-            <p style={{
-              fontSize: 15,
-              color: isDark ? '#a1a1aa' : '#52525b',
-              textAlign: 'center',
-              lineHeight: 1.7,
-              marginBottom: 28,
-            }}>
-              {reason || 'Промокод больше не действителен.'}
-              {' '}Вы можете создать заказ без скидки или вернуться и ввести другой промокод.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={onContinue}
-                style={{
-                  width: '100%',
-                  padding: '18px 24px',
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: '#050505',
-                  background: 'linear-gradient(135deg, #d4af37, #b8962e)',
-                  border: 'none',
-                  borderRadius: 16,
-                  cursor: 'pointer',
-                }}
-              >
-                Создать без скидки
-              </motion.button>
-
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={onCancel}
-                style={{
-                  width: '100%',
-                  padding: '18px 24px',
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: isDark ? '#d4af37' : '#b8962e',
-                  background: isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(212, 175, 55, 0.12)',
-                  border: `1.5px solid ${isDark ? 'rgba(212, 175, 55, 0.25)' : 'rgba(212, 175, 55, 0.3)'}`,
-                  borderRadius: 16,
-                  cursor: 'pointer',
-                }}
-              >
-                Ввести другой промокод
-              </motion.button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
   )
 }

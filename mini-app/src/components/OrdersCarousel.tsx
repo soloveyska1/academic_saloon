@@ -89,7 +89,6 @@ interface CaseFileCardProps {
 function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps) {
   const config = statusConfig[order.status] || { label: order.status, variant: 'info', icon: FileText }
   const colors = variantColors[config.variant]
-  const StatusIcon = config.icon
   const countdown = useCountdown(order.deadline)
 
   // 3D transform calculations - Enhanced "Cover Flow" style
@@ -327,7 +326,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
         </div>
 
         {/* Progress Bar (if in progress) */}
-        {order.progress > 0 && order.progress < 100 && isActive && (
+        {(order.progress ?? 0) > 0 && (order.progress ?? 0) < 100 && isActive && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -423,7 +422,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
                 textShadow: isActive ? '0 0 30px rgba(212, 175, 55, 0.3)' : 'none',
               }}
             >
-              {order.final_price.toLocaleString('ru-RU')} ₽
+              {(order.final_price ?? order.price).toLocaleString('ru-RU')} ₽
             </span>
           </div>
         </div>

@@ -186,10 +186,9 @@ function MiniTimeline({ currentStep }: { currentStep: number }) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      {steps.map((step, index) => {
+      {steps.map((_step, index) => {
         const isCompleted = index < currentStep
         const isCurrent = index === currentStep
-        const isPending = index > currentStep
 
         return (
           <div key={index} style={{ display: 'flex', alignItems: 'center' }}>

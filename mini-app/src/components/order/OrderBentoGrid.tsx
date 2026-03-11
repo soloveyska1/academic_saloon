@@ -110,7 +110,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     </div>
                 </div>
 
-                {order.final_price > 0 ? (
+                {(order.final_price ?? 0) > 0 ? (
                     <div>
                         {/* Promo badge */}
                         {order.promo_code && order.promo_discount && order.promo_discount > 0 && (
@@ -156,7 +156,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                             letterSpacing: '-0.01em',
                             fontFamily: 'var(--font-mono)',
                         }}>
-                            {order.final_price.toLocaleString()} ₽
+                            {(order.final_price ?? 0).toLocaleString()} ₽
                         </div>
                     </div>
                 ) : (

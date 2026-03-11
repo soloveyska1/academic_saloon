@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageCircle, Download, Star, CheckCircle, PenTool,
-  CreditCard, RefreshCw
+  RefreshCw
 } from 'lucide-react'
 import { Order, OrderStatus } from '../../types'
 
@@ -145,7 +145,7 @@ function getActionsForStatus(
 }
 
 export function FloatingActionBar(props: FloatingActionBarProps) {
-  const { order, unreadMessages } = props
+  const { order, unreadMessages: _unreadMessages } = props
   const actions = getActionsForStatus(order.status, order, props)
 
   // Don't show for cancelled orders

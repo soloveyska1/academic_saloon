@@ -334,7 +334,8 @@ export function LuxuryCard({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface HeroIconProps {
-  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: React.ComponentType<any>
   gradient: string
   glowColor: string
   size?: number

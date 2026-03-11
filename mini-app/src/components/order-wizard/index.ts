@@ -1,6 +1,10 @@
 // Order Wizard Components
 export { ServiceTypeStep } from './ServiceTypeStep'
 export { RequirementsStep } from './RequirementsStep'
+export { DeadlineStep } from './DeadlineStep'
+export { EstimateCard } from './EstimateCard'
+export { FloatingCtaDock } from './FloatingCtaDock'
+export { PromoWarningModal } from './PromoWarningModal'
 // Hooks
 export { useDrafts } from './useDrafts'
 export {
@@ -10,7 +14,7 @@ export {
   formatOrderCount,
   generateStaticProof,
 } from './useSocialProof'
-export type { SocialProofData, ServiceMetaForProof } from './useSocialProof'
+export type { SocialProofData, ServiceMetaForProof, ActivityEvent } from './useSocialProof'
 
 // Types
 export type {

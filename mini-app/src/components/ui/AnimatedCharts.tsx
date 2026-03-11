@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { TrendingUp, TrendingDown, BarChart3, PieChart, Activity } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { TrendingUp, TrendingDown, Activity } from 'lucide-react'
 
 // Animated Bar Chart
 interface BarChartProps {

@@ -66,6 +66,7 @@ export function RequirementsStep({
 }: RequirementsStepProps) {
   const [showEditor, setShowEditor] = useState(false)
   const service = SERVICE_TYPES.find(item => item.id === serviceTypeId)
+  const isExpress = service?.category === 'express'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -84,14 +85,15 @@ export function RequirementsStep({
         }}
       >
         {service
-          ? <>Для <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>«{service.label}»</span> укажите предмет и тему — это ускорит оценку.</>
+          ? <>Для <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>«{service.label}»</span> {isExpress ? 'предмет можно не указывать — укажите тему или прикрепите файлы.' : 'укажите предмет и тему — это ускорит оценку.'}</>
           : 'Укажите предмет и тему — это ускорит оценку и поможет подобрать автора.'}
       </motion.div>
 
       {/* Предмет */}
       <FieldCard
         label="Предмет / дисциплина"
-        required
+        required={!isExpress}
+        hint={isExpress ? 'по желанию' : undefined}
         icon={BookOpen}
         disabled={disabled}
         delay={0.05}

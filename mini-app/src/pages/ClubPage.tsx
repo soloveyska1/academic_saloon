@@ -8,7 +8,6 @@ import {
   Copy,
   Check,
   Send,
-  TrendingUp,
   Users,
   Wallet2,
   Lock,

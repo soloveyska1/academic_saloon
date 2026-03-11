@@ -7,7 +7,7 @@
  * - ELEGANT: Instant reveal (no animation delay)
  */
 
-import React, { memo, useMemo, Children, cloneElement, isValidElement } from 'react'
+import React, { memo, useMemo, Children, isValidElement } from 'react'
 import { motion, Variants, HTMLMotionProps } from 'framer-motion'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 

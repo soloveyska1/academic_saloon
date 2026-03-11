@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plus, X, MessageCircle, Gift, Sparkles,
-  HelpCircle, Share2, FileText, Zap, Heart
+  Plus, X, MessageCircle, Gift,
+  Share2, FileText, Zap
 } from 'lucide-react'
 import { useTelegram } from '../../hooks/useUserData'
 

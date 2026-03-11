@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Gift, Sparkles, X, Volume2 } from 'lucide-react'
+import { Gift, Sparkles, X } from 'lucide-react'
 import { Confetti } from './Confetti'
 
 interface Props {

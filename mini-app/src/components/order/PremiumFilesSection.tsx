@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import {
   Download, FileText, ExternalLink, CheckCircle2,
-  Clock, FolderOpen, Shield, Sparkles, Lock, Star
+  Clock, Shield, Sparkles, Lock, Star
 } from 'lucide-react'
 import { Order } from '../../types'
 
@@ -80,7 +80,6 @@ function DecorativeCorner({ position, color = '#8b5cf6' }: {
 export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionProps) {
   const hasFiles = !!order.files_url
   const isCompleted = order.status === 'completed'
-  const isReview = order.status === 'review'
 
   const accentColor = isCompleted ? '#22c55e' : '#8b5cf6'
 

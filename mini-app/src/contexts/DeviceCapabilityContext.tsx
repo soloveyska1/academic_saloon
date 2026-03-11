@@ -5,7 +5,7 @@
  * Use this context to adapt effects based on device performance.
  */
 
-import React, { createContext, useContext, useMemo, ReactNode } from 'react'
+import { createContext, useContext, useMemo, ReactNode } from 'react'
 import { useDeviceCapability, DeviceCapability, DeviceTier, TierName } from '../hooks/useDeviceCapability'
 
 interface DeviceCapabilityContextValue extends DeviceCapability {

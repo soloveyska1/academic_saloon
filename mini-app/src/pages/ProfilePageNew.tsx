@@ -199,6 +199,7 @@ export function ProfilePageNew({ user }: Props) {
 
         {showQR && inviteLink && (
           <QRCodeModal
+            isOpen={true}
             onClose={() => setShowQR(false)}
             value={inviteLink}
             displayValue={user.referral_code}

@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -549,7 +549,7 @@ function OrderCard({
       )}
 
       {/* Progress bar — thin line at bottom */}
-      {order.progress > 0 && order.progress < 100 && (
+      {(order.progress ?? 0) > 0 && (order.progress ?? 0) < 100 && (
         <div style={{
           position: 'absolute',
           bottom: 0, left: 0, right: 0,

@@ -7,7 +7,7 @@
  * - ELEGANT: Static premium gradient (still beautiful, no animation)
  */
 
-import React, { memo, useMemo, useEffect, useRef } from 'react'
+import React, { memo, useMemo, useEffect } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 

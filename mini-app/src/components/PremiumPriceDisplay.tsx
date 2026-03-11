@@ -9,7 +9,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Zap, Percent, Tag } from 'lucide-react'
+import { Zap, Tag } from 'lucide-react'
 
 export interface PremiumPriceDisplayProps {
   // Core pricing

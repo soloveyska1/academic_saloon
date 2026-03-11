@@ -155,7 +155,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
       </div>
 
       {/* Progress Bar (if applicable) */}
-      {order.progress > 0 && order.progress < 100 && (
+      {(order.progress ?? 0) > 0 && (order.progress ?? 0) < 100 && (
         <div style={{ marginBottom: 14 }}>
           <div style={{
             height: 4,

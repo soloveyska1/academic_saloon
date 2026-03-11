@@ -49,17 +49,6 @@ const VARIANT_STYLES: Record<string, React.CSSProperties> = {
   },
 }
 
-// Animation variants for Framer Motion
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.03,
-    },
-  },
-}
-
 const characterVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -119,7 +108,7 @@ const StaticKineticText = memo(function StaticKineticText({
 // Character-by-character animation for Tier 3
 const CharacterAnimation = memo(function CharacterAnimation({
   children,
-  as: Tag = 'span',
+  as: _Tag = 'span',
   variant,
   delay = 0,
   staggerDelay = 0.03,
@@ -168,7 +157,7 @@ const CharacterAnimation = memo(function CharacterAnimation({
 // Word-by-word animation for Tier 2
 const WordAnimation = memo(function WordAnimation({
   children,
-  as: Tag = 'span',
+  as: _Tag = 'span',
   variant,
   delay = 0,
   staggerDelay = 0.1,
@@ -248,7 +237,7 @@ const WaveAnimation = memo(function WaveAnimation({
 
 // Shimmer effect component (CSS animation - works on all tiers)
 const ShimmerText = memo(function ShimmerText({
-  children,
+  children: _children,
   as: Tag = 'span',
   style,
   className,
@@ -271,11 +260,11 @@ export const KineticText = memo(function KineticText(props: KineticTextProps) {
     as = 'span',
     variant = 'white',
     animation = 'fade',
-    delay = 0,
+    delay: _delay = 0,
     staggerDelay,
     className,
     style,
-    onAnimationComplete,
+    onAnimationComplete: _onAnimationComplete,
   } = props
 
   const capability = useCapability()

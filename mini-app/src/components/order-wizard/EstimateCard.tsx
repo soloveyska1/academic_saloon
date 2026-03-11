@@ -1,0 +1,117 @@
+import { motion } from 'framer-motion'
+import { Tag } from 'lucide-react'
+
+interface EstimateCardProps {
+  estimate: number
+  baseEstimate: number | null
+  loyaltyDiscount: number
+  activePromo: { code: string; discount: number } | null
+  isDark: boolean
+}
+
+export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePromo, isDark }: EstimateCardProps) {
+  const priceAfterLoyalty = baseEstimate
+    ? Math.round(baseEstimate * (1 - loyaltyDiscount / 100))
+    : null
+  const hasLoyaltyDiscount = loyaltyDiscount > 0
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
+      style={{
+        marginTop: 20,
+        padding: '20px 24px',
+        background: isDark
+          ? 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)'
+          : 'linear-gradient(135deg, rgba(180,142,38,0.1) 0%, rgba(180,142,38,0.03) 100%)',
+        border: isDark
+          ? '2px solid rgba(212, 175, 55, 0.3)'
+          : '2px solid rgba(180, 142, 38, 0.25)',
+        borderRadius: 20,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: isDark ? '#a1a1aa' : '#52525b' }}>
+              Ориентировочно
+            </span>
+          </div>
+          {(activePromo || hasLoyaltyDiscount) && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#22c55e', display: 'block', marginTop: 2 }}>
+              {hasLoyaltyDiscount && activePromo
+                ? `Статус ${loyaltyDiscount}% + промокод ${activePromo.discount}%`
+                : hasLoyaltyDiscount
+                  ? `С учетом личной скидки ${loyaltyDiscount}%`
+                  : `С промокодом ${activePromo?.discount}%`}
+            </span>
+          )}
+        </div>
+
+        <div style={{ textAlign: 'right' }}>
+          {(activePromo || hasLoyaltyDiscount) && baseEstimate && (
+            <>
+              <div style={{
+                fontSize: 14,
+                color: 'var(--text-muted)',
+                textDecoration: 'line-through',
+                marginBottom: 4,
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
+                {baseEstimate.toLocaleString('ru-RU')} ₽
+              </div>
+              {activePromo && hasLoyaltyDiscount && priceAfterLoyalty && (
+                <div style={{
+                  fontSize: 12,
+                  color: 'var(--text-secondary)',
+                  marginBottom: 4,
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>
+                  После статуса: {priceAfterLoyalty.toLocaleString('ru-RU')} ₽
+                </div>
+              )}
+            </>
+          )}
+          <motion.span
+            key={estimate}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: activePromo || hasLoyaltyDiscount ? '#22c55e' : (isDark ? '#d4af37' : '#9e7a1a'),
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            {estimate.toLocaleString('ru-RU')} ₽
+          </motion.span>
+          {(activePromo || hasLoyaltyDiscount) && (
+            <div style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#22c55e',
+              marginTop: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 6,
+            }}>
+              {activePromo ? (
+                <>
+                  <Tag size={12} />
+                  {activePromo.code} −{activePromo.discount}%
+                </>
+              ) : (
+                `Личная скидка −${loyaltyDiscount}%`
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )
+}

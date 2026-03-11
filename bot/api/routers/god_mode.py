@@ -17,11 +17,13 @@ Features:
 
 import logging
 import re
+import secrets
 from datetime import datetime, timedelta
 from typing import List, Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
 from sqlalchemy import select, desc, func, text, update, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram import Bot
@@ -33,6 +35,7 @@ from database.models.transactions import BalanceTransaction
 from database.models.promocodes import PromoCode, PromoCodeUsage
 from database.models.admin_logs import AdminActionLog, AdminActionType, UserActivity
 from core.config import settings
+from core.redis_pool import get_redis
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
     OrderResponse, GodOrderStatusRequest, GodOrderPriceRequest, GodOrderProgressRequest,
@@ -64,11 +67,45 @@ MSK_TZ = ZoneInfo("Europe/Moscow")
 def require_god_mode(tg_user: TelegramUser) -> None:
     """
     Strict admin check - only telegram_id from ADMIN_IDS allowed.
-    No passwords, no codes - pure Telegram authentication.
     """
     if tg_user.id not in settings.ADMIN_IDS:
         logger.warning(f"[GOD MODE] Access denied for user {tg_user.id}")
         raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+
+# ─── 2FA Constants ────────────────────────────────────────────────────────
+_2FA_CODE_TTL = 300          # 5 minutes
+_2FA_SESSION_TTL = 3600      # 1 hour
+_2FA_CODE_PREFIX = "god2fa:code:"
+_2FA_SESSION_PREFIX = "god2fa:session:"
+_2FA_RATE_PREFIX = "god2fa:rate:"
+_2FA_RATE_MAX = 5            # max code requests per 10 minutes
+
+
+class God2FAVerifyRequest(BaseModel):
+    code: str
+
+
+async def require_god_2fa(tg_user: TelegramUser, request: Request) -> None:
+    """
+    Verify that admin has a valid 2FA session.
+    Called on sensitive endpoints (everything except /system and /2fa/*).
+    """
+    token = request.headers.get("X-God-2FA-Token")
+    if not token:
+        raise HTTPException(status_code=403, detail="2FA required")
+
+    try:
+        redis = await get_redis()
+        stored_uid = await redis.get(f"{_2FA_SESSION_PREFIX}{token}")
+        if stored_uid is None or int(stored_uid) != tg_user.id:
+            raise HTTPException(status_code=403, detail="2FA session expired or invalid")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[GOD 2FA] Redis error checking session: {e}")
+        # If Redis is down, allow access (fail-open) — admin already passed initData auth
+        pass
 
 
 def calculate_order_promo_discount_amount(order: Order) -> float:
@@ -113,11 +150,122 @@ async def log_admin_action(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#                          TWO-FACTOR AUTHENTICATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.post("/2fa/request")
+async def request_2fa_code(
+    tg_user: TelegramUser = Depends(get_current_user),
+    bot: Bot = Depends(get_bot),
+):
+    """Send a 6-digit 2FA code to admin via Telegram bot."""
+    require_god_mode(tg_user)
+
+    try:
+        redis = await get_redis()
+
+        # Rate limit: max 5 requests per 10 minutes
+        rate_key = f"{_2FA_RATE_PREFIX}{tg_user.id}"
+        attempts = await redis.incr(rate_key)
+        if attempts == 1:
+            await redis.expire(rate_key, 600)
+        if attempts > _2FA_RATE_MAX:
+            raise HTTPException(status_code=429, detail="Слишком много запросов. Подождите 10 минут.")
+
+        # Generate 6-digit code
+        code = f"{secrets.randbelow(900000) + 100000}"
+
+        # Store in Redis with TTL
+        code_key = f"{_2FA_CODE_PREFIX}{tg_user.id}"
+        await redis.set(code_key, code, ex=_2FA_CODE_TTL)
+
+        # Send code via Telegram bot
+        await bot.send_message(
+            chat_id=tg_user.id,
+            text=(
+                f"🔐 <b>God Mode 2FA</b>\n\n"
+                f"Ваш код подтверждения: <code>{code}</code>\n\n"
+                f"⏱ Код действителен 5 минут.\n"
+                f"Если вы не запрашивали код — проигнорируйте это сообщение."
+            ),
+        )
+
+        logger.info(f"[GOD 2FA] Code sent to admin {tg_user.id}")
+        return {"success": True, "message": "Код отправлен в Telegram"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[GOD 2FA] Failed to send code to {tg_user.id}: {e}")
+        raise HTTPException(status_code=500, detail="Не удалось отправить код")
+
+
+@router.post("/2fa/verify")
+async def verify_2fa_code(
+    body: God2FAVerifyRequest,
+    tg_user: TelegramUser = Depends(get_current_user),
+):
+    """Verify 2FA code and return a session token."""
+    require_god_mode(tg_user)
+
+    try:
+        redis = await get_redis()
+        code_key = f"{_2FA_CODE_PREFIX}{tg_user.id}"
+        stored_code = await redis.get(code_key)
+
+        if stored_code is None:
+            raise HTTPException(status_code=400, detail="Код истёк. Запросите новый.")
+
+        if stored_code != body.code.strip():
+            raise HTTPException(status_code=400, detail="Неверный код")
+
+        # Delete used code
+        await redis.delete(code_key)
+
+        # Generate session token
+        token = secrets.token_urlsafe(32)
+        session_key = f"{_2FA_SESSION_PREFIX}{token}"
+        await redis.set(session_key, str(tg_user.id), ex=_2FA_SESSION_TTL)
+
+        logger.info(f"[GOD 2FA] Session created for admin {tg_user.id}")
+        return {"success": True, "token": token, "expires_in": _2FA_SESSION_TTL}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[GOD 2FA] Verify error for {tg_user.id}: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка проверки кода")
+
+
+@router.get("/2fa/status")
+async def check_2fa_status(
+    request: Request,
+    tg_user: TelegramUser = Depends(get_current_user),
+):
+    """Check if current 2FA session is valid."""
+    require_god_mode(tg_user)
+
+    token = request.headers.get("X-God-2FA-Token")
+    if not token:
+        return {"authenticated": False}
+
+    try:
+        redis = await get_redis()
+        stored_uid = await redis.get(f"{_2FA_SESSION_PREFIX}{token}")
+        is_valid = stored_uid is not None and int(stored_uid) == tg_user.id
+        return {"authenticated": is_valid}
+    except Exception:
+        return {"authenticated": False}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #                          DASHBOARD & STATS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/dashboard")
 async def get_dashboard(
+    request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -125,6 +273,7 @@ async def get_dashboard(
     Comprehensive dashboard with real-time statistics.
     """
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     now = datetime.now(MSK_TZ)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -504,6 +653,7 @@ async def update_order_status(
 ):
     """Update order status with full audit logging"""
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     order = await session.get(Order, order_id)
     if not order:
@@ -588,6 +738,7 @@ async def update_order_price(
 ):
     """Set order price"""
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     order = await session.get(Order, order_id)
     if not order:
@@ -793,6 +944,7 @@ async def confirm_order_payment(
 ):
     """Confirm payment for an order"""
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     order = await session.get(Order, order_id)
     if not order:
@@ -885,6 +1037,7 @@ async def reject_order_payment(
 ):
     """Reject payment verification"""
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     order = await session.get(Order, order_id)
     if not order:
@@ -1196,6 +1349,7 @@ async def modify_user_balance(
 ):
     """Add or deduct balance from user"""
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     user = await session.scalar(
         select(User).where(User.telegram_id == user_id)
@@ -1267,6 +1421,7 @@ async def ban_user(
 ):
     """Ban or unban user"""
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     user = await session.scalar(
         select(User).where(User.telegram_id == user_id)
@@ -1743,6 +1898,7 @@ async def execute_safe_sql(
 ):
     """Execute SQL query (SELECT only for safety)"""
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     query = data.query
 
@@ -1807,6 +1963,7 @@ async def send_broadcast(
 ):
     """Send broadcast message to users"""
     require_god_mode(tg_user)
+    await require_god_2fa(tg_user, request)
 
     text = data.text
     target = data.target

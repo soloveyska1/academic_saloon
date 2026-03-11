@@ -13,7 +13,7 @@ export function ThemeToggle({
   showLabel = false,
   variant = 'switch'
 }: ThemeToggleProps) {
-  const { theme, toggleTheme, isDark } = useTheme()
+  const { theme: _theme, toggleTheme, isDark } = useTheme()
 
   const sizes = {
     sm: { track: 44, thumb: 18, icon: 12 },

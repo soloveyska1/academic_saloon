@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tag, CheckCircle2, X, Loader, Sparkles, Gift, Percent, ChevronDown, ChevronUp, Calendar, Clock, Star } from 'lucide-react'
+import { Tag, CheckCircle2, X, Loader, Sparkles, Gift, Percent, ChevronDown, ChevronUp, Calendar, Clock } from 'lucide-react'
 import { usePromo } from '../../contexts/PromoContext'
 import { useTelegram } from '../../hooks/useUserData'
 
@@ -78,7 +78,7 @@ export function PromoCodeSection({
 
   // Generate confetti particles
   const triggerConfetti = () => {
-    const particles = Array.from({ length: 12 }, (_, i) => ({
+    const particles = Array.from({ length: 12 }, (_, _i) => ({
       id: Math.random(),
       x: Math.random() * 100 - 50,
       y: Math.random() * 100 - 50,

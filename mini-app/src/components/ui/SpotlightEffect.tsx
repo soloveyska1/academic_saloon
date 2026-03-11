@@ -7,7 +7,7 @@
  * - ELEGANT: No spotlight (disabled)
  */
 
-import React, { memo, useRef, useEffect, useState, useCallback } from 'react'
+import React, { memo, useRef, useEffect, useState } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 
@@ -36,7 +36,7 @@ const SpotlightOverlay = memo(function SpotlightOverlay({
   size: number
   intensity: number
   blur: number
-  spring: { stiffness: number; damping: number }
+  spring: { stiffness?: number; damping?: number }
   containerRef: React.RefObject<HTMLDivElement>
 }) {
   const mouseX = useMotionValue(0)

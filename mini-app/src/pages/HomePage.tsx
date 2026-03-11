@@ -1,6 +1,6 @@
-import { useCallback, useRef, useMemo, lazy, Suspense } from 'react'
+import { useCallback, useRef, useMemo, useState, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { useHomePageState, ModalName } from '../hooks/useHomePageState'
@@ -21,12 +21,14 @@ import {
   NextActionCard,
   NewTaskCTA,
   LastOrderCard,
+  QuickReorderCard,
   UrgentHubSheet,
   TrustStatsStrip,
   LiveActivityFeed,
-  HowItWorks,
   GuaranteesShowcase,
   StickyBottomCTA,
+  WelcomeTour,
+  hasSeenWelcomeTour,
   SaloonFooter,
   ModalLoadingFallback,
 } from '../components/home'
@@ -53,6 +55,9 @@ export function HomePage({ user }: Props) {
 
   // State management via reducer
   const { state, actions } = useHomePageState()
+
+  // Welcome tour for first-time users
+  const [showTour, setShowTour] = useState(() => !hasSeenWelcomeTour())
 
   // Secret admin activation (5 quick taps on logo badge)
   const tapCountRef = useRef(0)
@@ -98,7 +103,22 @@ export function HomePage({ user }: Props) {
     navigate('/club')
   }, [haptic, navigate])
 
+  const handleReorder = useCallback((orderId: number) => {
+    const order = user?.orders.find(o => o.id === orderId)
+    if (!order) return
+    navigate('/create-order', {
+      state: {
+        prefill: {
+          work_type: order.work_type,
+          subject: order.subject,
+          topic: order.subject, // subject doubles as topic
+        },
+      },
+    })
+  }, [user?.orders, navigate])
+
   return (
+    <>
     <main
       role="main"
       className={s.container}
@@ -140,14 +160,13 @@ export function HomePage({ user }: Props) {
 
         {/* ═══════════════════════════════════════════════════════════════════
           NEW USER FLOW — Trust-first, fear-elimination, single CTA
-          No process instructions. Just: value → trust → proof → action.
+          Value → trust → proof → action. No extra steps.
           ═══════════════════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
             <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
             <TrustStatsStrip />
             <LiveActivityFeed />
-            <HowItWorks />
             <GuaranteesShowcase
               onOpenGuaranteesModal={() => { haptic('light'); actions.openModal('guarantees') }}
             />
@@ -174,6 +193,15 @@ export function HomePage({ user }: Props) {
               />
             )}
 
+            {/* Quick reorder — only shows if last order is completed */}
+            {user.orders.length > 0 && (
+              <QuickReorderCard
+                lastOrder={user.orders[0]}
+                onReorder={handleReorder}
+                haptic={haptic}
+              />
+            )}
+
             <QuickActionsRow
               onNavigate={navigate}
               onOpenModal={(modal: ModalName) => {
@@ -186,6 +214,20 @@ export function HomePage({ user }: Props) {
               }}
               haptic={haptic}
             />
+
+            {/* Promo Code Section — only for returning users */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              style={{ marginBottom: 16 }}
+            >
+              <PromoCodeSection
+                variant="full"
+                collapsible={true}
+                defaultExpanded={!!activePromo}
+              />
+            </motion.div>
 
             {/* Referral CTA */}
             <motion.button
@@ -236,22 +278,6 @@ export function HomePage({ user }: Props) {
             </motion.button>
           </>
         )}
-
-        {/* ═══════════════════════════════════════════════════════════════════
-          PROMO CODE SECTION
-          ═══════════════════════════════════════════════════════════════════ */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.28 }}
-          style={{ marginBottom: 16 }}
-        >
-          <PromoCodeSection
-            variant="full"
-            collapsible={true}
-            defaultExpanded={!!activePromo}
-          />
-        </motion.div>
 
         <SaloonFooter />
       </div>{/* End content wrapper */}
@@ -315,6 +341,18 @@ export function HomePage({ user }: Props) {
           user={user}
         />
       </Suspense>
+
     </main>
+
+      {/* Welcome tour — only for new users, shown once (outside main to avoid overflow:hidden) */}
+      <AnimatePresence>
+        {isNewUser && showTour && (
+          <WelcomeTour
+            onComplete={() => setShowTour(false)}
+            haptic={haptic}
+          />
+        )}
+      </AnimatePresence>
+    </>
   )
 }

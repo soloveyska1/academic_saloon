@@ -1,6 +1,6 @@
 import {
   GraduationCap, FileText, BookOpen, Scroll, PenTool,
-  ClipboardCheck, Presentation, Briefcase, Sparkles, Camera,
+  ClipboardCheck, Presentation, Briefcase, Camera,
   HelpCircle
 } from 'lucide-react'
 import { ServiceType, DeadlineOption } from './types'

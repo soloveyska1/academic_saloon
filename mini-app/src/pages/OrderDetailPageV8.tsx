@@ -43,8 +43,6 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  AlertTriangle,
-  Flame,
   Download,
   ChevronRight,
   X,
@@ -67,7 +65,6 @@ import {
   Image,
   FileArchive,
   Archive,
-  User,
   Send,
   Award,
   RotateCcw,
@@ -100,7 +97,6 @@ import {
   formatOrderDeadlineRu,
   formatOrderTimelineDateSafe,
   getOrderHeadlineSafe,
-  getOrderSublineSafe,
   normalizeOrder,
   ORDER_WORK_TYPE_LABELS,
   parseOrderDateSafe,
@@ -200,18 +196,6 @@ const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
   rejected:             { label: 'Отклонён',         color: 'rgba(239,68,68,0.70)',   bgColor: 'rgba(239,68,68,0.06)',   borderColor: 'rgba(239,68,68,0.12)', icon: XCircle,      step: -1 },
 }
 
-const WORK_TYPE_ICONS: Record<string, typeof FileText> = {
-  masters: Award,
-  diploma: FileCheck,
-  coursework: FileText,
-  essay: Sparkles,
-  report: File,
-  control: CheckCircle2,
-  presentation: Image,
-  practice: CalendarCheck,
-  photo_task: Image,
-  other: FileText,
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              UTILITIES
@@ -1887,7 +1871,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
   const handleSubmit = async () => {
     if (!allChecked) {
       haptic?.('warning')
-      showToast({ type: 'warning', title: 'Подтвердите все пункты' })
+      showToast({ type: 'info', title: 'Подтвердите все пункты' })
       return
     }
 
@@ -2309,7 +2293,7 @@ interface TrustSectionProps {
   isPaymentFlow?: boolean
 }
 
-const TrustSection = memo(function TrustSection({ isPaymentFlow = true }: TrustSectionProps) {
+const TrustSection = memo(function TrustSection({ isPaymentFlow: _isPaymentFlow = true }: TrustSectionProps) {
   const [expandedChip, setExpandedChip] = useState<string | null>(null)
   const { haptic } = useTelegram()
 
@@ -3703,7 +3687,7 @@ export function OrderDetailPageV8() {
 
     if (receiptUploadFailed) {
       showToast({
-        type: 'warning',
+        type: 'info',
         title: 'Подтверждение отправлено',
         message: 'Статус обновили, но скриншот не прикрепился. Его можно дослать в чат заказа.',
       })

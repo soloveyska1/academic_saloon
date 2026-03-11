@@ -7,7 +7,7 @@
  * - ELEGANT: Static shimmer overlay (no particles)
  */
 
-import React, { memo, useRef, useEffect, useMemo, useCallback } from 'react'
+import React, { memo, useRef, useEffect, useMemo } from 'react'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 
 interface AdaptiveParticlesProps {
@@ -107,7 +107,7 @@ const CanvasParticles = memo(function CanvasParticles({
       ctx.clearRect(0, 0, width, height)
 
       // Update and draw particles
-      particlesRef.current.forEach((p, i) => {
+      particlesRef.current.forEach((p, _i) => {
         // Update position
         p.x += p.speedX
         p.y += p.speedY

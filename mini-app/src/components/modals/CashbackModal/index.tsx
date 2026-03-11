@@ -46,7 +46,7 @@ function RankPill({
   locked,
   label,
   cashback,
-  color,
+  color: _color,
   onClick,
 }: {
   active: boolean

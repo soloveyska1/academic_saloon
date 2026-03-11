@@ -61,7 +61,7 @@ export function SupportChat() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const errorCountRef = useRef(0)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

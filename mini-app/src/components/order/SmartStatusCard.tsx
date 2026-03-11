@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import {
-  Clock, CreditCard, Loader2, FileCheck, CheckCircle2,
-  XCircle, AlertCircle, PenTool, Eye, Sparkles, ArrowRight,
+  Clock, CreditCard, Loader2, CheckCircle2,
+  XCircle, PenTool, Eye, Sparkles, ArrowRight,
   RefreshCw, MessageCircle, Download
 } from 'lucide-react'
 import { Order, OrderStatus } from '../../types'

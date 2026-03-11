@@ -2,7 +2,7 @@
  * GOD MODE v3 — Thin Orchestrator
  * Auth guard → GodShell → 7 tabs → WebSocket notifications
  */
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Shield } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -12,6 +12,7 @@ import { getLastAppRoute } from '../utils/navigation'
 import { getActiveTab, withRouteParams, type TabId } from '../components/god/godConstants'
 import { useGodWebSocket } from '../components/god/godHooks'
 import { GodShell, NotificationToast } from '../components/god/GodShell'
+import { God2FAGate } from '../components/god/God2FAGate'
 import { CenterTab } from '../components/god/CenterTab'
 import { OrdersTab } from '../components/god/OrdersTab'
 import { ClientsTab } from '../components/god/ClientsTab'
@@ -26,6 +27,7 @@ export function GodModePage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { isAdmin, telegramId, simulateNewUser, toggleSimulateNewUser, accessResolved } = useAdmin()
+  const [is2FAVerified, setIs2FAVerified] = useState(false)
   const activeTab = useMemo(() => getActiveTab(searchParams), [searchParams])
   const appReturnPath = useMemo(() => getLastAppRoute(), [])
 
@@ -64,6 +66,16 @@ export function GodModePage() {
         <h1 className={s.deniedTitle}>Доступ закрыт</h1>
         <p className={s.deniedText}>Нет прав администратора.</p>
       </div>
+    )
+  }
+
+  /* 2FA gate — must verify before accessing dashboard */
+  if (!is2FAVerified) {
+    return (
+      <God2FAGate
+        onAuthenticated={() => setIs2FAVerified(true)}
+        onBack={handleBack}
+      />
     )
   }
 

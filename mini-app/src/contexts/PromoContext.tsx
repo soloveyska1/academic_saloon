@@ -279,7 +279,7 @@ export function PromoProvider({ children }: { children: ReactNode }) {
 
           return {
             ...prev,
-            discount: result.discount,
+            discount: result.discount as number,
             message: result.message,
             validatedAt: Date.now(),
             expiresAt: result.valid_until ? new Date(result.valid_until).getTime() : prev.expiresAt,

@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SKELETON LOADERS — Premium loading states for homepage cards
