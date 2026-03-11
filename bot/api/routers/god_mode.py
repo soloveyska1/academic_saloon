@@ -189,6 +189,7 @@ async def request_2fa_code(
                 f"⏱ Код действителен 5 минут.\n"
                 f"Если вы не запрашивали код — проигнорируйте это сообщение."
             ),
+            parse_mode="HTML",
         )
 
         logger.info(f"[GOD 2FA] Code sent to admin {tg_user.id}")
