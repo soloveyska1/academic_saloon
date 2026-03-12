@@ -183,6 +183,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     id?: number
     promoUsed?: { code: string; discount: number } | null
     basePrice?: number
+    isManual?: boolean
   } | null>(null)
 
   const loyaltyDiscount = useMemo(() => {
@@ -471,7 +472,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
           msg: finalMsg,
           id: res.order_id,
           promoUsed: actualPromoUsed,
-          basePrice: basePrice || undefined
+          basePrice: basePrice || undefined,
+          isManual: res.is_manual_required ?? false
         })
         shouldShowResult = true
       } else {
@@ -519,11 +521,11 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       : 0
     const title = result.ok ? 'Заявка принята' : 'Не удалось отправить заявку'
     const lead = result.ok && result.id
-      ? `Заказ #${result.id} создан. Сейчас проверяем вводные и готовим оценку от менеджера.`
+      ? (result.isManual
+          ? `Заказ #${result.id} создан. Сейчас проверяем вводные и готовим оценку от менеджера.`
+          : `Заказ #${result.id} создан. Можете перейти к оплате.`)
       : result.msg
-    const details = result.ok
-      ? result.msg.replace(/^✅?\s*Заказ #?\d+\s+создан!?/i, '').trim()
-      : result.msg
+    const details: string | null = null // Lead уже содержит всё нужное
 
     return (
       <div style={{ padding: 24, paddingBottom: 100, minHeight: '100vh', height: '100dvh', background: 'var(--bg-main)' }}>
@@ -621,18 +623,12 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                 {lead}
               </div>
 
-              {details && details !== lead && (
+              {promoUsed && savings > 0 && (
                 <div className={homeStyles.heroProofRail}>
-                  <div className={homeStyles.heroProofItem} style={{ alignItems: 'flex-start' }}>
-                    <Tag size={15} color="#d4af37" style={{ marginTop: 1 }} />
-                    <span style={{ lineHeight: 1.6 }}>{details}</span>
+                  <div className={homeStyles.heroProofItem}>
+                    <Tag size={15} color="#22c55e" />
+                    Промокод {promoUsed.code} сэкономил {savings.toLocaleString('ru-RU')} ₽
                   </div>
-                  {promoUsed && savings > 0 && (
-                    <div className={homeStyles.heroProofItem}>
-                      <Tag size={15} color="#22c55e" />
-                      Промокод {promoUsed.code} сэкономил {savings.toLocaleString('ru-RU')} ₽
-                    </div>
-                  )}
                 </div>
               )}
 
