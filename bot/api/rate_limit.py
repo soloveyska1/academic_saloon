@@ -33,9 +33,17 @@ def get_real_ip(request: Request) -> str:
         return real_ip
 
     # Fallback to direct connection IP
-    ip = get_remote_address(request)
-    logger.debug(f"[Rate Limit] Using direct IP: {ip}")
-    return ip
+    try:
+        if request.client and request.client.host:
+            ip = request.client.host
+            logger.debug(f"[Rate Limit] Using direct IP: {ip}")
+            return ip
+    except Exception:
+        pass
+
+    # Last resort — unknown client behind proxy without headers
+    logger.warning("[Rate Limit] Could not determine client IP, using fallback")
+    return "unknown"
 
 
 # Create limiter instance with custom key function
