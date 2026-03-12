@@ -4,23 +4,10 @@ import { fetchUserData, fetchConfig } from '../api/userApi'
 import { SUPPORT_TELEGRAM_URL } from '../lib/appLinks'
 import { useAdmin } from '../contexts/AdminContext'
 
-// Demo mode flag - same as in userApi.ts
-const IS_DEV = import.meta.env.DEV || false
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || IS_DEV
-
 // Wait until Telegram injects initData.
 // On some mobile clients initData arrives a bit later than the first render,
 // which caused the app to throw "Open via Telegram" before WebApp was ready.
 async function waitForTelegramContext(timeoutMs = 7000, pollMs = 50) {
-  // Skip waiting in demo mode - allow mock data
-  if (DEMO_MODE) {
-    // Quick check - if Telegram is available, use it
-    const tg = window.Telegram?.WebApp
-    if (tg?.initData && tg?.initData.length > 0) return true
-    // Otherwise proceed without Telegram (mock mode)
-    return false
-  }
-
   const started = Date.now()
 
   while (Date.now() - started < timeoutMs) {
@@ -46,9 +33,8 @@ export function useUserData() {
         // Wait for Telegram to provide initData (mobile webviews may delay it)
         const hasContext = await waitForTelegramContext()
 
-        // In demo mode, proceed even without Telegram context
-        if (!hasContext && !DEMO_MODE) {
-          throw new Error('Откройте приложение через Telegram (контекст не готов)')
+        if (!hasContext) {
+          throw new Error('Откройте приложение через Telegram')
         }
 
         const data = await fetchUserData()
@@ -87,9 +73,6 @@ export function useUserData() {
       referrals_count: 0,
       referral_earnings: 0,
       orders: [],
-      daily_luck_available: true,
-      daily_bonus_streak: 0,
-      free_spins: 0,
       rank: {
         name: 'Новый клиент',
         emoji: '✦',

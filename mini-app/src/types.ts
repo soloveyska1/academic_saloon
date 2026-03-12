@@ -21,10 +21,11 @@ export interface UserData {
   referral_next_percent?: number | null  // Next tier %
   referral_refs_to_next: number  // Refs needed for next tier
   orders: Order[]
-  daily_luck_available: boolean
-  daily_bonus_streak: number  // Days in a row claimed daily bonus
-  free_spins: number
-  roulette_onboarding_seen: boolean
+  // Legacy fields kept for API compatibility
+  daily_luck_available?: boolean
+  daily_bonus_streak?: number
+  free_spins?: number
+  roulette_onboarding_seen?: boolean
 }
 
 export interface Transaction {

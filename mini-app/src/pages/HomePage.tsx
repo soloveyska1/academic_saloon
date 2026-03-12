@@ -148,7 +148,6 @@ export function HomePage({ user }: Props) {
           user={{
             fullname: user.fullname,
             rank: { is_max: user.rank.is_max },
-            daily_bonus_streak: user.daily_bonus_streak,
             orders_count: user.orders_count,
             has_active_orders: activeOrders > 0,
           }}

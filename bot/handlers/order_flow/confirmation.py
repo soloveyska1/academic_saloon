@@ -360,7 +360,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
     Flow:
     1. Check Risk Matrix → determine GREEN or YELLOW flow
     2. GREEN FLOW (auto-pay): Show invoice with payment button
-    3. YELLOW FLOW (manual): Show "Requires sheriff evaluation" screen
+    3. YELLOW FLOW (manual): Show "Requires admin evaluation" screen
     4. SPECIAL (other): Send for manual evaluation
     """
     await callback.answer("⏳")
@@ -434,7 +434,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext, session: Asy
             order_status = OrderStatus.WAITING_PAYMENT.value
             order_price = final_price
         else:
-            # === YELLOW FLOW: NEED SHERIFF EVALUATION ===
+            # === YELLOW FLOW: NEED ADMIN EVALUATION ===
             # Calculate preliminary price for display
             price_calc = calculate_price(
                 work_type=work_type_value,

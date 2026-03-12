@@ -277,6 +277,7 @@ class Order(Base):
     deadline: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # Финансы
+    # TODO: migrate all financial Float fields → Numeric(12,2) for precision (requires Alembic migration)
     price: Mapped[float] = mapped_column(Float, default=0.0)
     discount: Mapped[float] = mapped_column(Float, default=0.0)
     promo_code: Mapped[str | None] = mapped_column(String(50), nullable=True)  # Примененный промокод

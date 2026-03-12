@@ -19,10 +19,6 @@ export interface OrderCreateResponse {
 // Development flag
 const IS_DEV = import.meta.env.DEV || false
 
-// Demo mode - enables mock data fallback when API is unavailable
-// Set VITE_DEMO_MODE=true in .env to enable
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || IS_DEV
-
 // Known production API host — used as fallback when VITE_API_URL is not set
 const PRODUCTION_API_URL = 'https://academic-saloon.duckdns.org/api'
 
@@ -137,37 +133,20 @@ export async function fetchConfig(): Promise<{ bot_username: string; support_use
 }
 
 export async function fetchUserData(): Promise<UserData> {
-  // In demo mode without Telegram context, return mock data
   if (!hasTelegramContext()) {
-    if (DEMO_MODE) return getMockUserData()
     throw new Error('Откройте приложение через Telegram')
   }
 
-  // Try to fetch from API, fallback to mock in demo mode
-  try {
-    return await apiFetch<UserData>('/user')
-  } catch (err) {
-    // If network error and demo mode enabled, use mock data
-    if (DEMO_MODE && err instanceof Error && err.message.includes('сети')) {
-      console.warn('[DEMO MODE] API unavailable, using mock data')
-      return getMockUserData()
-    }
-    throw err
-  }
+  return await apiFetch<UserData>('/user')
 }
 
 export async function fetchOrders(status?: string): Promise<Order[]> {
-  if (!hasTelegramContext() && IS_DEV) return getMockUserData().orders
   const params = status ? `?status=${status}` : ''
   const response = await apiFetch<{ orders: Order[] }>(`/orders${params}`)
   return response.orders
 }
 
 export async function fetchOrderDetail(orderId: number): Promise<Order> {
-  if (!hasTelegramContext() && IS_DEV) {
-    const o = getMockUserData().orders.find(x => x.id === orderId)
-    if (o) return o
-  }
   return await apiFetch<Order>(`/orders/${orderId}`)
 }
 
@@ -197,31 +176,6 @@ export async function applyPromoCode(code: string): Promise<PromoResult> {
     method: 'POST',
     body: JSON.stringify({ code }),
   })
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  ADMIN: Daily Bonus Testing
-// ═══════════════════════════════════════════════════════════════════════════
-
-export interface DailyBonusResetResult {
-  success: boolean
-  message: string
-  streak?: number
-  old_streak?: number
-  new_streak?: number
-  next_milestone?: { day: number; reward: number } | null
-}
-
-export async function resetDailyBonusCooldown(): Promise<DailyBonusResetResult> {
-  return await apiFetch<DailyBonusResetResult>('/daily-bonus/reset', { method: 'POST' })
-}
-
-export async function resetDailyBonusFull(): Promise<DailyBonusResetResult> {
-  return await apiFetch<DailyBonusResetResult>('/daily-bonus/reset-streak', { method: 'POST' })
-}
-
-export async function setDailyBonusStreak(streak: number): Promise<DailyBonusResetResult> {
-  return await apiFetch<DailyBonusResetResult>(`/daily-bonus/set-streak?streak=${streak}`, { method: 'POST' })
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -271,10 +225,6 @@ export interface PaymentInfo {
 }
 
 export async function fetchPaymentInfo(orderId: number): Promise<PaymentInfo> {
-  if (!hasTelegramContext() && IS_DEV) return {
-    order_id: orderId, status: 'waiting_payment', price: 1000, final_price: 1000, discount: 0, bonus_used: 0,
-    paid_amount: 0, remaining: 1000, card_number: '0000', card_holder: 'Dev', sbp_phone: '000', sbp_bank: 'Dev'
-  }
   return await apiFetch<PaymentInfo>(`/orders/${orderId}/payment-info`)
 }
 
@@ -312,7 +262,6 @@ export async function createOrder(data: OrderCreateRequest): Promise<OrderCreate
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function fetchOrderMessages(orderId: number): Promise<ChatMessagesResponse> {
-  if (!hasTelegramContext() && IS_DEV) return { order_id: orderId, messages: [], unread_count: 0 }
   // Add timestamp to prevent caching
   return await apiFetch<ChatMessagesResponse>(`/orders/${orderId}/messages?t=${Date.now()}`)
 }
@@ -398,7 +347,6 @@ export async function requestRevision(orderId: number, message: string = ''): Pr
 }
 
 export async function fetchSupportMessages(): Promise<ChatMessagesResponse> {
-  if (!hasTelegramContext() && IS_DEV) return { order_id: 0, messages: [], unread_count: 0 }
   return await apiFetch<ChatMessagesResponse>('/support/messages')
 }
 
@@ -493,23 +441,6 @@ export interface BatchPaymentInfo {
 }
 
 export async function fetchBatchPaymentInfo(orderIds: number[]): Promise<BatchPaymentInfo> {
-  if (!hasTelegramContext() && IS_DEV) {
-    return {
-      orders: orderIds.map(id => ({
-        id,
-        work_type_label: 'Курсовая работа',
-        subject: 'Предмет',
-        final_price: 1000,
-        remaining: 1000,
-      })),
-      total_amount: orderIds.length * 1000,
-      orders_count: orderIds.length,
-      card_number: '0000 0000 0000 0000',
-      card_holder: 'DEV USER',
-      sbp_phone: '+7 (000) 000-00-00',
-      sbp_bank: 'Банк',
-    }
-  }
   return await apiFetch<BatchPaymentInfo>('/orders/batch-payment-info', {
     method: 'POST',
     body: JSON.stringify({ order_ids: orderIds }),
@@ -892,14 +823,3 @@ export async function unsubscribeGodNotifications(): Promise<{ success: boolean 
   return apiFetch('/god/unsubscribe', { method: 'POST' })
 }
 
-// MOCK DATA GENERATOR
-function getMockUserData(): UserData {
-  return {
-    id: 1, telegram_id: 123456789, created_at: new Date().toISOString(), username: 'dev', fullname: 'Dev User', balance: 1000, bonus_balance: 100,
-    transactions: [], orders: [], orders_count: 0, total_spent: 0, discount: 0, referral_code: 'DEV', referrals_count: 0, referral_earnings: 0,
-    referral_percent: 0, referral_refs_to_next: 3,
-    daily_luck_available: true, daily_bonus_streak: 1, free_spins: 0, roulette_onboarding_seen: true,
-    rank: { name: 'Player', emoji: '🎲', level: 1, cashback: 0, bonus: null, next_rank: null, progress: 0, spent_to_next: 100, is_max: false },
-    loyalty: { status: 'Start', emoji: 'S', level: 1, discount: 0, orders_to_next: 1 }
-  }
-}

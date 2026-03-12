@@ -30,10 +30,8 @@ const REASON_LABELS: Record<string, string> = {
   compensation: 'Компенсация',
   order_cashback: 'Кэшбэк за заказ',
   bonus_expired: 'Сгорание бонусов',
-  daily_luck: 'Ежедневный бонус',
   coupon: 'Активация купона',
   order_refund: 'Возврат средств',
-  roulette_win: 'Выигрыш',
   welcome_bonus: 'Приветственный бонус',
   achievement: 'Награда за достижение',
   promo_code: 'Применение промокода',
@@ -47,10 +45,8 @@ const REASON_HINTS: Record<string, string> = {
   compensation: 'Начисление',
   order_cashback: 'Начисление за оплаченный заказ',
   bonus_expired: 'Сгорание',
-  daily_luck: 'Ежедневная активность',
   coupon: 'Начисление',
   order_refund: 'Возврат',
-  roulette_win: 'Начисление',
   welcome_bonus: 'Стартовый бонус',
   achievement: 'Начисление',
   promo_code: 'Начисление',
@@ -82,12 +78,6 @@ function getTransactionVisual(transaction: Transaction) {
   }
 
   const visuals: Record<string, { icon: typeof Gift; color: string; background: string; border: string }> = {
-    daily_luck: {
-      icon: Gift,
-      color: '#fcd34d',
-      background: 'rgba(252, 211, 77, 0.12)',
-      border: 'rgba(252, 211, 77, 0.22)',
-    },
     order_cashback: {
       icon: Wallet2,
       color: '#93c5fd',

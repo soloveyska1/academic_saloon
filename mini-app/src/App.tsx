@@ -26,7 +26,7 @@ import {
   SmartNotification,
   SmartNotificationData,
 } from './components/ui/RealtimeNotification'
-import { AlertTriangle, RefreshCw, Wifi, WifiOff } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Wifi, WifiOff, ArrowLeft, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 // Lazy Load Pages
@@ -115,6 +115,94 @@ function NotificationHandler({ notification, onDismiss }: NotificationHandlerPro
       onDismiss={onDismiss}
       onAction={handleAction}
     />
+  )
+}
+
+// 404 Not Found page
+function NotFoundPage() {
+  const navigate = useNavigate()
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#09090b',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      gap: 24,
+    }}>
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 200 }}
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 24,
+          background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+          border: '1px solid rgba(212,175,55,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(212,175,55,0.1)',
+        }}
+      >
+        <Search size={36} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
+      </motion.div>
+
+      <motion.div
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        style={{ textAlign: 'center' }}
+      >
+        <h2 style={{
+          fontFamily: "var(--font-serif, 'Playfair Display', serif)",
+          fontSize: 24,
+          fontWeight: 700,
+          color: 'rgba(255,255,255,0.9)',
+          margin: 0,
+          marginBottom: 12,
+        }}>
+          Страница не найдена
+        </h2>
+        <p style={{
+          fontSize: 13,
+          color: 'rgba(255,255,255,0.4)',
+          margin: 0,
+          lineHeight: 1.6,
+          maxWidth: 280,
+        }}>
+          Такой страницы не существует или она была перемещена
+        </p>
+      </motion.div>
+
+      <motion.button
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => navigate('/')}
+        style={{
+          padding: '14px 32px',
+          fontSize: 14,
+          fontWeight: 600,
+          color: '#0a0a0c',
+          background: 'linear-gradient(180deg, #f5d485, #D4AF37)',
+          border: 'none',
+          borderRadius: 14,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          boxShadow: '0 4px 20px rgba(212,175,55,0.3)',
+        }}
+      >
+        <ArrowLeft size={16} strokeWidth={2} />
+        На главную
+      </motion.button>
+    </div>
   )
 }
 
@@ -410,7 +498,7 @@ function AppContent() {
                   color: 'rgba(255,255,255,0.25)',
                   letterSpacing: '0.1em',
                 }}>
-                  EST. 2024
+                  EST. {new Date().getFullYear()}
                 </span>
                 <div style={{
                   width: 20,
@@ -465,6 +553,7 @@ function AppContent() {
                             <Route path="/batch-payment" element={<BatchPaymentPage />} />
                             <Route path="/admin" element={<GodModePage />} />
                             <Route path="/god" element={<GodModePage />} />
+                            <Route path="*" element={<NotFoundPage />} />
                           </Routes>
                         </Suspense>
 

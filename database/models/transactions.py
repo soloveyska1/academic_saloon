@@ -15,7 +15,7 @@ class BalanceTransaction(Base):
     user_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"), index=True
     )
-    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)  # TODO: migrate Float→Numeric(12,2)
     type: Mapped[str] = mapped_column(String(20), nullable=False)  # credit / debit
     reason: Mapped[str] = mapped_column(String(50), nullable=False)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -11,7 +11,6 @@ interface HomeHeaderProps {
   user: {
     fullname?: string
     rank: { is_max: boolean }
-    daily_bonus_streak: number
     orders_count?: number
     has_active_orders?: boolean
   }

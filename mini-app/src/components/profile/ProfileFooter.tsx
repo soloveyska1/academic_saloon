@@ -49,7 +49,7 @@ export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport }: Prop
           color: 'rgba(255,255,255,0.25)',
           letterSpacing: '0.1em',
         }}>
-          EST. 2024
+          EST. {new Date().getFullYear()}
         </span>
         <div className={`${s.footerLine} ${s.footerLineRight}`} />
       </div>

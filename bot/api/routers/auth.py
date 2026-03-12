@@ -117,15 +117,15 @@ async def get_user_profile(
     transactions = tx_result.scalars().all()
 
     # Check daily bonus availability (use timezone-aware datetime!)
-    can_spin = True
+    daily_available = True
     if user.last_daily_bonus_at:
         # Ensure both datetimes are timezone-aware for comparison
-        next_spin = user.last_daily_bonus_at + timedelta(hours=24)
+        next_claim = user.last_daily_bonus_at + timedelta(hours=24)
         now_utc = datetime.now(timezone.utc)
-        # If next_spin is naive, make it aware
-        if next_spin.tzinfo is None:
-            next_spin = next_spin.replace(tzinfo=timezone.utc)
-        can_spin = now_utc >= next_spin
+        # If next_claim is naive, make it aware
+        if next_claim.tzinfo is None:
+            next_claim = next_claim.replace(tzinfo=timezone.utc)
+        daily_available = now_utc >= next_claim
 
     # Get bonus expiry info
     bonus_expiry_data = user.bonus_expiry_info
@@ -138,7 +138,7 @@ async def get_user_profile(
         username=user.username,
         fullname=user.fullname or tg_user.first_name,
         balance=round(float(user.balance or 0), 2),
-        bonus_balance=round(float(user.balance or 0), 2),  # Same as balance - no separate bonus_balance in DB
+        bonus_balance=round(float(user.balance or 0), 2),  # User balance is all bonuses (single balance field in DB)
         orders_count=total_orders_count,  # Use actual count from orders table
         total_spent=actual_total_spent,   # Use actual sum from completed orders
         discount=loyalty_info.discount,
@@ -148,7 +148,7 @@ async def get_user_profile(
         referral_percent=ref_tier["current_percent"],
         referral_next_percent=ref_tier["next_tier"]["percent"] if ref_tier["next_tier"] else None,
         referral_refs_to_next=ref_tier["refs_to_next"],
-        daily_luck_available=can_spin,
+        daily_luck_available=daily_available,
         daily_bonus_streak=user.daily_bonus_streak or 0,
         rank=rank_info,  # Use actual total spent
         loyalty=loyalty_info,

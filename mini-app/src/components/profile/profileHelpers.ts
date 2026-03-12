@@ -61,7 +61,6 @@ export const TRANSACTION_REASON_LABELS: Record<string, string> = {
   compensation: 'Компенсация',
   order_cashback: 'Кэшбэк за заказ',
   bonus_expired: 'Сгорание бонусов',
-  daily_luck: 'Ежедневный бонус',
   coupon: 'Купон',
   promo_code: 'Промокод',
   order_refund: 'Возврат бонусов',
@@ -77,7 +76,6 @@ const TRANSACTION_REASON_HINTS: Record<string, string> = {
   compensation: 'Начисление от команды',
   order_cashback: 'Начисление после заказа',
   bonus_expired: 'Неиспользованный остаток',
-  daily_luck: 'Ежедневная награда',
   coupon: 'Активация купона',
   promo_code: 'Активация промокода',
   order_refund: 'Возврат после отмены',
@@ -240,7 +238,6 @@ export interface TransactionVisual {
 }
 
 const CREDIT_VISUALS: Record<string, { icon: LucideIcon; color: string; background: string; border: string }> = {
-  daily_luck: { icon: Gift, color: '#fcd34d', background: 'rgba(252, 211, 77, 0.12)', border: 'rgba(252, 211, 77, 0.22)' },
   order_cashback: { icon: Wallet2, color: '#93c5fd', background: 'rgba(147, 197, 253, 0.12)', border: 'rgba(147, 197, 253, 0.20)' },
   referral_bonus: { icon: Users, color: '#c4b5fd', background: 'rgba(196, 181, 253, 0.12)', border: 'rgba(196, 181, 253, 0.20)' },
   compensation: { icon: Sparkles, color: '#f9a8d4', background: 'rgba(249, 168, 212, 0.12)', border: 'rgba(249, 168, 212, 0.20)' },

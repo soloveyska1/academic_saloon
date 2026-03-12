@@ -1,121 +1,22 @@
 import logging
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
-import random
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from database.db import get_session
 from database.models.users import User
 from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
-    DailyBonusInfoResponse, DailyBonusClaimResponse, RouletteResponse
+    DailyBonusInfoResponse, DailyBonusClaimResponse
 )
-# Rate limiting done via nginx — slowapi crashes behind reverse proxy
-# from bot.api.rate_limit import limiter
 from bot.services.bonus import BonusService, BonusReason
-from bot.services.mini_app_logger import log_roulette_spin
-from bot.bot_instance import get_bot
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["Daily & Roulette"])
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  ROULETTE
-# ═══════════════════════════════════════════════════════════════════════════
-
-@router.post("/roulette/spin", response_model=RouletteResponse)
-async def spin_roulette(
-    request: Request,
-    tg_user: TelegramUser = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
-):
-    """
-    Элитный Клуб - испытай удачу!
-    БЕЗ ЛИМИТА - крутить можно сколько угодно
-    Шанс выигрыша крайне низкий - это элитный клуб!
-    """
-
-    result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    prizes = [
-        {"prize": "ДЖЕКПОТ 50000₽", "type": "jackpot", "value": 50000, "weight": 1},
-        {"prize": "МЕГА-ПРИЗ 10000₽", "type": "bonus", "value": 10000, "weight": 10},
-        {"prize": "СУПЕР-ПРИЗ 5000₽", "type": "bonus", "value": 5000, "weight": 100},
-        {"prize": "КРУПНЫЙ 1000₽", "type": "bonus", "value": 1000, "weight": 1000},
-        {"prize": "ХОРОШИЙ 500₽", "type": "bonus", "value": 500, "weight": 10000},
-        {"prize": "БОНУС 100₽", "type": "bonus", "value": 100, "weight": 100000},
-        {"prize": "Не повезло", "type": "nothing", "value": 0, "weight": 9888889},
-    ]
-
-    total_weight = sum(p["weight"] for p in prizes)
-    rand = random.randint(1, total_weight)
-    cumulative = 0
-    selected = prizes[-1]
-    for prize in prizes:
-        cumulative += prize["weight"]
-        if rand <= cumulative:
-            selected = prize
-            break
-
-    if selected["type"] in ("bonus", "jackpot") and selected["value"] > 0:
-        # Use atomic update to prevent race condition
-        await session.execute(
-            update(User)
-            .where(User.telegram_id == user.telegram_id)
-            .values(
-                balance=User.balance + selected["value"],
-                last_bonus_at=datetime.now(ZoneInfo("Europe/Moscow")),
-                bonus_expiry_notified=False
-            )
-        )
-        await session.commit()
-        # Refresh user to get updated balance
-        await session.refresh(user)
-    else:
-        await session.commit()
-
-    if selected["type"] != "nothing":
-        try:
-            bot = get_bot()
-            await log_roulette_spin(
-                bot=bot,
-                user_id=user.telegram_id,
-                username=user.username,
-                prize=selected["prize"],
-                prize_type=selected["type"],
-                value=selected["value"],
-            )
-
-            if selected["value"] > 0:
-                from bot.services.realtime_notifications import send_balance_notification
-                await send_balance_notification(
-                    telegram_id=user.telegram_id,
-                    change=round(float(selected["value"]), 2),
-                    new_balance=round(float(user.balance), 2),
-                    reason=f"Выигрыш в рулетке: {selected['prize']}",
-                    reason_key="roulette_win"
-                )
-        except Exception as e:
-            logger.warning(f"Roulette Log Error: {e}")
-
-    message = f"Поздравляем! Вы выиграли {selected['value']} ₽!" if selected["value"] > 0 else "Не повезло. Попробуйте снова завтра."
-
-    return RouletteResponse(
-        success=True,
-        prize=selected["prize"],
-        type=selected["type"],
-        value=selected["value"],
-        message=message,
-        next_spin_at=None
-    )
+router = APIRouter(tags=["Daily Bonus"])
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  DAILY BONUS — Гарантированный ежедневный бонус

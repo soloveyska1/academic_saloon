@@ -1,6 +1,6 @@
 """
 Terms of service (offer) text.
-Premium minimalism tone — legal content preserved, Wild West removed.
+Premium minimalism tone — legal content preserved.
 
 Re-exports greetings for backward compatibility with existing imports.
 """
@@ -219,6 +219,6 @@ TERMS_ACCEPTED_RETURNING = """<b>С возвращением, {name}!</b>
 # These were previously used directly from this module.
 # Keep them available for existing imports.
 MAIN_USP_TEMPLATE = None  # Removed — use get_main_text() from greetings.py
-COWBOY_QUOTES = None  # Removed — use get_random_quote() from greetings.py
+COWBOY_QUOTES = None  # Deprecated (Wild West theme removed)
 VOICE_TEASER = None  # Removed
 VOICE_CAPTION = None  # Removed

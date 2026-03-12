@@ -20,21 +20,20 @@ logger = logging.getLogger(__name__)
 # Базовые цены по типам работ (в рублях)
 # Можно вынести в Redis/DB для динамического обновления
 BASE_PRICES: dict[str, int] = {
-    # Мелкие работы (Simple)
+    # Мелкие работы (Simple) — минимум 2500₽
     WorkType.ESSAY.value: 2500,
     WorkType.REPORT.value: 2500,
-    WorkType.PRESENTATION.value: 2500,
+    WorkType.PRESENTATION.value: 7000,       # Презентация + речь в комплекте
     WorkType.CONTROL.value: 3000,
     WorkType.INDEPENDENT.value: 3500,
 
     # Средние работы
     WorkType.PRACTICE.value: 8000,           # Отчёт по практике
-    WorkType.COURSEWORK.value: 14000,        # Курсовая (теория)
-    # TODO: Добавить различие курсовая теория/эмпирика = 16000
+    WorkType.COURSEWORK.value: 14000,        # Курсовая теория = 14000, с эмпирикой = 20000 (ручная оценка)
 
     # Крупные работы
     WorkType.DIPLOMA.value: 40000,           # Диплом (ВКР)
-    WorkType.MASTERS.value: 50000,           # Магистерская
+    WorkType.MASTERS.value: 60000,           # Магистерская
 
     # Спецзаказы
     WorkType.OTHER.value: 5000,              # База для спецзаказа (ручная оценка)

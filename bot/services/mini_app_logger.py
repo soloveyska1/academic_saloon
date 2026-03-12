@@ -4,7 +4,7 @@ Mini App Logger - отправляет логи API в отдельный топ
 Используется для отслеживания действий пользователей в Mini App:
 - Создание заказов
 - Просмотр профиля
-- Рулетка
+- Ежедневный бонус
 - Ошибки API
 """
 
@@ -33,9 +33,9 @@ class MiniAppEvent(str, Enum):
     PROFILE_VIEW = "profile_view"
     PROMO_APPLY = "promo_apply"
 
-    # Рулетка
-    ROULETTE_SPIN = "roulette_spin"
-    ROULETTE_WIN = "roulette_win"
+    # Ежедневный бонус
+    ROULETTE_SPIN = "roulette_spin"      # Legacy name — kept for log compat
+    ROULETTE_WIN = "roulette_win"        # Legacy name — kept for log compat
 
     # Ошибки
     ERROR = "error"
@@ -49,7 +49,7 @@ EVENT_ICONS = {
     MiniAppEvent.ORDER_LIST: "📋",
     MiniAppEvent.PROFILE_VIEW: "👤",
     MiniAppEvent.PROMO_APPLY: "🎟",
-    MiniAppEvent.ROULETTE_SPIN: "🎰",
+    MiniAppEvent.ROULETTE_SPIN: "🎲",
     MiniAppEvent.ROULETTE_WIN: "🎉",
     MiniAppEvent.ERROR: "❌",
     MiniAppEvent.AUTH_FAIL: "🔐",
@@ -62,8 +62,8 @@ EVENT_NAMES = {
     MiniAppEvent.ORDER_LIST: "Список заказов",
     MiniAppEvent.PROFILE_VIEW: "Просмотр профиля",
     MiniAppEvent.PROMO_APPLY: "Промокод",
-    MiniAppEvent.ROULETTE_SPIN: "Рулетка",
-    MiniAppEvent.ROULETTE_WIN: "Выигрыш!",
+    MiniAppEvent.ROULETTE_SPIN: "Ежедневный бонус",
+    MiniAppEvent.ROULETTE_WIN: "Бонус получен!",
     MiniAppEvent.ERROR: "Ошибка",
     MiniAppEvent.AUTH_FAIL: "Ошибка авторизации",
 }
@@ -222,7 +222,7 @@ async def log_roulette_spin(
     prize_type: str,
     value: int,
 ):
-    """Логирует кручение рулетки"""
+    """Логирует получение ежедневного бонуса (legacy name kept for import compat)"""
     event = MiniAppEvent.ROULETTE_WIN if prize_type != "nothing" else MiniAppEvent.ROULETTE_SPIN
 
     extra = {"Приз": prize}

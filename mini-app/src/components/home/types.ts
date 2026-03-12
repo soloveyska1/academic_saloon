@@ -45,4 +45,4 @@ export interface OrderStatusInfo {
   border: string
 }
 
-export type ModalType = 'cashback' | 'guarantees' | 'transactions' | 'ranks' | 'qr' | 'daily_bonus' | 'welcome'
+export type ModalType = 'cashback' | 'guarantees' | 'transactions' | 'ranks' | 'qr' | 'welcome'

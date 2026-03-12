@@ -637,8 +637,6 @@ class PromoService:
         Call this on app startup to migrate from hardcoded promos.
         """
         default_promos = [
-            {"code": "COWBOY20", "percent": 20, "max_uses": 0, "days_valid": 365},
-            {"code": "SALOON10", "percent": 10, "max_uses": 0, "days_valid": 365},
             {"code": "WELCOME5", "percent": 5, "max_uses": 0, "days_valid": 365},
         ]
 

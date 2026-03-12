@@ -5136,7 +5136,7 @@ async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
     await state.clear()
 
     # Форматируем сообщение от менеджера
-    sheriff_msg = f"""<b>Сообщение поддержки</b>
+    support_msg = f"""<b>Сообщение поддержки</b>
 
 {msg_text}
 
@@ -5150,7 +5150,7 @@ async def send_message_to_user(message: Message, state: FSMContext, bot: Bot):
     ])
 
     try:
-        await bot.send_message(user_id, sheriff_msg, reply_markup=keyboard)
+        await bot.send_message(user_id, support_msg, reply_markup=keyboard)
         await message.answer(f"✅ Сообщение отправлено клиенту ({user_id})")
     except Exception as e:
         await message.answer(f"❌ Ошибка отправки: {e}")

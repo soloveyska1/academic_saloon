@@ -537,7 +537,7 @@ async def cancel_order(callback: CallbackQuery, state: FSMContext, bot: Bot, ses
 @order_router.callback_query(F.data.startswith("submit_for_review:"))
 async def submit_for_review_callback(callback: CallbackQuery, state: FSMContext, session: AsyncSession, bot: Bot):
     """
-    YELLOW FLOW: User submits order for sheriff review.
+    YELLOW FLOW: User submits order for admin review.
     Changes status from DRAFT to WAITING_ESTIMATION and notifies admins.
 
     Includes Yandex Disk upload and file sending to admins.

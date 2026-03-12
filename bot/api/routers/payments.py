@@ -7,6 +7,7 @@ YooKassa payment endpoints.
 
 import hashlib
 import hmac
+import ipaddress
 import json
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -25,6 +26,43 @@ from bot.utils.formatting import format_price
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["payments"])
+
+
+# ══════════════════════════════════════════════════════════
+#  YOOKASSA WEBHOOK SECURITY
+# ══════════════════════════════════════════════════════════
+
+# Official YooKassa IP ranges for webhook callbacks
+# https://yookassa.ru/developers/using-api/webhooks
+YOOKASSA_IP_NETWORKS = [
+    ipaddress.ip_network("185.71.76.0/27"),
+    ipaddress.ip_network("185.71.77.0/27"),
+    ipaddress.ip_network("77.75.153.0/25"),
+    ipaddress.ip_network("77.75.154.128/25"),
+    ipaddress.ip_network("77.75.156.11/32"),
+    ipaddress.ip_network("77.75.156.35/32"),
+    ipaddress.ip_network("2a02:5180::/32"),
+]
+
+
+def _is_yookassa_ip(client_ip: str) -> bool:
+    """Check if request IP belongs to YooKassa network."""
+    try:
+        addr = ipaddress.ip_address(client_ip)
+        return any(addr in network for network in YOOKASSA_IP_NETWORKS)
+    except (ValueError, TypeError):
+        return False
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract real client IP, respecting X-Forwarded-For behind nginx."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        # First IP in the chain is the real client
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return ""
 
 
 # ══════════════════════════════════════════════════════════
@@ -131,10 +169,20 @@ async def yookassa_webhook(
     Handle YooKassa webhook notifications.
     Called by YooKassa when payment status changes.
 
+    Security:
+    - IP whitelist: only YooKassa IPs accepted
+    - Optional HMAC signature verification if YOOKASSA_WEBHOOK_SECRET is set
+
     Events:
     - payment.succeeded — payment completed
     - payment.canceled — payment failed/canceled
     """
+    # ── IP whitelist check ──
+    client_ip = _get_client_ip(request)
+    if not _is_yookassa_ip(client_ip):
+        logger.warning(f"[YooKassa Webhook] Rejected request from non-YooKassa IP: {client_ip}")
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     try:
         body = await request.json()
     except Exception:

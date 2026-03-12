@@ -30,7 +30,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
           color: 'rgba(255,255,255,0.3)',
           letterSpacing: '0.08em',
         }}>
-          EST. 2024
+          EST. {new Date().getFullYear()}
         </span>
         <div style={{
           width: 24,

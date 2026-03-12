@@ -7,7 +7,6 @@ interface AdminSettings {
   telegramId: number | null
   debugMode: boolean
   simulateNewUser: boolean
-  unlimitedRoulette: boolean
   showDebugInfo: boolean
   // bypassPayments removed for security - payments must always go through server validation
 }
@@ -16,7 +15,6 @@ interface AdminContextType extends AdminSettings {
   accessResolved: boolean
   toggleDebugMode: () => void
   toggleSimulateNewUser: () => void
-  toggleUnlimitedRoulette: () => void
   toggleShowDebugInfo: () => void
   resetAllSettings: () => void
   simulatedRank: number | null
@@ -28,7 +26,6 @@ const defaultSettings: AdminSettings = {
   telegramId: null,
   debugMode: false,
   simulateNewUser: false,
-  unlimitedRoulette: false,
   showDebugInfo: false,
 }
 
@@ -37,7 +34,7 @@ const AdminContext = createContext<AdminContextType | null>(null)
 const STORAGE_KEY = 'academic_saloon_admin_settings'
 const MAX_ATTEMPTS = 20
 
-type PersistedAdminSettings = Pick<AdminSettings, 'debugMode' | 'simulateNewUser' | 'unlimitedRoulette' | 'showDebugInfo'>
+type PersistedAdminSettings = Pick<AdminSettings, 'debugMode' | 'simulateNewUser' | 'showDebugInfo'>
 
 function getPersistedSettings(): PersistedAdminSettings {
   try {
@@ -47,7 +44,6 @@ function getPersistedSettings(): PersistedAdminSettings {
       return {
         debugMode: Boolean(parsed.debugMode),
         simulateNewUser: Boolean(parsed.simulateNewUser),
-        unlimitedRoulette: Boolean(parsed.unlimitedRoulette),
         showDebugInfo: Boolean(parsed.showDebugInfo),
       }
     }
@@ -58,7 +54,6 @@ function getPersistedSettings(): PersistedAdminSettings {
   return {
     debugMode: false,
     simulateNewUser: false,
-    unlimitedRoulette: false,
     showDebugInfo: false,
   }
 }
@@ -163,7 +158,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const persisted: PersistedAdminSettings = {
         debugMode: settings.debugMode,
         simulateNewUser: settings.simulateNewUser,
-        unlimitedRoulette: settings.unlimitedRoulette,
         showDebugInfo: settings.showDebugInfo,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
@@ -178,10 +172,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const toggleSimulateNewUser = () => {
     setSettings(prev => ({ ...prev, simulateNewUser: !prev.simulateNewUser }))
-  }
-
-  const toggleUnlimitedRoulette = () => {
-    setSettings(prev => ({ ...prev, unlimitedRoulette: !prev.unlimitedRoulette }))
   }
 
   const toggleShowDebugInfo = () => {
@@ -202,7 +192,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         accessResolved,
         toggleDebugMode,
         toggleSimulateNewUser,
-        toggleUnlimitedRoulette,
         toggleShowDebugInfo,
         resetAllSettings,
         simulatedRank,

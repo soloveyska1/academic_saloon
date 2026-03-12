@@ -338,7 +338,7 @@ def get_muse_profile_keyboard(active_orders: int = 0) -> InlineKeyboardMarkup:
     Клавиатура для VIP Muse профиля - минималистичный дизайн + полный функционал.
 
     Layout:
-    [🎰 Испытать удачу] - VIP рулетка без кулдауна
+    [🎰 Испытать удачу] - VIP ежедневный бонус без кулдауна
     [📦 Мои заказы] - стандартный функционал
     [📜 История] [🎟 Купон]
     [Реферальная программа]
@@ -346,7 +346,7 @@ def get_muse_profile_keyboard(active_orders: int = 0) -> InlineKeyboardMarkup:
     """
     buttons = []
 
-    # Row 1: VIP Roulette (главная фишка)
+    # Row 1: VIP Daily Luck (главная фишка)
     buttons.append([
         InlineKeyboardButton(text="🎰 Испытать удачу", callback_data="daily_luck")
     ])

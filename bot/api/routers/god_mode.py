@@ -1897,28 +1897,61 @@ async def execute_safe_sql(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """Execute SQL query (SELECT only for safety)"""
+    """
+    Execute SQL query (SELECT only for safety).
+
+    Security model:
+    - God Mode + 2FA required
+    - Only SELECT statements accepted
+    - Destructive keywords (DROP, DELETE, TRUNCATE, ALTER, UPDATE, INSERT) are
+      blocked even inside subqueries or comments
+    - Semicolons and SQL comments blocked to prevent statement chaining
+    - Results capped at 1000 rows
+    """
     require_god_mode(tg_user)
     await require_god_2fa(tg_user, request)
 
     query = data.query
 
     # Security: Only allow SELECT queries
-    query_upper = query.upper()
+    query_upper = query.strip().upper()
     if not query_upper.startswith("SELECT"):
         raise HTTPException(
             status_code=400,
             detail="Only SELECT queries allowed. Use specific endpoints for modifications."
         )
 
-    # Block dangerous patterns
-    dangerous_patterns = [
-        "DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE",
-        "CREATE", "GRANT", "REVOKE", ";", "--"
+    # Block destructive keywords anywhere in query (subqueries, CTEs, etc.)
+    destructive_patterns = [
+        "DROP", "DELETE", "TRUNCATE", "ALTER",
     ]
-    for pattern in dangerous_patterns:
+    write_patterns = [
+        "UPDATE", "INSERT", "CREATE", "GRANT", "REVOKE",
+    ]
+    injection_patterns = [
+        ";", "--", "/*",
+    ]
+
+    for pattern in destructive_patterns:
         if pattern in query_upper:
-            raise HTTPException(status_code=400, detail=f"Query contains forbidden pattern: {pattern}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Destructive operation '{pattern}' is not allowed in SQL console."
+            )
+
+    for pattern in write_patterns:
+        if pattern in query_upper:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Write operation '{pattern}' is not allowed. Use specific endpoints."
+            )
+
+    for pattern in injection_patterns:
+        if pattern in query_upper:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Query contains forbidden pattern: {pattern}"
+            )
 
     try:
         result = await session.execute(text(query))

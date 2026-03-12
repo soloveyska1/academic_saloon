@@ -364,7 +364,7 @@ def build_muse_profile_caption(user: User | None, telegram_id: int, user_name: s
 
     В этом пространстве правила устанавливаешь ты.
 
-    👇 Твоя персональная рулетка готова.
+    👇 Твой ежедневный бонус ждёт.
     """
     if not user:
         return (
@@ -387,7 +387,7 @@ def build_muse_profile_caption(user: User | None, telegram_id: int, user_name: s
         "<i>В этом пространстве правила устанавливаешь ты.</i>",
         "<i>Удача всегда на твоей стороне.</i>",
         "",
-        "👇 <i>Твоя персональная рулетка готова.</i>",
+        "👇 <i>Твой ежедневный бонус ждёт.</i>",
     ]
 
     return "\n".join(lines)
@@ -1259,7 +1259,7 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
     # ═══════════════ STEP 6: SHOW RESULT ═══════════════
     if show_muse_ui:
         lines = [
-            "<code>✧ R O U L E T T E ✧</code>",
+            "<code>✧ D A I L Y — L U C K ✧</code>",
             "",
             f"💎 {flavor_text}",
             "",
@@ -1270,7 +1270,7 @@ async def daily_luck_handler(callback: CallbackQuery, session: AsyncSession, bot
         keyboard = get_muse_luck_result_keyboard()
     else:
         lines = [
-            "🎰 <b>БАРАБАН УДАЧИ</b>",
+            "🎲 <b>ЕЖЕДНЕВНЫЙ БОНУС</b>",
             "",
             f"🎉 <b>{flavor_text}</b>",
             "",
