@@ -188,8 +188,11 @@ export async function unarchiveOrder(orderId: number): Promise<ArchiveResponse> 
   return await apiFetch<ArchiveResponse>(`/orders/${orderId}/unarchive`, { method: 'POST' })
 }
 
+export async function cancelOrder(orderId: number): Promise<{ success: boolean; message: string }> {
+  return await apiFetch<{ success: boolean; message: string }>(`/orders/${orderId}/cancel`, { method: 'POST' })
+}
+
 export async function applyPromoCode(code: string): Promise<PromoResult> {
-  if (!hasTelegramContext() && IS_DEV) return { success: code === 'COWBOY20', message: 'OK', discount: 20 }
   return await apiFetch<PromoResult>('/promo', {
     method: 'POST',
     body: JSON.stringify({ code }),

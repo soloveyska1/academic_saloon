@@ -10,7 +10,7 @@ import {
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GOD 2FA GATE — PIN entry screen before God Mode access
-//  Shows only once per session (token stored in sessionStorage)
+//  Gold+onyx premium design matching the app's visual language.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface God2FAGateProps {
@@ -66,7 +66,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
     try {
       await requestGod2FACode()
       setPhase('verify')
-      setCooldown(60) // 60s before resend
+      setCooldown(60)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка отправки кода')
     } finally {
@@ -101,8 +101,15 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
   if (phase === 'checking') {
     return (
       <div style={containerStyle}>
-        <Loader2 size={32} color="#d4af37" style={{ animation: 'spin 1s linear infinite' }} />
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 16 }}>
+        <div style={glowStyle} />
+        <Loader2 size={28} color="#d4af37" style={{ animation: 'spin 1s linear infinite' }} />
+        <p style={{
+          fontFamily: "'Manrope', sans-serif",
+          color: 'rgba(255,255,255,0.35)',
+          fontSize: 12,
+          fontWeight: 500,
+          marginTop: 16,
+        }}>
           Проверка сессии...
         </p>
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -112,17 +119,21 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
 
   return (
     <div style={containerStyle}>
+      {/* Ambient gold glow */}
+      <div style={glowStyle} />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', damping: 25 }}
         style={{
-          maxWidth: 360,
+          maxWidth: 340,
           width: '100%',
           padding: '0 20px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          position: 'relative',
         }}
       >
         {/* Back button */}
@@ -132,51 +143,55 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
           whileTap={{ scale: 0.95 }}
           style={{
             position: 'absolute',
-            top: 'max(16px, env(safe-area-inset-top, 16px))',
-            left: 16,
-            padding: '8px 12px',
+            top: -80,
+            left: 0,
+            padding: '7px 12px',
             borderRadius: 12,
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'rgba(255,255,255,0.5)',
-            fontSize: 13,
-            fontWeight: 500,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.35)',
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: 12,
+            fontWeight: 600,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 5,
           }}
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={13} />
           Назад
         </motion.button>
 
-        {/* Icon */}
+        {/* Icon — gold glass */}
         <div style={{
-          width: 72, height: 72, borderRadius: 20,
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
-          border: '1px solid rgba(212,175,55,0.3)',
+          width: 56, height: 56, borderRadius: 16,
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+          border: '1px solid rgba(212,175,55,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 24,
+          marginBottom: 20,
           boxShadow: '0 8px 32px -8px rgba(212,175,55,0.2)',
         }}>
-          <Shield size={32} color="#d4af37" strokeWidth={1.5} />
+          <Shield size={24} color="#d4af37" strokeWidth={1.5} />
         </div>
 
         <h1 style={{
-          fontSize: 22, fontWeight: 800, color: '#fff',
-          marginBottom: 8, letterSpacing: '-0.02em',
+          fontFamily: "'Playfair Display', 'Cinzel', Georgia, serif",
+          fontSize: 22, fontWeight: 700, fontStyle: 'italic',
+          color: '#fff',
+          marginBottom: 8, letterSpacing: '-0.01em',
         }}>
-          Двухфакторная проверка
+          Подтверждение
         </h1>
 
         <p style={{
-          fontSize: 13, color: 'rgba(255,255,255,0.45)',
-          textAlign: 'center', lineHeight: 1.6, marginBottom: 32,
-          maxWidth: 280,
+          fontFamily: "'Manrope', sans-serif",
+          fontSize: 13, color: 'rgba(255,255,255,0.35)',
+          textAlign: 'center', lineHeight: 1.55, marginBottom: 28,
+          maxWidth: 260, fontWeight: 500,
         }}>
           {phase === 'send'
-            ? 'Для доступа к God Mode отправим 6-значный код в ваш Telegram'
+            ? 'Для доступа к God Mode отправим 6-значный код в Telegram'
             : 'Введите код из сообщения в Telegram'}
         </p>
 
@@ -187,9 +202,11 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
             animate={{ opacity: 1, y: 0 }}
             style={{
               width: '100%', padding: '10px 14px', borderRadius: 12,
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.2)',
-              color: '#ef4444', fontSize: 13, fontWeight: 500,
+              background: 'rgba(239,68,68,0.08)',
+              border: '1px solid rgba(239,68,68,0.15)',
+              color: '#f87171',
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: 12, fontWeight: 600,
               marginBottom: 16, textAlign: 'center',
             }}
           >
@@ -205,27 +222,36 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
             disabled={loading}
             whileTap={{ scale: 0.97 }}
             style={{
-              width: '100%', padding: '16px 24px', borderRadius: 16,
+              width: '100%', padding: '15px 24px', borderRadius: 16,
               background: 'linear-gradient(135deg, #d4af37, #f5d76e)',
               border: '1px solid rgba(212,175,55,0.4)',
-              color: '#09090b', fontSize: 15, fontWeight: 700,
+              color: '#09090b',
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: 14, fontWeight: 700,
               cursor: loading ? 'wait' : 'pointer',
               opacity: loading ? 0.7 : 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: '0 8px 24px -4px rgba(212,175,55,0.3)',
             }}
           >
             {loading ? (
-              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
             ) : (
-              <Send size={18} />
+              <Send size={16} />
             )}
             Отправить код
           </motion.button>
         ) : (
           /* Code input */
           <>
+            {/* Glass card wrapper */}
             <div style={{
-              width: '100%', position: 'relative', marginBottom: 16,
+              width: '100%',
+              padding: '20px 16px',
+              borderRadius: 20,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              marginBottom: 16,
             }}>
               <input
                 ref={inputRef}
@@ -237,15 +263,31 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
                 placeholder="000000"
                 autoComplete="one-time-code"
                 style={{
-                  width: '100%', padding: '16px 20px',
-                  borderRadius: 16, fontSize: 28, fontWeight: 700,
+                  width: '100%', padding: '14px 16px',
+                  borderRadius: 14, fontSize: 26, fontWeight: 700,
                   textAlign: 'center', letterSpacing: '0.3em',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${error ? 'rgba(239,68,68,0.3)' : 'rgba(212,175,55,0.2)'}`,
-                  color: '#fff', outline: 'none',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${error ? 'rgba(239,68,68,0.2)' : 'rgba(212,175,55,0.15)'}`,
+                  color: '#d4af37', outline: 'none',
                   fontFamily: "'JetBrains Mono', monospace",
+                  caretColor: '#d4af37',
                 }}
               />
+
+              {/* Digit indicators */}
+              <div style={{
+                display: 'flex', justifyContent: 'center', gap: 8,
+                marginTop: 12,
+              }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} style={{
+                    width: 8, height: 8, borderRadius: 4,
+                    background: i < code.length ? '#d4af37' : 'rgba(255,255,255,0.08)',
+                    transition: 'background 0.15s ease',
+                    boxShadow: i < code.length ? '0 0 6px rgba(212,175,55,0.3)' : 'none',
+                  }} />
+                ))}
+              </div>
             </div>
 
             <motion.button
@@ -254,23 +296,25 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
               disabled={loading || code.length !== 6}
               whileTap={{ scale: 0.97 }}
               style={{
-                width: '100%', padding: '16px 24px', borderRadius: 16,
+                width: '100%', padding: '15px 24px', borderRadius: 16,
                 background: code.length === 6
                   ? 'linear-gradient(135deg, #d4af37, #f5d76e)'
-                  : 'rgba(255,255,255,0.06)',
+                  : 'rgba(255,255,255,0.04)',
                 border: code.length === 6
                   ? '1px solid rgba(212,175,55,0.4)'
-                  : '1px solid rgba(255,255,255,0.1)',
-                color: code.length === 6 ? '#09090b' : 'rgba(255,255,255,0.3)',
-                fontSize: 15, fontWeight: 700,
+                  : '1px solid rgba(255,255,255,0.08)',
+                color: code.length === 6 ? '#09090b' : 'rgba(255,255,255,0.2)',
+                fontFamily: "'Manrope', sans-serif",
+                fontSize: 14, fontWeight: 700,
                 cursor: loading || code.length !== 6 ? 'default' : 'pointer',
                 opacity: loading ? 0.7 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 marginBottom: 16,
+                boxShadow: code.length === 6 ? '0 8px 24px -4px rgba(212,175,55,0.3)' : 'none',
               }}
             >
               {loading ? (
-                <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
               ) : (
                 'Подтвердить'
               )}
@@ -283,8 +327,9 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
               disabled={cooldown > 0 || loading}
               style={{
                 background: 'none', border: 'none',
-                color: cooldown > 0 ? 'rgba(255,255,255,0.2)' : 'rgba(212,175,55,0.7)',
-                fontSize: 13, fontWeight: 500, cursor: cooldown > 0 ? 'default' : 'pointer',
+                fontFamily: "'Manrope', sans-serif",
+                color: cooldown > 0 ? 'rgba(255,255,255,0.15)' : 'rgba(212,175,55,0.5)',
+                fontSize: 12, fontWeight: 600, cursor: cooldown > 0 ? 'default' : 'pointer',
               }}
             >
               {cooldown > 0 ? `Отправить повторно (${cooldown}с)` : 'Отправить код повторно'}
@@ -307,4 +352,16 @@ const containerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 100,
+  overflow: 'hidden',
+}
+
+const glowStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: '-20%',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  width: '140%',
+  height: '50%',
+  background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.06) 0%, transparent 70%)',
+  pointerEvents: 'none',
 }

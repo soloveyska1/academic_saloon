@@ -4,7 +4,7 @@ import { ShieldCheck, Clock, Sparkles, ArrowRight } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  WELCOME TOUR — 3-step onboarding for first-time users
-//  Shows once per device via localStorage. Premium gold+void design.
+//  Gold+onyx premium design matching the app's visual language.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STORAGE_KEY = 'as_welcome_seen'
@@ -16,8 +16,6 @@ interface WelcomeTourProps {
 
 interface Slide {
   icon: typeof ShieldCheck
-  iconGradient: string
-  iconGlow: string
   title: string
   subtitle: string
   bullets: string[]
@@ -26,8 +24,6 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     icon: Sparkles,
-    iconGradient: 'linear-gradient(135deg, #d4af37, #f5d76e)',
-    iconGlow: 'rgba(212,175,55,0.4)',
     title: 'Добро пожаловать',
     subtitle: 'Мы помогаем студентам с учебными работами — быстро, качественно и конфиденциально',
     bullets: [
@@ -38,8 +34,6 @@ const SLIDES: Slide[] = [
   },
   {
     icon: Clock,
-    iconGradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)',
-    iconGlow: 'rgba(59,130,246,0.4)',
     title: 'Как это работает',
     subtitle: 'Три простых шага от заявки до готовой работы',
     bullets: [
@@ -50,13 +44,11 @@ const SLIDES: Slide[] = [
   },
   {
     icon: ShieldCheck,
-    iconGradient: 'linear-gradient(135deg, #22c55e, #4ade80)',
-    iconGlow: 'rgba(34,197,94,0.4)',
     title: 'Гарантии',
     subtitle: 'Ваше спокойствие — наш приоритет',
     bullets: [
       'Бесплатные доработки до полного соответствия',
-      'Проверка на антиплагиат включена',
+      'Высокая уникальность текста гарантирована',
       'Полная конфиденциальность данных',
     ],
   },
@@ -131,9 +123,9 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
   }, [])
 
   const slideVariants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
+    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
   }
 
   const Icon = slide.icon
@@ -150,15 +142,26 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
         position: 'fixed',
         inset: 0,
         zIndex: 3000,
-        background: 'rgba(0,0,0,0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: '#09090b',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         padding: '0 20px',
+        overflow: 'hidden',
       }}
     >
+      {/* Ambient gold glow — top */}
+      <div style={{
+        position: 'absolute',
+        top: '-20%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '140%',
+        height: '50%',
+        background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.06) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+
       {/* Skip button */}
       {!isLast && (
         <motion.button
@@ -171,13 +174,15 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
             position: 'absolute',
             top: 'max(16px, env(safe-area-inset-top, 16px))',
             right: 16,
-            padding: '8px 16px',
+            padding: '7px 14px',
             borderRadius: 20,
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'rgba(255,255,255,0.5)',
-            fontSize: 13,
-            fontWeight: 500,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: 12,
+            fontFamily: "'Manrope', sans-serif",
+            fontWeight: 600,
+            letterSpacing: '0.02em',
             cursor: 'pointer',
           }}
         >
@@ -213,42 +218,36 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
               width: '100%',
             }}
           >
-            {/* Icon */}
+            {/* Icon — always gold, glass style */}
             <motion.div
               initial={{ scale: 0.7 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', delay: 0.1 }}
               style={{
-                width: 64,
-                height: 64,
-                borderRadius: 20,
-                background: slide.iconGradient,
+                width: 56,
+                height: 56,
+                borderRadius: 16,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+                border: '1px solid rgba(212,175,55,0.25)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 20,
-                boxShadow: `0 12px 40px -8px ${slide.iconGlow}`,
-                position: 'relative',
+                boxShadow: '0 8px 32px -8px rgba(212,175,55,0.2)',
               }}
             >
-              {/* Glass shine */}
-              <div style={{
-                position: 'absolute',
-                top: 0, left: 0, right: 0,
-                height: '50%',
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
-                borderRadius: '20px 20px 50% 50%',
-              }} />
-              <Icon size={28} color="#fff" strokeWidth={1.5} />
+              <Icon size={24} color="#d4af37" strokeWidth={1.5} />
             </motion.div>
 
-            {/* Title */}
+            {/* Title — serif display font */}
             <h2 style={{
-              fontSize: 22,
-              fontWeight: 800,
+              fontFamily: "'Playfair Display', 'Cinzel', Georgia, serif",
+              fontSize: 24,
+              fontWeight: 700,
+              fontStyle: 'italic',
               color: '#fff',
               marginBottom: 8,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.01em',
               lineHeight: 1.2,
             }}>
               {slide.title}
@@ -256,45 +255,53 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
 
             {/* Subtitle */}
             <p style={{
-              fontSize: 13.5,
-              color: 'rgba(255,255,255,0.55)',
-              lineHeight: 1.5,
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: 13,
+              color: 'rgba(255,255,255,0.40)',
+              lineHeight: 1.55,
               marginBottom: 20,
-              maxWidth: 300,
+              maxWidth: 280,
+              fontWeight: 500,
             }}>
               {slide.subtitle}
             </p>
 
-            {/* Bullets */}
+            {/* Bullets — glass cards */}
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 6,
+              gap: 8,
               width: '100%',
               textAlign: 'left',
             }}>
               {slide.bullets.map((bullet, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.15 + i * 0.08 }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.12 + i * 0.07 }}
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: 10,
-                    padding: '6px 0',
+                    padding: '10px 14px',
+                    borderRadius: 14,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
                   <div style={{
-                    width: 5, height: 5, borderRadius: 3,
-                    background: slide.iconGradient,
+                    width: 4, height: 4, borderRadius: 2,
+                    background: '#d4af37',
                     flexShrink: 0,
                     marginTop: 7,
+                    boxShadow: '0 0 6px rgba(212,175,55,0.4)',
                   }} />
                   <span style={{
+                    fontFamily: "'Manrope', sans-serif",
                     fontSize: 13,
-                    color: 'rgba(255,255,255,0.65)',
+                    fontWeight: 500,
+                    color: 'rgba(255,255,255,0.55)',
                     lineHeight: 1.5,
                   }}>
                     {bullet}
@@ -310,8 +317,8 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
       <div style={{
         flexShrink: 0,
         width: '100%',
-        maxWidth: 360,
-        paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
+        maxWidth: 340,
+        paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
         paddingTop: 12,
       }}>
         {/* Step dots */}
@@ -319,19 +326,20 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
           display: 'flex',
           justifyContent: 'center',
           gap: 8,
-          marginBottom: 20,
+          marginBottom: 16,
         }}>
           {SLIDES.map((_, i) => (
             <motion.div
               key={i}
               animate={{
-                width: i === step ? 24 : 8,
-                background: i === step ? '#d4af37' : 'rgba(255,255,255,0.15)',
+                width: i === step ? 20 : 6,
+                background: i === step ? '#d4af37' : 'rgba(255,255,255,0.10)',
               }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               style={{
-                height: 8,
-                borderRadius: 4,
+                height: 6,
+                borderRadius: 3,
+                boxShadow: i === step ? '0 0 8px rgba(212,175,55,0.3)' : 'none',
               }}
             />
           ))}
@@ -344,26 +352,29 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
           whileTap={{ scale: 0.97 }}
           style={{
             width: '100%',
-            padding: '16px 24px',
+            padding: '15px 24px',
             borderRadius: 16,
             background: isLast
               ? 'linear-gradient(135deg, #d4af37, #f5d76e)'
-              : 'rgba(255,255,255,0.08)',
+              : 'rgba(255,255,255,0.04)',
             border: isLast
               ? '1px solid rgba(212,175,55,0.4)'
-              : '1px solid rgba(255,255,255,0.12)',
-            color: isLast ? '#09090b' : '#fff',
-            fontSize: 15,
+              : '1px solid rgba(255,255,255,0.08)',
+            color: isLast ? '#09090b' : 'rgba(255,255,255,0.7)',
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: 14,
             fontWeight: 700,
+            letterSpacing: '0.01em',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
+            boxShadow: isLast ? '0 8px 24px -4px rgba(212,175,55,0.3)' : 'none',
           }}
         >
           {isLast ? 'Начать' : 'Далее'}
-          <ArrowRight size={18} strokeWidth={2} />
+          <ArrowRight size={16} strokeWidth={2.2} />
         </motion.button>
       </div>
     </motion.div>

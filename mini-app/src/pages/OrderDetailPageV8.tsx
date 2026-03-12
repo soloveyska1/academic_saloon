@@ -86,6 +86,7 @@ import {
   confirmPayment,
   uploadChatFile,
   createOnlinePayment,
+  cancelOrder,
 } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
@@ -2477,14 +2478,14 @@ interface OrderFile {
   id: string
   name: string
   size: number
-  type: 'pdf' | 'doc' | 'docx' | 'image' | 'archive' | 'other'
+  type: 'pdf' | 'doc' | 'docx' | 'image' | 'archive' | 'folder' | 'other'
   url?: string
   uploadedAt?: string
 }
 
 // Utility functions for files
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Б'
+  if (bytes <= 0) return ''
   const k = 1024
   const sizes = ['Б', 'КБ', 'МБ', 'ГБ']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -2501,6 +2502,8 @@ const getFileIcon = (type: OrderFile['type']) => {
       return Image
     case 'archive':
       return FileArchive
+    case 'folder':
+      return Package
     default:
       return File
   }
@@ -2517,6 +2520,8 @@ const getFileColor = (type: OrderFile['type']): string => {
       return DS.colors.purple
     case 'archive':
       return DS.colors.warning
+    case 'folder':
+      return DS.colors.gold
     default:
       return DS.colors.textMuted
   }
@@ -2535,14 +2540,15 @@ const FilesSection = memo(function FilesSection({
 }: FilesSectionProps) {
   const { haptic } = useTelegram()
 
-  // Parse files from order (mock data structure)
+  // Parse files from order — files_url is a Yandex.Disk folder link
+  const workLabel = order.work_type_label || 'Работа'
   const files: OrderFile[] = order.files_url
     ? [
         {
           id: '1',
-          name: 'Готовая_работа.docx',
-          size: 245760,
-          type: 'docx',
+          name: `${workLabel} — файлы`,
+          size: 0,
+          type: 'folder',
           url: order.files_url,
         },
       ]
@@ -2696,7 +2702,7 @@ const FilesSection = memo(function FilesSection({
                         marginTop: 2,
                       }}
                     >
-                      {formatFileSize(file.size)}
+                      {file.type === 'folder' ? 'Яндекс.Диск' : formatFileSize(file.size)}
                     </div>
                   </div>
 
@@ -3746,6 +3752,34 @@ export function OrderDetailPageV8() {
     }
   }, [haptic, navigate, order?.id])
 
+  // Cancel handler
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
+
+  const CANCELABLE_STATUSES = ['draft', 'pending', 'waiting_payment', 'confirmed', 'waiting_estimation']
+  const canCancelOrder = order ? CANCELABLE_STATUSES.includes(order.status) : false
+
+  const handleCancelOrder = useCallback(async () => {
+    if (!order?.id) return
+    setCancelLoading(true)
+    try {
+      const result = await cancelOrder(order.id)
+      if (result.success) {
+        haptic?.('success')
+        showToast({ type: 'success', title: 'Заказ отменён' })
+        setCancelConfirmOpen(false)
+        await loadOrder()
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (err) {
+      haptic?.('error')
+      showToast({ type: 'error', title: 'Ошибка', message: err instanceof Error ? err.message : 'Не удалось отменить заказ' })
+    } finally {
+      setCancelLoading(false)
+    }
+  }, [order?.id, haptic, showToast, loadOrder])
+
   // Archive handler
   const handleArchive = useCallback(async () => {
     if (!order?.id) return
@@ -3878,6 +3912,142 @@ export function OrderDetailPageV8() {
       >
         <SupportCard onOpenChat={handleOpenChat} />
       </SectionErrorBoundary>
+
+      {/* Cancel Order Button */}
+      {canCancelOrder && (
+        <div style={{ padding: `0 ${DS.space.lg}px`, marginBottom: DS.space.lg }}>
+          <button
+            type="button"
+            onClick={() => { haptic?.('light'); setCancelConfirmOpen(true) }}
+            style={{
+              width: '100%',
+              padding: `${DS.space.md}px ${DS.space.lg}px`,
+              borderRadius: DS.radius.lg,
+              background: 'rgba(239,68,68,0.06)',
+              border: '1px solid rgba(239,68,68,0.12)',
+              color: 'rgba(239,68,68,0.7)',
+              fontSize: DS.fontSize.sm,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: DS.space.sm,
+            }}
+          >
+            <XCircle size={16} />
+            Отменить заказ
+          </button>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      <AnimatePresence>
+        {cancelConfirmOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              background: 'rgba(0,0,0,0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: DS.space.xl,
+            }}
+            onClick={() => !cancelLoading && setCancelConfirmOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: 320,
+                background: DS.colors.bgCard,
+                borderRadius: DS.radius.xl,
+                border: `1px solid ${DS.colors.borderLight}`,
+                padding: DS.space.xl,
+                textAlign: 'center',
+              }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: 14,
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 16px',
+              }}>
+                <XCircle size={24} color={DS.colors.error} strokeWidth={1.5} />
+              </div>
+              <h3 style={{
+                fontSize: DS.fontSize.xl,
+                fontWeight: 700,
+                color: DS.colors.textPrimary,
+                marginBottom: 8,
+              }}>
+                Отменить заказ?
+              </h3>
+              <p style={{
+                fontSize: DS.fontSize.sm,
+                color: DS.colors.textMuted,
+                lineHeight: 1.5,
+                marginBottom: 24,
+              }}>
+                Заказ #{order?.id} будет отменён. Это действие нельзя отменить.
+              </p>
+              <div style={{ display: 'flex', gap: DS.space.sm }}>
+                <button
+                  type="button"
+                  onClick={() => setCancelConfirmOpen(false)}
+                  disabled={cancelLoading}
+                  style={{
+                    flex: 1,
+                    padding: `${DS.space.md}px ${DS.space.lg}px`,
+                    borderRadius: DS.radius.lg,
+                    background: DS.colors.bgElevated,
+                    border: `1px solid ${DS.colors.borderLight}`,
+                    color: DS.colors.textSecondary,
+                    fontSize: DS.fontSize.base,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Назад
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelOrder}
+                  disabled={cancelLoading}
+                  style={{
+                    flex: 1,
+                    padding: `${DS.space.md}px ${DS.space.lg}px`,
+                    borderRadius: DS.radius.lg,
+                    background: 'rgba(239,68,68,0.15)',
+                    border: '1px solid rgba(239,68,68,0.25)',
+                    color: DS.colors.error,
+                    fontSize: DS.fontSize.base,
+                    fontWeight: 700,
+                    cursor: cancelLoading ? 'wait' : 'pointer',
+                    opacity: cancelLoading ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {cancelLoading ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
+                  Отменить
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Guarantees Row */}
       <SectionErrorBoundary

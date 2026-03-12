@@ -14,8 +14,7 @@ from bot.api.auth import TelegramUser, get_current_user
 from bot.api.schemas import (
     DailyBonusInfoResponse, DailyBonusClaimResponse, RouletteResponse
 )
-# Rate limiting temporarily disabled - uncomment when slowapi is installed on server
-# from bot.api.rate_limit import rate_limit_roulette
+from bot.api.rate_limit import limiter
 from bot.services.bonus import BonusService, BonusReason
 from bot.services.mini_app_logger import log_roulette_spin
 from bot.bot_instance import get_bot
@@ -29,6 +28,7 @@ router = APIRouter(tags=["Daily & Roulette"])
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.post("/roulette/spin", response_model=RouletteResponse)
+@limiter.limit("30/minute")
 async def spin_roulette(
     request: Request,
     tg_user: TelegramUser = Depends(get_current_user),
@@ -39,7 +39,6 @@ async def spin_roulette(
     БЕЗ ЛИМИТА - крутить можно сколько угодно
     Шанс выигрыша крайне низкий - это элитный клуб!
     """
-    # await rate_limit_roulette.check(request)  # Rate limiting disabled
 
     result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = result.scalar_one_or_none()

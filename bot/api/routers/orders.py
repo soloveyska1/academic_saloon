@@ -376,10 +376,10 @@ async def apply_promo_code(
 #  ORDER CREATION
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Rate limiting temporarily disabled - uncomment when slowapi is installed on server
-# from bot.api.rate_limit import rate_limit_create, rate_limit_payment
+from bot.api.rate_limit import limiter
 
 @router.post("/orders/create", response_model=OrderCreateResponse)
+@limiter.limit("10/minute")
 async def create_order(
     request: Request,
     data: OrderCreateRequest,
@@ -387,7 +387,6 @@ async def create_order(
     session: AsyncSession = Depends(get_session)
 ):
     """Create a new order from Mini App."""
-    # await rate_limit_create.check(request)  # Rate limiting disabled
 
     logger.info(f"[API /orders/create] New order from user {tg_user.id}: {data.work_type}, promo_code={data.promo_code}")
 
@@ -478,7 +477,11 @@ async def create_order(
     # price * (1 - discount/100) * (1 - promo_discount/100)
     # So we store them separately.
 
-    initial_status = OrderStatus.WAITING_ESTIMATION.value
+    # Auto-priced orders skip admin estimation and go straight to payment
+    if price_calc.is_manual_required:
+        initial_status = OrderStatus.WAITING_ESTIMATION.value
+    else:
+        initial_status = OrderStatus.WAITING_PAYMENT.value
 
     logger.info(f"[API /orders/create] 🎟️ Creating order with promo_code={promo_code_used}, promo_discount={promo_discount}, base_price={base_price}")
 
@@ -637,7 +640,7 @@ async def create_order(
     message = (
         "Заявка принята. Менеджер вручную оценит детали и вернётся с точной стоимостью."
         if price_calc.is_manual_required
-        else f"Заказ #{order.id} создан. Ожидайте оценку от менеджера."
+        else f"Заказ #{order.id} создан. Можете перейти к оплате."
     )
 
     # Add promo failure warning to message if applicable
@@ -1138,3 +1141,70 @@ async def unarchive_order(
     await session.commit()
 
     return {"success": True, "message": "Заказ восстановлен из архива"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  ORDER CANCELLATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+CANCELABLE_STATUSES = {
+    OrderStatus.DRAFT.value,
+    OrderStatus.PENDING.value,
+    OrderStatus.WAITING_PAYMENT.value,
+    OrderStatus.CONFIRMED.value,
+    OrderStatus.WAITING_ESTIMATION.value,
+}
+
+@router.post("/orders/{order_id}/cancel")
+async def cancel_order(
+    order_id: int,
+    tg_user: TelegramUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Cancel an order (only for early-stage statuses)"""
+    order = await session.get(Order, order_id)
+    if not order or order.user_id != tg_user.id:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Заказ не найден"}
+        )
+
+    if order.status not in CANCELABLE_STATUSES:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Заказ в текущем статусе нельзя отменить"}
+        )
+
+    old_status = order.status
+    order.status = OrderStatus.CANCELLED.value
+    await session.commit()
+
+    # Notify via WebSocket
+    try:
+        from bot.services.realtime_notifications import send_order_status_notification
+        await send_order_status_notification(
+            telegram_id=tg_user.id,
+            order_id=order_id,
+            new_status=order.status,
+        )
+    except Exception:
+        pass
+
+    # Notify admin
+    try:
+        bot = get_bot()
+        from bot.services.live_cards import send_or_update_card
+        user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
+        user = user_result.scalar_one_or_none()
+        await send_or_update_card(
+            bot=bot,
+            order=order,
+            session=session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            extra_text=f"❌ Клиент отменил заказ (был: {old_status})",
+        )
+    except Exception:
+        pass
+
+    return {"success": True, "message": "Заказ отменён"}

@@ -11,7 +11,7 @@ import { ShieldCheck, RefreshCcw, EyeOff } from 'lucide-react'
 const GUARANTEES = [
   {
     icon: ShieldCheck,
-    title: 'Антиплагиат ниже обещанного?',
+    title: 'Уникальность ниже обещанного?',
     description: 'Бесплатно доработаем до нужного процента',
   },
   {

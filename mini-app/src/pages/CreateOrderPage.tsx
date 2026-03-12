@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  AlertCircle, ArrowLeft, Check, ChevronRight, Clock, Tag
+  AlertCircle, ArrowLeft, Check, ChevronRight, Clock, Tag, Sparkles
 } from 'lucide-react'
 import { UserData, WorkType, OrderCreateRequest } from '../types'
 import { createOrder, uploadOrderFiles, FileUploadResponse } from '../api/userApi'
@@ -141,6 +141,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 
   // Check for prefill data from navigation state (Quick Reorder)
   const prefillData = (location.state as { prefill?: PrefillData })?.prefill
+  // First order flag from Welcome Tour completion
+  const isFirstOrder = !!(location.state as { firstOrder?: boolean })?.firstOrder
 
   // Check for urgent/panic mode from URL params
   const isUrgentMode = searchParams.get('urgent') === 'true'
@@ -721,6 +723,44 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
           WebkitOverflowScrolling: 'touch',
         }}
       >
+        {/* First Order Welcome Banner */}
+        {isFirstOrder && !isReorder && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 16px',
+              marginBottom: 16,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+              border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: 14,
+            }}
+          >
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #d4af37, #f5d76e)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Sparkles size={20} color="#050505" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#d4af37', marginBottom: 2 }}>
+                Ваш первый заказ
+              </div>
+              <div style={{ fontSize: 12, color: '#a1a1aa' }}>
+                Выберите тип работы и заполните детали
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Reorder Banner */}
         {isReorder && (
           <motion.div

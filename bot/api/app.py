@@ -86,6 +86,7 @@ def create_app() -> FastAPI:
             "Authorization",
             "X-Telegram-Init-Data",
             "X-Requested-With",
+            "X-God-2FA-Token",
         ],
         expose_headers=[
             "X-RateLimit-Limit",

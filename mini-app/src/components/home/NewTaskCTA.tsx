@@ -17,7 +17,7 @@ interface NewTaskCTAProps {
 }
 
 const GUARANTEES = [
-  { icon: ShieldCheck, text: 'Антиплагиат от 70%' },
+  { icon: ShieldCheck, text: 'Уникальность от 70%' },
   { icon: Clock, text: 'Сдадим точно в срок' },
   { icon: RotateCcw, text: '3 правки бесплатно' },
 ] as const

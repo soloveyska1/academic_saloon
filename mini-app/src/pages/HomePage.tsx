@@ -348,7 +348,10 @@ export function HomePage({ user }: Props) {
       <AnimatePresence>
         {isNewUser && showTour && (
           <WelcomeTour
-            onComplete={() => setShowTour(false)}
+            onComplete={() => {
+              setShowTour(false)
+              navigate('/create-order', { state: { firstOrder: true } })
+            }}
             haptic={haptic}
           />
         )}
