@@ -25,7 +25,8 @@ from bot.api.schemas import (
 from bot.api.dependencies import (
     get_loyalty_levels, get_loyalty_info, order_to_response
 )
-from bot.api.rate_limit import limiter
+# Rate limiting done via nginx — slowapi crashes behind reverse proxy
+# from bot.api.rate_limit import limiter
 from bot.services.pricing import calculate_price
 from bot.services.yandex_disk import yandex_disk_service
 from bot.services.mini_app_logger import (
@@ -335,7 +336,6 @@ async def get_order_detail(
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.post("/promo", response_model=PromoCodeResponse)
-@limiter.limit("20/minute")
 async def apply_promo_code(
     request: Request,
     data: PromoCodeRequest,
@@ -376,10 +376,7 @@ async def apply_promo_code(
 #  ORDER CREATION
 # ═══════════════════════════════════════════════════════════════════════════
 
-from bot.api.rate_limit import limiter
-
 @router.post("/orders/create", response_model=OrderCreateResponse)
-@limiter.limit("10/minute")
 async def create_order(
     request: Request,
     data: OrderCreateRequest,
