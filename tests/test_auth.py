@@ -66,8 +66,8 @@ class TestInitDataValidation:
     def test_expired_init_data(self, bot_token, valid_user):
         from bot.api.auth import validate_init_data
 
-        # Set auth_date to 2 hours ago (> 1 hour limit)
-        old_auth_date = int(time.time()) - 7200
+        # Set auth_date to 25 hours ago (> 24 hour limit)
+        old_auth_date = int(time.time()) - 90000
         init_data = _build_init_data(valid_user, bot_token, auth_date=old_auth_date)
         user, error = validate_init_data(init_data, bot_token)
         assert user is None
