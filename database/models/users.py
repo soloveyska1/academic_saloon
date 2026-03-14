@@ -178,7 +178,8 @@ class User(Base):
         # Грубый расчёт: если total_spent это сумма после скидок,
         # восстанавливаем примерную экономию
         _, current_discount = self.loyalty_status
-        if current_discount == 0 or self.total_spent == 0:
+        spent = float(self.total_spent or 0)
+        if current_discount == 0 or spent == 0:
             return 0.0
         # Средняя скидка примерно половина от текущей (рос постепенно)
         avg_discount = current_discount / 2
@@ -187,8 +188,8 @@ class User(Base):
         # saved = original - total_spent
         if avg_discount >= 100:
             return 0.0
-        original = self.total_spent / (1 - avg_discount / 100)
-        return original - self.total_spent
+        original = spent / (1 - avg_discount / 100)
+        return original - spent
 
     # ══════════════════════════════════════════════════════════════
     #                    DAILY LUCK (ЕЖЕДНЕВНЫЙ БОНУС)
@@ -277,14 +278,15 @@ class User(Base):
     @property
     def bonus_expiry_info(self) -> dict:
         """Информация о сгорании бонусов для отображения в UI"""
-        if self.balance <= 0:
+        bal = float(self.balance or 0)
+        if bal <= 0:
             return {"has_expiry": False, "balance": 0}
 
         expiry_date = self.bonus_expiry_date
         if expiry_date is None:
             return {
                 "has_expiry": False,
-                "balance": self.balance,
+                "balance": bal,
             }
 
         now = datetime.now(MSK_TZ)
@@ -292,12 +294,12 @@ class User(Base):
         days_left = max(1, math.ceil(seconds_left / 86400)) if seconds_left > 0 else 0
 
         # Сколько сгорит
-        burn_amount = int(self.balance * self.BONUS_EXPIRY_PERCENT / 100)
+        burn_amount = int(bal * self.BONUS_EXPIRY_PERCENT / 100)
 
         if seconds_left <= 0:
             return {
                 "has_expiry": True,
-                "balance": self.balance,
+                "balance": bal,
                 "days_left": 0,
                 "expiry_date": expiry_date.strftime("%d.%m.%Y"),
                 "burn_amount": burn_amount,
@@ -308,7 +310,7 @@ class User(Base):
         elif days_left <= self.BONUS_EXPIRY_WARNING_DAYS:
             return {
                 "has_expiry": True,
-                "balance": self.balance,
+                "balance": bal,
                 "days_left": days_left,
                 "expiry_date": expiry_date.strftime("%d.%m.%Y"),
                 "burn_amount": burn_amount,
@@ -319,7 +321,7 @@ class User(Base):
         else:
             return {
                 "has_expiry": True,
-                "balance": self.balance,
+                "balance": bal,
                 "days_left": days_left,
                 "expiry_date": expiry_date.strftime("%d.%m.%Y"),
                 "burn_amount": burn_amount,

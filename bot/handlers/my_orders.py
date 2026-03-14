@@ -697,7 +697,7 @@ def build_order_detail_caption(order: Order) -> str:
         lines.append(f"Стоимость: {format_price(order.price, False)} ₽")
 
         if order.discount > 0:
-            discount_amount = order.price * order.discount / 100
+            discount_amount = float(order.price) * float(order.discount) / 100
             lines.append(f"Скидка: –{format_price(discount_amount, False)} ₽")
 
         if order.bonus_used > 0:

@@ -507,7 +507,7 @@ async def process_custom_price(message: Message, state: FSMContext, session: Asy
     # Рассчитываем бонусы (как в admin.py)
     bonus_used = 0
     if client and client.balance > 0:
-        max_bonus = price * 0.5
+        max_bonus = float(price) * 0.5
         bonus_used = min(client.balance, max_bonus)
 
     # Устанавливаем цену и бонусы

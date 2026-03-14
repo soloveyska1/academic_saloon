@@ -419,8 +419,8 @@ class BonusService:
             logger.info(f"[Cashback] User {user_id} has 0% cashback (Резидент level)")
             return 0.0
 
-        # Рассчитываем кешбэк
-        cashback_amount = order_amount * cashback_percent / 100
+        # Рассчитываем кешбэк (convert to float to avoid Decimal * float TypeError)
+        cashback_amount = float(order_amount) * float(cashback_percent) / 100
 
         if cashback_amount < 1:
             logger.info(f"[Cashback] Cashback for user {user_id} too small: {cashback_amount:.2f}")
@@ -465,7 +465,7 @@ class BonusService:
         if user.balance <= 0:
             return 0.0
 
-        expire_amount = int(user.balance * expire_percent / 100)
+        expire_amount = int(float(user.balance) * expire_percent / 100)
         if expire_amount < 1:
             return 0.0
 
@@ -607,7 +607,7 @@ class BonusService:
 
             remaining_seconds = (expiry_date - now).total_seconds()
             days_left = max(1, math.ceil(remaining_seconds / 86400)) if remaining_seconds > 0 else 0
-            burn_amount = int(user.balance * User.BONUS_EXPIRY_PERCENT / 100)
+            burn_amount = int(float(user.balance) * User.BONUS_EXPIRY_PERCENT / 100)
 
             # Бонусы истекли - сжигаем
             if remaining_seconds <= 0:

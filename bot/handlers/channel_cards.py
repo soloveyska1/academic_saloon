@@ -478,7 +478,7 @@ async def card_set_price_execute(callback: CallbackQuery, session: AsyncSession,
     # Рассчитываем бонусы (как в admin.py)
     bonus_used = 0
     if user and user.balance > 0:
-        max_bonus = price * 0.5
+        max_bonus = float(price) * 0.5
         bonus_used = min(user.balance, max_bonus)
 
     # Устанавливаем цену и бонусы

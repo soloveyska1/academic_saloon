@@ -345,15 +345,16 @@ class Order(Base):
             return self.work_type
 
     @property
-    def final_price(self) -> float:
+    def final_price(self) -> Decimal:
         """Итоговая цена с учётом скидки, промокода и бонусов"""
         # Сначала применяем скидку лояльности
         price_with_discount = self.price * (1 - self.discount / 100)
-        # Затем применяем скидку по промокоду
-        promo_discount = getattr(self, 'promo_discount', 0) or 0
-        price_with_promo = price_with_discount * (1 - promo_discount / 100)
+        # Затем применяем скидку по промокоду (keep Decimal, avoid int/float fallback)
+        promo = self.promo_discount if self.promo_discount else Decimal("0")
+        price_with_promo = price_with_discount * (1 - promo / 100)
         # И в конце вычитаем бонусы
-        return max(0, price_with_promo - self.bonus_used)
+        bonus = self.bonus_used if self.bonus_used else Decimal("0")
+        return max(Decimal("0"), price_with_promo - bonus)
 
 
 class MessageSender(str, enum.Enum):
