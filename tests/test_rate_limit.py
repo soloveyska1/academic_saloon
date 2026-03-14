@@ -49,9 +49,8 @@ class TestCheckRateLimit:
         mock_redis.incr.return_value = 1
         mock_redis.expire.return_value = True
 
-        with patch("bot.api.rate_limit.get_redis", return_value=mock_redis):
-            # Import locally after patch
-            from bot.api.rate_limit import check_rate_limit
+        mock_get_redis = AsyncMock(return_value=mock_redis)
+        with patch("core.redis_pool.get_redis", mock_get_redis):
             result = await check_rate_limit("test:key", limit=10, window_seconds=60)
             assert result is True
 
@@ -60,15 +59,15 @@ class TestCheckRateLimit:
         mock_redis = AsyncMock()
         mock_redis.incr.return_value = 11
 
-        with patch("bot.api.rate_limit.get_redis", return_value=mock_redis):
-            from bot.api.rate_limit import check_rate_limit
+        mock_get_redis = AsyncMock(return_value=mock_redis)
+        with patch("core.redis_pool.get_redis", mock_get_redis):
             result = await check_rate_limit("test:key", limit=10, window_seconds=60)
             assert result is False
 
     @pytest.mark.asyncio
     async def test_fails_open_on_redis_error(self):
         """Rate limiter should allow requests when Redis is unavailable."""
-        with patch("bot.api.rate_limit.get_redis", side_effect=ConnectionError("Redis down")):
-            from bot.api.rate_limit import check_rate_limit
+        mock_get_redis = AsyncMock(side_effect=ConnectionError("Redis down"))
+        with patch("core.redis_pool.get_redis", mock_get_redis):
             result = await check_rate_limit("test:key", limit=10, window_seconds=60)
             assert result is True  # Fail-open

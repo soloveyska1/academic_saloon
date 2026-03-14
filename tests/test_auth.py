@@ -61,7 +61,7 @@ class TestInitDataValidation:
         user, error = validate_init_data(init_data, bot_token)
         assert user is not None
         assert user.id == 12345
-        assert error is None
+        assert error == ""
 
     def test_expired_init_data(self, bot_token, valid_user):
         from bot.api.auth import validate_init_data
