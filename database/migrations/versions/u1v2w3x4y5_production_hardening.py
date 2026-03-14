@@ -1,7 +1,7 @@
 """production hardening: Float->Numeric, PaymentLog, indexes, constraints
 
 Revision ID: u1v2w3x4y5
-Revises: t8u9v0w1x2
+Revises: add_indexes_constraints
 Create Date: 2026-03-14
 """
 from typing import Sequence, Union
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 revision: str = "u1v2w3x4y5"
-down_revision: Union[str, None] = "t8u9v0w1x2"
+down_revision: Union[str, None] = "add_indexes_constraints"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -66,14 +66,11 @@ def upgrade() -> None:
     # === 3. UNIQUE constraint on orders.yookassa_payment_id ===
     op.create_unique_constraint("uq_orders_yookassa_payment_id", "orders", ["yookassa_payment_id"])
 
-    # === 4. Missing indexes ===
-    op.create_index("ix_orders_status", "orders", ["status"])
-    op.create_index("ix_orders_created_at", "orders", ["created_at"])
+    # === 4. Missing indexes (status, created_at, progress already in add_indexes_constraints) ===
     op.create_index("ix_orders_work_type", "orders", ["work_type"])
     op.create_index("ix_balance_transactions_created_at", "balance_transactions", ["created_at"])
 
-    # === 5. CHECK constraints ===
-    op.create_check_constraint("ck_orders_progress_range", "orders", "progress >= 0 AND progress <= 100")
+    # === 5. CHECK constraints (progress already in add_indexes_constraints) ===
     op.create_check_constraint("ck_orders_price_positive", "orders", "price >= 0")
     op.create_check_constraint("ck_orders_discount_range", "orders", "discount >= 0 AND discount <= 100")
 
@@ -82,13 +79,10 @@ def downgrade() -> None:
     # Remove constraints
     op.drop_constraint("ck_orders_discount_range", "orders", type_="check")
     op.drop_constraint("ck_orders_price_positive", "orders", type_="check")
-    op.drop_constraint("ck_orders_progress_range", "orders", type_="check")
 
     # Remove indexes
     op.drop_index("ix_balance_transactions_created_at", "balance_transactions")
     op.drop_index("ix_orders_work_type", "orders")
-    op.drop_index("ix_orders_created_at", "orders")
-    op.drop_index("ix_orders_status", "orders")
 
     # Remove unique constraint
     op.drop_constraint("uq_orders_yookassa_payment_id", "orders", type_="unique")
