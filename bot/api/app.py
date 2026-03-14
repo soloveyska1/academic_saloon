@@ -134,6 +134,17 @@ def create_app() -> FastAPI:
             content={"status": "healthy" if is_healthy else "degraded", "checks": checks},
         )
 
+    # Global unhandled exception handler — logs traceback for 500 debugging
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        import traceback
+        tb = traceback.format_exception(type(exc), exc, exc.__traceback__)
+        logger.error(f"[500] {request.method} {request.url.path} => {type(exc).__name__}: {exc}\n{''.join(tb[-3:])}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal server error: {type(exc).__name__}: {str(exc)[:200]}"},
+        )
+
     # Validation error handler with logging
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
