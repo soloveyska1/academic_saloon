@@ -121,15 +121,10 @@ export function HomePage({ user }: Props) {
     <>
     <main
       role="main"
-      className={s.container}
-      style={{
-        background: '#09090b',
-        position: 'relative',
-        overflow: 'hidden',
-        paddingBottom: isNewUser ? 140 : 100,
-      }}>
+      className={`${s.container} bg-void relative overflow-hidden`}
+      style={{ paddingBottom: isNewUser ? 140 : 100 }}>
       {/* Premium Background - Full width, fixed position */}
-      <div className="page-background" aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+      <div className="page-background fixed inset-0 z-0" aria-hidden="true">
         <PremiumBackground
           variant="gold" // Force gold variant for this theme
           intensity="medium"
@@ -139,7 +134,7 @@ export function HomePage({ user }: Props) {
       </div>
 
       {/* Content with padding */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div className="relative z-[1]">
 
         {/* ═══════════════════════════════════════════════════════════════════
           HEADER — New compact component
@@ -219,7 +214,7 @@ export function HomePage({ user }: Props) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              style={{ marginBottom: 16 }}
+              className="mb-4"
             >
               <PromoCodeSection
                 variant="full"
@@ -236,41 +231,16 @@ export function HomePage({ user }: Props) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.22 }}
-              className={s.voidGlass}
-              style={{
-                width: '100%',
-                padding: '16px 18px',
-                borderRadius: 22,
-                border: '1px solid rgba(212,175,55,0.12)',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                marginBottom: 16,
-                cursor: 'pointer',
-              }}
+              className={`${s.voidGlass} w-full py-4 px-[18px] rounded-[22px] border border-gold-400/[0.12] text-left flex items-center gap-3.5 mb-4 cursor-pointer`}
             >
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 16,
-                  background: 'rgba(212,175,55,0.1)',
-                  border: '1px solid rgba(212,175,55,0.16)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  fontSize: 20,
-                }}
-              >
+              <div className="w-11 h-11 rounded-2xl bg-gold-400/10 border border-gold-400/[0.16] flex items-center justify-center shrink-0 text-xl">
                 🎁
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#E8D5A3', marginBottom: 3 }}>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-bold text-[#E8D5A3] mb-[3px]">
                   Пригласи друга — получи бонус
                 </div>
-                <div style={{ fontSize: 12.5, color: 'rgba(228,213,163,0.5)', lineHeight: 1.5 }}>
+                <div className="text-[12.5px] text-[rgba(228,213,163,0.5)] leading-normal">
                   Кэшбэк {user.rank.cashback}% · Баланс {Math.round(user.bonus_balance).toLocaleString('ru-RU')} ₽
                 </div>
               </div>

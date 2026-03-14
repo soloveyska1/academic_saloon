@@ -103,12 +103,13 @@ manager = ConnectionManager()
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    telegram_id: int = Query(..., description="User's Telegram ID")
+    telegram_id: int = Query(..., description="User's Telegram ID"),
+    init_data: str = Query(default="", description="Telegram initData for authentication"),
 ):
     """
     WebSocket endpoint for real-time updates.
 
-    Connect with: ws://host/api/ws?telegram_id=123456789
+    Connect with: ws://host/api/ws?telegram_id=123456789&init_data=...
 
     Message types received by client:
     - order_update: Order status changed
@@ -116,6 +117,25 @@ async def websocket_endpoint(
     - notification: General notification
     - ping: Keep-alive ping
     """
+    # Authenticate via initData
+    if init_data:
+        try:
+            from bot.api.auth import validate_init_data
+            from core.config import settings
+            user, error = validate_init_data(init_data, settings.BOT_TOKEN.get_secret_value())
+            if not user or user.id != telegram_id:
+                logger.warning(f"[WS] Auth failed for telegram_id={telegram_id}: {error}")
+                await websocket.close(code=4001, reason="Authentication failed")
+                return
+        except Exception as e:
+            logger.error(f"[WS] Auth error: {e}")
+            await websocket.close(code=4001, reason="Authentication error")
+            return
+    else:
+        logger.warning(f"[WS] No init_data provided for telegram_id={telegram_id}")
+        await websocket.close(code=4001, reason="Missing init_data")
+        return
+
     await manager.connect(websocket, telegram_id)
 
     try:

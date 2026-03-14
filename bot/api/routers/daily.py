@@ -91,8 +91,8 @@ async def get_daily_bonus_info(
         rank_prog = user.rank_progress
         if rank_prog and not rank_prog.get("has_next", True):
              is_vip = True
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"[Daily] VIP check failed: {e}")
 
     # ═══ MSK TIMEZONE LOGIC ═══
     try:
@@ -205,8 +205,8 @@ async def claim_daily_bonus(
          rank_prog = user.rank_progress
          if rank_prog and not rank_prog.get("has_next", True):
              is_vip = True
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"[Daily] VIP check failed: {e}")
 
     # 1. Check if already claimed
     if last_claim_date == today_msk:

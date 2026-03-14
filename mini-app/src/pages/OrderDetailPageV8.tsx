@@ -249,18 +249,13 @@ function SectionFallbackCard({
 }) {
   return (
     <div
-      style={{
-        margin: `0 ${DS.space.lg}px ${DS.space.lg}px`,
-        padding: DS.space.lg,
-        borderRadius: DS.radius.xl,
-        background: DS.colors.bgCard,
-        border: `1px solid ${DS.colors.border}`,
-      }}
+      className="mx-4 mb-4 p-4 rounded-[20px] border border-white/[0.08]"
+      style={{ background: DS.colors.bgCard }}
     >
-      <div style={{ fontSize: DS.fontSize.lg, fontWeight: 700, color: DS.colors.textPrimary, marginBottom: 8 }}>
+      <div className="text-[15px] font-bold text-text-primary mb-2">
         {title}
       </div>
-      <div style={{ fontSize: DS.fontSize.sm, lineHeight: 1.6, color: DS.colors.textSecondary }}>
+      <div className="text-[12px] leading-[1.6] text-text-secondary">
         {message}
       </div>
     </div>
@@ -363,16 +358,9 @@ const OrderAppBar = memo(function OrderAppBar({
     <>
       {/* Main AppBar — minimal, just order number */}
       <div
+        className="flex items-center gap-3 px-4 py-[14px] sticky top-0 z-[100] backdrop-blur-[18px]"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: DS.space.md,
-          padding: `14px ${DS.space.lg}px`,
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
           background: 'rgba(5,5,7,0.92)',
-          backdropFilter: 'blur(18px)',
           WebkitBackdropFilter: 'blur(18px)',
         }}
       >
@@ -380,26 +368,14 @@ const OrderAppBar = memo(function OrderAppBar({
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={onBack}
-          style={{
-            width: 40, height: 40, borderRadius: 14,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', flexShrink: 0,
-          }}
+          className="w-10 h-10 rounded-[14px] bg-white/[0.03] border border-white/[0.06] flex items-center justify-center cursor-pointer shrink-0"
         >
           <ArrowLeft size={18} color="rgba(255,255,255,0.55)" />
         </motion.button>
 
         {/* Just order number — no work type (shown in hero) */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: 15, fontWeight: 700,
-              fontFamily: "'Manrope', sans-serif",
-              color: '#E8D5A3',
-            }}
-          >
+        <div className="flex-1 min-w-0">
+          <div className="text-[15px] font-bold font-sans text-gold-100">
             Заказ #{order.id}
           </div>
         </div>
@@ -408,25 +384,14 @@ const OrderAppBar = memo(function OrderAppBar({
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={() => setMenuOpen(true)}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 16,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
+          className="w-11 h-11 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center cursor-pointer shrink-0"
         >
           <MoreHorizontal size={20} color={DS.colors.textSecondary} />
         </motion.button>
       </div>
 
       {/* Subtle spacing below AppBar */}
-      <div style={{ height: 8 }} />
+      <div className="h-2" />
 
       {/* Menu Overlay */}
       <AnimatePresence>
@@ -436,27 +401,16 @@ const OrderAppBar = memo(function OrderAppBar({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setMenuOpen(false)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.6)',
-              zIndex: 200,
-            }}
+            className="fixed inset-0 bg-black/60 z-[200]"
           >
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               onClick={(e) => e.stopPropagation()}
+              className="absolute top-[70px] right-4 rounded-2xl border border-white/[0.12] overflow-hidden min-w-[200px]"
               style={{
-                position: 'absolute',
-                top: 70,
-                right: DS.space.lg,
                 background: DS.colors.bgElevated,
-                borderRadius: DS.radius.lg,
-                border: `1px solid ${DS.colors.borderLight}`,
-                overflow: 'hidden',
-                minWidth: 200,
                 boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
               }}
             >
@@ -465,18 +419,10 @@ const OrderAppBar = memo(function OrderAppBar({
                   key={i}
                   whileTap={{ scale: 0.98 }}
                   onClick={item.onClick}
+                  className="w-full px-5 py-4 bg-transparent flex items-center gap-3 cursor-pointer text-text-primary text-[14px]"
                   style={{
-                    width: '100%',
-                    padding: `${DS.space.lg}px ${DS.space.xl}px`,
-                    background: 'transparent',
                     border: 'none',
                     borderBottom: i < menuItems.length - 1 ? `1px solid ${DS.colors.border}` : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: DS.space.md,
-                    cursor: 'pointer',
-                    color: DS.colors.textPrimary,
-                    fontSize: DS.fontSize.base,
                   }}
                 >
                   <item.icon size={18} color={DS.colors.textSecondary} />
@@ -521,21 +467,12 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
     ? 'rgba(239,68,68,0.75)' : '#E8D5A3'
 
   return (
-    <div
-      style={{
-        margin: `0 ${DS.space.lg}px ${DS.space.lg}px`,
-        padding: 20,
-        borderRadius: 24,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
-      }}
-    >
+    <div className="mx-4 mb-4 p-5 rounded-3xl bg-white/[0.02] border border-white/[0.06]">
       {/* Status + work type — single clean row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         <div
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 12px', borderRadius: 999,
             background: statusConfig.bgColor,
             border: `1px solid ${statusConfig.borderColor}`,
           }}
@@ -545,70 +482,48 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
             color={statusConfig.color}
             className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''}
           />
-          <span style={{ fontSize: 11, fontWeight: 700, color: statusConfig.color }}>
+          <span className="text-[11px] font-bold" style={{ color: statusConfig.color }}>
             {statusConfig.label}
           </span>
         </div>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)' }}>
+        <span className="text-[12px] text-white/30">
           {workTypeLabel}
         </span>
       </div>
 
       {/* Title */}
-      <div
-        style={{
-          fontSize: 22, fontWeight: 800,
-          fontFamily: "'Manrope', sans-serif",
-          color: '#E8D5A3', lineHeight: 1.2,
-          marginBottom: 6,
-        }}
-      >
+      <div className="text-[22px] font-[800] font-sans text-gold-100 leading-[1.2] mb-1.5">
         {headline}
       </div>
       {subline && (
-        <div style={{ fontSize: 14, lineHeight: 1.5, color: 'rgba(255,255,255,0.42)', marginBottom: 18 }}>
+        <div className="text-[14px] leading-[1.5] text-white/[0.42] mb-[18px]">
           {subline}
         </div>
       )}
 
       {/* Info rows — clean list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {order.deadline && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 14px', borderRadius: 14,
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.04)',
-          }}>
+          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] bg-white/[0.02] border border-white/[0.04]">
             <Clock size={15} color="rgba(212,175,55,0.55)" />
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.60)' }}>
+            <span className="text-[13px] text-white/60">
               Срок: {formatOrderDeadlineRu(order.deadline)}
             </span>
           </div>
         )}
         {totalPrice > 0 && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 14px', borderRadius: 14,
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.04)',
-          }}>
+          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] bg-white/[0.02] border border-white/[0.04]">
             <Banknote size={15} color="rgba(212,175,55,0.55)" />
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.60)' }}>
+            <span className="text-[13px] text-white/60">
               {remainingAmount > 0 && remainingAmount !== totalPrice
                 ? `Осталось оплатить ${formatPrice(remainingAmount)} ₽`
                 : `Стоимость ${formatPrice(totalPrice)} ₽`}
             </span>
           </div>
         )}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '10px 14px', borderRadius: 14,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.04)',
-        }}>
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] bg-white/[0.02] border border-white/[0.04]">
           <Sparkles size={15} color="rgba(212,175,55,0.55)" />
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.60)' }}>
+          <span className="text-[13px] text-white/60">
             {order.files_url ? 'Файлы будут в этом заказе' : 'Все детали и правки ведём внутри заказа'}
           </span>
         </div>
@@ -616,29 +531,25 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
 
       {/* Payment countdown */}
       {isAwaitingPayment && countdown && (
-        <div style={{
-          marginTop: 14, padding: 14, borderRadius: 16,
-          background: 'rgba(212,175,55,0.04)',
-          border: '1px solid rgba(212,175,55,0.10)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <div className="mt-3.5 p-3.5 rounded-2xl bg-gold-400/[0.04] border border-gold-400/10">
+          <div className="flex items-center gap-2 mb-1.5">
             <Clock size={14} color={urgencyColor} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: urgencyColor }}>
+            <span className="text-[13px] font-bold" style={{ color: urgencyColor }}>
               {paymentExpired ? 'Срок оплаты истёк' : `Оплатить до ${countdown.formatted}`}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginBottom: !paymentExpired ? 10 : 0 }}>
+          <div className={`text-[12px] text-white/[0.38] ${!paymentExpired ? 'mb-2.5' : ''}`}>
             {paymentExpired
               ? 'Напишите в поддержку, чтобы подтвердить актуальность расчёта.'
               : 'После оплаты сразу запускаем заказ'}
           </div>
           {!paymentExpired && (
-            <div style={{ borderRadius: 999, background: 'rgba(255,255,255,0.06)', height: 4, overflow: 'hidden' }}>
+            <div className="rounded-full bg-white/[0.06] h-1 overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${countdown.progress}%` }}
                 transition={{ duration: 0.5 }}
-                style={{ height: '100%', borderRadius: 999, background: '#D4AF37', opacity: 0.6 }}
+                className="h-full rounded-full bg-gold-400 opacity-60"
               />
             </div>
           )}
@@ -784,46 +695,21 @@ const StickyActionBar = memo(function StickyActionBar({
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      className="fixed bottom-0 left-0 right-0 z-[90] pt-4 px-4 backdrop-blur-[12px]"
       style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 90,
-        // Safe area padding for iOS
         paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
-        paddingTop: DS.space.lg,
-        paddingLeft: DS.space.lg,
-        paddingRight: DS.space.lg,
         background: 'linear-gradient(180deg, transparent 0%, rgba(5,5,7,0.95) 20%, rgba(5,5,7,0.99) 100%)',
-        backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: DS.space.lg,
-          maxWidth: 480,
-          margin: '0 auto',
-        }}
-      >
+      <div className="flex items-center justify-between gap-4 max-w-[480px] mx-auto">
         {/* Left: Amount to pay */}
         {config.showAmount && todayAmount > 0 && (
-          <div style={{ flex: '0 0 auto' }}>
-            <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted, marginBottom: 2 }}>
+          <div className="flex-none">
+            <div className="text-[11px] text-text-muted mb-0.5">
               К оплате сегодня
             </div>
-            <div
-              style={{
-                fontSize: DS.fontSize['2xl'],
-                fontWeight: 700,
-                fontFamily: 'var(--font-mono)',
-                color: DS.colors.gold,
-              }}
-            >
+            <div className="text-[18px] font-bold font-mono text-gold-400">
               {formatPrice(todayAmount)} ₽
             </div>
           </div>
@@ -834,22 +720,14 @@ const StickyActionBar = memo(function StickyActionBar({
           whileTap={config.disabled ? undefined : { scale: 0.97 }}
           onClick={config.onClick}
           disabled={config.disabled}
+          className="flex items-center justify-center gap-2 py-4 px-5 rounded-2xl text-[15px] font-bold min-h-[52px]"
           style={{
             flex: config.showAmount ? '1 1 auto' : '1 1 100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: DS.space.sm,
-            padding: `${DS.space.lg}px ${DS.space.xl}px`,
-            borderRadius: DS.radius.lg,
             background: config.buttonBg,
             border: variant === 'work' ? `1px solid ${DS.colors.borderLight}` : 'none',
             color: config.buttonColor,
-            fontSize: DS.fontSize.lg,
-            fontWeight: 700,
             cursor: config.disabled ? 'not-allowed' : 'pointer',
             opacity: config.disabled ? 0.6 : 1,
-            minHeight: 52,
             boxShadow: ['payment', 'review', 'completed'].includes(variant) ? '0 8px 24px -4px rgba(212,175,55,0.25)' : 'none',
           }}
         >
@@ -954,15 +832,7 @@ const PaymentSheet = memo(function PaymentSheet({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.7)',
-            zIndex: 300,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-          }}
+          className="fixed inset-0 bg-black/70 z-[300] flex items-end justify-center"
         >
           <motion.div
             initial={{ y: '100%' }}
@@ -970,59 +840,32 @@ const PaymentSheet = memo(function PaymentSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[480px] max-h-[90vh] overflow-hidden flex flex-col"
             style={{
-              width: '100%',
-              maxWidth: 480,
-              maxHeight: '90vh',
               background: DS.colors.bgSurface,
               borderRadius: `${DS.radius['2xl']}px ${DS.radius['2xl']}px 0 0`,
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
             }}
           >
             {/* Header */}
             <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: `${DS.space.xl}px ${DS.space.lg}px`,
-                borderBottom: `1px solid ${DS.colors.border}`,
-              }}
+              className="flex items-center justify-between px-4 py-5"
+              style={{ borderBottom: `1px solid ${DS.colors.border}` }}
             >
               <div>
-                <h2 style={{
-                  fontSize: DS.fontSize['2xl'],
-                  fontWeight: 700,
-                  color: DS.colors.textPrimary,
-                  margin: 0,
-                  fontFamily: 'var(--font-serif)',
-                }}>
+                <h2 className="text-[18px] font-bold text-text-primary m-0 font-serif">
                   Оплата
                 </h2>
-                <p style={{
-                  fontSize: DS.fontSize.sm,
-                  color: DS.colors.textMuted,
-                  margin: 0,
-                  marginTop: 2,
-                }}>
+                <p className="text-[12px] text-text-muted m-0 mt-0.5">
                   Заказ #{order.id}
                 </p>
               </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
+                className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: DS.radius.md,
                   background: DS.colors.bgElevated,
                   border: `1px solid ${DS.colors.border}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
                 }}
               >
                 <X size={18} color={DS.colors.textSecondary} />
@@ -1030,18 +873,11 @@ const PaymentSheet = memo(function PaymentSheet({
             </div>
 
             {/* Scrollable Content */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: DS.space.lg }}>
+            <div className="flex-1 overflow-y-auto p-4">
 
               {/* Step A: Payment Plan Selection */}
-              <div style={{ marginBottom: DS.space['2xl'] }}>
-                <div style={{
-                  fontSize: DS.fontSize.xs,
-                  fontWeight: 600,
-                  color: DS.colors.textMuted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: DS.space.md,
-                }}>
+              <div className="mb-6">
+                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-3">
                   Шаг 1 · План оплаты
                 </div>
 
@@ -1049,82 +885,50 @@ const PaymentSheet = memo(function PaymentSheet({
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setPaymentScheme('full')}
+                  className="w-full p-4 rounded-2xl cursor-pointer text-left mb-3"
                   style={{
-                    width: '100%',
-                    padding: DS.space.lg,
-                    borderRadius: DS.radius.lg,
                     background: paymentScheme === 'full'
                       ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
                       : DS.colors.bgElevated,
                     border: `2px solid ${paymentScheme === 'full' ? DS.colors.gold : DS.colors.border}`,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    marginBottom: DS.space.md,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md }}>
-                      <div style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        border: `2px solid ${paymentScheme === 'full' ? DS.colors.gold : DS.colors.textMuted}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ border: `2px solid ${paymentScheme === 'full' ? DS.colors.gold : DS.colors.textMuted}` }}
+                      >
                         {paymentScheme === 'full' && (
-                          <div style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: 5,
-                            background: DS.colors.gold,
-                          }} />
+                          <div className="w-2.5 h-2.5 rounded-full bg-gold-400" />
                         )}
                       </div>
                       <div>
-                        <div style={{ fontSize: DS.fontSize.base, fontWeight: 600, color: DS.colors.textPrimary }}>
+                        <div className="text-[14px] font-semibold text-text-primary">
                           100% Полная оплата
                         </div>
-                        <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted, marginTop: 2 }}>
+                        <div className="text-[11px] text-text-muted mt-0.5">
                           Рекомендуем · Приоритет в работе
                         </div>
                       </div>
                     </div>
-                    <div style={{
-                      fontSize: DS.fontSize.lg,
-                      fontWeight: 700,
-                      fontFamily: 'var(--font-mono)',
-                      color: paymentScheme === 'full' ? DS.colors.gold : DS.colors.textSecondary,
-                    }}>
+                    <div
+                      className="text-[15px] font-bold font-mono"
+                      style={{ color: paymentScheme === 'full' ? DS.colors.gold : DS.colors.textSecondary }}
+                    >
                       {formatPrice(fullAmount)} ₽
                     </div>
                   </div>
                   {paymentScheme === 'full' && (
-                    <div style={{
-                      display: 'flex',
-                      gap: DS.space.sm,
-                      marginTop: DS.space.md,
-                      paddingTop: DS.space.md,
-                      borderTop: `1px solid ${DS.colors.borderGold}`,
-                    }}>
-                      <div style={{
-                        padding: `${DS.space.xs}px ${DS.space.sm}px`,
-                        borderRadius: DS.radius.sm,
-                        background: 'rgba(34,197,94,0.15)',
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.success,
-                      }}>
+                    <div
+                      className="flex gap-2 mt-3 pt-3"
+                      style={{ borderTop: `1px solid ${DS.colors.borderGold}` }}
+                    >
+                      <div className="px-2 py-1 rounded-lg bg-green-500/15 text-[11px] text-green-500">
                         <Zap size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
                         Быстрый старт
                       </div>
-                      <div style={{
-                        padding: `${DS.space.xs}px ${DS.space.sm}px`,
-                        borderRadius: DS.radius.sm,
-                        background: 'rgba(212,175,55,0.15)',
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.gold,
-                      }}>
+                      <div className="px-2 py-1 rounded-lg bg-gold-400/15 text-[11px] text-gold-400">
                         <Star size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
                         Приоритет
                       </div>
@@ -1136,53 +940,37 @@ const PaymentSheet = memo(function PaymentSheet({
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setPaymentScheme('half')}
+                  className="w-full p-4 rounded-2xl cursor-pointer text-left"
                   style={{
-                    width: '100%',
-                    padding: DS.space.lg,
-                    borderRadius: DS.radius.lg,
                     background: paymentScheme === 'half'
                       ? 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))'
                       : DS.colors.bgElevated,
                     border: `2px solid ${paymentScheme === 'half' ? DS.colors.info : DS.colors.border}`,
-                    cursor: 'pointer',
-                    textAlign: 'left',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.md }}>
-                      <div style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        border: `2px solid ${paymentScheme === 'half' ? DS.colors.info : DS.colors.textMuted}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ border: `2px solid ${paymentScheme === 'half' ? DS.colors.info : DS.colors.textMuted}` }}
+                      >
                         {paymentScheme === 'half' && (
-                          <div style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: 5,
-                            background: DS.colors.info,
-                          }} />
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: DS.colors.info }} />
                         )}
                       </div>
                       <div>
-                        <div style={{ fontSize: DS.fontSize.base, fontWeight: 600, color: DS.colors.textPrimary }}>
+                        <div className="text-[14px] font-semibold text-text-primary">
                           50% Предоплата
                         </div>
-                        <div style={{ fontSize: DS.fontSize.xs, color: DS.colors.textMuted, marginTop: 2 }}>
+                        <div className="text-[11px] text-text-muted mt-0.5">
                           Остаток {formatPrice(remainingAfterHalf)} ₽ после готовности
                         </div>
                       </div>
                     </div>
-                    <div style={{
-                      fontSize: DS.fontSize.lg,
-                      fontWeight: 700,
-                      fontFamily: 'var(--font-mono)',
-                      color: paymentScheme === 'half' ? DS.colors.info : DS.colors.textSecondary,
-                    }}>
+                    <div
+                      className="text-[15px] font-bold font-mono"
+                      style={{ color: paymentScheme === 'half' ? DS.colors.info : DS.colors.textSecondary }}
+                    >
                       {formatPrice(halfAmount)} ₽
                     </div>
                   </div>
@@ -1190,26 +978,16 @@ const PaymentSheet = memo(function PaymentSheet({
               </div>
 
               {/* Step B: Payment Method */}
-              <div style={{ marginBottom: DS.space['2xl'] }}>
-                <div style={{
-                  fontSize: DS.fontSize.xs,
-                  fontWeight: 600,
-                  color: DS.colors.textMuted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: DS.space.md,
-                }}>
+              <div className="mb-6">
+                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-3">
                   Шаг 2 · Способ оплаты
                 </div>
 
                 {/* Segmented Control */}
-                <div style={{
-                  display: 'flex',
-                  gap: DS.space.xs,
-                  padding: DS.space.xs,
-                  background: DS.colors.bgElevated,
-                  borderRadius: DS.radius.md,
-                }}>
+                <div
+                  className="flex gap-1 p-1 rounded-xl"
+                  style={{ background: DS.colors.bgElevated }}
+                >
                   {(['online', 'card', 'sbp'] as PaymentMethod[]).map((method) => {
                     const isActive = paymentMethod === method
                     const iconColor = isActive ? DS.colors.textPrimary : DS.colors.textMuted
@@ -1220,25 +998,17 @@ const PaymentSheet = memo(function PaymentSheet({
                         key={method}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setPaymentMethod(method)}
+                        className="flex-1 py-3 px-2 rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
                         style={{
-                          flex: 1,
-                          padding: `${DS.space.md}px ${DS.space.sm}px`,
-                          borderRadius: DS.radius.sm,
                           background: isActive ? DS.colors.bgCard : 'transparent',
                           border: isActive ? `1px solid ${DS.colors.borderLight}` : '1px solid transparent',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
                         }}
                       >
                         <Icon size={15} color={iconColor} />
-                        <span style={{
-                          fontSize: DS.fontSize.sm,
-                          fontWeight: 600,
-                          color: isActive ? DS.colors.textPrimary : DS.colors.textMuted,
-                        }}>
+                        <span
+                          className="text-[12px] font-semibold"
+                          style={{ color: isActive ? DS.colors.textPrimary : DS.colors.textMuted }}
+                        >
                           {label}
                         </span>
                       </motion.button>
@@ -1248,138 +1018,84 @@ const PaymentSheet = memo(function PaymentSheet({
               </div>
 
               {/* Step C: Payment Details / Online */}
-              <div style={{ marginBottom: DS.space['2xl'] }}>
-                <div style={{
-                  fontSize: DS.fontSize.xs,
-                  fontWeight: 600,
-                  color: DS.colors.textMuted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: DS.space.md,
-                }}>
+              <div className="mb-6">
+                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-3">
                   {paymentMethod === 'online' ? 'Шаг 3 · Оплата' : 'Шаг 3 · Реквизиты'}
                 </div>
 
                 {paymentMethod === 'online' ? (
-                  <div style={{
-                    padding: DS.space.xl,
-                    borderRadius: DS.radius.lg,
-                    background: DS.colors.bgElevated,
-                    border: `1px solid ${DS.colors.border}`,
-                    textAlign: 'center',
-                  }}>
-                    <div style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto',
-                      marginBottom: DS.space.lg,
-                    }}>
+                  <div
+                    className="p-5 rounded-2xl text-center"
+                    style={{
+                      background: DS.colors.bgElevated,
+                      border: `1px solid ${DS.colors.border}`,
+                    }}
+                  >
+                    <div
+                      className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
+                      style={{ background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})` }}
+                    >
                       <ShieldCheck size={28} color="#0a0a0c" />
                     </div>
-                    <div style={{
-                      fontSize: DS.fontSize.lg,
-                      fontWeight: 700,
-                      color: DS.colors.textPrimary,
-                      marginBottom: DS.space.sm,
-                    }}>
+                    <div className="text-[15px] font-bold text-text-primary mb-2">
                       Безопасная оплата
                     </div>
-                    <div style={{
-                      fontSize: DS.fontSize.sm,
-                      color: DS.colors.textMuted,
-                      marginBottom: DS.space.lg,
-                      lineHeight: 1.5,
-                    }}>
+                    <div className="text-[12px] text-text-muted mb-4 leading-[1.5]">
                       Вы будете перенаправлены на страницу ЮKassa для ввода данных карты. Мы не храним данные вашей карты.
                     </div>
-                    <div style={{
-                      fontSize: DS.fontSize.xl,
-                      fontWeight: 700,
-                      fontFamily: 'var(--font-mono)',
-                      color: DS.colors.gold,
-                      marginBottom: DS.space.xl,
-                    }}>
+                    <div className="text-[16px] font-bold font-mono text-gold-400 mb-5">
                       {formatPrice(todayAmount)} ₽
                     </div>
                     <motion.button
                       whileTap={onlinePaymentLoading ? undefined : { scale: 0.98 }}
                       onClick={onlinePaymentLoading ? undefined : onOnlinePayment}
                       disabled={onlinePaymentLoading}
+                      className="w-full py-4 px-5 rounded-2xl border-none flex items-center justify-center gap-2"
                       style={{
-                        width: '100%',
-                        padding: `${DS.space.lg}px ${DS.space.xl}px`,
-                        borderRadius: DS.radius.lg,
                         background: onlinePaymentLoading
                           ? DS.colors.bgCard
                           : `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
-                        border: 'none',
                         cursor: onlinePaymentLoading ? 'wait' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: DS.space.sm,
                         boxShadow: onlinePaymentLoading ? 'none' : '0 8px 24px -4px rgba(212,175,55,0.4)',
                       }}
                     >
                       {onlinePaymentLoading ? (
-                        <Loader2 size={20} color={DS.colors.textMuted} style={{ animation: 'spin 1s linear infinite' }} />
+                        <Loader2 size={20} color={DS.colors.textMuted} className="animate-spin" />
                       ) : (
                         <Globe size={20} color="#0a0a0c" />
                       )}
-                      <span style={{
-                        fontSize: DS.fontSize.lg,
-                        fontWeight: 700,
-                        color: onlinePaymentLoading ? DS.colors.textMuted : '#0a0a0c',
-                      }}>
+                      <span
+                        className="text-[15px] font-bold"
+                        style={{ color: onlinePaymentLoading ? DS.colors.textMuted : '#0a0a0c' }}
+                      >
                         {onlinePaymentLoading ? 'Создаём платёж...' : 'Перейти к оплате'}
                       </span>
                     </motion.button>
                   </div>
                 ) : paymentMethod === 'card' ? (
-                  <div style={{
-                    padding: DS.space.lg,
-                    borderRadius: DS.radius.lg,
-                    background: DS.colors.bgElevated,
-                    border: `1px solid ${DS.colors.border}`,
-                  }}>
+                  <div
+                    className="p-4 rounded-2xl"
+                    style={{
+                      background: DS.colors.bgElevated,
+                      border: `1px solid ${DS.colors.border}`,
+                    }}
+                  >
                     {/* Card Number */}
-                    <div style={{ marginBottom: DS.space.lg }}>
-                      <div style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginBottom: DS.space.xs,
-                      }}>
+                    <div className="mb-4">
+                      <div className="text-[11px] text-text-muted mb-1">
                         Номер карты
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
-                        <div style={{
-                          flex: 1,
-                          fontSize: DS.fontSize.lg,
-                          fontWeight: 600,
-                          fontFamily: 'var(--font-mono)',
-                          color: DS.colors.textPrimary,
-                          letterSpacing: '0.05em',
-                        }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 text-[15px] font-semibold font-mono text-text-primary tracking-[0.05em]">
                           {cardNumberVisible ? cardNumber : maskedCard}
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => setCardNumberVisible(!cardNumberVisible)}
+                          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
                           style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: DS.radius.sm,
                             background: DS.colors.bgCard,
                             border: `1px solid ${DS.colors.border}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
                           }}
                         >
                           {cardNumberVisible ? (
@@ -1391,16 +1107,10 @@ const PaymentSheet = memo(function PaymentSheet({
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleCopy(cardNumber, 'card')}
+                          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
                           style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: DS.radius.sm,
                             background: copiedField === 'card' ? DS.colors.success : DS.colors.bgCard,
                             border: `1px solid ${copiedField === 'card' ? DS.colors.success : DS.colors.border}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
                           }}
                         >
                           {copiedField === 'card' ? (
@@ -1413,54 +1123,31 @@ const PaymentSheet = memo(function PaymentSheet({
                     </div>
 
                     {/* Card Holder */}
-                    <div style={{ marginBottom: DS.space.lg }}>
-                      <div style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginBottom: DS.space.xs,
-                      }}>
+                    <div className="mb-4">
+                      <div className="text-[11px] text-text-muted mb-1">
                         Получатель
                       </div>
-                      <div style={{
-                        fontSize: DS.fontSize.base,
-                        color: DS.colors.textPrimary,
-                      }}>
+                      <div className="text-[14px] text-text-primary">
                         {cardHolder}
                       </div>
                     </div>
 
                     {/* Amount */}
-                    <div style={{ marginBottom: DS.space.lg }}>
-                      <div style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginBottom: DS.space.xs,
-                      }}>
+                    <div className="mb-4">
+                      <div className="text-[11px] text-text-muted mb-1">
                         Сумма
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
-                        <div style={{
-                          flex: 1,
-                          fontSize: DS.fontSize.xl,
-                          fontWeight: 700,
-                          fontFamily: 'var(--font-mono)',
-                          color: DS.colors.gold,
-                        }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 text-[16px] font-bold font-mono text-gold-400">
                           {formatPrice(todayAmount)} ₽
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleCopy(todayAmount.toString(), 'amount')}
+                          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
                           style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: DS.radius.sm,
                             background: copiedField === 'amount' ? DS.colors.success : DS.colors.bgCard,
                             border: `1px solid ${copiedField === 'amount' ? DS.colors.success : DS.colors.border}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
                           }}
                         >
                           {copiedField === 'amount' ? (
@@ -1473,35 +1160,21 @@ const PaymentSheet = memo(function PaymentSheet({
                     </div>
 
                     {/* Comment */}
-                    <div style={{ marginBottom: DS.space.lg }}>
-                      <div style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginBottom: DS.space.xs,
-                      }}>
+                    <div className="mb-4">
+                      <div className="text-[11px] text-text-muted mb-1">
                         Комментарий к переводу
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
-                        <div style={{
-                          flex: 1,
-                          fontSize: DS.fontSize.base,
-                          color: DS.colors.textPrimary,
-                        }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 text-[14px] text-text-primary">
                           Заказ #{order.id}
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleCopy(`Заказ #${order.id}`, 'comment')}
+                          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
                           style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: DS.radius.sm,
                             background: copiedField === 'comment' ? DS.colors.success : DS.colors.bgCard,
                             border: `1px solid ${copiedField === 'comment' ? DS.colors.success : DS.colors.border}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
                           }}
                         >
                           {copiedField === 'comment' ? (
@@ -1517,17 +1190,10 @@ const PaymentSheet = memo(function PaymentSheet({
                     <motion.button
                       whileTap={{ scale: 0.98 }}
                       onClick={handleCopyAll}
+                      className="w-full py-3 px-4 rounded-xl cursor-pointer flex items-center justify-center gap-2"
                       style={{
-                        width: '100%',
-                        padding: `${DS.space.md}px ${DS.space.lg}px`,
-                        borderRadius: DS.radius.md,
                         background: copiedField === 'all' ? DS.colors.success : 'transparent',
                         border: `1px solid ${copiedField === 'all' ? DS.colors.success : DS.colors.borderLight}`,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: DS.space.sm,
                       }}
                     >
                       {copiedField === 'all' ? (
@@ -1535,85 +1201,50 @@ const PaymentSheet = memo(function PaymentSheet({
                       ) : (
                         <Copy size={16} color={DS.colors.textSecondary} />
                       )}
-                      <span style={{
-                        fontSize: DS.fontSize.sm,
-                        fontWeight: 600,
-                        color: copiedField === 'all' ? DS.colors.white : DS.colors.textSecondary,
-                      }}>
+                      <span
+                        className="text-[12px] font-semibold"
+                        style={{ color: copiedField === 'all' ? DS.colors.white : DS.colors.textSecondary }}
+                      >
                         Скопировать всё
                       </span>
                     </motion.button>
                   </div>
                 ) : (
                   /* SBP Method - Phone Number */
-                  <div style={{
-                    padding: DS.space.lg,
-                    borderRadius: DS.radius.lg,
-                    background: DS.colors.bgElevated,
-                    border: `1px solid ${DS.colors.border}`,
-                  }}>
+                  <div
+                    className="p-4 rounded-2xl"
+                    style={{
+                      background: DS.colors.bgElevated,
+                      border: `1px solid ${DS.colors.border}`,
+                    }}
+                  >
                     {/* SBP Icon */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: DS.space.lg,
-                    }}>
-                      <div style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: DS.radius.lg,
-                        background: 'linear-gradient(135deg, #7B3FE4, #4F46E5)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7B3FE4, #4F46E5)' }}>
                         <Smartphone size={32} color={DS.colors.white} />
                       </div>
                     </div>
 
-                    <p style={{
-                      fontSize: DS.fontSize.sm,
-                      color: DS.colors.textSecondary,
-                      marginBottom: DS.space.lg,
-                      textAlign: 'center',
-                    }}>
+                    <p className="text-[12px] text-text-secondary mb-4 text-center">
                       Переведите по номеру телефона через СБП
                     </p>
 
                     {/* Phone Number */}
-                    <div style={{ marginBottom: DS.space.lg }}>
-                      <div style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginBottom: DS.space.xs,
-                      }}>
+                    <div className="mb-4">
+                      <div className="text-[11px] text-text-muted mb-1">
                         Номер телефона
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
-                        <div style={{
-                          flex: 1,
-                          fontSize: DS.fontSize.xl,
-                          fontWeight: 700,
-                          fontFamily: 'var(--font-mono)',
-                          color: DS.colors.textPrimary,
-                          letterSpacing: '0.02em',
-                        }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 text-[16px] font-bold font-mono text-text-primary tracking-[0.02em]">
                           {paymentInfo?.sbp_phone ? paymentInfo.sbp_phone.replace(/(\d)(\d{3})(\d{3})(\d{2})(\d{2})$/, '+7 ($1$2) $3-$4-$5') : '—'}
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleCopy(paymentInfo?.sbp_phone || '', 'sbp_phone')}
+                          className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer"
                           style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: DS.radius.md,
                             background: copiedField === 'sbp_phone' ? DS.colors.success : DS.colors.bgCard,
                             border: `1px solid ${copiedField === 'sbp_phone' ? DS.colors.success : DS.colors.border}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
                           }}
                         >
                           {copiedField === 'sbp_phone' ? (
@@ -1626,54 +1257,31 @@ const PaymentSheet = memo(function PaymentSheet({
                     </div>
 
                     {/* Bank Name */}
-                    <div style={{ marginBottom: DS.space.lg }}>
-                      <div style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginBottom: DS.space.xs,
-                      }}>
+                    <div className="mb-4">
+                      <div className="text-[11px] text-text-muted mb-1">
                         Банк получателя
                       </div>
-                      <div style={{
-                        fontSize: DS.fontSize.base,
-                        color: DS.colors.textPrimary,
-                      }}>
+                      <div className="text-[14px] text-text-primary">
                         {paymentInfo?.sbp_bank || 'Банк получателя'}
                       </div>
                     </div>
 
                     {/* Amount */}
-                    <div style={{ marginBottom: DS.space.lg }}>
-                      <div style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginBottom: DS.space.xs,
-                      }}>
+                    <div className="mb-4">
+                      <div className="text-[11px] text-text-muted mb-1">
                         Сумма
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
-                        <div style={{
-                          flex: 1,
-                          fontSize: DS.fontSize.xl,
-                          fontWeight: 700,
-                          fontFamily: 'var(--font-mono)',
-                          color: DS.colors.gold,
-                        }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 text-[16px] font-bold font-mono text-gold-400">
                           {formatPrice(todayAmount)} ₽
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleCopy(todayAmount.toString(), 'sbp_amount')}
+                          className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer"
                           style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: DS.radius.md,
                             background: copiedField === 'sbp_amount' ? DS.colors.success : DS.colors.bgCard,
                             border: `1px solid ${copiedField === 'sbp_amount' ? DS.colors.success : DS.colors.border}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
                           }}
                         >
                           {copiedField === 'sbp_amount' ? (
@@ -1687,34 +1295,20 @@ const PaymentSheet = memo(function PaymentSheet({
 
                     {/* Comment */}
                     <div>
-                      <div style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginBottom: DS.space.xs,
-                      }}>
+                      <div className="text-[11px] text-text-muted mb-1">
                         Комментарий к переводу
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
-                        <div style={{
-                          flex: 1,
-                          fontSize: DS.fontSize.base,
-                          color: DS.colors.textPrimary,
-                        }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 text-[14px] text-text-primary">
                           Заказ #{order.id}
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleCopy(`Заказ #${order.id}`, 'sbp_comment')}
+                          className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer"
                           style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: DS.radius.md,
                             background: copiedField === 'sbp_comment' ? DS.colors.success : DS.colors.bgCard,
                             border: `1px solid ${copiedField === 'sbp_comment' ? DS.colors.success : DS.colors.border}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
                           }}
                         >
                           {copiedField === 'sbp_comment' ? (
@@ -1732,19 +1326,16 @@ const PaymentSheet = memo(function PaymentSheet({
 
             {/* Footer with CTA — hidden for online payment (CTA is inside Step C) */}
             {paymentMethod !== 'online' && (
-              <div style={{
-                padding: DS.space.lg,
-                paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
-                borderTop: `1px solid ${DS.colors.border}`,
-                background: DS.colors.bgSurface,
-              }}>
+              <div
+                className="p-4"
+                style={{
+                  paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
+                  borderTop: `1px solid ${DS.colors.border}`,
+                  background: DS.colors.bgSurface,
+                }}
+              >
                 {!hasPaymentInfo && (
-                  <div style={{
-                    marginBottom: DS.space.md,
-                    fontSize: DS.fontSize.sm,
-                    color: DS.colors.textMuted,
-                    textAlign: 'center',
-                  }}>
+                  <div className="mb-3 text-[12px] text-text-muted text-center">
                     Реквизиты еще загружаются. Подождите пару секунд.
                   </div>
                 )}
@@ -1752,28 +1343,21 @@ const PaymentSheet = memo(function PaymentSheet({
                   whileTap={hasPaymentInfo ? { scale: 0.98 } : undefined}
                   onClick={hasPaymentInfo ? onConfirmPayment : undefined}
                   disabled={!hasPaymentInfo}
+                  className="w-full py-4 px-5 rounded-2xl flex items-center justify-center gap-2"
                   style={{
-                    width: '100%',
-                    padding: `${DS.space.lg}px ${DS.space.xl}px`,
-                    borderRadius: DS.radius.lg,
                     background: hasPaymentInfo
                       ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
                       : DS.colors.bgElevated,
                     border: hasPaymentInfo ? 'none' : `1px solid ${DS.colors.border}`,
                     cursor: hasPaymentInfo ? 'pointer' : 'not-allowed',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: DS.space.sm,
                     boxShadow: hasPaymentInfo ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
                   }}
                 >
                   <CheckCircle2 size={20} color={hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted} />
-                  <span style={{
-                    fontSize: DS.fontSize.lg,
-                    fontWeight: 700,
-                    color: hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted,
-                  }}>
+                  <span
+                    className="text-[15px] font-bold"
+                    style={{ color: hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted }}
+                  >
                     Я оплатил(а)
                   </span>
                 </motion.button>
@@ -1902,16 +1486,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.8)',
-            zIndex: 400,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: DS.space.lg,
-          }}
+          className="fixed inset-0 bg-black/80 z-[400] flex items-center justify-center p-4"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1919,59 +1494,29 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 400,
-              maxHeight: '85vh',
-              background: DS.colors.bgSurface,
-              borderRadius: DS.radius['2xl'],
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
+            className="w-full max-w-[400px] max-h-[85vh] rounded-2xl overflow-hidden flex flex-col"
+            style={{ background: DS.colors.bgSurface }}
           >
             {/* Header */}
             <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: DS.space.xl,
-                borderBottom: `1px solid ${DS.colors.border}`,
-              }}
+              className="flex items-center justify-between p-5"
+              style={{ borderBottom: `1px solid ${DS.colors.border}` }}
             >
               <div>
-                <h2 style={{
-                  fontSize: DS.fontSize['2xl'],
-                  fontWeight: 700,
-                  color: DS.colors.textPrimary,
-                  margin: 0,
-                  fontFamily: 'var(--font-serif)',
-                }}>
+                <h2 className="text-[18px] font-bold text-text-primary m-0 font-serif">
                   Подтверждение
                 </h2>
-                <p style={{
-                  fontSize: DS.fontSize.sm,
-                  color: DS.colors.textMuted,
-                  margin: 0,
-                  marginTop: 4,
-                }}>
+                <p className="text-[12px] text-text-muted m-0 mt-1">
                   Проверьте данные перед отправкой
                 </p>
               </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
+                className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: DS.radius.md,
                   background: DS.colors.bgElevated,
                   border: `1px solid ${DS.colors.border}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
                 }}
               >
                 <X size={18} color={DS.colors.textSecondary} />
@@ -1979,63 +1524,39 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             </div>
 
             {/* Content */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: DS.space.xl }}>
+            <div className="flex-1 overflow-y-auto p-5">
               {/* Checklist */}
-              <div style={{ marginBottom: DS.space['2xl'] }}>
-                <div style={{
-                  fontSize: DS.fontSize.xs,
-                  fontWeight: 600,
-                  color: DS.colors.textMuted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: DS.space.md,
-                }}>
+              <div className="mb-6">
+                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-3">
                   Чеклист подтверждения
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: DS.space.sm }}>
+                <div className="flex flex-col gap-2">
                   {checklist.map((item) => (
                     <motion.button
                       key={item.id}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => toggleItem(item.id)}
+                      className="w-full p-4 rounded-xl cursor-pointer flex items-center gap-3 text-left"
                       style={{
-                        width: '100%',
-                        padding: DS.space.lg,
-                        borderRadius: DS.radius.md,
                         background: item.checked
                           ? 'rgba(34,197,94,0.1)'
                           : DS.colors.bgElevated,
                         border: `1px solid ${item.checked ? DS.colors.success + '40' : DS.colors.border}`,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: DS.space.md,
-                        textAlign: 'left',
                       }}
                     >
                       <div
+                        className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200"
                         style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: DS.radius.sm,
                           background: item.checked ? DS.colors.success : 'transparent',
                           border: `2px solid ${item.checked ? DS.colors.success : DS.colors.textMuted}`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          transition: 'all 0.2s ease',
                         }}
                       >
                         {item.checked && <Check size={14} color={DS.colors.white} />}
                       </div>
                       <span
-                        style={{
-                          fontSize: DS.fontSize.base,
-                          color: item.checked ? DS.colors.textPrimary : DS.colors.textSecondary,
-                          flex: 1,
-                        }}
+                        className="text-[14px] flex-1"
+                        style={{ color: item.checked ? DS.colors.textPrimary : DS.colors.textSecondary }}
                       >
                         {item.label}
                       </span>
@@ -2046,86 +1567,35 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
 
               {/* Screenshot Upload (Optional) */}
               <div>
-                <div style={{
-                  fontSize: DS.fontSize.xs,
-                  fontWeight: 600,
-                  color: DS.colors.textMuted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: DS.space.sm,
-                }}>
+                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-2">
                   Скриншот оплаты (опционально)
                 </div>
-                <p style={{
-                  fontSize: DS.fontSize.sm,
-                  color: DS.colors.textMuted,
-                  marginBottom: DS.space.md,
-                }}>
+                <p className="text-[12px] text-text-muted mb-3">
                   Прикрепите для ускорения проверки
                 </p>
 
                 {screenshotPreview ? (
                   <div
-                    style={{
-                      position: 'relative',
-                      borderRadius: DS.radius.lg,
-                      overflow: 'hidden',
-                      border: `1px solid ${DS.colors.border}`,
-                    }}
+                    className="relative rounded-2xl overflow-hidden"
+                    style={{ border: `1px solid ${DS.colors.border}` }}
                   >
                     <img
                       src={screenshotPreview}
                       alt="Скриншот оплаты"
                       loading="lazy"
-                      style={{
-                        width: '100%',
-                        maxHeight: 200,
-                        objectFit: 'cover',
-                      }}
+                      className="w-full max-h-[200px] object-cover"
                     />
                     <motion.button
                       whileTap={{ scale: 0.9 }}
                       onClick={removeScreenshot}
-                      style={{
-                        position: 'absolute',
-                        top: DS.space.sm,
-                        right: DS.space.sm,
-                        width: 32,
-                        height: 32,
-                        borderRadius: DS.radius.sm,
-                        background: 'rgba(0,0,0,0.7)',
-                        border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                      }}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/70 border-none flex items-center justify-center cursor-pointer"
                     >
                       <Trash2 size={16} color={DS.colors.error} />
                     </motion.button>
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        padding: DS.space.sm,
-                        background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-                      }}
-                    >
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: DS.space.sm,
-                      }}>
+                    <div className="absolute bottom-0 left-0 right-0 p-2" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
+                      <div className="flex items-center gap-2">
                         <FileImage size={14} color={DS.colors.success} />
-                        <span style={{
-                          fontSize: DS.fontSize.xs,
-                          color: DS.colors.textSecondary,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}>
+                        <span className="text-[11px] text-text-secondary overflow-hidden text-ellipsis whitespace-nowrap">
                           {screenshot?.name}
                         </span>
                       </div>
@@ -2133,38 +1603,23 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                   </div>
                 ) : (
                   <label
+                    className="flex flex-col items-center justify-center p-5 rounded-2xl cursor-pointer transition-all duration-200"
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: DS.space.xl,
-                      borderRadius: DS.radius.lg,
                       background: DS.colors.bgElevated,
                       border: `2px dashed ${DS.colors.border}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
                     }}
                   >
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleFileChange}
-                      style={{ display: 'none' }}
+                      className="hidden"
                     />
                     <Upload size={24} color={DS.colors.textMuted} />
-                    <span style={{
-                      fontSize: DS.fontSize.sm,
-                      color: DS.colors.textMuted,
-                      marginTop: DS.space.sm,
-                    }}>
+                    <span className="text-[12px] text-text-muted mt-2">
                       Нажмите для загрузки
                     </span>
-                    <span style={{
-                      fontSize: DS.fontSize.xs,
-                      color: DS.colors.textMuted,
-                      marginTop: DS.space.xs,
-                    }}>
+                    <span className="text-[11px] text-text-muted mt-1">
                       PNG, JPG до 10 МБ
                     </span>
                   </label>
@@ -2174,32 +1629,17 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
 
             {/* Footer */}
             <div
+              className="p-5"
               style={{
-                padding: DS.space.xl,
                 paddingBottom: 'max(env(safe-area-inset-bottom, 20px), 20px)',
                 borderTop: `1px solid ${DS.colors.border}`,
                 background: DS.colors.bgSurface,
               }}
             >
               {/* Info note */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: DS.space.sm,
-                  padding: DS.space.md,
-                  borderRadius: DS.radius.md,
-                  background: 'rgba(6,182,212,0.1)',
-                  border: `1px solid rgba(6,182,212,0.2)`,
-                  marginBottom: DS.space.lg,
-                }}
-              >
-                <Timer size={16} color={DS.colors.cyan} style={{ flexShrink: 0, marginTop: 2 }} />
-                <span style={{
-                  fontSize: DS.fontSize.sm,
-                  color: DS.colors.textSecondary,
-                  lineHeight: 1.4,
-                }}>
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 mb-4">
+                <Timer size={16} color={DS.colors.cyan} className="shrink-0 mt-0.5" />
+                <span className="text-[12px] text-text-secondary leading-[1.4]">
                   После отправки проверка займёт <strong style={{ color: DS.colors.cyan }}>5-15 минут</strong>
                 </span>
               </div>
@@ -2209,19 +1649,13 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 whileTap={allChecked && !isSubmitting ? { scale: 0.98 } : undefined}
                 onClick={handleSubmit}
                 disabled={!allChecked || isSubmitting}
+                className="w-full py-4 px-5 rounded-2xl flex items-center justify-center gap-2"
                 style={{
-                  width: '100%',
-                  padding: `${DS.space.lg}px ${DS.space.xl}px`,
-                  borderRadius: DS.radius.lg,
                   background: allChecked
                     ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
                     : DS.colors.bgElevated,
                   border: allChecked ? 'none' : `1px solid ${DS.colors.border}`,
                   cursor: allChecked && !isSubmitting ? 'pointer' : 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: DS.space.sm,
                   opacity: isSubmitting ? 0.7 : 1,
                   boxShadow: allChecked ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
                 }}
@@ -2229,22 +1663,17 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 {isSubmitting ? (
                   <>
                     <Loader2 size={20} color="#0a0a0c" className="animate-spin" />
-                    <span style={{
-                      fontSize: DS.fontSize.lg,
-                      fontWeight: 700,
-                      color: '#0a0a0c',
-                    }}>
+                    <span className="text-[15px] font-bold text-[#0a0a0c]">
                       Отправка...
                     </span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck size={20} color={allChecked ? '#0a0a0c' : DS.colors.textMuted} />
-                    <span style={{
-                      fontSize: DS.fontSize.lg,
-                      fontWeight: 700,
-                      color: allChecked ? '#0a0a0c' : DS.colors.textMuted,
-                    }}>
+                    <span
+                      className="text-[15px] font-bold"
+                      style={{ color: allChecked ? '#0a0a0c' : DS.colors.textMuted }}
+                    >
                       Отправить на проверку
                     </span>
                   </>
@@ -2304,20 +1733,9 @@ const TrustSection = memo(function TrustSection({ isPaymentFlow: _isPaymentFlow 
   }
 
   return (
-    <div
-      style={{
-        margin: `0 ${DS.space.lg}px`,
-        marginBottom: DS.space.lg,
-      }}
-    >
+    <div className="mx-4 mb-4">
       {/* Chips Row */}
-      <div
-        style={{
-          display: 'flex',
-          gap: DS.space.sm,
-          flexWrap: 'wrap',
-        }}
-      >
+      <div className="flex gap-2 flex-wrap">
         {TRUST_CHIPS.map((chip) => {
           const ChipIcon = chip.icon
           const isExpanded = expandedChip === chip.id
@@ -2327,34 +1745,24 @@ const TrustSection = memo(function TrustSection({ isPaymentFlow: _isPaymentFlow 
               key={chip.id}
               whileTap={{ scale: 0.97 }}
               onClick={() => handleChipClick(chip.id)}
+              className="flex items-center gap-2 px-3 py-2 rounded-full cursor-pointer"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: DS.space.sm,
-                padding: `${DS.space.sm}px ${DS.space.md}px`,
-                borderRadius: DS.radius.full,
                 background: chip.bgColor,
                 border: `1px solid ${chip.color}30`,
-                cursor: 'pointer',
               }}
             >
               <ChipIcon size={14} color={chip.color} />
               <span
-                style={{
-                  fontSize: DS.fontSize.sm,
-                  fontWeight: 600,
-                  color: chip.color,
-                }}
+                className="text-[12px] font-semibold"
+                style={{ color: chip.color }}
               >
                 {chip.label}
               </span>
               <ChevronDown
                 size={12}
                 color={chip.color}
-                style={{
-                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s ease',
-                }}
+                className="transition-transform duration-200"
+                style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
               />
             </motion.button>
           )
@@ -2369,34 +1777,20 @@ const TrustSection = memo(function TrustSection({ isPaymentFlow: _isPaymentFlow 
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            style={{ overflow: 'hidden' }}
+            className="overflow-hidden"
           >
             {TRUST_CHIPS.filter((c) => c.id === expandedChip).map((chip) => (
               <div
                 key={chip.id}
+                className="mt-3 p-4 rounded-2xl"
                 style={{
-                  marginTop: DS.space.md,
-                  padding: DS.space.lg,
-                  borderRadius: DS.radius.lg,
                   background: chip.bgColor,
                   border: `1px solid ${chip.color}25`,
                 }}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: DS.space.md,
-                  }}
-                >
-                  <Info size={16} color={chip.color} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <p
-                    style={{
-                      fontSize: DS.fontSize.sm,
-                      color: DS.colors.textSecondary,
-                      lineHeight: 1.5,
-                      margin: 0,
-                    }}
+                <div className="flex items-start gap-3">
+                  <Info size={16} color={chip.color} className="shrink-0 mt-0.5" />
+                  <p className="text-[12px] text-text-secondary leading-[1.5] m-0"
                   >
                     {chip.details}
                   </p>
@@ -2425,44 +1819,25 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{
-        margin: `0 ${DS.space.lg}px`,
-        marginBottom: DS.space.lg,
-        padding: 18,
-        borderRadius: 20,
-        background: 'rgba(212,175,55,0.04)',
-        border: '1px solid rgba(212,175,55,0.10)',
-      }}
+      className="mx-4 mb-4 p-[18px] rounded-[20px] bg-gold-400/[0.04] border border-gold-400/10"
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-        <div
-          style={{
-            width: 44, height: 44, borderRadius: 14,
-            background: 'rgba(212,175,55,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
+      <div className="flex items-center gap-3.5 mb-3">
+        <div className="w-11 h-11 rounded-[14px] bg-gold-400/[0.08] flex items-center justify-center shrink-0">
           <Loader2 size={22} color="rgba(212,175,55,0.60)" className="animate-spin" />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.88)', marginBottom: 4 }}>
+        <div className="flex-1">
+          <div className="text-[15px] font-bold text-white/[0.88] mb-1">
             Платёж на проверке
           </div>
-          <div style={{ fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.42)' }}>
+          <div className="text-[13px] leading-[1.55] text-white/[0.42]">
             Обычно подтверждаем за {estimatedMinutes} минут и переводим заказ в работу автоматически.
           </div>
         </div>
       </div>
 
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 12px', borderRadius: 12,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.04)',
-      }}>
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
         <ShieldCheck size={14} color="rgba(212,175,55,0.50)" />
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)' }}>
+        <span className="text-[12px] text-white/[0.38]">
           Статус обновится сам, ничего дополнительно отправлять не нужно
         </span>
       </div>
@@ -2561,42 +1936,16 @@ const FilesSection = memo(function FilesSection({
   if (!filesAvailable && !hasFiles) return null
 
   return (
-    <div
-      style={{
-        margin: `0 ${DS.space.lg}px`,
-        marginBottom: DS.space.lg,
-      }}
-    >
+    <div className="mx-4 mb-4">
       {/* Section Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: DS.space.md,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: DS.space.sm }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
           <FileText size={18} color={DS.colors.gold} />
-          <span
-            style={{
-              fontSize: DS.fontSize.lg,
-              fontWeight: 700,
-              color: DS.colors.textPrimary,
-            }}
-          >
+          <span className="text-[15px] font-bold text-text-primary">
             Файлы
           </span>
           {hasFiles && (
-            <span
-              style={{
-                padding: `${DS.space.xs}px ${DS.space.sm}px`,
-                borderRadius: DS.radius.sm,
-                background: 'rgba(212,175,55,0.15)',
-                fontSize: DS.fontSize.xs,
-                fontWeight: 600,
-                color: DS.colors.gold,
-              }}
+            <span className="px-2 py-1 rounded-lg bg-gold-400/15 text-[11px] font-semibold text-gold-400"
             >
               {files.length}
             </span>
@@ -2610,19 +1959,11 @@ const FilesSection = memo(function FilesSection({
               haptic?.('light')
               onDownloadAll()
             }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: DS.space.xs,
-              padding: `${DS.space.sm}px ${DS.space.md}px`,
-              borderRadius: DS.radius.md,
-              background: 'transparent',
-              border: `1px solid ${DS.colors.borderGold}`,
-              cursor: 'pointer',
-            }}
+            className="flex items-center gap-1 px-3 py-2 rounded-xl bg-transparent cursor-pointer"
+            style={{ border: `1px solid ${DS.colors.borderGold}` }}
           >
             <Download size={14} color={DS.colors.gold} />
-            <span style={{ fontSize: DS.fontSize.sm, color: DS.colors.gold }}>
+            <span className="text-[12px] text-gold-400">
               Скачать всё
             </span>
           </motion.button>
@@ -2631,15 +1972,14 @@ const FilesSection = memo(function FilesSection({
 
       {/* Files List */}
       <div
+        className="p-4 rounded-[20px]"
         style={{
-          padding: DS.space.lg,
-          borderRadius: DS.radius.xl,
           background: DS.colors.bgCard,
           border: `1px solid ${DS.colors.border}`,
         }}
       >
         {hasFiles ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: DS.space.sm }}>
+          <div className="flex flex-col gap-2">
             {files.map((file) => {
               const FileIcon = getFileIcon(file.type)
               const fileColor = getFileColor(file.type)
@@ -2652,73 +1992,32 @@ const FilesSection = memo(function FilesSection({
                     haptic?.('light')
                     onDownloadFile(file)
                   }}
+                  className="w-full p-3 rounded-2xl cursor-pointer flex items-center gap-3 text-left"
                   style={{
-                    width: '100%',
-                    padding: DS.space.md,
-                    borderRadius: DS.radius.lg,
                     background: DS.colors.bgElevated,
                     border: `1px solid ${DS.colors.border}`,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: DS.space.md,
-                    textAlign: 'left',
                   }}
                 >
                   {/* File Icon */}
                   <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: DS.radius.md,
-                      background: `${fileColor}15`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${fileColor}15` }}
                   >
                     <FileIcon size={22} color={fileColor} />
                   </div>
 
                   {/* File Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: DS.fontSize.base,
-                        fontWeight: 600,
-                        color: DS.colors.textPrimary,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-semibold text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
                       {file.name}
                     </div>
-                    <div
-                      style={{
-                        fontSize: DS.fontSize.xs,
-                        color: DS.colors.textMuted,
-                        marginTop: 2,
-                      }}
-                    >
+                    <div className="text-[11px] text-text-muted mt-0.5">
                       {file.type === 'folder' ? 'Яндекс.Диск' : formatFileSize(file.size)}
                     </div>
                   </div>
 
                   {/* Download Icon */}
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: DS.radius.sm,
-                      background: 'rgba(212,175,55,0.1)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
+                  <div className="w-9 h-9 rounded-lg bg-gold-400/10 flex items-center justify-center shrink-0">
                     <Download size={18} color={DS.colors.gold} />
                   </div>
                 </motion.button>
@@ -2727,46 +2026,14 @@ const FilesSection = memo(function FilesSection({
           </div>
         ) : (
           /* Empty State */
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              padding: DS.space.xl,
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: DS.radius.lg,
-                background: 'rgba(255,255,255,0.05)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: DS.space.md,
-              }}
-            >
+          <div className="flex flex-col items-center p-5 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
               <FileText size={28} color={DS.colors.textMuted} />
             </div>
-            <p
-              style={{
-                fontSize: DS.fontSize.base,
-                color: DS.colors.textSecondary,
-                margin: 0,
-                marginBottom: DS.space.xs,
-              }}
-            >
+            <p className="text-[14px] text-text-secondary m-0 mb-1">
               Файлы появятся здесь
             </p>
-            <p
-              style={{
-                fontSize: DS.fontSize.sm,
-                color: DS.colors.textMuted,
-                margin: 0,
-              }}
-            >
+            <p className="text-[12px] text-text-muted m-0">
               После выполнения работы
             </p>
           </div>
@@ -2802,78 +2069,40 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
   }
 
   return (
-    <div
-      style={{
-        margin: `0 ${DS.space.lg}px`,
-        marginBottom: DS.space.lg,
-      }}
-    >
+    <div className="mx-4 mb-4">
       {/* Section Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: DS.space.sm,
-          marginBottom: DS.space.md,
-        }}
-      >
+      <div className="flex items-center gap-2 mb-3">
         <MessageCircle size={18} color={DS.colors.gold} />
-        <span
-          style={{
-            fontSize: DS.fontSize.lg,
-            fontWeight: 700,
-            color: DS.colors.textPrimary,
-          }}
-        >
+        <span className="text-[15px] font-bold text-text-primary">
           Поддержка
         </span>
       </div>
 
-      <div
-        style={{
-          padding: 18,
-          borderRadius: 20,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-          <div
-            style={{
-              width: 48, height: 48, borderRadius: 16,
-              background: 'rgba(212,175,55,0.06)',
-              border: '1px solid rgba(212,175,55,0.10)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
+      <div className="p-[18px] rounded-[20px] bg-white/[0.02] border border-white/[0.06]">
+        <div className="flex items-center gap-3.5 mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-gold-400/[0.06] border border-gold-400/10 flex items-center justify-center shrink-0">
             <MessageCircle size={20} color="rgba(212,175,55,0.55)" />
           </div>
 
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.88)', marginBottom: 4 }}>
+          <div className="flex-1 min-w-0">
+            <div className="text-[15px] font-bold text-white/[0.88] mb-1">
               Поддержка по заказу
             </div>
-            <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.42)' }}>
+            <div className="text-[13px] leading-[1.5] text-white/[0.42]">
               По оплате, срокам, правкам и уточнениям
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 10 }}>
+        <div className="grid grid-cols-[1.2fr_1fr] gap-2.5">
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={() => {
               haptic?.('medium')
               onOpenChat()
             }}
-            style={{
-              minHeight: 48, borderRadius: 16,
-              background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
-              border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              color: '#0a0a0c', fontSize: 14, fontWeight: 700,
-            }}
+            className="min-h-[48px] rounded-2xl border-none cursor-pointer flex items-center justify-center gap-2 text-[#0a0a0c] text-[14px] font-bold"
+            style={{ background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})` }}
           >
             <MessageCircle size={16} color="#0a0a0c" />
             Написать в чат
@@ -2882,14 +2111,7 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={handleTelegramClick}
-            style={{
-              minHeight: 48, borderRadius: 16,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: 600,
-            }}
+            className="min-h-[48px] rounded-2xl bg-white/[0.03] border border-white/[0.06] cursor-pointer flex items-center justify-center gap-2 text-white/[0.55] text-[13px] font-semibold"
           >
             <Send size={14} color="rgba(212,175,55,0.50)" />
             Telegram
@@ -2942,41 +2164,17 @@ const GuaranteesRow = memo(function GuaranteesRow() {
   const { haptic } = useTelegram()
 
   return (
-    <div
-      style={{
-        margin: `0 ${DS.space.lg}px`,
-        marginBottom: DS.space.lg,
-      }}
-    >
+    <div className="mx-4 mb-4">
       {/* Section Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: DS.space.sm,
-          marginBottom: DS.space.md,
-        }}
-      >
+      <div className="flex items-center gap-2 mb-3">
         <Award size={18} color={DS.colors.gold} />
-        <span
-          style={{
-            fontSize: DS.fontSize.lg,
-            fontWeight: 700,
-            color: DS.colors.textPrimary,
-          }}
-        >
+        <span className="text-[15px] font-bold text-text-primary">
           Гарантии
         </span>
       </div>
 
       {/* Guarantees Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: DS.space.sm,
-        }}
-      >
+      <div className="grid grid-cols-3 gap-2">
         {GUARANTEES.map((g) => {
           const Icon = g.icon
           const isExpanded = expandedId === g.id
@@ -2989,47 +2187,24 @@ const GuaranteesRow = memo(function GuaranteesRow() {
                 haptic?.('light')
                 setExpandedId(isExpanded ? null : g.id)
               }}
+              className="p-3 rounded-[18px] cursor-pointer flex flex-col items-start gap-2 text-left"
               style={{
-                padding: 12,
-                borderRadius: 18,
                 background: isExpanded ? `${g.color}15` : DS.colors.bgCard,
                 border: `1px solid ${isExpanded ? `${g.color}40` : DS.colors.border}`,
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                gap: 8,
-                textAlign: 'left',
               }}
             >
               <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: DS.radius.md,
-                  background: `${g.color}15`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: `${g.color}15` }}
               >
                   <Icon size={18} color={g.color} />
                 </div>
-              <span
-                style={{
-                  fontSize: DS.fontSize.sm,
-                  fontWeight: 600,
-                  color: DS.colors.textPrimary,
-                }}
-              >
+              <span className="text-[12px] font-semibold text-text-primary">
                 {g.title}
               </span>
               <span
-                style={{
-                  fontSize: 12,
-                  lineHeight: 1.45,
-                  color: isExpanded ? DS.colors.textSecondary : DS.colors.textMuted,
-                }}
+                className="text-[12px] leading-[1.45]"
+                style={{ color: isExpanded ? DS.colors.textSecondary : DS.colors.textMuted }}
               >
                 {g.id === 'refund' ? 'Если работа не стартовала' : g.id === 'revisions' ? '3 бесплатных круга' : 'Фиксируем при подтверждении'}
               </span>
@@ -3046,29 +2221,20 @@ const GuaranteesRow = memo(function GuaranteesRow() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            style={{ overflow: 'hidden' }}
+            className="overflow-hidden"
           >
             {GUARANTEES.filter((g) => g.id === expandedId).map((g) => (
               <div
                 key={g.id}
+                className="mt-3 p-4 rounded-2xl"
                 style={{
-                  marginTop: DS.space.md,
-                  padding: DS.space.lg,
-                  borderRadius: DS.radius.lg,
                   background: `${g.color}10`,
                   border: `1px solid ${g.color}25`,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: DS.space.md }}>
-                  <Info size={16} color={g.color} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <p
-                    style={{
-                      fontSize: DS.fontSize.sm,
-                      color: DS.colors.textSecondary,
-                      lineHeight: 1.5,
-                      margin: 0,
-                    }}
-                  >
+                <div className="flex items-start gap-3">
+                  <Info size={16} color={g.color} className="shrink-0 mt-0.5" />
+                  <p className="text-[12px] text-text-secondary leading-[1.5] m-0">
                     {g.description}
                   </p>
                 </div>
@@ -3162,65 +2328,35 @@ const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps)
   const isCancelled = ['cancelled', 'rejected'].includes(order.status)
 
   return (
-    <div
-      style={{
-        margin: `0 ${DS.space.lg}px`,
-        marginBottom: DS.space.lg,
-      }}
-    >
+    <div className="mx-4 mb-4">
       {/* Section Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: DS.space.sm,
-          marginBottom: DS.space.md,
-        }}
-      >
+      <div className="flex items-center gap-2 mb-3">
         <Clock size={18} color={DS.colors.gold} />
-        <span
-          style={{
-            fontSize: DS.fontSize.lg,
-            fontWeight: 700,
-            color: DS.colors.textPrimary,
-          }}
-        >
+        <span className="text-[15px] font-bold text-text-primary">
           Ход выполнения
         </span>
       </div>
 
       {/* Timeline Card */}
       <div
+        className="p-4 rounded-[20px]"
         style={{
-          padding: DS.space.lg,
-          borderRadius: DS.radius.xl,
           background: DS.colors.bgCard,
           border: `1px solid ${DS.colors.border}`,
         }}
       >
         {/* Cancelled Banner */}
         {isCancelled && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: DS.space.sm,
-              padding: DS.space.md,
-              marginBottom: DS.space.lg,
-              borderRadius: DS.radius.md,
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.2)',
-            }}
-          >
+          <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20">
             <XCircle size={16} color={DS.colors.error} />
-            <span style={{ fontSize: DS.fontSize.sm, color: DS.colors.error, fontWeight: 600 }}>
+            <span className="text-[12px] text-red-500 font-semibold">
               Заказ {order.status === 'cancelled' ? 'отменён' : 'отклонён'}
             </span>
           </div>
         )}
 
         {/* Steps */}
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           {steps.map((step, index) => {
             const StepIcon = step.icon
             const isLast = index === steps.length - 1
@@ -3258,21 +2394,14 @@ const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps)
             return (
               <div
                 key={step.id}
-                style={{
-                  display: 'flex',
-                  gap: DS.space.md,
-                  position: 'relative',
-                  paddingBottom: isLast ? 0 : DS.space.lg,
-                }}
+                className="flex gap-3 relative"
+                style={{ paddingBottom: isLast ? 0 : DS.space.lg }}
               >
                 {/* Vertical Line */}
                 {!isLast && (
                   <div
+                    className="absolute left-[15px] top-8 w-0.5"
                     style={{
-                      position: 'absolute',
-                      left: 15,
-                      top: 32,
-                      width: 2,
                       height: 'calc(100% - 32px)',
                       background: colors.line,
                     }}
@@ -3281,17 +2410,10 @@ const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps)
 
                 {/* Icon Circle */}
                 <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-[1]"
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: DS.radius.full,
                     background: step.status === 'upcoming' ? DS.colors.bgElevated : colors.bg,
                     border: `2px solid ${colors.border}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    zIndex: 1,
                   }}
                 >
                   {step.status === 'completed' ? (
@@ -3308,44 +2430,22 @@ const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps)
                 </div>
 
                 {/* Content */}
-                <div style={{ flex: 1, paddingTop: 4 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: DS.space.sm,
-                    }}
-                  >
+                <div className="flex-1 pt-1">
+                  <div className="flex items-center justify-between gap-2">
                     <span
-                      style={{
-                        fontSize: DS.fontSize.base,
-                        fontWeight: step.status === 'current' ? 700 : 500,
-                        color: colors.text,
-                      }}
+                      className={`text-[14px] ${step.status === 'current' ? 'font-bold' : 'font-medium'}`}
+                      style={{ color: colors.text }}
                     >
                       {step.label}
                     </span>
                     {step.date && (
-                      <span
-                        style={{
-                          fontSize: DS.fontSize.xs,
-                          color: DS.colors.textMuted,
-                        }}
-                      >
+                      <span className="text-[11px] text-text-muted">
                         {step.date}
                       </span>
                     )}
                   </div>
                   {step.description && (
-                    <p
-                      style={{
-                        fontSize: DS.fontSize.sm,
-                        color: DS.colors.textSecondary,
-                        margin: 0,
-                        marginTop: 2,
-                      }}
-                    >
+                    <p className="text-[12px] text-text-secondary m-0 mt-0.5">
                       {step.description}
                     </p>
                   )}
@@ -3365,23 +2465,14 @@ const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps)
 
 function LoadingState() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '60vh',
-        gap: DS.space.lg,
-      }}
-    >
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
       >
         <Loader2 size={36} color={DS.colors.gold} />
       </motion.div>
-      <span style={{ fontSize: DS.fontSize.base, color: DS.colors.textSecondary }}>
+      <span className="text-[14px] text-text-secondary">
         Загружаем заказ...
       </span>
     </div>
@@ -3390,54 +2481,20 @@ function LoadingState() {
 
 function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '60vh',
-        padding: DS.space['2xl'],
-        gap: DS.space.xl,
-      }}
-    >
-      <div
-        style={{
-          width: 80,
-          height: 80,
-          borderRadius: DS.radius.xl,
-          background: 'rgba(239,68,68,0.15)',
-          border: '1px solid rgba(239,68,68,0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 gap-5">
+      <div className="w-20 h-20 rounded-[20px] bg-red-500/15 border border-red-500/25 flex items-center justify-center">
         <XCircle size={40} color={DS.colors.error} />
       </div>
-      <p
-        style={{
-          fontSize: DS.fontSize['2xl'],
-          fontWeight: 600,
-          color: DS.colors.textPrimary,
-          textAlign: 'center',
-          margin: 0,
-        }}
-      >
+      <p className="text-[18px] font-semibold text-text-primary text-center m-0">
         {message}
       </p>
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={onBack}
+        className="py-4 px-6 rounded-xl cursor-pointer text-text-secondary text-[14px] font-semibold"
         style={{
-          padding: `${DS.space.lg}px ${DS.space['2xl']}px`,
-          borderRadius: DS.radius.md,
           background: DS.colors.bgElevated,
           border: `1px solid ${DS.colors.border}`,
-          color: DS.colors.textSecondary,
-          fontSize: DS.fontSize.base,
-          fontWeight: 600,
-          cursor: 'pointer',
         }}
       >
         Назад к заказам
@@ -3515,11 +2572,13 @@ export function OrderDetailPageV8() {
         }
       }
     } catch (err) {
-      console.error('[OrderDetailPageV8] loadOrder failed', {
-        orderId,
-        route: `/order/${orderId}`,
-        error: err,
-      })
+      if (import.meta.env.DEV) {
+        console.error('[OrderDetailPageV8] loadOrder failed', {
+          orderId,
+          route: `/order/${orderId}`,
+          error: err,
+        })
+      }
       setError(err instanceof Error ? err.message : 'Ошибка загрузки')
     } finally {
       setLoading(false)
@@ -3839,7 +2898,7 @@ export function OrderDetailPageV8() {
   }
 
   return (
-    <div className="premium-club-page" style={{ paddingBottom: 140 }}>
+    <div className="premium-club-page pb-[140px]">
       <SectionErrorBoundary
         sectionName="order-app-bar"
         resetKey={sectionResetKey}
@@ -3915,25 +2974,11 @@ export function OrderDetailPageV8() {
 
       {/* Cancel Order Button */}
       {canCancelOrder && (
-        <div style={{ padding: `0 ${DS.space.lg}px`, marginBottom: DS.space.lg }}>
+        <div className="px-4 mb-4">
           <button
             type="button"
             onClick={() => { haptic?.('light'); setCancelConfirmOpen(true) }}
-            style={{
-              width: '100%',
-              padding: `${DS.space.md}px ${DS.space.lg}px`,
-              borderRadius: DS.radius.lg,
-              background: 'rgba(239,68,68,0.06)',
-              border: '1px solid rgba(239,68,68,0.12)',
-              color: 'rgba(239,68,68,0.7)',
-              fontSize: DS.fontSize.sm,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: DS.space.sm,
-            }}
+            className="w-full py-3 px-4 rounded-2xl bg-red-500/[0.06] border border-red-500/[0.12] text-red-500/70 text-[12px] font-semibold cursor-pointer flex items-center justify-center gap-2"
           >
             <XCircle size={16} />
             Отменить заказ
@@ -3948,16 +2993,7 @@ export function OrderDetailPageV8() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 9999,
-              background: 'rgba(0,0,0,0.7)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: DS.space.xl,
-            }}
+            className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-5"
             onClick={() => !cancelLoading && setCancelConfirmOpen(false)}
           >
             <motion.div
@@ -3965,56 +3001,30 @@ export function OrderDetailPageV8() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
+              className="w-full max-w-[320px] rounded-[20px] p-5 text-center"
               style={{
-                width: '100%',
-                maxWidth: 320,
                 background: DS.colors.bgCard,
-                borderRadius: DS.radius.xl,
                 border: `1px solid ${DS.colors.borderLight}`,
-                padding: DS.space.xl,
-                textAlign: 'center',
               }}
             >
-              <div style={{
-                width: 48, height: 48, borderRadius: 14,
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 16px',
-              }}>
+              <div className="w-12 h-12 rounded-[14px] bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
                 <XCircle size={24} color={DS.colors.error} strokeWidth={1.5} />
               </div>
-              <h3 style={{
-                fontSize: DS.fontSize.xl,
-                fontWeight: 700,
-                color: DS.colors.textPrimary,
-                marginBottom: 8,
-              }}>
+              <h3 className="text-[16px] font-bold text-text-primary mb-2">
                 Отменить заказ?
               </h3>
-              <p style={{
-                fontSize: DS.fontSize.sm,
-                color: DS.colors.textMuted,
-                lineHeight: 1.5,
-                marginBottom: 24,
-              }}>
+              <p className="text-[12px] text-text-muted leading-[1.5] mb-6">
                 Заказ #{order?.id} будет отменён. Это действие нельзя отменить.
               </p>
-              <div style={{ display: 'flex', gap: DS.space.sm }}>
+              <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setCancelConfirmOpen(false)}
                   disabled={cancelLoading}
+                  className="flex-1 py-3 px-4 rounded-2xl text-text-secondary text-[14px] font-semibold cursor-pointer"
                   style={{
-                    flex: 1,
-                    padding: `${DS.space.md}px ${DS.space.lg}px`,
-                    borderRadius: DS.radius.lg,
                     background: DS.colors.bgElevated,
                     border: `1px solid ${DS.colors.borderLight}`,
-                    color: DS.colors.textSecondary,
-                    fontSize: DS.fontSize.base,
-                    fontWeight: 600,
-                    cursor: 'pointer',
                   }}
                 >
                   Назад
@@ -4023,21 +3033,10 @@ export function OrderDetailPageV8() {
                   type="button"
                   onClick={handleCancelOrder}
                   disabled={cancelLoading}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-red-500/15 border border-red-500/25 text-red-500 text-[14px] font-bold flex items-center justify-center gap-1.5"
                   style={{
-                    flex: 1,
-                    padding: `${DS.space.md}px ${DS.space.lg}px`,
-                    borderRadius: DS.radius.lg,
-                    background: 'rgba(239,68,68,0.15)',
-                    border: '1px solid rgba(239,68,68,0.25)',
-                    color: DS.colors.error,
-                    fontSize: DS.fontSize.base,
-                    fontWeight: 700,
                     cursor: cancelLoading ? 'wait' : 'pointer',
                     opacity: cancelLoading ? 0.7 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
                   }}
                 >
                   {cancelLoading ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}

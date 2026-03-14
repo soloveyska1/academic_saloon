@@ -365,7 +365,7 @@ export function OrderChatPage() {
       await audio.play()
       setPlayingAudioId(messageId)
     } catch (err) {
-      console.error('Audio playback error:', err)
+      if (import.meta.env.DEV) console.error('Audio playback error:', err)
       setPlayingAudioId(null)
       // Fallback: open audio in new tab/window
       window.open(url, '_blank')
@@ -387,24 +387,16 @@ export function OrderChatPage() {
 
   if (!orderId) {
     return (
-      <div className="app-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <p style={{ color: 'var(--text-muted)' }}>Заказ не найден</p>
+      <div className="app-content flex items-center justify-center h-screen">
+        <p className="text-text-muted">Заказ не найден</p>
       </div>
     )
   }
 
   return (
     <div
-      className="app-content"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        height: '100dvh',
-        background: 'var(--bg-main)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
+      className="app-content flex flex-col min-h-screen relative overflow-hidden"
+      style={{ height: '100dvh', background: 'var(--bg-main)' }}
     >
       <FloatingParticles />
 
@@ -412,33 +404,12 @@ export function OrderChatPage() {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          position: 'relative',
-          zIndex: 1,
-          flexShrink: 0,
-          background: 'rgba(10, 10, 12, 0.8)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)'
-        }}
+        className="px-4 py-3 flex items-center gap-3 relative z-[1] shrink-0 bg-[rgba(10,10,12,0.8)] backdrop-blur-[20px] border-b border-white/5"
       >
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={handleBack}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer'
-          }}
+          className="w-9 h-9 rounded-[10px] bg-white/5 border border-white/10 flex items-center justify-center cursor-pointer"
         >
           <ArrowLeft size={18} color="var(--text-main)" />
         </motion.button>
@@ -446,72 +417,53 @@ export function OrderChatPage() {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: 'linear-gradient(135deg, #d4af37, #8b6914)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(212, 175, 55, 0.3)',
-          }}
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center shadow-gold-glow"
+          style={{ background: 'linear-gradient(135deg, #d4af37, #8b6914)' }}
         >
           <MessageCircle size={18} color="#0a0a0c" />
         </motion.div>
 
-        <div style={{ flex: 1 }}>
-          <h1 style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: 16,
-            fontWeight: 700,
-            background: 'var(--gold-text-shine)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            margin: 0
-          }}>
+        <div className="flex-1">
+          <h1
+            className="font-serif text-[16px] font-bold m-0"
+            style={{
+              background: 'var(--gold-text-shine)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
             Чат по заказу #{orderId}
           </h1>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
+          <p className="text-[11px] text-text-muted m-0">
             {isAdminTyping ? 'Печатает...' : 'Вопросы по этому заказу'}
           </p>
         </div>
       </motion.header>
 
       {/* Messages Area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 2 }}>
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 relative z-[2]">
         {isLoading && messages.length === 0 ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+          <div className="flex justify-center p-5">
             <Loader2 className="animate-spin" color="#d4af37" />
           </div>
         ) : error ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40 }}>
-            <AlertCircle size={48} color="rgba(239,68,68,0.5)" style={{ margin: '0 auto 16px' }} />
-            <p style={{ marginBottom: 16 }}>{error}</p>
+          <div className="text-center text-text-muted mt-10">
+            <AlertCircle size={48} color="rgba(239,68,68,0.5)" className="mx-auto mb-4" />
+            <p className="mb-4">{error}</p>
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleRetry}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '10px 20px',
-                background: 'rgba(212,175,55,0.1)',
-                border: '1px solid rgba(212,175,55,0.3)',
-                borderRadius: 12,
-                color: '#d4af37',
-                cursor: 'pointer'
-              }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-400/10 border border-gold-400/30 rounded-xl text-gold-400 cursor-pointer"
             >
               <RefreshCw size={16} />
               Повторить
             </motion.button>
           </div>
         ) : messages.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40 }}>
-            <MessageCircle size={48} color="rgba(212,175,55,0.3)" style={{ margin: '0 auto 16px' }} />
+          <div className="text-center text-text-muted mt-10">
+            <MessageCircle size={48} color="rgba(212,175,55,0.3)" className="mx-auto mb-4" />
             <p>Задайте вопрос по этому заказу</p>
-            <p style={{ fontSize: 12, opacity: 0.6 }}>Мы ответим в ближайшее время</p>
+            <p className="text-[12px] opacity-60">Мы ответим в ближайшее время</p>
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -524,46 +476,33 @@ export function OrderChatPage() {
                 key={msg.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                style={{
-                  alignSelf: isMe ? 'flex-end' : 'flex-start',
-                  maxWidth: '85%',
-                  display: 'flex',
-                  gap: 8,
-                  flexDirection: isMe ? 'row-reverse' : 'row'
-                }}
+                className={`max-w-[85%] flex gap-2 ${isMe ? 'self-end flex-row-reverse' : 'self-start flex-row'}`}
               >
                 {!isMe && (
-                  <div style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: 'rgba(212,175,55,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: showAvatar ? 1 : 0,
-                    flexShrink: 0
-                  }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#d4af37' }}>С</span>
+                  <div
+                    className="w-8 h-8 rounded-full bg-gold-400/20 flex items-center justify-center shrink-0"
+                    style={{ opacity: showAvatar ? 1 : 0 }}
+                  >
+                    <span className="text-[14px] font-bold text-gold-400">С</span>
                   </div>
                 )}
 
                 <div>
                   {/* Bubble */}
-                  <div style={{
-                    padding: msg.file_type === 'photo' ? 4 : '12px 16px',
-                    borderRadius: 18,
-                    borderTopRightRadius: isMe ? 4 : 18,
-                    borderTopLeftRadius: !isMe ? 4 : 18,
-                    background: isMe
-                      ? 'linear-gradient(135deg, #d4af37, #b38728)'
-                      : 'rgba(255,255,255,0.05)',
-                    color: isMe ? '#000' : 'var(--text-main)',
-                    border: !isMe ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                    fontSize: 15,
-                    lineHeight: 1.4,
-                    boxShadow: isMe ? '0 4px 12px rgba(212,175,55,0.2)' : 'none'
-                  }}>
+                  <div
+                    className="text-[15px] leading-[1.4]"
+                    style={{
+                      padding: msg.file_type === 'photo' ? 4 : '12px 16px',
+                      borderRadius: 18,
+                      borderTopRightRadius: isMe ? 4 : 18,
+                      borderTopLeftRadius: !isMe ? 4 : 18,
+                      background: isMe
+                        ? 'linear-gradient(135deg, #d4af37, #b38728)'
+                        : 'rgba(255,255,255,0.05)',
+                      color: isMe ? '#000' : 'var(--text-main)',
+                      border: !isMe ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                      boxShadow: isMe ? '0 4px 12px rgba(212,175,55,0.2)' : 'none'
+                    }}>
                     {/* Text message */}
                     {msg.message_text && <span>{msg.message_text}</span>}
 
@@ -572,32 +511,18 @@ export function OrderChatPage() {
                       <img
                         src={msg.file_url}
                         alt={msg.file_name || 'Фото'}
-                        style={{
-                          maxWidth: '100%',
-                          maxHeight: 300,
-                          borderRadius: 14,
-                          display: 'block'
-                        }}
+                        className="max-w-full max-h-[300px] rounded-[14px] block"
                       />
                     )}
 
                     {/* Voice message */}
                     {(msg.file_type === 'voice' || msg.file_type === 'audio') && msg.file_url && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div className="flex items-center gap-3">
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handlePlayAudio(msg.id, msg.file_url!)}
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '50%',
-                            background: isMe ? 'rgba(0,0,0,0.2)' : 'rgba(212,175,55,0.2)',
-                            border: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer'
-                          }}
+                          className="w-9 h-9 rounded-full border-none flex items-center justify-center cursor-pointer"
+                          style={{ background: isMe ? 'rgba(0,0,0,0.2)' : 'rgba(212,175,55,0.2)' }}
                         >
                           {playingAudioId === msg.id ? (
                             <Pause size={18} color={isMe ? '#000' : '#d4af37'} />
@@ -605,19 +530,17 @@ export function OrderChatPage() {
                             <Play size={18} color={isMe ? '#000' : '#d4af37'} />
                           )}
                         </motion.button>
-                        <div style={{
-                          flex: 1,
-                          height: 4,
-                          background: isMe ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)',
-                          borderRadius: 2
-                        }}>
-                          <div style={{
-                            width: playingAudioId === msg.id ? '50%' : '0%',
-                            height: '100%',
-                            background: isMe ? '#000' : '#d4af37',
-                            borderRadius: 2,
-                            transition: 'width 0.3s'
-                          }} />
+                        <div
+                          className="flex-1 h-1 rounded-sm"
+                          style={{ background: isMe ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)' }}
+                        >
+                          <div
+                            className="h-full rounded-sm transition-[width] duration-300"
+                            style={{
+                              width: playingAudioId === msg.id ? '50%' : '0%',
+                              background: isMe ? '#000' : '#d4af37',
+                            }}
+                          />
                         </div>
                       </div>
                     )}
@@ -629,29 +552,15 @@ export function OrderChatPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         whileTap={{ scale: 0.98 }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: '8px 12px',
-                          background: isMe ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)',
-                          borderRadius: 12,
-                          textDecoration: 'none',
-                          color: 'inherit'
-                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl no-underline text-inherit"
+                        style={{ background: isMe ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)' }}
                       >
                         <FileIcon size={24} color={isMe ? '#000' : '#d4af37'} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
                             {msg.file_name || 'Файл'}
                           </div>
-                          <div style={{ fontSize: 11, opacity: 0.7 }}>
+                          <div className="text-[11px] opacity-70">
                             {msg.file_type === 'video' ? 'Видео' : 'Документ'}
                           </div>
                         </div>
@@ -661,18 +570,9 @@ export function OrderChatPage() {
                   </div>
 
                   {/* Time and status */}
-                  <div style={{
-                    fontSize: 11,
-                    color: 'var(--text-muted)',
-                    marginTop: 4,
-                    textAlign: isMe ? 'right' : 'left',
-                    paddingRight: isMe ? 4 : 0,
-                    paddingLeft: !isMe ? 4 : 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: isMe ? 'flex-end' : 'flex-start',
-                    gap: 4
-                  }}>
+                  <div
+                    className={`text-[11px] text-text-muted mt-1 flex items-center gap-1 ${isMe ? 'text-right pr-1 justify-end' : 'text-left pl-1 justify-start'}`}
+                  >
                     <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {isMe && <MessageStatus isRead={msg.is_read} />}
                   </div>
@@ -687,27 +587,13 @@ export function OrderChatPage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            style={{ alignSelf: 'flex-start', display: 'flex', gap: 8 }}
+            className="self-start flex gap-2"
           >
-            <div style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: 'rgba(212,175,55,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#d4af37' }}>С</span>
+            <div className="w-8 h-8 rounded-full bg-gold-400/20 flex items-center justify-center">
+              <span className="text-[14px] font-bold text-gold-400">С</span>
             </div>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: 18,
-              borderTopLeftRadius: 4,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)'
-            }}>
-              <div style={{ display: 'flex', gap: 4 }}>
+            <div className="px-4 py-3 rounded-[18px] rounded-tl bg-white/5 border border-white/10">
+              <div className="flex gap-1">
                 {[0, 1, 2].map((i) => (
                   <motion.div
                     key={i}
@@ -721,12 +607,7 @@ export function OrderChatPage() {
                       delay: i * 0.15,
                       ease: "easeInOut"
                     }}
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: '#d4af37',
-                    }}
+                    className="w-1.5 h-1.5 rounded-full bg-gold-400"
                   />
                 ))}
               </div>
@@ -739,24 +620,17 @@ export function OrderChatPage() {
 
       {/* Upload progress */}
       {uploading && (
-        <div style={{
-          padding: '8px 16px',
-          background: 'rgba(212,175,55,0.1)',
-          borderTop: '1px solid rgba(212,175,55,0.2)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="px-4 py-2 bg-gold-400/10 border-t border-gold-400/20">
+          <div className="flex items-center gap-3">
             <Loader2 size={16} color="#d4af37" className="animate-spin" />
-            <span style={{ fontSize: 13, color: '#d4af37' }}>
+            <span className="text-[13px] text-gold-400">
               Загрузка... {uploadProgress}%
             </span>
-            <div style={{ flex: 1, height: 3, background: 'rgba(212,175,55,0.2)', borderRadius: 2 }}>
-              <div style={{
-                width: `${uploadProgress}%`,
-                height: '100%',
-                background: '#d4af37',
-                borderRadius: 2,
-                transition: 'width 0.2s'
-              }} />
+            <div className="flex-1 h-[3px] bg-gold-400/20 rounded-sm">
+              <div
+                className="h-full bg-gold-400 rounded-sm transition-[width] duration-200"
+                style={{ width: `${uploadProgress}%` }}
+              />
             </div>
           </div>
         </div>
@@ -764,61 +638,29 @@ export function OrderChatPage() {
 
       {/* Recording indicator */}
       {isRecording && (
-        <div style={{
-          padding: '12px 16px',
-          background: 'rgba(239,68,68,0.1)',
-          borderTop: '1px solid rgba(239,68,68,0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="px-4 py-3 bg-red-500/10 border-t border-red-500/20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                background: '#ef4444'
-              }}
+              className="w-3 h-3 rounded-full bg-red-500"
             />
-            <span style={{ fontSize: 14, color: '#ef4444' }}>
+            <span className="text-sm text-red-500">
               Запись {formatDuration(recordingDuration)}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="flex gap-2">
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={cancelRecording}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
+              className="w-9 h-9 rounded-full bg-white/10 border-none flex items-center justify-center cursor-pointer"
             >
               <X size={18} color="var(--text-muted)" />
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={stopRecording}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: '#ef4444',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
+              className="w-9 h-9 rounded-full bg-red-500 border-none flex items-center justify-center cursor-pointer"
             >
               <StopCircle size={18} color="#fff" />
             </motion.button>
@@ -827,45 +669,28 @@ export function OrderChatPage() {
       )}
 
       {/* Input Area */}
-      <div style={{
-        padding: '12px 16px',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-        background: 'rgba(20, 20, 23, 0.95)',
-        borderTop: '1px solid rgba(255,255,255,0.1)',
-        backdropFilter: 'blur(20px)',
-        position: 'relative',
-        zIndex: 3
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: 8,
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: 24,
-          padding: '8px 8px 8px 16px',
-          border: '1px solid rgba(255,255,255,0.05)',
-        }}>
+      <div
+        className="px-4 pt-3 relative z-[3] border-t border-white/10 backdrop-blur-[20px]"
+        style={{
+          paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+          background: 'rgba(20, 20, 23, 0.95)',
+        }}
+      >
+        <div className="flex items-end gap-2 bg-white/5 rounded-3xl py-2 pr-2 pl-4 border border-white/5">
           {/* File upload button */}
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
             onChange={handleFileSelect}
-            style={{ display: 'none' }}
+            className="hidden"
           />
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || isRecording}
+            className="w-9 h-9 rounded-full bg-transparent border-none flex items-center justify-center"
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: 'transparent',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               cursor: uploading || isRecording ? 'default' : 'pointer',
               opacity: uploading || isRecording ? 0.5 : 1
             }}
@@ -880,20 +705,8 @@ export function OrderChatPage() {
             placeholder="Сообщение..."
             rows={1}
             disabled={isRecording}
-            style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-main)',
-              fontSize: 15,
-              resize: 'none',
-              padding: '10px 0',
-              maxHeight: 100,
-              minHeight: 24,
-              outline: 'none',
-              fontFamily: 'inherit',
-              opacity: isRecording ? 0.5 : 1
-            }}
+            className="flex-1 bg-transparent border-none text-[var(--text-main)] text-[15px] resize-none py-2.5 px-0 max-h-[100px] min-h-[24px] outline-none font-[inherit]"
+            style={{ opacity: isRecording ? 0.5 : 1 }}
           />
 
           {/* Voice or Send button */}
@@ -902,19 +715,8 @@ export function OrderChatPage() {
               whileTap={{ scale: 0.9 }}
               onClick={handleSend}
               disabled={isSending}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                background: '#d4af37',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 'none',
-                cursor: isSending ? 'default' : 'pointer',
-                color: '#000',
-                flexShrink: 0
-              }}
+              className="w-10 h-10 rounded-full bg-gold-400 flex items-center justify-center border-none text-black shrink-0"
+              style={{ cursor: isSending ? 'default' : 'pointer' }}
             >
               {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </motion.button>
@@ -923,17 +725,10 @@ export function OrderChatPage() {
               whileTap={{ scale: 0.9 }}
               onClick={isRecording ? stopRecording : startRecording}
               disabled={uploading}
+              className="w-10 h-10 rounded-full flex items-center justify-center border-none shrink-0"
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
                 background: isRecording ? '#ef4444' : 'rgba(255,255,255,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 'none',
                 cursor: uploading ? 'default' : 'pointer',
-                flexShrink: 0,
                 opacity: uploading ? 0.5 : 1
               }}
             >

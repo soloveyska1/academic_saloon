@@ -5,6 +5,19 @@ from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
 
 from core.config import settings
+
+# Initialize Sentry before anything else
+if settings.SENTRY_DSN:
+    try:
+        import sentry_sdk
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            traces_sample_rate=0.1,
+            profiles_sample_rate=0.1,
+            environment="production",
+        )
+    except ImportError:
+        pass
 from bot.bot_instance import get_bot, set_bot, close_bot
 from bot.handlers.start import router as start_router
 from bot.handlers.terms import router as terms_router

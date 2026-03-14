@@ -473,7 +473,7 @@ class BatchOrderItem(BaseModel):
 
 class BatchPaymentInfoRequest(BaseModel):
     """Request for batch payment info"""
-    order_ids: List[int] = Field(..., min_length=1)
+    order_ids: List[int] = Field(..., min_length=1, max_length=50)
 
 
 class BatchPaymentInfoResponse(BaseModel):
@@ -489,7 +489,7 @@ class BatchPaymentInfoResponse(BaseModel):
 
 class BatchPaymentConfirmRequest(BaseModel):
     """Batch payment confirmation request"""
-    order_ids: List[int] = Field(..., min_length=1)
+    order_ids: List[int] = Field(..., min_length=1, max_length=50)
     payment_method: str  # card / sbp
     payment_scheme: str  # full / half
 

@@ -10,6 +10,7 @@ import hmac
 import ipaddress
 import json
 import logging
+from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -19,7 +20,9 @@ from core.config import settings
 from database.db import get_session
 from database.models.orders import Order, OrderStatus
 from database.models.users import User
+from database.models.payment_logs import PaymentLog
 from bot.api.auth import TelegramUser, get_current_user
+from bot.api.rate_limit import rate_limit
 from bot.services.yookassa import get_yookassa_service
 from bot.services.bonus import BonusService, BonusReason
 from bot.utils.formatting import format_price
@@ -87,7 +90,9 @@ class CreatePaymentResponse(BaseModel):
 # ══════════════════════════════════════════════════════════
 
 @router.post("/payments/create", response_model=CreatePaymentResponse)
+@rate_limit(limit=5, window=60, key_prefix="rl:payment")
 async def create_payment(
+    request: Request,
     body: CreatePaymentRequest,
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -230,11 +235,29 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         logger.warning(f"[YooKassa] Order #{order_id} not found for payment {payment_id}")
         return
 
-    # Check if already processed (idempotency)
+    # True idempotency: check PaymentLog for duplicate payment_id
+    existing_log = await session.execute(
+        select(PaymentLog).where(PaymentLog.yookassa_payment_id == payment_id)
+    )
+    if existing_log.scalar_one_or_none():
+        logger.info(f"[YooKassa] Payment {payment_id} already processed (PaymentLog), skipping")
+        return
+
+    # Also check order status as a secondary safeguard
     if order.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value,
                         OrderStatus.IN_PROGRESS.value, OrderStatus.COMPLETED.value]:
-        logger.info(f"[YooKassa] Order #{order_id} already processed, skipping")
+        logger.info(f"[YooKassa] Order #{order_id} already in paid state, skipping")
         return
+
+    # Log this payment immediately (before processing)
+    payment_log = PaymentLog(
+        yookassa_payment_id=payment_id,
+        order_id=order_id,
+        event_type="payment.succeeded",
+        amount=Decimal(str(amount_value)),
+        raw_payload=json.dumps(payment_obj, ensure_ascii=False, default=str),
+    )
+    session.add(payment_log)
 
     # Find user
     user_query = select(User).where(User.telegram_id == order.user_id)
@@ -318,8 +341,8 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         order_bonus = await BonusService.process_order_bonus(
             session=session, bot=bot, user_id=order.user_id,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[YooKassa] Failed to process order bonus for order #{order.id}: {e}")
 
     # Referral bonus
     if user.referrer_id:
@@ -330,8 +353,8 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
                 order_amount=order.price,
                 referred_user_id=order.user_id,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[YooKassa] Failed to process referral bonus for order #{order.id}: {e}")
 
     # Telegram notification to user
     if bot:
@@ -421,5 +444,5 @@ async def _handle_payment_canceled(session: AsyncSession, payment_obj: dict):
             f"Заказ #{order.id} — оплата отклонена или отменена.\n"
             f"Попробуйте снова или используйте другой способ оплаты.",
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[YooKassa] Failed to notify user about canceled payment for order #{order_id}: {e}")

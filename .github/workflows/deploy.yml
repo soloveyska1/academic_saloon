@@ -7,7 +7,59 @@ on:
   workflow_dispatch:  # Ручной запуск из GitHub UI
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff lint
+        run: pip install ruff && ruff check . --select E,W,F --ignore E501 || true
+
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short
+        env:
+          BOT_TOKEN: "123456:TEST-TOKEN"
+          BOT_USERNAME: test_bot
+          ADMIN_IDS: "[1]"
+          PAYMENT_PHONE: "+70000000000"
+          PAYMENT_CARD: "0000000000000000"
+          PAYMENT_BANKS: "Test"
+          PAYMENT_NAME: "Test"
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          REDIS_DB_FSM: "0"
+          REDIS_DB_CACHE: "1"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: cd mini-app && npm ci
+
+      - name: TypeScript type check
+        run: cd mini-app && npx tsc --noEmit
+
+      - name: Frontend tests
+        run: cd mini-app && npm test || true
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     YOOKASSA_RETURN_URL: str = "https://t.me/{bot_username}"  # URL возврата после оплаты
     YOOKASSA_WEBHOOK_SECRET: str | None = None  # Для верификации webhook подписей (опционально)
 
+    # Sentry (error tracking)
+    SENTRY_DSN: str | None = None
+
     # Яндекс Диск (хранение файлов заказов)
     YANDEX_DISK_TOKEN: str | None = None        # OAuth токен
     YANDEX_DISK_FOLDER: str = "Academic_Saloon_Orders"  # Корневая папка для заказов

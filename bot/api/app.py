@@ -11,8 +11,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 logger = logging.getLogger(__name__)
 from .websocket import router as ws_router
-from slowapi.errors import RateLimitExceeded
-from .rate_limit import limiter, rate_limit_exceeded_handler
 
 
 # Production origins only
@@ -49,11 +47,11 @@ ALLOWED_ORIGINS = PROD_ORIGINS + VERCEL_PREVIEW_ORIGINS + (DEV_ORIGINS if IS_DEB
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
-    print("🌐 Mini App API starting...")
-    print(f"🌐 Debug mode: {IS_DEBUG}")
-    print(f"🌐 CORS origins: {len(ALLOWED_ORIGINS)} configured")
+    logger.info("Mini App API starting...")
+    logger.info(f"Debug mode: {IS_DEBUG}")
+    logger.info(f"CORS origins: {len(ALLOWED_ORIGINS)} configured")
     yield
-    print("🌐 Mini App API shutting down...")
+    logger.info("Mini App API shutting down...")
 
 
 def create_app() -> FastAPI:
@@ -63,14 +61,13 @@ def create_app() -> FastAPI:
         title="Academic Saloon Mini App API",
         description="API for Telegram Mini App integration",
         version="1.0.0",
-        docs_url=None,
-        redoc_url=None,
-        openapi_url=None,
+        docs_url="/api/docs" if IS_DEBUG else None,
+        redoc_url="/api/redoc" if IS_DEBUG else None,
+        openapi_url="/api/openapi.json" if IS_DEBUG else None,
         lifespan=lifespan
     )
 
-    # Rate limiting
-    app.state.limiter = limiter
+    # Rate limiting is handled per-endpoint via @rate_limit decorator (Redis-based)
 
     # CORS for Mini App
     # Note: Cannot use "*" with credentials=True, must specify origins explicitly
@@ -109,15 +106,33 @@ def create_app() -> FastAPI:
     app.include_router(assistant.router, prefix="/api")  # AI assistant (FAQ + complexity)
     app.include_router(ws_router)  # WebSocket for real-time updates
 
-    # Health check
+    # Health check with dependency verification
     @app.get("/api/health")
     async def health_check():
-        return {"status": "ok", "service": "mini-app-api"}
+        checks = {"api": "ok"}
 
-    # Rate limit exceeded handler
-    @app.exception_handler(RateLimitExceeded)
-    async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
-        return await rate_limit_exceeded_handler(request, exc)
+        try:
+            from database.db import async_session_maker
+            from sqlalchemy import text
+            async with async_session_maker() as session:
+                await session.execute(text("SELECT 1"))
+            checks["database"] = "ok"
+        except Exception as e:
+            checks["database"] = f"error: {e}"
+
+        try:
+            from core.redis_pool import get_redis
+            redis = await get_redis()
+            await redis.ping()
+            checks["redis"] = "ok"
+        except Exception as e:
+            checks["redis"] = f"error: {e}"
+
+        is_healthy = all(v == "ok" for v in checks.values())
+        return JSONResponse(
+            status_code=200 if is_healthy else 503,
+            content={"status": "healthy" if is_healthy else "degraded", "checks": checks},
+        )
 
     # Validation error handler with logging
     @app.exception_handler(RequestValidationError)

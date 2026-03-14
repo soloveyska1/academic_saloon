@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Request, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,8 +25,7 @@ from bot.api.schemas import (
 from bot.api.dependencies import (
     get_loyalty_levels, get_loyalty_info, order_to_response
 )
-# Rate limiting done via nginx — slowapi crashes behind reverse proxy
-# from bot.api.rate_limit import limiter
+from bot.api.rate_limit import rate_limit
 from bot.services.pricing import calculate_price
 from bot.services.yandex_disk import yandex_disk_service
 from bot.services.mini_app_logger import (
@@ -74,7 +73,7 @@ def is_allowed_file(filename: str) -> bool:
         return False
     # If whitelist is defined, only allow those extensions
     # Otherwise, allow anything except blocked
-    return ext in ALLOWED_EXTENSIONS or ext == ''
+    return ext in ALLOWED_EXTENSIONS
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -84,8 +83,8 @@ def is_allowed_file(filename: str) -> bool:
 @router.get("/orders", response_model=OrdersListResponse)
 async def get_orders(
     status: Optional[str] = None,
-    limit: int = 20,
-    offset: int = 0,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
@@ -265,8 +264,8 @@ async def confirm_batch_payment(
                 telegram_id=tg_user.id, order_id=order.id, new_status=order.status,
                 extra_data={"payment_method": data.payment_method, "payment_scheme": data.payment_scheme, "is_batch": True}
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[Batch] Failed to send WS notification for order #{order.id}: {e}")
 
     if processed_orders:
         try:
@@ -758,8 +757,8 @@ async def upload_order_files(
                 client_name=user.fullname,
                 extra_text=f"📎 {uploaded_count} файл(ов) загружено",
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[Files] Failed to update live card for order #{order.id}: {e}")
 
         # Notify client about file delivery via WebSocket
         try:
@@ -770,8 +769,8 @@ async def upload_order_files(
                 file_count=uploaded_count,
                 files_url=result.folder_url
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[Files] Failed to send WS file delivery notification for order #{order.id}: {e}")
 
         rejected_count = len(blocked_files) + len(oversized_files)
         storage_failed_count = max(len(file_data) - uploaded_count, 0)
@@ -858,8 +857,8 @@ async def confirm_payment(
             telegram_id=tg_user.id, order_id=order_id, new_status=order.status,
             extra_data={"payment_method": data.payment_method, "payment_scheme": data.payment_scheme}
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Payment] Failed to send WS notification for order #{order_id}: {e}")
 
     # Notify admins about pending payment
     try:
@@ -870,8 +869,8 @@ async def confirm_payment(
             amount=amount_to_pay,
             payment_method=data.payment_method
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Payment] Failed to notify admins about pending payment for order #{order.id}: {e}")
 
     try:
         bot = get_bot()
@@ -886,16 +885,16 @@ async def confirm_payment(
             chat_id=user.telegram_id,
             text=f"✅ <b>Заявка на оплату принята!</b>\n\nЗаказ <code>#{order.id}</code>\nСумма: <b>{format_price(amount_to_pay)}</b>\n\nМенеджер проверит поступление и подтвердит."
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Payment] Failed to send live card/notification for order #{order.id}: {e}")
 
     try:
         await log_mini_app_event(
             bot=get_bot(), event=MiniAppEvent.ORDER_VIEW, user_id=user.telegram_id, username=user.username,
             order_id=order.id, details=f"Подтвердил оплату: {format_price(amount_to_pay)}"
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Payment] Failed to log mini app event for order #{order.id}: {e}")
 
     return PaymentConfirmResponse(
         success=True, message="Заявка на оплату отправлена на проверку", new_status=order.status, amount_to_pay=amount_to_pay
@@ -1040,8 +1039,8 @@ async def request_revision(
             client_username=user.username if user else None,
             client_name=user.fullname if user else None
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Revision] Failed to notify admin about revision for order #{order_id}: {e}")
 
     return RevisionRequestResponse(success=True, message="Запрос отправлен", prefilled_text=f"Прошу внести правки:\n\n{data.message}", revision_count=order.revision_count, is_paid=is_paid)
 
@@ -1082,16 +1081,16 @@ async def confirm_work_completion(
         from bot.services.bonus import BonusService
         bot = get_bot()
         cashback = await BonusService.add_order_cashback(session, bot, order.user_id, order.id, float(order.price or 0))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Completion] Failed to process cashback for order #{order.id}: {e}")
 
     # Notify Admin and Close Topic
     try:
         from bot.services.unified_hub import close_order_topic
         bot = get_bot()
         await close_order_topic(bot, session, order)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Completion] Failed to close order topic for order #{order.id}: {e}")
 
     return ConfirmWorkResponse(success=True, message=f"Спасибо! Заказ завершён.")
 
@@ -1114,6 +1113,9 @@ async def archive_order(
             content={"success": False, "message": "Order not found"}
         )
 
+    if order.is_archived:
+        return {"success": True, "message": "Заказ уже в архиве"}
+
     order.is_archived = True
     await session.commit()
 
@@ -1133,6 +1135,9 @@ async def unarchive_order(
             status_code=404,
             content={"success": False, "message": "Order not found"}
         )
+
+    if not order.is_archived:
+        return {"success": True, "message": "Заказ уже не в архиве"}
 
     order.is_archived = False
     await session.commit()
@@ -1184,8 +1189,8 @@ async def cancel_order(
             order_id=order_id,
             new_status=order.status,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Cancel] Failed to send WS notification for order #{order_id}: {e}")
 
     # Notify admin
     try:
@@ -1201,7 +1206,7 @@ async def cancel_order(
             client_name=user.fullname if user else None,
             extra_text=f"❌ Клиент отменил заказ (был: {old_status})",
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Cancel] Failed to notify admin about order #{order_id} cancellation: {e}")
 
     return {"success": True, "message": "Заказ отменён"}

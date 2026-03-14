@@ -35,7 +35,11 @@ export class SectionErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback ?? null
+      return this.props.fallback ?? (
+        <div style={{ padding: '12px 16px', opacity: 0.5, fontSize: 13, textAlign: 'center' }}>
+          Не удалось загрузить секцию
+        </div>
+      )
     }
 
     return this.props.children

@@ -1,6 +1,7 @@
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, String, func
+from sqlalchemy import BigInteger, DateTime, Numeric, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.db import Base
@@ -15,7 +16,7 @@ class BalanceTransaction(Base):
     user_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"), index=True
     )
-    amount: Mapped[float] = mapped_column(Float, nullable=False)  # TODO: migrate Float→Numeric(12,2)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     type: Mapped[str] = mapped_column(String(20), nullable=False)  # credit / debit
     reason: Mapped[str] = mapped_column(String(50), nullable=False)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)

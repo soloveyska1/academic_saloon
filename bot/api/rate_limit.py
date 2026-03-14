@@ -1,83 +1,92 @@
 """
-Rate Limiting configuration for FastAPI
-Uses slowapi to limit requests per IP address
+Redis-based rate limiting for FastAPI.
+Replaces slowapi which crashes behind nginx reverse proxy.
+Uses sliding window counter via Redis INCR + EXPIRE.
 """
 
 import logging
-from slowapi import Limiter
-from slowapi.errors import RateLimitExceeded
-from fastapi import Request
+from functools import wraps
+
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
 
-def get_real_ip(request: Request) -> str:
-    """
-    Get real client IP address, considering proxy headers.
-    Checks X-Forwarded-For, X-Real-IP, and falls back to request.client.host
-    """
-    # Check X-Forwarded-For header (nginx/proxy)
+def _get_client_ip(request: Request) -> str:
+    """Extract real client IP, respecting proxy headers."""
     forwarded = request.headers.get("X-Forwarded-For")
     if forwarded:
-        # X-Forwarded-For can contain multiple IPs, take the first one (original client)
-        ip = forwarded.split(",")[0].strip()
-        logger.debug(f"[Rate Limit] Using X-Forwarded-For IP: {ip}")
-        return ip
-
-    # Check X-Real-IP header
+        return forwarded.split(",")[0].strip()
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
-        logger.debug(f"[Rate Limit] Using X-Real-IP: {real_ip}")
         return real_ip
-
-    # Fallback to direct connection IP
-    try:
-        if request.client and request.client.host:
-            ip = request.client.host
-            logger.debug(f"[Rate Limit] Using direct IP: {ip}")
-            return ip
-    except Exception:
-        pass
-
-    # Last resort — unknown client behind proxy without headers
-    logger.warning("[Rate Limit] Could not determine client IP, using fallback")
+    if request.client and request.client.host:
+        return request.client.host
     return "unknown"
 
 
-# Create limiter instance with custom key function
-limiter = Limiter(
-    key_func=get_real_ip,
-    default_limits=["100/minute"],  # Default global limit
-    storage_uri="memory://",  # In-memory storage (can be replaced with Redis later)
-    headers_enabled=True,  # Add rate limit headers to responses
-)
-
-
-async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+async def check_rate_limit(key: str, limit: int, window_seconds: int) -> bool:
     """
-    Custom handler for rate limit exceeded errors.
-    Logs the violation and returns a user-friendly JSON response.
+    Check rate limit using Redis sliding window.
+    Returns True if request is ALLOWED, False if rate limit exceeded.
+    Fails open (allows request) if Redis is unavailable.
     """
-    client_ip = get_real_ip(request)
-    path = request.url.path
+    try:
+        from core.redis_pool import get_redis
+        redis = await get_redis()
+        current = await redis.incr(key)
+        if current == 1:
+            await redis.expire(key, window_seconds)
+        return current <= limit
+    except Exception as e:
+        logger.warning(f"[RateLimit] Redis error, allowing request: {e}")
+        return True  # Fail-open for rate limiting
 
-    # Log rate limit violation
-    logger.warning(
-        f"[Rate Limit Exceeded] IP: {client_ip} | Path: {path} | "
-        f"Limit: {exc.detail}"
-    )
 
+def rate_limit(limit: int = 30, window: int = 60, key_prefix: str = "rl"):
+    """
+    Rate limiting decorator for FastAPI endpoints.
+
+    Usage:
+        @router.post("/endpoint")
+        @rate_limit(limit=10, window=60)
+        async def my_endpoint(request: Request, ...):
+            ...
+
+    Note: The decorated function MUST have a `request: Request` parameter.
+    """
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Find Request object in args or kwargs
+            request = kwargs.get("request")
+            if request is None:
+                for arg in args:
+                    if isinstance(arg, Request):
+                        request = arg
+                        break
+
+            if request:
+                ip = _get_client_ip(request)
+                key = f"{key_prefix}:{request.url.path}:{ip}"
+                if not await check_rate_limit(key, limit, window):
+                    raise HTTPException(
+                        status_code=429,
+                        detail="Too many requests. Please try again later.",
+                    )
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+async def rate_limit_exceeded_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handler for rate limit exceeded errors (kept for compatibility)."""
     return JSONResponse(
         status_code=429,
         content={
             "error": "Too Many Requests",
             "message": "You have exceeded the rate limit. Please try again later.",
-            "detail": exc.detail,
-            "path": path
         },
-        headers={
-            "Retry-After": "60",  # Suggest retry after 60 seconds
-            "X-RateLimit-Limit": str(exc.detail),
-        }
+        headers={"Retry-After": "60"},
     )

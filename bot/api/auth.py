@@ -94,12 +94,12 @@ def validate_init_data(init_data: str, bot_token: str) -> Tuple[Optional[Telegra
             logger.debug(f"[AUTH] data_check_string: {data_check_string[:200]}...")
             return None, "hash_mismatch"
 
-        # Check auth_date (not older than 24 hours for flexibility)
+        # Check auth_date (not older than 1 hour)
         auth_date = int(parsed.get('auth_date', ['0'])[0])
         current_time = time.time()
         age_seconds = current_time - auth_date
 
-        if age_seconds > 86400:  # 24 hours
+        if age_seconds > 3600:  # 1 hour
             logger.warning(f"[AUTH] initData too old: {age_seconds/3600:.1f} hours (auth_date={auth_date})")
             return None, "expired"
 

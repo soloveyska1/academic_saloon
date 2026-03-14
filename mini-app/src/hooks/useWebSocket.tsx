@@ -104,6 +104,11 @@ interface UseWebSocketOptions {
 function getWebSocketUrl(telegramId: number): string {
   const url = new URL(API_WS_URL)
   url.searchParams.set('telegram_id', String(telegramId))
+  // Pass initData for authentication
+  const tg = (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram
+  if (tg?.WebApp?.initData) {
+    url.searchParams.set('init_data', tg.WebApp.initData)
+  }
   return url.toString()
 }
 

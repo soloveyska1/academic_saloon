@@ -1,4 +1,6 @@
-from sqlalchemy import BigInteger, String, Float, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean
+from decimal import Decimal
+
+from sqlalchemy import BigInteger, String, Numeric, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.db import Base
 from datetime import datetime
@@ -277,21 +279,20 @@ class Order(Base):
     deadline: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # Финансы
-    # TODO: migrate all financial Float fields → Numeric(12,2) for precision (requires Alembic migration)
-    price: Mapped[float] = mapped_column(Float, default=0.0)
-    discount: Mapped[float] = mapped_column(Float, default=0.0)
+    price: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
+    discount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     promo_code: Mapped[str | None] = mapped_column(String(50), nullable=True)  # Примененный промокод
-    promo_discount: Mapped[float] = mapped_column(Float, default=0.0)  # Скидка от промокода (%)
-    bonus_used: Mapped[float] = mapped_column(Float, default=0.0)  # Списанные бонусы
-    paid_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    promo_discount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))  # Скидка от промокода (%)
+    bonus_used: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))  # Списанные бонусы
+    paid_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
 
     # Схема и способ оплаты
     payment_scheme: Mapped[str | None] = mapped_column(String(20), nullable=True)  # full / half
     payment_method: Mapped[str | None] = mapped_column(String(20), nullable=True)  # card / sbp / transfer
-    yookassa_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)  # ID платежа в ЮKassa
+    yookassa_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True)  # ID платежа в ЮKassa
 
     # Статус
-    status: Mapped[str] = mapped_column(String(20), default=OrderStatus.DRAFT.value)
+    status: Mapped[str] = mapped_column(String(20), default=OrderStatus.DRAFT.value, index=True)
 
     # Прогресс выполнения (0-100%)
     progress: Mapped[int] = mapped_column(Integer, default=0)  # 0-100

@@ -525,8 +525,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
           ? `Заказ #${result.id} создан. Сейчас проверяем вводные и готовим оценку от менеджера.`
           : `Заказ #${result.id} создан. Можете перейти к оплате.`)
       : result.msg
-    const details: string | null = null // Lead уже содержит всё нужное
-
     return (
       <div style={{ padding: 24, paddingBottom: 100, minHeight: '100vh', height: '100dvh', background: 'var(--bg-main)' }}>
         <motion.div

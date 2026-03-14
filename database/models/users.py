@@ -1,4 +1,6 @@
-from sqlalchemy import BigInteger, String, Boolean, DateTime, Integer, Float, Text, func
+from decimal import Decimal
+
+from sqlalchemy import BigInteger, String, Boolean, DateTime, Integer, Numeric, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from database.db import Base
 from datetime import datetime, timedelta
@@ -17,17 +19,17 @@ class User(Base):
     username: Mapped[str | None] = mapped_column(String(100), nullable=True)
     fullname: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20), default="user")
-    balance: Mapped[float] = mapped_column(Float, default=0.0)  # TODO: migrate Float→Numeric(12,2) for financial precision
+    balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Реферальная система
     referrer_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     referrals_count: Mapped[int] = mapped_column(Integer, default=0)
-    referral_earnings: Mapped[float] = mapped_column(Float, default=0.0)  # TODO: migrate Float→Numeric(12,2)
+    referral_earnings: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
 
     # Статистика заказов
     orders_count: Mapped[int] = mapped_column(Integer, default=0)
-    total_spent: Mapped[float] = mapped_column(Float, default=0.0)  # TODO: migrate Float→Numeric(12,2)
+    total_spent: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"))
 
     # Ежедневный бонус (Daily Luck)
     last_daily_bonus_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

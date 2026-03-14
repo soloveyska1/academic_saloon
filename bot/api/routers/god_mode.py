@@ -103,9 +103,8 @@ async def require_god_2fa(tg_user: TelegramUser, request: Request) -> None:
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[GOD 2FA] Redis error checking session: {e}")
-        # If Redis is down, allow access (fail-open) — admin already passed initData auth
-        pass
+        logger.critical(f"[GOD 2FA] Redis unavailable, BLOCKING access: {e}")
+        raise HTTPException(status_code=503, detail="2FA service unavailable. Try again later.")
 
 
 def calculate_order_promo_discount_amount(order: Order) -> float:
