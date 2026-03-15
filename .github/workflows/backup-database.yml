@@ -39,13 +39,12 @@ jobs:
             export POSTGRES_PORT=$(grep -E '^POSTGRES_PORT=' .env | cut -d'=' -f2-)
             export YANDEX_DISK_TOKEN=$(grep -E '^YANDEX_DISK_TOKEN=' .env | cut -d'=' -f2-)
 
-            # Create dump
+            # Dump
             PGPASSWORD=$POSTGRES_PASSWORD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB | gzip > $BACKUP_DIR/$BACKUP_FILE
 
             BACKUP_SIZE=$(ls -lh $BACKUP_DIR/$BACKUP_FILE | awk '{print $5}')
 
-            # Count tables and rows
-            TABLE_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null | tr -d ' ' || echo "?")
+            # DB stats
             ORDER_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM orders" 2>/dev/null | tr -d ' ' || echo "?")
             USER_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM users" 2>/dev/null | tr -d ' ' || echo "?")
 
@@ -65,7 +64,7 @@ jobs:
 
             curl -s -T $BACKUP_DIR/$BACKUP_FILE "$UPLOAD_URL"
 
-            # Cleanup old
+            # Cleanup
             find $BACKUP_DIR -name "academic_saloon_*.sql.gz" -mtime +3 -delete
 
             OLD_BACKUPS=$(curl -s -X GET \
@@ -73,19 +72,12 @@ jobs:
               "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER&limit=100&sort=-created" \
               | grep -o '"name":"academic_saloon_[^"]*"' | cut -d'"' -f4 | tail -n +8)
 
-            DELETED=0
             for old_file in $OLD_BACKUPS; do
               curl -s -X DELETE -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
                 "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER/$old_file&permanently=true"
-              DELETED=$((DELETED + 1))
             done
 
-            REMAINING=$(curl -s -X GET \
-              -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
-              "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER&limit=100" \
-              | grep -o '"name":"academic_saloon_[^"]*"' | wc -l || echo "?")
-
-            echo "=== BACKUP: $BACKUP_FILE | Size: $BACKUP_SIZE | Tables: $TABLE_COUNT | Users: $USER_COUNT | Orders: $ORDER_COUNT | Cloud: $REMAINING copies | Cleaned: $DELETED ==="
+            echo "=== BACKUP: $BACKUP_FILE | $BACKUP_SIZE | Users: $USER_COUNT | Orders: $ORDER_COUNT ==="
 
       - name: Notify Telegram (Success)
         if: success() && (github.event.inputs.notify != 'false')
@@ -95,12 +87,12 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *BACKUP*  ${{ github.event.schedule && '07:00 MSK auto' || 'manual' }}
+            *БЭКАП*  ${{ github.event.schedule && '07:00 МСК авто' || 'ручной' }}
 
-            Database dumped and uploaded to Yandex Disk.
-            Retention: 7 copies in cloud, 3 days local.
+            БД сохранена на Яндекс Диск.
+            Хранение: 7 копий в облаке, 3 дня локально.
 
-            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Notify Telegram (Failure)
         if: failure()
@@ -110,7 +102,7 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *BACKUP FAILED*
+            *БЭКАП УПАЛ*
 
-            Database backup did not complete.
-            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            Резервная копия БД не создана.
+            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

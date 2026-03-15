@@ -70,41 +70,33 @@ jobs:
       - name: Collect deploy info
         id: info
         run: |
-          # Commit message (first line)
+          set +e
+
           MSG=$(git log -1 --format='%s' | head -c 100)
           echo "commit_msg=$MSG" >> $GITHUB_OUTPUT
 
-          # Author
-          AUTHOR=$(git log -1 --format='%an')
-          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
-
-          # Short SHA
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-          # Count commits since last merge/deploy (up to 20)
-          COMMIT_COUNT=$(git log --oneline -20 --no-merges | wc -l)
-          echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
-
           # Changed files summary
-          CHANGED=$(git diff --stat HEAD~1 HEAD 2>/dev/null | tail -1 || echo "unknown")
-          echo "changes=$CHANGED" >> $GITHUB_OUTPUT
+          CHANGED=$(git diff --stat HEAD~1 HEAD 2>/dev/null | tail -1)
+          echo "changes=${CHANGED:-нет изменений}" >> $GITHUB_OUTPUT
 
-          # File categories
-          PY_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '\.py$' || echo 0)
-          TS_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -cE '\.(tsx?|css)$' || echo 0)
-          YML_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '\.yml$' || echo 0)
-          echo "py_count=$PY_COUNT" >> $GITHUB_OUTPUT
-          echo "ts_count=$TS_COUNT" >> $GITHUB_OUTPUT
-          echo "yml_count=$YML_COUNT" >> $GITHUB_OUTPUT
+          # File category counts (grep -c returns 1 on no match, so use || true)
+          PY_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '\.py$' || true)
+          TS_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -cE '\.(tsx?|css)$' || true)
+          YML_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '\.yml$' || true)
+          echo "py_count=${PY_COUNT:-0}" >> $GITHUB_OUTPUT
+          echo "ts_count=${TS_COUNT:-0}" >> $GITHUB_OUTPUT
+          echo "yml_count=${YML_COUNT:-0}" >> $GITHUB_OUTPUT
 
-          # Recent non-merge commits (last 5)
-          RECENT=$(git log --oneline --no-merges -5 --format='%s' | sed 's/^/• /' | head -c 500)
-          # Store multiline in env file
-          echo "RECENT_COMMITS<<EOF" >> $GITHUB_ENV
-          echo "$RECENT" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          # Recent commits
+          RECENT=$(git log --oneline --no-merges -5 --format='%s' | sed 's/^/  /' | head -c 500)
+          {
+            echo "RECENT_COMMITS<<ENDOFCOMMITS"
+            echo "$RECENT"
+            echo "ENDOFCOMMITS"
+          } >> $GITHUB_ENV
 
-          # Start time
           echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: Deploy via SSH
@@ -153,8 +145,10 @@ jobs:
             sleep 8
             rm -f /tmp/saloon-deploy.lock
 
-            BOT_STATUS="down"
-            if systemctl is-active --quiet saloon-bot; then BOT_STATUS="ok"; fi
+            if ! systemctl is-active --quiet saloon-bot; then
+              journalctl -u saloon-bot --no-pager -n 20
+              exit 1
+            fi
 
             # Frontend
             cd ~/academic_saloon/mini-app
@@ -167,30 +161,21 @@ jobs:
 
             nginx -t && systemctl reload nginx
 
-            # Collect metrics
             DISK=$(df -h / | tail -1 | awk '{print $5}')
             MEM=$(free | grep Mem | awk '{printf("%.0f%%", $3/$2*100)}')
-            BUNDLE=$(du -sh /var/www/academic_saloon/dist/assets/ 2>/dev/null | awk '{print $1}')
-            UPTIME=$(uptime -p | sed 's/up //')
 
-            echo "=== DEPLOY DONE: $OLD_COMMIT -> $NEW_COMMIT | Bot: $BOT_STATUS | Disk: $DISK | RAM: $MEM | Bundle: $BUNDLE ==="
-
-            if [ "$BOT_STATUS" != "ok" ]; then
-              echo "Bot failed to start!"
-              journalctl -u saloon-bot --no-pager -n 20
-              exit 1
-            fi
+            echo "=== DEPLOY: $OLD_COMMIT -> $NEW_COMMIT | Disk: $DISK | RAM: $MEM ==="
 
       - name: Calculate duration
         id: duration
         if: always()
         run: |
           START=${{ steps.info.outputs.start_time }}
-          END=$(date +%s)
-          DURATION=$((END - START))
-          MINS=$((DURATION / 60))
-          SECS=$((DURATION % 60))
-          echo "formatted=${MINS}m ${SECS}s" >> $GITHUB_OUTPUT
+          NOW=$(date +%s)
+          SECS=$((NOW - START))
+          MINS=$((SECS / 60))
+          REM=$((SECS % 60))
+          echo "time=${MINS}м ${REM}с" >> $GITHUB_OUTPUT
 
       - name: Notify Telegram (Success)
         if: success()
@@ -200,7 +185,7 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *DEPLOY*  `${{ steps.info.outputs.sha_short }}`  *${{ steps.duration.outputs.formatted }}*
+            *ДЕПЛОЙ*  `${{ steps.info.outputs.sha_short }}`  *${{ steps.duration.outputs.time }}*
 
             ${{ steps.info.outputs.commit_msg }}
 
@@ -208,7 +193,7 @@ jobs:
 
             ${{ env.RECENT_COMMITS }}
 
-            [GitHub](${{ github.event.head_commit.url }})  |  [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Коммит](${{ github.event.head_commit.url }}) | [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Notify Telegram (Failure)
         if: failure()
@@ -218,10 +203,8 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *DEPLOY FAILED*  `${{ steps.info.outputs.sha_short }}`
+            *ДЕПЛОЙ УПАЛ*  `${{ steps.info.outputs.sha_short }}`
 
             ${{ steps.info.outputs.commit_msg }}
 
-            ${{ steps.info.outputs.changes }}
-
-            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
