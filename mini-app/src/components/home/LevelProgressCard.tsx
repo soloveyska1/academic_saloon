@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp, Crown, Percent, Star } from 'lucide-react'
 
 // Glass card style
 const glassStyle: React.CSSProperties = {
@@ -14,10 +14,15 @@ const glassStyle: React.CSSProperties = {
 }
 
 interface Rank {
+  name: string
+  emoji: string
   level: number
+  cashback: number
+  bonus: string | null
   progress: number
   next_rank: string | null
   spent_to_next: number
+  is_max: boolean
 }
 
 interface LevelProgressCardProps {
@@ -26,11 +31,116 @@ interface LevelProgressCardProps {
   onNavigate?: () => void
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAX RANK CARD — Crown achievement instead of empty space
+// ═══════════════════════════════════════════════════════════════════════════
+function MaxRankCard({ rank }: { rank: Rank }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.32 }}
+      className="card-padding card-radius"
+      style={{
+        ...glassStyle,
+        marginBottom: 16,
+        border: '1px solid rgba(212,175,55,0.25)',
+        background: 'linear-gradient(145deg, rgba(212,175,55,0.08), var(--bg-card) 40%)',
+      }}
+    >
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Header with crown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.08))',
+            border: '1px solid rgba(212,175,55,0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 20px -5px rgba(212,175,55,0.3)',
+          }}>
+            <Crown size={22} color="var(--gold-400)" strokeWidth={1.5} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase' as const,
+              color: 'rgba(255,255,255,0.35)',
+              marginBottom: 2,
+            }}>
+              Максимальный уровень
+            </div>
+            <div style={{
+              fontSize: 16,
+              fontWeight: 700,
+              fontFamily: 'var(--font-serif)',
+              background: 'var(--gold-text-shine)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
+              {rank.emoji} {rank.name}
+            </div>
+          </div>
+        </div>
+
+        {/* Benefits grid */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          {rank.cashback > 0 && (
+            <div style={{
+              flex: 1,
+              padding: '10px 12px',
+              borderRadius: 12,
+              background: 'rgba(212,175,55,0.06)',
+              border: '1px solid rgba(212,175,55,0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <Percent size={14} color="var(--gold-400)" strokeWidth={2} />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>
+                  {rank.cashback}%
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>кэшбэк</div>
+              </div>
+            </div>
+          )}
+          {rank.bonus && (
+            <div style={{
+              flex: 1,
+              padding: '10px 12px',
+              borderRadius: 12,
+              background: 'rgba(212,175,55,0.06)',
+              border: '1px solid rgba(212,175,55,0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <Star size={14} color="var(--gold-400)" strokeWidth={2} />
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                {rank.bonus}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 export const LevelProgressCard = memo(function LevelProgressCard({
   rank,
   displayNextRank,
 }: LevelProgressCardProps) {
-  if (!displayNextRank) return null
+  // Max rank: show achievement card with benefits
+  if (rank.is_max || !displayNextRank) {
+    return <MaxRankCard rank={rank} />
+  }
 
   return (
     <motion.div
@@ -40,13 +150,11 @@ export const LevelProgressCard = memo(function LevelProgressCard({
       className="card-padding card-radius"
       style={{ ...glassStyle, marginBottom: 16 }}
     >
-      <div aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1 }}>
         <div
-          aria-hidden="true"
           style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}
         >
           <div
-            aria-hidden="true"
             style={{
               width: 48,
               height: 48,
@@ -61,15 +169,13 @@ export const LevelProgressCard = memo(function LevelProgressCard({
           >
             <TrendingUp size={22} color="var(--gold-400)" strokeWidth={1.5} />
           </div>
-          <div aria-hidden="true" style={{ flex: 1 }}>
+          <div style={{ flex: 1 }}>
             <div
-              aria-hidden="true"
               style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}
             >
               Следующий уровень
             </div>
             <div
-              aria-hidden="true"
               style={{
                 fontSize: 12,
                 fontWeight: 600,
@@ -125,7 +231,6 @@ export const LevelProgressCard = memo(function LevelProgressCard({
           />
         </div>
         <div
-          aria-hidden="true"
           style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}
         >
           Осталось{' '}
