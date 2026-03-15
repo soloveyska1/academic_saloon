@@ -14,7 +14,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'masters',
     label: 'Магистерская диссертация',
-    description: 'Полный цикл: от плана до защиты. Научрук одобрит',
+    description: 'От плана до защиты. Научрук скажет «да»',
     price: 'от 60 000 ₽',
     priceNum: 60000,
     icon: GraduationCap,
@@ -25,7 +25,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'diploma',
     label: 'Дипломная работа (ВКР)',
-    description: 'Самая заказываемая. Ведём до оценки, а не до сдачи',
+    description: 'Ведём до оценки, а не просто до сдачи',
     price: 'от 40 000 ₽',
     priceNum: 40000,
     icon: GraduationCap,
@@ -36,7 +36,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'coursework',
     label: 'Курсовая работа',
-    description: 'Теория — от 14 000 ₽, с эмпирикой — от 20 000 ₽',
+    description: 'Теория или эмпирика — закроем оба варианта',
     price: 'от 14 000 ₽',
     priceNum: 14000,
     icon: BookOpen,
@@ -47,7 +47,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'practice',
     label: 'Отчёт по практике',
-    description: 'Дневник + отчёт в комплекте. Готово к проверке',
+    description: 'Дневник + отчёт. Открыл и сдал',
     price: 'от 8 000 ₽',
     priceNum: 8000,
     icon: Briefcase,
@@ -57,7 +57,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'essay',
     label: 'Эссе',
-    description: 'Аргументация, стиль и подача — без воды',
+    description: 'Сильные аргументы, ноль воды',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: PenTool,
@@ -67,7 +67,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'presentation',
     label: 'Презентация',
-    description: 'Слайды + речь к защите. Два в одном',
+    description: 'Слайды + речь. Выступил и забыл',
     price: 'от 7 000 ₽',
     priceNum: 7000,
     icon: Presentation,
@@ -78,7 +78,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'control',
     label: 'Контрольная работа',
-    description: 'Разбор, решение, оформление — всё включено',
+    description: 'Решение + оформление. Всё чисто',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: ClipboardCheck,
@@ -88,7 +88,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'independent',
     label: 'Самостоятельная работа',
-    description: 'Понятное решение по требованиям преподавателя',
+    description: 'Чётко по методичке преподавателя',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: Scroll,
@@ -98,7 +98,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'report',
     label: 'Реферат',
-    description: 'Источники, структура и чистое оформление по ГОСТу',
+    description: 'Структура и ГОСТ — без придирок',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: FileText,
@@ -108,7 +108,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'photo_task',
     label: 'Задача по фото',
-    description: 'Сфотографируйте задание — разберём и решим',
+    description: 'Скинь фото задания — решим',
     price: 'индивидуально',
     priceNum: 0,
     icon: Camera,
@@ -118,7 +118,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'other',
     label: 'Другое',
-    description: 'Нестандартная задача? Подберём формат и автора',
+    description: 'Опиши задачу — подберём автора',
     price: 'индивидуально',
     priceNum: 0,
     icon: HelpCircle,
