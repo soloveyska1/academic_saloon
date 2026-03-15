@@ -316,6 +316,9 @@ export interface TelegramWebApp {
     onClick: (callback: () => void) => void
     offClick: (callback: () => void) => void
   }
+  disableVerticalSwipes?: () => void
+  enableVerticalSwipes?: () => void
+  isVerticalSwipesEnabled?: boolean
 }
 
 // --- ADMIN TYPES ---
