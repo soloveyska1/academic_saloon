@@ -25,10 +25,15 @@ jobs:
     steps:
       - name: Execute server action
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          NOTIFY_CHAT_ID: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          ACTION_TYPE: ${{ github.event.inputs.action }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NOTIFY_CHAT_ID,ACTION_TYPE,GH_RUN_URL
           script: |
             ACTION="${{ github.event.inputs.action }}"
             LINES="${{ github.event.inputs.lines }}"
@@ -37,34 +42,87 @@ jobs:
               "status")
                 UPTIME=$(uptime -p | sed 's/up //')
                 LOAD=$(cat /proc/loadavg | awk '{print $1, $2, $3}')
-                DISK=$(df -h / | tail -1 | awk '{print $3"/"$2" ("$5")"}')
+                DISK_PCT=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
+                DISK_INFO=$(df -h / | tail -1 | awk '{print $3"/"$2}')
                 MEM_PCT=$(free | grep Mem | awk '{printf("%.0f", $3/$2*100)}')
-                MEM=$(free -h | grep Mem | awk -v p=$MEM_PCT '{print $3"/"$2" ("p"%)"}')
+                MEM_INFO=$(free -h | grep Mem | awk '{print $3"/"$2}')
 
-                BOT=$(systemctl is-active saloon-bot 2>/dev/null || echo "stopped")
-                NGX=$(systemctl is-active nginx 2>/dev/null || echo "stopped")
-                PG=$(systemctl is-active postgresql 2>/dev/null || echo "stopped")
-                RD=$((systemctl is-active redis-server 2>/dev/null || systemctl is-active redis 2>/dev/null) || echo "stopped")
+                BOT="✗"; NGX="✗"; PG="✗"; RD="✗"
+                systemctl is-active --quiet saloon-bot && BOT="●"
+                systemctl is-active --quiet nginx && NGX="●"
+                systemctl is-active --quiet postgresql && PG="●"
+                (systemctl is-active --quiet redis-server 2>/dev/null || systemctl is-active --quiet redis 2>/dev/null) && RD="●"
 
-                cd ~/academic_saloon
-                LAST=$(git log -1 --format='%h %s (%cr)' | head -c 100)
+                BOT_RAM=$(ps aux | grep -E 'python.*main\.py|uvicorn' | grep -v grep | awk '{sum+=$6} END {printf("%.0f", sum/1024)}' 2>/dev/null || echo "0")
 
-                BOT_RAM=$(ps aux | grep 'python.*main.py\|uvicorn' | grep -v grep | awk '{sum+=$6} END {printf("%.0fMB", sum/1024)}' 2>/dev/null || echo "?")
-
-                DOMAIN="academic-saloon.duckdns.org"
-                SSL_DAYS=""
-                SSL_DATE=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
-                if [ -n "$SSL_DATE" ]; then
-                  SSL_TS=$(date -d "$SSL_DATE" +%s)
-                  NOW_TS=$(date +%s)
-                  SSL_DAYS="$(( (SSL_TS - NOW_TS) / 86400 ))д"
+                API_MS="—"
+                API_TIME=$(curl -s -o /dev/null -w '%{time_total}' --max-time 3 http://localhost:8000/health 2>/dev/null || echo "0")
+                if [ "$API_TIME" != "0" ]; then
+                  API_MS=$(echo "$API_TIME * 1000" | bc 2>/dev/null | cut -d. -f1 || echo "?")
                 fi
 
-                echo "Аптайм: $UPTIME | Нагрузка: $LOAD"
-                echo "Диск: $DISK | RAM: $MEM"
-                echo "Бот: $BOT ($BOT_RAM) | Nginx: $NGX | PG: $PG | Redis: $RD"
-                echo "SSL: ${SSL_DAYS:-?}"
-                echo "Последний коммит: $LAST"
+                cd ~/academic_saloon
+                LAST_COMMIT=$(git log -1 --format='%h  %s' | head -c 60)
+                LAST_TIME=$(git log -1 --format='%cr')
+
+                DOMAIN="academic-saloon.duckdns.org"
+                SSL_DAYS="?"
+                SSL_DATE=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+                if [ -n "$SSL_DATE" ]; then
+                  SSL_TS=$(date -d "$SSL_DATE" +%s 2>/dev/null || echo "0")
+                  NOW_TS=$(date +%s)
+                  if [ "$SSL_TS" -gt 0 ] 2>/dev/null; then
+                    SSL_DAYS=$(( (SSL_TS - NOW_TS) / 86400 ))
+                  fi
+                fi
+
+                # Gauge bars
+                make_bar() {
+                  local p=$1 f=$(($1*8/100)) bar=""
+                  [ $f -gt 8 ] && f=8; [ $f -lt 0 ] && f=0
+                  for i in $(seq 1 $f); do bar="${bar}▰"; done
+                  for i in $(seq $((f+1)) 8); do bar="${bar}▱"; done
+                  echo "$bar"
+                }
+
+                DISK_BAR=$(make_bar $DISK_PCT)
+                RAM_BAR=$(make_bar $MEM_PCT)
+
+                # Health score
+                HEALTH=100
+                [ "$BOT" = "✗" ] && HEALTH=$((HEALTH - 30))
+                [ "$NGX" = "✗" ] && HEALTH=$((HEALTH - 25))
+                [ "$PG" = "✗" ] && HEALTH=$((HEALTH - 25))
+                [ "$DISK_PCT" -gt 80 ] && HEALTH=$((HEALTH - 10))
+                [ "$MEM_PCT" -gt 80 ] && HEALTH=$((HEALTH - 10))
+
+                # Send rich status to Telegram
+                BOT_TOKEN_VAL=$(grep -E '^BOT_TOKEN=' ~/academic_saloon/.env | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -1)
+
+                if [ -n "$BOT_TOKEN_VAL" ] && [ -n "$NOTIFY_CHAT_ID" ]; then
+                  read -r -d '' MSG << ENDMSG || true
+            <b>◈ СЕРВЕР</b>
+
+            <pre>
+            Бот    ${BOT}  ${BOT_RAM}MB      Диск ${DISK_BAR} ${DISK_PCT}%
+            API    ●  ${API_MS}ms      RAM  ${RAM_BAR} ${MEM_PCT}%
+            Nginx  ${NGX}              SSL  ${SSL_DAYS}д
+            PG     ${PG}              Аптайм ${UPTIME}
+            Redis  ${RD}              Нагрузка ${LOAD}
+            </pre>
+            <code>Диск: ${DISK_INFO} · RAM: ${MEM_INFO} · ♥ ${HEALTH}/100</code>
+
+            <i>Последний коммит: ${LAST_COMMIT} (${LAST_TIME})</i>
+
+            <a href="${GH_RUN_URL}">полный вывод</a>
+            ENDMSG
+
+                  curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN_VAL}/sendMessage" \
+                    --data-urlencode "chat_id=${NOTIFY_CHAT_ID}" \
+                    --data-urlencode "parse_mode=HTML" \
+                    --data-urlencode "text=${MSG}" \
+                    --data-urlencode "disable_web_page_preview=true" || true
+                fi
                 ;;
 
               "logs-bot")
@@ -84,23 +142,24 @@ jobs:
                 ;;
 
               "disk-cleanup")
-                echo "До: $(df -h / | tail -1 | awk '{print $5}')"
+                BEFORE=$(df -h / | tail -1 | awk '{print $5}')
                 journalctl --vacuum-time=7d 2>/dev/null || true
                 npm cache clean --force 2>/dev/null || true
                 apt-get clean 2>/dev/null || true
                 find /root/backups -name "*.sql.gz" -mtime +7 -delete 2>/dev/null || true
-                echo "После: $(df -h / | tail -1 | awk '{print $5}')"
+                AFTER=$(df -h / | tail -1 | awk '{print $5}')
+                echo "Очистка: $BEFORE -> $AFTER"
                 ;;
             esac
 
-      - name: Send result to Telegram
-        if: always()
+      - name: Send fallback notification
+        if: always() && github.event.inputs.action != 'status'
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            *СЕРВЕР* `${{ github.event.inputs.action }}`
+            <b>◈ СЕРВЕР</b> <code>${{ github.event.inputs.action }}</code>
 
-            [Полный вывод](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Полный вывод</a>

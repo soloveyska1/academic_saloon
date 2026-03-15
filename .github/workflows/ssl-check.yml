@@ -29,14 +29,20 @@ jobs:
           echo "expiry=$EXPIRY_SHORT" >> $GITHUB_OUTPUT
           echo "days_left=$DAYS_LEFT" >> $GITHUB_OUTPUT
 
-          # Visual bar
+          # Visual bar (90 days = full)
           FILLED=$((DAYS_LEFT * 10 / 90))
           [ $FILLED -gt 10 ] && FILLED=10
           [ $FILLED -lt 0 ] && FILLED=0
           BAR=""
-          for i in $(seq 1 $FILLED); do BAR="${BAR}#"; done
-          for i in $(seq $((FILLED + 1)) 10); do BAR="${BAR}-"; done
-          echo "bar=[$BAR]" >> $GITHUB_OUTPUT
+          for i in $(seq 1 $FILLED); do BAR="${BAR}▰"; done
+          for i in $(seq $((FILLED + 1)) 10); do BAR="${BAR}▱"; done
+          echo "bar=$BAR" >> $GITHUB_OUTPUT
+
+          # Percentage
+          PCT=$((DAYS_LEFT * 100 / 90))
+          [ $PCT -gt 100 ] && PCT=100
+          [ $PCT -lt 0 ] && PCT=0
+          echo "pct=$PCT" >> $GITHUB_OUTPUT
 
           if [ $DAYS_LEFT -lt 7 ]; then
             echo "status=critical" >> $GITHUB_OUTPUT
@@ -52,14 +58,16 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            *SSL КРИТИЧНО*  `${{ steps.ssl.outputs.days_left }}д`
+            <b>⚠ SSL КРИТИЧНО</b>
 
-            `${{ steps.ssl.outputs.bar }}`
+            <pre>
+            ${{ steps.ssl.outputs.bar }}  ${{ steps.ssl.outputs.days_left }}д (${{ steps.ssl.outputs.pct }}%)
             Истекает: ${{ steps.ssl.outputs.expiry }}
+            </pre>
 
-            Срочно выполни `certbot renew` на сервере.
+            Выполни <code>certbot renew</code> на сервере.
 
       - name: Notify Telegram (Warning)
         if: steps.ssl.outputs.status == 'warning'
@@ -67,14 +75,16 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            *SSL ВНИМАНИЕ*  `${{ steps.ssl.outputs.days_left }}д`
+            <b>◆ SSL</b>
 
-            `${{ steps.ssl.outputs.bar }}`
+            <pre>
+            ${{ steps.ssl.outputs.bar }}  ${{ steps.ssl.outputs.days_left }}д (${{ steps.ssl.outputs.pct }}%)
             Истекает: ${{ steps.ssl.outputs.expiry }}
+            </pre>
 
-            Certbot должен обновить автоматически. Следи.
+            Certbot должен обновить автоматически.
 
       - name: Notify Telegram (Error)
         if: steps.ssl.outputs.status == 'error'
@@ -82,9 +92,9 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            *SSL ПРОВЕРКА УПАЛА*
+            <b>✗ SSL НЕ ПРОВЕРЕН</b>
 
-            Не удалось подключиться к серверу или прочитать сертификат.
-            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            Не удалось подключиться к серверу.
+            <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Логи</a>

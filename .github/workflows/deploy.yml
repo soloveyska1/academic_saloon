@@ -67,47 +67,22 @@ jobs:
         with:
           fetch-depth: 50
 
-      - name: Collect deploy info
-        id: info
-        run: |
-          set +e
-
-          MSG=$(git log -1 --format='%s' | head -c 100)
-          echo "commit_msg=$MSG" >> $GITHUB_OUTPUT
-
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-          # Changed files summary
-          CHANGED=$(git diff --stat HEAD~1 HEAD 2>/dev/null | tail -1)
-          echo "changes=${CHANGED:-нет изменений}" >> $GITHUB_OUTPUT
-
-          # File category counts (grep -c returns 1 on no match, so use || true)
-          PY_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '\.py$' || true)
-          TS_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -cE '\.(tsx?|css)$' || true)
-          YML_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '\.yml$' || true)
-          echo "py_count=${PY_COUNT:-0}" >> $GITHUB_OUTPUT
-          echo "ts_count=${TS_COUNT:-0}" >> $GITHUB_OUTPUT
-          echo "yml_count=${YML_COUNT:-0}" >> $GITHUB_OUTPUT
-
-          # Recent commits
-          RECENT=$(git log --oneline --no-merges -5 --format='%s' | sed 's/^/  /' | head -c 500)
-          {
-            echo "RECENT_COMMITS<<ENDOFCOMMITS"
-            echo "$RECENT"
-            echo "ENDOFCOMMITS"
-          } >> $GITHUB_ENV
-
-          echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
-
       - name: Deploy via SSH
         id: deploy
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          NOTIFY_CHAT_ID: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          GH_SHA: ${{ github.sha }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_COMMIT_URL: ${{ github.event.head_commit.url }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NOTIFY_CHAT_ID,GH_SHA,GH_RUN_URL,GH_COMMIT_URL
           script: |
             set -e
+            DEPLOY_START=$(date +%s)
 
             cd ~/academic_saloon || git clone https://github.com/soloveyska1/academic_saloon.git ~/academic_saloon
             cd ~/academic_saloon
@@ -118,6 +93,15 @@ jobs:
             git checkout main
             git reset --hard origin/main
             NEW_COMMIT=$(git rev-parse --short HEAD)
+
+            # Diff stats
+            COMMIT_MSG=$(git log -1 --format='%s')
+            DIFF_STAT=$(git diff --stat ${OLD_COMMIT}..${NEW_COMMIT} 2>/dev/null | tail -1 || echo "")
+            RECENT=$(git log --oneline --no-merges -5 ${OLD_COMMIT}..${NEW_COMMIT} --format='%s' 2>/dev/null | head -5)
+            PY_COUNT=$(git diff --name-only ${OLD_COMMIT}..${NEW_COMMIT} 2>/dev/null | grep -c '\.py$' || true)
+            TS_COUNT=$(git diff --name-only ${OLD_COMMIT}..${NEW_COMMIT} 2>/dev/null | grep -cE '\.(tsx?|css)$' || true)
+            YML_COUNT=$(git diff --name-only ${OLD_COMMIT}..${NEW_COMMIT} 2>/dev/null | grep -c '\.yml$' || true)
+            DEPLOY_NUM=$(git log --oneline main | wc -l)
 
             # Backend
             if [ ! -d "venv" ]; then python3 -m venv venv; fi
@@ -145,10 +129,8 @@ jobs:
             sleep 8
             rm -f /tmp/saloon-deploy.lock
 
-            if ! systemctl is-active --quiet saloon-bot; then
-              journalctl -u saloon-bot --no-pager -n 20
-              exit 1
-            fi
+            BOT_OK="false"
+            if systemctl is-active --quiet saloon-bot; then BOT_OK="true"; fi
 
             # Frontend
             cd ~/academic_saloon/mini-app
@@ -161,39 +143,132 @@ jobs:
 
             nginx -t && systemctl reload nginx
 
-            DISK=$(df -h / | tail -1 | awk '{print $5}')
-            MEM=$(free | grep Mem | awk '{printf("%.0f%%", $3/$2*100)}')
+            # ═══════════════════════════════════════════
+            # COLLECT METRICS & SEND RICH NOTIFICATION
+            # ═══════════════════════════════════════════
 
-            echo "=== DEPLOY: $OLD_COMMIT -> $NEW_COMMIT | Disk: $DISK | RAM: $MEM ==="
+            DEPLOY_END=$(date +%s)
+            DEPLOY_SECS=$((DEPLOY_END - DEPLOY_START))
+            DEPLOY_MIN=$((DEPLOY_SECS / 60))
+            DEPLOY_REM=$((DEPLOY_SECS % 60))
 
-      - name: Calculate duration
-        id: duration
-        if: always()
-        run: |
-          START=${{ steps.info.outputs.start_time }}
-          NOW=$(date +%s)
-          SECS=$((NOW - START))
-          MINS=$((SECS / 60))
-          REM=$((SECS % 60))
-          echo "time=${MINS}м ${REM}с" >> $GITHUB_OUTPUT
+            DISK_PCT=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
+            DISK_USED=$(df -h / | tail -1 | awk '{print $3}')
+            DISK_TOTAL=$(df -h / | tail -1 | awk '{print $2}')
+            RAM_PCT=$(free | grep Mem | awk '{printf("%.0f", $3/$2*100)}')
+            RAM_USED=$(free -h | grep Mem | awk '{print $3}')
+            RAM_TOTAL=$(free -h | grep Mem | awk '{print $2}')
 
-      - name: Notify Telegram (Success)
-        if: success()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
-          token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
-          message: |
-            *ДЕПЛОЙ*  `${{ steps.info.outputs.sha_short }}`  *${{ steps.duration.outputs.time }}*
+            BOT_RAM=$(ps aux | grep -E 'python.*main\.py|uvicorn' | grep -v grep | awk '{sum+=$6} END {printf("%.0f", sum/1024)}' 2>/dev/null || echo "0")
+            BUNDLE_KB=$(du -sk /var/www/academic_saloon/dist/assets/ 2>/dev/null | awk '{print $1}' || echo "0")
+            BUNDLE_MB=$(echo "scale=1; $BUNDLE_KB / 1024" | bc 2>/dev/null || echo "?")
 
-            ${{ steps.info.outputs.commit_msg }}
+            API_MS="—"
+            API_ICON="✗"
+            API_TIME=$(curl -s -o /dev/null -w '%{time_total}' --max-time 5 http://localhost:8000/health 2>/dev/null || echo "0")
+            if [ "$API_TIME" != "0" ]; then
+              API_MS=$(echo "$API_TIME * 1000" | bc 2>/dev/null | cut -d. -f1 || echo "?")
+              API_ICON="●"
+            fi
 
-            `py:${{ steps.info.outputs.py_count }}` `ts:${{ steps.info.outputs.ts_count }}` `ci:${{ steps.info.outputs.yml_count }}`  ${{ steps.info.outputs.changes }}
+            UPTIME_STR=$(uptime -p | sed 's/up //')
 
-            ${{ env.RECENT_COMMITS }}
+            DOMAIN="academic-saloon.duckdns.org"
+            SSL_DAYS="?"
+            SSL_DATE=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+            if [ -n "$SSL_DATE" ]; then
+              SSL_TS=$(date -d "$SSL_DATE" +%s 2>/dev/null || echo "0")
+              NOW_TS=$(date +%s)
+              if [ "$SSL_TS" -gt 0 ] 2>/dev/null; then
+                SSL_DAYS=$(( (SSL_TS - NOW_TS) / 86400 ))
+              fi
+            fi
 
-            [Коммит](${{ github.event.head_commit.url }}) | [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            # Gauge bar function
+            make_bar() {
+              local pct=$1 filled=$((($1 * 8 + 50) / 100)) bar=""
+              [ $filled -gt 8 ] && filled=8
+              [ $filled -lt 0 ] && filled=0
+              for i in $(seq 1 $filled); do bar="${bar}▰"; done
+              for i in $(seq $((filled + 1)) 8); do bar="${bar}▱"; done
+              echo "$bar"
+            }
+
+            DISK_BAR=$(make_bar $DISK_PCT)
+            RAM_BAR=$(make_bar $RAM_PCT)
+
+            # Health score (weighted)
+            HEALTH=100
+            [ "$BOT_OK" = "false" ] && HEALTH=$((HEALTH - 40))
+            [ "$API_ICON" = "✗" ] && HEALTH=$((HEALTH - 20))
+            [ "$DISK_PCT" -gt 80 ] && HEALTH=$((HEALTH - 15))
+            [ "$RAM_PCT" -gt 80 ] && HEALTH=$((HEALTH - 15))
+            [ "$DISK_PCT" -gt 90 ] && HEALTH=$((HEALTH - 10))
+            [ $HEALTH -lt 0 ] && HEALTH=0
+
+            # Speed rating
+            if [ $DEPLOY_SECS -lt 120 ]; then SPEED="молния"
+            elif [ $DEPLOY_SECS -lt 180 ]; then SPEED="быстро"
+            elif [ $DEPLOY_SECS -lt 300 ]; then SPEED="норм"
+            else SPEED="долго"; fi
+
+            # Time of day
+            HOUR=$(date +%H)
+            if [ $HOUR -ge 6 ] && [ $HOUR -lt 12 ]; then TOD="Утренний деплой"
+            elif [ $HOUR -ge 12 ] && [ $HOUR -lt 18 ]; then TOD="Дневной деплой"
+            elif [ $HOUR -ge 18 ] && [ $HOUR -lt 23 ]; then TOD="Вечерний деплой"
+            else TOD="Ночной деплой"; fi
+
+            # Bot status
+            if [ "$BOT_OK" = "true" ]; then BOT_LABEL="●  ${BOT_RAM}MB"; else BOT_LABEL="✗  упал"; fi
+
+            # Build commit list
+            COMMIT_LIST=""
+            while IFS= read -r line; do
+              [ -n "$line" ] && COMMIT_LIST="${COMMIT_LIST}
+            ▸ ${line}"
+            done <<< "$RECENT"
+
+            # File type summary
+            FILE_TYPES=""
+            [ "$PY_COUNT" -gt 0 ] 2>/dev/null && FILE_TYPES="${FILE_TYPES}py:${PY_COUNT} "
+            [ "$TS_COUNT" -gt 0 ] 2>/dev/null && FILE_TYPES="${FILE_TYPES}ts:${TS_COUNT} "
+            [ "$YML_COUNT" -gt 0 ] 2>/dev/null && FILE_TYPES="${FILE_TYPES}ci:${YML_COUNT} "
+
+            # Send notification
+            BOT_TOKEN_VAL=$(grep -E '^BOT_TOKEN=' ~/academic_saloon/.env | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -1)
+
+            if [ -n "$BOT_TOKEN_VAL" ] && [ -n "$NOTIFY_CHAT_ID" ]; then
+
+              read -r -d '' MSG << ENDMSG || true
+            <b>● ДЕПЛОЙ</b>  <code>${NEW_COMMIT}</code>
+
+            <i>${COMMIT_MSG}</i>
+            ${COMMIT_LIST}
+            <code>${FILE_TYPES}— ${DIFF_STAT}</code>
+
+            <pre>
+            Бот   ${BOT_LABEL}      Диск ${DISK_BAR} ${DISK_PCT}%
+            API   ${API_ICON}  ${API_MS}ms      RAM  ${RAM_BAR} ${RAM_PCT}%
+            Nginx ●            SSL  ${SSL_DAYS}д
+            Бандл ${BUNDLE_MB}MB       Аптайм ${UPTIME_STR}
+            </pre>
+            <code>${TOD} · ${DEPLOY_MIN}м${DEPLOY_REM}с · ${SPEED} · #${DEPLOY_NUM} · ♥ ${HEALTH}/100</code>
+
+            <a href="${GH_COMMIT_URL}">коммит</a> · <a href="${GH_RUN_URL}">логи</a>
+            ENDMSG
+
+              curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN_VAL}/sendMessage" \
+                --data-urlencode "chat_id=${NOTIFY_CHAT_ID}" \
+                --data-urlencode "parse_mode=HTML" \
+                --data-urlencode "text=${MSG}" \
+                --data-urlencode "disable_web_page_preview=true" || true
+            fi
+
+            if [ "$BOT_OK" = "false" ]; then
+              journalctl -u saloon-bot --no-pager -n 20
+              exit 1
+            fi
 
       - name: Notify Telegram (Failure)
         if: failure()
@@ -201,10 +276,10 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            *ДЕПЛОЙ УПАЛ*  `${{ steps.info.outputs.sha_short }}`
+            <b>✗ ДЕПЛОЙ УПАЛ</b>  <code>${{ github.sha }}</code>
 
-            ${{ steps.info.outputs.commit_msg }}
+            Тесты прошли, но деплой на сервер не удался.
 
-            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Подробные логи</a>

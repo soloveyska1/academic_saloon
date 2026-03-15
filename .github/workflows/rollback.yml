@@ -14,19 +14,26 @@ jobs:
     steps:
       - name: Rollback via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          NOTIFY_CHAT_ID: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMITS_BACK: ${{ github.event.inputs.commits_back }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NOTIFY_CHAT_ID,GH_ACTOR,GH_RUN_URL,COMMITS_BACK
           script: |
             set -e
 
-            COMMITS_BACK=${{ github.event.inputs.commits_back }}
             cd ~/academic_saloon
 
             FROM=$(git rev-parse --short HEAD)
-            git reset --hard HEAD~$COMMITS_BACK
+            FROM_MSG=$(git log -1 --format='%s' | head -c 60)
+            git reset --hard HEAD~${COMMITS_BACK}
             TO=$(git rev-parse --short HEAD)
+            TO_MSG=$(git log -1 --format='%s' | head -c 60)
 
             # Rebuild
             cd ~/academic_saloon/mini-app
@@ -47,22 +54,32 @@ jobs:
             rm -f /tmp/saloon-deploy.lock
             nginx -t && systemctl reload nginx
 
-            echo "=== ROLLBACK: $FROM -> $TO (-$COMMITS_BACK) ==="
+            BOT_OK="✗"
+            if systemctl is-active --quiet saloon-bot; then BOT_OK="●"; fi
 
-      - name: Notify Telegram (Success)
-        if: success()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
-          token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
-          message: |
-            *ОТКАТ*  -${{ github.event.inputs.commits_back }} коммитов
+            # Notification
+            BOT_TOKEN_VAL=$(grep -E '^BOT_TOKEN=' ~/academic_saloon/.env | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -1)
 
-            Инициатор: `${{ github.actor }}`
-            Сервер откачен, фронтенд пересобран, сервисы перезапущены.
+            if [ -n "$BOT_TOKEN_VAL" ] && [ -n "$NOTIFY_CHAT_ID" ]; then
+              read -r -d '' MSG << ENDMSG || true
+            <b>↶ ОТКАТ</b>  <code>-${COMMITS_BACK}</code>
 
-            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            <pre>
+            Было  ${FROM}  ${FROM_MSG}
+            Стало ${TO}  ${TO_MSG}
+            </pre>
+            <code>Бот: ${BOT_OK} · Инициатор: ${GH_ACTOR}</code>
+
+            Фронтенд пересобран, сервисы перезапущены.
+            <a href="${GH_RUN_URL}">логи</a>
+            ENDMSG
+
+              curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN_VAL}/sendMessage" \
+                --data-urlencode "chat_id=${NOTIFY_CHAT_ID}" \
+                --data-urlencode "parse_mode=HTML" \
+                --data-urlencode "text=${MSG}" \
+                --data-urlencode "disable_web_page_preview=true" || true
+            fi
 
       - name: Notify Telegram (Failure)
         if: failure()
@@ -70,10 +87,10 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            *ОТКАТ УПАЛ*
+            <b>✗ ОТКАТ УПАЛ</b>
 
-            Инициатор: `${{ github.actor }}`
+            Инициатор: <code>${{ github.actor }}</code>
             Требуется ручное вмешательство.
-            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Логи</a>
