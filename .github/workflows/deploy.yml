@@ -105,22 +105,38 @@ jobs:
             # Restart bot
             touch /tmp/saloon-deploy.lock
             systemctl stop saloon-bot 2>/dev/null || true
-            sleep 2
-            fuser -k -9 8000/tcp 2>/dev/null || true
             sleep 3
 
-            for i in {1..10}; do
-                if ! fuser 8000/tcp 2>/dev/null; then break; fi
+            # Kill anything on port 8000 aggressively
+            fuser -k -9 8000/tcp 2>/dev/null || true
+            sleep 2
+            # Double-check with lsof as backup
+            lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
+            sleep 2
+
+            for i in {1..15}; do
+                if ! fuser 8000/tcp 2>/dev/null && ! lsof -ti:8000 >/dev/null 2>&1; then break; fi
                 fuser -k -9 8000/tcp 2>/dev/null || true
+                lsof -ti:8000 | xargs -r kill -9 2>/dev/null || true
                 sleep 2
             done
 
             systemctl start saloon-bot
-            sleep 8
+            sleep 10
             rm -f /tmp/saloon-deploy.lock
 
-            if ! systemctl is-active --quiet saloon-bot; then
-              journalctl -u saloon-bot --no-pager -n 20
+            # Retry check: bot may need extra time
+            BOT_OK=false
+            for i in {1..3}; do
+                if systemctl is-active --quiet saloon-bot; then
+                    BOT_OK=true
+                    break
+                fi
+                sleep 5
+            done
+
+            if [ "$BOT_OK" != "true" ]; then
+              journalctl -u saloon-bot --no-pager -n 30
               exit 1
             fi
 
