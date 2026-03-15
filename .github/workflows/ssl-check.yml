@@ -1,9 +1,8 @@
 name: SSL Certificate Check
 
-# Проверка SSL сертификата раз в неделю
 on:
   schedule:
-    - cron: '0 9 * * 1'  # Каждый понедельник в 9:00 UTC (12:00 МСК)
+    - cron: '0 9 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -15,77 +14,78 @@ jobs:
         run: |
           DOMAIN="academic-saloon.duckdns.org"
 
-          echo "Checking SSL for $DOMAIN..."
-
-          # Получаем дату истечения сертификата
           EXPIRY_DATE=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
 
           if [ -z "$EXPIRY_DATE" ]; then
-            echo "ERROR: Could not get certificate info"
             echo "status=error" >> $GITHUB_OUTPUT
             exit 1
           fi
 
-          # Конвертируем в timestamp
           EXPIRY_TS=$(date -d "$EXPIRY_DATE" +%s)
           NOW_TS=$(date +%s)
           DAYS_LEFT=$(( (EXPIRY_TS - NOW_TS) / 86400 ))
+          EXPIRY_SHORT=$(date -d "$EXPIRY_DATE" +"%d %b %Y")
 
-          echo "Certificate expires: $EXPIRY_DATE"
-          echo "Days left: $DAYS_LEFT"
-
-          echo "expiry_date=$EXPIRY_DATE" >> $GITHUB_OUTPUT
+          echo "expiry=$EXPIRY_SHORT" >> $GITHUB_OUTPUT
           echo "days_left=$DAYS_LEFT" >> $GITHUB_OUTPUT
 
-          if [ $DAYS_LEFT -lt 14 ]; then
+          # Progress bar (90 days = full, 0 = empty)
+          FILLED=$((DAYS_LEFT * 10 / 90))
+          [ $FILLED -gt 10 ] && FILLED=10
+          [ $FILLED -lt 0 ] && FILLED=0
+          BAR=""
+          for i in $(seq 1 $FILLED); do BAR="${BAR}#"; done
+          for i in $(seq $((FILLED + 1)) 10); do BAR="${BAR}-"; done
+          echo "bar=[$BAR]" >> $GITHUB_OUTPUT
+
+          if [ $DAYS_LEFT -lt 7 ]; then
             echo "status=critical" >> $GITHUB_OUTPUT
-          elif [ $DAYS_LEFT -lt 30 ]; then
+          elif [ $DAYS_LEFT -lt 14 ]; then
             echo "status=warning" >> $GITHUB_OUTPUT
           else
             echo "status=ok" >> $GITHUB_OUTPUT
           fi
 
-      - name: Notify Telegram (Critical - <14 days)
+      # Only notify when attention needed (not when everything is fine)
+      - name: Notify Telegram (Critical)
         if: steps.ssl.outputs.status == 'critical'
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            🚨 *SSL СЕРТИФИКАТ ИСТЕКАЕТ!*
+            *SSL CRITICAL*  `${{ steps.ssl.outputs.days_left }}d left`
 
-            ⚠️ Осталось дней: *${{ steps.ssl.outputs.days_left }}*
-            📅 Дата истечения: ${{ steps.ssl.outputs.expiry_date }}
+            `${{ steps.ssl.outputs.bar }}`
+            Expires: ${{ steps.ssl.outputs.expiry }}
 
-            Нужно обновить сертификат!
-            На сервере выполни: `certbot renew`
+            Run `certbot renew` on server immediately.
 
-      - name: Notify Telegram (Warning - <30 days)
+      - name: Notify Telegram (Warning)
         if: steps.ssl.outputs.status == 'warning'
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            ⚠️ *SSL сертификат скоро истекает*
+            *SSL WARNING*  `${{ steps.ssl.outputs.days_left }}d left`
 
-            📅 Осталось дней: ${{ steps.ssl.outputs.days_left }}
-            📅 Дата истечения: ${{ steps.ssl.outputs.expiry_date }}
+            `${{ steps.ssl.outputs.bar }}`
+            Expires: ${{ steps.ssl.outputs.expiry }}
 
-            Certbot должен обновить автоматически, но проверь.
+            Certbot should auto-renew. Monitor.
 
       - name: Notify Telegram (Error)
         if: steps.ssl.outputs.status == 'error'
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            ❌ *Не удалось проверить SSL*
+            *SSL CHECK FAILED*
 
-            Возможно, сервер недоступен или сертификат уже истёк.
-
-            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            Could not reach server or read certificate.
+            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

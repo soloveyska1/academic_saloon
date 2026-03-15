@@ -1,9 +1,8 @@
 name: Health Check & Auto-Restart
 
-# Проверка здоровья каждые 10 минут + ручной запуск
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Каждые 10 минут
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -20,199 +19,140 @@ jobs:
           script: |
             set -e
 
-            echo "=== Health Check at $(date) ==="
-
             ISSUES=""
-            RESTARTED=""
+            ACTIONS=""
+            METRICS=""
 
-            # 0. Check deploy lock — skip if deploy is in progress
+            # Skip if deploy in progress
             if [ -f /tmp/saloon-deploy.lock ]; then
-              echo "⏸️ Deploy in progress, skipping health check"
+              echo "Deploy in progress, skipping"
               exit 0
             fi
 
-            # 1. Проверяем бота
-            echo "Checking saloon-bot service..."
+            # --- Services ---
+            BOT="ok"; NGINX="ok"; PG="ok"; REDIS="ok"
+
             if ! systemctl is-active --quiet saloon-bot; then
-              echo "⚠️ Bot service is DOWN! Restarting..."
               fuser -k 8000/tcp 2>/dev/null || true
               sleep 2
               systemctl restart saloon-bot
               sleep 5
               if systemctl is-active --quiet saloon-bot; then
-                RESTARTED="$RESTARTED bot"
-                echo "✅ Bot restarted successfully"
+                ACTIONS="${ACTIONS}bot_restarted "
+                BOT="restarted"
               else
-                ISSUES="$ISSUES bot_failed"
-                echo "❌ Bot failed to restart"
+                ISSUES="${ISSUES}bot_down "
+                BOT="down"
               fi
-            else
-              echo "✅ Bot is running"
             fi
 
-            # 2. Проверяем Nginx
-            echo "Checking nginx..."
             if ! systemctl is-active --quiet nginx; then
-              echo "⚠️ Nginx is DOWN! Restarting..."
               systemctl restart nginx
               if systemctl is-active --quiet nginx; then
-                RESTARTED="$RESTARTED nginx"
-                echo "✅ Nginx restarted"
+                ACTIONS="${ACTIONS}nginx_restarted "
+                NGINX="restarted"
               else
-                ISSUES="$ISSUES nginx_failed"
+                ISSUES="${ISSUES}nginx_down "
+                NGINX="down"
               fi
-            else
-              echo "✅ Nginx is running"
             fi
 
-            # 3. Проверяем PostgreSQL
-            echo "Checking PostgreSQL..."
             if ! systemctl is-active --quiet postgresql; then
-              echo "⚠️ PostgreSQL is DOWN! Restarting..."
               systemctl restart postgresql
               if systemctl is-active --quiet postgresql; then
-                RESTARTED="$RESTARTED postgresql"
+                ACTIONS="${ACTIONS}pg_restarted "
+                PG="restarted"
               else
-                ISSUES="$ISSUES postgresql_failed"
+                ISSUES="${ISSUES}pg_down "
+                PG="down"
               fi
-            else
-              echo "✅ PostgreSQL is running"
             fi
 
-            # 4. Проверяем Redis
-            echo "Checking Redis..."
-            if ! systemctl is-active --quiet redis-server 2>/dev/null && ! systemctl is-active --quiet redis 2>/dev/null; then
-              echo "⚠️ Redis might be down, checking..."
-              if command -v redis-cli &> /dev/null && ! redis-cli ping &> /dev/null; then
-                ISSUES="$ISSUES redis_down"
+            if ! (systemctl is-active --quiet redis-server 2>/dev/null || systemctl is-active --quiet redis 2>/dev/null); then
+              if command -v redis-cli &>/dev/null && ! redis-cli ping &>/dev/null; then
+                ISSUES="${ISSUES}redis_down "
+                REDIS="down"
               fi
-            else
-              echo "✅ Redis is running"
             fi
 
-            # 5. Проверяем диск и АВТОМАТИЧЕСКИ чистим если > 80%
-            echo "Checking disk space..."
-            DISK_USAGE=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
-            if [ "$DISK_USAGE" -gt 80 ]; then
-              echo "⚠️ Disk usage is ${DISK_USAGE}% — АВТО-ОЧИСТКА..."
+            # --- Disk ---
+            DISK=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
+            DISK_USED=$(df -h / | tail -1 | awk '{print $3}')
+            DISK_TOTAL=$(df -h / | tail -1 | awk '{print $2}')
 
-              # Чистим логи старше 3 дней
+            if [ "$DISK" -gt 80 ]; then
               journalctl --vacuum-time=3d 2>/dev/null || true
-
-              # Чистим apt кэш
               apt-get clean 2>/dev/null || true
-
-              # Удаляем старые бэкапы (> 7 дней)
               find /root/backups -name '*.sql.gz' -mtime +7 -delete 2>/dev/null || true
-
-              # Чистим tmp
               find /tmp -type f -mtime +1 -delete 2>/dev/null || true
-
-              # Чистим pip кэш
               pip cache purge 2>/dev/null || true
-
-              # Чистим npm кэш
               npm cache clean --force 2>/dev/null || true
 
-              # Проверяем результат
               DISK_AFTER=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
-              echo "✅ Disk cleaned: ${DISK_USAGE}% → ${DISK_AFTER}%"
-              DISK_USAGE=$DISK_AFTER
-              RESTARTED="$RESTARTED disk_cleaned"
+              ACTIONS="${ACTIONS}disk_cleaned_${DISK}%>${DISK_AFTER}% "
+              DISK=$DISK_AFTER
 
-              # Если всё ещё > 90% — это проблема
-              if [ "$DISK_USAGE" -gt 90 ]; then
-                ISSUES="$ISSUES disk_critical_${DISK_USAGE}%"
+              if [ "$DISK" -gt 90 ]; then
+                ISSUES="${ISSUES}disk_critical_${DISK}% "
               fi
-            else
-              echo "✅ Disk usage: ${DISK_USAGE}%"
             fi
 
-            # 6. Проверяем RAM и АВТОМАТИЧЕСКИ перезапускаем бота если > 85%
-            echo "Checking memory..."
-            MEM_USAGE=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
-            if [ "$MEM_USAGE" -gt 85 ]; then
-              echo "⚠️ Memory usage is ${MEM_USAGE}% — АВТО-ПЕРЕЗАПУСК бота..."
+            # --- RAM ---
+            MEM=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
+            MEM_USED=$(free -h | grep Mem | awk '{print $3}')
+            MEM_TOTAL=$(free -h | grep Mem | awk '{print $2}')
 
-              # Перезапускаем бота чтобы освободить память
+            if [ "$MEM" -gt 85 ]; then
               fuser -k 8000/tcp 2>/dev/null || true
               sleep 2
               systemctl restart saloon-bot
               sleep 5
-
-              # Очищаем кэши памяти
               sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 
               MEM_AFTER=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
-              echo "✅ Memory freed: ${MEM_USAGE}% → ${MEM_AFTER}%"
-              RESTARTED="$RESTARTED memory_cleaned"
+              ACTIONS="${ACTIONS}ram_cleaned_${MEM}%>${MEM_AFTER}% "
 
-              # Если всё ещё > 95% — критическая проблема
               if [ "$MEM_AFTER" -gt 95 ]; then
-                ISSUES="$ISSUES memory_critical_${MEM_AFTER}%"
+                ISSUES="${ISSUES}ram_critical_${MEM_AFTER}% "
               fi
-            else
-              echo "✅ Memory usage: ${MEM_USAGE}%"
+              MEM=$MEM_AFTER
             fi
 
-            # 7. Проверяем что бот отвечает на порту
-            echo "Checking bot API..."
+            # --- API check ---
+            API="ok"
             if ! curl -s --max-time 5 http://localhost:8000/health > /dev/null 2>&1; then
-              # Попробуем базовый endpoint
               if ! curl -s --max-time 5 http://localhost:8000/ > /dev/null 2>&1; then
-                echo "⚠️ Bot API not responding on port 8000"
-                # Не добавляем в ISSUES если сервис работает - может не быть /health endpoint
+                API="no_response"
               fi
-            else
-              echo "✅ Bot API responding"
             fi
 
-            echo "=== Health Check Complete ==="
+            # --- Uptime ---
+            UPTIME=$(uptime -p | sed 's/up //')
+            LOAD=$(cat /proc/loadavg | awk '{print $1}')
+
+            # Output
+            echo "SERVICES: bot=$BOT nginx=$NGINX pg=$PG redis=$REDIS api=$API"
+            echo "RESOURCES: disk=${DISK}% (${DISK_USED}/${DISK_TOTAL}) ram=${MEM}% (${MEM_USED}/${MEM_TOTAL})"
+            echo "SYSTEM: uptime=$UPTIME load=$LOAD"
+            echo "ACTIONS: $ACTIONS"
             echo "ISSUES: $ISSUES"
-            echo "RESTARTED: $RESTARTED"
-            echo "DISK_USAGE: $DISK_USAGE"
-            echo "MEM_USAGE: $MEM_USAGE"
 
-            # Записываем результаты для следующих шагов
-            echo "ISSUES=$ISSUES" >> $GITHUB_OUTPUT 2>/dev/null || echo "ISSUES=$ISSUES"
-            echo "RESTARTED=$RESTARTED" >> $GITHUB_OUTPUT 2>/dev/null || echo "RESTARTED=$RESTARTED"
-            echo "DISK_USAGE=$DISK_USAGE" >> $GITHUB_OUTPUT 2>/dev/null || echo "DISK_USAGE=$DISK_USAGE"
-            echo "MEM_USAGE=$MEM_USAGE" >> $GITHUB_OUTPUT 2>/dev/null || echo "MEM_USAGE=$MEM_USAGE"
-
-            # Выходим с ошибкой если есть нерешённые проблемы
             if [ -n "$ISSUES" ]; then
               exit 1
             fi
 
-      - name: Notify Telegram (Issues Found)
+      # Only notify when something happened (not every 10 min)
+      - name: Notify Telegram (Critical)
         if: failure()
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            🚨 *Health Check: Проблемы!*
+            *HEALTH ALERT*
 
-            ⏰ Время: ${{ github.event.schedule && 'Автоматическая проверка' || 'Ручная проверка' }}
+            One or more services failed to recover.
+            Auto-restart was attempted but issues remain.
 
-            Проверь сервер - возможные проблемы:
-            - Сервис не запустился после рестарта
-            - Диск заполнен >85%
-            - Память >90%
-
-            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-      # Уведомляем только если были рестарты (не каждые 10 минут)
-      - name: Notify Telegram (Auto-Restart)
-        if: success() && contains(steps.health.outputs.RESTARTED, ' ')
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
-          token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
-          message: |
-            🔄 *Auto-Restart выполнен!*
-
-            Сервисы были перезапущены автоматически.
-            Всё работает!
+            [Full logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

@@ -1,9 +1,8 @@
-name: Database Backup to Yandex Disk
+name: Database Backup
 
-# Ежедневный бэкап БД + ручной запуск
 on:
   schedule:
-    - cron: '0 4 * * *'  # Каждый день в 4:00 UTC (7:00 МСК)
+    - cron: '0 4 * * *'
   workflow_dispatch:
     inputs:
       notify:
@@ -15,7 +14,7 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Create backup and upload to Yandex Disk
+      - name: Create backup and upload
         uses: appleboy/ssh-action@v1.0.3
         id: backup
         with:
@@ -25,22 +24,14 @@ jobs:
           script: |
             set -e
 
-            # Настройки
             BACKUP_DIR="/root/backups"
             DATE=$(date +%Y-%m-%d_%H-%M-%S)
             BACKUP_FILE="academic_saloon_${DATE}.sql.gz"
             YADISK_FOLDER="Academic_Saloon_Backups"
 
-            echo "=== Starting database backup at $(date) ==="
-
-            # Создаём директорию для бэкапов
             mkdir -p $BACKUP_DIR
 
-            # Создаём дамп БД и сжимаем
-            echo "Creating PostgreSQL dump..."
             cd ~/academic_saloon
-
-            # Читаем только нужные переменные (безопаснее чем source)
             export POSTGRES_USER=$(grep -E '^POSTGRES_USER=' .env | cut -d'=' -f2-)
             export POSTGRES_PASSWORD=$(grep -E '^POSTGRES_PASSWORD=' .env | cut -d'=' -f2-)
             export POSTGRES_DB=$(grep -E '^POSTGRES_DB=' .env | cut -d'=' -f2-)
@@ -48,20 +39,20 @@ jobs:
             export POSTGRES_PORT=$(grep -E '^POSTGRES_PORT=' .env | cut -d'=' -f2-)
             export YANDEX_DISK_TOKEN=$(grep -E '^YANDEX_DISK_TOKEN=' .env | cut -d'=' -f2-)
 
+            # Create dump
             PGPASSWORD=$POSTGRES_PASSWORD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB | gzip > $BACKUP_DIR/$BACKUP_FILE
 
             BACKUP_SIZE=$(ls -lh $BACKUP_DIR/$BACKUP_FILE | awk '{print $5}')
-            echo "Backup created: $BACKUP_FILE ($BACKUP_SIZE)"
 
-            # Загружаем на Яндекс Диск
-            echo "Uploading to Yandex Disk..."
+            # Count tables and rows
+            TABLE_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null | tr -d ' ' || echo "?")
+            ORDER_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM orders" 2>/dev/null | tr -d ' ' || echo "?")
+            USER_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM users" 2>/dev/null | tr -d ' ' || echo "?")
 
-            # Создаём папку на Яндекс Диске (если не существует)
-            curl -s -X PUT \
-              -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
+            # Upload to Yandex Disk
+            curl -s -X PUT -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
               "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER" || true
 
-            # Получаем URL для загрузки
             UPLOAD_URL=$(curl -s -X GET \
               -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
               "https://cloud-api.yandex.net/v1/disk/resources/upload?path=/$YADISK_FOLDER/$BACKUP_FILE&overwrite=true" \
@@ -72,58 +63,54 @@ jobs:
               exit 1
             fi
 
-            # Загружаем файл
             curl -s -T $BACKUP_DIR/$BACKUP_FILE "$UPLOAD_URL"
 
-            echo "✅ Backup uploaded to Yandex Disk: /$YADISK_FOLDER/$BACKUP_FILE"
-
-            # Удаляем старые локальные бэкапы (старше 3 дней)
+            # Cleanup old
             find $BACKUP_DIR -name "academic_saloon_*.sql.gz" -mtime +3 -delete
-            echo "Old local backups cleaned"
 
-            # Удаляем старые бэкапы на Яндекс Диске (оставляем последние 7)
-            echo "Cleaning old Yandex Disk backups..."
             OLD_BACKUPS=$(curl -s -X GET \
               -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
               "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER&limit=100&sort=-created" \
               | grep -o '"name":"academic_saloon_[^"]*"' | cut -d'"' -f4 | tail -n +8)
 
+            DELETED=0
             for old_file in $OLD_BACKUPS; do
-              echo "Deleting old backup: $old_file"
-              curl -s -X DELETE \
-                -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
+              curl -s -X DELETE -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
                 "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER/$old_file&permanently=true"
+              DELETED=$((DELETED + 1))
             done
 
-            echo "=== Backup completed at $(date) ==="
-            echo "BACKUP_FILE=$BACKUP_FILE" >> /tmp/backup_result
-            echo "BACKUP_SIZE=$BACKUP_SIZE" >> /tmp/backup_result
+            REMAINING=$(curl -s -X GET \
+              -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
+              "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER&limit=100" \
+              | grep -o '"name":"academic_saloon_[^"]*"' | wc -l || echo "?")
+
+            echo "=== BACKUP: $BACKUP_FILE | Size: $BACKUP_SIZE | Tables: $TABLE_COUNT | Users: $USER_COUNT | Orders: $ORDER_COUNT | Cloud: $REMAINING copies | Cleaned: $DELETED ==="
 
       - name: Notify Telegram (Success)
         if: success() && (github.event.inputs.notify != 'false')
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            💾 *Backup БД выполнен!*
+            *BACKUP*  ${{ github.event.schedule && '07:00 MSK auto' || 'manual' }}
 
-            📅 Время: ${{ github.event.schedule && 'Автоматический (4:00 МСК)' || 'Ручной запуск' }}
-            📁 Файл: `academic_saloon_${{ github.run_id }}.sql.gz`
-            ☁️ Сохранён в: Яндекс Диск
+            Database dumped and uploaded to Yandex Disk.
+            Retention: 7 copies in cloud, 3 days local.
 
-            ✅ Хранится 7 последних бэкапов
+            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Notify Telegram (Failure)
         if: failure()
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            ❌ *Backup БД провалился!*
+            *BACKUP FAILED*
 
-            ⚠️ Проверь логи:
-            🔗 [Посмотреть](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            Database backup did not complete.
+            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

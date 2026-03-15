@@ -1,6 +1,5 @@
-name: Server Status & Logs
+name: Server Status
 
-# Получить статус сервера и логи по запросу
 on:
   workflow_dispatch:
     inputs:
@@ -16,7 +15,7 @@ on:
           - logs-errors
           - disk-cleanup
       lines:
-        description: 'Number of log lines (for logs actions)'
+        description: 'Number of log lines'
         required: false
         default: '50'
 
@@ -37,76 +36,74 @@ jobs:
 
             case "$ACTION" in
               "status")
-                echo "=== SERVER STATUS ==="
-                echo ""
-                echo "📊 SYSTEM INFO:"
-                echo "Uptime: $(uptime -p)"
-                echo "Load: $(cat /proc/loadavg | awk '{print $1, $2, $3}')"
-                echo ""
-                echo "💾 DISK:"
-                df -h / | tail -1 | awk '{print "Used: "$3" / "$2" ("$5")"}'
-                echo ""
-                echo "🧠 MEMORY:"
-                free -h | grep Mem | awk '{print "Used: "$3" / "$2}'
-                echo ""
-                echo "🤖 SERVICES:"
-                echo -n "Bot: "; systemctl is-active saloon-bot || echo "stopped"
-                echo -n "Nginx: "; systemctl is-active nginx || echo "stopped"
-                echo -n "PostgreSQL: "; systemctl is-active postgresql || echo "stopped"
-                echo -n "Redis: "; (systemctl is-active redis-server 2>/dev/null || systemctl is-active redis 2>/dev/null) || echo "stopped"
-                echo ""
-                echo "📦 LAST DEPLOY:"
-                cd ~/academic_saloon && git log -1 --format="Commit: %h%nDate: %ci%nMessage: %s"
-                echo ""
-                echo "🔒 SSL CERT:"
-                DOMAIN="academic-saloon.duckdns.org"
-                EXPIRY=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
-                if [ -n "$EXPIRY" ]; then
-                  echo "Expires: $EXPIRY"
-                else
-                  echo "Could not check SSL"
+                UPTIME=$(uptime -p | sed 's/up //')
+                LOAD=$(cat /proc/loadavg | awk '{print $1, $2, $3}')
+                DISK_PCT=$(df -h / | tail -1 | awk '{print $5}')
+                DISK_USED=$(df -h / | tail -1 | awk '{print $3}')
+                DISK_TOTAL=$(df -h / | tail -1 | awk '{print $2}')
+                MEM_PCT=$(free | grep Mem | awk '{printf("%.0f%%", $3/$2*100)}')
+                MEM_USED=$(free -h | grep Mem | awk '{print $3}')
+                MEM_TOTAL=$(free -h | grep Mem | awk '{print $2}')
+
+                BOT=$(systemctl is-active saloon-bot 2>/dev/null || echo "stopped")
+                NGX=$(systemctl is-active nginx 2>/dev/null || echo "stopped")
+                PG=$(systemctl is-active postgresql 2>/dev/null || echo "stopped")
+                RD=$((systemctl is-active redis-server 2>/dev/null || systemctl is-active redis 2>/dev/null) || echo "stopped")
+
+                cd ~/academic_saloon
+                LAST_COMMIT=$(git log -1 --format='%h %s' | head -c 80)
+                LAST_DEPLOY=$(git log -1 --format='%cr')
+
+                API_STATUS="down"
+                if curl -s --max-time 3 http://localhost:8000/health > /dev/null 2>&1; then
+                  API_STATUS="ok"
                 fi
+
+                DOMAIN="academic-saloon.duckdns.org"
+                SSL_DAYS=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+                if [ -n "$SSL_DAYS" ]; then
+                  SSL_TS=$(date -d "$SSL_DAYS" +%s)
+                  NOW_TS=$(date +%s)
+                  SSL_LEFT=$(( (SSL_TS - NOW_TS) / 86400 ))
+                  SSL_INFO="${SSL_LEFT}d"
+                else
+                  SSL_INFO="unknown"
+                fi
+
+                # Bot process RAM
+                BOT_RAM=$(ps aux | grep 'python.*main.py\|uvicorn' | grep -v grep | awk '{sum+=$6} END {printf("%.0fMB", sum/1024)}' 2>/dev/null || echo "?")
+
+                echo "=== SERVER STATUS ==="
+                echo "Uptime: $UPTIME | Load: $LOAD"
+                echo "Disk: $DISK_USED/$DISK_TOTAL ($DISK_PCT) | RAM: $MEM_USED/$MEM_TOTAL ($MEM_PCT)"
+                echo "Bot: $BOT ($BOT_RAM) | API: $API_STATUS | Nginx: $NGX | PG: $PG | Redis: $RD"
+                echo "SSL: $SSL_INFO | Deploy: $LAST_DEPLOY"
+                echo "Last: $LAST_COMMIT"
                 ;;
 
               "logs-bot")
-                echo "=== BOT LOGS (last $LINES lines) ==="
                 journalctl -u saloon-bot --no-pager -n $LINES
                 ;;
 
               "logs-nginx")
-                echo "=== NGINX LOGS (last $LINES lines) ==="
-                echo "--- Access Log ---"
+                echo "--- Access ---"
                 tail -n $((LINES/2)) /var/log/nginx/access.log 2>/dev/null || echo "No access log"
                 echo ""
-                echo "--- Error Log ---"
+                echo "--- Errors ---"
                 tail -n $((LINES/2)) /var/log/nginx/error.log 2>/dev/null || echo "No error log"
                 ;;
 
               "logs-errors")
-                echo "=== ERROR LOGS (last $LINES lines) ==="
                 journalctl -u saloon-bot --no-pager -n $LINES -p err
                 ;;
 
               "disk-cleanup")
-                echo "=== DISK CLEANUP ==="
-                echo "Before:"
-                df -h / | tail -1
-
-                # Очищаем логи старше 7 дней
+                echo "Before: $(df -h / | tail -1 | awk '{print $5}')"
                 journalctl --vacuum-time=7d 2>/dev/null || true
-
-                # Очищаем npm cache
                 npm cache clean --force 2>/dev/null || true
-
-                # Очищаем apt cache
                 apt-get clean 2>/dev/null || true
-
-                # Удаляем старые бэкапы
                 find /root/backups -name "*.sql.gz" -mtime +7 -delete 2>/dev/null || true
-
-                echo "After:"
-                df -h / | tail -1
-                echo "✅ Cleanup complete"
+                echo "After: $(df -h / | tail -1 | awk '{print $5}')"
                 ;;
             esac
 
@@ -114,10 +111,10 @@ jobs:
         if: always()
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            📋 *Server ${{ github.event.inputs.action }}*
+            *SERVER ${{ github.event.inputs.action }}*
 
-            🔗 [Посмотреть полный вывод](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Full output](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
