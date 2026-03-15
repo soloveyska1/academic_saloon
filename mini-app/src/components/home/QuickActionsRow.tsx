@@ -1,10 +1,11 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { QUICK_ACTIONS } from './constants'
 import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  QUICK ACTIONS ROW — Elite Edition
+//  Now accepts user-specific data to show real values instead of static text
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface QuickActionsRowProps {
@@ -12,6 +13,7 @@ interface QuickActionsRowProps {
   onOpenModal: (modal: 'cashback' | 'guarantees') => void
   onOpenUrgentSheet: () => void
   haptic: (style: 'light' | 'medium' | 'heavy') => void
+  cashbackPercent?: number
 }
 
 export const QuickActionsRow = memo(function QuickActionsRow({
@@ -19,7 +21,18 @@ export const QuickActionsRow = memo(function QuickActionsRow({
   onOpenModal,
   onOpenUrgentSheet,
   haptic,
+  cashbackPercent,
 }: QuickActionsRowProps) {
+  // Override static subtitles with real user data
+  const actions = useMemo(() => {
+    return QUICK_ACTIONS.map(action => {
+      if (action.id === 'cashback' && cashbackPercent != null && cashbackPercent > 0) {
+        return { ...action, subtitle: `ваш ${cashbackPercent}%` }
+      }
+      return action
+    })
+  }, [cashbackPercent])
+
   const handleClick = (action: typeof QUICK_ACTIONS[0]) => {
     haptic('light')
 
@@ -36,7 +49,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
 
   return (
     <div className={s.scrollRow} style={{ marginBottom: 20, gap: 10 }}>
-      {QUICK_ACTIONS.map((action, index) => (
+      {actions.map((action, index) => (
         <motion.button
           key={action.id}
           initial={{ opacity: 0, y: 20 }}

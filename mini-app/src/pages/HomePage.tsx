@@ -141,6 +141,22 @@ export function HomePage({ user }: Props) {
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
   const inviteLink = buildReferralLink(botUsername, user.telegram_id)
 
+  // Three returning-user sub-states for personalized flow
+  const returningUserState = useMemo(() => {
+    if (isNewUser) return 'new' as const
+    const hasActive = activeOrders > 0
+    if (hasActive) return 'active' as const
+
+    // Check if last order was completed recently (within 7 days)
+    const lastOrder = user.orders[0]
+    if (lastOrder?.status === 'completed' && lastOrder.completed_at) {
+      const completedDate = new Date(lastOrder.completed_at)
+      const daysSince = (Date.now() - completedDate.getTime()) / (1000 * 60 * 60 * 24)
+      if (daysSince <= 7) return 'just-completed' as const
+    }
+    return 'idle' as const
+  }, [isNewUser, activeOrders, user.orders])
+
   return (
     <>
     <main
@@ -211,13 +227,13 @@ export function HomePage({ user }: Props) {
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════════════════
-             RETURNING USER FLOW — Guru-level personalized experience:
-             Bonus urgency → Active order tracker → New order CTA →
-             Actions priority → Quick tools → Level progress →
-             Referral program → Promo
+             RETURNING USER FLOW — Three sub-states:
+             A) Active orders  → tracker-first, action-oriented
+             B) Just completed → celebration + quick reorder prominent
+             C) Idle returning → win-back FOMO + trust reinforcement
              ═══════════════════════════════════════════════════════════════════ */
           <>
-            {/* 1. Bonus Expiry Alert — Loss aversion trigger */}
+            {/* ── BONUS ALERT — Shows in all returning states ── */}
             {user.bonus_expiry && (
               <BonusExpiryAlert
                 bonusExpiry={user.bonus_expiry}
@@ -226,26 +242,50 @@ export function HomePage({ user }: Props) {
               />
             )}
 
-            {/* 2. Active Order Dashboard — Uber-style tracking */}
-            <ActiveOrderDashboard
-              orders={user.orders}
-              onNavigate={navigate}
-              haptic={haptic}
-            />
-
-            {/* 3. New Order CTA — Always accessible */}
-            <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-
-            {/* 4. Quick reorder — Friction-free repeat purchase */}
-            {user.orders.length > 0 && (
-              <QuickReorderCard
-                lastOrder={user.orders[0]}
-                onReorder={handleReorder}
-                haptic={haptic}
-              />
+            {/* ── STATE A: ACTIVE ORDERS — Tracker-first, minimal noise ── */}
+            {returningUserState === 'active' && (
+              <>
+                <ActiveOrderDashboard
+                  orders={user.orders}
+                  onNavigate={navigate}
+                  haptic={haptic}
+                />
+                <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+              </>
             )}
 
-            {/* 5. Quick Actions — Tools row */}
+            {/* ── STATE B: JUST COMPLETED — Celebrate + next order ── */}
+            {returningUserState === 'just-completed' && (
+              <>
+                {user.orders.length > 0 && (
+                  <QuickReorderCard
+                    lastOrder={user.orders[0]}
+                    onReorder={handleReorder}
+                    haptic={haptic}
+                  />
+                )}
+                <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                <TrustStatsStrip />
+              </>
+            )}
+
+            {/* ── STATE C: IDLE RETURNING — Win-back with social proof ── */}
+            {returningUserState === 'idle' && (
+              <>
+                <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                {user.orders.length > 0 && (
+                  <QuickReorderCard
+                    lastOrder={user.orders[0]}
+                    onReorder={handleReorder}
+                    haptic={haptic}
+                  />
+                )}
+                <TrustStatsStrip />
+                <LiveActivityFeed />
+              </>
+            )}
+
+            {/* ── SHARED: Quick tools, gamification, promo, referral ── */}
             <QuickActionsRow
               onNavigate={navigate}
               onOpenModal={(modal: ModalName) => {
@@ -257,17 +297,15 @@ export function HomePage({ user }: Props) {
                 actions.openModal('urgentSheet')
               }}
               haptic={haptic}
+              cashbackPercent={user.rank.cashback}
             />
 
-            {/* 6. Level Progress — Gamification: progress to next rank */}
-            {!user.rank.is_max && (
-              <LevelProgressCard
-                rank={user.rank}
-                displayNextRank={user.rank.next_rank}
-              />
-            )}
+            <LevelProgressCard
+              rank={user.rank}
+              displayNextRank={user.rank.next_rank}
+            />
 
-            {/* 7. Promo Code Section */}
+            {/* Promo Code Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -281,7 +319,7 @@ export function HomePage({ user }: Props) {
               />
             </motion.div>
 
-            {/* 8. Referral Program — Full-featured partner card */}
+            {/* Referral Program */}
             <ReputationCard
               referralCode={user.referral_code}
               referralsCount={user.referrals_count}
