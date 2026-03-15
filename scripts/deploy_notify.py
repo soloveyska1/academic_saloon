@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """
-Premium image-based deploy notification for Academic Saloon.
+Premium image-based deploy & merge notifications for Academic Saloon.
 
-Generates a beautiful PNG dashboard card using Pillow and sends
-it via Telegram sendPhoto API.
+Generates stunning PNG dashboard cards using Pillow with:
+- Circular health gauge with glow
+- Gradient backgrounds and accent lines
+- Subtle dot-grid texture
+- Sophisticated typography hierarchy
+- Glowing status indicators
 
 Usage:
     python3 scripts/deploy_notify.py --chat-id ID --old-commit SHA --new-commit SHA
+    python3 scripts/deploy_notify.py --mode merge --chat-id ID ...
 """
 
 import argparse
 import io
+import math
 import os
 import re
 import subprocess
@@ -32,52 +38,62 @@ FONTS_DIR = Path(__file__).parent / "fonts"
 
 # ─── Color Palette ───────────────────────────────────────────────────────
 
-class C:
-    """Dark luxury color palette."""
-    BG = (12, 12, 16)           # Deep black
-    CARD = (22, 22, 28)         # Card background
-    CARD_LIGHT = (30, 30, 38)   # Lighter card
-    BORDER = (45, 45, 55)       # Subtle borders
+BG_DARK = (10, 10, 14)
+BG_CARD = (18, 18, 24)
+BG_CARD2 = (24, 24, 32)
+BG_ELEVATED = (32, 32, 42)
+BORDER = (42, 42, 55)
+BORDER_LIGHT = (55, 55, 70)
 
-    GOLD = (212, 175, 55)       # Primary accent
-    GOLD_DIM = (160, 130, 40)   # Dimmed gold
-    GOLD_GLOW = (212, 175, 55, 30)  # Glow effect
+GOLD = (212, 175, 55)
+GOLD_LIGHT = (235, 206, 110)
+GOLD_DIM = (140, 115, 35)
+GOLD_DARK = (80, 65, 20)
 
-    GREEN = (34, 197, 94)       # Success / active
-    GREEN_DIM = (22, 120, 60)   # Dim green
-    RED = (239, 68, 68)         # Error
-    RED_DIM = (160, 45, 45)     # Dim red
-    AMBER = (245, 158, 11)      # Warning
-    BLUE = (59, 130, 246)       # Info / links
+EMERALD = (16, 185, 129)
+EMERALD_LIGHT = (52, 211, 153)
+EMERALD_DIM = (10, 120, 80)
 
-    TEXT = (240, 240, 245)      # Primary text
-    TEXT_SEC = (160, 160, 175)  # Secondary text
-    TEXT_DIM = (100, 100, 115)  # Dimmed text
+SKY = (56, 189, 248)
+SKY_DIM = (30, 100, 140)
 
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
+ROSE = (244, 63, 94)
+ROSE_DIM = (140, 35, 50)
+
+AMBER = (245, 158, 11)
+AMBER_DIM = (160, 100, 10)
+
+VIOLET = (139, 92, 246)
+VIOLET_DIM = (80, 50, 150)
+
+TEXT_PRIMARY = (245, 245, 250)
+TEXT_SECONDARY = (160, 160, 180)
+TEXT_MUTED = (95, 95, 115)
+TEXT_DIM = (65, 65, 80)
 
 
 # ─── Fonts ───────────────────────────────────────────────────────────────
 
 def load_fonts() -> dict:
-    """Load all required fonts."""
-    fonts = {}
+    f = {}
     try:
-        fonts["title"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Bold.ttf"), 28)
-        fonts["heading"] = ImageFont.truetype(str(FONTS_DIR / "Inter-SemiBold.ttf"), 18)
-        fonts["body"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Medium.ttf"), 15)
-        fonts["small"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Regular.ttf"), 13)
-        fonts["tiny"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Regular.ttf"), 11)
+        f["hero"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Bold.ttf"), 32)
+        f["title"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Bold.ttf"), 22)
+        f["heading"] = ImageFont.truetype(str(FONTS_DIR / "Inter-SemiBold.ttf"), 16)
+        f["body"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Medium.ttf"), 14)
+        f["caption"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Regular.ttf"), 12)
+        f["tiny"] = ImageFont.truetype(str(FONTS_DIR / "Inter-Regular.ttf"), 10)
 
-        fonts["mono_lg"] = ImageFont.truetype(str(FONTS_DIR / "JetBrainsMono-Bold.ttf"), 22)
-        fonts["mono"] = ImageFont.truetype(str(FONTS_DIR / "JetBrainsMono-Medium.ttf"), 14)
-        fonts["mono_sm"] = ImageFont.truetype(str(FONTS_DIR / "JetBrainsMono-Regular.ttf"), 12)
+        f["num_xl"] = ImageFont.truetype(str(FONTS_DIR / "JetBrainsMono-Bold.ttf"), 28)
+        f["num_lg"] = ImageFont.truetype(str(FONTS_DIR / "JetBrainsMono-Bold.ttf"), 20)
+        f["mono"] = ImageFont.truetype(str(FONTS_DIR / "JetBrainsMono-Medium.ttf"), 13)
+        f["mono_sm"] = ImageFont.truetype(str(FONTS_DIR / "JetBrainsMono-Regular.ttf"), 11)
     except OSError:
-        # Fallback to default
-        for key in ["title", "heading", "body", "small", "tiny", "mono_lg", "mono", "mono_sm"]:
-            fonts[key] = ImageFont.load_default()
-    return fonts
+        default = ImageFont.load_default()
+        for key in ["hero", "title", "heading", "body", "caption", "tiny",
+                     "num_xl", "num_lg", "mono", "mono_sm"]:
+            f[key] = default
+    return f
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────
@@ -109,67 +125,131 @@ def human_uptime(text: str) -> str:
     return " ".join(parts[:3]) or text
 
 
+def lerp_color(c1, c2, t):
+    """Linearly interpolate between two RGB colors."""
+    return tuple(int(c1[i] + (c2[i] - c1[i]) * t) for i in range(3))
+
+
 # ─── Drawing Primitives ──────────────────────────────────────────────────
 
+def draw_dot_grid(draw, x1, y1, x2, y2, spacing=16, color=(255, 255, 255), alpha=12):
+    """Draw a subtle dot grid pattern."""
+    dot_color = (*color[:3], alpha) if len(color) == 3 else color
+    # Since we're on RGBA, just draw low-alpha dots
+    c = (color[0], color[1], color[2])
+    # Approximate alpha by blending with background
+    bg = BG_DARK
+    t = alpha / 255
+    blended = tuple(int(bg[i] * (1 - t) + c[i] * t) for i in range(3))
+    for x in range(x1, x2, spacing):
+        for y in range(y1, y2, spacing):
+            draw.point((x, y), fill=blended)
+
+
+def draw_gradient_h(draw, x1, y1, x2, y2, c_left, c_right):
+    """Draw horizontal gradient rectangle."""
+    w = x2 - x1
+    for i in range(w):
+        t = i / max(1, w - 1)
+        c = lerp_color(c_left, c_right, t)
+        draw.line([(x1 + i, y1), (x1 + i, y2)], fill=c)
+
+
+def draw_gradient_v(draw, x1, y1, x2, y2, c_top, c_bottom):
+    """Draw vertical gradient rectangle."""
+    h = y2 - y1
+    for i in range(h):
+        t = i / max(1, h - 1)
+        c = lerp_color(c_top, c_bottom, t)
+        draw.line([(x1, y1 + i), (x2, y1 + i)], fill=c)
+
+
 def draw_rounded_rect(draw, xy, radius, fill=None, outline=None, width=1):
-    """Draw a rounded rectangle."""
-    x1, y1, x2, y2 = xy
     draw.rounded_rectangle(xy, radius=radius, fill=fill, outline=outline, width=width)
 
 
-def draw_gradient_bar(img, xy, pct, color_start, color_end, bg_color=C.CARD_LIGHT, radius=6):
-    """Draw a gradient progress bar."""
-    draw = ImageDraw.Draw(img)
-    x1, y1, x2, y2 = xy
-    bar_w = x2 - x1
-    bar_h = y2 - y1
+def draw_glow_circle(img, cx, cy, radius, color, intensity=0.4):
+    """Draw a soft glow behind an element."""
+    glow = Image.new("RGB", img.size, BG_DARK)
+    glow_draw = ImageDraw.Draw(glow)
 
-    # Background
-    draw.rounded_rectangle((x1, y1, x2, y2), radius=radius, fill=bg_color)
+    for r in range(radius, 0, -1):
+        t = 1 - (r / radius)
+        alpha = t * t * intensity
+        c = lerp_color(BG_DARK, color, alpha)
+        glow_draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=c)
 
-    # Fill
-    fill_w = max(0, int(bar_w * min(100, pct) / 100))
+    # Blend onto main image
+    from PIL import ImageChops
+    img.paste(ImageChops.lighter(img.convert("RGB"), glow).convert("RGBA"))
+
+
+def draw_arc_gauge(draw, cx, cy, radius, thickness, pct, color_start, color_end, bg_color=BORDER):
+    """Draw a circular arc gauge (270 degrees)."""
+    start_angle = 135  # bottom-left
+    sweep = 270
+
+    # Background arc
+    for deg in range(sweep):
+        angle = math.radians(start_angle + deg)
+        for t in range(thickness):
+            r = radius - t
+            x = cx + r * math.cos(angle)
+            y = cy + r * math.sin(angle)
+            draw.point((int(x), int(y)), fill=bg_color)
+
+    # Filled arc
+    fill_degrees = int(sweep * min(100, pct) / 100)
+    for deg in range(fill_degrees):
+        t_color = deg / max(1, sweep)
+        color = lerp_color(color_start, color_end, t_color)
+        angle = math.radians(start_angle + deg)
+        for t in range(thickness):
+            r = radius - t
+            x = cx + r * math.cos(angle)
+            y = cy + r * math.sin(angle)
+            draw.point((int(x), int(y)), fill=color)
+
+
+def draw_progress_bar(draw, x1, y1, x2, y2, pct, color, bg=BG_ELEVATED, radius=4):
+    """Draw a sleek progress bar."""
+    draw.rounded_rectangle((x1, y1, x2, y2), radius=radius, fill=bg)
+    fill_w = int((x2 - x1) * min(100, pct) / 100)
     if fill_w > radius * 2:
-        # Draw gradient fill
-        for i in range(fill_w):
-            t = i / max(1, fill_w - 1)
-            r = int(color_start[0] + (color_end[0] - color_start[0]) * t)
-            g = int(color_start[1] + (color_end[1] - color_start[1]) * t)
-            b = int(color_start[2] + (color_end[2] - color_start[2]) * t)
-            draw.line([(x1 + i, y1 + 1), (x1 + i, y2 - 1)], fill=(r, g, b))
-
-        # Mask corners
-        mask = Image.new("L", img.size, 255)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.rounded_rectangle((x1, y1, x1 + fill_w, y2), radius=radius, fill=255)
-        # Apply by redrawing background outside fill area
-        draw.rounded_rectangle((x1 + fill_w, y1, x2, y2), radius=radius, fill=bg_color)
+        draw.rounded_rectangle((x1, y1, x1 + fill_w, y2), radius=radius, fill=color)
+        # Highlight on top edge
+        highlight = lerp_color(color, (255, 255, 255), 0.3)
+        draw.line([(x1 + radius, y1 + 1), (x1 + fill_w - radius, y1 + 1)], fill=highlight)
 
 
-def draw_status_dot(draw, x, y, active, size=10):
-    """Draw a glowing status indicator dot."""
+def draw_status_indicator(draw, x, y, active, size=8):
+    """Draw a glowing status dot."""
     if active:
         # Outer glow
-        draw.ellipse((x - 2, y - 2, x + size + 2, y + size + 2), fill=(34, 197, 94, 40))
-        draw.ellipse((x, y, x + size, y + size), fill=C.GREEN)
-        # Inner highlight
-        draw.ellipse((x + 2, y + 2, x + size - 4, y + size - 4), fill=(80, 220, 130))
+        for r in range(size + 4, size, -1):
+            alpha = (r - size) / 4
+            c = lerp_color(BG_CARD, EMERALD, 0.15 * alpha)
+            draw.ellipse((x - r + size, y - r + size, x + r, y + r), fill=c)
+        draw.ellipse((x, y, x + size, y + size), fill=EMERALD)
+        # Inner bright spot
+        draw.ellipse((x + 2, y + 2, x + size - 3, y + size - 3), fill=EMERALD_LIGHT)
     else:
-        draw.ellipse((x, y, x + size, y + size), fill=C.RED_DIM)
-        draw.ellipse((x + 2, y + 2, x + size - 2, y + size - 2), fill=C.RED)
+        draw.ellipse((x, y, x + size, y + size), fill=ROSE_DIM)
+        draw.ellipse((x + 1, y + 1, x + size - 1, y + size - 1), fill=ROSE)
 
 
-def draw_gold_line(draw, x1, y, x2, thickness=1):
-    """Draw a subtle gold separator line with gradient fade."""
-    for i in range(x2 - x1):
-        t = i / (x2 - x1)
-        # Fade in and out
-        alpha_t = min(t * 4, 1.0) * min((1 - t) * 4, 1.0)
-        r = int(C.GOLD[0] * alpha_t + C.CARD[0] * (1 - alpha_t))
-        g = int(C.GOLD[1] * alpha_t + C.CARD[1] * (1 - alpha_t))
-        b = int(C.GOLD[2] * alpha_t + C.CARD[2] * (1 - alpha_t))
-        for dy in range(thickness):
-            draw.point((x1 + i, y + dy), fill=(r, g, b))
+def draw_gold_separator(draw, x1, y, x2):
+    """Draw a premium gold gradient line."""
+    w = x2 - x1
+    for i in range(w):
+        t = i / w
+        fade = math.sin(t * math.pi)  # sine fade in/out
+        c = lerp_color(BG_CARD if BG_CARD else BG_DARK, GOLD, fade * 0.6)
+        draw.point((x1 + i, y), fill=c)
+
+
+def text_width(font, text):
+    return font.getlength(text)
 
 
 # ─── Metrics ─────────────────────────────────────────────────────────────
@@ -208,7 +288,6 @@ def collect_metrics(old_commit: str, new_commit: str) -> dict:
     m["uptime"] = human_uptime(sh("uptime -p"))
     m["load"] = sh("cat /proc/loadavg | awk '{print $1}'")
 
-    # Services
     m["bot_active"] = sh("systemctl is-active saloon-bot 2>/dev/null") == "active"
     m["nginx_active"] = sh("systemctl is-active nginx 2>/dev/null") == "active"
     m["pg_active"] = sh("systemctl is-active postgresql 2>/dev/null") == "active"
@@ -245,310 +324,431 @@ def collect_metrics(old_commit: str, new_commit: str) -> dict:
         ssl_ts = sh(f"date -d '{ssl_output}' +%s 2>/dev/null")
         m["ssl_days"] = (int(ssl_ts) - int(time.time())) // 86400 if ssl_ts else -1
 
-    # Health score
     health = 100
-    if not m["bot_active"]:
-        health -= 35
-    if not m["api_ok"]:
-        health -= 20
-    if not m["nginx_active"]:
-        health -= 20
-    if not m["pg_active"]:
-        health -= 20
-    if m["disk_pct"] > 85:
-        health -= 10
-    if m["ram_pct"] > 85:
-        health -= 10
+    if not m["bot_active"]: health -= 35
+    if not m["api_ok"]: health -= 20
+    if not m["nginx_active"]: health -= 20
+    if not m["pg_active"]: health -= 20
+    if m["disk_pct"] > 85: health -= 10
+    if m["ram_pct"] > 85: health -= 10
     m["health"] = max(0, health)
 
     return m
 
 
-# ─── Image Builder ───────────────────────────────────────────────────────
+# ─── Deploy Card Builder ─────────────────────────────────────────────────
 
 def build_deploy_card(m: dict, deploy_secs: int, commit_url: str, logs_url: str) -> bytes:
-    """Generate a beautiful PNG deploy dashboard card."""
-
     fonts = load_fonts()
+    W, H = 820, 760
+    PAD = 36
 
-    W = 800
-    H = 680
-    PAD = 32
-    CARD_PAD = 20
-
-    img = Image.new("RGBA", (W, H), C.BG)
+    img = Image.new("RGB", (W, H), BG_DARK)
     draw = ImageDraw.Draw(img)
 
-    y = PAD
+    # ═══ BACKGROUND TEXTURE ═══
+    draw_dot_grid(draw, 0, 0, W, H, spacing=20, color=(255, 255, 255), alpha=6)
 
-    # ═══ TOP ACCENT LINE ═══
-    for x in range(0, W):
-        t = x / W
-        r = int(C.GOLD[0] * (0.3 + 0.7 * (1 - abs(2 * t - 1))))
-        g = int(C.GOLD[1] * (0.3 + 0.7 * (1 - abs(2 * t - 1))))
-        b = int(C.GOLD[2] * (0.3 + 0.7 * (1 - abs(2 * t - 1))))
-        for dy in range(3):
-            draw.point((x, dy), fill=(r, g, b))
+    # ═══ TOP GRADIENT BAR ═══
+    draw_gradient_h(draw, 0, 0, W, 4, GOLD_DIM, GOLD)
+    # Subtle glow under the gold bar
+    for y in range(4, 30):
+        t = (y - 4) / 26
+        alpha = (1 - t) * 0.08
+        c = lerp_color(BG_DARK, GOLD, alpha)
+        draw.line([(0, y), (W, y)], fill=c)
 
-    # ═══ HEADER ═══
-    y = 20
+    y = 36
 
-    # Deploy number badge
+    # ═══ HEADER SECTION ═══
+    # Deploy badge — pill shape
     deploy_text = f"#{m['deploy_num']}"
-    badge_w = fonts["mono"].getlength(deploy_text) + 16
-    draw_rounded_rect(draw, (W - PAD - badge_w, y + 2, W - PAD, y + 26), radius=12,
-                      fill=C.GOLD_DIM, outline=C.GOLD)
-    draw.text((W - PAD - badge_w + 8, y + 4), deploy_text, fill=C.BG, font=fonts["mono"])
+    badge_w = int(text_width(fonts["mono"], deploy_text)) + 20
+    badge_x = W - PAD - badge_w
+    draw_rounded_rect(draw, (badge_x, y, badge_x + badge_w, y + 28), radius=14,
+                      fill=GOLD_DARK, outline=GOLD_DIM)
+    draw.text((badge_x + 10, y + 5), deploy_text, fill=GOLD_LIGHT, font=fonts["mono"])
 
-    # Title
-    draw.text((PAD, y), "ДЕПЛОЙ ЗАВЕРШЁН", fill=C.GOLD, font=fonts["title"])
-    y += 38
+    # Title with subtle shadow
+    draw.text((PAD + 2, y + 2), "ДЕПЛОЙ", fill=(5, 5, 8), font=fonts["hero"])  # shadow
+    draw.text((PAD, y), "ДЕПЛОЙ", fill=GOLD, font=fonts["hero"])
 
-    # Time info
+    y += 42
+
+    # Timestamp + duration
     mins = deploy_secs // 60
     secs = deploy_secs % 60
     time_str = f"{mins}м {secs}с" if mins else f"{secs}с"
     now_str = datetime.now().strftime("%d.%m.%Y  %H:%M")
-    draw.text((PAD, y), f"{now_str}  ·  {time_str}", fill=C.TEXT_DIM, font=fonts["small"])
-    y += 28
+    draw.text((PAD, y), now_str, fill=TEXT_MUTED, font=fonts["caption"])
+    draw.text((PAD + text_width(fonts["caption"], now_str) + 12, y), f"·  {time_str}",
+              fill=TEXT_DIM, font=fonts["caption"])
+    y += 24
 
     # Gold separator
-    draw_gold_line(draw, PAD, y, W - PAD)
+    draw_gold_separator(draw, PAD, y, W - PAD)
     y += 16
 
-    # ═══ COMMIT INFO ═══
-    commit_msg = m["commit_msg"][:65]
-    draw.text((PAD, y), commit_msg, fill=C.TEXT, font=fonts["heading"])
-    y += 28
+    # ═══ COMMIT SECTION ═══
+    commit_msg = m["commit_msg"][:62]
+    draw.text((PAD, y), commit_msg, fill=TEXT_PRIMARY, font=fonts["title"])
+    y += 30
 
-    # Commit list
-    for c in m["commits"][:3]:
-        label = c[:60] + "…" if len(c) > 60 else c
-        draw.text((PAD + 16, y), "›", fill=C.GOLD, font=fonts["body"])
-        draw.text((PAD + 30, y), label, fill=C.TEXT_SEC, font=fonts["small"])
+    # Commit list with connecting lines
+    for i, c in enumerate(m["commits"][:4]):
+        label = c[:55] + "…" if len(c) > 55 else c
+        is_last = (i == len(m["commits"][:4]) - 1)
+
+        # Tree connector
+        connector = "└" if is_last else "├"
+        draw.text((PAD + 4, y - 2), connector, fill=BORDER_LIGHT, font=fonts["body"])
+        draw.text((PAD + 18, y), label, fill=TEXT_SECONDARY, font=fonts["caption"])
         y += 20
 
-    y += 8
+    y += 10
 
-    # ═══ DIFF STATS BAR ═══
-    stats_card_y = y
-    draw_rounded_rect(draw, (PAD, y, W - PAD, y + 50), radius=12, fill=C.CARD)
+    # ═══ DIFF STATS CARD ═══
+    card_y = y
+    draw_rounded_rect(draw, (PAD, y, W - PAD, y + 56), radius=12, fill=BG_CARD, outline=BORDER)
 
-    sx = PAD + CARD_PAD
+    sx = PAD + 16
     sy = y + 10
 
-    # File counts with colored dots
-    if m["py"]:
-        draw.ellipse((sx, sy + 5, sx + 8, sy + 13), fill=(59, 130, 246))  # blue for Python
-        draw.text((sx + 12, sy), f'{m["py"]} py', fill=C.TEXT_SEC, font=fonts["mono_sm"])
-        sx += int(fonts["mono_sm"].getlength(f'{m["py"]} py')) + 24
+    # Language dots with labels
+    lang_items = []
+    if m["py"]: lang_items.append((SKY, f"{m['py']} py"))
+    if m["ts"]: lang_items.append((EMERALD, f"{m['ts']} ts"))
+    if m["yml"]: lang_items.append((AMBER, f"{m['yml']} ci"))
 
-    if m["ts"]:
-        draw.ellipse((sx, sy + 5, sx + 8, sy + 13), fill=(49, 196, 141))  # teal for TS
-        draw.text((sx + 12, sy), f'{m["ts"]} ts', fill=C.TEXT_SEC, font=fonts["mono_sm"])
-        sx += int(fonts["mono_sm"].getlength(f'{m["ts"]} ts')) + 24
+    for color, label in lang_items:
+        draw.ellipse((sx, sy + 3, sx + 7, sy + 10), fill=color)
+        draw.text((sx + 11, sy), label, fill=TEXT_SECONDARY, font=fonts["mono_sm"])
+        sx += int(text_width(fonts["mono_sm"], label)) + 22
 
-    if m["yml"]:
-        draw.ellipse((sx, sy + 5, sx + 8, sy + 13), fill=(245, 158, 11))  # amber for YAML
-        draw.text((sx + 12, sy), f'{m["yml"]} yml', fill=C.TEXT_SEC, font=fonts["mono_sm"])
-        sx += int(fonts["mono_sm"].getlength(f'{m["yml"]} yml')) + 24
+    draw.text((sx + 4, sy), f"{m['total_files']} файлов", fill=TEXT_MUTED, font=fonts["mono_sm"])
 
-    # Total files
-    draw.text((sx + 8, sy), f'{m["total_files"]} файлов', fill=C.TEXT_DIM, font=fonts["mono_sm"])
+    # Insertions/deletions on right
+    rx = W - PAD - 16
+    if m["deletions"]:
+        del_t = f"−{m['deletions']}"
+        rx -= int(text_width(fonts["mono_sm"], del_t))
+        draw.text((rx, sy), del_t, fill=ROSE, font=fonts["mono_sm"])
+        rx -= 12
+    if m["insertions"]:
+        ins_t = f"+{m['insertions']}"
+        rx -= int(text_width(fonts["mono_sm"], ins_t))
+        draw.text((rx, sy), ins_t, fill=EMERALD, font=fonts["mono_sm"])
 
-    # Insertions / deletions on the right
-    right_x = W - PAD - CARD_PAD
-    if m["insertions"] or m["deletions"]:
-        del_text = f"−{m['deletions']}"
-        del_w = fonts["mono_sm"].getlength(del_text)
-        draw.text((right_x - del_w, sy), del_text, fill=C.RED, font=fonts["mono_sm"])
+    # Change bar
+    sy += 20
+    total = m["insertions"] + m["deletions"]
+    if total > 0:
+        bx1, bx2 = PAD + 16, W - PAD - 16
+        bw = bx2 - bx1
+        ins_w = max(2, int(bw * m["insertions"] / total))
+        draw.rounded_rectangle((bx1, sy, bx1 + ins_w, sy + 6), radius=3, fill=EMERALD)
+        if ins_w < bw - 2:
+            draw.rounded_rectangle((bx1 + ins_w + 2, sy, bx2, sy + 6), radius=3, fill=ROSE_DIM)
 
-        ins_text = f"+{m['insertions']}"
-        ins_w = fonts["mono_sm"].getlength(ins_text)
-        draw.text((right_x - del_w - ins_w - 16, sy), ins_text, fill=C.GREEN, font=fonts["mono_sm"])
+    y = card_y + 64
 
-    # Second row in stats card
-    sy += 18
-    total_changes = m["insertions"] + m["deletions"]
-    if total_changes > 0:
-        bar_x1 = PAD + CARD_PAD
-        bar_x2 = W - PAD - CARD_PAD
-        bar_w = bar_x2 - bar_x1
-        ins_ratio = m["insertions"] / total_changes
-        ins_w = int(bar_w * ins_ratio)
-
-        # Green bar (insertions)
-        if ins_w > 0:
-            draw.rounded_rectangle((bar_x1, sy + 2, bar_x1 + ins_w, sy + 8), radius=3, fill=C.GREEN)
-        # Red bar (deletions)
-        if ins_w < bar_w:
-            draw.rounded_rectangle((bar_x1 + ins_w + 2, sy + 2, bar_x2, sy + 8), radius=3, fill=C.RED_DIM)
-
-    y = stats_card_y + 58
-
-    # ═══ SERVICES + SYSTEM — TWO COLUMN LAYOUT ═══
-    y += 8
+    # ═══ TWO-COLUMN SECTION ═══
+    col_gap = 14
+    col_w = (W - 2 * PAD - col_gap) // 2
     col1_x = PAD
-    col2_x = W // 2 + 8
-    col_w = W // 2 - PAD - 8
+    col2_x = PAD + col_w + col_gap
 
-    # Left card: Services
-    card_h = 200
-    draw_rounded_rect(draw, (col1_x, y, col1_x + col_w, y + card_h), radius=14, fill=C.CARD)
+    # ─── LEFT: Services Card ───
+    svc_h = 220
+    draw_rounded_rect(draw, (col1_x, y, col1_x + col_w, y + svc_h), radius=14,
+                      fill=BG_CARD, outline=BORDER)
 
-    # Card title
-    cy = y + CARD_PAD
-    draw.text((col1_x + CARD_PAD, cy), "СЕРВИСЫ", fill=C.GOLD_DIM, font=fonts["tiny"])
-    cy += 22
+    cy = y + 16
+    draw.text((col1_x + 18, cy), "СЕРВИСЫ", fill=GOLD_DIM, font=fonts["tiny"])
+    # Decorative line under title
+    draw_gradient_h(draw, col1_x + 18, cy + 14, col1_x + 90, cy + 15, GOLD_DIM, BG_CARD)
+    cy += 26
 
     services = [
-        ("Бот", m["bot_active"], f'{m["bot_ram"]} MB'),
-        ("API", m["api_ok"], f'{m["api_ms"]}мс' if m["api_ok"] else "—"),
-        ("Nginx", m["nginx_active"], ""),
-        ("PostgreSQL", m["pg_active"], ""),
-        ("Redis", m["redis_active"], ""),
+        ("Бот", m["bot_active"], f'{m["bot_ram"]}MB', EMERALD),
+        ("API", m["api_ok"], f'{m["api_ms"]}мс' if m["api_ok"] else "—", SKY),
+        ("Nginx", m["nginx_active"], "", EMERALD),
+        ("PostgreSQL", m["pg_active"], "", VIOLET),
+        ("Redis", m["redis_active"], "", AMBER),
     ]
 
-    for name, active, detail in services:
-        draw_status_dot(draw, col1_x + CARD_PAD, cy + 2, active, size=10)
-        draw.text((col1_x + CARD_PAD + 18, cy), name, fill=C.TEXT if active else C.TEXT_DIM, font=fonts["body"])
+    for name, active, detail, accent in services:
+        draw_status_indicator(draw, col1_x + 18, cy + 3, active)
+        name_color = TEXT_PRIMARY if active else TEXT_MUTED
+        draw.text((col1_x + 32, cy), name, fill=name_color, font=fonts["body"])
         if detail:
-            dw = fonts["mono_sm"].getlength(detail)
-            draw.text((col1_x + col_w - CARD_PAD - dw, cy + 2), detail,
-                      fill=C.TEXT_SEC if active else C.TEXT_DIM, font=fonts["mono_sm"])
-        cy += 28
+            dw = text_width(fonts["mono_sm"], detail)
+            detail_color = TEXT_SECONDARY if active else TEXT_MUTED
+            draw.text((col1_x + col_w - 18 - dw, cy + 1), detail, fill=detail_color, font=fonts["mono_sm"])
+        cy += 34
 
-    # Right card: System
-    draw_rounded_rect(draw, (col2_x, y, col2_x + col_w, y + card_h), radius=14, fill=C.CARD)
+    # ─── RIGHT: System + Health ───
+    draw_rounded_rect(draw, (col2_x, y, col2_x + col_w, y + svc_h), radius=14,
+                      fill=BG_CARD, outline=BORDER)
 
-    cy = y + CARD_PAD
-    draw.text((col2_x + CARD_PAD, cy), "СИСТЕМА", fill=C.GOLD_DIM, font=fonts["tiny"])
-    cy += 22
+    cy = y + 16
+    draw.text((col2_x + 18, cy), "СИСТЕМА", fill=GOLD_DIM, font=fonts["tiny"])
+    draw_gradient_h(draw, col2_x + 18, cy + 14, col2_x + 90, cy + 15, GOLD_DIM, BG_CARD)
+    cy += 28
 
     # Disk
-    draw.text((col2_x + CARD_PAD, cy), "Диск", fill=C.TEXT_SEC, font=fonts["body"])
-    disk_val = f'{m["disk_used"]}/{m["disk_total"]}  {m["disk_pct"]}%'
-    dw = fonts["mono_sm"].getlength(disk_val)
-    draw.text((col2_x + col_w - CARD_PAD - dw, cy + 2), disk_val, fill=C.TEXT, font=fonts["mono_sm"])
-    cy += 22
-
-    # Disk bar
-    disk_color = C.GREEN if m["disk_pct"] < 70 else (C.AMBER if m["disk_pct"] < 85 else C.RED)
-    bar_x1 = col2_x + CARD_PAD
-    bar_x2 = col2_x + col_w - CARD_PAD
-    draw_gradient_bar(img, (bar_x1, cy, bar_x2, cy + 8), m["disk_pct"],
-                      disk_color, disk_color, radius=4)
-    cy += 18
+    draw.text((col2_x + 18, cy), "Диск", fill=TEXT_SECONDARY, font=fonts["body"])
+    disk_label = f"{m['disk_pct']}%"
+    draw.text((col2_x + col_w - 18 - text_width(fonts["mono_sm"], disk_label), cy + 1),
+              disk_label, fill=TEXT_PRIMARY, font=fonts["mono_sm"])
+    cy += 20
+    disk_color = EMERALD if m["disk_pct"] < 70 else (AMBER if m["disk_pct"] < 85 else ROSE)
+    draw_progress_bar(draw, col2_x + 18, cy, col2_x + col_w - 18, cy + 7,
+                      m["disk_pct"], disk_color)
+    disk_info = f"{m['disk_used']} / {m['disk_total']}"
+    draw.text((col2_x + 18, cy + 11), disk_info, fill=TEXT_DIM, font=fonts["tiny"])
+    cy += 30
 
     # RAM
-    draw.text((col2_x + CARD_PAD, cy), "RAM", fill=C.TEXT_SEC, font=fonts["body"])
-    ram_val = f'{m["ram_used"]}/{m["ram_total"]}  {m["ram_pct"]}%'
-    rw = fonts["mono_sm"].getlength(ram_val)
-    draw.text((col2_x + col_w - CARD_PAD - rw, cy + 2), ram_val, fill=C.TEXT, font=fonts["mono_sm"])
-    cy += 22
-
-    # RAM bar
-    ram_color = C.GREEN if m["ram_pct"] < 70 else (C.AMBER if m["ram_pct"] < 85 else C.RED)
-    draw_gradient_bar(img, (bar_x1, cy, bar_x2, cy + 8), m["ram_pct"],
-                      ram_color, ram_color, radius=4)
-    cy += 22
-
-    # Additional system info
-    draw.text((col2_x + CARD_PAD, cy), "Аптайм", fill=C.TEXT_DIM, font=fonts["small"])
-    uw = fonts["mono_sm"].getlength(m["uptime"])
-    draw.text((col2_x + col_w - CARD_PAD - uw, cy), m["uptime"], fill=C.TEXT_SEC, font=fonts["mono_sm"])
+    draw.text((col2_x + 18, cy), "RAM", fill=TEXT_SECONDARY, font=fonts["body"])
+    ram_label = f"{m['ram_pct']}%"
+    draw.text((col2_x + col_w - 18 - text_width(fonts["mono_sm"], ram_label), cy + 1),
+              ram_label, fill=TEXT_PRIMARY, font=fonts["mono_sm"])
     cy += 20
+    ram_color = EMERALD if m["ram_pct"] < 70 else (AMBER if m["ram_pct"] < 85 else ROSE)
+    draw_progress_bar(draw, col2_x + 18, cy, col2_x + col_w - 18, cy + 7,
+                      m["ram_pct"], ram_color)
+    ram_info = f"{m['ram_used']} / {m['ram_total']}"
+    draw.text((col2_x + 18, cy + 11), ram_info, fill=TEXT_DIM, font=fonts["tiny"])
+    cy += 32
 
-    draw.text((col2_x + CARD_PAD, cy), "Нагрузка", fill=C.TEXT_DIM, font=fonts["small"])
-    lw = fonts["mono_sm"].getlength(m["load"])
-    draw.text((col2_x + col_w - CARD_PAD - lw, cy), m["load"], fill=C.TEXT_SEC, font=fonts["mono_sm"])
+    # Uptime + Load
+    draw.text((col2_x + 18, cy), "Аптайм", fill=TEXT_MUTED, font=fonts["caption"])
+    draw.text((col2_x + col_w - 18 - text_width(fonts["mono_sm"], m["uptime"]), cy),
+              m["uptime"], fill=TEXT_SECONDARY, font=fonts["mono_sm"])
+    cy += 20
+    draw.text((col2_x + 18, cy), "Нагрузка", fill=TEXT_MUTED, font=fonts["caption"])
+    draw.text((col2_x + col_w - 18 - text_width(fonts["mono_sm"], m["load"]), cy),
+              m["load"], fill=TEXT_SECONDARY, font=fonts["mono_sm"])
 
-    y += card_h + 12
+    y += svc_h + 14
 
-    # ═══ BOTTOM METRICS ROW ═══
-    metrics_h = 80
-    draw_rounded_rect(draw, (PAD, y, W - PAD, y + metrics_h), radius=14, fill=C.CARD)
+    # ═══ BOTTOM METRICS WITH CIRCULAR GAUGE ═══
+    bottom_h = 140
+    draw_rounded_rect(draw, (PAD, y, W - PAD, y + bottom_h), radius=16, fill=BG_CARD, outline=BORDER)
 
-    # Three metric cells
-    cell_w = (W - 2 * PAD) // 3
-    metrics_data = [
-        ("БАНДЛ", f"{m['bundle_kb'] / 1024:.1f} MB" if m["bundle_kb"] > 1024 else f"{m['bundle_kb']} KB"),
-        ("SSL", f'{m["ssl_days"]}д' if m["ssl_days"] > 0 else "—"),
-        ("ЗДОРОВЬЕ", f'{m["health"]}/100'),
+    # Circular health gauge — center-right
+    gauge_cx = W - PAD - 90
+    gauge_cy = y + bottom_h // 2
+
+    # Determine health colors
+    if m["health"] >= 90:
+        h_c1, h_c2 = EMERALD_DIM, EMERALD_LIGHT
+    elif m["health"] >= 60:
+        h_c1, h_c2 = AMBER_DIM, AMBER
+    else:
+        h_c1, h_c2 = ROSE_DIM, ROSE
+
+    draw_arc_gauge(draw, gauge_cx, gauge_cy, 48, 6, m["health"], h_c1, h_c2)
+
+    # Health number in center
+    h_text = str(m["health"])
+    hw = text_width(fonts["num_xl"], h_text)
+    draw.text((gauge_cx - hw / 2, gauge_cy - 18), h_text, fill=TEXT_PRIMARY, font=fonts["num_xl"])
+    lbl = "здоровье"
+    lw = text_width(fonts["tiny"], lbl)
+    draw.text((gauge_cx - lw / 2, gauge_cy + 14), lbl, fill=TEXT_MUTED, font=fonts["tiny"])
+
+    # Left metrics: Bundle, SSL, Uptime
+    mx = PAD + 24
+    my = y + 20
+
+    metrics = [
+        ("БАНДЛ", f"{m['bundle_kb'] / 1024:.1f}MB" if m["bundle_kb"] > 1024 else f"{m['bundle_kb']}KB", SKY),
+        ("SSL", f"{m['ssl_days']}д" if m["ssl_days"] > 0 else "—", EMERALD if m["ssl_days"] > 14 else ROSE),
+        ("КОММИТОВ", str(m["commit_count"]), VIOLET),
     ]
 
-    for i, (label, value) in enumerate(metrics_data):
-        cx = PAD + i * cell_w + cell_w // 2
-        cy_top = y + 18
+    for label, value, color in metrics:
+        draw.text((mx, my), label, fill=TEXT_DIM, font=fonts["tiny"])
+        draw.text((mx, my + 14), value, fill=color, font=fonts["num_lg"])
+        my += 38
 
-        draw.text((cx - fonts["tiny"].getlength(label) / 2, cy_top),
-                  label, fill=C.GOLD_DIM, font=fonts["tiny"])
+    # Middle: small vertical separator
+    sep_x = PAD + 140
+    draw.line([(sep_x, y + 24), (sep_x, y + bottom_h - 24)], fill=BORDER, width=1)
 
-        # Value
-        val_font = fonts["mono_lg"]
-        vw = val_font.getlength(value)
-        val_color = C.TEXT
+    # Middle-left metrics
+    mx2 = sep_x + 24
+    my2 = y + 20
+    metrics2 = [
+        ("ФАЙЛОВ", str(m["total_files"]), GOLD),
+        ("ДОБАВЛЕНО", f"+{m['insertions']}", EMERALD),
+        ("УДАЛЕНО", f"−{m['deletions']}", ROSE),
+    ]
+    for label, value, color in metrics2:
+        draw.text((mx2, my2), label, fill=TEXT_DIM, font=fonts["tiny"])
+        draw.text((mx2, my2 + 14), value, fill=color, font=fonts["num_lg"])
+        my2 += 38
 
-        if label == "ЗДОРОВЬЕ":
-            if m["health"] >= 95:
-                val_color = C.GREEN
-            elif m["health"] >= 70:
-                val_color = C.AMBER
-            else:
-                val_color = C.RED
+    # Separator before gauge
+    sep2_x = sep_x + 155
+    draw.line([(sep2_x, y + 24), (sep2_x, y + bottom_h - 24)], fill=BORDER, width=1)
 
-        if label == "SSL" and m["ssl_days"] < 14:
-            val_color = C.RED if m["ssl_days"] < 7 else C.AMBER
-
-        draw.text((cx - vw / 2, cy_top + 20), value, fill=val_color, font=val_font)
-
-        # Divider between cells
-        if i < 2:
-            div_x = PAD + (i + 1) * cell_w
-            draw.line([(div_x, y + 16), (div_x, y + metrics_h - 16)], fill=C.BORDER, width=1)
-
-    y += metrics_h + 12
+    y += bottom_h + 16
 
     # ═══ FOOTER ═══
-    footer_text = f"Academic Saloon  ·  {m['sha']}"
-    fw = fonts["small"].getlength(footer_text)
-    draw.text(((W - fw) / 2, y), footer_text, fill=C.TEXT_DIM, font=fonts["small"])
+    footer = f"Academic Saloon  ·  {m['sha']}"
+    fw = text_width(fonts["caption"], footer)
+    draw.text(((W - fw) / 2, y), footer, fill=TEXT_DIM, font=fonts["caption"])
 
-    # ─── Convert to PNG bytes ─────────────────────────────────────────
-    # Flatten to RGB
-    bg = Image.new("RGB", img.size, C.BG)
-    bg.paste(img, mask=img.split()[3] if img.mode == "RGBA" else None)
+    # Bottom gold line
+    draw_gradient_h(draw, W // 4, H - 3, 3 * W // 4, H - 1, BG_DARK, GOLD_DIM)
 
     buf = io.BytesIO()
-    bg.save(buf, format="PNG", optimize=True)
+    img.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+
+# ─── Merge Card Builder ──────────────────────────────────────────────────
+
+def build_merge_card(
+    branch: str,
+    commit_count: int,
+    commits: list,
+    file_tags: str,
+    files_stat: str,
+    insertions: int = 0,
+    deletions: int = 0,
+) -> bytes:
+    """Generate a PNG card for merge notifications."""
+    fonts = load_fonts()
+    W = 700
+    PAD = 32
+
+    # Calculate height based on content
+    n_commits = min(len(commits), 5)
+    H = 260 + n_commits * 22
+
+    img = Image.new("RGB", (W, H), BG_DARK)
+    draw = ImageDraw.Draw(img)
+
+    draw_dot_grid(draw, 0, 0, W, H, spacing=20, color=(255, 255, 255), alpha=6)
+
+    # Top accent — violet/blue for merge
+    draw_gradient_h(draw, 0, 0, W, 4, VIOLET_DIM, VIOLET)
+    for y_line in range(4, 25):
+        t = (y_line - 4) / 21
+        alpha = (1 - t) * 0.07
+        c = lerp_color(BG_DARK, VIOLET, alpha)
+        draw.line([(0, y_line), (W, y_line)], fill=c)
+
+    y = 30
+
+    # Header
+    draw.text((PAD + 2, y + 2), "МЕРЖ", fill=(5, 5, 8), font=fonts["hero"])
+    draw.text((PAD, y), "МЕРЖ", fill=VIOLET, font=fonts["hero"])
+
+    # Commit count badge
+    count_text = f"{commit_count}"
+    badge_w = int(text_width(fonts["num_lg"], count_text)) + 20
+    badge_x = W - PAD - badge_w - 60
+    draw_rounded_rect(draw, (badge_x, y + 2, badge_x + badge_w, y + 34), radius=17,
+                      fill=VIOLET_DIM, outline=VIOLET)
+    draw.text((badge_x + 10, y + 5), count_text, fill=TEXT_PRIMARY, font=fonts["num_lg"])
+
+    # "коммитов" label
+    plural = "коммит" if commit_count == 1 else "коммитов" if commit_count > 4 else "коммита"
+    draw.text((badge_x + badge_w + 8, y + 12), plural, fill=TEXT_MUTED, font=fonts["caption"])
+
+    y += 44
+
+    # Branch name in a pill
+    branch_short = branch.replace("claude/", "")
+    branch_w = int(text_width(fonts["mono"], branch_short)) + 20
+    draw_rounded_rect(draw, (PAD, y, PAD + branch_w, y + 26), radius=13,
+                      fill=BG_ELEVATED, outline=BORDER)
+    draw.text((PAD + 10, y + 5), branch_short, fill=SKY, font=fonts["mono"])
+
+    # Arrow → main
+    arrow_x = PAD + branch_w + 10
+    draw.text((arrow_x, y + 3), "→", fill=TEXT_MUTED, font=fonts["heading"])
+    draw.text((arrow_x + 20, y + 5), "main", fill=EMERALD, font=fonts["mono"])
+
+    y += 40
+
+    # Separator
+    draw_gold_separator(draw, PAD, y, W - PAD)
+    y += 14
+
+    # Commit list
+    for i, c in enumerate(commits[:5]):
+        label = c[:52] + "…" if len(c) > 52 else c
+        is_last = (i == min(len(commits), 5) - 1)
+        connector = "└" if is_last else "├"
+        draw.text((PAD + 4, y - 1), connector, fill=BORDER_LIGHT, font=fonts["body"])
+        draw.text((PAD + 18, y), label, fill=TEXT_SECONDARY, font=fonts["caption"])
+        y += 22
+
+    y += 12
+
+    # Stats bar at bottom
+    stats_h = 44
+    draw_rounded_rect(draw, (PAD, y, W - PAD, y + stats_h), radius=12, fill=BG_CARD, outline=BORDER)
+
+    sx = PAD + 14
+    sy = y + 14
+
+    # File type dots
+    if file_tags:
+        for tag in file_tags.strip().split():
+            if ":" in tag:
+                key, val = tag.split(":", 1)
+                color = {"py": SKY, "ts": EMERALD, "ci": AMBER}.get(key, TEXT_MUTED)
+                draw.ellipse((sx, sy + 1, sx + 7, sy + 8), fill=color)
+                draw.text((sx + 10, sy - 2), f"{val} {key}", fill=TEXT_SECONDARY, font=fonts["mono_sm"])
+                sx += int(text_width(fonts["mono_sm"], f"{val} {key}")) + 20
+
+    # Diff stats on right
+    if files_stat and files_stat != "нет изменений":
+        fsw = text_width(fonts["mono_sm"], files_stat[:40])
+        draw.text((W - PAD - 14 - fsw, sy - 2), files_stat[:40], fill=TEXT_MUTED, font=fonts["mono_sm"])
+
+    y += stats_h + 14
+
+    # Footer
+    footer = "→ деплой запускается..."
+    fw = text_width(fonts["caption"], footer)
+    draw.text(((W - fw) / 2, y - 4), footer, fill=TEXT_DIM, font=fonts["caption"])
+
+    # Bottom accent
+    draw_gradient_h(draw, W // 4, H - 3, 3 * W // 4, H - 1, BG_DARK, VIOLET_DIM)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
 
 
 # ─── Telegram API ────────────────────────────────────────────────────────
 
 def send_photo(token: str, chat_id: str, photo_bytes: bytes, caption: str = "") -> bool:
-    """Send a photo via Telegram Bot API using multipart/form-data."""
-    boundary = "----PythonBoundary" + str(int(time.time()))
+    boundary = "----DeployNotifyBoundary" + str(int(time.time()))
 
     body = b""
-    # chat_id
     body += f"--{boundary}\r\n".encode()
     body += b"Content-Disposition: form-data; name=\"chat_id\"\r\n\r\n"
     body += f"{chat_id}\r\n".encode()
 
-    # caption
     if caption:
         body += f"--{boundary}\r\n".encode()
         body += b"Content-Disposition: form-data; name=\"caption\"\r\n\r\n"
         body += f"{caption}\r\n".encode()
-
         body += f"--{boundary}\r\n".encode()
         body += b"Content-Disposition: form-data; name=\"parse_mode\"\r\n\r\n"
         body += b"HTML\r\n"
 
-    # photo
     body += f"--{boundary}\r\n".encode()
-    body += b"Content-Disposition: form-data; name=\"photo\"; filename=\"deploy.png\"\r\n"
+    body += b"Content-Disposition: form-data; name=\"photo\"; filename=\"notification.png\"\r\n"
     body += b"Content-Type: image/png\r\n\r\n"
     body += photo_bytes
     body += b"\r\n"
@@ -570,36 +770,66 @@ def send_photo(token: str, chat_id: str, photo_bytes: bytes, caption: str = "") 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", default="deploy", choices=["deploy", "merge"])
     parser.add_argument("--chat-id", required=True)
+
+    # Deploy args
     parser.add_argument("--old-commit", default="HEAD~1")
     parser.add_argument("--new-commit", default="HEAD")
     parser.add_argument("--deploy-start", type=int, default=0)
     parser.add_argument("--commit-url", default="")
     parser.add_argument("--logs-url", default="")
+
+    # Merge args
+    parser.add_argument("--branch", default="")
+    parser.add_argument("--commit-count", type=int, default=0)
+    parser.add_argument("--commits", default="")
+    parser.add_argument("--file-tags", default="")
+    parser.add_argument("--files-stat", default="")
+    parser.add_argument("--insertions", type=int, default=0)
+    parser.add_argument("--deletions", type=int, default=0)
+
     args = parser.parse_args()
 
     token = read_env("BOT_TOKEN")
     if not token:
-        print("ERROR: BOT_TOKEN not found in .env")
+        token = os.environ.get("BOT_TOKEN", "")
+    if not token:
+        print("ERROR: BOT_TOKEN not found")
         return
 
-    deploy_secs = int(time.time()) - args.deploy_start if args.deploy_start else 0
+    if args.mode == "deploy":
+        deploy_secs = int(time.time()) - args.deploy_start if args.deploy_start else 0
 
-    print("Collecting metrics...")
-    metrics = collect_metrics(args.old_commit, args.new_commit)
+        print("Collecting metrics...")
+        metrics = collect_metrics(args.old_commit, args.new_commit)
 
-    print("Generating dashboard card...")
-    png_data = build_deploy_card(metrics, deploy_secs, args.commit_url, args.logs_url)
+        print("Generating deploy card...")
+        png_data = build_deploy_card(metrics, deploy_secs, args.commit_url, args.logs_url)
 
-    # Save locally for debugging
-    debug_path = Path("/tmp/deploy_card.png")
+        caption = f'<a href="{args.commit_url}">коммит {metrics["sha"]}</a>'
+        if args.logs_url:
+            caption += f'  ·  <a href="{args.logs_url}">логи CI</a>'
+
+    elif args.mode == "merge":
+        commit_list = [c.strip() for c in args.commits.split("\n") if c.strip()]
+
+        print("Generating merge card...")
+        png_data = build_merge_card(
+            branch=args.branch,
+            commit_count=args.commit_count,
+            commits=commit_list,
+            file_tags=args.file_tags,
+            files_stat=args.files_stat,
+            insertions=args.insertions,
+            deletions=args.deletions,
+        )
+        caption = ""
+
+    # Save debug copy
+    debug_path = Path("/tmp/notification_card.png")
     debug_path.write_bytes(png_data)
     print(f"Card saved to {debug_path} ({len(png_data)} bytes)")
-
-    # Caption with links
-    caption = f'<a href="{args.commit_url}">коммит {metrics["sha"]}</a>'
-    if args.logs_url:
-        caption += f'  ·  <a href="{args.logs_url}">логи CI</a>'
 
     print("Sending notification...")
     ok = send_photo(token, args.chat_id, png_data, caption)

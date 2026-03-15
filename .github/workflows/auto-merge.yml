@@ -40,6 +40,7 @@ jobs:
             BRANCH="${{ github.ref_name }}"
           fi
 
+          echo "full_branch=$BRANCH" >> $GITHUB_OUTPUT
           SHORT_BRANCH=$(echo "$BRANCH" | sed 's|claude/||')
           echo "branch=$SHORT_BRANCH" >> $GITHUB_OUTPUT
 
@@ -50,11 +51,14 @@ jobs:
           echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
 
           set +e
-          COMMITS=$(git log --oneline origin/main..origin/$BRANCH --no-merges --format='%s' | head -5 | sed 's/^/▸ /')
+          COMMITS=$(git log --oneline origin/main..origin/$BRANCH --no-merges --format='%s' | head -5)
           FILES_STAT=$(git diff --stat origin/main..origin/$BRANCH | tail -1)
           PY=$(git diff --name-only origin/main..origin/$BRANCH | grep -c '\.py$' || true)
           TS=$(git diff --name-only origin/main..origin/$BRANCH | grep -cE '\.(tsx?|css)$' || true)
           YML=$(git diff --name-only origin/main..origin/$BRANCH | grep -c '\.yml$' || true)
+
+          INS=$(git diff --shortstat origin/main..origin/$BRANCH | grep -oP '\d+(?= insertion)' || echo "0")
+          DELS=$(git diff --shortstat origin/main..origin/$BRANCH | grep -oP '\d+(?= deletion)' || echo "0")
           set -e
 
           FILE_TAGS=""
@@ -70,30 +74,49 @@ jobs:
 
           echo "files=${FILES_STAT:-нет изменений}" >> $GITHUB_OUTPUT
           echo "file_tags=${FILE_TAGS}" >> $GITHUB_OUTPUT
+          echo "insertions=${INS:-0}" >> $GITHUB_OUTPUT
+          echo "deletions=${DELS:-0}" >> $GITHUB_OUTPUT
 
           git checkout main
           git merge "origin/$BRANCH" --no-ff -m "Auto-merge: $BRANCH -> main"
           git push origin main
 
-      - name: Notify Telegram (Success)
+      - name: Send merge notification via SSH
         if: success()
-        uses: appleboy/telegram-action@master
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          NOTIFY_CHAT_ID: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          MERGE_BRANCH: ${{ steps.merge.outputs.full_branch }}
+          MERGE_COMMIT_COUNT: ${{ steps.merge.outputs.commit_count }}
+          MERGE_COMMITS_TEXT: ${{ env.MERGE_COMMITS }}
+          MERGE_FILE_TAGS: ${{ steps.merge.outputs.file_tags }}
+          MERGE_FILES_STAT: ${{ steps.merge.outputs.files }}
+          MERGE_INSERTIONS: ${{ steps.merge.outputs.insertions }}
+          MERGE_DELETIONS: ${{ steps.merge.outputs.deletions }}
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
-          token: ${{ secrets.BOT_TOKEN }}
-          format: html
-          message: |
-            🔀 <b>Мерж в main</b>
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NOTIFY_CHAT_ID,MERGE_BRANCH,MERGE_COMMIT_COUNT,MERGE_COMMITS_TEXT,MERGE_FILE_TAGS,MERGE_FILES_STAT,MERGE_INSERTIONS,MERGE_DELETIONS
+          script: |
+            cd ~/academic_saloon
+            git fetch origin main --quiet
+            git checkout main --quiet 2>/dev/null
+            git reset --hard origin/main --quiet
 
-            ├─ 🌿 <code>${{ steps.merge.outputs.branch }}</code>
-            ├─ 📦 ${{ steps.merge.outputs.commit_count }} коммитов
-            └─ ${{ steps.merge.outputs.file_tags }}
+            source venv/bin/activate
 
-            <blockquote>${{ env.MERGE_COMMITS }}</blockquote>
-
-            <code>${{ steps.merge.outputs.files }}</code>
-
-            ⏳ <i>Деплой запускается...</i>
+            python3 scripts/deploy_notify.py \
+              --mode merge \
+              --chat-id "$NOTIFY_CHAT_ID" \
+              --branch "$MERGE_BRANCH" \
+              --commit-count "$MERGE_COMMIT_COUNT" \
+              --commits "$MERGE_COMMITS_TEXT" \
+              --file-tags "$MERGE_FILE_TAGS" \
+              --files-stat "$MERGE_FILES_STAT" \
+              --insertions "${MERGE_INSERTIONS:-0}" \
+              --deletions "${MERGE_DELETIONS:-0}" \
+              || echo "Merge notification failed (non-fatal)"
 
       - name: Notify Telegram (Failure)
         if: failure()
