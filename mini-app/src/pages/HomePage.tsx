@@ -33,6 +33,11 @@ import {
   hasSeenWelcomeTour,
   SaloonFooter,
   ModalLoadingFallback,
+  ExamSeasonBanner,
+  BonusExpiryAlert,
+  ActiveOrderDashboard,
+  LevelProgressCard,
+  ReputationCard,
 } from '../components/home'
 
 // Lazy load modal components
@@ -60,6 +65,9 @@ export function HomePage({ user }: Props) {
 
   // Welcome tour for first-time users
   const [showTour, setShowTour] = useState(() => !hasSeenWelcomeTour())
+
+  // Referral copy state
+  const [referralCopied, setReferralCopied] = useState(false)
 
   // Secret admin activation (5 quick taps on logo badge)
   const tapCountRef = useRef(0)
@@ -112,6 +120,22 @@ export function HomePage({ user }: Props) {
     })
   }, [user?.orders, navigate])
 
+  const handleCopyReferral = useCallback(() => {
+    if (!user) return
+    haptic('light')
+    navigator.clipboard?.writeText(user.referral_code).catch(() => {})
+    setReferralCopied(true)
+    setTimeout(() => setReferralCopied(false), 2000)
+  }, [user, haptic])
+
+  const handleTelegramShare = useCallback(() => {
+    if (!user) return
+    haptic('medium')
+    const shareText = buildReferralShareText(user.referral_code)
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(buildReferralLink(botUsername, user.telegram_id))}&text=${encodeURIComponent(shareText)}`
+    window.open(shareUrl, '_blank')
+  }, [user, haptic, botUsername])
+
   if (!user) return null
 
   // User type detection for progressive disclosure
@@ -155,9 +179,15 @@ export function HomePage({ user }: Props) {
         />
 
         {/* ═══════════════════════════════════════════════════════════════════
+          CONTEXTUAL SEASON BANNER — Both flows
+          Shows during exam periods (Dec-Jan, May-Jun). Urgency without being pushy.
+          ═══════════════════════════════════════════════════════════════════ */}
+        <ExamSeasonBanner />
+
+        {/* ═══════════════════════════════════════════════════════════════════
           NEW USER FLOW — Conversion-optimized funnel:
-          Hero → Stats → Social Proof → How It Works → Activity → Guarantees
-          Each section eliminates an objection and builds desire.
+          Season → Hero → Stats → Live Activity → How It Works →
+          Testimonials → Guarantees → Sticky CTA
           ═══════════════════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
@@ -167,14 +197,14 @@ export function HomePage({ user }: Props) {
             {/* 2. Trust Stats — The proof in numbers */}
             <TrustStatsStrip />
 
-            {/* 3. How It Works — Eliminate process anxiety */}
+            {/* 3. Live Activity — FOMO first, while attention is high */}
+            <LiveActivityFeed />
+
+            {/* 4. How It Works — Eliminate process anxiety */}
             <HowItWorks />
 
-            {/* 4. Testimonials — Social proof from real students */}
+            {/* 5. Testimonials — Social proof from real students */}
             <TestimonialsSection />
-
-            {/* 5. Live Activity — FOMO + freshness signal */}
-            <LiveActivityFeed />
 
             {/* 6. Guarantees — Eliminate risk fears */}
             <GuaranteesShowcase
@@ -183,27 +213,39 @@ export function HomePage({ user }: Props) {
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════════════════
-             RETURNING USER FLOW — Action-first, then tools
+             RETURNING USER FLOW — Guru-level personalized experience:
+             Bonus urgency → Active order tracker → New order CTA →
+             Actions priority → Quick tools → Level progress →
+             Referral program → Promo
              ═══════════════════════════════════════════════════════════════════ */
           <>
+            {/* 1. Bonus Expiry Alert — Loss aversion trigger */}
+            {user.bonus_expiry && (
+              <BonusExpiryAlert
+                bonusExpiry={user.bonus_expiry}
+                bonusBalance={user.bonus_balance}
+                onUseBonus={handleNewOrder}
+              />
+            )}
+
+            {/* 2. Active Order Dashboard — Uber-style tracking */}
+            <ActiveOrderDashboard
+              orders={user.orders}
+              onNavigate={navigate}
+              haptic={haptic}
+            />
+
+            {/* 3. New Order CTA — Always accessible */}
             <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
 
-            {/* Next action card for active orders */}
+            {/* 4. Priority action card — What needs attention NOW */}
             <NextActionCard
               orders={user.orders}
               onNavigate={navigate}
               haptic={haptic}
             />
 
-            {/* Last order quick access */}
-            {user.orders.length > 0 && (
-              <LastOrderCard
-                order={user.orders[0]}
-                onClick={() => navigate(`/order/${user.orders[0].id}`)}
-              />
-            )}
-
-            {/* Quick reorder */}
+            {/* 5. Quick reorder — Friction-free repeat purchase */}
             {user.orders.length > 0 && (
               <QuickReorderCard
                 lastOrder={user.orders[0]}
@@ -212,6 +254,7 @@ export function HomePage({ user }: Props) {
               />
             )}
 
+            {/* 6. Quick Actions — Tools row */}
             <QuickActionsRow
               onNavigate={navigate}
               onOpenModal={(modal: ModalName) => {
@@ -225,7 +268,15 @@ export function HomePage({ user }: Props) {
               haptic={haptic}
             />
 
-            {/* Promo Code Section */}
+            {/* 7. Level Progress — Gamification: progress to next rank */}
+            {!user.rank.is_max && (
+              <LevelProgressCard
+                rank={user.rank}
+                displayNextRank={user.rank.next_rank}
+              />
+            )}
+
+            {/* 8. Promo Code Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -239,28 +290,24 @@ export function HomePage({ user }: Props) {
               />
             </motion.div>
 
-            {/* Referral CTA */}
-            <motion.button
-              type="button"
-              whileTap={{ scale: 0.985 }}
-              onClick={handleOpenLounge}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.22 }}
-              className={`${s.voidGlass} w-full py-4 px-[18px] rounded-[22px] border border-gold-400/[0.12] text-left flex items-center gap-3.5 mb-4 cursor-pointer`}
-            >
-              <div className="w-11 h-11 rounded-2xl bg-gold-400/10 border border-gold-400/[0.16] flex items-center justify-center shrink-0 text-xl">
-                🎁
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-bold text-[#E8D5A3] mb-[3px]">
-                  Пригласи друга — получи бонус
-                </div>
-                <div className="text-[12.5px] text-[rgba(228,213,163,0.5)] leading-normal">
-                  Кэшбэк {user.rank.cashback}% · Баланс {Math.round(user.bonus_balance).toLocaleString('ru-RU')} ₽
-                </div>
-              </div>
-            </motion.button>
+            {/* 9. Referral Program — Full-featured partner card */}
+            <ReputationCard
+              referralCode={user.referral_code}
+              referralsCount={user.referrals_count}
+              referralEarnings={user.referral_earnings}
+              copied={referralCopied}
+              onCopy={handleCopyReferral}
+              onShowQR={() => { haptic('light'); actions.openModal('qr') }}
+              onTelegramShare={handleTelegramShare}
+            />
+
+            {/* 10. Last order card — Quick access */}
+            {user.orders.length > 0 && (
+              <LastOrderCard
+                order={user.orders[0]}
+                onClick={() => navigate(`/order/${user.orders[0].id}`)}
+              />
+            )}
           </>
         )}
 
