@@ -12,15 +12,20 @@ jobs:
       - name: Check services health
         uses: appleboy/ssh-action@v1.0.3
         id: health
+        env:
+          NOTIFY_CHAT_ID: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NOTIFY_CHAT_ID,GH_RUN_URL
           script: |
             set -e
 
             ISSUES=""
             ACTIONS=""
+            ALERT_LINES=""
 
             # Skip if deploy in progress
             if [ -f /tmp/saloon-deploy.lock ]; then
@@ -35,39 +40,45 @@ jobs:
               systemctl restart saloon-bot
               sleep 5
               if systemctl is-active --quiet saloon-bot; then
-                ACTIONS="${ACTIONS}бот перезапущен, "
+                ACTIONS="${ACTIONS}бот "
+                ALERT_LINES="${ALERT_LINES}Бот    ▸ был упал ▸ перезапущен ●\n"
               else
-                ISSUES="${ISSUES}бот не запустился, "
+                ISSUES="${ISSUES}bot "
+                ALERT_LINES="${ALERT_LINES}Бот    ▸ упал ▸ не восстановился ✗\n"
               fi
             fi
 
             if ! systemctl is-active --quiet nginx; then
               systemctl restart nginx
               if systemctl is-active --quiet nginx; then
-                ACTIONS="${ACTIONS}nginx перезапущен, "
+                ACTIONS="${ACTIONS}nginx "
+                ALERT_LINES="${ALERT_LINES}Nginx  ▸ был упал ▸ перезапущен ●\n"
               else
-                ISSUES="${ISSUES}nginx упал, "
+                ISSUES="${ISSUES}nginx "
+                ALERT_LINES="${ALERT_LINES}Nginx  ▸ упал ▸ не восстановился ✗\n"
               fi
             fi
 
             if ! systemctl is-active --quiet postgresql; then
               systemctl restart postgresql
               if systemctl is-active --quiet postgresql; then
-                ACTIONS="${ACTIONS}PostgreSQL перезапущен, "
+                ACTIONS="${ACTIONS}pg "
+                ALERT_LINES="${ALERT_LINES}PG     ▸ был упал ▸ перезапущен ●\n"
               else
-                ISSUES="${ISSUES}PostgreSQL упал, "
+                ISSUES="${ISSUES}pg "
+                ALERT_LINES="${ALERT_LINES}PG     ▸ упал ▸ не восстановился ✗\n"
               fi
             fi
 
             if ! (systemctl is-active --quiet redis-server 2>/dev/null || systemctl is-active --quiet redis 2>/dev/null); then
               if command -v redis-cli &>/dev/null && ! redis-cli ping &>/dev/null; then
-                ISSUES="${ISSUES}Redis недоступен, "
+                ISSUES="${ISSUES}redis "
+                ALERT_LINES="${ALERT_LINES}Redis  ▸ недоступен ✗\n"
               fi
             fi
 
             # --- Disk ---
             DISK=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
-
             if [ "$DISK" -gt 80 ]; then
               journalctl --vacuum-time=3d 2>/dev/null || true
               apt-get clean 2>/dev/null || true
@@ -77,17 +88,18 @@ jobs:
               npm cache clean --force 2>/dev/null || true
 
               DISK_AFTER=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
-              ACTIONS="${ACTIONS}диск очищен ${DISK}%->${DISK_AFTER}%, "
+              ACTIONS="${ACTIONS}disk "
+              ALERT_LINES="${ALERT_LINES}Диск   ▸ ${DISK}% ▸ очищен до ${DISK_AFTER}%\n"
               DISK=$DISK_AFTER
 
               if [ "$DISK" -gt 90 ]; then
-                ISSUES="${ISSUES}диск критический ${DISK}%, "
+                ISSUES="${ISSUES}disk "
+                ALERT_LINES="${ALERT_LINES}Диск   ▸ критический ${DISK}% ✗\n"
               fi
             fi
 
             # --- RAM ---
             MEM=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
-
             if [ "$MEM" -gt 85 ]; then
               fuser -k 8000/tcp 2>/dev/null || true
               sleep 2
@@ -96,37 +108,58 @@ jobs:
               sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 
               MEM_AFTER=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
-              ACTIONS="${ACTIONS}RAM очищена ${MEM}%->${MEM_AFTER}%, "
+              ACTIONS="${ACTIONS}ram "
+              ALERT_LINES="${ALERT_LINES}RAM    ▸ ${MEM}% ▸ очищена до ${MEM_AFTER}%\n"
 
               if [ "$MEM_AFTER" -gt 95 ]; then
-                ISSUES="${ISSUES}RAM критическая ${MEM_AFTER}%, "
+                ISSUES="${ISSUES}ram "
+                ALERT_LINES="${ALERT_LINES}RAM    ▸ критическая ${MEM_AFTER}% ✗\n"
               fi
             fi
 
             # --- API ---
             if ! curl -s --max-time 5 http://localhost:8000/health > /dev/null 2>&1; then
               if ! curl -s --max-time 5 http://localhost:8000/ > /dev/null 2>&1; then
-                echo "API not responding"
+                ALERT_LINES="${ALERT_LINES}API    ▸ не отвечает\n"
               fi
             fi
 
-            echo "DISK=${DISK}% | RAM=${MEM}% | ACTIONS: $ACTIONS | ISSUES: $ISSUES"
+            # Send notification only if something happened
+            if [ -n "$ACTIONS" ] || [ -n "$ISSUES" ]; then
+              BOT_TOKEN_VAL=$(grep -E '^BOT_TOKEN=' ~/academic_saloon/.env | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -1)
+
+              if [ -n "$ISSUES" ]; then
+                HEADER="<b>⚠ СЕРВЕР — ПРОБЛЕМЫ</b>"
+              else
+                HEADER="<b>↻ АВТО-ВОССТАНОВЛЕНИЕ</b>"
+              fi
+
+              # Get current metrics for context
+              DISK_NOW=$(df -h / | tail -1 | awk '{print $5}')
+              MEM_NOW=$(free | grep Mem | awk '{printf("%.0f%%", $3/$2*100)}')
+              UPTIME_NOW=$(uptime -p | sed 's/up //')
+
+              FORMATTED_LINES=$(echo -e "$ALERT_LINES")
+
+              if [ -n "$BOT_TOKEN_VAL" ] && [ -n "$NOTIFY_CHAT_ID" ]; then
+                read -r -d '' MSG << ENDMSG || true
+            ${HEADER}
+
+            <pre>
+            ${FORMATTED_LINES}</pre>
+            <code>Диск: ${DISK_NOW} · RAM: ${MEM_NOW} · Аптайм: ${UPTIME_NOW}</code>
+
+            <a href="${GH_RUN_URL}">Подробные логи</a>
+            ENDMSG
+
+                curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN_VAL}/sendMessage" \
+                  --data-urlencode "chat_id=${NOTIFY_CHAT_ID}" \
+                  --data-urlencode "parse_mode=HTML" \
+                  --data-urlencode "text=${MSG}" \
+                  --data-urlencode "disable_web_page_preview=true" || true
+              fi
+            fi
 
             if [ -n "$ISSUES" ]; then
               exit 1
             fi
-
-      # Notify only when something went wrong
-      - name: Notify Telegram (Issues)
-        if: failure()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
-          token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
-          message: |
-            *HEALTH ALERT*
-
-            Один или несколько сервисов не восстановились после авто-перезапуска.
-
-            [Подробные логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

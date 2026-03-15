@@ -17,10 +17,16 @@ jobs:
       - name: Create backup and upload
         uses: appleboy/ssh-action@v1.0.3
         id: backup
+        env:
+          NOTIFY_CHAT_ID: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          SHOULD_NOTIFY: ${{ github.event.inputs.notify || 'true' }}
+          TRIGGER: ${{ github.event.schedule && '07:00 МСК авто' || 'ручной' }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NOTIFY_CHAT_ID,SHOULD_NOTIFY,TRIGGER,GH_RUN_URL
           script: |
             set -e
 
@@ -47,6 +53,7 @@ jobs:
             # DB stats
             ORDER_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM orders" 2>/dev/null | tr -d ' ' || echo "?")
             USER_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM users" 2>/dev/null | tr -d ' ' || echo "?")
+            PAID_COUNT=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_DB -t -c "SELECT count(*) FROM orders WHERE status IN ('paid', 'paid_full', 'in_progress', 'completed')" 2>/dev/null | tr -d ' ' || echo "?")
 
             # Upload to Yandex Disk
             curl -s -X PUT -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
@@ -72,27 +79,45 @@ jobs:
               "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER&limit=100&sort=-created" \
               | grep -o '"name":"academic_saloon_[^"]*"' | cut -d'"' -f4 | tail -n +8)
 
+            DELETED=0
             for old_file in $OLD_BACKUPS; do
               curl -s -X DELETE -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
                 "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER/$old_file&permanently=true"
+              DELETED=$((DELETED + 1))
             done
 
-            echo "=== BACKUP: $BACKUP_FILE | $BACKUP_SIZE | Users: $USER_COUNT | Orders: $ORDER_COUNT ==="
+            CLOUD_COUNT=$(curl -s -X GET \
+              -H "Authorization: OAuth $YANDEX_DISK_TOKEN" \
+              "https://cloud-api.yandex.net/v1/disk/resources?path=/$YADISK_FOLDER&limit=100" \
+              | grep -o '"name":"academic_saloon_[^"]*"' | wc -l || echo "?")
 
-      - name: Notify Telegram (Success)
-        if: success() && (github.event.inputs.notify != 'false')
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
-          token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
-          message: |
-            *БЭКАП*  ${{ github.event.schedule && '07:00 МСК авто' || 'ручной' }}
+            DISK_PCT=$(df -h / | tail -1 | awk '{print $5}')
 
-            БД сохранена на Яндекс Диск.
-            Хранение: 7 копий в облаке, 3 дня локально.
+            # Send notification from server
+            if [ "$SHOULD_NOTIFY" != "false" ]; then
+              BOT_TOKEN_VAL=$(grep -E '^BOT_TOKEN=' ~/academic_saloon/.env | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -1)
 
-            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              if [ -n "$BOT_TOKEN_VAL" ] && [ -n "$NOTIFY_CHAT_ID" ]; then
+                read -r -d '' MSG << ENDMSG || true
+            <b>◆ БЭКАП</b>  <code>${TRIGGER}</code>
+
+            <pre>
+            Размер   ${BACKUP_SIZE}
+            Юзеры    ${USER_COUNT}
+            Заказы   ${ORDER_COUNT} (оплаченных: ${PAID_COUNT})
+            </pre>
+            <code>Облако: ${CLOUD_COUNT} копий · Локально: 3 дня · Диск: ${DISK_PCT}</code>
+
+            <a href="${GH_RUN_URL}">логи</a>
+            ENDMSG
+
+                curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN_VAL}/sendMessage" \
+                  --data-urlencode "chat_id=${NOTIFY_CHAT_ID}" \
+                  --data-urlencode "parse_mode=HTML" \
+                  --data-urlencode "text=${MSG}" \
+                  --data-urlencode "disable_web_page_preview=true" || true
+              fi
+            fi
 
       - name: Notify Telegram (Failure)
         if: failure()
@@ -100,9 +125,9 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            *БЭКАП УПАЛ*
+            <b>✗ БЭКАП УПАЛ</b>
 
             Резервная копия БД не создана.
-            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Логи</a>
