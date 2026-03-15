@@ -30,7 +30,7 @@ VERCEL_PREVIEW_ORIGINS = [
 # - https://academic-saloon*.vercel.app
 # - https://mini-app-*.vercel.app (git branch previews)
 # - https://*-soloveyska1s-projects.vercel.app (all user's projects)
-VERCEL_ORIGIN_REGEX = r"https://.*\.vercel\.app"
+VERCEL_ORIGIN_REGEX = r"https://academic-saloon[a-z0-9-]*\.vercel\.app"
 
 # Dev origins (only added when DEBUG=true)
 DEV_ORIGINS = [
@@ -142,7 +142,7 @@ def create_app() -> FastAPI:
         logger.error(f"[500] {request.method} {request.url.path} => {type(exc).__name__}: {exc}\n{''.join(tb[-3:])}")
         return JSONResponse(
             status_code=500,
-            content={"detail": f"Internal server error: {type(exc).__name__}: {str(exc)[:200]}"},
+            content={"detail": "Внутренняя ошибка сервера. Попробуйте позже."},
         )
 
     # Validation error handler with logging

@@ -68,11 +68,12 @@ def is_allowed_file(filename: str) -> bool:
     """Check if file extension is allowed"""
     if not filename:
         return False
+    # Sanitize: strip path components to prevent traversal
+    import os
+    filename = os.path.basename(filename)
     ext = '.' + filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
     if ext in BLOCKED_EXTENSIONS:
         return False
-    # If whitelist is defined, only allow those extensions
-    # Otherwise, allow anything except blocked
     return ext in ALLOWED_EXTENSIONS
 
 
@@ -97,10 +98,7 @@ async def get_orders(
     )
     user = result.scalar_one_or_none()
     if not user:
-        return JSONResponse(
-            status_code=404,
-            content={"success": False, "message": "User not found"}
-        )
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     query = select(Order).where(
         Order.user_id == user.telegram_id,
@@ -119,8 +117,9 @@ async def get_orders(
         else:
             query = query.where(Order.status == status)
 
-    count_result = await session.execute(query.with_only_columns(Order.id))
-    total = len(count_result.all())
+    count_query = query.with_only_columns(func.count(Order.id))
+    count_result = await session.execute(count_query)
+    total = count_result.scalar() or 0
 
     query = query.order_by(desc(Order.created_at)).offset(offset).limit(limit)
     result = await session.execute(query)
@@ -695,7 +694,8 @@ async def upload_order_files(
     blocked_files = []
     oversized_files = []
     for file in files:
-        filename = file.filename or "unnamed_file"
+        import os as _os
+        filename = _os.path.basename(file.filename or "unnamed_file")
         # Check file extension
         if not is_allowed_file(filename):
             blocked_files.append(filename)
