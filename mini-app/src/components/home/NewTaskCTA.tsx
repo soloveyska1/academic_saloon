@@ -17,8 +17,8 @@ interface NewTaskCTAProps {
 
 const PROOF_POINTS = [
   { icon: Star, text: '4.9 из 5 — оценка клиентов' },
-  { icon: Shield, text: 'Уникальность от 70%' },
-  { icon: Clock, text: '3 бесплатные доработки' },
+  { icon: Shield, text: 'Каждая работа — с нуля' },
+  { icon: Clock, text: '3 раунда правок бесплатно' },
 ] as const
 
 export const NewTaskCTA = memo(function NewTaskCTA({

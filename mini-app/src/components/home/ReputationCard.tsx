@@ -39,7 +39,7 @@ export const ReputationCard = memo(function ReputationCard({
       onTelegramShare()
     } else {
       // Use Telegram WebApp share if available
-      const shareText = `Привет! Я пользуюсь Академическим Салоном для учебных работ. Мой код: ${referralCode} — получишь скидку, а я 5% с твоих заказов 📚`
+      const shareText = `Привет! Пользуюсь Академическим Салоном для учебных работ — рекомендую. Мой код: ${referralCode}, по нему будет скидка. 📚`
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent('https://t.me/AcademicSaloonBot')}&text=${encodeURIComponent(shareText)}`
       window.open(shareUrl, '_blank')
     }
@@ -77,7 +77,7 @@ export const ReputationCard = memo(function ReputationCard({
                 letterSpacing: '0.1em',
               }}
             >
-              ПАРТНЁРКА
+              ПАРТНЁРСКАЯ ПРОГРАММА
             </span>
           </div>
 
@@ -139,7 +139,7 @@ export const ReputationCard = memo(function ReputationCard({
             lineHeight: 1.5,
           }}
         >
-          Приглашай друзей →{' '}
+          Приглашайте друзей →{' '}
           <span
             style={{
               background: 'var(--gold-text-shine)',
@@ -268,7 +268,7 @@ export const ReputationCard = memo(function ReputationCard({
             }}
           >
             <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-              💡 <strong style={{ color: 'var(--text-secondary)' }}>Пример:</strong> Пригласи 3 друзей с заказами по 5000₽ → заработай{' '}
+              💡 <strong style={{ color: 'var(--text-secondary)' }}>Пример:</strong> Пригласите 3 друзей с заказами по 5000₽ → заработаете{' '}
               <span style={{ color: 'var(--gold-400)', fontWeight: 600 }}>750₽</span> пассивно
             </p>
           </motion.div>
