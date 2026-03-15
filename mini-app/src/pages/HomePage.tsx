@@ -18,9 +18,7 @@ import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 import {
   HomeHeader,
   QuickActionsRow,
-  NextActionCard,
   NewTaskCTA,
-  LastOrderCard,
   QuickReorderCard,
   UrgentHubSheet,
   TrustStatsStrip,
@@ -238,14 +236,7 @@ export function HomePage({ user }: Props) {
             {/* 3. New Order CTA — Always accessible */}
             <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
 
-            {/* 4. Priority action card — What needs attention NOW */}
-            <NextActionCard
-              orders={user.orders}
-              onNavigate={navigate}
-              haptic={haptic}
-            />
-
-            {/* 5. Quick reorder — Friction-free repeat purchase */}
+            {/* 4. Quick reorder — Friction-free repeat purchase */}
             {user.orders.length > 0 && (
               <QuickReorderCard
                 lastOrder={user.orders[0]}
@@ -254,7 +245,7 @@ export function HomePage({ user }: Props) {
               />
             )}
 
-            {/* 6. Quick Actions — Tools row */}
+            {/* 5. Quick Actions — Tools row */}
             <QuickActionsRow
               onNavigate={navigate}
               onOpenModal={(modal: ModalName) => {
@@ -268,7 +259,7 @@ export function HomePage({ user }: Props) {
               haptic={haptic}
             />
 
-            {/* 7. Level Progress — Gamification: progress to next rank */}
+            {/* 6. Level Progress — Gamification: progress to next rank */}
             {!user.rank.is_max && (
               <LevelProgressCard
                 rank={user.rank}
@@ -276,7 +267,7 @@ export function HomePage({ user }: Props) {
               />
             )}
 
-            {/* 8. Promo Code Section */}
+            {/* 7. Promo Code Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -290,7 +281,7 @@ export function HomePage({ user }: Props) {
               />
             </motion.div>
 
-            {/* 9. Referral Program — Full-featured partner card */}
+            {/* 8. Referral Program — Full-featured partner card */}
             <ReputationCard
               referralCode={user.referral_code}
               referralsCount={user.referrals_count}
@@ -301,13 +292,6 @@ export function HomePage({ user }: Props) {
               onTelegramShare={handleTelegramShare}
             />
 
-            {/* 10. Last order card — Quick access */}
-            {user.orders.length > 0 && (
-              <LastOrderCard
-                order={user.orders[0]}
-                onClick={() => navigate(`/order/${user.orders[0].id}`)}
-              />
-            )}
           </>
         )}
 

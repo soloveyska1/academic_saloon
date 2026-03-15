@@ -59,7 +59,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   onNavigate,
   haptic,
 }: ActiveOrderDashboardProps) {
-  const activeOrder = useMemo(() => {
+  const { activeOrder, otherActiveCount } = useMemo(() => {
     // Find the most important active order (by priority)
     const priority: Record<string, number> = {
       waiting_payment: 1,
@@ -74,9 +74,14 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
       pending: 9,
     }
 
-    return orders
+    const active = orders
       .filter(o => ACTIVE_STATUSES.includes(o.status))
-      .sort((a, b) => (priority[a.status] ?? 99) - (priority[b.status] ?? 99))[0] || null
+      .sort((a, b) => (priority[a.status] ?? 99) - (priority[b.status] ?? 99))
+
+    return {
+      activeOrder: active[0] || null,
+      otherActiveCount: Math.max(0, active.length - 1),
+    }
   }, [orders])
 
   if (!activeOrder) return null
@@ -301,6 +306,20 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           </div>
           <ArrowRight size={14} color={needsAction ? (statusInfo?.color ?? '#d4af37') : 'rgba(255,255,255,0.20)'} strokeWidth={2} />
         </div>
+
+        {/* Other active orders hint */}
+        {otherActiveCount > 0 && (
+          <div style={{
+            marginTop: 10,
+            textAlign: 'center',
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'rgba(255,255,255,0.30)',
+            letterSpacing: '0.02em',
+          }}>
+            + ещё {otherActiveCount} {otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе
+          </div>
+        )}
       </motion.button>
     </motion.div>
   )
