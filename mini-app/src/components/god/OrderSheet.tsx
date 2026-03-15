@@ -72,7 +72,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
       load()
     } catch (e) {
       notify('error')
-      showToast({ type: 'error', title: 'Ошибка', message: e instanceof Error ? e.message : '' })
+      showToast({ type: 'error', title: 'Ошибка', message: 'Не удалось выполнить действие. Попробуйте позже.' })
     }
     setBusy(false)
   }, [impact, notify, showToast, load])

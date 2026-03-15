@@ -347,6 +347,7 @@ function ServiceRow({
         WebkitTapHighlightColor: 'transparent',
         position: 'relative',
         transition: 'background 0.2s ease',
+        touchAction: 'pan-y',
       }}
     >
       {/* Left accent bar when selected */}

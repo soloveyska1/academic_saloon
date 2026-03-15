@@ -33,12 +33,23 @@ import homeStyles from './HomePage.module.css'
 //  исправленный scroll/keyboard, Telegram MainButton
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Reduced motion support
+const prefersReducedMotion =
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+
 // Animation
-const slideVariants = {
-  enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0 }),
-}
+const slideVariants = prefersReducedMotion
+  ? {
+      enter: () => ({ opacity: 0 }),
+      center: { opacity: 1 },
+      exit: () => ({ opacity: 0 }),
+    }
+  : {
+      enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+      center: { x: 0, opacity: 1 },
+      exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0 }),
+    }
 
 const FAST_WIZARD_STEPS = [
   { num: 1, title: 'Быстрый запрос', subtitle: 'Тема, комментарий и файлы без выбора формата' },
@@ -715,6 +726,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
           paddingBottom: 120, // Space for sticky CTA
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
         }}
       >
         {/* First Order Welcome Banner */}

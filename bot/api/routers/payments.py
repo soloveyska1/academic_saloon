@@ -268,7 +268,31 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         logger.warning(f"[YooKassa] User not found for order #{order_id}")
         return
 
-    # Deduct bonuses if used
+    # Validate payment amount matches expected order price (tolerance ±1₽ for rounding)
+    expected_amount = float(order.final_price)
+    if order.payment_scheme == "half":
+        expected_amount = expected_amount / 2
+    expected_amount = round(expected_amount, 2)
+
+    if abs(amount_value - expected_amount) > 1.0:
+        logger.error(
+            f"[YooKassa] AMOUNT MISMATCH for order #{order_id}: "
+            f"received={amount_value}, expected={expected_amount}"
+        )
+        # Still log the payment but don't auto-confirm
+        payment_log.event_type = "payment.amount_mismatch"
+        await session.commit()
+        return
+
+    # Update order status (atomic with bonus deduction)
+    if order.payment_scheme == "half":
+        order.status = OrderStatus.PAID.value
+        order.paid_amount = order.final_price / 2
+    else:
+        order.status = OrderStatus.PAID_FULL.value
+        order.paid_amount = order.final_price
+
+    # Deduct bonuses if used (in same transaction as status update)
     if order.bonus_used > 0:
         await BonusService.deduct_bonus(
             session=session,
@@ -279,14 +303,6 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
             user=user,
             auto_commit=False,
         )
-
-    # Update order status
-    if order.payment_scheme == "half":
-        order.status = OrderStatus.PAID.value
-        order.paid_amount = order.final_price / 2
-    else:
-        order.status = OrderStatus.PAID_FULL.value
-        order.paid_amount = order.final_price
 
     # Update user stats
     user.orders_count += 1

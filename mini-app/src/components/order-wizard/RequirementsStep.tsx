@@ -464,7 +464,7 @@ function AttachmentsCard({
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)', marginBottom: 2 }}>
-              {files.length > 0 ? `${files.length} файл(ов)` : 'Прикрепить файлы'}
+              {files.length > 0 ? `${files.length} ${pluralizeFiles(files.length)}` : 'Прикрепить файлы'}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {files.length > 0
@@ -962,11 +962,20 @@ function validateIncomingFiles(incoming: File[], existing: File[]) {
 
 function buildFileNotice(v: ReturnType<typeof validateIncomingFiles>) {
   const p: string[] = []
-  if (v.accepted.length > 0) p.push(`Добавили ${v.accepted.length} файл(ов).`)
+  if (v.accepted.length > 0) p.push(`Добавили ${v.accepted.length} ${pluralizeFiles(v.accepted.length)}.`)
   if (v.duplicates.length > 0) p.push(`Повторы пропустили: ${v.duplicates.join(', ')}.`)
   if (v.blocked.length > 0) p.push(`Неподдерживаемый тип: ${v.blocked.join(', ')}.`)
   if (v.oversized.length > 0) p.push(`Слишком большие (лимит 50 МБ): ${v.oversized.join(', ')}.`)
   return p.length > 0 ? p.join(' ') : null
+}
+
+function pluralizeFiles(count: number): string {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod100 >= 11 && mod100 <= 19) return 'файлов'
+  if (mod10 === 1) return 'файл'
+  if (mod10 >= 2 && mod10 <= 4) return 'файла'
+  return 'файлов'
 }
 
 function getTemplateLabel(key: string) {

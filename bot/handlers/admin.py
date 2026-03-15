@@ -734,7 +734,7 @@ async def show_status_change_menu(callback: CallbackQuery):
 
     text = f"""🔄 <b>Смена статуса заказа #{order_id}</b>
 
-Выбери новый статус:"""
+Выберите новый статус:"""
 
     await callback.message.edit_text(text, reply_markup=get_status_select_keyboard(order_id))
 
@@ -833,16 +833,16 @@ async def set_order_status(callback: CallbackQuery, session: AsyncSession, bot: 
         try:
             # Формируем сообщение о завершении с кешбэком
             if new_status == OrderStatus.COMPLETED.value and cashback_amount > 0:
-                completed_msg = f"✨ Заказ успешно завершён!\n💰 Кешбэк: +{cashback_amount:.0f}₽ на бонусный счёт\n\nСпасибо за доверие 🤝"
+                completed_msg = f"Заказ успешно завершён.\nКешбэк: +{cashback_amount:.0f}₽ на бонусный счёт.\n\nСпасибо за доверие."
             else:
-                completed_msg = "✨ Заказ успешно завершён! Спасибо за доверие 🤝"
+                completed_msg = "Заказ успешно завершён. Спасибо за доверие."
 
             status_messages = {
-                OrderStatus.PAID.value: "💰 Оплата получена! Приступаю к работе.",
-                OrderStatus.IN_PROGRESS.value: "⚙️ Твой заказ в работе!",
-                OrderStatus.REVIEW.value: "🔍 Работа готова и ждёт твоей проверки!",
+                OrderStatus.PAID.value: "Оплата получена. Приступаем к работе.",
+                OrderStatus.IN_PROGRESS.value: "Ваш заказ в работе.",
+                OrderStatus.REVIEW.value: "Работа готова и ждёт Вашей проверки.",
                 OrderStatus.COMPLETED.value: completed_msg,
-                OrderStatus.CANCELLED.value: "❌ Заказ отменён.",
+                OrderStatus.CANCELLED.value: "Заказ отменён.",
             }
             msg = status_messages.get(new_status, f"Статус заказа изменён на: {new_label}")
             await bot.send_message(order.user_id, f"<b>Заказ #{order.id}</b>\n\n{msg}")
@@ -1021,7 +1021,7 @@ async def show_progress_menu(callback: CallbackQuery, session: AsyncSession):
 
 <b>Текущий прогресс:</b> {current_progress}%
 
-Выбери новый прогресс или используй кнопки +/−:
+Выберите новый прогресс или используйте кнопки +/−:
 
 <i>💡 При достижении 25%, 50%, 75% и 100%
 клиент получит уведомление автоматически.</i>"""
@@ -1078,7 +1078,7 @@ async def set_order_progress(callback: CallbackQuery, session: AsyncSession, bot
 
 <b>Текущий прогресс:</b> {new_progress}%
 
-Выбери новый прогресс или используй кнопки +/−:
+Выберите новый прогресс или используйте кнопки +/−:
 
 <i>💡 При достижении 25%, 50%, 75% и 100%
 клиент получит уведомление автоматически.</i>"""
@@ -1132,7 +1132,7 @@ async def increase_progress(callback: CallbackQuery, session: AsyncSession, bot:
 
 <b>Текущий прогресс:</b> {new_progress}%
 
-Выбери новый прогресс или используй кнопки +/−:
+Выберите новый прогресс или используйте кнопки +/−:
 
 <i>💡 При достижении 25%, 50%, 75% и 100%
 клиент получит уведомление автоматически.</i>"""
@@ -1185,7 +1185,7 @@ async def decrease_progress(callback: CallbackQuery, session: AsyncSession, bot:
 
 <b>Текущий прогресс:</b> {new_progress}%
 
-Выбери новый прогресс или используй кнопки +/−:
+Выберите новый прогресс или используйте кнопки +/−:
 
 <i>💡 При достижении 25%, 50%, 75% и 100%
 клиент получит уведомление автоматически.</i>"""
@@ -1831,7 +1831,7 @@ async def cmd_bonus(message: Message, command: CommandObject, session: AsyncSess
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-Выбери действие 👇"""
+Выберите действие:"""
 
     await message.answer(text, reply_markup=get_bonus_keyboard(user.telegram_id))
 
@@ -1889,7 +1889,7 @@ async def bonus_add_callback(callback: CallbackQuery, session: AsyncSession, bot
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-Выбери действие 👇"""
+Выберите действие:"""
 
     await callback.message.edit_text(text, reply_markup=get_bonus_keyboard(user_id))
 
@@ -1964,7 +1964,7 @@ async def bonus_sub_callback(callback: CallbackQuery, session: AsyncSession, bot
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-Выбери действие 👇"""
+Выберите действие:"""
 
     await callback.message.edit_text(text, reply_markup=get_bonus_keyboard(user_id))
 
@@ -2025,7 +2025,7 @@ async def bonus_cancel_callback(callback: CallbackQuery, state: FSMContext, sess
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-Выбери действие 👇"""
+Выберите действие:"""
         await callback.message.edit_text(text, reply_markup=get_bonus_keyboard(user_id))
     else:
         await callback.message.edit_text("❌ Пользователь не найден")
@@ -2131,7 +2131,7 @@ async def process_bonus_amount(message: Message, state: FSMContext, session: Asy
 
 ━━━━━━━━━━━━━━━━━━━━━
 
-Выбери действие 👇"""
+Выберите действие:"""
 
     await message.answer(text, reply_markup=get_bonus_keyboard(user_id))
 

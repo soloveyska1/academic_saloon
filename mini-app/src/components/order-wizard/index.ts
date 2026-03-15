@@ -27,6 +27,9 @@ export type {
   LocalDraft,
 } from './types'
 
+// Design tokens
+export { SPACING, RADIUS, COLORS, FONT, ICON_BOX } from './design-tokens'
+
 // Constants
 export {
   SERVICE_TYPES,

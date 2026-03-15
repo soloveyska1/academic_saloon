@@ -40,39 +40,56 @@ BLOCKED_SQL_KEYWORDS = [
 ]
 
 def validate_sql_query(query: str) -> tuple[bool, str]:
-    """Validate SQL query for security"""
-    # Remove leading/trailing whitespace and normalize
+    """Validate SQL query for security — defense-in-depth approach"""
     cleaned = query.strip()
     normalized = cleaned.upper()
 
-    # Block empty queries
     if not cleaned:
         return False, "Пустой запрос"
 
-    # Block comment attacks FIRST (before other checks to prevent bypass)
+    # Block comments (bypass vector)
     if '--' in query or '/*' in query or '*/' in query:
         return False, "SQL комментарии запрещены"
-
-    # Only allow SELECT queries (must start with SELECT after optional whitespace)
-    if not re.match(r'^\s*SELECT\b', normalized):
-        return False, "Разрешены только SELECT запросы"
-
-    # Check for dangerous keywords with word boundaries
-    for keyword in BLOCKED_SQL_KEYWORDS:
-        if re.search(rf'\b{keyword}\b', normalized):
-            return False, f"Запрещённое ключевое слово: {keyword}"
-
-    # Block subqueries with write operations (injection attempts)
-    if re.search(r'\(\s*(DELETE|INSERT|UPDATE|DROP|ALTER|CREATE)\b', normalized):
-        return False, "Запрещённые подзапросы"
 
     # Block semicolons (prevent multiple statements)
     if ';' in cleaned:
         return False, "Точка с запятой запрещена (только один запрос)"
 
-    # Block UNION-based injection attempts in suspicious contexts
-    if re.search(r'UNION\s+(ALL\s+)?SELECT.*FROM\s+PG_', normalized):
-        return False, "Подозрительный UNION запрос"
+    # Only allow SELECT (must start with SELECT)
+    if not re.match(r'^\s*SELECT\b', normalized):
+        return False, "Разрешены только SELECT запросы"
+
+    # Block ALL dangerous keywords anywhere in the query (not just top-level)
+    all_blocked = [
+        'DROP', 'DELETE', 'TRUNCATE', 'ALTER', 'CREATE', 'INSERT', 'UPDATE',
+        'GRANT', 'REVOKE', 'EXEC', 'EXECUTE', 'INTO OUTFILE', 'INTO DUMPFILE',
+        'LOAD_FILE', 'BENCHMARK', 'SLEEP', 'PG_SLEEP', 'WAITFOR', 'SHUTDOWN',
+        'COPY', 'PG_READ_FILE', 'PG_WRITE_FILE', 'LO_IMPORT', 'LO_EXPORT',
+        'SET ROLE', 'SET SESSION', 'REASSIGN',
+    ]
+    for keyword in all_blocked:
+        if re.search(rf'\b{keyword}\b', normalized):
+            return False, f"Запрещённое ключевое слово: {keyword}"
+
+    # Block access to system catalogs
+    system_tables = ['PG_SHADOW', 'PG_AUTHID', 'PG_ROLES', 'PG_USER', 'PG_STAT_ACTIVITY']
+    for tbl in system_tables:
+        if tbl in normalized:
+            return False, f"Доступ к системным таблицам запрещён"
+
+    # Only allow access to known application tables
+    allowed_tables = {
+        'USERS', 'ORDERS', 'ORDER_MESSAGES', 'CONVERSATIONS',
+        'BALANCE_TRANSACTIONS', 'PROMOCODES', 'PROMOCODE_USAGES',
+        'RANK_LEVELS', 'LOYALTY_LEVELS', 'PAYMENT_LOGS',
+        'ADMIN_LOGS', 'USER_ACTIVITY', 'ALEMBIC_VERSION',
+    }
+    # Extract table-like identifiers from FROM/JOIN clauses
+    from_matches = re.findall(r'\bFROM\s+(\w+)|\bJOIN\s+(\w+)', normalized)
+    for match_groups in from_matches:
+        for table_name in match_groups:
+            if table_name and table_name not in allowed_tables:
+                return False, f"Таблица не в белом списке: {table_name.lower()}"
 
     return True, ""
 
@@ -87,8 +104,9 @@ async def execute_sql(
     Security measures:
     - Only SELECT queries allowed
     - Dangerous keywords blocked
+    - Table whitelist enforced
     - Results limited to 1000 rows
-    - All queries logged
+    - All queries logged with audit trail
     """
     if not is_admin(tg_user.id):
         raise HTTPException(status_code=403, detail="Access denied")
@@ -96,15 +114,17 @@ async def execute_sql(
     # Validate query
     is_valid, error_msg = validate_sql_query(data.query)
     if not is_valid:
-        logger.warning(f"Blocked SQL query from admin {tg_user.id}: {error_msg}")
+        logger.warning(f"[AUDIT] Blocked SQL from admin {tg_user.id}: {error_msg} | Query: {data.query[:300]}")
         return AdminSqlResponse(columns=[], rows=[], error=error_msg)
 
-    # Log query for audit
-    logger.info(f"Admin SQL query by {tg_user.id}: {data.query[:200]}...")
+    # Audit log
+    logger.info(f"[AUDIT] Admin SQL by {tg_user.id}: {data.query[:500]}")
 
     try:
+        # Execute in read-only transaction for extra safety
+        result = await session.execute(text("SET TRANSACTION READ ONLY"))
         result = await session.execute(text(data.query))
-        rows = result.fetchmany(1000)  # Limit to 1000 rows
+        rows = result.fetchmany(1000)
         columns = list(result.keys())
 
         serializable_rows = []
@@ -114,8 +134,8 @@ async def execute_sql(
         return AdminSqlResponse(columns=columns, rows=serializable_rows)
 
     except Exception as e:
-        logger.error(f"SQL execution error: {e}")
-        return AdminSqlResponse(columns=[], rows=[], error=str(e))
+        logger.error(f"[AUDIT] SQL error by {tg_user.id}: {e}")
+        return AdminSqlResponse(columns=[], rows=[], error=f"Ошибка выполнения: {type(e).__name__}")
 
 @router.get("/admin/users", response_model=List[AdminUserResponse])
 async def get_all_users(

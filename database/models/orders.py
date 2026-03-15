@@ -346,15 +346,29 @@ class Order(Base):
 
     @property
     def final_price(self) -> Decimal:
-        """Итоговая цена с учётом скидки, промокода и бонусов"""
-        # Сначала применяем скидку лояльности
-        price_with_discount = self.price * (1 - self.discount / 100)
-        # Затем применяем скидку по промокоду (keep Decimal, avoid int/float fallback)
+        """Итоговая цена с учётом скидки, промокода и бонусов.
+
+        Суммарная скидка (лояльность + промокод) ограничена 70%.
+        """
+        # Скидка лояльности (макс 50%)
+        loyalty = min(self.discount, Decimal("50")) if self.discount else Decimal("0")
+        # Скидка промокода
         promo = self.promo_discount if self.promo_discount else Decimal("0")
-        price_with_promo = price_with_discount * (1 - promo / 100)
-        # И в конце вычитаем бонусы
+
+        # Суммарная скидка не может превышать 70%
+        combined_discount = min(
+            Decimal("1") - (Decimal("1") - loyalty / Decimal("100")) * (Decimal("1") - promo / Decimal("100")),
+            Decimal("0.70")
+        )
+
+        price_after_discounts = self.price * (Decimal("1") - combined_discount)
+
+        # Вычитаем бонусы
         bonus = self.bonus_used if self.bonus_used else Decimal("0")
-        return max(Decimal("0"), price_with_promo - bonus)
+        # Минимальная цена после бонусов — 100₽ (или 0 если цена изначально 0)
+        if self.price == 0:
+            return Decimal("0")
+        return max(Decimal("100"), price_after_discounts - bonus)
 
 
 class MessageSender(str, enum.Enum):
