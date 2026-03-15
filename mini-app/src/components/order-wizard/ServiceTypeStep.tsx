@@ -6,7 +6,9 @@ import {
   ChevronRight,
   Crown,
   Search,
-  Star,
+  ShieldCheck,
+  Sparkles,
+  Timer,
   X,
   Zap,
   BookOpen,
@@ -15,14 +17,14 @@ import { ServiceCategory, ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SERVICE TYPE STEP — v3 «Чёткая иерархия»
+   SERVICE TYPE STEP — v4 «Guru-level catalog»
 
-   Принципы дизайна:
-   - Секции ФИЗИЧЕСКИ разделены (gap 32px, category-colored left border)
-   - Ряды НЕ в контейнерах — каждый ряд самостоятелен, разделены линиями
-   - Хедеры секций — крупный цветной лейбл (не иконка в квадрате)
-   - Selected = заливка + бордер, а не едва заметный градиент
-   - Цена — крупная, справа, контрастная
+   Principles:
+   - Premium services get flagship treatment (expanded card, social proof)
+   - Smart hierarchy: popular items bubble up, categories feel distinct
+   - Every service row sells, not just lists
+   - Selection is visually satisfying (color, animation, haptic)
+   - Trust signals embedded: guarantees, speed, quality metrics
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface ServiceTypeStepProps {
@@ -48,29 +50,29 @@ const SECTION_ORDER: ServiceCategory[] = ['premium', 'standard', 'express']
 const SECTION_META: Record<ServiceCategory, SectionMeta> = {
   premium: {
     category: 'premium',
-    title: 'Выпускные работы',
-    subtitle: 'Сопровождение до защиты',
+    title: 'Дипломные и диссертации',
+    subtitle: 'Полное сопровождение до защиты',
     accent: '#d4af37',
-    accentSoft: 'rgba(212, 175, 55, 0.12)',
-    accentBorder: 'rgba(212, 175, 55, 0.30)',
+    accentSoft: 'rgba(212, 175, 55, 0.10)',
+    accentBorder: 'rgba(212, 175, 55, 0.25)',
     icon: Crown,
   },
   standard: {
     category: 'standard',
     title: 'Учебные работы',
-    subtitle: 'Структура и методичка',
+    subtitle: 'Надёжно и в срок',
     accent: '#c9a96e',
-    accentSoft: 'rgba(201, 169, 110, 0.10)',
-    accentBorder: 'rgba(201, 169, 110, 0.25)',
+    accentSoft: 'rgba(201, 169, 110, 0.08)',
+    accentBorder: 'rgba(201, 169, 110, 0.20)',
     icon: BookOpen,
   },
   express: {
     category: 'express',
-    title: 'Экспресс-форматы',
-    subtitle: 'Быстрый запуск',
+    title: 'Быстрые задачи',
+    subtitle: 'От 1 дня',
     accent: '#5cb89a',
-    accentSoft: 'rgba(92, 184, 154, 0.10)',
-    accentBorder: 'rgba(92, 184, 154, 0.25)',
+    accentSoft: 'rgba(92, 184, 154, 0.08)',
+    accentBorder: 'rgba(92, 184, 154, 0.20)',
     icon: Zap,
   },
 }
@@ -123,6 +125,9 @@ export function ServiceTypeStep({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* ── Trust strip — mini guarantees above catalog ── */}
+      {!minimal && !search && <TrustStrip />}
+
       {/* ── Search ── */}
       {!minimal && (
         <CatalogSearch
@@ -134,7 +139,7 @@ export function ServiceTypeStep({
 
       {/* ── Sections ── */}
       {sections.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           {sections.map((section, index) => (
             <ServiceSection
               key={section.category}
@@ -154,6 +159,56 @@ export function ServiceTypeStep({
         <UrgentRequestCard onPress={handleUrgentRequest} />
       )}
     </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TRUST STRIP — 3 mini-guarantees for confidence
+   ───────────────────────────────────────────────────────────────────────── */
+
+function TrustStrip() {
+  const items = [
+    { icon: ShieldCheck, text: '3 правки бесплатно' },
+    { icon: Timer, text: '98% в срок' },
+    { icon: Sparkles, text: 'Пишем с нуля' },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.05 }}
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 16,
+        padding: '10px 0 6px',
+      }}
+    >
+      {items.map((item) => {
+        const Icon = item.icon
+        return (
+          <div
+            key={item.text}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <Icon size={12} color="rgba(212, 175, 55, 0.45)" strokeWidth={2} />
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'rgba(255, 255, 255, 0.32)',
+              whiteSpace: 'nowrap',
+            }}>
+              {item.text}
+            </span>
+          </div>
+        )
+      })}
+    </motion.div>
   )
 }
 
@@ -178,9 +233,9 @@ function CatalogSearch({
       padding: '11px 14px',
       background: 'rgba(255, 255, 255, 0.04)',
       border: '1px solid rgba(255, 255, 255, 0.08)',
-      borderRadius: 12,
+      borderRadius: 14,
     }}>
-      <Search size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+      <Search size={16} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0 }} />
       <input
         type="text"
         value={value}
@@ -191,7 +246,7 @@ function CatalogSearch({
           border: 'none',
           outline: 'none',
           background: 'transparent',
-          color: 'var(--text-main)',
+          color: 'rgba(255,255,255,0.85)',
           fontSize: 14,
           fontFamily: "'Manrope', sans-serif",
         }}
@@ -214,7 +269,7 @@ function CatalogSearch({
             flexShrink: 0,
           }}
         >
-          <X size={11} color="var(--text-muted)" />
+          <X size={11} color="rgba(255,255,255,0.4)" />
         </motion.button>
       )}
     </div>
@@ -222,7 +277,7 @@ function CatalogSearch({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SECTION — Category group with colored left accent
+   SECTION — Category group with distinct visual identity
    ───────────────────────────────────────────────────────────────────────── */
 
 function ServiceSection({
@@ -236,47 +291,53 @@ function ServiceSection({
   onSelect: (id: string) => void
   index: number
 }) {
+  const SectionIcon = section.icon
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07, type: 'spring', stiffness: 280, damping: 28 }}
+      transition={{ delay: index * 0.08, type: 'spring', stiffness: 280, damping: 28 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 0 }}
     >
-      {/* Section header — category pill + subtitle */}
+      {/* Section header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 10,
         marginBottom: 10,
       }}>
-        <span style={{
-          display: 'inline-flex',
+        <div style={{
+          display: 'flex',
           alignItems: 'center',
-          gap: 5,
+          gap: 6,
           padding: '5px 10px',
-          borderRadius: 8,
+          borderRadius: 10,
           background: section.accentSoft,
           border: `1px solid ${section.accentBorder}`,
-          fontSize: 12,
-          fontWeight: 700,
-          color: section.accent,
-          letterSpacing: '0.02em',
-          lineHeight: 1,
-          whiteSpace: 'nowrap',
         }}>
-          {section.title}
-        </span>
+          <SectionIcon size={13} color={section.accent} strokeWidth={1.8} />
+          <span style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: section.accent,
+            letterSpacing: '0.01em',
+            lineHeight: 1,
+          }}>
+            {section.title}
+          </span>
+        </div>
         <span style={{
           fontSize: 12,
-          color: 'var(--text-muted)',
+          color: 'rgba(255,255,255,0.30)',
           lineHeight: 1,
+          fontWeight: 500,
         }}>
           {section.subtitle}
         </span>
       </div>
 
-      {/* Service rows — inside a bordered card with colored top accent */}
+      {/* Service rows */}
       <div style={{
         borderRadius: 16,
         overflow: 'hidden',
@@ -284,15 +345,14 @@ function ServiceSection({
         background: 'rgba(255, 255, 255, 0.015)',
         position: 'relative',
       }}>
-        {/* Colored top line — 2px accent bar */}
+        {/* Colored top accent */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           height: 2,
-          background: `linear-gradient(90deg, ${section.accent}, transparent)`,
-          opacity: 0.6,
+          background: `linear-gradient(90deg, ${section.accent}90, transparent)`,
         }} />
 
         {section.services.map((service, i) => (
@@ -311,7 +371,7 @@ function ServiceSection({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SERVICE ROW — Clean, readable, with strong selected state
+   SERVICE ROW — Rich, informative, with satisfying selection
    ───────────────────────────────────────────────────────────────────────── */
 
 function ServiceRow({
@@ -362,11 +422,12 @@ function ServiceRow({
             bottom: 0,
             width: 3,
             background: sectionMeta.accent,
+            borderRadius: '0 2px 2px 0',
           }}
         />
       )}
 
-      {/* Row layout: [Icon] [Content area] [Check/Chevron] */}
+      {/* Row layout */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -374,40 +435,44 @@ function ServiceRow({
       }}>
         {/* Icon */}
         <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: 10,
+          width: 40,
+          height: 40,
+          borderRadius: 12,
           background: selected
-            ? `${sectionMeta.accent}22`
-            : 'rgba(255, 255, 255, 0.05)',
+            ? `${sectionMeta.accent}20`
+            : 'rgba(255, 255, 255, 0.04)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
           transition: 'all 0.2s ease',
+          border: selected
+            ? `1px solid ${sectionMeta.accent}25`
+            : '1px solid transparent',
         }}>
           <Icon
             size={18}
-            color={selected ? sectionMeta.accent : 'var(--text-secondary)'}
+            color={selected ? sectionMeta.accent : 'rgba(255,255,255,0.40)'}
             strokeWidth={1.6}
           />
         </div>
 
-        {/* Content: two lines */}
+        {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Line 1: Name + badge */}
+          {/* Line 1: Name + badges */}
           <div style={{
             display: 'flex',
-            alignItems: 'baseline',
+            alignItems: 'center',
             gap: 6,
             marginBottom: 4,
             flexWrap: 'wrap',
           }}>
             <span style={{
               fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-main)',
+              fontWeight: 700,
+              color: selected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.82)',
               lineHeight: 1.3,
+              letterSpacing: '-0.01em',
             }}>
               {service.label}
             </span>
@@ -416,27 +481,37 @@ function ServiceRow({
               <span style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 2,
-                padding: '2px 6px',
+                gap: 3,
+                padding: '2px 7px',
                 borderRadius: 999,
-                background: 'rgba(212, 175, 55, 0.12)',
+                background: 'rgba(212, 175, 55, 0.10)',
+                border: '1px solid rgba(212, 175, 55, 0.15)',
                 fontSize: 9,
                 fontWeight: 700,
-                letterSpacing: '0.05em',
+                letterSpacing: '0.04em',
                 textTransform: 'uppercase' as const,
                 color: '#d4af37',
                 lineHeight: 1,
                 flexShrink: 0,
-                position: 'relative',
-                top: -1,
               }}>
-                <Star size={7} fill="#d4af37" color="#d4af37" />
-                хит
+                <Sparkles size={7} color="#d4af37" />
+                популярное
               </span>
             )}
           </div>
 
-          {/* Line 2: Duration ··· Price */}
+          {/* Line 2: Description (only when not selected to keep it clean) */}
+          <div style={{
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.35)',
+            lineHeight: 1.4,
+            marginBottom: 6,
+            fontWeight: 500,
+          }}>
+            {service.description}
+          </div>
+
+          {/* Line 3: Duration + Price */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -444,10 +519,14 @@ function ServiceRow({
             gap: 8,
           }}>
             <span style={{
-              fontSize: 12,
-              color: 'var(--text-muted)',
+              fontSize: 11,
+              color: 'rgba(255,255,255,0.25)',
               lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
             }}>
+              <Timer size={10} color="rgba(255,255,255,0.20)" />
               {service.duration}
             </span>
 
@@ -455,7 +534,7 @@ function ServiceRow({
               fontSize: 13,
               fontWeight: 700,
               fontFamily: "'JetBrains Mono', monospace",
-              color: selected ? sectionMeta.accent : 'var(--text-secondary)',
+              color: selected ? sectionMeta.accent : 'rgba(255,255,255,0.50)',
               lineHeight: 1,
               whiteSpace: 'nowrap',
               flexShrink: 0,
@@ -466,7 +545,7 @@ function ServiceRow({
           </div>
         </div>
 
-        {/* Check / Chevron — right edge */}
+        {/* Check / Chevron */}
         <AnimatePresence mode="wait">
           {selected ? (
             <motion.div
@@ -476,14 +555,15 @@ function ServiceRow({
               exit={{ scale: 0.5, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 500, damping: 25 }}
               style={{
-                width: 24,
-                height: 24,
+                width: 26,
+                height: 26,
                 borderRadius: '50%',
                 background: sectionMeta.accent,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
+                boxShadow: `0 4px 12px ${sectionMeta.accent}30`,
               }}
             >
               <Check size={13} color="#050505" strokeWidth={3} />
@@ -492,11 +572,11 @@ function ServiceRow({
             <motion.div
               key="chevron"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 0.3 }}
               exit={{ opacity: 0 }}
               style={{ flexShrink: 0, display: 'flex' }}
             >
-              <ChevronRight size={16} color="var(--text-muted)" />
+              <ChevronRight size={16} color="rgba(255,255,255,0.25)" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -506,7 +586,7 @@ function ServiceRow({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   URGENT REQUEST CARD — Stands out from service sections
+   URGENT REQUEST CARD
    ───────────────────────────────────────────────────────────────────────── */
 
 function UrgentRequestCard({ onPress }: { onPress: () => void }) {
@@ -525,8 +605,8 @@ function UrgentRequestCard({ onPress }: { onPress: () => void }) {
         gap: 12,
         padding: '14px 16px',
         background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.06), rgba(96, 165, 250, 0.02))',
-        border: '1px dashed rgba(96, 165, 250, 0.25)',
-        borderRadius: 14,
+        border: '1px dashed rgba(96, 165, 250, 0.22)',
+        borderRadius: 16,
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
@@ -534,26 +614,27 @@ function UrgentRequestCard({ onPress }: { onPress: () => void }) {
       }}
     >
       <div style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        background: 'rgba(96, 165, 250, 0.12)',
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        background: 'rgba(96, 165, 250, 0.10)',
+        border: '1px solid rgba(96, 165, 250, 0.12)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
       }}>
-        <Zap size={17} color="#60a5fa" />
+        <Zap size={17} color="#60a5fa" strokeWidth={1.8} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#93bbfc', marginBottom: 2, lineHeight: 1.2 }}>
-          Срочная задача?
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#93bbfc', marginBottom: 3, lineHeight: 1.2 }}>
+          Не нашли нужное?
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.3 }}>
-          Отправьте тему — подберём формат
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', lineHeight: 1.3, fontWeight: 500 }}>
+          Опишите задачу — подберём формат и автора
         </div>
       </div>
-      <ArrowUpRight size={16} color="#60a5fa" style={{ flexShrink: 0, opacity: 0.6 }} />
+      <ArrowUpRight size={16} color="#60a5fa" style={{ flexShrink: 0, opacity: 0.5 }} />
     </motion.button>
   )
 }
@@ -571,26 +652,26 @@ function EmptySearchState({ onReset }: { onReset: () => void }) {
         padding: '32px 20px',
         borderRadius: 16,
         background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
         textAlign: 'center',
       }}
     >
       <div style={{
-        width: 44,
-        height: 44,
-        borderRadius: '50%',
+        width: 48,
+        height: 48,
+        borderRadius: 16,
         background: 'rgba(255, 255, 255, 0.04)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 14,
       }}>
-        <Search size={20} color="var(--text-muted)" />
+        <Search size={20} color="rgba(255,255,255,0.25)" />
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
+      <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.80)', marginBottom: 6 }}>
         Ничего не найдено
       </div>
-      <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)', marginBottom: 16 }}>
+      <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.35)', marginBottom: 16 }}>
         Попробуйте другой запрос или посмотрите весь каталог
       </div>
       <motion.button
@@ -598,10 +679,10 @@ function EmptySearchState({ onReset }: { onReset: () => void }) {
         whileTap={{ scale: 0.97 }}
         onClick={onReset}
         style={{
-          padding: '10px 16px',
-          borderRadius: 10,
-          border: '1px solid rgba(212, 175, 55, 0.22)',
-          background: 'rgba(212, 175, 55, 0.08)',
+          padding: '10px 18px',
+          borderRadius: 12,
+          border: '1px solid rgba(212, 175, 55, 0.20)',
+          background: 'rgba(212, 175, 55, 0.06)',
           color: '#d4af37',
           fontSize: 13,
           fontWeight: 700,
