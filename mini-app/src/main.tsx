@@ -79,6 +79,11 @@ if (tg) {
   tg.setHeaderColor('#09090b')
   tg.setBackgroundColor('#09090b')
 
+  // Disable Telegram's pull-to-close gesture so scrolling up works properly
+  if (typeof tg.disableVerticalSwipes === 'function') {
+    tg.disableVerticalSwipes()
+  }
+
   // Dev diagnostics only
   if (IS_DEV) {
     console.log('[DEV] Telegram WebApp initialized')
