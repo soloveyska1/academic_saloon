@@ -76,10 +76,17 @@ console.log('[Build]', __BUILD_TIME__)
 document.addEventListener('touchmove', function (e) {
   // Allow normal scrolling inside scrollable containers
   let el = e.target as HTMLElement | null
-  while (el && el !== document.body) {
+  while (el) {
     if (el.scrollHeight > el.clientHeight) {
       // Element is scrollable — let it scroll normally
       return
+    }
+    // Stop at body — check documentElement (html) too for page-level scroll
+    if (el === document.body) {
+      if (document.documentElement.scrollHeight > document.documentElement.clientHeight) {
+        return
+      }
+      break
     }
     el = el.parentElement
   }
