@@ -29,7 +29,7 @@ jobs:
           echo "expiry=$EXPIRY_SHORT" >> $GITHUB_OUTPUT
           echo "days_left=$DAYS_LEFT" >> $GITHUB_OUTPUT
 
-          # Progress bar (90 days = full, 0 = empty)
+          # Visual bar
           FILLED=$((DAYS_LEFT * 10 / 90))
           [ $FILLED -gt 10 ] && FILLED=10
           [ $FILLED -lt 0 ] && FILLED=0
@@ -46,7 +46,6 @@ jobs:
             echo "status=ok" >> $GITHUB_OUTPUT
           fi
 
-      # Only notify when attention needed (not when everything is fine)
       - name: Notify Telegram (Critical)
         if: steps.ssl.outputs.status == 'critical'
         uses: appleboy/telegram-action@master
@@ -55,12 +54,12 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *SSL CRITICAL*  `${{ steps.ssl.outputs.days_left }}d left`
+            *SSL КРИТИЧНО*  `${{ steps.ssl.outputs.days_left }}д`
 
             `${{ steps.ssl.outputs.bar }}`
-            Expires: ${{ steps.ssl.outputs.expiry }}
+            Истекает: ${{ steps.ssl.outputs.expiry }}
 
-            Run `certbot renew` on server immediately.
+            Срочно выполни `certbot renew` на сервере.
 
       - name: Notify Telegram (Warning)
         if: steps.ssl.outputs.status == 'warning'
@@ -70,12 +69,12 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *SSL WARNING*  `${{ steps.ssl.outputs.days_left }}d left`
+            *SSL ВНИМАНИЕ*  `${{ steps.ssl.outputs.days_left }}д`
 
             `${{ steps.ssl.outputs.bar }}`
-            Expires: ${{ steps.ssl.outputs.expiry }}
+            Истекает: ${{ steps.ssl.outputs.expiry }}
 
-            Certbot should auto-renew. Monitor.
+            Certbot должен обновить автоматически. Следи.
 
       - name: Notify Telegram (Error)
         if: steps.ssl.outputs.status == 'error'
@@ -85,7 +84,7 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *SSL CHECK FAILED*
+            *SSL ПРОВЕРКА УПАЛА*
 
-            Could not reach server or read certificate.
-            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            Не удалось подключиться к серверу или прочитать сертификат.
+            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

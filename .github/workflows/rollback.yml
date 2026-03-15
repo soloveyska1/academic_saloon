@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Rollback via SSH
-        id: rollback
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -26,14 +25,10 @@ jobs:
             cd ~/academic_saloon
 
             FROM=$(git rev-parse --short HEAD)
-            FROM_MSG=$(git log -1 --format='%s')
-
             git reset --hard HEAD~$COMMITS_BACK
-
             TO=$(git rev-parse --short HEAD)
-            TO_MSG=$(git log -1 --format='%s')
 
-            # Rebuild frontend
+            # Rebuild
             cd ~/academic_saloon/mini-app
             npm ci --prefer-offline
             npm run build
@@ -42,7 +37,7 @@ jobs:
             cp -r dist/* /var/www/academic_saloon/dist/
             chown -R www-data:www-data /var/www/academic_saloon/dist/
 
-            # Restart services
+            # Restart
             touch /tmp/saloon-deploy.lock
             systemctl stop saloon-bot 2>/dev/null || true
             fuser -k 8000/tcp 2>/dev/null || true
@@ -52,12 +47,7 @@ jobs:
             rm -f /tmp/saloon-deploy.lock
             nginx -t && systemctl reload nginx
 
-            BOT_STATUS="down"
-            if systemctl is-active --quiet saloon-bot; then BOT_STATUS="ok"; fi
-
-            echo "=== ROLLBACK: $FROM -> $TO (-$COMMITS_BACK) | Bot: $BOT_STATUS ==="
-            echo "=== FROM: $FROM_MSG ==="
-            echo "=== TO: $TO_MSG ==="
+            echo "=== ROLLBACK: $FROM -> $TO (-$COMMITS_BACK) ==="
 
       - name: Notify Telegram (Success)
         if: success()
@@ -67,12 +57,12 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *ROLLBACK*  -${{ github.event.inputs.commits_back }} commits
+            *ОТКАТ*  -${{ github.event.inputs.commits_back }} коммитов
 
-            Initiated by `${{ github.actor }}`
-            Server reverted, frontend rebuilt, services restarted.
+            Инициатор: `${{ github.actor }}`
+            Сервер откачен, фронтенд пересобран, сервисы перезапущены.
 
-            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Notify Telegram (Failure)
         if: failure()
@@ -82,8 +72,8 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *ROLLBACK FAILED*
+            *ОТКАТ УПАЛ*
 
-            Initiated by `${{ github.actor }}`
-            Manual intervention required.
-            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            Инициатор: `${{ github.actor }}`
+            Требуется ручное вмешательство.
+            [Логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

@@ -25,7 +25,6 @@ jobs:
     steps:
       - name: Execute server action
         uses: appleboy/ssh-action@v1.0.3
-        id: action
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -38,12 +37,9 @@ jobs:
               "status")
                 UPTIME=$(uptime -p | sed 's/up //')
                 LOAD=$(cat /proc/loadavg | awk '{print $1, $2, $3}')
-                DISK_PCT=$(df -h / | tail -1 | awk '{print $5}')
-                DISK_USED=$(df -h / | tail -1 | awk '{print $3}')
-                DISK_TOTAL=$(df -h / | tail -1 | awk '{print $2}')
-                MEM_PCT=$(free | grep Mem | awk '{printf("%.0f%%", $3/$2*100)}')
-                MEM_USED=$(free -h | grep Mem | awk '{print $3}')
-                MEM_TOTAL=$(free -h | grep Mem | awk '{print $2}')
+                DISK=$(df -h / | tail -1 | awk '{print $3"/"$2" ("$5")"}')
+                MEM_PCT=$(free | grep Mem | awk '{printf("%.0f", $3/$2*100)}')
+                MEM=$(free -h | grep Mem | awk -v p=$MEM_PCT '{print $3"/"$2" ("p"%)"}')
 
                 BOT=$(systemctl is-active saloon-bot 2>/dev/null || echo "stopped")
                 NGX=$(systemctl is-active nginx 2>/dev/null || echo "stopped")
@@ -51,34 +47,24 @@ jobs:
                 RD=$((systemctl is-active redis-server 2>/dev/null || systemctl is-active redis 2>/dev/null) || echo "stopped")
 
                 cd ~/academic_saloon
-                LAST_COMMIT=$(git log -1 --format='%h %s' | head -c 80)
-                LAST_DEPLOY=$(git log -1 --format='%cr')
+                LAST=$(git log -1 --format='%h %s (%cr)' | head -c 100)
 
-                API_STATUS="down"
-                if curl -s --max-time 3 http://localhost:8000/health > /dev/null 2>&1; then
-                  API_STATUS="ok"
-                fi
-
-                DOMAIN="academic-saloon.duckdns.org"
-                SSL_DAYS=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
-                if [ -n "$SSL_DAYS" ]; then
-                  SSL_TS=$(date -d "$SSL_DAYS" +%s)
-                  NOW_TS=$(date +%s)
-                  SSL_LEFT=$(( (SSL_TS - NOW_TS) / 86400 ))
-                  SSL_INFO="${SSL_LEFT}d"
-                else
-                  SSL_INFO="unknown"
-                fi
-
-                # Bot process RAM
                 BOT_RAM=$(ps aux | grep 'python.*main.py\|uvicorn' | grep -v grep | awk '{sum+=$6} END {printf("%.0fMB", sum/1024)}' 2>/dev/null || echo "?")
 
-                echo "=== SERVER STATUS ==="
-                echo "Uptime: $UPTIME | Load: $LOAD"
-                echo "Disk: $DISK_USED/$DISK_TOTAL ($DISK_PCT) | RAM: $MEM_USED/$MEM_TOTAL ($MEM_PCT)"
-                echo "Bot: $BOT ($BOT_RAM) | API: $API_STATUS | Nginx: $NGX | PG: $PG | Redis: $RD"
-                echo "SSL: $SSL_INFO | Deploy: $LAST_DEPLOY"
-                echo "Last: $LAST_COMMIT"
+                DOMAIN="academic-saloon.duckdns.org"
+                SSL_DAYS=""
+                SSL_DATE=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+                if [ -n "$SSL_DATE" ]; then
+                  SSL_TS=$(date -d "$SSL_DATE" +%s)
+                  NOW_TS=$(date +%s)
+                  SSL_DAYS="$(( (SSL_TS - NOW_TS) / 86400 ))д"
+                fi
+
+                echo "Аптайм: $UPTIME | Нагрузка: $LOAD"
+                echo "Диск: $DISK | RAM: $MEM"
+                echo "Бот: $BOT ($BOT_RAM) | Nginx: $NGX | PG: $PG | Redis: $RD"
+                echo "SSL: ${SSL_DAYS:-?}"
+                echo "Последний коммит: $LAST"
                 ;;
 
               "logs-bot")
@@ -87,10 +73,10 @@ jobs:
 
               "logs-nginx")
                 echo "--- Access ---"
-                tail -n $((LINES/2)) /var/log/nginx/access.log 2>/dev/null || echo "No access log"
+                tail -n $((LINES/2)) /var/log/nginx/access.log 2>/dev/null || echo "Нет логов"
                 echo ""
-                echo "--- Errors ---"
-                tail -n $((LINES/2)) /var/log/nginx/error.log 2>/dev/null || echo "No error log"
+                echo "--- Ошибки ---"
+                tail -n $((LINES/2)) /var/log/nginx/error.log 2>/dev/null || echo "Нет логов"
                 ;;
 
               "logs-errors")
@@ -98,12 +84,12 @@ jobs:
                 ;;
 
               "disk-cleanup")
-                echo "Before: $(df -h / | tail -1 | awk '{print $5}')"
+                echo "До: $(df -h / | tail -1 | awk '{print $5}')"
                 journalctl --vacuum-time=7d 2>/dev/null || true
                 npm cache clean --force 2>/dev/null || true
                 apt-get clean 2>/dev/null || true
                 find /root/backups -name "*.sql.gz" -mtime +7 -delete 2>/dev/null || true
-                echo "After: $(df -h / | tail -1 | awk '{print $5}')"
+                echo "После: $(df -h / | tail -1 | awk '{print $5}')"
                 ;;
             esac
 
@@ -115,6 +101,6 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            *SERVER ${{ github.event.inputs.action }}*
+            *СЕРВЕР* `${{ github.event.inputs.action }}`
 
-            [Full output](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Полный вывод](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

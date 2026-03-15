@@ -21,7 +21,6 @@ jobs:
 
             ISSUES=""
             ACTIONS=""
-            METRICS=""
 
             # Skip if deploy in progress
             if [ -f /tmp/saloon-deploy.lock ]; then
@@ -30,55 +29,44 @@ jobs:
             fi
 
             # --- Services ---
-            BOT="ok"; NGINX="ok"; PG="ok"; REDIS="ok"
-
             if ! systemctl is-active --quiet saloon-bot; then
               fuser -k 8000/tcp 2>/dev/null || true
               sleep 2
               systemctl restart saloon-bot
               sleep 5
               if systemctl is-active --quiet saloon-bot; then
-                ACTIONS="${ACTIONS}bot_restarted "
-                BOT="restarted"
+                ACTIONS="${ACTIONS}бот перезапущен, "
               else
-                ISSUES="${ISSUES}bot_down "
-                BOT="down"
+                ISSUES="${ISSUES}бот не запустился, "
               fi
             fi
 
             if ! systemctl is-active --quiet nginx; then
               systemctl restart nginx
               if systemctl is-active --quiet nginx; then
-                ACTIONS="${ACTIONS}nginx_restarted "
-                NGINX="restarted"
+                ACTIONS="${ACTIONS}nginx перезапущен, "
               else
-                ISSUES="${ISSUES}nginx_down "
-                NGINX="down"
+                ISSUES="${ISSUES}nginx упал, "
               fi
             fi
 
             if ! systemctl is-active --quiet postgresql; then
               systemctl restart postgresql
               if systemctl is-active --quiet postgresql; then
-                ACTIONS="${ACTIONS}pg_restarted "
-                PG="restarted"
+                ACTIONS="${ACTIONS}PostgreSQL перезапущен, "
               else
-                ISSUES="${ISSUES}pg_down "
-                PG="down"
+                ISSUES="${ISSUES}PostgreSQL упал, "
               fi
             fi
 
             if ! (systemctl is-active --quiet redis-server 2>/dev/null || systemctl is-active --quiet redis 2>/dev/null); then
               if command -v redis-cli &>/dev/null && ! redis-cli ping &>/dev/null; then
-                ISSUES="${ISSUES}redis_down "
-                REDIS="down"
+                ISSUES="${ISSUES}Redis недоступен, "
               fi
             fi
 
             # --- Disk ---
             DISK=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
-            DISK_USED=$(df -h / | tail -1 | awk '{print $3}')
-            DISK_TOTAL=$(df -h / | tail -1 | awk '{print $2}')
 
             if [ "$DISK" -gt 80 ]; then
               journalctl --vacuum-time=3d 2>/dev/null || true
@@ -89,18 +77,16 @@ jobs:
               npm cache clean --force 2>/dev/null || true
 
               DISK_AFTER=$(df -h / | tail -1 | awk '{print $5}' | tr -d '%')
-              ACTIONS="${ACTIONS}disk_cleaned_${DISK}%>${DISK_AFTER}% "
+              ACTIONS="${ACTIONS}диск очищен ${DISK}%->${DISK_AFTER}%, "
               DISK=$DISK_AFTER
 
               if [ "$DISK" -gt 90 ]; then
-                ISSUES="${ISSUES}disk_critical_${DISK}% "
+                ISSUES="${ISSUES}диск критический ${DISK}%, "
               fi
             fi
 
             # --- RAM ---
             MEM=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
-            MEM_USED=$(free -h | grep Mem | awk '{print $3}')
-            MEM_TOTAL=$(free -h | grep Mem | awk '{print $2}')
 
             if [ "$MEM" -gt 85 ]; then
               fuser -k 8000/tcp 2>/dev/null || true
@@ -110,39 +96,28 @@ jobs:
               sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 
               MEM_AFTER=$(free | grep Mem | awk '{printf("%.0f", $3/$2 * 100)}')
-              ACTIONS="${ACTIONS}ram_cleaned_${MEM}%>${MEM_AFTER}% "
+              ACTIONS="${ACTIONS}RAM очищена ${MEM}%->${MEM_AFTER}%, "
 
               if [ "$MEM_AFTER" -gt 95 ]; then
-                ISSUES="${ISSUES}ram_critical_${MEM_AFTER}% "
+                ISSUES="${ISSUES}RAM критическая ${MEM_AFTER}%, "
               fi
-              MEM=$MEM_AFTER
             fi
 
-            # --- API check ---
-            API="ok"
+            # --- API ---
             if ! curl -s --max-time 5 http://localhost:8000/health > /dev/null 2>&1; then
               if ! curl -s --max-time 5 http://localhost:8000/ > /dev/null 2>&1; then
-                API="no_response"
+                echo "API not responding"
               fi
             fi
 
-            # --- Uptime ---
-            UPTIME=$(uptime -p | sed 's/up //')
-            LOAD=$(cat /proc/loadavg | awk '{print $1}')
-
-            # Output
-            echo "SERVICES: bot=$BOT nginx=$NGINX pg=$PG redis=$REDIS api=$API"
-            echo "RESOURCES: disk=${DISK}% (${DISK_USED}/${DISK_TOTAL}) ram=${MEM}% (${MEM_USED}/${MEM_TOTAL})"
-            echo "SYSTEM: uptime=$UPTIME load=$LOAD"
-            echo "ACTIONS: $ACTIONS"
-            echo "ISSUES: $ISSUES"
+            echo "DISK=${DISK}% | RAM=${MEM}% | ACTIONS: $ACTIONS | ISSUES: $ISSUES"
 
             if [ -n "$ISSUES" ]; then
               exit 1
             fi
 
-      # Only notify when something happened (not every 10 min)
-      - name: Notify Telegram (Critical)
+      # Notify only when something went wrong
+      - name: Notify Telegram (Issues)
         if: failure()
         uses: appleboy/telegram-action@master
         with:
@@ -152,7 +127,6 @@ jobs:
           message: |
             *HEALTH ALERT*
 
-            One or more services failed to recover.
-            Auto-restart was attempted but issues remain.
+            Один или несколько сервисов не восстановились после авто-перезапуска.
 
-            [Full logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Подробные логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
