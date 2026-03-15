@@ -5,6 +5,8 @@ import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { useAdmin } from '../contexts/AdminContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
+import { SkeletonProfileHeader, SkeletonStatsGrid, SkeletonCard } from '../components/ui/Skeleton'
+import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { QRCodeModal } from '../components/ui/QRCode'
 import { TransactionsModal } from '../components/modals/TransactionsModal'
 import { useToast } from '../components/ui/Toast'
@@ -122,7 +124,17 @@ export function ProfilePageNew({ user }: Props) {
 
   /* ═══════ Guard ═══════ */
 
-  if (!user) return null
+  if (!user) return (
+    <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
+      <div className="page-background"><PremiumBackground /></div>
+      <div className="page-content" style={{ padding: '20px 20px 120px' }}>
+        <SkeletonProfileHeader />
+        <div style={{ marginBottom: 16 }}><SkeletonStatsGrid /></div>
+        <div style={{ marginBottom: 16 }}><SkeletonCard /></div>
+        <SkeletonCard />
+      </div>
+    </div>
+  )
 
   /* ═══════ Render ═══════ */
 
@@ -159,6 +171,11 @@ export function ProfilePageNew({ user }: Props) {
 
         {/* 4. Status & Membership */}
         <StatusCard user={user} />
+
+        {/* 4.5. Theme Toggle */}
+        <div style={{ marginBottom: 16 }}>
+          <ThemeToggle variant="card" />
+        </div>
 
         {/* 5. Bonus Wallet */}
         <BonusWallet

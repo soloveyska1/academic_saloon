@@ -94,6 +94,7 @@ import { useModalRegistration } from '../contexts/NavigationContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { useToast } from '../components/ui/Toast'
 import { SectionErrorBoundary } from '../components/ui/SectionErrorBoundary'
+import { ReviewSection } from '../components/order/ReviewSection'
 import {
   formatOrderDeadlineRu,
   formatOrderTimelineDateSafe,
@@ -2840,6 +2841,9 @@ export function OrderDetailPageV8() {
   }, [order?.id, haptic, showToast, loadOrder])
 
   // Archive handler
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
+  const [archiveLoading, setArchiveLoading] = useState(false)
+
   const handleArchive = useCallback(async () => {
     if (!order?.id) return
     haptic?.('medium')
@@ -2911,7 +2915,13 @@ export function OrderDetailPageV8() {
           onCopyOrderId={handleCopyOrderId}
           onContactManager={handleContactManager}
           onOpenFAQ={handleOpenFAQ}
-          onArchive={handleArchive}
+          onArchive={() => {
+            if (order.is_archived) {
+              handleArchive()
+            } else {
+              setArchiveConfirmOpen(true)
+            }
+          }}
         />
       </SectionErrorBoundary>
 
@@ -2961,6 +2971,22 @@ export function OrderDetailPageV8() {
           onDownloadAll={handleDownloadAllFiles}
         />
       </SectionErrorBoundary>
+
+      {/* Review Section — only for completed orders without a review */}
+      {order.status === 'completed' && !order.review_submitted && (
+        <SectionErrorBoundary
+          sectionName="order-review"
+          resetKey={sectionResetKey}
+          context={sectionContext}
+          fallback={null}
+        >
+          <ReviewSection
+            orderId={order.id}
+            haptic={haptic ?? (() => {})}
+            onReviewSubmitted={loadOrder}
+          />
+        </SectionErrorBoundary>
+      )}
 
       {/* Support Card */}
       <SectionErrorBoundary
@@ -3041,6 +3067,76 @@ export function OrderDetailPageV8() {
                 >
                   {cancelLoading ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
                   Отменить
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Archive Confirmation Modal */}
+      <AnimatePresence>
+        {archiveConfirmOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-5"
+            onClick={() => !archiveLoading && setArchiveConfirmOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-[320px] rounded-[20px] p-5 text-center"
+              style={{
+                background: DS.colors.bgCard,
+                border: `1px solid ${DS.colors.borderLight}`,
+              }}
+            >
+              <div className="w-12 h-12 rounded-[14px] bg-[#d4af37]/10 border border-[#d4af37]/20 flex items-center justify-center mx-auto mb-4">
+                <Archive size={24} color="#d4af37" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-[16px] font-bold text-text-primary mb-2">
+                Архивировать заказ?
+              </h3>
+              <p className="text-[12px] text-text-muted leading-[1.5] mb-6">
+                Заказ будет перемещён в архив. Вы сможете найти его в разделе «Архив».
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setArchiveConfirmOpen(false)}
+                  disabled={archiveLoading}
+                  className="flex-1 py-3 px-4 rounded-2xl text-text-secondary text-[14px] font-semibold cursor-pointer"
+                  style={{
+                    background: DS.colors.bgElevated,
+                    border: `1px solid ${DS.colors.borderLight}`,
+                  }}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setArchiveLoading(true)
+                    await handleArchive()
+                    setArchiveLoading(false)
+                    setArchiveConfirmOpen(false)
+                  }}
+                  disabled={archiveLoading}
+                  className="flex-1 py-3 px-4 rounded-2xl text-[14px] font-bold flex items-center justify-center gap-1.5"
+                  style={{
+                    background: 'linear-gradient(135deg, #d4af37, #b38728)',
+                    color: '#09090b',
+                    cursor: archiveLoading ? 'wait' : 'pointer',
+                    opacity: archiveLoading ? 0.7 : 1,
+                    border: 'none',
+                  }}
+                >
+                  {archiveLoading ? <Loader2 size={16} className="animate-spin" /> : <Archive size={16} />}
+                  Архивировать
                 </button>
               </div>
             </motion.div>

@@ -295,6 +295,11 @@ function AppContent() {
     refetch()
   }, [refetch])
 
+  // Pull-to-refresh handler for pages — wraps refetch as async Promise<void>
+  const handlePullRefresh = useCallback(async () => {
+    await refetch()
+  }, [refetch])
+
 
   useEffect(() => {
     // Mark ready after minimum time
@@ -542,8 +547,8 @@ function AppContent() {
 
                         <Suspense fallback={<LoadingScreen />}>
                           <Routes>
-                            <Route path="/" element={<HomePage user={userData} />} />
-                            <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} />} />
+                            <Route path="/" element={<HomePage user={userData} onRefresh={handlePullRefresh} />} />
+                            <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} loading={userDataLoading} onRefresh={handlePullRefresh} />} />
                             <Route path="/order/:id" element={<OrderDetailPageV8 />} />
                             <Route path="/order/:id/chat" element={<OrderChatPage />} />
                             <Route path="/club" element={<ClubPage user={userData} />} />

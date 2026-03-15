@@ -536,6 +536,7 @@ class LiveFeedResponse(BaseModel):
 class GodOrderStatusRequest(BaseModel):
     """Request to update order status"""
     status: str = Field(..., min_length=1, max_length=50)
+    force: bool = Field(False, description="Force transition even if not allowed by state machine")
 
     @field_validator('status')
     @classmethod

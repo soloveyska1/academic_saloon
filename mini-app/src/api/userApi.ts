@@ -823,3 +823,34 @@ export async function unsubscribeGodNotifications(): Promise<{ success: boolean 
   return apiFetch('/god/unsubscribe', { method: 'POST' })
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  DAILY BONUS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface DailyBonusInfo {
+  can_claim: boolean
+  streak: number
+  next_bonus: number
+  cooldown_remaining: string | null
+  bonuses: number[]
+  streak_milestones: { day: number; bonus: number }[]
+}
+
+export interface DailyBonusClaimResult {
+  success: boolean
+  won: boolean
+  bonus: number
+  streak: number
+  message: string
+  new_balance: number
+  next_claim_at: string | null
+}
+
+export async function fetchDailyBonusInfo(): Promise<DailyBonusInfo> {
+  return apiFetch<DailyBonusInfo>('/daily-bonus/info')
+}
+
+export async function claimDailyBonus(): Promise<DailyBonusClaimResult> {
+  return apiFetch<DailyBonusClaimResult>('/daily-bonus/claim', { method: 'POST' })
+}
+

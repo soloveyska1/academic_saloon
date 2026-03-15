@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
@@ -7,6 +8,7 @@ import {
   ChevronUp,
   Copy,
   Check,
+  Receipt,
   Send,
   Users,
   Wallet2,
@@ -14,6 +16,7 @@ import {
 } from 'lucide-react'
 import { UserData, Transaction } from '../types'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
+import { GoldSkeleton, Skeleton, SkeletonCard } from '../components/ui/Skeleton'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { useTelegram } from '../hooks/useUserData'
 import { RANKS, getRankByCashback, getNextRank, isMaxRank, getRankIndexByCashback } from '../lib/ranks'
@@ -363,6 +366,7 @@ function ReferralBlock({ user }: { user: UserData }) {
 // ─── Transaction History ────────────────────────────────────────────────────
 
 function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
+  const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
   const sorted = useMemo(
     () => [...transactions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
@@ -378,17 +382,60 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
         transition={{ delay: 0.2 }}
         className={homeStyles.voidGlass}
         style={{
-          padding: '20px',
+          padding: '28px 20px',
           borderRadius: 24,
           border: '1px solid rgba(255,255,255,0.06)',
           marginBottom: 22,
-          color: 'rgba(228,213,163,0.45)',
-          fontSize: 14,
           textAlign: 'center',
           fontFamily: "'Manrope', sans-serif",
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 0,
         }}
       >
-        История операций пока пуста
+        <Receipt size={40} color="rgba(212,175,55,0.3)" style={{ marginBottom: 14 }} />
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'rgba(228,213,163,0.65)',
+            marginBottom: 6,
+          }}
+        >
+          Пока нет операций
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            color: 'rgba(228,213,163,0.35)',
+            lineHeight: 1.5,
+            maxWidth: 220,
+            marginBottom: 18,
+          }}
+        >
+          Совершите заказ — и здесь появится история бонусов
+        </div>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate('/create-order')}
+          style={{
+            height: 40,
+            padding: '0 22px',
+            borderRadius: 14,
+            border: 'none',
+            background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
+            color: '#090909',
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: "'Manrope', sans-serif",
+            cursor: 'pointer',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          Создать заказ
+        </motion.button>
       </motion.section>
     )
   }
@@ -670,8 +717,29 @@ function ClubPage({ user }: ClubPageProps) {
   if (!user) {
     return (
       <div className="page-full-width" style={{ background: 'var(--bg-main)' }}>
-        <div style={{ padding: '60px 20px', textAlign: 'center', color: 'rgba(228,213,163,0.4)', fontSize: 14 }}>
-          Загрузка...
+        <div style={{ padding: '24px 20px 120px' }}>
+          {/* Hero skeleton */}
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <GoldSkeleton width={80} height={80} borderRadius={24} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+              <Skeleton width={200} height={24} borderRadius={8} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <Skeleton width={140} height={16} borderRadius={6} />
+            </div>
+          </div>
+          {/* Rank progress skeleton */}
+          <div style={{ marginBottom: 16 }}>
+            <SkeletonCard />
+          </div>
+          {/* Referral skeleton */}
+          <div style={{ marginBottom: 16 }}>
+            <SkeletonCard />
+          </div>
+          {/* Transactions skeleton */}
+          <SkeletonCard />
         </div>
       </div>
     )

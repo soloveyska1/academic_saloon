@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -27,6 +27,8 @@ import {
 } from 'lucide-react'
 import { Order } from '../types'
 import { useTelegram } from '../hooks/useUserData'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import { SkeletonOrderCard } from '../components/ui/Skeleton'
 import {
   getOrderDisplaySubtitle,
   getOrderDisplayTitle,
@@ -43,6 +45,8 @@ import {
 
 interface Props {
   orders: Order[]
+  loading?: boolean
+  onRefresh?: () => Promise<void>
 }
 
 type FilterType = 'all' | 'action' | 'active' | 'completed' | 'archived'
@@ -495,7 +499,7 @@ function ActionBanner({
   )
 }
 
-function OrderCard({
+const OrderCard = memo(function OrderCard({
   order,
   index,
   onOpenOrder,
@@ -670,9 +674,9 @@ function OrderCard({
       </div>
     </motion.button>
   )
-}
+})
 
-function SectionHeader({ title, count }: { title: string; count: number }) {
+const SectionHeader = memo(function SectionHeader({ title, count }: { title: string; count: number }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
@@ -693,7 +697,7 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
       </span>
     </div>
   )
-}
+})
 
 function EmptyState({
   onCreateOrder,
@@ -709,15 +713,20 @@ function EmptyState({
       padding: '40px 20px',
       textAlign: 'center',
     }}>
-      <div style={{
-        width: 56, height: 56, borderRadius: 18,
-        margin: '0 auto 20px',
-        background: 'rgba(212,175,55,0.06)',
-        border: '1px solid rgba(212,175,55,0.10)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <FolderOpen size={24} color="rgba(212,175,55,0.50)" />
-      </div>
+      <motion.div
+        animate={{ y: [0, -6, 0] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <div style={{
+          width: 56, height: 56, borderRadius: 18,
+          margin: '0 auto 20px',
+          background: 'rgba(212,175,55,0.06)',
+          border: '1px solid rgba(212,175,55,0.10)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <FolderOpen size={24} color="rgba(212,175,55,0.50)" />
+        </div>
+      </motion.div>
 
       <div style={{
         fontSize: 18, fontWeight: 700,
@@ -776,9 +785,14 @@ function EmptyState({
 
 // ─── Main Page ───────────────────────────────────────────────────────────
 
-export function OrdersPage({ orders }: Props) {
+export function OrdersPage({ orders, loading, onRefresh }: Props) {
   const navigate = useNavigate()
   const { haptic } = useTelegram()
+
+  const { containerRef, PullIndicator } = usePullToRefresh({
+    onRefresh: async () => { if (onRefresh) await onRefresh() },
+    disabled: !onRefresh,
+  })
   const [filter, setFilter] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -886,7 +900,14 @@ export function OrdersPage({ orders }: Props) {
   ]
 
   return (
-    <div style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
+    <motion.div
+      ref={containerRef as React.RefObject<HTMLDivElement>}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      style={{ background: 'var(--bg-main)', minHeight: '100vh', overflowY: 'auto', height: '100vh' }}
+    >
+      <PullIndicator />
       <div style={{ padding: '16px 20px', paddingBottom: 100 }}>
 
         {/* ═══════ Header: Title + New Order ═══════ */}
@@ -1013,7 +1034,11 @@ export function OrdersPage({ orders }: Props) {
         </div>
 
         {/* ═══════ Orders list ═══════ */}
-        {visibleOrders.length === 0 ? (
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[1, 2, 3].map(i => <SkeletonOrderCard key={i} />)}
+          </div>
+        ) : visibleOrders.length === 0 ? (
           <EmptyState
             onCreateOrder={handleCreateOrder}
             hasSearch={Boolean(searchQuery.trim()) || filter !== 'all'}
@@ -1035,7 +1060,7 @@ export function OrdersPage({ orders }: Props) {
           ))
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }
 

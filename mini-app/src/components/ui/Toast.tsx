@@ -193,6 +193,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {/* Toast Container */}
       <div
+        aria-live="polite"
+        role="status"
         style={{
           position: 'fixed',
           top: 20,

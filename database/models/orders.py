@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, String, Numeric, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean
+from sqlalchemy import BigInteger, String, Numeric, DateTime, Integer, Text, ForeignKey, Enum, func, Boolean, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.db import Base
 from datetime import datetime
@@ -263,8 +263,88 @@ def get_cancelable_statuses() -> list[str]:
     return [s.value for s, meta in ORDER_STATUS_META.items() if meta.get("user_can_cancel")]
 
 
+# ══════════════════════════════════════════════════════════════
+#           ALLOWED STATUS TRANSITIONS (state machine)
+# ══════════════════════════════════════════════════════════════
+ALLOWED_TRANSITIONS: dict[str, set[str]] = {
+    OrderStatus.DRAFT.value: {
+        OrderStatus.PENDING.value,
+        OrderStatus.CANCELLED.value,
+    },
+    OrderStatus.PENDING.value: {
+        OrderStatus.WAITING_ESTIMATION.value,
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,
+        OrderStatus.CANCELLED.value,
+        OrderStatus.REJECTED.value,
+    },
+    OrderStatus.WAITING_ESTIMATION.value: {
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,
+        OrderStatus.CANCELLED.value,
+        OrderStatus.REJECTED.value,
+    },
+    OrderStatus.WAITING_PAYMENT.value: {
+        OrderStatus.VERIFICATION_PENDING.value,
+        OrderStatus.CANCELLED.value,
+        OrderStatus.REJECTED.value,
+    },
+    OrderStatus.CONFIRMED.value: {
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.VERIFICATION_PENDING.value,
+        OrderStatus.PAID.value,
+        OrderStatus.PAID_FULL.value,
+        OrderStatus.CANCELLED.value,
+        OrderStatus.REJECTED.value,
+    },
+    OrderStatus.VERIFICATION_PENDING.value: {
+        OrderStatus.PAID.value,
+        OrderStatus.PAID_FULL.value,
+        OrderStatus.WAITING_PAYMENT.value,  # payment rejected by admin
+        OrderStatus.CANCELLED.value,
+        OrderStatus.REJECTED.value,
+    },
+    OrderStatus.PAID.value: {
+        OrderStatus.PAID_FULL.value,
+        OrderStatus.IN_PROGRESS.value,
+        OrderStatus.CANCELLED.value,
+    },
+    OrderStatus.PAID_FULL.value: {
+        OrderStatus.IN_PROGRESS.value,
+        OrderStatus.CANCELLED.value,
+    },
+    OrderStatus.IN_PROGRESS.value: {
+        OrderStatus.REVIEW.value,
+        OrderStatus.CANCELLED.value,
+    },
+    OrderStatus.REVIEW.value: {
+        OrderStatus.REVISION.value,
+        OrderStatus.COMPLETED.value,
+    },
+    OrderStatus.REVISION.value: {
+        OrderStatus.IN_PROGRESS.value,
+        OrderStatus.REVIEW.value,
+        OrderStatus.COMPLETED.value,
+    },
+    # Terminal states — no transitions out
+    OrderStatus.COMPLETED.value: set(),
+    OrderStatus.CANCELLED.value: set(),
+    OrderStatus.REJECTED.value: set(),
+}
+
+
+def is_valid_transition(from_status: str, to_status: str) -> bool:
+    """Check if a status transition is allowed by the state machine."""
+    allowed = ALLOWED_TRANSITIONS.get(from_status, set())
+    return to_status in allowed
+
+
 class Order(Base):
     __tablename__ = "orders"
+    __table_args__ = (
+        Index('ix_orders_user_status', 'user_id', 'status'),
+        Index('ix_orders_user_created', 'user_id', 'created_at'),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 

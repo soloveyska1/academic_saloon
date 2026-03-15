@@ -660,8 +660,17 @@ async def update_order_status(
         raise HTTPException(status_code=404, detail="Заказ не найден")
 
     new_status = data.status
-
     old_status = order.status
+
+    # Validate status transition (unless force=True)
+    from database.models.orders import is_valid_transition
+    if not data.force and not is_valid_transition(old_status, new_status):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Переход {old_status} → {new_status} недопустим. "
+                   f"Используйте force=true для принудительного изменения.",
+        )
+
     order.status = new_status
 
     # Set completed_at if completing

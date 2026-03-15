@@ -118,8 +118,7 @@ async def get_orders(
             query = query.where(Order.status == status)
 
     count_query = query.with_only_columns(func.count(Order.id))
-    count_result = await session.execute(count_query)
-    total = count_result.scalar() or 0
+    total = (await session.execute(count_query)).scalar() or 0
 
     query = query.order_by(desc(Order.created_at)).offset(offset).limit(limit)
     result = await session.execute(query)
@@ -203,6 +202,7 @@ async def get_batch_payment_info(
 
 
 @router.post("/orders/batch-payment-confirm", response_model=BatchPaymentConfirmResponse)
+@rate_limit(limit=3, window=60, key_prefix="rl:batch_confirm")
 async def confirm_batch_payment(
     request: Request,
     data: BatchPaymentConfirmRequest,
@@ -210,7 +210,6 @@ async def confirm_batch_payment(
     session: AsyncSession = Depends(get_session)
 ):
     """Confirm payment for multiple orders at once"""
-    # await rate_limit_payment.check(request)  # Rate limiting disabled
 
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
@@ -813,6 +812,7 @@ async def upload_order_files(
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.post("/orders/{order_id}/confirm-payment", response_model=PaymentConfirmResponse)
+@rate_limit(limit=3, window=60, key_prefix="rl:confirm_pay")
 async def confirm_payment(
     request: Request,
     order_id: int,
@@ -820,15 +820,29 @@ async def confirm_payment(
     tg_user: TelegramUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    # await rate_limit_payment.check(request)  # Rate limiting disabled
     user_result = await session.execute(select(User).where(User.telegram_id == tg_user.id))
     user = user_result.scalar_one_or_none()
 
-    order = await session.get(Order, order_id)
+    # Lock the order row to prevent concurrent payment confirmations
+    order_result = await session.execute(
+        select(Order).where(Order.id == order_id).with_for_update()
+    )
+    order = order_result.scalar_one_or_none()
     if not order or order.user_id != tg_user.id:
         return JSONResponse(
             status_code=404,
             content={"success": False, "message": "Order not found"}
+        )
+
+    # Idempotency: if already in verification_pending, return success without re-processing
+    if order.status == OrderStatus.VERIFICATION_PENDING.value:
+        final_price = order.final_price
+        idempotent_amount = final_price / 2 if order.payment_scheme == 'half' else final_price
+        return PaymentConfirmResponse(
+            success=True,
+            message="Оплата уже на проверке",
+            new_status=order.status,
+            amount_to_pay=float(idempotent_amount),
         )
 
     if order.status in [OrderStatus.CANCELLED.value, OrderStatus.REJECTED.value, OrderStatus.COMPLETED.value]:

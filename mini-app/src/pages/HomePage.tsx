@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useHomePageState, ModalName } from '../hooks/useHomePageState'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
 import { usePromo } from '../contexts/PromoContext'
@@ -16,6 +17,7 @@ import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 
 // Home Components
 import {
+  DailyBonusCard,
   HomeHeader,
   QuickActionsRow,
   NewTaskCTA,
@@ -46,16 +48,22 @@ const TransactionsModal = lazy(() => import('../components/modals/TransactionsMo
 
 interface Props {
   user: UserData | null
+  onRefresh?: () => Promise<void>
 }
 
 import s from './HomePage.module.css'
 
-export function HomePage({ user }: Props) {
+export function HomePage({ user, onRefresh }: Props) {
   const navigate = useNavigate()
   const { haptic, tg, botUsername } = useTelegram()
   const admin = useAdmin()
   const { activePromo } = usePromo()
   const capability = useCapability()
+
+  const { containerRef, PullIndicator } = usePullToRefresh({
+    onRefresh: async () => { if (onRefresh) await onRefresh() },
+    disabled: !onRefresh,
+  })
 
   // State management via reducer
   const { state, actions } = useHomePageState()
@@ -159,9 +167,11 @@ export function HomePage({ user }: Props) {
   return (
     <>
     <main
+      ref={containerRef as unknown as React.RefObject<HTMLElement>}
       role="main"
       className={`${s.container} bg-void relative`}
-      style={{ paddingBottom: isNewUser ? 160 : 100 }}>
+      style={{ paddingBottom: isNewUser ? 160 : 100, overflowY: 'auto', height: '100vh' }}>
+      <PullIndicator />
       {/* Premium Background */}
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
         <PremiumBackground
@@ -237,6 +247,14 @@ export function HomePage({ user }: Props) {
                 onUseBonus={handleNewOrder}
               />
             )}
+
+            {/* Daily Bonus */}
+            <DailyBonusCard
+              dailyAvailable={user.daily_luck_available ?? false}
+              streak={user.daily_bonus_streak || 0}
+              haptic={haptic}
+              onBonusClaimed={() => {}}
+            />
 
             {/* ── STATE A: ACTIVE ORDERS — Tracker-first, minimal noise ── */}
             {returningUserState === 'active' && (

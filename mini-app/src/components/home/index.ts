@@ -1,4 +1,5 @@
 // Home Components
+export { DailyBonusCard } from './DailyBonusCard'
 export { HomeHeader } from './HomeHeader'
 export { SocialProofStrip } from './SocialProofStrip'
 export { QuickActionsRow } from './QuickActionsRow'
