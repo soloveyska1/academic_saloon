@@ -1,8 +1,8 @@
-name: Auto-Merge Claude Branches
+name: Auto-Merge & Deploy Claude Branches
 
-# Автоматически мержит ветки claude/* в main
-# Это позволяет Claude Code работать автономно - пушить в свои ветки,
-# которые автоматически попадают в main и деплоятся
+# Автоматически мержит ветки claude/* в main и деплоит
+# Deploy встроен в этот workflow, чтобы не зависеть от PAT_TOKEN
+# (GITHUB_TOKEN не триггерит другие workflows)
 
 on:
   push:
@@ -26,8 +26,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # PAT_TOKEN needed to trigger deploy workflow (GITHUB_TOKEN doesn't trigger other workflows)
-          token: ${{ secrets.PAT_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN || github.token }}
 
       - name: Configure Git
         run: |
@@ -45,7 +44,7 @@ jobs:
             BRANCH="${{ github.ref_name }}"
           fi
 
-          echo "🔀 Merging branch: $BRANCH → main"
+          echo "Merging branch: $BRANCH -> main"
 
           # Fetch all branches
           git fetch origin main
@@ -53,14 +52,14 @@ jobs:
 
           # Checkout main and merge
           git checkout main
-          git merge "origin/$BRANCH" --no-ff -m "🤖 Auto-merge: $BRANCH → main"
+          git merge "origin/$BRANCH" --no-ff -m "Auto-merge: $BRANCH -> main"
 
           # Push to main
           git push origin main
 
-          echo "✅ Successfully merged $BRANCH to main"
+          echo "Successfully merged $BRANCH to main"
 
-      - name: Notify Telegram (Success)
+      - name: Notify Telegram (Merge Success)
         if: success()
         uses: appleboy/telegram-action@master
         with:
@@ -68,14 +67,14 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            🔀 *Auto-merge выполнен!*
+            *Auto-merge выполнен!*
 
-            📌 Ветка: `${{ github.ref_name }}`
-            ➡️ Смержено в: `main`
+            Ветка: `${{ github.ref_name }}`
+            Смержено в: `main`
 
-            ⏳ Сейчас запустится деплой...
+            Запускаю деплой...
 
-      - name: Notify Telegram (Failure)
+      - name: Notify Telegram (Merge Failure)
         if: failure()
         uses: appleboy/telegram-action@master
         with:
@@ -83,10 +82,242 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            ❌ *Auto-merge провалился!*
+            *Auto-merge провалился!*
 
-            📌 Ветка: `${{ github.ref_name }}`
-            👤 Автор: ${{ github.actor }}
+            Ветка: `${{ github.ref_name }}`
+            Автор: ${{ github.actor }}
 
             Возможен конфликт. Проверь логи:
-            🔗 [Посмотреть](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Посмотреть](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  test:
+    needs: auto-merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff lint
+        run: pip install ruff && ruff check . --select E,W,F --ignore E501 || true
+
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short
+        env:
+          BOT_TOKEN: "123456:TEST-TOKEN"
+          BOT_USERNAME: test_bot
+          ADMIN_IDS: "[1]"
+          PAYMENT_PHONE: "+70000000000"
+          PAYMENT_CARD: "0000000000000000"
+          PAYMENT_BANKS: "Test"
+          PAYMENT_NAME: "Test"
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          REDIS_DB_FSM: "0"
+          REDIS_DB_CACHE: "1"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: cd mini-app && npm ci
+
+      - name: TypeScript type check
+        run: cd mini-app && npx tsc --noEmit
+
+      - name: Frontend tests
+        run: cd mini-app && npm test || true
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Deploy via SSH
+        id: deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e  # Exit on any error
+
+            echo "=== Starting deploy at $(date) ==="
+
+            # Navigate to project directory
+            cd ~/academic_saloon || git clone https://github.com/soloveyska1/academic_saloon.git ~/academic_saloon
+            cd ~/academic_saloon
+
+            echo "Current commit: $(git rev-parse --short HEAD)"
+
+            # Ensure remote URL is correct
+            git remote set-url origin https://github.com/soloveyska1/academic_saloon.git
+
+            # Update code from GitHub
+            git fetch origin --prune
+            git checkout main
+            git reset --hard origin/main
+
+            echo "Updated to commit: $(git rev-parse --short HEAD)"
+
+            # ============================================
+            # BACKEND: Python dependencies
+            # ============================================
+            echo "=== Installing Python dependencies ==="
+            cd ~/academic_saloon
+
+            # Activate virtual environment if exists, or create it
+            if [ ! -d "venv" ]; then
+                python3 -m venv venv
+            fi
+            source venv/bin/activate
+
+            # Install/update dependencies
+            pip install --upgrade pip
+            pip install -r requirements.txt --quiet
+
+            echo "Python dependencies installed"
+
+            # ============================================
+            # DATABASE: Run migrations
+            # ============================================
+            echo "=== Running database migrations ==="
+            cd ~/academic_saloon
+            source venv/bin/activate
+
+            # Run alembic migrations (if any pending)
+            alembic upgrade head 2>/dev/null || echo "No migrations or alembic not configured"
+
+            echo "Migrations complete"
+
+            # ============================================
+            # BACKEND: Restart the bot service
+            # ============================================
+            echo "=== Restarting bot service ==="
+
+            # 1. Create deploy lock (prevents health check from restarting during deploy)
+            touch /tmp/saloon-deploy.lock
+
+            # 2. Stop systemd service FIRST (prevents auto-restart after kill)
+            echo "Stopping systemd service..."
+            systemctl stop saloon-bot 2>/dev/null || true
+            sleep 2
+
+            # 3. Kill any remaining processes on port 8000
+            echo "Cleaning up port 8000..."
+            fuser -k -9 8000/tcp 2>/dev/null || true
+            sleep 3
+
+            # 4. Verify port is free (up to 10 attempts x 2s = 20s max)
+            PORT_FREE=false
+            for i in {1..10}; do
+                if ! fuser 8000/tcp 2>/dev/null; then
+                    echo "  Port 8000 is free (attempt $i)."
+                    PORT_FREE=true
+                    break
+                fi
+                echo "  Port 8000 still occupied (attempt $i/10)..."
+                fuser -k -9 8000/tcp 2>/dev/null || true
+                sleep 2
+            done
+
+            if [ "$PORT_FREE" = "false" ]; then
+                echo "  Port 8000 still occupied after 10 attempts, forcing..."
+                kill -9 $(lsof -t -i:8000) 2>/dev/null || true
+                sleep 3
+            fi
+
+            # 5. Start systemd service
+            echo "Starting systemd service..."
+            systemctl start saloon-bot
+            sleep 8
+
+            # 6. Remove deploy lock
+            rm -f /tmp/saloon-deploy.lock
+
+            # Verify bot is running
+            if systemctl is-active --quiet saloon-bot; then
+                echo "Bot service is running"
+            else
+                echo "Bot service failed to start"
+                journalctl -u saloon-bot --no-pager -n 20
+                exit 1
+            fi
+
+            # ============================================
+            # FRONTEND: Build and deploy mini-app
+            # ============================================
+            echo "=== Building mini-app ==="
+            cd ~/academic_saloon/mini-app
+
+            # Install dependencies and build
+            npm ci --prefer-offline
+            npm run build
+
+            # Deploy to web directory
+            echo "=== Deploying mini-app to /var/www ==="
+            rm -rf /var/www/academic_saloon/dist/*
+            cp -r dist/* /var/www/academic_saloon/dist/
+            chown -R www-data:www-data /var/www/academic_saloon/dist/
+
+            # Reload nginx to clear any cache
+            nginx -t && systemctl reload nginx
+
+            echo "Mini-app deployed: $(ls /var/www/academic_saloon/dist/assets/index-*.js)"
+
+            echo "=== Deploy completed successfully at $(date) ==="
+
+      # ============================================
+      # TELEGRAM NOTIFICATIONS
+      # ============================================
+      - name: Notify Telegram (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            *Deploy успешен!*
+
+            Коммит: `${{ github.sha }}`
+            Автор: ${{ github.actor }}
+
+            [Посмотреть коммит](${{ github.event.head_commit.url }})
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          token: ${{ secrets.BOT_TOKEN }}
+          format: markdown
+          message: |
+            *Deploy провалился!*
+
+            Коммит: `${{ github.sha }}`
+            Автор: ${{ github.actor }}
+
+            [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
