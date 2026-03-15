@@ -70,6 +70,23 @@ window.addEventListener('unhandledrejection', function (event) {
 declare const __BUILD_TIME__: string
 console.log('[Build]', __BUILD_TIME__)
 
+// ─── Telegram Mini App scroll fix ──────────────────────────────────────────
+// Telegram intercepts touch events at the top of the page (pull-to-close).
+// This handler prevents that when the user is inside a scrollable container.
+document.addEventListener('touchmove', function (e) {
+  // Allow normal scrolling inside scrollable containers
+  let el = e.target as HTMLElement | null
+  while (el && el !== document.body) {
+    if (el.scrollHeight > el.clientHeight) {
+      // Element is scrollable — let it scroll normally
+      return
+    }
+    el = el.parentElement
+  }
+  // No scrollable parent found — prevent Telegram from pulling down
+  e.preventDefault()
+}, { passive: false })
+
 // Initialize Telegram WebApp
 const tg = window.Telegram?.WebApp
 

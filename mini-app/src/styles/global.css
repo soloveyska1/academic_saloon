@@ -26,7 +26,7 @@ input,
 select,
 textarea,
 [tabindex]:not([tabindex="-1"]) {
-  touch-action: manipulation;
+  touch-action: pan-y;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
 }
@@ -806,6 +806,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
 }
 
 body {
@@ -815,6 +816,7 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  overscroll-behavior: none;
   line-height: 1.5;
   position: relative;
   font-weight: 400;
