@@ -22,6 +22,8 @@ export { ReputationCard } from './ReputationCard'
 export { LevelProgressCard } from './LevelProgressCard'
 export { RankUpCelebration } from './RankUpCelebration'
 export { ExamSeasonBanner } from './ExamSeasonBanner'
+export { BonusExpiryAlert } from './BonusExpiryAlert'
+export { ActiveOrderDashboard } from './ActiveOrderDashboard'
 // Skeleton Loaders
 export {
   BenefitsCardSkeleton,
