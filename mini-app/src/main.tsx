@@ -66,6 +66,10 @@ window.addEventListener('unhandledrejection', function (event) {
   errorDiv.innerHTML += `<h2>UNHANDLED PROMISE</h2><pre>${errorMsg}</pre>`
 })
 
+// Build info for deploy verification
+declare const __BUILD_TIME__: string
+console.log('[Build]', __BUILD_TIME__)
+
 // Initialize Telegram WebApp
 const tg = window.Telegram?.WebApp
 
