@@ -4,7 +4,9 @@ import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  HOME HEADER — Elite Gold Edition
+//  HOME HEADER — Refined Premium Edition
+//  Quieter, more confident. No unnecessary decoration.
+//  Identity on the left, privilege access on the right.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface HomeHeaderProps {
@@ -27,6 +29,15 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
   const shouldShowAvatar = Boolean(avatarSrc && isImageAvatar(avatarSrc) && !avatarError)
 
+  // Contextual greeting based on time of day
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour < 6) return 'Доброй ночи'
+    if (hour < 12) return 'Доброе утро'
+    if (hour < 18) return 'Добрый день'
+    return 'Добрый вечер'
+  }, [])
+
   return (
     <motion.header
       className={s.header}
@@ -38,7 +49,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div className={s.avatarContainer} onClick={onSecretTap}>
           <div className={s.avatar} style={{ position: 'relative', background: '#121214' }}>
-            {/* 1. Fallback Layer (Always visible underneath) */}
+            {/* Fallback Layer */}
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -60,7 +71,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               </span>
             </div>
 
-            {/* 2. Image Layer (On top) */}
+            {/* Image Layer */}
             {shouldShowAvatar && (
               <img
                 src={avatarSrc}
@@ -87,39 +98,57 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
         </div>
 
         <div className={s.userInfo}>
-          <div className={s.userName}>{firstName.toUpperCase()}</div>
-          <div className={s.userStatus}>
-            <div className={s.statusDot} />
-            {isNewUser ? 'ДОБРО ПОЖАЛОВАТЬ' : isPremiumClub ? 'ПРЕМИУМ КЛУБ' : 'КЛУБ ПРИВИЛЕГИЙ'}
-          </div>
+          {isNewUser ? (
+            <>
+              <div className={s.userName} style={{ fontSize: 18 }}>
+                {greeting}
+              </div>
+              <div className={s.userStatus}>
+                <div className={s.statusDot} />
+                ДОБРО ПОЖАЛОВАТЬ В САЛОН
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={s.userName}>{firstName.toUpperCase()}</div>
+              <div className={s.userStatus}>
+                <div className={s.statusDot} />
+                {isPremiumClub ? 'ПРЕМИУМ КЛУБ' : 'КЛУБ ПРИВИЛЕГИЙ'}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* RIGHT: Club Access / Settings */}
-      <motion.button
-        type="button"
-        whileTap={{ scale: 0.95 }}
-        onClick={onOpenLounge}
-        style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(212,175,55,0.2)',
-          borderRadius: '12px',
-          padding: '8px 16px',
-          color: '#d4af37',
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: '12px',
-          fontWeight: 600,
-          letterSpacing: '0.05em',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-        }}
-      >
-        ПРИВИЛЕГИИ
-      </motion.button>
+      {/* RIGHT: Club Access */}
+      {!isNewUser && (
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.95 }}
+          onClick={onOpenLounge}
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(212,175,55,0.18)',
+            borderRadius: '12px',
+            padding: '8px 16px',
+            color: 'rgba(212,175,55,0.75)',
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: '12px',
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            textTransform: 'uppercase',
+          }}
+        >
+          ПРИВИЛЕГИИ
+        </motion.button>
+      )}
     </motion.header>
   )
 }, (prev: Readonly<HomeHeaderProps>, next: Readonly<HomeHeaderProps>) => {
   return prev.userPhoto === next.userPhoto &&
     prev.user.fullname === next.user.fullname &&
-    prev.user.rank.is_max === next.user.rank.is_max
+    prev.user.rank.is_max === next.user.rank.is_max &&
+    prev.isNewUser === next.isNewUser
 })

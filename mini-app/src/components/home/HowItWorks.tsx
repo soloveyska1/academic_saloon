@@ -3,26 +3,30 @@ import { motion } from 'framer-motion'
 import { MessageSquareText, CreditCard, FileCheck } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  HOW IT WORKS — 3-step selling flow
-//  Uses a secondary surface (subtle card), NOT the same as hero.
-//  Wider connecting line. Solid gold step badges. Larger icon boxes.
+//  HOW IT WORKS — 3-step anxiety reducer.
+//  Removes the "what happens next?" fear.
+//  Vertical timeline with elegant connectors.
+//  Copy: action-oriented, clear, reassuring.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STEPS = [
   {
     icon: MessageSquareText,
+    step: '01',
     title: 'Опишите задачу',
-    detail: 'Тема, объём, сроки — за 2 минуты',
+    description: 'Укажите тип работы, предмет и требования. Ответим за 5 минут.',
   },
   {
     icon: CreditCard,
-    title: 'Узнайте стоимость',
-    detail: 'Цена — сразу, оплата — после согласования',
+    step: '02',
+    title: 'Согласуйте условия',
+    description: 'Мы рассчитаем стоимость и сроки. Оплата — только после вашего согласия.',
   },
   {
     icon: FileCheck,
+    step: '03',
     title: 'Получите работу',
-    detail: 'Высокая уникальность, правки, сопровождение до сдачи',
+    description: 'Эксперт выполнит в срок. Уникальность проверена. 3 правки — бесплатно.',
   },
 ] as const
 
@@ -31,118 +35,131 @@ export const HowItWorks = memo(function HowItWorks() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.20 }}
-      style={{
-        borderRadius: 20,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.04)',
-        padding: '20px 20px 18px',
-        marginBottom: 24,
-      }}
+      transition={{ delay: 0.26 }}
+      style={{ marginBottom: 28 }}
     >
+      {/* Section header */}
       <div
         style={{
           fontFamily: "'Manrope', sans-serif",
           fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: '0.06em',
+          fontWeight: 700,
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
           color: 'rgba(255,255,255,0.30)',
-          marginBottom: 22,
+          marginBottom: 18,
+          paddingLeft: 2,
         }}
       >
         Как это работает
       </div>
 
-      <div style={{ display: 'grid', gap: 20, position: 'relative' }}>
-        {/* Connecting line */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            left: 21,
-            top: 44,
-            bottom: 22,
-            width: 2,
-            background: 'linear-gradient(180deg, rgba(212,175,55,0.25) 0%, rgba(212,175,55,0.05) 100%)',
-            borderRadius: 1,
-          }}
-        />
+      {/* Steps timeline */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {STEPS.map((s, i) => {
+          const Icon = s.icon
+          const isLast = i === STEPS.length - 1
 
-        {STEPS.map((step, i) => {
-          const Icon = step.icon
           return (
             <motion.div
-              key={step.title}
-              initial={{ opacity: 0, x: -8 }}
+              key={s.step}
+              initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.26 + i * 0.08 }}
+              transition={{ delay: 0.30 + i * 0.08 }}
               style={{
                 display: 'flex',
-                alignItems: 'flex-start',
-                gap: 14,
+                gap: 16,
                 position: 'relative',
               }}
             >
+              {/* Timeline column */}
               <div
                 style={{
-                  position: 'relative',
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
-                  background: 'rgba(212,175,55,0.06)',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  width: 40,
                   flexShrink: 0,
                 }}
               >
-                <Icon size={18} color="rgba(212,175,55,0.6)" strokeWidth={1.8} />
-                {/* Step badge — solid gold, readable */}
+                {/* Icon circle */}
                 <div
                   style={{
-                    position: 'absolute',
-                    top: -5,
-                    right: -5,
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #D4AF37 0%, #B8962E 100%)',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    background: 'rgba(212,175,55,0.06)',
+                    border: '1px solid rgba(212,175,55,0.12)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color: '#09090b',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                    position: 'relative',
+                    zIndex: 1,
                   }}
                 >
-                  {i + 1}
+                  <Icon size={18} color="rgba(212,175,55,0.65)" strokeWidth={1.8} />
+                  {/* Step number badge */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #D4AF37 0%, #B8962E 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      color: '#09090b',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    {i + 1}
+                  </div>
                 </div>
+
+                {/* Connector line */}
+                {!isLast && (
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: 1,
+                      flex: 1,
+                      minHeight: 16,
+                      background: 'linear-gradient(180deg, rgba(212,175,55,0.15), rgba(212,175,55,0.04))',
+                      marginTop: 4,
+                      marginBottom: 4,
+                    }}
+                  />
+                )}
               </div>
 
-              <div style={{ paddingTop: 4 }}>
+              {/* Content */}
+              <div style={{ flex: 1, paddingBottom: isLast ? 0 : 24, paddingTop: 2 }}>
                 <div
                   style={{
                     fontSize: 15,
                     fontWeight: 700,
-                    color: 'rgba(255,255,255,0.85)',
-                    lineHeight: 1.2,
+                    color: '#F0F0F0',
+                    lineHeight: 1.3,
                     letterSpacing: '-0.01em',
-                    marginBottom: 3,
+                    marginBottom: 4,
                   }}
                 >
-                  {step.title}
+                  {s.title}
                 </div>
                 <div
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: 'rgba(255,255,255,0.38)',
-                    lineHeight: 1.4,
+                    color: 'rgba(255,255,255,0.40)',
+                    lineHeight: 1.55,
                   }}
                 >
-                  {step.detail}
+                  {s.description}
                 </div>
               </div>
             </motion.div>
