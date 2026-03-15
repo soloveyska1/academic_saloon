@@ -22,7 +22,6 @@ import {
   QuickReorderCard,
   UrgentHubSheet,
   TrustStatsStrip,
-  LiveActivityFeed,
   HowItWorks,
   GuaranteesShowcase,
   TestimonialsSection,
@@ -211,10 +210,7 @@ export function HomePage({ user }: Props) {
             {/* 2. Trust Stats — The proof in numbers */}
             <TrustStatsStrip />
 
-            {/* 3. Live Activity — FOMO first, while attention is high */}
-            <LiveActivityFeed />
-
-            {/* 4. How It Works — Eliminate process anxiety */}
+            {/* 3. How It Works — Eliminate process anxiety */}
             <HowItWorks />
 
             {/* 5. Testimonials — Social proof from real students */}
@@ -281,7 +277,6 @@ export function HomePage({ user }: Props) {
                   />
                 )}
                 <TrustStatsStrip />
-                <LiveActivityFeed />
               </>
             )}
 
@@ -369,10 +364,12 @@ export function HomePage({ user }: Props) {
           isOpen={state.modals.cashback}
           onClose={() => actions.closeModal('cashback')}
           user={user}
+          onCreateOrder={handleNewOrder}
         />
         <GuaranteesModal
           isOpen={state.modals.guarantees}
           onClose={() => actions.closeModal('guarantees')}
+          onCreateOrder={handleNewOrder}
         />
         <TransactionsModal
           isOpen={state.modals.transactions}
@@ -385,6 +382,7 @@ export function HomePage({ user }: Props) {
           isOpen={state.modals.ranks}
           onClose={() => actions.closeModal('ranks')}
           user={user}
+          onCreateOrder={handleNewOrder}
         />
       </Suspense>
 
