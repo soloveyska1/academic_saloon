@@ -1,4 +1,4 @@
-name: Rollback to Previous Version
+name: Rollback
 
 on:
   workflow_dispatch:
@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Rollback via SSH
+        id: rollback
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -22,66 +23,67 @@ jobs:
             set -e
 
             COMMITS_BACK=${{ github.event.inputs.commits_back }}
-            echo "=== Rolling back $COMMITS_BACK commit(s) at $(date) ==="
-
             cd ~/academic_saloon
 
-            # Get current commit before rollback
-            CURRENT=$(git rev-parse --short HEAD)
-            echo "Current commit: $CURRENT"
+            FROM=$(git rev-parse --short HEAD)
+            FROM_MSG=$(git log -1 --format='%s')
 
-            # Rollback
             git reset --hard HEAD~$COMMITS_BACK
-            NEW=$(git rev-parse --short HEAD)
-            echo "Rolled back to: $NEW"
 
-            # Rebuild mini-app
-            echo "=== Rebuilding mini-app ==="
+            TO=$(git rev-parse --short HEAD)
+            TO_MSG=$(git log -1 --format='%s')
+
+            # Rebuild frontend
             cd ~/academic_saloon/mini-app
             npm ci --prefer-offline
             npm run build
 
-            # Deploy
             rm -rf /var/www/academic_saloon/dist/*
             cp -r dist/* /var/www/academic_saloon/dist/
             chown -R www-data:www-data /var/www/academic_saloon/dist/
 
             # Restart services
+            touch /tmp/saloon-deploy.lock
+            systemctl stop saloon-bot 2>/dev/null || true
             fuser -k 8000/tcp 2>/dev/null || true
-            sleep 2
-            systemctl restart saloon-bot
+            sleep 3
+            systemctl start saloon-bot
+            sleep 5
+            rm -f /tmp/saloon-deploy.lock
             nginx -t && systemctl reload nginx
 
-            echo "=== Rollback completed: $CURRENT → $NEW ==="
+            BOT_STATUS="down"
+            if systemctl is-active --quiet saloon-bot; then BOT_STATUS="ok"; fi
 
-      # ============================================
-      # TELEGRAM NOTIFICATIONS
-      # ============================================
+            echo "=== ROLLBACK: $FROM -> $TO (-$COMMITS_BACK) | Bot: $BOT_STATUS ==="
+            echo "=== FROM: $FROM_MSG ==="
+            echo "=== TO: $TO_MSG ==="
+
       - name: Notify Telegram (Success)
         if: success()
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            ⏪ *Rollback выполнен!*
+            *ROLLBACK*  -${{ github.event.inputs.commits_back }} commits
 
-            🔙 Откатились на ${{ github.event.inputs.commits_back }} коммит(ов)
-            👤 Инициатор: ${{ github.actor }}
+            Initiated by `${{ github.actor }}`
+            Server reverted, frontend rebuilt, services restarted.
 
-            🔗 [Посмотреть workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Notify Telegram (Failure)
         if: failure()
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID || '872379852' }}
+          to: ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            ❌ *Rollback провалился!*
+            *ROLLBACK FAILED*
 
-            👤 Инициатор: ${{ github.actor }}
-
-            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            Initiated by `${{ github.actor }}`
+            Manual intervention required.
+            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Ручной запуск из GitHub UI
+  workflow_dispatch:
 
 jobs:
   test:
@@ -65,7 +65,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 50
+
+      - name: Collect deploy info
+        id: info
+        run: |
+          # Commit message (first line)
+          MSG=$(git log -1 --format='%s' | head -c 100)
+          echo "commit_msg=$MSG" >> $GITHUB_OUTPUT
+
+          # Author
+          AUTHOR=$(git log -1 --format='%an')
+          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+
+          # Short SHA
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+          # Count commits since last merge/deploy (up to 20)
+          COMMIT_COUNT=$(git log --oneline -20 --no-merges | wc -l)
+          echo "commit_count=$COMMIT_COUNT" >> $GITHUB_OUTPUT
+
+          # Changed files summary
+          CHANGED=$(git diff --stat HEAD~1 HEAD 2>/dev/null | tail -1 || echo "unknown")
+          echo "changes=$CHANGED" >> $GITHUB_OUTPUT
+
+          # File categories
+          PY_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '\.py$' || echo 0)
+          TS_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -cE '\.(tsx?|css)$' || echo 0)
+          YML_COUNT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -c '\.yml$' || echo 0)
+          echo "py_count=$PY_COUNT" >> $GITHUB_OUTPUT
+          echo "ts_count=$TS_COUNT" >> $GITHUB_OUTPUT
+          echo "yml_count=$YML_COUNT" >> $GITHUB_OUTPUT
+
+          # Recent non-merge commits (last 5)
+          RECENT=$(git log --oneline --no-merges -5 --format='%s' | sed 's/^/• /' | head -c 500)
+          # Store multiline in env file
+          echo "RECENT_COMMITS<<EOF" >> $GITHUB_ENV
+          echo "$RECENT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          # Start time
+          echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: Deploy via SSH
         id: deploy
@@ -75,136 +115,83 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e  # Exit on any error
+            set -e
 
-            echo "=== Starting deploy at $(date) ==="
-
-            # Navigate to project directory
             cd ~/academic_saloon || git clone https://github.com/soloveyska1/academic_saloon.git ~/academic_saloon
             cd ~/academic_saloon
 
-            echo "Current commit: $(git rev-parse --short HEAD)"
-
-            # Ensure remote URL is correct
+            OLD_COMMIT=$(git rev-parse --short HEAD)
             git remote set-url origin https://github.com/soloveyska1/academic_saloon.git
-
-            # Update code from GitHub
             git fetch origin --prune
             git checkout main
             git reset --hard origin/main
+            NEW_COMMIT=$(git rev-parse --short HEAD)
 
-            echo "Updated to commit: $(git rev-parse --short HEAD)"
-
-            # ============================================
-            # BACKEND: Python dependencies
-            # ============================================
-            echo "=== Installing Python dependencies ==="
-            cd ~/academic_saloon
-
-            # Activate virtual environment if exists, or create it
-            if [ ! -d "venv" ]; then
-                python3 -m venv venv
-            fi
+            # Backend
+            if [ ! -d "venv" ]; then python3 -m venv venv; fi
             source venv/bin/activate
-
-            # Install/update dependencies
-            pip install --upgrade pip
+            pip install --upgrade pip -q
             pip install -r requirements.txt --quiet
 
-            echo "✅ Python dependencies installed"
+            # Migrations
+            alembic upgrade head 2>/dev/null || true
 
-            # ============================================
-            # DATABASE: Run migrations
-            # ============================================
-            echo "=== Running database migrations ==="
-            cd ~/academic_saloon
-            source venv/bin/activate
-
-            # Run alembic migrations (if any pending)
-            alembic upgrade head 2>/dev/null || echo "No migrations or alembic not configured"
-
-            echo "✅ Migrations complete"
-
-            # ============================================
-            # BACKEND: Restart the bot service
-            # ============================================
-            echo "=== Restarting bot service ==="
-
-            # 1. Create deploy lock (prevents health check from restarting during deploy)
+            # Restart bot
             touch /tmp/saloon-deploy.lock
-
-            # 2. Stop systemd service FIRST (prevents auto-restart after kill)
-            echo "Stopping systemd service..."
             systemctl stop saloon-bot 2>/dev/null || true
             sleep 2
-
-            # 3. Kill any remaining processes on port 8000
-            echo "Cleaning up port 8000..."
             fuser -k -9 8000/tcp 2>/dev/null || true
             sleep 3
 
-            # 4. Verify port is free (up to 10 attempts × 2s = 20s max)
-            PORT_FREE=false
             for i in {1..10}; do
-                if ! fuser 8000/tcp 2>/dev/null; then
-                    echo "  ✓ Port 8000 is free (attempt $i)."
-                    PORT_FREE=true
-                    break
-                fi
-                echo "  Port 8000 still occupied (attempt $i/10)..."
+                if ! fuser 8000/tcp 2>/dev/null; then break; fi
                 fuser -k -9 8000/tcp 2>/dev/null || true
                 sleep 2
             done
 
-            if [ "$PORT_FREE" = "false" ]; then
-                echo "  ⚠️ Port 8000 still occupied after 10 attempts, forcing..."
-                kill -9 $(lsof -t -i:8000) 2>/dev/null || true
-                sleep 3
-            fi
-
-            # 5. Start systemd service
-            echo "Starting systemd service..."
             systemctl start saloon-bot
             sleep 8
-
-            # 6. Remove deploy lock
             rm -f /tmp/saloon-deploy.lock
 
-            # Verify bot is running
-            if systemctl is-active --quiet saloon-bot; then
-                echo "✅ Bot service is running"
-            else
-                echo "❌ Bot service failed to start"
-                journalctl -u saloon-bot --no-pager -n 20
-                exit 1
-            fi
+            BOT_STATUS="down"
+            if systemctl is-active --quiet saloon-bot; then BOT_STATUS="ok"; fi
 
-            # ============================================
-            # FRONTEND: Build and deploy mini-app
-            # ============================================
-            echo "=== Building mini-app ==="
+            # Frontend
             cd ~/academic_saloon/mini-app
-
-            # Install dependencies and build
             npm ci --prefer-offline
             npm run build
 
-            # Deploy to web directory
-            echo "=== Deploying mini-app to /var/www ==="
             rm -rf /var/www/academic_saloon/dist/*
             cp -r dist/* /var/www/academic_saloon/dist/
             chown -R www-data:www-data /var/www/academic_saloon/dist/
 
-            # Reload nginx to clear any cache
             nginx -t && systemctl reload nginx
 
-            echo "✅ Mini-app deployed: $(ls /var/www/academic_saloon/dist/assets/index-*.js)"
+            # Collect metrics
+            DISK=$(df -h / | tail -1 | awk '{print $5}')
+            MEM=$(free | grep Mem | awk '{printf("%.0f%%", $3/$2*100)}')
+            BUNDLE=$(du -sh /var/www/academic_saloon/dist/assets/ 2>/dev/null | awk '{print $1}')
+            UPTIME=$(uptime -p | sed 's/up //')
 
-            echo "=== Deploy completed successfully at $(date) ==="
+            echo "=== DEPLOY DONE: $OLD_COMMIT -> $NEW_COMMIT | Bot: $BOT_STATUS | Disk: $DISK | RAM: $MEM | Bundle: $BUNDLE ==="
 
-      # ============================================
-      # TELEGRAM NOTIFICATIONS
-      # ============================================
+            if [ "$BOT_STATUS" != "ok" ]; then
+              echo "Bot failed to start!"
+              journalctl -u saloon-bot --no-pager -n 20
+              exit 1
+            fi
+
+      - name: Calculate duration
+        id: duration
+        if: always()
+        run: |
+          START=${{ steps.info.outputs.start_time }}
+          END=$(date +%s)
+          DURATION=$((END - START))
+          MINS=$((DURATION / 60))
+          SECS=$((DURATION % 60))
+          echo "formatted=${MINS}m ${SECS}s" >> $GITHUB_OUTPUT
+
       - name: Notify Telegram (Success)
         if: success()
         uses: appleboy/telegram-action@master
@@ -213,13 +200,15 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            ✅ *Deploy успешен!*
+            *DEPLOY*  `${{ steps.info.outputs.sha_short }}`  *${{ steps.duration.outputs.formatted }}*
 
-            📦 Коммит: `${{ github.sha }}`
-            👤 Автор: ${{ github.actor }}
-            📝 Сообщение: ${{ github.event.head_commit.message }}
+            ${{ steps.info.outputs.commit_msg }}
 
-            🔗 [Посмотреть коммит](${{ github.event.head_commit.url }})
+            `py:${{ steps.info.outputs.py_count }}` `ts:${{ steps.info.outputs.ts_count }}` `ci:${{ steps.info.outputs.yml_count }}`  ${{ steps.info.outputs.changes }}
+
+            ${{ env.RECENT_COMMITS }}
+
+            [GitHub](${{ github.event.head_commit.url }})  |  [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Notify Telegram (Failure)
         if: failure()
@@ -229,10 +218,10 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: markdown
           message: |
-            ❌ *Deploy провалился!*
+            *DEPLOY FAILED*  `${{ steps.info.outputs.sha_short }}`
 
-            📦 Коммит: `${{ github.sha }}`
-            👤 Автор: ${{ github.actor }}
-            📝 Сообщение: ${{ github.event.head_commit.message }}
+            ${{ steps.info.outputs.commit_msg }}
 
-            🔗 [Посмотреть логи](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ${{ steps.info.outputs.changes }}
+
+            [Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
