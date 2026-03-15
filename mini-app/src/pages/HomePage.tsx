@@ -123,7 +123,7 @@ export function HomePage({ user }: Props) {
     <>
     <main
       role="main"
-      className={`${s.container} bg-void relative overflow-hidden`}
+      className={`${s.container} bg-void relative`}
       style={{ paddingBottom: isNewUser ? 160 : 100 }}>
       {/* Premium Background */}
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
