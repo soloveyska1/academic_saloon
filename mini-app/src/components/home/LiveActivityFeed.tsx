@@ -1,11 +1,10 @@
 import { memo, useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  LIVE ACTIVITY FEED — Quiet social proof ticker
-//  NO card border. Minimal container. Content floats on void.
-//  Uses em-dash separator instead of dots (more editorial).
+//  LIVE ACTIVITY FEED — Social proof in real-time.
+//  Quiet, elegant ticker. Creates FOMO without being aggressive.
+//  Minimal chrome — content floats on void.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const WORK_TYPES = [
@@ -19,13 +18,8 @@ const SUBJECTS = [
   'Логистика', 'Философия', 'Политология', 'Медицина', 'Культурология',
 ] as const
 
-const UNIVERSITIES = [
-  'МГУ', 'РУДН', 'ВШЭ', 'СПбГУ', 'МГИМО', 'МГТУ', 'РЭУ',
-  'РАНХИГС', 'МИРЭА', 'КФУ', 'УрФУ', 'НГУ', 'ТГУ', 'ДВФУ',
-] as const
-
 const TIMESTAMPS = [
-  'только что', '1 мин', '2 мин', '5 мин', '8 мин',
+  'только что', '1 мин назад', '3 мин назад', '5 мин назад',
 ] as const
 
 function pick<T>(arr: readonly T[]): T {
@@ -36,7 +30,6 @@ function generateFeedItem() {
   return {
     type: pick(WORK_TYPES),
     subject: pick(SUBJECTS),
-    university: pick(UNIVERSITIES),
     time: pick(TIMESTAMPS),
     id: Math.random(),
   }
@@ -62,7 +55,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
   useEffect(() => {
     const initial = setTimeout(() => {
       cycle()
-      intervalRef.current = setInterval(cycle, 4000)
+      intervalRef.current = setInterval(cycle, 4500)
     }, 3000)
 
     return () => {
@@ -75,13 +68,10 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15 }}
-      style={{
-        marginBottom: 20,
-        paddingTop: 4,
-      }}
+      transition={{ delay: 0.18 }}
+      style={{ marginBottom: 24 }}
     >
-      {/* Header — minimal, no card */}
+      {/* Header */}
       <div
         style={{
           display: 'flex',
@@ -91,71 +81,92 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
           paddingLeft: 2,
         }}
       >
-        <div
-          style={{
-            width: 5,
-            height: 5,
-            borderRadius: '50%',
-            background: 'rgba(212,175,55,0.7)',
-            boxShadow: '0 0 6px rgba(212,175,55,0.35)',
-            animation: 'pulse 2.5s infinite',
-          }}
-        />
+        {/* Live indicator */}
+        <div style={{ position: 'relative', width: 8, height: 8 }}>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              background: 'rgba(212,175,55,0.7)',
+              animation: 'pulse 2.5s infinite',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: -3,
+              borderRadius: '50%',
+              border: '1px solid rgba(212,175,55,0.2)',
+              animation: 'pulse 2.5s infinite 0.5s',
+            }}
+          />
+        </div>
         <span
           style={{
             fontFamily: "'Manrope', sans-serif",
             fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.06em',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.30)',
+            color: 'rgba(255,255,255,0.28)',
           }}
         >
-          Заказывают сейчас
+          Заказывают прямо сейчас
         </span>
       </div>
 
-      {/* Feed items — no container, floating on void */}
-      <div style={{ minHeight: 114 }}>
+      {/* Feed items */}
+      <div style={{ minHeight: 114, overflow: 'hidden' }}>
         <AnimatePresence mode="popLayout" initial={false}>
           {items.map((item, i) => (
             <motion.div
               key={item.id}
               layout
               initial={{ opacity: 0, y: -16, scale: 0.97 }}
-              animate={{ opacity: 1 - i * 0.2, y: 0, scale: 1 }}
+              animate={{ opacity: 1 - i * 0.25, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '11px 14px',
+                padding: '12px 14px',
                 marginBottom: 4,
-                borderRadius: 12,
-                background: i === 0 ? 'rgba(255,255,255,0.02)' : 'none',
+                borderRadius: 14,
+                background: i === 0
+                  ? 'linear-gradient(135deg, rgba(212,175,55,0.03), rgba(255,255,255,0.015))'
+                  : 'transparent',
+                border: i === 0
+                  ? '1px solid rgba(212,175,55,0.06)'
+                  : '1px solid transparent',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-                <Zap size={12} color="rgba(212,175,55,0.45)" strokeWidth={2.2} style={{ flexShrink: 0 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                {/* Type indicator dot */}
+                <div
+                  style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: '50%',
+                    background: i === 0 ? 'rgba(212,175,55,0.6)' : 'rgba(255,255,255,0.15)',
+                    flexShrink: 0,
+                  }}
+                />
                 <span
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: 'rgba(255,255,255,0.65)',
+                    color: 'rgba(255,255,255,0.60)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                   }}
                 >
                   {item.type}
-                  <span style={{ color: 'rgba(255,255,255,0.12)', margin: '0 6px' }}>/</span>
+                  <span style={{ color: 'rgba(255,255,255,0.10)', margin: '0 8px', fontWeight: 400 }}>·</span>
                   <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.35)' }}>
                     {item.subject}
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.12)', margin: '0 6px' }}>/</span>
-                  <span style={{ fontWeight: 600, color: 'rgba(212,175,55,0.5)' }}>
-                    {item.university}
                   </span>
                 </span>
               </div>
@@ -163,10 +174,10 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
                 style={{
                   fontSize: 10,
                   fontWeight: 500,
-                  color: 'rgba(255,255,255,0.18)',
+                  color: 'rgba(255,255,255,0.16)',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
-                  marginLeft: 8,
+                  marginLeft: 10,
                 }}
               >
                 {item.time}

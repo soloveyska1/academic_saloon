@@ -3,9 +3,9 @@ import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  STICKY BOTTOM CTA — Fixed thumb-zone conversion bar
-//  Fully opaque bar. 2-stop vertical gold gradient. No border on button.
-//  Clean shadow edge for separation. Premium but quiet.
+//  STICKY BOTTOM CTA — Fixed thumb-zone conversion bar.
+//  Premium gold gradient button. Micro-reassurance text.
+//  Clean separation from content above.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface StickyBottomCTAProps {
@@ -24,10 +24,9 @@ export const StickyBottomCTA = memo(function StickyBottomCTA({ onClick }: Sticky
         left: 0,
         right: 0,
         zIndex: 800,
-        padding: '16px 20px',
-        paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-        background: '#09090b',
-        boxShadow: '0 -1px 0 rgba(255,255,255,0.04), 0 -20px 40px rgba(0,0,0,0.5)',
+        padding: '12px 20px',
+        paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+        background: 'linear-gradient(180deg, rgba(9,9,11,0) 0%, rgba(9,9,11,0.95) 25%, #09090b 100%)',
       }}
     >
       <motion.button
@@ -40,23 +39,37 @@ export const StickyBottomCTA = memo(function StickyBottomCTA({ onClick }: Sticky
           justifyContent: 'center',
           gap: 10,
           width: '100%',
-          padding: '18px 24px',
-          borderRadius: 14,
+          padding: '17px 24px',
+          borderRadius: 16,
           background: 'linear-gradient(180deg, #E8C84A 0%, #C9A436 100%)',
           border: 'none',
-          boxShadow: '0 4px 16px rgba(201,164,54,0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
+          boxShadow: '0 4px 24px rgba(201,164,54,0.30), inset 0 1px 0 rgba(255,255,255,0.15)',
           cursor: 'pointer',
           appearance: 'none',
           fontFamily: "'Manrope', sans-serif",
           fontSize: 15,
-          fontWeight: 600,
+          fontWeight: 700,
           color: '#09090b',
-          letterSpacing: '0.02em',
+          letterSpacing: '0.01em',
         }}
       >
-        <span>Узнать стоимость</span>
+        <span>Рассчитать стоимость</span>
         <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
       </motion.button>
+
+      {/* Micro reassurance below button */}
+      <div
+        style={{
+          textAlign: 'center',
+          marginTop: 8,
+          fontSize: 11,
+          fontWeight: 500,
+          color: 'rgba(255,255,255,0.20)',
+          letterSpacing: '0.01em',
+        }}
+      >
+        Бесплатно · Без обязательств · Ответ за 5 мин
+      </div>
     </motion.div>
   )
 })

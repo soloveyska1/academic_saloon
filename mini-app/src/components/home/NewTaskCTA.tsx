@@ -1,13 +1,12 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, ShieldCheck, Clock, RotateCcw } from 'lucide-react'
+import { ArrowRight, Star, Shield, Clock } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  NEW TASK CTA — The ONE star element on the page
-//  Everything else is deliberately quiet so this stands out.
-//  Static gold text. No animated shimmer. No floating orbs.
-//  Generous padding. Tight letter-spacing at display sizes.
+//  NEW TASK CTA — The Hero. The ONE element that sells.
+//  Quiet luxury: warm gold, generous whitespace, zero noise.
+//  Copy: benefit-first, fear-eliminating, action-driving.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface NewTaskCTAProps {
@@ -16,10 +15,10 @@ interface NewTaskCTAProps {
   variant?: 'first-order' | 'repeat-order'
 }
 
-const GUARANTEES = [
-  { icon: ShieldCheck, text: 'Уникальность от 70%' },
-  { icon: Clock, text: 'Сдадим точно в срок' },
-  { icon: RotateCcw, text: '3 правки бесплатно' },
+const PROOF_POINTS = [
+  { icon: Star, text: '4.9 из 5 — оценка клиентов' },
+  { icon: Shield, text: 'Уникальность от 70%' },
+  { icon: Clock, text: '3 бесплатные доработки' },
 ] as const
 
 export const NewTaskCTA = memo(function NewTaskCTA({
@@ -41,9 +40,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         style={{
           position: 'relative',
           width: '100%',
-          padding: '32px 24px 24px',
+          padding: '36px 24px 28px',
           borderRadius: 24,
-          marginBottom: 24,
+          marginBottom: 28,
           overflow: 'hidden',
           isolation: 'isolate',
           textAlign: 'left',
@@ -53,81 +52,93 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         <div className={s.primaryActionShine} aria-hidden="true" />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Eyebrow */}
+          {/* Eyebrow — establishment */}
           <div
             style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.08em',
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              color: 'rgba(212,175,55,0.5)',
-              marginBottom: 16,
+              color: 'rgba(212,175,55,0.55)',
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
             }}
           >
+            <div style={{
+              width: 16,
+              height: 1,
+              background: 'linear-gradient(90deg, rgba(212,175,55,0.5), transparent)',
+            }} />
             Академический Салон
           </div>
 
-          {/* Headline — static warm gold, no animation */}
-          <div
+          {/* Headline — emotional, benefit-first */}
+          <h1
             className={s.goldAccent}
             style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: 'clamp(34px, 9vw, 44px)',
+              fontSize: 'clamp(32px, 8.5vw, 42px)',
               fontWeight: 800,
-              lineHeight: 0.95,
-              letterSpacing: '-0.02em',
-              marginBottom: 16,
+              lineHeight: 1.0,
+              letterSpacing: '-0.025em',
+              marginBottom: 14,
             }}
           >
-            Сделаем{'\n'}за тебя
-          </div>
+            Учись спокойно.{'\n'}Мы сделаем.
+          </h1>
 
-          <div
+          {/* Subhead — clarity + scope */}
+          <p
             style={{
-              color: 'rgba(255,255,255,0.50)',
-              fontSize: 14,
+              color: 'rgba(255,255,255,0.48)',
+              fontSize: 15,
               fontWeight: 500,
-              lineHeight: 1.5,
-              marginBottom: 24,
+              lineHeight: 1.55,
+              marginBottom: 28,
+              maxWidth: 300,
             }}
           >
-            Курсовые, дипломы, рефераты и ещё 10+ видов работ
-          </div>
+            Курсовые, дипломы, рефераты и ещё 15+ видов работ.
+            Эксперты с опытом от 5 лет.
+          </p>
 
-          {/* Guarantee pills — more space, less cramped */}
+          {/* Proof points — elegant, not cramped */}
           <div
             style={{
               display: 'flex',
+              flexDirection: 'column',
               gap: 8,
-              flexWrap: 'wrap',
-              marginBottom: 24,
+              marginBottom: 28,
             }}
           >
-            {GUARANTEES.map((g) => {
-              const Icon = g.icon
+            {PROOF_POINTS.map((p) => {
+              const Icon = p.icon
               return (
                 <div
-                  key={g.text}
+                  key={p.text}
                   style={{
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
-                    padding: '6px 12px',
-                    borderRadius: 10,
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    gap: 10,
+                    padding: '9px 14px',
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.025)',
+                    border: '1px solid rgba(255,255,255,0.05)',
                   }}
                 >
-                  <Icon size={12} color="rgba(212,175,55,0.6)" strokeWidth={2.2} />
+                  <Icon size={14} color="rgba(212,175,55,0.65)" strokeWidth={2} />
                   <span
                     style={{
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: 600,
-                      color: 'rgba(255,255,255,0.55)',
+                      color: 'rgba(255,255,255,0.58)',
+                      letterSpacing: '-0.005em',
                     }}
                   >
-                    {g.text}
+                    {p.text}
                   </span>
                 </div>
               )
@@ -141,30 +152,31 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             onClick={handleClick}
             className={s.heroPrimaryButton}
           >
-            <span>Узнать стоимость</span>
+            <span>Рассчитать стоимость бесплатно</span>
             <div className={s.primaryActionArrow}>
               <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
             </div>
           </motion.button>
 
-          {/* Reassurance */}
+          {/* Micro-reassurance — eliminates last objection */}
           <div
             style={{
-              marginTop: 12,
+              marginTop: 14,
               fontSize: 12,
-              color: 'rgba(255,255,255,0.25)',
+              color: 'rgba(255,255,255,0.22)',
               fontWeight: 500,
               textAlign: 'center',
+              letterSpacing: '0.01em',
             }}
           >
-            Оплата только после согласования деталей
+            Без предоплаты · Ответ за 5 минут
           </div>
         </div>
       </motion.section>
     )
   }
 
-  // ── Returning user: compact CTA ──
+  // ── Returning user: compact but premium CTA ──
   return (
     <motion.section
       className={`${s.voidGlass} ${s.primaryActionCard} ${s.returningOrderActionCard}`}
@@ -173,7 +185,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
       style={{
         position: 'relative',
         width: '100%',
-        padding: '18px 18px 18px 20px',
+        padding: '20px 20px',
         borderRadius: 20,
         marginBottom: 16,
         overflow: 'hidden',
@@ -192,7 +204,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
+          gap: 14,
           width: '100%',
           background: 'none',
           border: 'none',
@@ -202,7 +214,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           textAlign: 'left',
         }}
       >
-        <div>
+        <div style={{ flex: 1 }}>
           <div
             className={s.goldAccent}
             style={{
@@ -211,13 +223,13 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               fontWeight: 800,
               lineHeight: 1.15,
               letterSpacing: '-0.01em',
-              marginBottom: 3,
+              marginBottom: 4,
             }}
           >
             Новый заказ
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)', fontWeight: 500 }}>
-            Любая работа · от 1 дня
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>
+            Любой тип работы · от 1 дня · бесплатный расчёт
           </div>
         </div>
         <div className={s.primaryActionArrow} style={{ flexShrink: 0 }}>

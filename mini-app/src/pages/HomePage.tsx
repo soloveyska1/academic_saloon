@@ -14,7 +14,7 @@ import { PremiumBackground } from '../components/ui/PremiumBackground'
 import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 
-// New Home Components
+// Home Components
 import {
   HomeHeader,
   QuickActionsRow,
@@ -25,7 +25,9 @@ import {
   UrgentHubSheet,
   TrustStatsStrip,
   LiveActivityFeed,
+  HowItWorks,
   GuaranteesShowcase,
+  TestimonialsSection,
   StickyBottomCTA,
   WelcomeTour,
   hasSeenWelcomeTour,
@@ -33,7 +35,7 @@ import {
   ModalLoadingFallback,
 } from '../components/home'
 
-// Lazy load modal components — all use shared ModalWrapper / CenteredModalWrapper
+// Lazy load modal components
 const QRCodeModal = lazy(() => import('../components/ui/QRCode').then(m => ({ default: m.QRCodeModal })))
 const CashbackModal = lazy(() => import('../components/modals/CashbackModal').then(m => ({ default: m.CashbackModal })))
 const RanksModal = lazy(() => import('../components/modals/RanksModal').then(m => ({ default: m.RanksModal })))
@@ -86,13 +88,6 @@ export function HomePage({ user }: Props) {
     [user?.orders]
   )
 
-  if (!user) return null
-
-  // User type detection for progressive disclosure
-  const isNewUser = user.orders_count === 0 || admin.simulateNewUser
-  const userPhoto = tg?.initDataUnsafe?.user?.photo_url
-  const inviteLink = buildReferralLink(botUsername, user.telegram_id)
-
   const handleNewOrder = useCallback(() => {
     haptic('heavy')
     navigate('/create-order')
@@ -111,33 +106,40 @@ export function HomePage({ user }: Props) {
         prefill: {
           work_type: order.work_type,
           subject: order.subject,
-          topic: order.subject, // subject doubles as topic
+          topic: order.subject,
         },
       },
     })
   }, [user?.orders, navigate])
+
+  if (!user) return null
+
+  // User type detection for progressive disclosure
+  const isNewUser = user.orders_count === 0 || admin.simulateNewUser
+  const userPhoto = tg?.initDataUnsafe?.user?.photo_url
+  const inviteLink = buildReferralLink(botUsername, user.telegram_id)
 
   return (
     <>
     <main
       role="main"
       className={`${s.container} bg-void relative overflow-hidden`}
-      style={{ paddingBottom: isNewUser ? 140 : 100 }}>
-      {/* Premium Background - Full width, fixed position */}
+      style={{ paddingBottom: isNewUser ? 160 : 100 }}>
+      {/* Premium Background */}
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
         <PremiumBackground
-          variant="gold" // Force gold variant for this theme
+          variant="gold"
           intensity="medium"
           interactive={capability.tier >= 3}
         />
         <FloatingGoldParticles count={capability.getParticleCount(12)} />
       </div>
 
-      {/* Content with padding */}
+      {/* Content */}
       <div className="relative z-[1]">
 
         {/* ═══════════════════════════════════════════════════════════════════
-          HEADER — New compact component
+          HEADER
           ═══════════════════════════════════════════════════════════════════ */}
         <HomeHeader
           user={{
@@ -153,21 +155,35 @@ export function HomePage({ user }: Props) {
         />
 
         {/* ═══════════════════════════════════════════════════════════════════
-          NEW USER FLOW — Trust-first, fear-elimination, single CTA
-          Value → trust → proof → action. No extra steps.
+          NEW USER FLOW — Conversion-optimized funnel:
+          Hero → Stats → Social Proof → How It Works → Activity → Guarantees
+          Each section eliminates an objection and builds desire.
           ═══════════════════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
+            {/* 1. Hero CTA — The promise */}
             <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
+
+            {/* 2. Trust Stats — The proof in numbers */}
             <TrustStatsStrip />
+
+            {/* 3. How It Works — Eliminate process anxiety */}
+            <HowItWorks />
+
+            {/* 4. Testimonials — Social proof from real students */}
+            <TestimonialsSection />
+
+            {/* 5. Live Activity — FOMO + freshness signal */}
             <LiveActivityFeed />
+
+            {/* 6. Guarantees — Eliminate risk fears */}
             <GuaranteesShowcase
               onOpenGuaranteesModal={() => { haptic('light'); actions.openModal('guarantees') }}
             />
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════════════════
-             RETURNING USER FLOW — Compact CTA + active orders + tools
+             RETURNING USER FLOW — Action-first, then tools
              ═══════════════════════════════════════════════════════════════════ */
           <>
             <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
@@ -187,7 +203,7 @@ export function HomePage({ user }: Props) {
               />
             )}
 
-            {/* Quick reorder — only shows if last order is completed */}
+            {/* Quick reorder */}
             {user.orders.length > 0 && (
               <QuickReorderCard
                 lastOrder={user.orders[0]}
@@ -209,7 +225,7 @@ export function HomePage({ user }: Props) {
               haptic={haptic}
             />
 
-            {/* Promo Code Section — only for returning users */}
+            {/* Promo Code Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -249,13 +265,9 @@ export function HomePage({ user }: Props) {
         )}
 
         <SaloonFooter />
-      </div>{/* End content wrapper */}
+      </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          URGENT HUB SHEET — Bottom sheet with 2 urgent options
-          Fixes the duplicate "Urgent" issue
-          ═══════════════════════════════════════════════════════════════════ */}
-      {/* Sticky bottom CTA for new users — thumb-zone conversion */}
+      {/* Sticky bottom CTA for new users */}
       {isNewUser && <StickyBottomCTA onClick={handleNewOrder} />}
 
       <UrgentHubSheet
@@ -266,11 +278,7 @@ export function HomePage({ user }: Props) {
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          MODALS — Lazy loaded
-          ═══════════════════════════════════════════════════════════════════ */}
-      {/* ═══════════════════════════════════════════════════════════════════
-          MODALS — All use shared wrappers with internal AnimatePresence.
-          Rendered always (not conditionally) so exit animations work.
+          MODALS — Lazy loaded, always rendered for exit animations
           ═══════════════════════════════════════════════════════════════════ */}
       <Suspense fallback={<ModalLoadingFallback />}>
         <QRCodeModal
@@ -313,7 +321,7 @@ export function HomePage({ user }: Props) {
 
     </main>
 
-      {/* Welcome tour — only for new users, shown once (outside main to avoid overflow:hidden) */}
+      {/* Welcome tour — only for new users, shown once */}
       <AnimatePresence>
         {isNewUser && showTour && (
           <WelcomeTour
