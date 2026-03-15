@@ -83,13 +83,17 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           format: html
           message: |
-            <b>↓ МЕРЖ</b>  <code>${{ steps.merge.outputs.branch }}</code>  <b>${{ steps.merge.outputs.commit_count }} коммитов</b>
+            🔀 <b>Мерж в main</b>
 
-            ${{ env.MERGE_COMMITS }}
+            ├─ 🌿 <code>${{ steps.merge.outputs.branch }}</code>
+            ├─ 📦 ${{ steps.merge.outputs.commit_count }} коммитов
+            └─ ${{ steps.merge.outputs.file_tags }}
 
-            <code>${{ steps.merge.outputs.file_tags }}— ${{ steps.merge.outputs.files }}</code>
+            <blockquote>${{ env.MERGE_COMMITS }}</blockquote>
 
-            <i>Деплой запускается...</i>
+            <code>${{ steps.merge.outputs.files }}</code>
+
+            ⏳ <i>Деплой запускается...</i>
 
       - name: Notify Telegram (Failure)
         if: failure()
