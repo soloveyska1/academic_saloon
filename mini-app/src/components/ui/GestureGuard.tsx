@@ -57,6 +57,8 @@ const triggerHaptic = (style: 'light' | 'medium' | 'rigid' = 'light') => {
 
 // Сохранение позиции скролла при блокировке
 let savedScrollY = 0
+let savedContainerScrollTop = 0
+let savedContainer: HTMLElement | null = null
 let scrollLockCount = 0
 
 export function GestureGuardProvider({ children }: { children: ReactNode }) {
@@ -87,7 +89,10 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
     scrollLockCount++
 
     if (scrollLockCount === 1) {
+      // Save both window scroll and the main scroll container position
       savedScrollY = window.scrollY
+      savedContainer = document.querySelector('main[role="main"]') as HTMLElement | null
+      savedContainerScrollTop = savedContainer?.scrollTop ?? 0
 
       // Фиксируем body для предотвращения скролла
       document.body.style.position = 'fixed'
@@ -112,8 +117,12 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
         document.body.style.overflow = ''
         document.documentElement.style.overflow = ''
 
-        // Возвращаем позицию скролла
+        // Restore both window and container scroll positions
         window.scrollTo(0, savedScrollY)
+        if (savedContainer) {
+          savedContainer.scrollTop = savedContainerScrollTop
+          savedContainer = null
+        }
 
         setIsScrollLocked(false)
       }
@@ -183,34 +192,29 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
       isBlockingRef.current = false
     }
 
-    // Защита от pull-to-refresh
+    // Защита от pull-to-refresh (Telegram pull-to-close)
     const handleOverscroll = (e: TouchEvent) => {
-      // Если мы в top и пытаемся скроллить вверх - блокируем
-      if (window.scrollY === 0) {
-        const touch = e.touches[0]
-        if (!touch || !touchStartRef.current) return
+      const touch = e.touches[0]
+      if (!touch || !touchStartRef.current) return
 
-        const deltaY = touch.clientY - touchStartRef.current.y
+      const deltaY = touch.clientY - touchStartRef.current.y
 
-        // Пользователь тянет вниз при scrollY = 0
-        if (deltaY > 10) {
-          // Проверяем что это не внутри scrollable container
-          const target = e.target as HTMLElement
-          const scrollContainer = target.closest('[data-scroll-container]') as HTMLElement
+      // Only care about downward pulls
+      if (deltaY <= 10) return
 
-          // Если внутри scroll container - разрешаем скролл
-          if (scrollContainer) {
-            // Только блокируем если контейнер уже в самом верху
-            if (scrollContainer.scrollTop <= 0) {
-              // Не блокируем - пусть iOS делает свой bounce внутри контейнера
-              return
-            }
-            return // Разрешаем скролл внутри контейнера
-          }
-
-          e.preventDefault()
+      // Walk up from touch target to find the nearest scrollable container
+      let el = e.target as HTMLElement | null
+      while (el && el !== document.body) {
+        // Check if this element is a scroll container (has overflow and content taller than viewport)
+        if (el.scrollHeight > el.clientHeight) {
+          // Found a scrollable ancestor — allow scrolling, don't block
+          return
         }
+        el = el.parentElement
       }
+
+      // No scrollable parent found — prevent Telegram pull-to-close
+      e.preventDefault()
     }
 
     // Добавляем слушатели с правильными опциями

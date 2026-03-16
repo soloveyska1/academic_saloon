@@ -905,6 +905,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
+      data-scroll-container="true"
       style={{ background: 'var(--bg-main)', minHeight: '100vh', overflowY: 'auto', height: '100vh' }}
     >
       <PullIndicator />

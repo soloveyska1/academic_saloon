@@ -441,7 +441,7 @@ export function OrderChatPage() {
       </motion.header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 relative z-[2]">
+      <div data-scroll-container="true" className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 relative z-[2]">
         {isLoading && messages.length === 0 ? (
           <div className="flex justify-center p-5">
             <Loader2 className="animate-spin" color="#d4af37" />

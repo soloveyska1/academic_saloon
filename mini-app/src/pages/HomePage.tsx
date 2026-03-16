@@ -168,6 +168,7 @@ export function HomePage({ user, onRefresh }: Props) {
     <main
       ref={containerRef as unknown as React.RefObject<HTMLElement>}
       role="main"
+      data-scroll-container="true"
       className={`${s.container} bg-void relative`}
       style={{ paddingBottom: isNewUser ? 160 : 100, overflowY: 'auto', height: '100vh' }}>
       <PullIndicator />
