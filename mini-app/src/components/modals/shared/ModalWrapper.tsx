@@ -275,7 +275,10 @@ export function ModalWrapper({
               <div
                 ref={contentRef}
                 style={{
-                  flex: 1,
+                  flexGrow: 1,
+                  flexShrink: 1,
+                  flexBasis: 0,
+                  height: 0,
                   minHeight: 0,
                   overflowY: 'auto',
                   overflowX: 'hidden',
