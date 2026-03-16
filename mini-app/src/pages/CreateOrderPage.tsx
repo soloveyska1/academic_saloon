@@ -720,6 +720,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       {/* Scrollable Content */}
       <div
         ref={scrollContainerRef}
+        data-scroll-container="true"
         style={{
           flex: 1,
           padding: 24,

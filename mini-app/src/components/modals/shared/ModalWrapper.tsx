@@ -61,6 +61,7 @@ export function ModalWrapper({
   accentColor = '#D4AF37',
 }: ModalWrapperProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const dragStartRef = useRef<{ y: number; time: number } | null>(null)
   const [dragY, setDragY] = useState(0)
@@ -69,7 +70,14 @@ export function ModalWrapper({
   // System hooks
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
-  useModalRegistration(isOpen)
+  useModalRegistration(isOpen, modalId)
+
+  // Reset content scroll position when modal opens
+  useEffect(() => {
+    if (isOpen && contentRef.current) {
+      contentRef.current.scrollTop = 0
+    }
+  }, [isOpen])
 
   // Close with haptic
   const handleClose = useCallback(() => {
@@ -265,6 +273,7 @@ export function ModalWrapper({
 
               {/* Scrollable content — NO touch event interference */}
               <div
+                ref={contentRef}
                 style={{
                   flex: 1,
                   minHeight: 0,
