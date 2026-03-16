@@ -1,13 +1,11 @@
 import { useCallback, useState } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
-import { Shield, RefreshCw, FileCheck, Award, Clock, Lock, ChevronDown, CheckCircle2 } from 'lucide-react'
+import { Shield, RefreshCw, Award, Clock, Lock, ChevronDown, CheckCircle2 } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GUARANTEES MODAL — Proof Wall
-//  Not a list of promises — a wall of evidence.
-//  Every guarantee is backed by a real metric.
-//  Copy that addresses the exact fear, then kills it.
+//  Compact, evidence-backed guarantees. No fluff.
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface GuaranteesModalProps {
@@ -19,117 +17,68 @@ export interface GuaranteesModalProps {
 interface Guarantee {
   icon: typeof Shield
   title: string
-  subtitle: string
+  hook: string
   desc: string
-  proof: string
-  proofLabel: string
-  featured?: boolean
 }
 
 const GUARANTEES: Guarantee[] = [
   {
     icon: RefreshCw,
     title: 'Работаем до оценки',
-    subtitle: 'Не до сдачи — до результата',
-    desc: 'Преподаватель вернул с правками? Доработаем. И ещё раз. Столько, сколько нужно — пока работу не примут.',
-    proof: '2 400+',
-    proofLabel: 'работ приняты',
-    featured: true,
-  },
-  {
-    icon: FileCheck,
-    title: 'Три правки включены',
-    subtitle: 'Обычно хватает одной',
-    desc: 'Три раунда доработок в стоимости. Нужно больше — договоримся. Без скрытых доплат, без мелкого шрифта.',
-    proof: '93%',
-    proofLabel: 'с первого раза',
+    hook: 'Не до сдачи — до результата',
+    desc: 'Преподаватель вернул с правками? Доработаем столько, сколько нужно. Три раунда включены в стоимость.',
   },
   {
     icon: Award,
     title: '100% возврат до старта',
-    subtitle: 'Без вопросов, без задержек',
-    desc: 'Передумали до начала работы? Возвращаем всю сумму. Ни одного спора за 2024 год.',
-    proof: '0',
-    proofLabel: 'спорных возвратов',
+    hook: 'Без вопросов и задержек',
+    desc: 'Передумали до начала работы — возвращаем всю сумму. В процессе — пропорционально.',
   },
   {
     icon: Clock,
     title: 'Точно в срок',
-    subtitle: 'Дата — это закон',
-    desc: 'Фиксируем дедлайн — и держим слово. Никаких «завтра» и «ещё чуть-чуть». Дата есть дата.',
-    proof: '98%',
-    proofLabel: 'вовремя',
+    hook: 'Дата — это закон',
+    desc: 'Фиксируем дедлайн и держим слово. За каждым заказом стоит менеджер — если автор пропал, подключаем замену.',
   },
   {
     icon: Lock,
     title: 'Полная анонимность',
-    subtitle: 'Только вы и мы',
-    desc: 'Ваше имя, вуз, переписка и заказ — строго между нами. Никаких третьих лиц. Данные не утекают.',
-    proof: 'E2E',
-    proofLabel: 'шифрование',
+    hook: 'Только вы и мы',
+    desc: 'Имя, вуз, переписка — строго между нами. Никаких третьих лиц, E2E-шифрование.',
   },
 ]
 
-// FAQ that addresses deepest fears
+const STATS = [
+  { value: '2 400+', label: 'работ' },
+  { value: '98%', label: 'в срок' },
+  { value: '93%', label: 'с 1-го раза' },
+] as const
+
 const FAQ = [
   {
-    q: 'А если работа не пройдёт антиплагиат?',
-    a: 'Каждая работа пишется с нуля — это гарантирует высокую уникальность. Мы не проверяем через Антиплагиат ВУЗ специально, чтобы система не «запомнила» текст раньше времени. Рекомендуем проверить самостоятельно через личный кабинет.',
+    q: 'А если не пройдёт антиплагиат?',
+    a: 'Каждая работа пишется с нуля — уникальность высокая. Мы не прогоняем через систему заранее, чтобы она не «запомнила» текст. Рекомендуем проверить самостоятельно.',
   },
   {
     q: 'Что если автор пропадёт?',
-    a: 'За каждым заказом стоит менеджер. Если автор выходит из контакта — мы подключаем замену без доплаты и без сдвига сроков.',
+    a: 'За каждым заказом стоит менеджер. Если автор выходит из контакта — подключаем замену без доплаты и без сдвига сроков.',
   },
   {
-    q: 'Можно ли вернуть деньги, если работа уже в процессе?',
-    a: 'Да. Возврат пропорционально невыполненной части. Без удержаний, без штрафов. Всё прозрачно.',
+    q: 'Можно вернуть деньги, если работа в процессе?',
+    a: 'Да. Возврат пропорционально невыполненной части. Без удержаний, без штрафов.',
   },
 ]
 
-function ProofBadge({ value, label }: { value: string; label: string }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: 6,
-        padding: '6px 12px',
-        borderRadius: 10,
-        background: 'rgba(212,175,55,0.06)',
-        border: '1px solid rgba(212,175,55,0.10)',
-      }}
-    >
-      <span
-        style={{
-          fontSize: 15,
-          fontWeight: 800,
-          color: '#E8D5A3',
-          letterSpacing: '-0.02em',
-          fontFamily: "'Manrope', sans-serif",
-        }}
-      >
-        {value}
-      </span>
-      <span
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: 'rgba(212,175,55,0.50)',
-        }}
-      >
-        {label}
-      </span>
-    </div>
-  )
-}
-
-function FAQItem({ q, a }: { q: string; a: string }) {
+function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
   const [open, setOpen] = useState(false)
 
   return (
     <m.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 + index * 0.05 }}
       style={{
-        borderRadius: 16,
+        borderRadius: 14,
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.05)',
         overflow: 'hidden',
@@ -140,7 +89,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         onClick={() => setOpen(prev => !prev)}
         style={{
           width: '100%',
-          padding: '16px 18px',
+          padding: '14px 16px',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -151,23 +100,11 @@ function FAQItem({ q, a }: { q: string; a: string }) {
           textAlign: 'left',
         }}
       >
-        <span
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'rgba(255,255,255,0.75)',
-            lineHeight: 1.4,
-            flex: 1,
-          }}
-        >
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.70)', lineHeight: 1.4, flex: 1 }}>
           {q}
         </span>
-        <m.div
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.25 }}
-          style={{ flexShrink: 0 }}
-        >
-          <ChevronDown size={16} color="rgba(212,175,55,0.45)" />
+        <m.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} style={{ flexShrink: 0 }}>
+          <ChevronDown size={15} color="rgba(212,175,55,0.40)" />
         </m.div>
       </button>
 
@@ -180,15 +117,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             style={{ overflow: 'hidden' }}
           >
-            <div
-              style={{
-                padding: '0 18px 16px',
-                fontSize: 13,
-                lineHeight: 1.65,
-                color: 'rgba(255,255,255,0.45)',
-                fontWeight: 500,
-              }}
-            >
+            <div style={{ padding: '0 16px 14px', fontSize: 12.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.40)', fontWeight: 500 }}>
               {a}
             </div>
           </m.div>
@@ -214,230 +143,165 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
     >
       <div style={{ padding: '0 20px 20px' }}>
 
-        {/* ═══════════ HERO ═══════════ */}
+        {/* ═══════════ COMPACT HERO ═══════════ */}
         <m.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          style={{ textAlign: 'center', padding: '8px 0 28px' }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          style={{ textAlign: 'center', padding: '4px 0 20px' }}
         >
-          {/* Shield with seal effect */}
           <m.div
-            initial={{ scale: 0.5, opacity: 0 }}
+            initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 12, delay: 0.1 }}
+            transition={{ type: 'spring', damping: 14, delay: 0.1 }}
             style={{
-              width: 88,
-              height: 88,
-              borderRadius: 26,
-              background: 'linear-gradient(145deg, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.04) 100%)',
-              border: '1.5px solid rgba(212,175,55,0.18)',
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: 'linear-gradient(145deg, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 100%)',
+              border: '1.5px solid rgba(212,175,55,0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 24px',
-              boxShadow: '0 28px 64px -16px rgba(212,175,55,0.25), 0 0 0 1px rgba(212,175,55,0.05)',
+              margin: '0 auto 16px',
+              boxShadow: '0 16px 40px -12px rgba(212,175,55,0.20)',
               position: 'relative',
             }}
           >
-            <Shield size={38} color="rgba(212,175,55,0.75)" strokeWidth={1.3} />
-
-            {/* Verified checkmark */}
+            <Shield size={28} color="rgba(212,175,55,0.70)" strokeWidth={1.4} />
             <m.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.5, type: 'spring', damping: 10 }}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.4, type: 'spring', damping: 10 }}
               style={{
                 position: 'absolute',
-                bottom: -4,
-                right: -4,
-                width: 28,
-                height: 28,
+                bottom: -3,
+                right: -3,
+                width: 22,
+                height: 22,
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #22c55e, #16a34a)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '2.5px solid #09090b',
-                boxShadow: '0 4px 12px rgba(34,197,94,0.3)',
+                border: '2px solid #09090b',
               }}
             >
-              <CheckCircle2 size={14} color="#fff" strokeWidth={2.5} />
+              <CheckCircle2 size={11} color="#fff" strokeWidth={2.5} />
             </m.div>
           </m.div>
 
-          <m.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            style={{
-              fontSize: 26,
-              fontWeight: 800,
-              lineHeight: 1.15,
-              letterSpacing: '-0.025em',
-              marginBottom: 12,
-              fontFamily: "'Manrope', sans-serif",
-              color: '#E8D5A3',
-            }}
-          >
+          <div style={{
+            fontSize: 22,
+            fontWeight: 800,
+            lineHeight: 1.2,
+            letterSpacing: '-0.02em',
+            marginBottom: 8,
+            fontFamily: "'Manrope', sans-serif",
+            color: '#E8D5A3',
+          }}>
             Каждое слово —{'\u00A0'}в{'\u00A0'}деле
-          </m.div>
+          </div>
 
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            style={{
-              fontSize: 14,
-              lineHeight: 1.6,
-              color: 'rgba(255,255,255,0.42)',
-              fontWeight: 500,
-              maxWidth: 280,
-              margin: '0 auto',
-            }}
-          >
-            Это не маркетинг. Это правила, по которым мы работаем
-          </m.div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.38)', fontWeight: 500, maxWidth: 260, margin: '0 auto' }}>
+            Правила, по которым мы работаем
+          </div>
         </m.div>
 
-        {/* ═══════════ PROOF STRIP ═══════════ */}
+        {/* ═══════════ STATS STRIP ═══════════ */}
         <m.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: 0.15 }}
           style={{
             display: 'flex',
             justifyContent: 'center',
-            gap: 8,
-            marginBottom: 28,
-            flexWrap: 'wrap',
+            gap: 6,
+            marginBottom: 20,
           }}
         >
-          <ProofBadge value="2 400+" label="работ" />
-          <ProofBadge value="98%" label="в срок" />
-          <ProofBadge value="4.9" label="оценка" />
+          {STATS.map(({ value, label }) => (
+            <div
+              key={label}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 8,
+                background: 'rgba(212,175,55,0.05)',
+                border: '1px solid rgba(212,175,55,0.08)',
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 4,
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#E8D5A3', letterSpacing: '-0.02em', fontFamily: "'Manrope', sans-serif" }}>
+                {value}
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(212,175,55,0.45)' }}>
+                {label}
+              </span>
+            </div>
+          ))}
         </m.div>
 
-        {/* ═══════════ GOLD DIVIDER ═══════════ */}
+        {/* ═══════════ DIVIDER ═══════════ */}
         <div
           aria-hidden="true"
-          style={{
-            height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
-            marginBottom: 24,
-          }}
+          style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)', marginBottom: 18 }}
         />
 
         {/* ═══════════ GUARANTEE CARDS ═══════════ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {GUARANTEES.map((item, index) => {
             const Icon = item.icon
-
             return (
               <m.div
                 key={item.title}
-                initial={{ opacity: 0, y: 18 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: 0.2 + index * 0.07,
-                  duration: 0.5,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
+                transition={{ delay: 0.15 + index * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 style={{
-                  padding: item.featured ? '20px 18px' : '16px 18px',
-                  borderRadius: 18,
-                  background: item.featured
-                    ? 'linear-gradient(135deg, rgba(212,175,55,0.07) 0%, rgba(212,175,55,0.02) 100%)'
+                  padding: '14px 16px',
+                  borderRadius: 16,
+                  background: index === 0
+                    ? 'linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(212,175,55,0.02) 100%)'
                     : 'rgba(255,255,255,0.02)',
-                  border: item.featured
-                    ? '1px solid rgba(212,175,55,0.14)'
-                    : '1px solid rgba(255,255,255,0.05)',
+                  border: index === 0
+                    ? '1px solid rgba(212,175,55,0.12)'
+                    : '1px solid rgba(255,255,255,0.04)',
                   position: 'relative',
                   overflow: 'hidden',
                 }}
               >
-                {/* Featured card — gold accent line */}
-                {item.featured && (
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 20,
-                      right: 20,
-                      height: 1.5,
-                      background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.30), transparent)',
-                    }}
-                  />
+                {index === 0 && (
+                  <div aria-hidden="true" style={{
+                    position: 'absolute', top: 0, left: 20, right: 20, height: 1,
+                    background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.25), transparent)',
+                  }} />
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                  {/* Icon */}
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 14,
-                      background: item.featured
-                        ? 'rgba(212,175,55,0.10)'
-                        : 'rgba(212,175,55,0.05)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Icon
-                      size={20}
-                      color={item.featured ? 'rgba(212,175,55,0.70)' : 'rgba(212,175,55,0.50)'}
-                      strokeWidth={1.6}
-                    />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 12,
+                    background: index === 0 ? 'rgba(212,175,55,0.10)' : 'rgba(212,175,55,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Icon size={18} color={index === 0 ? 'rgba(212,175,55,0.65)' : 'rgba(212,175,55,0.45)'} strokeWidth={1.6} />
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Title */}
-                    <div
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: 'rgba(255,255,255,0.90)',
-                        lineHeight: 1.25,
-                        letterSpacing: '-0.01em',
-                        marginBottom: 2,
-                      }}
-                    >
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)', lineHeight: 1.25, letterSpacing: '-0.01em', marginBottom: 2 }}>
                       {item.title}
                     </div>
-
-                    {/* Subtitle — the hook */}
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: item.featured ? 'rgba(212,175,55,0.55)' : 'rgba(212,175,55,0.40)',
-                        marginBottom: 8,
-                        letterSpacing: '0.01em',
-                      }}
-                    >
-                      {item.subtitle}
+                    <div style={{ fontSize: 11, fontWeight: 600, color: index === 0 ? 'rgba(212,175,55,0.50)' : 'rgba(212,175,55,0.35)', marginBottom: 6 }}>
+                      {item.hook}
                     </div>
-
-                    {/* Description */}
-                    <div
-                      style={{
-                        fontSize: 13,
-                        lineHeight: 1.6,
-                        color: 'rgba(255,255,255,0.42)',
-                        fontWeight: 500,
-                        marginBottom: 10,
-                      }}
-                    >
+                    <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>
                       {item.desc}
-                    </div>
-
-                    {/* Proof badge */}
-                    <div style={{ display: 'inline-flex' }}>
-                      <ProofBadge value={item.proof} label={item.proofLabel} />
                     </div>
                   </div>
                 </div>
@@ -448,29 +312,27 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
 
         {/* ═══════════ FAQ ═══════════ */}
         <m.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          style={{ marginTop: 28 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.45 }}
+          style={{ marginTop: 22 }}
         >
-          <div
-            style={{
-              fontFamily: "'Manrope', sans-serif",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.28)',
-              marginBottom: 12,
-              paddingLeft: 2,
-            }}
-          >
+          <div style={{
+            fontFamily: "'Manrope', sans-serif",
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.24)',
+            marginBottom: 10,
+            paddingLeft: 2,
+          }}>
             Частые вопросы
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {FAQ.map((item) => (
-              <FAQItem key={item.q} q={item.q} a={item.a} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {FAQ.map((item, i) => (
+              <FAQItem key={item.q} q={item.q} a={item.a} index={i} />
             ))}
           </div>
         </m.div>
@@ -478,10 +340,10 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
         {/* ═══════════ CTA ═══════════ */}
         {onCreateOrder && (
           <m.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            style={{ marginTop: 28 }}
+            transition={{ delay: 0.55 }}
+            style={{ marginTop: 22 }}
           >
             <m.button
               type="button"
@@ -489,57 +351,38 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
               onClick={handleCTA}
               style={{
                 width: '100%',
-                padding: '16px 24px',
-                borderRadius: 16,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.08) 100%)',
-                border: '1px solid rgba(212,175,55,0.25)',
+                padding: '14px 24px',
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.07) 100%)',
+                border: '1px solid rgba(212,175,55,0.22)',
                 cursor: 'pointer',
                 textAlign: 'center',
                 position: 'relative',
                 overflow: 'hidden',
               }}
             >
-              {/* Subtle shimmer */}
               <m.div
                 animate={{ x: ['-100%', '200%'] }}
-                transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+                transition={{ duration: 3, repeat: Infinity, repeatDelay: 5 }}
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '40%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
+                  position: 'absolute', top: 0, left: 0,
+                  width: '40%', height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.06), transparent)',
                 }}
               />
-              <span
-                style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: '#E8D5A3',
-                  letterSpacing: '-0.01em',
-                  position: 'relative',
-                }}
-              >
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#E8D5A3', letterSpacing: '-0.01em', position: 'relative' }}>
                 Оформить заказ
               </span>
             </m.button>
           </m.div>
         )}
 
-        {/* ═══════════ BOTTOM TRUST LINE ═══════════ */}
+        {/* ═══════════ TRUST LINE ═══════════ */}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          style={{
-            marginTop: 20,
-            textAlign: 'center',
-            fontSize: 12,
-            color: 'rgba(255,255,255,0.22)',
-            fontWeight: 500,
-            lineHeight: 1.5,
-          }}
+          transition={{ delay: 0.6 }}
+          style={{ marginTop: 16, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.18)', fontWeight: 500 }}
         >
           Все гарантии действуют с момента оформления заказа
         </m.div>

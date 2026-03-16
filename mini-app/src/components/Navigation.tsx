@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useRef, useState, useEffect } from 'react'
-import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion'
+import { useRef, useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Home, List, Crown, User, LucideIcon } from 'lucide-react'
 import { useHapticFeedback } from '../hooks/useHapticFeedback'
 import { useNavigation } from '../contexts/NavigationContext'
@@ -86,7 +86,6 @@ export const Navigation = () => {
 
   // Context & Scroll State
   const { isHidden, isForcedHidden, isModalOpen } = useNavigation()
-  const { scrollY } = useScroll()
   const [isVisible, setIsVisible] = useState(true)
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
   const lastScrollY = useRef(0)
@@ -99,6 +98,20 @@ export const Navigation = () => {
   // Pages where nav is completely removed
   const isHiddenPage = shouldHideBottomNavigation(location.pathname)
   const shouldHideNav = isHiddenPage || isHidden || isForcedHidden || isModalOpen || isKeyboardOpen
+
+  // Find the actual scrollable container (HomePage uses overflowY: auto on <main>)
+  const getScrollContainer = useCallback((): HTMLElement | null => {
+    return document.querySelector('main[role="main"]') as HTMLElement | null
+  }, [])
+
+  const scrollToTop = useCallback(() => {
+    const container = getScrollContainer()
+    if (container && container.scrollTop > 0) {
+      container.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [getScrollContainer])
 
   useEffect(() => {
     const viewport = window.visualViewport
@@ -118,27 +131,37 @@ export const Navigation = () => {
     }
   }, [])
 
-  // Smart Hide Logic (Throttled for performance)
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    if (shouldHideNav) {
-      if (isVisible) setIsVisible(false)
-      return
+  // Smart Hide Logic — listens to both window scroll and main container scroll
+  useEffect(() => {
+    const container = getScrollContainer()
+
+    const handleScroll = () => {
+      if (shouldHideNav) {
+        setIsVisible(false)
+        return
+      }
+
+      // Read from whichever is actually scrolling
+      const latest = container ? container.scrollTop : window.scrollY
+      const diff = latest - lastScrollY.current
+      const isScrollingDown = diff > 10
+      const isScrollingUp = diff < -10
+      const isAtTop = latest < 50
+
+      if (isAtTop) {
+        setIsVisible(true)
+      } else if (isScrollingDown) {
+        setIsVisible(false)
+      } else if (isScrollingUp) {
+        setIsVisible(true)
+      }
+      lastScrollY.current = latest
     }
 
-    const diff = latest - lastScrollY.current
-    const isScrollingDown = diff > 10
-    const isScrollingUp = diff < -10
-    const isAtTop = latest < 50
-
-    if (isAtTop) {
-      setIsVisible(true)
-    } else if (isScrollingDown && isVisible) {
-      setIsVisible(false)
-    } else if (isScrollingUp && !isVisible) {
-      setIsVisible(true)
-    }
-    lastScrollY.current = latest
-  })
+    const target = container || window
+    target.addEventListener('scroll', handleScroll, { passive: true })
+    return () => target.removeEventListener('scroll', handleScroll)
+  }, [shouldHideNav, getScrollContainer])
 
   // Recalculate visibility on location/context change
   useEffect(() => {
@@ -147,6 +170,8 @@ export const Navigation = () => {
     } else {
       setIsVisible(true)
     }
+    // Reset scroll tracking on route change
+    lastScrollY.current = 0
   }, [location.pathname, shouldHideNav])
 
   const navItems: NavItem[] = [
@@ -274,7 +299,7 @@ export const Navigation = () => {
                     onClick={() => {
                       haptic(isActive ? 'soft' : 'light')
                       if (isActive && location.pathname === item.path) {
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                        scrollToTop()
                         return
                       }
 
