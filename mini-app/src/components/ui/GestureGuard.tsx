@@ -213,10 +213,17 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
       // Walk up from touch target to find the nearest scrollable container
       let el = e.target as HTMLElement | null
       while (el && el !== document.body) {
-        // Check if this element is a scroll container (has overflow and content taller than viewport)
-        if (el.scrollHeight > el.clientHeight) {
-          // Found a scrollable ancestor — allow scrolling, don't block
+        // Managed scroll containers (modals, sheets) — never interfere
+        if (el.getAttribute('data-scroll-container') === 'true') {
           return
+        }
+        // Check if this element is truly scrollable (has overflow-y: auto/scroll AND overflowing content)
+        if (el.scrollHeight > el.clientHeight) {
+          const style = window.getComputedStyle(el)
+          const ov = style.overflowY
+          if (ov === 'auto' || ov === 'scroll') {
+            return
+          }
         }
         el = el.parentElement
       }

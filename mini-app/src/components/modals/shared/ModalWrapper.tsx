@@ -281,6 +281,7 @@ export function ModalWrapper({
                   overflowX: 'hidden',
                   WebkitOverflowScrolling: 'touch',
                   overscrollBehavior: 'contain',
+                  touchAction: 'pan-y',
                   paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
                 }}
                 data-scroll-container="true"
