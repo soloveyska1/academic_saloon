@@ -98,7 +98,14 @@ export function CenteredModalWrapper({
 
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
-  useModalRegistration(isOpen)
+  useModalRegistration(isOpen, modalId)
+
+  // Reset scroll position when modal opens
+  useEffect(() => {
+    if (isOpen && dialogRef.current) {
+      dialogRef.current.scrollTop = 0
+    }
+  }, [isOpen])
 
   const handleClose = useCallback(() => {
     triggerHaptic('light')
@@ -160,6 +167,7 @@ export function CenteredModalWrapper({
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 onClick={(e) => e.stopPropagation()}
                 style={dialogStyle}
+                data-scroll-container="true"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={`${modalId}-title`}
