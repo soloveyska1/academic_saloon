@@ -300,7 +300,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       scrollContainerRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     })
 
     return () => window.cancelAnimationFrame(frame)
