@@ -146,8 +146,13 @@ export function OrderChatPage() {
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current)
       }
+      // Fully dispose audio on unmount
       if (audioRef.current) {
         audioRef.current.pause()
+        audioRef.current.onended = null
+        audioRef.current.onerror = null
+        audioRef.current.src = ''
+        audioRef.current = null
       }
     }
   }, [])
@@ -251,8 +256,9 @@ export function OrderChatPage() {
 
   // Voice recording
   const startRecording = async () => {
+    let stream: MediaStream | null = null
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : 'audio/webm'
@@ -284,6 +290,10 @@ export function OrderChatPage() {
         setRecordingDuration(prev => prev + 1)
       }, 1000)
     } catch {
+      // Stop stream tracks if MediaRecorder creation fails
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+      }
       setError('Не удалось получить доступ к микрофону')
     }
   }
@@ -332,17 +342,27 @@ export function OrderChatPage() {
     }
   }
 
+  // Dispose current audio element properly
+  const disposeAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.onended = null
+      audioRef.current.onerror = null
+      audioRef.current.src = ''
+      audioRef.current = null
+    }
+  }, [])
+
   // Audio playback with error handling for Telegram WebView
   const handlePlayAudio = useCallback(async (messageId: number, url: string) => {
     if (playingAudioId === messageId) {
-      audioRef.current?.pause()
+      disposeAudio()
       setPlayingAudioId(null)
       return
     }
 
-    if (audioRef.current) {
-      audioRef.current.pause()
-    }
+    // Dispose previous audio before creating new one
+    disposeAudio()
 
     try {
       const audio = new Audio()
@@ -370,7 +390,7 @@ export function OrderChatPage() {
       // Fallback: open audio in new tab/window
       window.open(url, '_blank')
     }
-  }, [playingAudioId])
+  }, [playingAudioId, disposeAudio])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

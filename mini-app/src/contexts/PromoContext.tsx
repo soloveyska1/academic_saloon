@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, useMemo } from 'react'
 import { applyPromoCode } from '../api/userApi'
 
 export interface ActivePromo {
@@ -352,18 +352,18 @@ export function PromoProvider({ children }: { children: ReactNode }) {
     }
   }, [activePromo, revalidatePromo])
 
+  const contextValue = useMemo(() => ({
+    activePromo,
+    isValidating,
+    validationError,
+    validateAndSetPromo,
+    clearPromo,
+    revalidatePromo,
+    isPromoValid,
+  }), [activePromo, isValidating, validationError, validateAndSetPromo, clearPromo, revalidatePromo, isPromoValid])
+
   return (
-    <PromoContext.Provider
-      value={{
-        activePromo,
-        isValidating,
-        validationError,
-        validateAndSetPromo,
-        clearPromo,
-        revalidatePromo,
-        isPromoValid,
-      }}
-    >
+    <PromoContext.Provider value={contextValue}>
       {children}
     </PromoContext.Provider>
   )

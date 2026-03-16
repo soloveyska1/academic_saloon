@@ -37,7 +37,7 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
     document.body.appendChild(errorDiv)
   }
 
-  errorDiv.innerHTML = `<h1>CRITICAL ERROR</h1><pre>${errorMsg}</pre>`
+  errorDiv.textContent = `CRITICAL ERROR\n\n${errorMsg}`
   return false
 }
 
@@ -63,7 +63,7 @@ window.addEventListener('unhandledrejection', function (event) {
     document.body.appendChild(errorDiv)
   }
 
-  errorDiv.innerHTML += `<h2>UNHANDLED PROMISE</h2><pre>${errorMsg}</pre>`
+  errorDiv.textContent += `\n\nUNHANDLED PROMISE\n\n${errorMsg}`
 })
 
 // Build info for deploy verification

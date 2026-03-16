@@ -308,5 +308,8 @@ export function GoldConfetti(props: Omit<Props, 'colors'>) {
 }
 
 export function CelebrationConfetti(props: Omit<Props, 'colors' | 'intensity'>) {
-  return <Confetti {...props} colors={PARTY_COLORS} intensity="extreme" />
+  // Use device-appropriate intensity instead of always "extreme"
+  const isLowEnd = typeof navigator !== 'undefined' && (navigator.hardwareConcurrency ?? 4) <= 2
+  const intensity = isLowEnd ? 'medium' : 'high'
+  return <Confetti {...props} colors={PARTY_COLORS} intensity={intensity} />
 }

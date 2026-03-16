@@ -39,8 +39,15 @@ export function MagneticButton({
   // Glow intensity based on distance
   const glowIntensity = useSpring(0, { stiffness: 200, damping: 30 })
 
+  // Throttle mousemove updates to ~30fps to avoid excessive spring recalculations
+  const lastMoveTimeRef = useRef(0)
+
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled || !ref.current) return
+
+    const now = performance.now()
+    if (now - lastMoveTimeRef.current < 33) return // ~30fps
+    lastMoveTimeRef.current = now
 
     const rect = ref.current.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2

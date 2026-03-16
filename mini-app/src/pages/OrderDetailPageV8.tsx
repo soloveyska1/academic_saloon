@@ -222,8 +222,9 @@ async function copyTextSafely(text: string): Promise<boolean> {
     // Use fallback below.
   }
 
+  let textarea: HTMLTextAreaElement | null = null
   try {
-    const textarea = document.createElement('textarea')
+    textarea = document.createElement('textarea')
     textarea.value = text
     textarea.style.position = 'fixed'
     textarea.style.opacity = '0'
@@ -232,10 +233,13 @@ async function copyTextSafely(text: string): Promise<boolean> {
     textarea.focus()
     textarea.select()
     const copied = document.execCommand('copy')
-    document.body.removeChild(textarea)
     return copied
   } catch {
     return false
+  } finally {
+    if (textarea && textarea.parentNode) {
+      textarea.parentNode.removeChild(textarea)
+    }
   }
 }
 

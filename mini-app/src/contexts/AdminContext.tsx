@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react'
 import { fetchGodSystemInfo } from '../api/userApi'
 const DEV_ADMIN_ID = 872379852
 
@@ -166,38 +166,38 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   }, [settings])
 
-  const toggleDebugMode = () => {
+  const toggleDebugMode = useCallback(() => {
     setSettings(prev => ({ ...prev, debugMode: !prev.debugMode }))
-  }
+  }, [])
 
-  const toggleSimulateNewUser = () => {
+  const toggleSimulateNewUser = useCallback(() => {
     setSettings(prev => ({ ...prev, simulateNewUser: !prev.simulateNewUser }))
-  }
+  }, [])
 
-  const toggleShowDebugInfo = () => {
+  const toggleShowDebugInfo = useCallback(() => {
     setSettings(prev => ({ ...prev, showDebugInfo: !prev.showDebugInfo }))
-  }
+  }, [])
 
-  const resetAllSettings = () => {
+  const resetAllSettings = useCallback(() => {
     setSettings(prev => ({
       ...defaultSettings,
       isAdmin: prev.isAdmin, // Keep admin status
     }))
-  }
+  }, [])
+
+  const contextValue = useMemo(() => ({
+    ...settings,
+    accessResolved,
+    toggleDebugMode,
+    toggleSimulateNewUser,
+    toggleShowDebugInfo,
+    resetAllSettings,
+    simulatedRank,
+    setSimulatedRank,
+  }), [settings, accessResolved, toggleDebugMode, toggleSimulateNewUser, toggleShowDebugInfo, resetAllSettings, simulatedRank])
 
   return (
-    <AdminContext.Provider
-      value={{
-        ...settings,
-        accessResolved,
-        toggleDebugMode,
-        toggleSimulateNewUser,
-        toggleShowDebugInfo,
-        resetAllSettings,
-        simulatedRank,
-        setSimulatedRank,
-      }}
-    >
+    <AdminContext.Provider value={contextValue}>
       {children}
     </AdminContext.Provider>
   )

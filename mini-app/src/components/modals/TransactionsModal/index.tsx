@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { m } from 'framer-motion'
 import {
   ArrowUpRight,
@@ -196,9 +196,13 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
 
   const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null)
 
+  // Only reset selection when the modal opens, not on every transactions change
+  const prevIsOpenRef = useRef(false)
   useEffect(() => {
-    if (!isOpen) return
-    setSelectedTransactionId(sortedTransactions[0]?.id ?? null)
+    if (isOpen && !prevIsOpenRef.current) {
+      setSelectedTransactionId(sortedTransactions[0]?.id ?? null)
+    }
+    prevIsOpenRef.current = isOpen
   }, [isOpen, sortedTransactions])
 
   const selectedTransaction = sortedTransactions.find((transaction) => transaction.id === selectedTransactionId) || sortedTransactions[0] || null
