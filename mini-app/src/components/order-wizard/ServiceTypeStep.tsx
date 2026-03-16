@@ -3,71 +3,102 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowUpRight, Check, ChevronRight, Timer, Zap } from 'lucide-react'
 import type { ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
+import { SPACING, RADIUS, COLORS, FONT, ICON_BOX, TAP_SCALE } from './design-tokens'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SERVICE TYPE STEP — v6 «Unified Catalog»
+   SERVICE TYPE STEP — v7 «Совет Салуна»
 
    Architecture: ONE list, ONE card component, THREE size tiers.
-   Hierarchy is communicated through sizing and spacing — not through
-   section headers, color systems, or layout modes.
+   Hierarchy through sizing, background, and spacing — not section headers.
+
+   Fixes from v6:
+   - Design tokens integrated (zero magic numbers)
+   - CSS variables for theme support (var(--text-main), var(--text-muted))
+   - Stronger visual tier differentiation
+   - Compact cards show description + duration
+   - Stronger selection state
+   - Fake social proof replaced with value descriptors
+   - AssistCard moved between row/compact tiers
+   - AnimatePresence mode="popLayout" for snappy selection
+   - CATALOG auto-syncs with SERVICE_TYPES (no silent drops)
+   - Dead props removed
+   - Wild West flavor in header + AssistCard
 
    Tiers:
-     hero    → diploma, masters (large cards with descriptions + proof)
-     row     → coursework, practice, presentation (medium rows)
+     hero    → diploma, masters (large cards, prominent)
+     row     → coursework, practice, presentation (medium)
      compact → essay, control, independent, report, photo_task, other
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface ServiceTypeStepProps {
   selected: string | null
   onSelect: (id: string) => void
-  onAssistRequest?: () => void
   onUrgentRequest?: () => void
-  minimal?: boolean
 }
 
 // ─── Tier assignment ─────────────────────────────────────────────────────
 
 type CardTier = 'hero' | 'row' | 'compact'
 
+const TIER_BY_CATEGORY: Record<string, CardTier> = {
+  premium: 'hero',
+  standard: 'row',
+}
+
+// Express services that deserve row treatment
+const ROW_OVERRIDES = new Set(['presentation'])
+
 function getTier(s: ServiceType): CardTier {
-  if (s.category === 'premium') return 'hero'
-  if (s.category === 'standard' || s.id === 'presentation') return 'row'
-  return 'compact'
+  if (ROW_OVERRIDES.has(s.id)) return 'row'
+  return TIER_BY_CATEGORY[s.category] ?? 'compact'
 }
 
-// ─── Deterministic daily seed (stable per day) ───────────────────────────
+// ─── Value descriptors (replace fake social proof) ───────────────────────
 
-function dailySeed(): number {
-  const d = new Date()
-  const day = Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000)
-  return ((day * 2654435761) >>> 0) % 1000
+const VALUE_DESCRIPTORS: Record<string, string> = {
+  diploma: 'Сопровождаем до защиты',
+  masters: 'С научной новизной',
+  coursework: 'Теория + практика',
+  presentation: 'Слайды + речь для выступления',
 }
 
-// Social proof — varied per service, not repetitive
-const SOCIAL_PROOF: Record<string, string> = (() => {
-  const s = dailySeed()
-  return {
-    diploma: `${340 + (s % 30)}+ студентов сдали`,
-    masters: `${12 + (s % 6)} магистерских в этом месяце`,
-    coursework: `${52 + (s % 20)} курсовых за 30 дней`,
-    presentation: `${45 + (s % 15)} на этой неделе`,
-  }
-})()
+// ─── Ordered catalog — auto-synced with SERVICE_TYPES ────────────────────
 
-// ─── Ordered catalog — hero → row → compact, popular first in tier ──────
+const PREFERRED_ORDER: string[] = [
+  'diploma', 'masters',
+  'coursework', 'practice', 'presentation',
+  'essay', 'control', 'independent', 'report',
+  'photo_task', 'other',
+]
 
 const CATALOG: { service: ServiceType; tier: CardTier }[] = (() => {
-  const order: string[] = [
-    'diploma', 'masters',
-    'coursework', 'practice', 'presentation',
-    'essay', 'control', 'independent', 'report',
-    'photo_task', 'other',
-  ]
-  return order.map(id => {
-    const service = SERVICE_TYPES.find(s => s.id === id)!
-    return { service, tier: getTier(service) }
-  })
+  const byId = new Map(SERVICE_TYPES.map(s => [s.id, s]))
+  const result: { service: ServiceType; tier: CardTier }[] = []
+  const seen = new Set<string>()
+
+  // Add in preferred order
+  for (const id of PREFERRED_ORDER) {
+    const service = byId.get(id)
+    if (service) {
+      result.push({ service, tier: getTier(service) })
+      seen.add(id)
+    }
+  }
+
+  // Add any new services not in PREFERRED_ORDER (fallback — never silently drop)
+  for (const service of SERVICE_TYPES) {
+    if (!seen.has(service.id)) {
+      result.push({ service, tier: getTier(service) })
+    }
+  }
+
+  return result
 })()
+
+// Index where AssistCard should appear (between row and compact tiers)
+const ASSIST_INSERT_INDEX = CATALOG.findIndex(
+  (item, i) => i > 0 && item.tier === 'compact' && CATALOG[i - 1].tier !== 'compact'
+)
 
 /* ═════════════════════════════════════════════════════════════════════════
    ROOT
@@ -76,12 +107,9 @@ const CATALOG: { service: ServiceType; tier: CardTier }[] = (() => {
 export function ServiceTypeStep({
   selected,
   onSelect,
-  onAssistRequest,
   onUrgentRequest,
 }: ServiceTypeStepProps) {
-  const assistHandler = onUrgentRequest || onAssistRequest
-
-  // Determine gap breaks between tiers
+  // Determine tier breaks for visual spacing
   const tierBreaks = useMemo(() => {
     const set = new Set<number>()
     for (let i = 1; i < CATALOG.length; i++) {
@@ -90,25 +118,65 @@ export function ServiceTypeStep({
     return set
   }, [])
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {CATALOG.map(({ service, tier }, i) => (
-        <ServiceCard
-          key={service.id}
-          service={service}
-          tier={tier}
-          selected={selected === service.id}
-          onSelect={() => onSelect(service.id)}
-          index={i}
-          proof={SOCIAL_PROOF[service.id]}
-          extraGapAbove={tierBreaks.has(i)}
-        />
-      ))}
+  // Section labels for tier transitions
+  const tierLabels: Record<number, string> = useMemo(() => {
+    const labels: Record<number, string> = {}
+    for (const idx of tierBreaks) {
+      const tier = CATALOG[idx].tier
+      if (tier === 'row') labels[idx] = 'Популярное'
+      if (tier === 'compact') labels[idx] = 'Быстрые работы'
+    }
+    return labels
+  }, [tierBreaks])
 
-      {/* Assist CTA — for users who can't decide */}
-      {assistHandler && (
-        <AssistCard onPress={assistHandler} />
-      )}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+      {/* Header */}
+      <div style={{
+        fontSize: FONT.size.md,
+        color: 'var(--text-secondary, rgba(255,255,255,0.45))',
+        padding: `0 ${SPACING.xs}px`,
+        marginBottom: SPACING.xs,
+        fontWeight: 500,
+      }}>
+        Что закажем, партнёр?
+      </div>
+
+      {CATALOG.map(({ service, tier }, i) => (
+        <div key={service.id}>
+          {/* Tier section label */}
+          {tierLabels[i] && (
+            <div style={{
+              fontSize: FONT.size['2xs'],
+              fontWeight: 700,
+              color: 'var(--text-muted, rgba(255,255,255,0.22))',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              padding: `0 ${SPACING.xs}px`,
+              marginTop: SPACING.lg,
+              marginBottom: SPACING.sm,
+            }}>
+              {tierLabels[i]}
+            </div>
+          )}
+
+          <ServiceCard
+            service={service}
+            tier={tier}
+            selected={selected === service.id}
+            onSelect={() => onSelect(service.id)}
+            index={i}
+            descriptor={VALUE_DESCRIPTORS[service.id]}
+          />
+
+          {/* AssistCard between row and compact tiers */}
+          {i === ASSIST_INSERT_INDEX - 1 && onUrgentRequest && (
+            <div style={{ marginTop: SPACING.md }}>
+              <AssistCard onPress={onUrgentRequest} index={i + 1} />
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }
@@ -119,37 +187,40 @@ export function ServiceTypeStep({
 
 const TIER_CONFIG = {
   hero: {
-    padding: '18px 16px',
-    iconSize: 44,
-    iconRadius: 14,
-    titleSize: 16,
-    titleWeight: 700,
-    priceSize: 15,
-    cardRadius: 18,
-    showDescription: true,
+    padding: `${SPACING.xl}px ${SPACING.lg + 2}px`,
+    iconSize: ICON_BOX.xl,
+    iconRadius: RADIUS['2xl'],
+    titleSize: FONT.size['2xl'],
+    titleWeight: 800,
+    priceSize: FONT.size.xl,
+    cardRadius: RADIUS['3xl'],
     showDuration: true,
+    cardBg: COLORS.card.bgSubtle,
+    cardBorder: COLORS.card.border,
   },
   row: {
-    padding: '14px 16px',
-    iconSize: 38,
-    iconRadius: 12,
-    titleSize: 14.5,
+    padding: `${SPACING.lg - 2}px ${SPACING.lg}px`,
+    iconSize: ICON_BOX.md,
+    iconRadius: RADIUS.lg,
+    titleSize: FONT.size.base,
     titleWeight: 700,
-    priceSize: 13,
-    cardRadius: 16,
-    showDescription: true,
+    priceSize: FONT.size.md,
+    cardRadius: RADIUS.xl,
     showDuration: true,
+    cardBg: COLORS.card.bg,
+    cardBorder: COLORS.card.border,
   },
   compact: {
-    padding: '12px 14px',
-    iconSize: 34,
-    iconRadius: 10,
-    titleSize: 14,
+    padding: `${SPACING.md}px ${SPACING.lg - 2}px`,
+    iconSize: ICON_BOX.sm + 2,
+    iconRadius: RADIUS.sm,
+    titleSize: FONT.size.md,
     titleWeight: 600,
-    priceSize: 12,
-    cardRadius: 14,
-    showDescription: false,
-    showDuration: false,
+    priceSize: FONT.size.sm,
+    cardRadius: RADIUS.lg,
+    showDuration: true,
+    cardBg: 'transparent',
+    cardBorder: COLORS.card.borderSubtle,
   },
 } as const
 
@@ -159,41 +230,43 @@ function ServiceCard({
   selected,
   onSelect,
   index,
-  proof,
-  extraGapAbove,
+  descriptor,
 }: {
   service: ServiceType
   tier: CardTier
   selected: boolean
   onSelect: () => void
   index: number
-  proof?: string
-  extraGapAbove: boolean
+  descriptor?: string
 }) {
   const Icon = service.icon
   const cfg = TIER_CONFIG[tier]
   const isPopular = !!service.popular
   const isCustomPrice = service.priceNum === 0
 
+  // Stagger: visible for hero/row, compact appears together
+  const delay = tier === 'compact'
+    ? Math.min(0.22 + (index - ASSIST_INSERT_INDEX) * 0.02, 0.4)
+    : index * 0.06
+
   return (
     <motion.button
       type="button"
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, type: 'spring', stiffness: 300, damping: 28 }}
-      whileTap={{ scale: 0.98 }}
+      transition={{ delay, type: 'spring', stiffness: 300, damping: 28 }}
+      whileTap={{ scale: tier === 'compact' ? TAP_SCALE.tile : TAP_SCALE.card }}
       onClick={onSelect}
       style={{
         width: '100%',
         padding: cfg.padding,
         borderRadius: cfg.cardRadius,
-        marginTop: extraGapAbove ? 10 : 0,
         background: selected
-          ? 'rgba(212,175,55,0.06)'
-          : 'rgba(255,255,255,0.015)',
+          ? COLORS.gold.soft
+          : cfg.cardBg,
         border: selected
-          ? '1.5px solid rgba(212,175,55,0.30)'
-          : '1px solid rgba(255,255,255,0.06)',
+          ? `2px solid ${COLORS.gold.borderStrong}`
+          : `1px solid ${cfg.cardBorder}`,
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
@@ -202,15 +275,15 @@ function ServiceCard({
         touchAction: 'pan-y',
         userSelect: 'none',
         boxShadow: selected
-          ? '0 6px 24px -6px rgba(212,175,55,0.12)'
+          ? `0 6px 24px -4px ${COLORS.gold.shadow}`
           : 'none',
         transition: 'border-color 0.25s ease, background 0.25s ease, box-shadow 0.3s ease',
       }}
     >
       <div style={{
         display: 'flex',
-        alignItems: tier === 'compact' ? 'center' : 'flex-start',
-        gap: tier === 'compact' ? 12 : 14,
+        alignItems: 'center',
+        gap: tier === 'compact' ? SPACING.md : SPACING.lg - 2,
       }}>
 
         {/* Icon */}
@@ -219,18 +292,18 @@ function ServiceCard({
           height: cfg.iconSize,
           borderRadius: cfg.iconRadius,
           background: selected
-            ? 'rgba(212,175,55,0.10)'
-            : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${selected ? 'rgba(212,175,55,0.18)' : 'transparent'}`,
+            ? COLORS.gold.soft
+            : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${selected ? COLORS.gold.border : 'transparent'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          transition: 'all 0.25s ease',
+          transition: 'background 0.25s ease, border-color 0.25s ease',
         }}>
           <Icon
-            size={tier === 'hero' ? 21 : tier === 'row' ? 18 : 16}
-            color={selected ? '#d4af37' : 'rgba(255,255,255,0.35)'}
+            size={tier === 'hero' ? 22 : tier === 'row' ? 18 : 15}
+            color={selected ? COLORS.gold.primary : 'var(--text-muted, rgba(255,255,255,0.50))'}
             strokeWidth={1.6}
             style={{ transition: 'color 0.2s ease' }}
           />
@@ -242,76 +315,86 @@ function ServiceCard({
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            flexWrap: tier === 'compact' ? 'nowrap' : 'wrap',
+            gap: SPACING.sm,
           }}>
             <span style={{
               fontSize: cfg.titleSize,
               fontWeight: cfg.titleWeight,
-              color: selected ? '#fff' : `rgba(255,255,255,${tier === 'compact' ? '0.72' : '0.88'})`,
+              color: selected
+                ? 'var(--text-main, #fff)'
+                : `var(--text-main, rgba(255,255,255,${tier === 'compact' ? '0.75' : '0.90'}))`,
               lineHeight: 1.3,
               letterSpacing: '-0.01em',
               transition: 'color 0.2s ease',
             }}>
               {service.label}
             </span>
+
+            {/* Popular badge */}
+            {isPopular && tier !== 'compact' && (
+              <span style={{
+                padding: `2px ${SPACING.sm}px`,
+                borderRadius: RADIUS.sm - 2,
+                background: COLORS.gold.soft,
+                color: COLORS.gold.badge,
+                fontSize: FONT.size['2xs'],
+                fontWeight: 700,
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+              }}>
+                Хит
+              </span>
+            )}
           </div>
 
-          {/* Description — hero and row only */}
-          {cfg.showDescription && (
-            <div style={{
-              fontSize: tier === 'hero' ? 13 : 12.5,
-              color: 'rgba(255,255,255,0.38)',
-              lineHeight: 1.45,
-              marginTop: 4,
-              fontWeight: 500,
-            }}>
-              {service.description}
-            </div>
-          )}
+          {/* Description — all tiers now (compact: single line) */}
+          <div style={{
+            fontSize: tier === 'hero' ? FONT.size.md : FONT.size.sm,
+            color: 'var(--text-muted, rgba(255,255,255,0.40))',
+            lineHeight: 1.45,
+            marginTop: 3,
+            fontWeight: 500,
+            ...(tier === 'compact' ? {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap' as const,
+            } : {}),
+          }}>
+            {service.description}
+          </div>
 
-          {/* Popular annotation + social proof — hero and row only */}
-          {(isPopular || proof) && tier !== 'compact' && (
+          {/* Value descriptor — hero only */}
+          {descriptor && tier === 'hero' && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              marginTop: 8,
-              fontSize: 10.5,
+              gap: SPACING.sm - 2,
+              marginTop: SPACING.sm,
+              fontSize: FONT.size.xs,
               fontWeight: 600,
-              color: 'rgba(212,175,55,0.50)',
+              color: COLORS.gold.badge,
               lineHeight: 1,
             }}>
-              {isPopular && (
-                <span>Частый выбор</span>
-              )}
-              {isPopular && proof && (
-                <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>
-              )}
-              {proof && (
-                <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>
-                  {proof}
-                </span>
-              )}
+              <span>{descriptor}</span>
             </div>
           )}
 
           {/* Duration + Price — hero and row */}
-          {cfg.showDuration && (
+          {tier !== 'compact' && cfg.showDuration && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginTop: 10,
+              marginTop: SPACING.md - 2,
             }}>
               <span style={{
-                fontSize: 10.5,
-                color: 'rgba(255,255,255,0.20)',
+                fontSize: FONT.size['2xs'],
+                color: 'var(--text-muted, rgba(255,255,255,0.25))',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 4,
+                gap: SPACING.xs,
               }}>
-                <Timer size={10} color="rgba(255,255,255,0.16)" />
+                <Timer size={10} color="var(--text-muted, rgba(255,255,255,0.20))" />
                 {service.duration}
               </span>
               <PriceDisplay
@@ -324,14 +407,28 @@ function ServiceCard({
           )}
         </div>
 
-        {/* Right side — compact: price + indicator; hero/row: just indicator */}
+        {/* Right side — compact: duration + price + indicator */}
         {tier === 'compact' && (
-          <PriceDisplay
-            price={service.price}
-            isCustom={isCustomPrice}
-            selected={selected}
-            size={cfg.priceSize}
-          />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: SPACING.sm,
+            flexShrink: 0,
+          }}>
+            <span style={{
+              fontSize: FONT.size.xs,
+              color: 'var(--text-muted, rgba(255,255,255,0.22))',
+              whiteSpace: 'nowrap',
+            }}>
+              {service.duration}
+            </span>
+            <PriceDisplay
+              price={service.price}
+              isCustom={isCustomPrice}
+              selected={selected}
+              size={cfg.priceSize}
+            />
+          </div>
         )}
 
         <SelectionIndicator selected={selected} />
@@ -360,11 +457,11 @@ function PriceDisplay({
       <span style={{
         fontSize: size - 1,
         fontWeight: 600,
-        color: selected ? 'rgba(212,175,55,0.60)' : 'rgba(255,255,255,0.28)',
+        color: selected ? COLORS.gold.badge : 'var(--text-muted, rgba(255,255,255,0.28))',
         whiteSpace: 'nowrap',
         transition: 'color 0.2s ease',
       }}>
-        Узнать цену
+        По запросу
       </span>
     )
   }
@@ -373,8 +470,8 @@ function PriceDisplay({
     <span style={{
       fontSize: size,
       fontWeight: 800,
-      fontFamily: "'Manrope', sans-serif",
-      color: selected ? '#E8D5A3' : 'rgba(255,255,255,0.45)',
+      fontFamily: FONT.family.sans,
+      color: selected ? COLORS.gold.light : 'var(--text-secondary, rgba(255,255,255,0.50))',
       letterSpacing: '-0.02em',
       whiteSpace: 'nowrap',
       transition: 'color 0.2s ease',
@@ -386,7 +483,7 @@ function PriceDisplay({
 
 function SelectionIndicator({ selected }: { selected: boolean }) {
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="popLayout">
       {selected ? (
         <motion.div
           key="check"
@@ -395,15 +492,15 @@ function SelectionIndicator({ selected }: { selected: boolean }) {
           exit={{ scale: 0, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 500, damping: 22 }}
           style={{
-            width: 24,
-            height: 24,
-            borderRadius: '50%',
-            background: '#d4af37',
+            width: SPACING['2xl'],
+            height: SPACING['2xl'],
+            borderRadius: RADIUS.full,
+            background: COLORS.gold.primary,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            boxShadow: '0 4px 14px rgba(212,175,55,0.30)',
+            boxShadow: `0 4px 14px ${COLORS.gold.shadow}`,
           }}
         >
           <Check size={13} color="#09090b" strokeWidth={3} />
@@ -412,64 +509,63 @@ function SelectionIndicator({ selected }: { selected: boolean }) {
         <motion.div
           key="chevron"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.2 }}
+          animate={{ opacity: 0.3 }}
           exit={{ opacity: 0 }}
           style={{ flexShrink: 0 }}
         >
-          <ChevronRight size={16} color="rgba(255,255,255,0.25)" />
+          <ChevronRight size={16} color="var(--text-muted, rgba(255,255,255,0.30))" />
         </motion.div>
       )}
     </AnimatePresence>
   )
 }
 
-function AssistCard({ onPress }: { onPress: () => void }) {
+function AssistCard({ onPress, index }: { onPress: () => void; index: number }) {
   return (
     <motion.button
       type="button"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.35 }}
-      whileTap={{ scale: 0.98 }}
+      transition={{ delay: index * 0.06 }}
+      whileTap={{ scale: TAP_SCALE.card }}
       onClick={onPress}
       style={{
         width: '100%',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
-        padding: '13px 16px',
-        background: 'linear-gradient(135deg, rgba(96,165,250,0.04), rgba(139,92,246,0.02))',
-        border: '1px dashed rgba(96,165,250,0.15)',
-        borderRadius: 14,
+        gap: SPACING.md,
+        padding: `${SPACING.md + 1}px ${SPACING.lg}px`,
+        background: `linear-gradient(135deg, ${COLORS.assist.bg}, rgba(139,92,246,0.02))`,
+        border: `1px dashed ${COLORS.assist.border}`,
+        borderRadius: RADIUS.xl,
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
-        marginTop: 4,
         userSelect: 'none',
         touchAction: 'pan-y',
       }}
     >
       <div style={{
-        width: 34,
-        height: 34,
-        borderRadius: 10,
-        background: 'rgba(96,165,250,0.07)',
+        width: ICON_BOX.md - 2,
+        height: ICON_BOX.md - 2,
+        borderRadius: RADIUS.md,
+        background: COLORS.assist.icon,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
       }}>
-        <Zap size={15} color="#60a5fa" strokeWidth={1.8} />
+        <Zap size={15} color={COLORS.assist.primary} strokeWidth={1.8} />
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#93bbfc', lineHeight: 1.3 }}>
-          Сложно выбрать?
+        <div style={{ fontSize: FONT.size.md, fontWeight: 700, color: COLORS.assist.text, lineHeight: 1.3 }}>
+          Не нашли нужное, партнёр?
         </div>
-        <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.28)', fontWeight: 500, marginTop: 2 }}>
-          Опишите задачу — поможем определиться
+        <div style={{ fontSize: FONT.size.xs + 0.5, color: 'var(--text-muted, rgba(255,255,255,0.28))', fontWeight: 500, marginTop: 2 }}>
+          Опишите задачу — рассчитаем за 5 минут
         </div>
       </div>
-      <ArrowUpRight size={15} color="#60a5fa" style={{ flexShrink: 0, opacity: 0.35 }} />
+      <ArrowUpRight size={15} color={COLORS.assist.primary} style={{ flexShrink: 0, opacity: 0.35 }} />
     </motion.button>
   )
 }
