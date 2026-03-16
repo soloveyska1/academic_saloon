@@ -173,7 +173,7 @@ export function HomePage({ user }: Props) {
       </div>
 
       {/* Content */}
-      <div className="relative z-[1]">
+      <div className="relative z-[1]" style={isNewUser ? { paddingBottom: 120 } : undefined}>
 
         {/* ═══════════════════════════════════════════════════════════════════
           HEADER
