@@ -995,7 +995,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                     selected={serviceTypeId}
                     onSelect={handleServiceTypeSelect}
                     onUrgentRequest={() => switchMode('fast')}
-                    minimal
                   />
                 </div>
               )}

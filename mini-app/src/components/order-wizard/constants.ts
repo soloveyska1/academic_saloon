@@ -14,7 +14,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'masters',
     label: 'Магистерская диссертация',
-    description: 'От плана до защиты. Научрук скажет «да»',
+    description: 'От плана до защиты. С научной новизной',
     price: 'от 60 000 ₽',
     priceNum: 60000,
     icon: GraduationCap,
@@ -36,7 +36,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'coursework',
     label: 'Курсовая работа',
-    description: 'Теория или эмпирика — закроем оба варианта',
+    description: 'Теория + исследование. Под ваш ВУЗ',
     price: 'от 14 000 ₽',
     priceNum: 14000,
     icon: BookOpen,
@@ -67,7 +67,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'presentation',
     label: 'Презентация',
-    description: 'Слайды + речь. Выступил и забыл',
+    description: 'Слайды + речь. Готов к выступлению',
     price: 'от 7 000 ₽',
     priceNum: 7000,
     icon: Presentation,
@@ -78,7 +78,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'control',
     label: 'Контрольная работа',
-    description: 'Решение + оформление. Всё чисто',
+    description: 'Решение + оформление по методичке',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: ClipboardCheck,
@@ -98,7 +98,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'report',
     label: 'Реферат',
-    description: 'Структура и ГОСТ — без придирок',
+    description: 'По ГОСТу. Готовый к сдаче',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: FileText,
@@ -108,7 +108,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'photo_task',
     label: 'Задача по фото',
-    description: 'Скинь фото задания — решим',
+    description: 'Фото задания — решение в ответ',
     price: 'индивидуально',
     priceNum: 0,
     icon: Camera,
@@ -118,7 +118,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'other',
     label: 'Другое',
-    description: 'Опиши задачу — подберём автора',
+    description: 'Любая задача — подберём автора',
     price: 'индивидуально',
     priceNum: 0,
     icon: HelpCircle,
