@@ -25,7 +25,6 @@ import {
   HowItWorks,
   GuaranteesShowcase,
   TestimonialsSection,
-  StickyBottomCTA,
   WelcomeTour,
   hasSeenWelcomeTour,
   SaloonFooter,
@@ -173,7 +172,7 @@ export function HomePage({ user }: Props) {
       </div>
 
       {/* Content */}
-      <div className="relative z-[1]" style={isNewUser ? { paddingBottom: 120 } : undefined}>
+      <div className="relative z-[1]">
 
         {/* ═══════════════════════════════════════════════════════════════════
           HEADER
@@ -331,8 +330,6 @@ export function HomePage({ user }: Props) {
         <SaloonFooter />
       </div>
 
-      {/* Sticky bottom CTA for new users */}
-      {isNewUser && <StickyBottomCTA onClick={handleNewOrder} />}
 
       <UrgentHubSheet
         isOpen={state.modals.urgentSheet}
