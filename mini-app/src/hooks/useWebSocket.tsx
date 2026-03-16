@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { API_WS_URL } from '../api/userApi'
 
 // WebSocket message types
@@ -303,21 +303,38 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
   }, [])
 
   // Manual reconnect
+  const reconnectTimeoutIdRef = useRef<number | null>(null)
   const reconnect = useCallback(() => {
     disconnect()
-    setTimeout(connect, 100)
+    if (reconnectTimeoutIdRef.current) {
+      clearTimeout(reconnectTimeoutIdRef.current)
+    }
+    reconnectTimeoutIdRef.current = window.setTimeout(() => {
+      reconnectTimeoutIdRef.current = null
+      connect()
+    }, 100)
   }, [disconnect, connect])
+
+  // Store connect/disconnect in refs to avoid stale closures in the effect
+  const connectRef = useRef(connect)
+  const disconnectRef = useRef(disconnect)
+  useEffect(() => { connectRef.current = connect }, [connect])
+  useEffect(() => { disconnectRef.current = disconnect }, [disconnect])
 
   // Connect on mount / telegramId change
   useEffect(() => {
     if (telegramId) {
-      connect()
+      connectRef.current()
     }
 
     return () => {
-      disconnect()
+      disconnectRef.current()
+      if (reconnectTimeoutIdRef.current) {
+        clearTimeout(reconnectTimeoutIdRef.current)
+        reconnectTimeoutIdRef.current = null
+      }
     }
-  }, [telegramId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [telegramId])
 
   // Reconnect when tab becomes visible
   useEffect(() => {
@@ -384,13 +401,15 @@ export function WebSocketProvider({
     onRefresh,
   })
 
+  const contextValue = useMemo(() => ({
+    isConnected: ws.isConnected,
+    lastMessage: ws.lastMessage,
+    addMessageHandler: ws.addMessageHandler,
+    reconnect: ws.reconnect,
+  }), [ws.isConnected, ws.lastMessage, ws.addMessageHandler, ws.reconnect])
+
   return (
-    <WebSocketContext.Provider value={{
-      isConnected: ws.isConnected,
-      lastMessage: ws.lastMessage,
-      addMessageHandler: ws.addMessageHandler,
-      reconnect: ws.reconnect,
-    }}>
+    <WebSocketContext.Provider value={contextValue}>
       {children}
     </WebSocketContext.Provider>
   )

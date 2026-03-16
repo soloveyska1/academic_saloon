@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useEffect } from 'react'
 import { useTelegram } from './useUserData'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -54,6 +54,8 @@ export const usePremiumGesture = <T extends HTMLElement = HTMLDivElement>({
     // try { haptic('soft') } catch {}
   }, [animatePress])
 
+  const tapTimeoutRef = useRef<number | null>(null)
+
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!isPressed.current) return
     isPressed.current = false
@@ -78,7 +80,9 @@ export const usePremiumGesture = <T extends HTMLElement = HTMLDivElement>({
 
       // Small delay to let user see the release animation
       // This creates the feeling of "weight" in the button
-      setTimeout(() => {
+      if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current)
+      tapTimeoutRef.current = window.setTimeout(() => {
+        tapTimeoutRef.current = null
         requestAnimationFrame(() => {
           onTap()
         })
@@ -102,6 +106,15 @@ export const usePremiumGesture = <T extends HTMLElement = HTMLDivElement>({
     }
     startPos.current = null
   }, [animatePress])
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tapTimeoutRef.current) {
+        clearTimeout(tapTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const preventContextMenu = useCallback((e: React.SyntheticEvent) => {
     e.preventDefault()

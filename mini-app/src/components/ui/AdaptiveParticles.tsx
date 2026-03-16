@@ -46,6 +46,7 @@ const CanvasParticles = memo(function CanvasParticles({
   const particlesRef = useRef<Particle[]>([])
   const animationRef = useRef<number>()
   const lastTimeRef = useRef<number>(0)
+  const glowGradientRef = useRef<CanvasGradient | null>(null)
 
   // Initialize particles
   useEffect(() => {
@@ -92,6 +93,15 @@ const CanvasParticles = memo(function CanvasParticles({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Create a unit-circle glow gradient once (reused for all particles via transform)
+    if (glow) {
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
+      grad.addColorStop(0, color.replace('1)', '0.8)'))
+      grad.addColorStop(0.4, secondaryColor.replace('1)', '0.4)'))
+      grad.addColorStop(1, 'transparent')
+      glowGradientRef.current = grad
+    }
+
     const animate = (currentTime: number) => {
       // Limit to ~30fps for performance
       if (currentTime - lastTimeRef.current < 33) {
@@ -125,19 +135,17 @@ const CanvasParticles = memo(function CanvasParticles({
 
         // Draw particle
         if (glow) {
-          // Glow effect
-          const gradient = ctx.createRadialGradient(
-            p.x, p.y, 0,
-            p.x, p.y, p.size * 3
-          )
-          gradient.addColorStop(0, color.replace('1)', `${currentOpacity})`))
-          gradient.addColorStop(0.4, secondaryColor.replace('1)', `${currentOpacity * 0.5})`))
-          gradient.addColorStop(1, 'transparent')
-
+          // Glow effect — use a single reusable gradient per particle
+          // by drawing a unit circle and scaling via transform
+          ctx.save()
+          ctx.translate(p.x, p.y)
+          ctx.scale(p.size * 3, p.size * 3)
+          ctx.globalAlpha = currentOpacity
           ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2)
-          ctx.fillStyle = gradient
+          ctx.arc(0, 0, 1, 0, Math.PI * 2)
+          ctx.fillStyle = glowGradientRef.current!
           ctx.fill()
+          ctx.restore()
         }
 
         // Core particle

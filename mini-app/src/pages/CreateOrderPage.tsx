@@ -276,18 +276,12 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     }
   }, [])
 
-  // Auto-advance to step 2 if type is pre-selected (urgent mode)
+  // Combined effect: reset step on mode change + auto-advance for urgent mode
   useEffect(() => {
-    if (preselectedType && isUrgentMode && !isFastMode) {
-      setStep(2)
-    }
-  }, [preselectedType, isUrgentMode, isFastMode])
-
-  useEffect(() => {
-    setStep(1)
     setDirection(0)
 
     if (isFastMode) {
+      setStep(1)
       setServiceTypeId(preselectedType || 'other')
       return
     }
@@ -295,7 +289,14 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     if (!preselectedType && !isReorder && serviceTypeId === 'other') {
       setServiceTypeId(null)
     }
-  }, [isFastMode, isReorder, preselectedType])
+
+    // Auto-advance to step 2 if type is pre-selected (urgent mode)
+    if (preselectedType && isUrgentMode && !isFastMode) {
+      setStep(2)
+    } else {
+      setStep(1)
+    }
+  }, [isFastMode, isReorder, preselectedType, isUrgentMode])
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {

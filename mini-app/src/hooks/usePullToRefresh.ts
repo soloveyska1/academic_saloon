@@ -42,6 +42,7 @@ function usePullToRefresh({
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const pullDistanceRef = useRef(0)
 
   const { haptic } = useTelegram()
 
@@ -100,6 +101,7 @@ function usePullToRefresh({
 
       // Apply rubber-band damping: the further you pull, the harder it gets
       const dampened = Math.min(delta * 0.5, MAX_PULL)
+      pullDistanceRef.current = dampened
       setPullDistance(dampened)
       setIsVisible(true)
 
@@ -120,7 +122,7 @@ function usePullToRefresh({
       if (!isTouching.current) return
       isTouching.current = false
 
-      if (pullDistance >= threshold && !isRefreshing) {
+      if (pullDistanceRef.current >= threshold && !isRefreshing) {
         try {
           haptic('success')
         } catch {
@@ -143,7 +145,7 @@ function usePullToRefresh({
       container.removeEventListener('touchend', onTouchEnd)
       container.removeEventListener('touchcancel', onTouchEnd)
     }
-  }, [disabled, isRefreshing, pullDistance, threshold, haptic, handleRefresh, resetState, isVisible])
+  }, [disabled, isRefreshing, threshold, haptic, handleRefresh, resetState])
 
   // ── PullIndicator Component ──────────────────────────────────────────
   const PullIndicator: React.FC = useCallback(() => {

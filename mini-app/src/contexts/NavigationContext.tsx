@@ -109,11 +109,28 @@ export function useNavigation() {
 
 export function useModalRegistration(isOpen: boolean, modalId?: string) {
     const { registerModal } = useNavigation()
+    const unregisterRef = useRef<(() => void) | null>(null)
 
     useEffect(() => {
-        if (!isOpen) return
+        if (!isOpen) {
+            // Ensure cleanup if modal closes
+            unregisterRef.current?.()
+            unregisterRef.current = null
+            return
+        }
 
         const unregister = registerModal(modalId)
-        return unregister
+        unregisterRef.current = unregister
+        return () => {
+            unregister()
+            unregisterRef.current = null
+        }
     }, [isOpen, modalId, registerModal])
+
+    // Safety: always unregister on unmount even if isOpen is still true
+    useEffect(() => {
+        return () => {
+            unregisterRef.current?.()
+        }
+    }, [])
 }
