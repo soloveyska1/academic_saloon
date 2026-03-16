@@ -102,6 +102,11 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
       document.body.style.overflow = 'hidden'
       document.documentElement.style.overflow = 'hidden'
 
+      // Also lock the scroll container itself
+      if (savedContainer) {
+        savedContainer.style.overflow = 'hidden'
+      }
+
       setIsScrollLocked(true)
     }
 
@@ -117,12 +122,15 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
         document.body.style.overflow = ''
         document.documentElement.style.overflow = ''
 
-        // Restore both window and container scroll positions
-        window.scrollTo(0, savedScrollY)
+        // Restore container overflow and scroll position
         if (savedContainer) {
+          savedContainer.style.overflow = ''
           savedContainer.scrollTop = savedContainerScrollTop
           savedContainer = null
         }
+
+        // Restore window scroll
+        window.scrollTo(0, savedScrollY)
 
         setIsScrollLocked(false)
       }
