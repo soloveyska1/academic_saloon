@@ -169,7 +169,7 @@ export function ModalWrapper({
     zIndex: 2001,
     outline: 'none',
     overflow: 'hidden',
-  }), [accentColor])
+  }), [])
 
   return (
     <LazyMotion features={domAnimation}>
