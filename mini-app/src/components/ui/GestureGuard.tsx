@@ -84,25 +84,20 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Блокировка скролла с сохранением позиции (iOS-friendly)
+  // Блокировка скролла — overflow:hidden only (no position:fixed).
+  // position:fixed on body kills scroll inside fixed modals in Telegram WebView.
   const lockScroll = useCallback(() => {
     scrollLockCount++
 
     if (scrollLockCount === 1) {
-      // Save both window scroll and the main scroll container position
       savedScrollY = window.scrollY
       savedContainer = document.querySelector('main[role="main"]') as HTMLElement | null
       savedContainerScrollTop = savedContainer?.scrollTop ?? 0
 
-      // Фиксируем body для предотвращения скролла
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${savedScrollY}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
+      // Block page scroll via overflow only — do NOT set position:fixed
       document.body.style.overflow = 'hidden'
       document.documentElement.style.overflow = 'hidden'
 
-      // Also lock the scroll container itself
       if (savedContainer) {
         savedContainer.style.overflow = 'hidden'
       }
@@ -114,24 +109,16 @@ export function GestureGuardProvider({ children }: { children: ReactNode }) {
       scrollLockCount = Math.max(0, scrollLockCount - 1)
 
       if (scrollLockCount === 0) {
-        // Восстанавливаем скролл
-        document.body.style.position = ''
-        document.body.style.top = ''
-        document.body.style.left = ''
-        document.body.style.right = ''
         document.body.style.overflow = ''
         document.documentElement.style.overflow = ''
 
-        // Restore container overflow and scroll position
         if (savedContainer) {
           savedContainer.style.overflow = ''
           savedContainer.scrollTop = savedContainerScrollTop
           savedContainer = null
         }
 
-        // Restore window scroll
         window.scrollTo(0, savedScrollY)
-
         setIsScrollLocked(false)
       }
     }
