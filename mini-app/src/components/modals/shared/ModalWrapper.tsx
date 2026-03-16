@@ -271,12 +271,13 @@ export function ModalWrapper({
 
               <h2 id={`${modalId}-title`} className="sr-only">{title}</h2>
 
-              {/* Scrollable content — explicit max-height, no flex dependency */}
+              {/* Scrollable content — flex-based so it fills remaining space */}
               <div
                 ref={contentRef}
                 style={{
-                  maxHeight: 'calc(92vh - 28px)',
-                  overflowY: 'scroll',
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
                   overflowX: 'hidden',
                   WebkitOverflowScrolling: 'touch',
                   overscrollBehavior: 'contain',

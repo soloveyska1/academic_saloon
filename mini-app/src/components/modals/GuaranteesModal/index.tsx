@@ -6,7 +6,7 @@ import { ModalWrapper } from '../shared'
 // ═══════════════════════════════════════════════════════════════════════════
 //  GUARANTEES MODAL — Proof Wall
 //  Evidence-backed guarantees. Each card has a proof metric.
-//  Structured: Hero → Proof Cards → FAQ → CTA
+//  Structured: Hero → Stats → Proof Cards → FAQ → CTA
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface GuaranteesModalProps {
@@ -277,6 +277,30 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
   )
 }
 
+// ═══════════ STAT PILL ═══════════
+function StatPill({ value, label }: { value: string; label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+      <span style={{
+        fontSize: 15,
+        fontWeight: 800,
+        color: '#4ade80',
+        letterSpacing: '-0.02em',
+        fontFamily: "'Manrope', sans-serif",
+      }}>
+        {value}
+      </span>
+      <span style={{
+        fontSize: 10,
+        fontWeight: 600,
+        color: 'rgba(34,197,94,0.50)',
+      }}>
+        {label}
+      </span>
+    </div>
+  )
+}
+
 // ═══════════ MAIN MODAL ═══════════
 export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesModalProps) {
   const handleCTA = useCallback(() => {
@@ -368,7 +392,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           </div>
         </m.div>
 
-        {/* ═══════════ HERO STAT ═══════════ */}
+        {/* ═══════════ HERO STATS ═══════════ */}
         <m.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -382,43 +406,26 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 20,
+            gap: 16,
           }}
         >
-          {[
-            { value: '2 400+', label: 'работ' },
-            { value: '98%', label: 'в срок' },
-            { value: '93%', label: 'с 1-го раза' },
-          ].map(({ value, label }, i) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {i > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  marginLeft: -12,
-                  width: 3,
-                  height: 3,
-                  borderRadius: '50%',
-                  background: 'rgba(34,197,94,0.20)',
-                }} />
-              )}
-              <span style={{
-                fontSize: 15,
-                fontWeight: 800,
-                color: '#4ade80',
-                letterSpacing: '-0.02em',
-                fontFamily: "'Manrope', sans-serif",
-              }}>
-                {value}
-              </span>
-              <span style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: 'rgba(34,197,94,0.50)',
-              }}>
-                {label}
-              </span>
-            </div>
-          ))}
+          <StatPill value="2 400+" label="работ" />
+          <div style={{
+            width: 3,
+            height: 3,
+            borderRadius: '50%',
+            background: 'rgba(34,197,94,0.20)',
+            flexShrink: 0,
+          }} />
+          <StatPill value="98%" label="в срок" />
+          <div style={{
+            width: 3,
+            height: 3,
+            borderRadius: '50%',
+            background: 'rgba(34,197,94,0.20)',
+            flexShrink: 0,
+          }} />
+          <StatPill value="93%" label="с 1-го раза" />
         </m.div>
 
         {/* ═══════════ DIVIDER ═══════════ */}
