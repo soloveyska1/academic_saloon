@@ -274,7 +274,7 @@ export function OrderChatPage() {
       }
 
       mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop())
+        stream?.getTracks().forEach(track => track.stop())
         if (audioChunksRef.current.length > 0) {
           const audioBlob = new Blob(audioChunksRef.current, { type: mimeType })
           await sendVoiceMessage(audioBlob)
@@ -292,7 +292,7 @@ export function OrderChatPage() {
     } catch {
       // Stop stream tracks if MediaRecorder creation fails
       if (stream) {
-        stream.getTracks().forEach(track => track.stop())
+        stream?.getTracks().forEach(track => track.stop())
       }
       setError('Не удалось получить доступ к микрофону')
     }
