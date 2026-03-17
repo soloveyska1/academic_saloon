@@ -58,7 +58,7 @@ export function ModalWrapper({
   children,
   modalId,
   title,
-  accentColor = '#D4AF37',
+  accentColor: _accentColor = '#D4AF37',
 }: ModalWrapperProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
