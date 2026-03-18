@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Home, List, Crown, User, LucideIcon } from 'lucide-react'
 import { useHapticFeedback } from '../hooks/useHapticFeedback'
 import { useNavigation } from '../contexts/NavigationContext'
+import { useThemeValue } from '../contexts/ThemeContext'
 import { isNavigationItemActive, shouldHideBottomNavigation } from '../utils/navigation'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -83,6 +84,8 @@ export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { impactOccurred: haptic } = useHapticFeedback()
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
 
   // Context & Scroll State
   const { isHidden, isForcedHidden, isModalOpen } = useNavigation()
@@ -186,6 +189,11 @@ export const Navigation = () => {
   // Find active index for spotlight
   const activeIndex = navItems.findIndex(item => isNavigationItemActive(location.pathname, item.path))
 
+  // Theme-aware colors
+  const goldAccent = isDark ? '#D4AF37' : '#9e7a1a'
+  const inactiveIconColor = isDark ? '#71717a' : 'rgba(87,83,78,0.7)'
+  const inactiveLabelColor = isDark ? '#9a9aa6' : 'rgba(87,83,78,0.75)'
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -210,7 +218,9 @@ export const Navigation = () => {
         >
           {/* Dynamic Island Capsule */}
           <div style={{
-            background: 'rgba(15, 15, 18, 0.85)', // Darker, richer key
+            background: isDark
+              ? 'rgba(15, 15, 18, 0.85)'
+              : 'rgba(255, 255, 255, 0.82)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             borderRadius: '100px',
@@ -219,12 +229,20 @@ export const Navigation = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 4,
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            boxShadow: `
-              0 20px 40px -10px rgba(0,0,0,0.6),
-              0 0 0 1px rgba(0,0,0,1),
-              inset 0 1px 0 rgba(255,255,255,0.15)
-            `,
+            border: isDark
+              ? '1px solid rgba(255, 255, 255, 0.08)'
+              : '1px solid rgba(120, 85, 40, 0.1)',
+            boxShadow: isDark
+              ? `
+                0 20px 40px -10px rgba(0,0,0,0.6),
+                0 0 0 1px rgba(0,0,0,1),
+                inset 0 1px 0 rgba(255,255,255,0.15)
+              `
+              : `
+                0 20px 40px -10px rgba(120,85,40,0.18),
+                0 0 0 1px rgba(120,85,40,0.06),
+                inset 0 1px 0 rgba(255,255,255,0.9)
+              `,
             position: 'relative',
             overflow: 'hidden'
           }}>
@@ -232,14 +250,18 @@ export const Navigation = () => {
             {/* Top Gloss Highlight */}
             <div style={{
               position: 'absolute', top: 0, left: 20, right: 20, height: 1,
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+              background: isDark
+                ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)'
+                : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
               zIndex: 10
             }} />
 
             {/* Bottom Golden Glow (Ambient) */}
             <div style={{
               position: 'absolute', bottom: -15, left: '20%', right: '20%', height: 30,
-              background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.15) 0%, transparent 70%)',
+              background: isDark
+                ? 'radial-gradient(ellipse at center, rgba(212,175,55,0.15) 0%, transparent 70%)'
+                : 'radial-gradient(ellipse at center, rgba(158,122,26,0.1) 0%, transparent 70%)',
               filter: 'blur(15px)',
               zIndex: 0
             }} />
@@ -258,13 +280,6 @@ export const Navigation = () => {
                   position: 'absolute',
                   top: 6,
                   bottom: 6,
-                  // We need to calculate position manually or use a fixed width assumption.
-                  // Since we use flex and gap, let's use a simpler approach:
-                  // The spotlight is "behind" the items.
-                  // Actually, let's make it a floating pill behind the active item.
-                  // Because we don't have refs to each item here easily without more complex code,
-                  // we'll use the assumption that items are uniform width or handle it via a wrapper.
-                  // BETTER APPROACH: Add the spotlight INSIDE the map but with layoutId.
                   display: 'none' // We'll do it inside the map loop for perfect alignment
                 }}
               />
@@ -284,9 +299,15 @@ export const Navigation = () => {
                         position: 'absolute',
                         inset: 6,
                         borderRadius: '50px',
-                        background: 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.05) 100%)',
-                        boxShadow: '0 0 20px rgba(212,175,55,0.15)',
-                        border: '1px solid rgba(212,175,55,0.1)',
+                        background: isDark
+                          ? 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.05) 100%)'
+                          : 'linear-gradient(135deg, rgba(158,122,26,0.12) 0%, rgba(158,122,26,0.03) 100%)',
+                        boxShadow: isDark
+                          ? '0 0 20px rgba(212,175,55,0.15)'
+                          : '0 0 20px rgba(158,122,26,0.08)',
+                        border: isDark
+                          ? '1px solid rgba(212,175,55,0.1)'
+                          : '1px solid rgba(158,122,26,0.1)',
                         zIndex: 0
                       }}
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -310,7 +331,7 @@ export const Navigation = () => {
                       animate={{
                         y: isActive ? -2 : 0,
                         scale: isActive ? 1.1 : 1,
-                        color: isActive ? '#D4AF37' : '#71717a'
+                        color: isActive ? goldAccent : inactiveIconColor
                       }}
                     >
                       <Icon
@@ -321,17 +342,11 @@ export const Navigation = () => {
                       />
                     </motion.div>
 
-                    {/* Label is removed for ultra-clean "Icon Only" premium look on mobile, 
-                        OR we keep it tiny. "Peak of elegance" often suggests minimalism.
-                        Let's keep it very subtle or remove it. 
-                        User asked for "maximum convenience". Labels help convenience.
-                        We will keep them but very small and premium.
-                    */}
                     <motion.span
                       animate={{
                         opacity: isActive ? 1 : 0.72,
                         y: isActive ? 0 : 1,
-                        color: isActive ? '#D4AF37' : '#9a9aa6'
+                        color: isActive ? goldAccent : inactiveLabelColor
                       }}
                       style={{
                         fontSize: 9,
@@ -342,11 +357,6 @@ export const Navigation = () => {
                     >
                       {item.label}
                     </motion.span>
-
-                    {/* Active Dot - optional if we have the pill. 
-                        Let's stick to the Pill + Icon Fill for elegance. 
-                        Removing the bottom dot to avoid clutter. 
-                    */}
                   </MagneticItem>
                 </div>
               )
