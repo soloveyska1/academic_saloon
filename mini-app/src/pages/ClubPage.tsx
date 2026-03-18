@@ -391,7 +391,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
         style={{
           padding: '28px 20px',
           borderRadius: 24,
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
           marginBottom: 22,
           textAlign: 'center',
           fontFamily: "'Manrope', sans-serif",
@@ -401,12 +401,12 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
           gap: 0,
         }}
       >
-        <Receipt size={40} color="rgba(212,175,55,0.3)" style={{ marginBottom: 14 }} />
+        <Receipt size={40} color={isDark ? 'rgba(212,175,55,0.3)' : 'rgba(158,122,26,0.3)'} style={{ marginBottom: 14 }} />
         <div
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: 'rgba(228,213,163,0.65)',
+            color: isDark ? 'rgba(228,213,163,0.65)' : 'rgba(125,92,18,0.65)',
             marginBottom: 6,
           }}
         >
@@ -415,7 +415,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
         <div
           style={{
             fontSize: 12,
-            color: 'rgba(228,213,163,0.35)',
+            color: isDark ? 'rgba(228,213,163,0.35)' : 'rgba(125,92,18,0.35)',
             lineHeight: 1.5,
             maxWidth: 220,
             marginBottom: 18,
@@ -432,8 +432,10 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
             padding: '0 22px',
             borderRadius: 14,
             border: 'none',
-            background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
-            color: '#090909',
+            background: isDark
+              ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
+              : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
+            color: isDark ? '#090909' : '#FFFFFF',
             fontSize: 13,
             fontWeight: 700,
             fontFamily: "'Manrope', sans-serif",
