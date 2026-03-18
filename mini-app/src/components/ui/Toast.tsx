@@ -42,35 +42,35 @@ const toastConfig: Record<ToastType, {
     gradient: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(20, 20, 23, 0.98) 100%)',
     border: 'rgba(34, 197, 94, 0.3)',
     iconBg: 'rgba(34, 197, 94, 0.2)',
-    iconColor: '#22c55e',
+    iconColor: 'var(--success-text)',
   },
   error: {
     icon: AlertCircle,
     gradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(20, 20, 23, 0.98) 100%)',
     border: 'rgba(239, 68, 68, 0.3)',
     iconBg: 'rgba(239, 68, 68, 0.2)',
-    iconColor: '#ef4444',
+    iconColor: 'var(--error-text)',
   },
   info: {
     icon: Info,
     gradient: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(20, 20, 23, 0.98) 100%)',
     border: 'rgba(59, 130, 246, 0.3)',
     iconBg: 'rgba(59, 130, 246, 0.2)',
-    iconColor: '#3b82f6',
+    iconColor: 'var(--info-text)',
   },
   bonus: {
     icon: Gift,
     gradient: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(20, 20, 23, 0.98) 100%)',
     border: 'rgba(212, 175, 55, 0.4)',
-    iconBg: 'linear-gradient(135deg, #d4af37, #b38728)',
-    iconColor: '#09090b',
+    iconBg: 'linear-gradient(135deg, var(--gold-400), var(--gold-700))',
+    iconColor: 'var(--text-on-gold)',
   },
   achievement: {
     icon: Zap,
     gradient: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(20, 20, 23, 0.98) 100%)',
     border: 'rgba(168, 85, 247, 0.3)',
     iconBg: 'linear-gradient(135deg, #a855f7, #7c3aed)',
-    iconColor: '#fff',
+    iconColor: 'var(--text-primary)',
   },
 }
 
@@ -128,7 +128,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
         <div style={{
           fontSize: 14,
           fontWeight: 600,
-          color: '#f2f2f2',
+          color: 'var(--text-primary)',
           marginBottom: toast.message ? 2 : 0,
         }}>
           {toast.title}
@@ -136,7 +136,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
         {toast.message && (
           <div style={{
             fontSize: 12,
-            color: '#a1a1aa',
+            color: 'var(--text-secondary)',
             lineHeight: 1.4,
           }}>
             {toast.message}
@@ -152,7 +152,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
           width: 28,
           height: 28,
           borderRadius: 8,
-          background: 'rgba(255,255,255,0.1)',
+          background: 'var(--surface-active)',
           border: 'none',
           cursor: 'pointer',
           display: 'flex',
@@ -161,7 +161,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
           flexShrink: 0,
         }}
       >
-        <X size={14} color="#71717a" />
+        <X size={14} color="var(--text-muted)" />
       </motion.button>
     </motion.div>
   )

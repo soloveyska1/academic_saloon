@@ -61,7 +61,7 @@ export const ClientsTab = memo(function ClientsTab() {
 
       {/* Search */}
       <div className={s.searchWrap}>
-        <Search size={14} color="#52525b" />
+        <Search size={14} color="var(--text-muted)" />
         <input
           type="text" className={s.searchInput}
           placeholder="ID, имя, @username..."
@@ -80,16 +80,16 @@ export const ClientsTab = memo(function ClientsTab() {
             <div className={`${s.flexRow} ${s.gap8}`}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: 'rgba(212,175,55,0.1)', display: 'flex',
+                background: 'var(--gold-glass-subtle)', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
               }}>
                 {u.rank_emoji || '👤'}
               </div>
               <div className={s.flex1}>
                 <div className={`${s.flexRow} ${s.gap4}`}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{u.fullname || 'Без имени'}</span>
-                  {u.is_banned && <Ban size={12} color="#ef4444" />}
-                  {u.is_watched && <Eye size={12} color="#f59e0b" />}
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{u.fullname || 'Без имени'}</span>
+                  {u.is_banned && <Ban size={12} color="var(--error-text)" />}
+                  {u.is_watched && <Eye size={12} color="var(--warning-text)" />}
                 </div>
                 <div className={s.mutedSmall}>
                   {u.username ? `@${u.username}` : `ID: ${u.telegram_id}`}
@@ -97,7 +97,7 @@ export const ClientsTab = memo(function ClientsTab() {
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#d4af37' }}>{formatMoney(u.balance)}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-400)' }}>{formatMoney(u.balance)}</div>
                 <div className={s.mutedSmall}>{u.orders_count} зак.</div>
               </div>
             </div>

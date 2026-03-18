@@ -102,13 +102,13 @@ export const ClientSheet = memo(function ClientSheet({ userId, onClose }: Client
               <div className={`${s.flexRow} ${s.gap10}`}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 12,
-                  background: 'rgba(212,175,55,0.1)', display: 'flex',
+                  background: 'var(--gold-glass-subtle)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center', fontSize: 24,
                 }}>
                   {user.rank_emoji || '👤'}
                 </div>
                 <div className={s.flex1}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{user.fullname || 'Без имени'}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{user.fullname || 'Без имени'}</div>
                   <div className={s.mutedSmall}>
                     {user.username ? `@${user.username}` : ''} · ID: {user.telegram_id}
                   </div>
@@ -118,15 +118,15 @@ export const ClientSheet = memo(function ClientSheet({ userId, onClose }: Client
               {/* Stats */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                 <div className={s.card} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#d4af37' }}>{formatMoney(user.balance)}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold-400)' }}>{formatMoney(user.balance)}</div>
                   <div className={s.mutedSmall}>Баланс</div>
                 </div>
                 <div className={s.card} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{user.orders_count}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{user.orders_count}</div>
                   <div className={s.mutedSmall}>Заказов</div>
                 </div>
                 <div className={s.card} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{formatMoney(user.total_spent)}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{formatMoney(user.total_spent)}</div>
                   <div className={s.mutedSmall}>Потрачено</div>
                 </div>
               </div>
@@ -216,15 +216,15 @@ export const ClientSheet = memo(function ClientSheet({ userId, onClose }: Client
               {transactions.length === 0 ? (
                 <div className={s.mutedSmall} style={{ textAlign: 'center', padding: 20 }}>Нет транзакций</div>
               ) : transactions.map((tx) => (
-                <div key={tx.id} className={`${s.flexRow} ${s.gap8}`} style={{ padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div key={tx.id} className={`${s.flexRow} ${s.gap8}`} style={{ padding: '6px 0', borderBottom: '1px solid var(--border-default)' }}>
                   <div className={s.flex1}>
-                    <div style={{ fontSize: 12, color: '#e4e4e7' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>
                       {TRANSACTION_REASON_LABELS[tx.reason] || tx.reason}
                     </div>
                     {tx.description && <div className={s.mutedSmall}>{tx.description}</div>}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: tx.amount >= 0 ? '#22c55e' : '#ef4444' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: tx.amount >= 0 ? 'var(--success-text)' : 'var(--error-text)' }}>
                       {tx.amount >= 0 ? '+' : ''}{formatMoney(tx.amount)}
                     </div>
                     <div className={s.mutedSmall}>{formatDateTime(tx.created_at)}</div>

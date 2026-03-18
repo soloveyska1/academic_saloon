@@ -122,14 +122,14 @@ export const NotificationToast = memo(function NotificationToast({ notifications
             style={{ background: latest.type === 'new_order' ? 'rgba(34,197,94,0.2)' : 'rgba(236,72,153,0.2)' }}
           >
             {latest.type === 'new_order'
-              ? <Package size={14} color="#22c55e" />
+              ? <Package size={14} color="var(--success-text)" />
               : <CreditCard size={14} color="#ec4899" />}
           </div>
           <div className={s.flex1}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: latest.type === 'new_order' ? '#22c55e' : '#ec4899', marginBottom: 2 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: latest.type === 'new_order' ? 'var(--success-text)' : '#ec4899', marginBottom: 2 }}>
               {latest.title}
             </div>
-            <div style={{ fontSize: 11, color: '#a1a1aa', whiteSpace: 'pre-line', lineHeight: 1.4 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'pre-line', lineHeight: 1.4 }}>
               {latest.message}
             </div>
           </div>

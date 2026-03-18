@@ -112,14 +112,14 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           padding: '20px',
           borderRadius: 20,
           background: needsAction
-            ? `linear-gradient(145deg, ${statusInfo?.bg ?? 'rgba(212,175,55,0.06)'}, rgba(20,20,23,0.6))`
-            : 'rgba(15,13,8,0.85)',
+            ? `linear-gradient(145deg, ${statusInfo?.bg ?? 'var(--gold-glass-subtle)'}, var(--bg-card))`
+            : 'var(--bg-card)',
           backdropFilter: 'blur(24px) saturate(180%)',
           WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-          border: `1px solid ${needsAction ? (statusInfo?.border ?? 'rgba(212,175,55,0.15)') : 'rgba(255,255,255,0.06)'}`,
+          border: `1px solid ${needsAction ? (statusInfo?.border ?? 'var(--gold-glass-medium)') : 'var(--surface-hover)'}`,
           boxShadow: needsAction
-            ? `0 8px 24px -6px rgba(0,0,0,0.4), 0 0 20px -5px ${statusInfo?.bg ?? 'rgba(212,175,55,0.1)'}`
-            : 'inset 0 1px 0 rgba(255,255,255,0.04), 0 1px 2px rgba(0,0,0,0.2)',
+            ? `0 8px 24px -6px rgba(0,0,0,0.4), 0 0 20px -5px ${statusInfo?.bg ?? 'var(--gold-glass-medium)'}`
+            : 'inset 0 1px 0 var(--bg-glass), 0 1px 2px rgba(0,0,0,0.2)',
           cursor: 'pointer',
           appearance: 'none',
           textAlign: 'left',
@@ -135,8 +135,8 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
-                background: statusInfo?.color ?? '#d4af37',
-                boxShadow: `0 0 8px ${statusInfo?.color ?? '#d4af37'}60`,
+                background: statusInfo?.color ?? 'var(--gold-400)',
+                boxShadow: `0 0 8px ${statusInfo?.color ?? 'var(--gold-400)'}60`,
                 animation: needsAction ? 'pulse 2s infinite' : undefined,
               }}
             />
@@ -145,7 +145,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               fontWeight: 700,
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.35)',
+              color: 'var(--text-muted)',
               fontFamily: "'Manrope', sans-serif",
             }}>
               Активный заказ
@@ -155,11 +155,11 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             style={{
               fontSize: 11,
               fontWeight: 700,
-              color: statusInfo?.color ?? '#d4af37',
+              color: statusInfo?.color ?? 'var(--gold-400)',
               padding: '3px 10px',
               borderRadius: 100,
-              background: statusInfo?.bg ?? 'rgba(212,175,55,0.12)',
-              border: `1px solid ${statusInfo?.border ?? 'rgba(212,175,55,0.25)'}`,
+              background: statusInfo?.bg ?? 'var(--gold-glass-medium)',
+              border: `1px solid ${statusInfo?.border ?? 'var(--gold-glass-strong)'}`,
             }}
           >
             {statusInfo?.label ?? activeOrder.status}
@@ -171,7 +171,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           <div style={{
             fontSize: 16,
             fontWeight: 700,
-            color: '#f0f0f0',
+            color: 'var(--text-primary)',
             lineHeight: 1.3,
             marginBottom: 4,
           }}>
@@ -181,7 +181,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             <div style={{
               fontSize: 13,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.40)',
+              color: 'var(--text-muted)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -198,10 +198,10 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             const isCurrent = i === stageIdx
             const StageIcon = stage.icon
             const color = isCompleted
-              ? '#22c55e'
+              ? 'var(--success-text)'
               : isCurrent
-                ? (statusInfo?.color ?? '#d4af37')
-                : 'rgba(255,255,255,0.15)'
+                ? (statusInfo?.color ?? 'var(--gold-400)')
+                : 'var(--surface-overlay)'
 
             return (
               <div key={stage.key} style={{ display: 'flex', alignItems: 'center', flex: i < STAGES.length - 1 ? 1 : 0 }}>
@@ -210,7 +210,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   width: isCurrent ? 28 : 20,
                   height: isCurrent ? 28 : 20,
                   borderRadius: '50%',
-                  background: isCompleted ? 'rgba(34,197,94,0.15)' : isCurrent ? `${color}18` : 'rgba(255,255,255,0.04)',
+                  background: isCompleted ? 'rgba(34,197,94,0.15)' : isCurrent ? `${color}18` : 'var(--bg-glass)',
                   border: `1.5px solid ${color}`,
                   display: 'flex',
                   alignItems: 'center',
@@ -234,7 +234,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                     marginLeft: 4,
                     marginRight: 4,
                     borderRadius: 1,
-                    background: isCompleted ? '#22c55e' : 'rgba(255,255,255,0.06)',
+                    background: isCompleted ? 'var(--success-text)' : 'var(--surface-hover)',
                     position: 'relative',
                     overflow: 'hidden',
                   }}>
@@ -249,7 +249,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                           left: 0,
                           height: '100%',
                           borderRadius: 1,
-                          background: statusInfo?.color ?? '#d4af37',
+                          background: statusInfo?.color ?? 'var(--gold-400)',
                         }}
                       />
                     )}
@@ -269,7 +269,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               <span key={stage.key} style={{
                 fontSize: 9,
                 fontWeight: isCurrent ? 700 : 500,
-                color: isCompleted ? 'rgba(34,197,94,0.7)' : isCurrent ? (statusInfo?.color ?? '#d4af37') : 'rgba(255,255,255,0.15)',
+                color: isCompleted ? 'rgba(34,197,94,0.7)' : isCurrent ? (statusInfo?.color ?? 'var(--gold-400)') : 'var(--surface-overlay)',
                 textAlign: 'center',
                 flex: 1,
                 letterSpacing: '0.02em',
@@ -287,24 +287,24 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           justifyContent: 'space-between',
           padding: '10px 14px',
           borderRadius: 12,
-          background: needsAction ? `${statusInfo?.color ?? '#d4af37'}10` : 'rgba(255,255,255,0.025)',
-          border: `1px solid ${needsAction ? `${statusInfo?.color ?? '#d4af37'}20` : 'rgba(255,255,255,0.04)'}`,
+          background: needsAction ? `${statusInfo?.color ?? 'var(--gold-400)'}10` : 'var(--border-subtle)',
+          border: `1px solid ${needsAction ? `${statusInfo?.color ?? 'var(--gold-400)'}20` : 'var(--bg-glass)'}`,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {needsAction ? (
-              <AlertCircle size={14} color={statusInfo?.color ?? '#d4af37'} strokeWidth={2} />
+              <AlertCircle size={14} color={statusInfo?.color ?? 'var(--gold-400)'} strokeWidth={2} />
             ) : (
-              <Clock size={14} color="rgba(255,255,255,0.30)" strokeWidth={2} />
+              <Clock size={14} color="var(--text-muted)" strokeWidth={2} />
             )}
             <span style={{
               fontSize: 12,
               fontWeight: 600,
-              color: needsAction ? (statusInfo?.color ?? '#d4af37') : 'rgba(255,255,255,0.45)',
+              color: needsAction ? (statusInfo?.color ?? 'var(--gold-400)') : 'var(--text-muted)',
             }}>
               {getStatusMessage(activeOrder.status, activeOrder.progress)}
             </span>
           </div>
-          <ArrowRight size={14} color={needsAction ? (statusInfo?.color ?? '#d4af37') : 'rgba(255,255,255,0.20)'} strokeWidth={2} />
+          <ArrowRight size={14} color={needsAction ? (statusInfo?.color ?? 'var(--gold-400)') : 'var(--surface-overlay)'} strokeWidth={2} />
         </div>
 
         {/* Other active orders hint */}
@@ -314,7 +314,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             textAlign: 'center',
             fontSize: 11,
             fontWeight: 600,
-            color: 'rgba(255,255,255,0.30)',
+            color: 'var(--text-muted)',
             letterSpacing: '0.02em',
           }}>
             + ещё {otherActiveCount} {otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе

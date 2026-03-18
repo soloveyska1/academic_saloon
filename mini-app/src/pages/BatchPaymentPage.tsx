@@ -160,7 +160,7 @@ export function BatchPaymentPage() {
         justifyContent: 'center',
         gap: 16,
       }}>
-        <AlertCircle size={48} color="#ef4444" />
+        <AlertCircle size={48} color="var(--error-text)" />
         <p style={{ fontSize: 16, color: 'var(--text-main)', textAlign: 'center' }}>
           {error}
         </p>
@@ -201,7 +201,7 @@ export function BatchPaymentPage() {
           style={{
             background: 'var(--bg-card-solid)',
             borderRadius: 24,
-            border: '1px solid rgba(212,175,55,0.3)',
+            border: '1px solid var(--gold-glass-strong)',
             padding: 40,
             display: 'flex',
             flexDirection: 'column',
@@ -232,7 +232,7 @@ export function BatchPaymentPage() {
               animate={{ scale: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <CheckCircle size={50} color="#22c55e" strokeWidth={1.5} />
+              <CheckCircle size={50} color="var(--success-text)" strokeWidth={1.5} />
             </motion.div>
           </motion.div>
 
@@ -244,7 +244,7 @@ export function BatchPaymentPage() {
               fontFamily: 'var(--font-serif)',
               fontSize: 24,
               fontWeight: 700,
-              color: '#22c55e',
+              color: 'var(--success-text)',
               margin: 0,
               textAlign: 'center',
             }}
@@ -338,7 +338,7 @@ export function BatchPaymentPage() {
           style={{
             background: 'var(--bg-card-solid)',
             borderRadius: 24,
-            border: '1px solid rgba(212,175,55,0.3)',
+            border: '1px solid var(--gold-glass-strong)',
             overflow: 'hidden',
           }}
         >
@@ -351,7 +351,7 @@ export function BatchPaymentPage() {
           {/* Header */}
           <div style={{
             padding: '24px 24px 20px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid var(--border-strong)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -362,12 +362,12 @@ export function BatchPaymentPage() {
                 height: 48,
                 borderRadius: 14,
                 background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
-                border: '1px solid rgba(212,175,55,0.3)',
+                border: '1px solid var(--gold-glass-strong)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <Receipt size={24} color="#d4af37" />
+                <Receipt size={24} color="var(--gold-400)" />
               </div>
               <div>
                 <h3 style={{
@@ -395,12 +395,12 @@ export function BatchPaymentPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 12px',
-              background: 'rgba(245,158,11,0.1)',
+              background: 'rgba(245, 158, 11, 0.1)',
               borderRadius: 10,
-              border: '1px solid rgba(245,158,11,0.2)',
+              border: '1px solid rgba(245, 158, 11, 0.2)',
             }}>
-              <Timer size={14} color="#f59e0b" />
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b' }}>
+              <Timer size={14} color="var(--warning-text)" />
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--warning-text)' }}>
                 24ч
               </span>
             </div>
@@ -409,7 +409,7 @@ export function BatchPaymentPage() {
           {/* Orders List */}
           <div style={{
             padding: '16px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid var(--border-strong)',
           }}>
             <p style={{
               fontSize: 11,
@@ -431,7 +431,7 @@ export function BatchPaymentPage() {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '12px 14px',
-                    background: 'rgba(255,255,255,0.03)',
+                    background: 'var(--border-subtle)',
                     borderRadius: 12,
                     border: '1px solid var(--border-subtle)',
                   }}
@@ -441,7 +441,7 @@ export function BatchPaymentPage() {
                       width: 36,
                       height: 36,
                       borderRadius: 10,
-                      background: 'rgba(212,175,55,0.1)',
+                      background: 'var(--gold-glass-medium)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -503,7 +503,7 @@ export function BatchPaymentPage() {
                   fontSize: 48,
                   fontWeight: 700,
                   fontFamily: 'var(--font-mono)',
-                  background: 'linear-gradient(135deg, #f5d061, #d4af37)',
+                  background: 'var(--gold-metallic)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -523,7 +523,7 @@ export function BatchPaymentPage() {
                     padding: '8px 16px',
                     background: 'rgba(212,175,55,0.1)',
                     borderRadius: 10,
-                    border: '1px solid rgba(212,175,55,0.2)',
+                    border: '1px solid var(--border-gold)',
                     display: 'inline-block',
                   }}
                 >
@@ -533,7 +533,7 @@ export function BatchPaymentPage() {
                   <span style={{
                     fontSize: 14,
                     fontWeight: 600,
-                    color: '#d4af37',
+                    color: 'var(--gold-400)',
                     fontFamily: 'var(--font-mono)',
                   }}>
                     {amountToPay.toLocaleString('ru-RU')} ₽
@@ -572,11 +572,11 @@ export function BatchPaymentPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-                    <Zap size={18} color={paymentScheme === 'full' ? '#d4af37' : '#71717a'} />
+                    <Zap size={18} color={paymentScheme === 'full' ? 'var(--gold-400)' : 'var(--text-muted)'} />
                     <span style={{
                       fontSize: 16,
                       fontWeight: 700,
-                      color: paymentScheme === 'full' ? '#d4af37' : '#a1a1aa',
+                      color: paymentScheme === 'full' ? 'var(--gold-400)' : 'var(--text-secondary)',
                     }}>
                       100%
                     </span>
@@ -602,11 +602,11 @@ export function BatchPaymentPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-                    <Shield size={18} color={paymentScheme === 'half' ? '#d4af37' : '#71717a'} />
+                    <Shield size={18} color={paymentScheme === 'half' ? 'var(--gold-400)' : 'var(--text-muted)'} />
                     <span style={{
                       fontSize: 16,
                       fontWeight: 700,
-                      color: paymentScheme === 'half' ? '#d4af37' : '#a1a1aa',
+                      color: paymentScheme === 'half' ? 'var(--gold-400)' : 'var(--text-secondary)',
                     }}>
                       50%
                     </span>
@@ -649,13 +649,13 @@ export function BatchPaymentPage() {
                 >
                   <CreditCard
                     size={24}
-                    color={paymentMethod === 'card' ? '#3b82f6' : '#71717a'}
+                    color={paymentMethod === 'card' ? 'var(--info-text)' : 'var(--text-muted)'}
                     style={{ marginBottom: 8 }}
                   />
                   <p style={{
                     fontSize: 14,
                     fontWeight: 600,
-                    color: paymentMethod === 'card' ? '#3b82f6' : '#a1a1aa',
+                    color: paymentMethod === 'card' ? 'var(--info-text)' : 'var(--text-secondary)',
                     margin: 0,
                   }}>
                     На карту
@@ -679,13 +679,13 @@ export function BatchPaymentPage() {
                 >
                   <Smartphone
                     size={24}
-                    color={paymentMethod === 'sbp' ? '#8b5cf6' : '#71717a'}
+                    color={paymentMethod === 'sbp' ? '#8b5cf6' : 'var(--text-muted)'}
                     style={{ marginBottom: 8 }}
                   />
                   <p style={{
                     fontSize: 14,
                     fontWeight: 600,
-                    color: paymentMethod === 'sbp' ? '#8b5cf6' : '#a1a1aa',
+                    color: paymentMethod === 'sbp' ? '#8b5cf6' : 'var(--text-secondary)',
                     margin: 0,
                   }}>
                     СБП
@@ -711,11 +711,11 @@ export function BatchPaymentPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                    <Building2 size={16} color="#3b82f6" />
+                    <Building2 size={16} color="var(--info-text)" />
                     <span style={{
                       fontSize: 12,
                       fontWeight: 600,
-                      color: '#3b82f6',
+                      color: 'var(--info-text)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                     }}>
@@ -749,9 +749,9 @@ export function BatchPaymentPage() {
                       {paymentInfo.card_number}
                     </span>
                     {copied === 'card' ? (
-                      <Check size={20} color="#22c55e" />
+                      <Check size={20} color="var(--success-text)" />
                     ) : (
-                      <Copy size={20} color="#71717a" />
+                      <Copy size={20} color="var(--text-muted)" />
                     )}
                   </motion.button>
 
@@ -818,9 +818,9 @@ export function BatchPaymentPage() {
                       {paymentInfo.sbp_phone}
                     </span>
                     {copied === 'phone' ? (
-                      <Check size={20} color="#22c55e" />
+                      <Check size={20} color="var(--success-text)" />
                     ) : (
-                      <Copy size={20} color="#71717a" />
+                      <Copy size={20} color="var(--text-muted)" />
                     )}
                   </motion.button>
 
@@ -851,7 +851,7 @@ export function BatchPaymentPage() {
               >
                 <p style={{
                   fontSize: 13,
-                  color: '#ef4444',
+                  color: 'var(--error-text)',
                   margin: 0,
                   textAlign: 'center',
                 }}>
@@ -871,10 +871,10 @@ export function BatchPaymentPage() {
                 fontSize: 17,
                 fontWeight: 700,
                 fontFamily: 'var(--font-serif)',
-                color: processing ? '#71717a' : '#050505',
+                color: processing ? 'var(--text-muted)' : 'var(--text-on-gold)',
                 background: processing
-                  ? 'rgba(255,255,255,0.1)'
-                  : 'linear-gradient(180deg, #f5d061, #d4af37, #b48e26)',
+                  ? 'var(--surface-active)'
+                  : 'var(--liquid-gold)',
                 border: 'none',
                 borderRadius: 16,
                 cursor: processing ? 'not-allowed' : 'pointer',
@@ -882,7 +882,7 @@ export function BatchPaymentPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 12,
-                boxShadow: processing ? 'none' : '0 0 40px -8px rgba(212,175,55,0.6)',
+                boxShadow: processing ? 'none' : 'var(--glow-gold)',
               }}
             >
               {processing ? (

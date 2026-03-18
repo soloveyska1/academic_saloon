@@ -208,11 +208,11 @@ function MiniTimeline({ currentStep }: { currentStep: number }) {
                 height: isCurrent ? 10 : 6,
                 borderRadius: '50%',
                 background: isCompleted
-                  ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                  ? 'linear-gradient(135deg, var(--success-text), var(--success-text))'
                   : isCurrent
-                    ? 'linear-gradient(135deg, #D4AF37, #B38728)'
-                    : 'rgba(255,255,255,0.15)',
-                border: isCurrent ? '2px solid rgba(212,175,55,0.5)' : 'none',
+                    ? 'var(--gold-metallic)'
+                    : 'var(--surface-overlay)',
+                border: isCurrent ? '2px solid var(--border-gold-strong)' : 'none',
               }}
             />
             {index < steps.length - 1 && (
@@ -220,8 +220,8 @@ function MiniTimeline({ currentStep }: { currentStep: number }) {
                 width: 16,
                 height: 2,
                 background: isCompleted
-                  ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                  : 'rgba(255,255,255,0.1)',
+                  ? 'linear-gradient(90deg, var(--success-text), var(--success-text))'
+                  : 'var(--surface-active)',
                 marginLeft: 2,
                 marginRight: 2,
                 borderRadius: 1,
@@ -292,7 +292,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
         padding: 20,
         borderRadius: 28,
         background: 'linear-gradient(145deg, rgba(28,28,32,0.98), rgba(18,18,22,0.99))',
-        border: `1.5px solid ${needsPayment ? 'rgba(212,175,55,0.35)' : isCompleted ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.08)'}`,
+        border: `1.5px solid ${needsPayment ? 'var(--border-gold-strong)' : isCompleted ? 'var(--success-border)' : 'var(--border-strong)'}`,
         overflow: 'hidden',
       }}
     >
@@ -345,8 +345,8 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             width: 44,
             height: 44,
             borderRadius: 14,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'var(--border-default)',
+            border: '1px solid var(--surface-active)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -354,7 +354,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             flexShrink: 0,
           }}
         >
-          <ArrowLeft size={20} color="rgba(255,255,255,0.7)" />
+          <ArrowLeft size={20} color="var(--text-secondary)" />
         </motion.button>
 
         {/* Work type emoji + Title */}
@@ -381,7 +381,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             <h1 style={{
               fontSize: 18,
               fontWeight: 700,
-              color: isCompleted ? '#22c55e' : 'var(--text-main)',
+              color: isCompleted ? 'var(--success-text)' : 'var(--text-main)',
               margin: 0,
               fontFamily: 'var(--font-serif)',
               display: 'flex',
@@ -392,7 +392,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
               textOverflow: 'ellipsis',
             }}>
               {order.work_type_label || 'Заказ'}
-              {isCompleted && <CheckCircle2 size={18} color="#22c55e" />}
+              {isCompleted && <CheckCircle2 size={18} color="var(--success-text)" />}
             </h1>
           </div>
         </div>
@@ -410,8 +410,8 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
           style={{
             padding: '8px 14px',
             borderRadius: 12,
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.08))',
-            border: '1px solid rgba(212,175,55,0.3)',
+            background: 'linear-gradient(135deg, var(--gold-glass-medium), var(--gold-glass-subtle))',
+            border: '1px solid var(--border-gold)',
             flexShrink: 0,
           }}
         >
@@ -419,7 +419,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             fontSize: 14,
             fontWeight: 800,
             fontFamily: 'var(--font-mono)',
-            background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+            background: 'linear-gradient(135deg, var(--gold-100), var(--gold-400))',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
@@ -433,15 +433,15 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
         <div style={{
           padding: '12px 16px',
           borderRadius: 14,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--border-subtle)',
+          border: '1px solid var(--surface-hover)',
           marginBottom: 16,
           position: 'relative',
           zIndex: 1,
         }}>
           <p style={{
             fontSize: 14,
-            color: 'rgba(255,255,255,0.7)',
+            color: 'var(--text-secondary)',
             lineHeight: 1.5,
             margin: 0,
           }}>

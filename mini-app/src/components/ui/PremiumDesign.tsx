@@ -61,7 +61,7 @@ export const FloatingParticles = () => {
                         animationDelay: p.delay,
                         animationDuration: `${8 + p.id % 3}s`,
                         position: 'absolute',
-                        background: '#d4af37',
+                        background: 'var(--gold-400)',
                         borderRadius: '50%',
                         opacity: 0.6,
                         animationName: 'float',

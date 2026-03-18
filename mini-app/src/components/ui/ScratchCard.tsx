@@ -232,12 +232,12 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
               position: 'absolute',
               top: 16,
               right: 16,
-              background: 'rgba(255,255,255,0.1)',
+              background: 'var(--surface-active)',
               border: 'none',
               borderRadius: 10,
               padding: 10,
               cursor: 'pointer',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               zIndex: 10,
             }}
           >
@@ -260,13 +260,13 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
               boxShadow: '0 0 40px rgba(212,175,55,0.5)',
             }}
           >
-            <Gift size={36} color="#09090b" />
+            <Gift size={36} color="var(--text-on-gold)" />
           </motion.div>
 
           <h2 style={{
             fontSize: 22,
             fontWeight: 800,
-            color: '#fff',
+            color: 'var(--text-primary)',
             marginBottom: 6,
             fontFamily: "'Playfair Display', serif",
           }}>
@@ -275,7 +275,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
 
           <p style={{
             fontSize: 13,
-            color: '#a1a1aa',
+            color: 'var(--text-secondary)',
             marginBottom: 20,
           }}>
             Сотри покрытие и узнай свой приз!
@@ -311,7 +311,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
               >
                 <Sparkles
                   size={32}
-                  color={revealed ? '#22c55e' : '#d4af37'}
+                  color={revealed ? 'var(--success-text)' : 'var(--gold-400)'}
                   style={{ marginBottom: 8 }}
                 />
               </motion.div>
@@ -323,7 +323,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
                 style={{
                   fontSize: 36,
                   fontWeight: 800,
-                  color: revealed ? '#22c55e' : '#d4af37',
+                  color: revealed ? 'var(--success-text)' : 'var(--gold-400)',
                   fontFamily: "'Montserrat', sans-serif",
                   textShadow: revealed ? '0 0 20px rgba(34,197,94,0.5)' : 'none',
                 }}
@@ -333,7 +333,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
 
               <div style={{
                 fontSize: 12,
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 marginTop: 4,
               }}>
                 {prize}
@@ -369,7 +369,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
           }}>
             <div style={{
               height: 4,
-              background: 'rgba(255,255,255,0.1)',
+              background: 'var(--surface-active)',
               borderRadius: 2,
               overflow: 'hidden',
               marginBottom: 6,

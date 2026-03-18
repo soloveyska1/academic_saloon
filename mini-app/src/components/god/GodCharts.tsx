@@ -55,8 +55,8 @@ export const RevenueChart = memo(function RevenueChart({ data, height = 180 }: R
           const y = padTop + barAreaH - (barAreaH * i) / (yLabels.length - 1)
           return (
             <g key={i}>
-              <line x1={padLeft} y1={y} x2={Math.max(svgW, 300)} y2={y} stroke="rgba(255,255,255,0.06)" />
-              <text x={padLeft - 6} y={y + 3} fill="#52525b" fontSize={9} textAnchor="end" fontFamily="monospace">
+              <line x1={padLeft} y1={y} x2={Math.max(svgW, 300)} y2={y} stroke="var(--surface-hover)" />
+              <text x={padLeft - 6} y={y + 3} fill="var(--text-muted)" fontSize={9} textAnchor="end" fontFamily="monospace">
                 {label}
               </text>
             </g>
@@ -94,7 +94,7 @@ export const RevenueChart = memo(function RevenueChart({ data, height = 180 }: R
                 <text
                   x={x + barW / 2}
                   y={height - 4}
-                  fill="#52525b"
+                  fill="var(--text-muted)"
                   fontSize={8}
                   textAnchor="middle"
                   fontFamily="monospace"
@@ -113,11 +113,11 @@ export const RevenueChart = memo(function RevenueChart({ data, height = 180 }: R
           const tipX = Math.min(Math.max(x, 60), Math.max(svgW, 300) - 100)
           return (
             <g>
-              <rect x={tipX - 55} y={2} width={120} height={32} rx={6} fill="#1c1c1e" stroke="rgba(212,175,55,0.3)" strokeWidth={1} />
-              <text x={tipX + 5} y={15} fill="#d4af37" fontSize={10} fontWeight={600} textAnchor="middle">
+              <rect x={tipX - 55} y={2} width={120} height={32} rx={6} fill="var(--bg-elevated)" stroke="var(--border-gold)" strokeWidth={1} />
+              <text x={tipX + 5} y={15} fill="var(--gold-400)" fontSize={10} fontWeight={600} textAnchor="middle">
                 {formatDateShort(item.date)} — {formatMoneyShort(item.revenue)}
               </text>
-              <text x={tipX + 5} y={28} fill="#71717a" fontSize={9} textAnchor="middle">
+              <text x={tipX + 5} y={28} fill="var(--text-muted)" fontSize={9} textAnchor="middle">
                 {item.orders_count} заказ{item.orders_count === 1 ? '' : item.orders_count < 5 ? 'а' : 'ов'}
               </text>
             </g>
