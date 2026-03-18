@@ -30,7 +30,7 @@
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(212, 175, 55, 0.1);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 var(--bg-glass),
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 8px 24px -6px rgba(0, 0, 0, 0.4);
 }
@@ -45,7 +45,7 @@
     linear-gradient(165deg, rgba(30, 24, 10, 0.92) 0%, rgba(12, 10, 6, 0.96) 50%, rgba(9, 9, 11, 0.98) 100%);
   border-color: rgba(212, 175, 55, 0.15) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 var(--bg-glass),
     0 1px 2px rgba(0, 0, 0, 0.3),
     0 4px 8px -2px rgba(0, 0, 0, 0.3),
     0 20px 40px -10px rgba(0, 0, 0, 0.5);
@@ -72,7 +72,7 @@
 .primaryActionShine {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 30%);
+  background: linear-gradient(180deg, var(--bg-glass) 0%, transparent 30%);
   pointer-events: none;
   z-index: 0;
 }
@@ -89,7 +89,7 @@
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #E8C84A 0%, #C9A436 100%);
+  background: linear-gradient(180deg, var(--gold-300) 0%, var(--gold-500) 100%);
   border: none;
   box-shadow: 0 4px 12px rgba(201, 164, 54, 0.25);
   animation: primaryArrowPulse 2.4s ease-in-out infinite;
@@ -99,7 +99,7 @@
   width: 52px;
   height: 52px;
   border-radius: 18px;
-  background: linear-gradient(180deg, #E8C84A 0%, #C9A436 100%);
+  background: linear-gradient(180deg, var(--gold-300) 0%, var(--gold-500) 100%);
   box-shadow: 0 8px 20px rgba(201, 164, 54, 0.2);
   display: flex;
   align-items: center;
@@ -120,9 +120,9 @@
   min-height: 38px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: #ececf0;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
   font-family: 'Manrope', sans-serif;
   font-size: 12px;
   font-weight: 600;
@@ -140,9 +140,9 @@
   background: rgba(212, 175, 55, 0.06);
   border: 1px solid rgba(212, 175, 55, 0.15);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 var(--bg-glass),
     0 8px 24px rgba(0, 0, 0, 0.2);
-  color: #F0E6C8;
+  color: var(--gold-200);
   font-family: 'Manrope', sans-serif;
   font-size: 15px;
   font-weight: 600;
@@ -154,7 +154,7 @@
 
 .heroFootnote {
   margin-top: 12px;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   font-family: 'Manrope', sans-serif;
   font-size: 12px;
   font-weight: 600;
@@ -174,7 +174,7 @@
 
 /* Static warm gold — NOT animated shimmer */
 .goldAccent {
-  color: #E8D5A3;
+  color: var(--gold-200);
 }
 
 @keyframes shine {
@@ -248,7 +248,7 @@
   font-family: 'Manrope', sans-serif;
   font-weight: 800;
   font-size: 20px;
-  color: #E8E8ED;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
@@ -296,7 +296,7 @@
 }
 
 .statCard {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--border-subtle);
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 16px;
   padding: 16px;
@@ -316,14 +316,14 @@
   left: 20%;
   right: 20%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  background: linear-gradient(90deg, transparent, var(--surface-hover), transparent);
 }
 
 .statLabel {
   font-family: 'Manrope', sans-serif;
   font-size: 11px;
   font-weight: 500;
-  color: #71717a;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
   margin-bottom: 6px;
@@ -333,7 +333,7 @@
   font-family: 'Manrope', sans-serif;
   font-size: 20px;
   font-weight: 700;
-  color: #E8E8ED;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
@@ -374,7 +374,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
+  background: linear-gradient(90deg, var(--surface-hover), transparent);
 }
 
 /* ==================== SCROLL CONTAINER FOR HORIZONTAL ITEMS ==================== */
@@ -427,25 +427,11 @@
   background: radial-gradient(circle, rgba(158, 122, 26, 0.06) 0%, transparent 65%);
 }
 
-:global([data-theme="light"]) .primaryActionShine {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 30%);
-}
-
-:global([data-theme="light"]) .primaryActionArrow {
-  background: linear-gradient(180deg, #B8922E 0%, #9E7A1A 100%);
-  box-shadow: 0 4px 12px rgba(158, 122, 26, 0.25);
-}
-
-:global([data-theme="light"]) .heroActionIcon {
-  background: linear-gradient(180deg, #B8922E 0%, #9E7A1A 100%);
-  box-shadow: 0 8px 20px rgba(158, 122, 26, 0.18);
-}
-
-:global([data-theme="light"]) .heroProofItem {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(120, 85, 40, 0.08);
-  color: rgba(28, 25, 23, 0.85);
-  box-shadow: 0 1px 3px rgba(120, 85, 40, 0.05);
+:global([data-theme="light"]) .heroCard {
+  background:
+    linear-gradient(135deg, rgba(158, 122, 26, 0.07) 0%, rgba(255, 255, 255, 0.92) 55%, rgba(250, 249, 247, 0.98) 100%);
+  border-color: rgba(158, 122, 26, 0.14);
+  box-shadow: 0 20px 42px -36px rgba(120, 85, 40, 0.08);
 }
 
 :global([data-theme="light"]) .heroPrimaryButton {
@@ -454,24 +440,11 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     0 8px 24px rgba(120, 85, 40, 0.08);
-  color: #7d5c12;
-}
-
-:global([data-theme="light"]) .heroFootnote {
-  color: rgba(87, 83, 78, 0.75);
-}
-
-:global([data-theme="light"]) .goldAccent {
-  color: #7d5c12;
 }
 
 /* ── Header ── */
 :global([data-theme="light"]) .avatarContainer::before {
   background: linear-gradient(145deg, rgba(158, 122, 26, 0.55) 0%, rgba(158, 122, 26, 0.18) 100%);
-}
-
-:global([data-theme="light"]) .userName {
-  color: rgba(28, 25, 23, 0.92);
 }
 
 :global([data-theme="light"]) .userStatus {
@@ -492,14 +465,6 @@
 
 :global([data-theme="light"]) .statCard::before {
   background: linear-gradient(90deg, transparent, rgba(158, 122, 26, 0.08), transparent);
-}
-
-:global([data-theme="light"]) .statLabel {
-  color: rgba(87, 83, 78, 0.75);
-}
-
-:global([data-theme="light"]) .statValue {
-  color: rgba(28, 25, 23, 0.9);
 }
 
 /* ── Hero / Daily Bonus ── */

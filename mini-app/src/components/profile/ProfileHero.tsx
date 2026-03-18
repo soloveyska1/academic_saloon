@@ -2,7 +2,6 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Crown } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
-import { useThemeValue } from '../../contexts/ThemeContext'
 import { formatMemberSince, getMemberSince, getProfileRankName, prefersReducedMotion, toSafeNumber } from './profileHelpers'
 import type { UserData } from '../../types'
 
@@ -14,8 +13,6 @@ interface Props {
 }
 
 export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin, onAdminAccess }: Props) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
   const memberSince = getMemberSince(user.orders, user.created_at)
   const displayRankName = getProfileRankName(user.rank.name)
   const cashbackPercent = toSafeNumber(user.rank.cashback)
@@ -38,7 +35,7 @@ export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin,
         <div style={{
           fontSize: 11,
           fontWeight: 700,
-          color: isDark ? 'rgba(212,175,55,0.72)' : 'rgba(158,122,26,0.72)',
+          color: 'var(--gold-label)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
         }}>
@@ -67,8 +64,8 @@ export const ProfileHero = memo(function ProfileHero({ user, userPhoto, isAdmin,
           borderRadius: 18,
           overflow: 'hidden',
           flexShrink: 0,
-          background: isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(158, 122, 26, 0.08)',
-          border: isDark ? '2px solid rgba(212, 175, 55, 0.25)' : '2px solid rgba(158, 122, 26, 0.20)',
+          background: 'var(--gold-glass-subtle)',
+          border: '2px solid var(--border-gold)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

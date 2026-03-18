@@ -8,7 +8,6 @@ import {
 } from 'lucide-react'
 import { useTelegram } from '../../hooks/useUserData'
 import { Confetti, useConfetti } from './Confetti'
-import { useTheme } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SMART NOTIFICATION DATA TYPES
@@ -80,7 +79,6 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 
 export function SmartNotification({ notification, onDismiss, onAction }: Props) {
   const { haptic, hapticSuccess } = useTelegram()
-  const { isDark } = useTheme()
   const confetti = useConfetti()
   const [isVisible, setIsVisible] = useState(false)
 
@@ -123,33 +121,23 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
   // Premium Theme Configuration
   const theme = {
     bg: isBonus
-      ? isDark
-        ? 'linear-gradient(135deg, rgba(20, 20, 23, 0.98) 0%, rgba(13, 33, 13, 0.98) 100%)' // Black to Deep Green
-        : 'linear-gradient(135deg, rgba(255, 255, 252, 0.98) 0%, rgba(240, 253, 240, 0.98) 100%)' // Cream to Light Green
-      : isDark
-        ? 'rgba(20, 20, 23, 0.95)'
-        : 'rgba(255, 255, 252, 0.95)',
+      ? 'var(--notification-bonus-bg, linear-gradient(135deg, rgba(20, 20, 23, 0.98) 0%, rgba(13, 33, 13, 0.98) 100%))'
+      : 'var(--bg-card)',
     backdrop: 'blur(25px)',
     border: isBonus
-      ? '1px solid rgba(34, 197, 94, 0.3)' // Green Accent Border
-      : isDark
-        ? '1px solid rgba(255, 255, 255, 0.08)'
-        : '1px solid rgba(212, 175, 55, 0.15)',
+      ? '1px solid rgba(34, 197, 94, 0.3)'
+      : '1px solid var(--border-strong)',
     shadow: isBonus
-      ? '0 12px 40px -12px rgba(34, 197, 94, 0.2), 0 0 20px rgba(212, 175, 55, 0.1)' // Green/Gold Glow
-      : isDark
-        ? '0 12px 40px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.1)'
-        : '0 20px 60px -15px rgba(212, 175, 55, 0.25), 0 10px 25px -10px rgba(0,0,0,0.05)',
-    titleColor: isDark ? '#fff' : '#1a1a1a',
-    textColor: isDark ? '#a1a1aa' : '#5c5c5c',
+      ? '0 12px 40px -12px rgba(34, 197, 94, 0.2), 0 0 20px rgba(212, 175, 55, 0.1)'
+      : 'var(--card-shadow)',
+    titleColor: 'var(--text-primary)',
+    textColor: 'var(--text-secondary)',
     iconBg: isBonus
-      ? `linear-gradient(135deg, #d4af37 0%, #22c55e 100%)` // Gold to Green Gradient Icon
-      : isDark
-        ? `linear-gradient(135deg, ${color}20, ${color}10)`
-        : `linear-gradient(135deg, ${color}15, #fff 100%)`,
-    iconBorder: isDark ? `${color}30` : `${color}20`,
-    closeBtn: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-    actionText: isDark ? '#71717a' : '#a1a1aa',
+      ? `linear-gradient(135deg, #d4af37 0%, #22c55e 100%)`
+      : `linear-gradient(135deg, ${color}20, ${color}10)`,
+    iconBorder: `${color}30`,
+    closeBtn: 'var(--surface-hover)',
+    actionText: 'var(--text-muted)',
   }
 
   return (
@@ -261,7 +249,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                       fontSize: 11,
                       fontWeight: 600,
                       color: color,
-                      background: isDark ? `${color}15` : `${color}10`,
+                      background: `${color}15`,
                       padding: '2px 6px',
                       borderRadius: 6,
                       marginLeft: 8,
@@ -287,7 +275,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
 
                 {/* Progress Bar */}
                 {notification.type === 'progress_update' && notification.progress !== undefined && (
-                  <div style={{ marginTop: 10, height: 4, background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ marginTop: 10, height: 4, background: 'var(--surface-active)', borderRadius: 2, overflow: 'hidden' }}>
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${notification.progress}%` }}
@@ -300,7 +288,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
               {/* Close Button */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                whileHover={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
+                whileHover={{ backgroundColor: 'var(--surface-active)' }}
                 onClick={(e) => {
                   e.stopPropagation()
                   setIsVisible(false)
@@ -317,7 +305,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                  color: 'var(--text-muted)',
                   transition: 'color 0.2s',
                 }}
               >
@@ -334,7 +322,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
                 style={{
                   marginTop: 12,
                   paddingTop: 10,
-                  borderTop: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.04)',
+                  borderTop: '1px solid var(--border-default)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -365,7 +353,7 @@ export function SmartNotification({ notification, onDismiss, onAction }: Props) 
               left: 0,
               right: 0,
               height: 2,
-              background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              background: 'var(--border-default)',
             }}>
               <motion.div
                 initial={{ width: '100%' }}

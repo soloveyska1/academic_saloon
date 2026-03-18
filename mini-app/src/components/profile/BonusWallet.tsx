@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Clock3, Wallet2 } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
-import { useThemeValue } from '../../contexts/ThemeContext'
 import {
   formatExpiryHint,
   formatMoney,
@@ -18,8 +17,6 @@ interface Props {
 }
 
 export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions }: Props) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
   const bonusBalance = toSafeNumber(user.balance)
 
   const latestTransactions = useMemo(
@@ -54,7 +51,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
             <div style={{
               fontSize: 24,
               fontWeight: 800,
-              color: isDark ? '#E8D5A3' : '#7d5c12',
+              color: 'var(--gold-200)',
               fontFamily: "'Manrope', sans-serif",
               marginBottom: 2,
             }}>
@@ -69,8 +66,8 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
             width: 44,
             height: 44,
             borderRadius: 14,
-            background: isDark ? 'rgba(212, 175, 55, 0.10)' : 'rgba(158, 122, 26, 0.08)',
-            border: isDark ? '1px solid rgba(212, 175, 55, 0.16)' : '1px solid rgba(158, 122, 26, 0.14)',
+            background: 'var(--gold-glass-subtle)',
+            border: '1px solid var(--border-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -87,9 +84,9 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
             gap: 6,
             padding: '6px 10px',
             borderRadius: 999,
-            background: isDark ? 'rgba(251, 191, 36, 0.10)' : 'rgba(180, 130, 10, 0.08)',
-            border: isDark ? '1px solid rgba(251, 191, 36, 0.18)' : '1px solid rgba(180, 130, 10, 0.16)',
-            color: isDark ? '#fbbf24' : '#92600a',
+            background: 'var(--warning-glass)',
+            border: '1px solid var(--warning-border)',
+            color: 'var(--warning-text)',
             fontSize: 11.5,
             fontWeight: 700,
             marginBottom: 14,
@@ -103,7 +100,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
         <div style={{
           fontSize: 11,
           fontWeight: 700,
-          color: isDark ? 'rgba(255,255,255,0.44)' : 'rgba(87,83,78,0.65)',
+          color: 'var(--text-muted)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
           marginBottom: 8,

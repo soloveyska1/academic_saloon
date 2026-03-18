@@ -28,7 +28,6 @@ import { DEADLINES } from './constants'
 interface DeadlineStepProps {
   selected: string | null
   onSelect: (value: string) => void
-  isDark: boolean
   /** Base price to show real impact (optional) */
   basePrice?: number | null
 }
@@ -136,9 +135,7 @@ function getDeadlineMeta(value: string): DeadlineMeta {
 
 // ── Root component ──
 
-export function DeadlineStep({ selected, onSelect, isDark, basePrice }: DeadlineStepProps) {
-  void isDark
-
+export function DeadlineStep({ selected, onSelect, basePrice }: DeadlineStepProps) {
   const sections = useMemo(() => {
     return SECTION_ORDER.map((category) => {
       const meta = SECTION_META[category]

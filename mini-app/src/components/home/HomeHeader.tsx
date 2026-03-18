@@ -2,7 +2,6 @@ import { useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
-import { useThemeValue } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HOME HEADER — Refined Premium Edition
@@ -25,8 +24,6 @@ interface HomeHeaderProps {
 
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap, onOpenLounge, isNewUser }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
   const firstName = user.fullname?.split(' ')[0] || 'ГОСТЬ'
   const isPremiumClub = user.rank.is_max
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])
@@ -51,7 +48,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       {/* LEFT: Identity */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div className={s.avatarContainer} onClick={onSecretTap}>
-          <div className={s.avatar} style={{ position: 'relative', background: isDark ? '#121214' : '#F5F0E8' }}>
+          <div className={s.avatar} style={{ position: 'relative', background: 'var(--bg-elevated)' }}>
             {/* Fallback Layer */}
             <div style={{
               position: 'absolute',
@@ -59,13 +56,11 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: isDark
-                ? 'linear-gradient(135deg, #18181b 0%, #09090b 100%)'
-                : 'linear-gradient(135deg, #FAF7F0 0%, #F0EBE0 100%)',
+              background: 'var(--bg-elevated)',
               zIndex: 1
             }}>
               <span style={{
-                color: isDark ? '#d4af37' : '#9e7a1a',
+                color: 'var(--gold-400)',
                 fontWeight: 700,
                 fontFamily: "'Cormorant Garamond', 'Times New Roman', serif",
                 fontSize: '18px',
@@ -132,17 +127,17 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           whileTap={{ scale: 0.95 }}
           onClick={onOpenLounge}
           style={{
-            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(158,122,26,0.05)',
-            border: isDark ? '1px solid rgba(212,175,55,0.18)' : '1px solid rgba(158,122,26,0.15)',
+            background: 'var(--border-subtle)',
+            border: '1px solid var(--border-gold)',
             borderRadius: '12px',
             padding: '8px 16px',
-            color: isDark ? 'rgba(212,175,55,0.75)' : 'rgba(125,92,18,0.8)',
+            color: 'var(--gold-400)',
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: '12px',
             fontWeight: 600,
             letterSpacing: '0.06em',
             backdropFilter: 'blur(10px)',
-            boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 20px rgba(120,85,40,0.08)',
+            boxShadow: 'var(--card-shadow)',
             textTransform: 'uppercase',
           }}
         >

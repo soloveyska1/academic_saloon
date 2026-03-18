@@ -16,8 +16,8 @@
   width: 42px;
   height: 42px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--border-default);
+  border: 1px solid var(--border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,7 +52,7 @@
   margin-top: 8px;
   font-size: 13px;
   line-height: 1.55;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
   max-width: 340px;
 }
 
@@ -62,7 +62,7 @@
   border-radius: 14px;
   border: 1px solid rgba(212, 175, 55, 0.18);
   background: rgba(212, 175, 55, 0.1);
-  color: #d4af37;
+  color: var(--gold-400);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -106,13 +106,13 @@
 .heroTitle {
   font-size: 16px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .heroDescription {
   font-size: 12.5px;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
   line-height: 1.55;
 }
 
@@ -129,7 +129,7 @@
   padding: 14px 14px 15px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--surface-hover);
   text-align: left;
   cursor: pointer;
   appearance: none;
@@ -157,14 +157,14 @@
 .topicTitle {
   font-size: 13.5px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .topicDescription {
   font-size: 12.5px;
   line-height: 1.55;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
 }
 
 /* ═══════ SEGMENTED CONTROL ═══════ */
@@ -178,9 +178,9 @@
   min-height: 46px;
   padding: 0 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-secondary, #a1a1aa);
+  border: 1px solid var(--surface-hover);
+  background: var(--border-subtle);
+  color: var(--text-secondary);
   font-size: 13.5px;
   font-weight: 700;
   display: flex;
@@ -204,7 +204,7 @@
   border-radius: 20px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--surface-hover);
   text-align: left;
   cursor: pointer;
   appearance: none;
@@ -240,17 +240,17 @@
   min-width: 0;
   font-size: 15px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
 .faqAnswer {
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--surface-hover);
   font-size: 13.5px;
   line-height: 1.65;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
 }
 
 /* ═══════ "NOT FOUND" CTA ═══════ */
@@ -258,21 +258,21 @@
   border-radius: 24px;
   padding: 18px;
   background: rgba(12, 12, 15, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--surface-hover);
   box-shadow: 0 24px 46px -36px rgba(0, 0, 0, 0.9);
 }
 
 .notFoundTitle {
   font-size: 16px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
 .notFoundText {
   font-size: 13px;
   line-height: 1.6;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
   margin-bottom: 14px;
 }
 
@@ -287,7 +287,7 @@
   border-radius: 16px;
   border: none;
   background: var(--gold-metallic);
-  color: #090909;
+  color: var(--text-on-gold);
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
@@ -297,9 +297,9 @@
 .secondaryButton {
   min-height: 48px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: #f4f4f5;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-glass);
+  color: var(--text-primary);
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
@@ -313,7 +313,7 @@
   border-radius: 26px;
   overflow: hidden;
   background: rgba(12, 12, 15, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--surface-hover);
   box-shadow: 0 24px 46px -36px rgba(0, 0, 0, 0.9);
   display: flex;
   flex-direction: column;
@@ -325,7 +325,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 16px 18px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--surface-hover);
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -338,7 +338,7 @@
 .chatHeaderTitle {
   font-size: 14.5px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .chatHeaderSub {
@@ -351,8 +351,8 @@
   padding: 0 12px;
   border-radius: 12px;
   border: 1px solid rgba(212, 175, 55, 0.16);
-  background: rgba(212, 175, 55, 0.08);
-  color: #d4af37;
+  background: var(--gold-glass-subtle);
+  color: var(--gold-400);
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
@@ -364,7 +364,7 @@
 
 .chatHints {
   padding: 12px 18px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-default);
   background: rgba(255, 255, 255, 0.02);
   display: flex;
   flex-wrap: wrap;
@@ -374,7 +374,7 @@
 .chatHint {
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
   flex: 1 1 140px;
 }
 
@@ -397,8 +397,8 @@
 .dayLabel {
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--border-default);
+  border: 1px solid var(--border-default);
   font-size: 11px;
   color: rgba(255, 255, 255, 0.52);
 }
@@ -425,7 +425,7 @@
 .supportName {
   font-size: 12.5px;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--text-primary);
 }
 
 .supportSub {
@@ -437,8 +437,8 @@
   max-width: 84%;
   padding: 12px 14px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #e7cb72 0%, #d4af37 55%, #b38728 100%);
-  color: #090909;
+  background: linear-gradient(135deg, var(--gold-300) 0%, var(--gold-400) 55%, var(--gold-700) 100%);
+  color: var(--text-on-gold);
   box-shadow: 0 8px 22px rgba(212, 175, 55, 0.18);
 }
 
@@ -446,9 +446,9 @@
   max-width: 84%;
   padding: 12px 14px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #f4f4f5;
+  background: var(--border-default);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
 }
 
 .bubbleText {
@@ -495,14 +495,14 @@
 .emptyChatTitle {
   font-size: 17px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .emptyChatText {
   font-size: 13.5px;
   line-height: 1.6;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
@@ -510,9 +510,9 @@
   min-height: 46px;
   padding: 0 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: #f4f4f5;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-glass);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
   display: inline-flex;
@@ -527,22 +527,22 @@
   margin-top: 20px;
   padding: 20px 18px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--border-subtle);
+  border: 1px solid var(--surface-hover);
   text-align: center;
 }
 
 .errorTitle {
   font-size: 15px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .errorText {
   font-size: 13px;
   line-height: 1.6;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
@@ -555,9 +555,9 @@
 .retryButton {
   min-height: 44px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: #f4f4f5;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-glass);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
   display: flex;
@@ -573,7 +573,7 @@
   border-radius: 14px;
   border: 1px solid rgba(212, 175, 55, 0.18);
   background: rgba(212, 175, 55, 0.1);
-  color: #d4af37;
+  color: var(--gold-400);
   font-size: 13px;
   font-weight: 700;
   display: flex;
@@ -587,7 +587,7 @@
 /* ═══════ COMPOSER ═══════ */
 .composerBar {
   padding: 12px 16px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--surface-hover);
   background: rgba(15, 15, 18, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -599,8 +599,8 @@
   gap: 10px;
   padding: 10px 10px 10px 14px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-glass);
+  border: 1px solid var(--surface-hover);
 }
 
 .composerTextarea {
@@ -611,7 +611,7 @@
   border: none;
   outline: none;
   background: transparent;
-  color: #f4f4f5;
+  color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
   font-family: inherit;
@@ -637,14 +637,13 @@
 
 .sendButtonActive {
   background: var(--gold-metallic);
-  color: #090909;
+  color: var(--text-on-gold);
   cursor: pointer;
 }
 
 .sendButtonInactive {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-strong);
   color: rgba(255, 255, 255, 0.36);
-  cursor: default;
 }
 
 .composerFooter {
@@ -660,7 +659,7 @@
 .composerLink {
   border: none;
   background: transparent;
-  color: #d4af37;
+  color: var(--gold-400);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -686,11 +685,6 @@
    LIGHT THEME OVERRIDES — Warm Ivory + Bronze Gold + Charcoal
    ═══════════════════════════════════════════════════════════════════════════ */
 
-[data-theme="light"] .backButton {
-  background: rgba(120, 85, 40, 0.05);
-  border-color: rgba(120, 85, 40, 0.10);
-}
-
 [data-theme="light"] .headerLabel {
   color: rgba(158, 122, 26, 0.72);
 }
@@ -713,10 +707,6 @@
   border-color: rgba(158, 122, 26, 0.14);
 }
 
-[data-theme="light"] .heroTitle {
-  color: #1C1917;
-}
-
 [data-theme="light"] .topicCard {
   background: rgba(255, 255, 255, 0.88);
   border-color: rgba(120, 85, 40, 0.08);
@@ -726,10 +716,6 @@
 [data-theme="light"] .topicIcon {
   background: rgba(158, 122, 26, 0.08);
   border-color: rgba(158, 122, 26, 0.12);
-}
-
-[data-theme="light"] .topicTitle {
-  color: #1C1917;
 }
 
 [data-theme="light"] .segmentedButton {
@@ -758,10 +744,6 @@
   border-color: rgba(158, 122, 26, 0.12);
 }
 
-[data-theme="light"] .faqTitle {
-  color: #1C1917;
-}
-
 [data-theme="light"] .faqAnswer {
   border-top-color: rgba(120, 85, 40, 0.06);
 }
@@ -770,16 +752,6 @@
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(120, 85, 40, 0.08);
   box-shadow: 0 24px 46px -36px rgba(120, 85, 40, 0.12);
-}
-
-[data-theme="light"] .notFoundTitle {
-  color: #1C1917;
-}
-
-[data-theme="light"] .secondaryButton {
-  border-color: rgba(120, 85, 40, 0.10);
-  background: rgba(120, 85, 40, 0.04);
-  color: rgba(28, 25, 23, 0.85);
 }
 
 [data-theme="light"] .chatContainer {
@@ -791,10 +763,6 @@
 [data-theme="light"] .chatHeader {
   border-bottom-color: rgba(120, 85, 40, 0.06);
   background: rgba(250, 249, 247, 0.95);
-}
-
-[data-theme="light"] .chatHeaderTitle {
-  color: #1C1917;
 }
 
 [data-theme="light"] .chatHeaderSub {
@@ -821,10 +789,6 @@
 [data-theme="light"] .supportAvatar {
   background: rgba(158, 122, 26, 0.08);
   border-color: rgba(158, 122, 26, 0.14);
-}
-
-[data-theme="light"] .supportName {
-  color: #1C1917;
 }
 
 [data-theme="light"] .supportSub {
@@ -861,35 +825,9 @@
   border-color: rgba(158, 122, 26, 0.14);
 }
 
-[data-theme="light"] .emptyChatTitle {
-  color: #1C1917;
-}
-
-[data-theme="light"] .emptyChatButton {
-  border-color: rgba(120, 85, 40, 0.10);
-  background: rgba(120, 85, 40, 0.04);
-  color: rgba(28, 25, 23, 0.85);
-}
-
 [data-theme="light"] .errorCard {
   background: rgba(255, 255, 255, 0.90);
   border-color: rgba(120, 85, 40, 0.08);
-}
-
-[data-theme="light"] .errorTitle {
-  color: #1C1917;
-}
-
-[data-theme="light"] .retryButton {
-  border-color: rgba(120, 85, 40, 0.10);
-  background: rgba(120, 85, 40, 0.04);
-  color: rgba(28, 25, 23, 0.85);
-}
-
-[data-theme="light"] .telegramAltButton {
-  border-color: rgba(158, 122, 26, 0.16);
-  background: rgba(158, 122, 26, 0.08);
-  color: #9e7a1a;
 }
 
 [data-theme="light"] .composerBar {
@@ -900,10 +838,6 @@
 [data-theme="light"] .composerInner {
   background: rgba(255, 255, 255, 0.88);
   border-color: rgba(120, 85, 40, 0.08);
-}
-
-[data-theme="light"] .composerTextarea {
-  color: rgba(28, 25, 23, 0.88);
 }
 
 [data-theme="light"] .composerTextarea::placeholder {
@@ -921,8 +855,4 @@
 
 [data-theme="light"] .composerLink {
   color: #9e7a1a;
-}
-
-[data-theme="light"] .primaryButton {
-  color: #FFFFFF;
 }

@@ -27,7 +27,7 @@ const lineStyle: React.CSSProperties = {
   left: 20,
   right: 20,
   height: 2,
-  background: 'rgba(255,255,255,0.1)',
+  background: 'var(--surface-active)',
   zIndex: 0,
   transform: 'translateY(-50%)',
 }
@@ -84,8 +84,8 @@ const RankNode = memo(function RankNode({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: isActive ? rank.color : isUnlocked ? 'rgba(255,255,255,0.2)' : '#18181b',
-    border: `1px solid ${isActive ? rank.color : isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)'}`,
+    background: isActive ? rank.color : isUnlocked ? 'var(--surface-strong)' : 'var(--bg-surface)',
+    border: `1px solid ${isActive ? rank.color : 'var(--surface-active)'}`,
     boxShadow: isActive ? `0 0 15px ${rank.color}60` : 'none',
     transition: 'background 0.3s, border-color 0.3s, box-shadow 0.3s',
   }), [isActive, isUnlocked, rank.color])
@@ -109,7 +109,7 @@ const RankNode = memo(function RankNode({
       }}
     >
       <div style={nodeStyle}>
-        <Icon size={18} color={isActive ? '#000' : isUnlocked ? '#fff' : '#52525b'} />
+        <Icon size={18} color={isActive ? 'var(--text-on-gold)' : isUnlocked ? 'var(--text-primary)' : 'var(--text-muted)'} />
       </div>
 
       {/* Active Label */}

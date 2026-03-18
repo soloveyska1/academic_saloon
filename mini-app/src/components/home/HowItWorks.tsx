@@ -1,7 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { MessageSquareText, CreditCard, FileCheck } from 'lucide-react'
-import { useThemeValue } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HOW IT WORKS — 3-step anxiety reducer.
@@ -32,9 +31,6 @@ const STEPS = [
 ] as const
 
 export const HowItWorks = memo(function HowItWorks() {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -50,7 +46,7 @@ export const HowItWorks = memo(function HowItWorks() {
           fontWeight: 700,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          color: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(120,113,108,0.6)',
+          color: 'var(--text-muted)',
           marginBottom: 18,
           paddingLeft: 2,
         }}
@@ -92,12 +88,8 @@ export const HowItWorks = memo(function HowItWorks() {
                     width: 40,
                     height: 40,
                     borderRadius: 12,
-                    background: isDark
-                      ? 'rgba(212,175,55,0.06)'
-                      : 'rgba(158,122,26,0.07)',
-                    border: isDark
-                      ? '1px solid rgba(212,175,55,0.12)'
-                      : '1px solid rgba(158,122,26,0.14)',
+                    background: 'var(--gold-glass-subtle)',
+                    border: '1px solid var(--border-gold)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -107,7 +99,7 @@ export const HowItWorks = memo(function HowItWorks() {
                 >
                   <Icon
                     size={18}
-                    color={isDark ? 'rgba(212,175,55,0.65)' : 'rgba(158,122,26,0.7)'}
+                    color="var(--gold-400)"
                     strokeWidth={1.8}
                   />
                   {/* Step number badge */}
@@ -119,18 +111,14 @@ export const HowItWorks = memo(function HowItWorks() {
                       width: 18,
                       height: 18,
                       borderRadius: '50%',
-                      background: isDark
-                        ? 'linear-gradient(135deg, #D4AF37 0%, #B8962E 100%)'
-                        : 'linear-gradient(135deg, #9e7a1a 0%, #7d5c12 100%)',
+                      background: 'var(--gold-metallic)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: 9,
                       fontWeight: 800,
-                      color: isDark ? '#09090b' : '#FFFFFF',
-                      boxShadow: isDark
-                        ? '0 2px 6px rgba(0,0,0,0.3)'
-                        : '0 2px 6px rgba(120,85,40,0.09)',
+                      color: 'var(--text-on-gold)',
+                      boxShadow: 'var(--shadow-sm)',
                     }}
                   >
                     {i + 1}
@@ -145,9 +133,7 @@ export const HowItWorks = memo(function HowItWorks() {
                       width: 1,
                       flex: 1,
                       minHeight: 16,
-                      background: isDark
-                        ? 'linear-gradient(180deg, rgba(212,175,55,0.15), rgba(212,175,55,0.04))'
-                        : 'linear-gradient(180deg, rgba(158,122,26,0.18), rgba(158,122,26,0.04))',
+                      background: 'linear-gradient(180deg, var(--border-gold), transparent)',
                       marginTop: 4,
                       marginBottom: 4,
                     }}
@@ -161,7 +147,7 @@ export const HowItWorks = memo(function HowItWorks() {
                   style={{
                     fontSize: 15,
                     fontWeight: 700,
-                    color: isDark ? '#F0F0F0' : '#1C1917',
+                    color: 'var(--text-primary)',
                     lineHeight: 1.3,
                     letterSpacing: '-0.01em',
                     marginBottom: 4,
@@ -173,7 +159,7 @@ export const HowItWorks = memo(function HowItWorks() {
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: isDark ? 'rgba(255,255,255,0.40)' : 'rgba(87,83,78,0.75)',
+                    color: 'var(--text-secondary)',
                     lineHeight: 1.55,
                   }}
                 >

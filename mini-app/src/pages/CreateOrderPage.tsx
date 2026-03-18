@@ -7,7 +7,6 @@ import {
 import { UserData, WorkType, OrderCreateRequest } from '../types'
 import { createOrder, uploadOrderFiles, FileUploadResponse } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
-import { useTheme } from '../contexts/ThemeContext'
 import { usePromo } from '../contexts/PromoContext'
 import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { PromoCodeSection } from '../components/ui/PromoCodeSection'
@@ -142,7 +141,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const { haptic, hapticSuccess, hapticError } = useTelegram()
-  const { isDark } = useTheme()
   const { activePromo, clearPromo, revalidatePromo, isValidating: isRevalidating } = usePromo()
   const safeBack = useSafeBackNavigation('/')
 
@@ -1041,7 +1039,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               <DeadlineStep
                 selected={deadline}
                 onSelect={handleDeadlineSelect}
-                isDark={isDark}
                 basePrice={SERVICE_TYPES.find(s => s.id === serviceTypeId)?.priceNum}
               />
 
@@ -1066,7 +1063,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                       baseEstimate={getBaseEstimate()}
                       loyaltyDiscount={loyaltyDiscount}
                       activePromo={activePromo}
-                      isDark={isDark}
                     />
                   )}
                 </>
@@ -1096,7 +1092,6 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
         reason={promoLostReason}
         onContinue={handlePromoWarningContinue}
         onCancel={handlePromoWarningCancel}
-        isDark={isDark}
       />
 
       {/* Confetti */}

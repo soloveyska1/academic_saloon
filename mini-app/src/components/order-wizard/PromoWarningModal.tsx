@@ -7,10 +7,9 @@ interface PromoWarningModalProps {
   reason: string | null
   onContinue: () => void
   onCancel: () => void
-  isDark: boolean
 }
 
-export function PromoWarningModal({ isOpen, reason, onContinue, onCancel, isDark }: PromoWarningModalProps) {
+export function PromoWarningModal({ isOpen, reason, onContinue, onCancel }: PromoWarningModalProps) {
   useModalRegistration(isOpen, 'create-order-promo-warning')
 
   return (
@@ -39,9 +38,7 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel, isDark
             exit={{ scale: 0.9, opacity: 0, y: 10 }}
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: isDark
-                ? 'linear-gradient(145deg, #1f1f25 0%, #18181c 100%)'
-                : 'linear-gradient(145deg, #ffffff 0%, #f8f8f8 100%)',
+              background: 'var(--bg-elevated)',
               borderRadius: 28,
               padding: '32px 28px',
               maxWidth: 380,
@@ -67,7 +64,7 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel, isDark
               fontFamily: "'Playfair Display', serif",
               fontSize: 24,
               fontWeight: 700,
-              color: isDark ? '#f2f2f2' : '#18181b',
+              color: 'var(--text-primary)',
               textAlign: 'center',
               marginBottom: 14,
             }}>
@@ -76,7 +73,7 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel, isDark
 
             <p style={{
               fontSize: 15,
-              color: isDark ? '#a1a1aa' : '#52525b',
+              color: 'var(--text-secondary)',
               textAlign: 'center',
               lineHeight: 1.7,
               marginBottom: 28,
@@ -112,9 +109,9 @@ export function PromoWarningModal({ isOpen, reason, onContinue, onCancel, isDark
                   padding: '18px 24px',
                   fontSize: 16,
                   fontWeight: 600,
-                  color: isDark ? '#d4af37' : '#b8962e',
-                  background: isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(212, 175, 55, 0.12)',
-                  border: `1.5px solid ${isDark ? 'rgba(212, 175, 55, 0.25)' : 'rgba(212, 175, 55, 0.3)'}`,
+                  color: 'var(--gold-400)',
+                  background: 'var(--gold-glass-subtle)',
+                  border: '1.5px solid var(--border-gold)',
                   borderRadius: 16,
                   cursor: 'pointer',
                 }}

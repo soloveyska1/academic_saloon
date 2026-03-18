@@ -22,7 +22,7 @@
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(212, 175, 55, 0.1);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 var(--bg-glass),
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 8px 24px -6px rgba(0, 0, 0, 0.4);
 }
@@ -34,7 +34,7 @@
   background:
     radial-gradient(circle at top right, rgba(212, 175, 55, 0.08), transparent 36%),
     linear-gradient(180deg, rgba(19, 18, 24, 0.97), rgba(10, 10, 16, 0.96));
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--surface-hover);
   box-shadow: 0 20px 42px -36px rgba(0, 0, 0, 0.82);
 }
 
@@ -45,7 +45,7 @@
 
 /* ═══════ TYPOGRAPHY ═══════ */
 .goldAccent {
-  color: #E8D5A3;
+  color: var(--gold-200);
 }
 
 .sectionTitle {
@@ -66,17 +66,17 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
+  background: linear-gradient(90deg, var(--surface-hover), transparent);
 }
 
 /* ═══════ STAT CARD ═══════ */
 .statCard {
   padding: 14px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--border-subtle);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--surface-hover);
   min-width: 0;
 }
 
@@ -97,7 +97,7 @@
 
 .statHelper {
   font-size: 12px;
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted);
   line-height: 1.45;
 }
 
@@ -112,7 +112,7 @@
 .progressFill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #d4af37, #f5d061);
+  background: linear-gradient(90deg, var(--gold-400), #f5d061);
   box-shadow: 0 0 14px rgba(212, 175, 55, 0.35);
   transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -124,9 +124,9 @@
   gap: 6px;
   padding: 8px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: var(--text-muted, #71717a);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
   font-size: 11.5px;
   font-weight: 700;
   line-height: 1;
@@ -135,7 +135,7 @@
 .metaPillGold {
   background: rgba(212, 175, 55, 0.10);
   border-color: rgba(212, 175, 55, 0.18);
-  color: var(--gold-300, #e6c547);
+  color: var(--gold-300);
 }
 
 /* ═══════ QUICK ACTIONS ═══════ */
@@ -152,10 +152,10 @@
   gap: 8px;
   padding: 16px 8px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--border-subtle);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--surface-hover);
   cursor: pointer;
   appearance: none;
   color: inherit;
@@ -173,7 +173,7 @@
 .quickActionLabel {
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -183,7 +183,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .transactionRow:last-child {
@@ -208,7 +208,7 @@
 .transactionTitle {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-main, #f2f2f2);
+  color: var(--text-primary);
   margin-bottom: 3px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -217,7 +217,7 @@
 
 .transactionSub {
   font-size: 12px;
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -236,7 +236,7 @@
   border-radius: 14px;
   border: 1px solid rgba(212, 175, 55, 0.18);
   background: rgba(212, 175, 55, 0.10);
-  color: var(--gold-300, #e6c547);
+  color: var(--gold-300);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -247,9 +247,9 @@
   min-height: 56px;
   padding: 10px 12px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--surface-hover);
   background: rgba(255, 255, 255, 0.035);
-  color: var(--text-main, #f2f2f2);
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -267,7 +267,7 @@
 .miniButtonLabel {
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary);
 }
 
 /* ═══════ BANNER ═══════ */
@@ -281,7 +281,7 @@
     linear-gradient(165deg, rgba(30, 24, 10, 0.92) 0%, rgba(12, 10, 6, 0.96) 50%, rgba(9, 9, 11, 0.98) 100%);
   border: 1px solid rgba(212, 175, 55, 0.15);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 var(--bg-glass),
     0 1px 2px rgba(0, 0, 0, 0.3),
     0 20px 40px -10px rgba(0, 0, 0, 0.5);
   cursor: pointer;
@@ -290,7 +290,7 @@
 .bannerShine {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 30%);
+  background: linear-gradient(180deg, var(--bg-glass) 0%, transparent 30%);
   pointer-events: none;
 }
 
@@ -301,7 +301,7 @@
   width: 38px;
   height: 38px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #E8C84A 0%, #C9A436 100%);
+  background: linear-gradient(180deg, var(--gold-300) 0%, var(--gold-500) 100%);
   box-shadow: 0 4px 12px rgba(201, 164, 54, 0.25);
   flex-shrink: 0;
 }
@@ -337,9 +337,9 @@
   padding: 12px 14px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-default);
   font-size: 12.5px;
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted);
   line-height: 1.55;
   word-break: break-all;
 }
@@ -370,10 +370,6 @@
   box-shadow: 0 22px 50px -36px rgba(158, 122, 26, 0.15);
 }
 
-[data-theme="light"] .goldAccent {
-  color: #7d5c12;
-}
-
 [data-theme="light"] .sectionTitle {
   color: rgba(87, 83, 78, 0.6);
 }
@@ -391,10 +387,6 @@
   color: rgba(87, 83, 78, 0.65);
 }
 
-[data-theme="light"] .statHelper {
-  color: #78716C;
-}
-
 [data-theme="light"] .progressTrack {
   background: rgba(120, 85, 40, 0.08);
 }
@@ -402,12 +394,6 @@
 [data-theme="light"] .progressFill {
   background: linear-gradient(90deg, #9e7a1a, #c9a436);
   box-shadow: 0 0 14px rgba(158, 122, 26, 0.25);
-}
-
-[data-theme="light"] .metaPill {
-  background: rgba(120, 85, 40, 0.05);
-  border: 1px solid rgba(120, 85, 40, 0.08);
-  color: #78716C;
 }
 
 [data-theme="light"] .metaPillGold {
@@ -421,22 +407,6 @@
   border: 1px solid rgba(120, 85, 40, 0.08);
 }
 
-[data-theme="light"] .quickActionLabel {
-  color: #57534E;
-}
-
-[data-theme="light"] .transactionRow {
-  border-bottom: 1px solid rgba(120, 85, 40, 0.06);
-}
-
-[data-theme="light"] .transactionTitle {
-  color: #1C1917;
-}
-
-[data-theme="light"] .transactionSub {
-  color: #78716C;
-}
-
 [data-theme="light"] .goldButton {
   border: 1px solid rgba(158, 122, 26, 0.20);
   background: rgba(158, 122, 26, 0.08);
@@ -446,11 +416,6 @@
 [data-theme="light"] .miniButton {
   border: 1px solid rgba(120, 85, 40, 0.08);
   background: rgba(255, 255, 255, 0.85);
-  color: #1C1917;
-}
-
-[data-theme="light"] .miniButtonLabel {
-  color: #57534E;
 }
 
 [data-theme="light"] .bannerCard {
@@ -468,21 +433,10 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 30%);
 }
 
-[data-theme="light"] .bannerArrow {
-  background: linear-gradient(180deg, #b8941e 0%, #9e7a1a 100%);
-  box-shadow: 0 4px 12px rgba(158, 122, 26, 0.20);
-}
-
 [data-theme="light"] .footerLine {
   background: linear-gradient(90deg, transparent, rgba(158, 122, 26, 0.25));
 }
 
 [data-theme="light"] .footerLineRight {
   background: linear-gradient(90deg, rgba(158, 122, 26, 0.25), transparent);
-}
-
-[data-theme="light"] .linkBox {
-  background: rgba(120, 85, 40, 0.04);
-  border: 1px solid rgba(120, 85, 40, 0.08);
-  color: #78716C;
 }

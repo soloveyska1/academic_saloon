@@ -2,7 +2,6 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Medal, Wallet2 } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
-import { useThemeValue } from '../../contexts/ThemeContext'
 import {
   formatMoney,
   getProfileRankName,
@@ -16,8 +15,6 @@ interface Props {
 }
 
 export const StatusCard = memo(function StatusCard({ user }: Props) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
   const displayRankName = getProfileRankName(user.rank.name)
   const cashbackPercent = toSafeNumber(user.rank.cashback)
   const loyaltyDiscount = toSafeNumber(user.loyalty.discount || user.discount)
@@ -40,8 +37,8 @@ export const StatusCard = memo(function StatusCard({ user }: Props) {
             width: 40,
             height: 40,
             borderRadius: 14,
-            background: isDark ? 'rgba(212, 175, 55, 0.10)' : 'rgba(158, 122, 26, 0.08)',
-            border: isDark ? '1px solid rgba(212, 175, 55, 0.16)' : '1px solid rgba(158, 122, 26, 0.14)',
+            background: 'var(--gold-glass-subtle)',
+            border: '1px solid var(--border-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -88,7 +85,7 @@ export const StatusCard = memo(function StatusCard({ user }: Props) {
       }}>
         <div className={s.statCard}>
           <div className={s.statLabel}>Скидка</div>
-          <div className={s.statValue} style={{ color: isDark ? '#86efac' : '#15803d' }}>{loyaltyDiscount}%</div>
+          <div className={s.statValue} style={{ color: 'var(--accent-green)' }}>{loyaltyDiscount}%</div>
           <div className={s.statHelper}>
             {user.loyalty.orders_to_next > 0
               ? `Ещё ${user.loyalty.orders_to_next} заказов до ↑`
@@ -104,13 +101,13 @@ export const StatusCard = memo(function StatusCard({ user }: Props) {
 
         <div className={s.statCard}>
           <div className={s.statLabel}>Бонусный баланс</div>
-          <div className={s.statValue} style={{ color: isDark ? '#93c5fd' : '#1d4ed8' }}>{formatMoney(bonusBalance)}</div>
+          <div className={s.statValue} style={{ color: 'var(--accent-blue)' }}>{formatMoney(bonusBalance)}</div>
           <div className={s.statHelper}>Списать в оплату</div>
         </div>
 
         <div className={s.statCard}>
           <div className={s.statLabel}>Рефералы</div>
-          <div className={s.statValue} style={{ color: isDark ? '#c4b5fd' : '#7c3aed' }}>{referralsCount}</div>
+          <div className={s.statValue} style={{ color: 'var(--accent-purple)' }}>{referralsCount}</div>
           <div className={s.statHelper}>
             {referralsCount > 0 ? 'Приглашённых друзей' : 'Пока без приглашений'}
           </div>

@@ -13,7 +13,6 @@ import {
 } from 'lucide-react'
 import { Transaction } from '../../../types'
 import { ModalWrapper } from '../shared'
-import { useThemeValue } from '../../../contexts/ThemeContext'
 
 export interface TransactionsModalProps {
   isOpen: boolean
@@ -66,76 +65,61 @@ function formatDateTime(value: string): string {
   })
 }
 
-function getTransactionVisual(transaction: Transaction, isDark: boolean) {
+function getTransactionVisual(transaction: Transaction) {
   if (transaction.type === 'debit') {
     return {
       icon: CreditCard,
-      iconColor: isDark ? '#f59e0b' : '#b45309',
-      iconBackground: isDark ? 'rgba(245, 158, 11, 0.14)' : 'rgba(245, 158, 11, 0.10)',
-      iconBorder: isDark ? 'rgba(245, 158, 11, 0.24)' : 'rgba(245, 158, 11, 0.18)',
-      amountColor: isDark ? '#fbbf24' : '#b45309',
+      iconColor: 'var(--warning-text)',
+      iconBackground: 'var(--warning-glass)',
+      iconBorder: 'var(--warning-border)',
+      amountColor: 'var(--warning-text)',
       directionLabel: 'Списание',
     }
   }
 
-  const visuals: Record<string, { icon: typeof Gift; color: string; darkColor: string; background: string; darkBackground: string; border: string; darkBorder: string }> = {
+  const visuals: Record<string, { icon: typeof Gift; color: string; background: string; border: string }> = {
     order_cashback: {
       icon: Wallet2,
-      darkColor: '#93c5fd',
-      color: '#1d4ed8',
-      darkBackground: 'rgba(147, 197, 253, 0.12)',
-      background: 'rgba(29, 78, 216, 0.08)',
-      darkBorder: 'rgba(147, 197, 253, 0.22)',
-      border: 'rgba(29, 78, 216, 0.15)',
+      color: 'var(--accent-blue)',
+      background: 'var(--accent-blue-glass)',
+      border: 'var(--accent-blue-border)',
     },
     referral_bonus: {
       icon: Users,
-      darkColor: '#c4b5fd',
-      color: '#6d28d9',
-      darkBackground: 'rgba(196, 181, 253, 0.12)',
-      background: 'rgba(109, 40, 217, 0.08)',
-      darkBorder: 'rgba(196, 181, 253, 0.22)',
-      border: 'rgba(109, 40, 217, 0.15)',
+      color: 'var(--accent-purple)',
+      background: 'var(--accent-purple-glass)',
+      border: 'var(--accent-purple-border)',
     },
     compensation: {
       icon: Sparkles,
-      darkColor: '#f9a8d4',
-      color: '#be185d',
-      darkBackground: 'rgba(249, 168, 212, 0.12)',
-      background: 'rgba(190, 24, 93, 0.08)',
-      darkBorder: 'rgba(249, 168, 212, 0.22)',
-      border: 'rgba(190, 24, 93, 0.15)',
+      color: 'var(--error-text)',
+      background: 'var(--error-glass)',
+      border: 'var(--error-border)',
     },
     promo_code: {
       icon: Tag,
-      darkColor: '#86efac',
-      color: '#15803d',
-      darkBackground: 'rgba(134, 239, 172, 0.12)',
-      background: 'rgba(21, 128, 61, 0.08)',
-      darkBorder: 'rgba(134, 239, 172, 0.22)',
-      border: 'rgba(21, 128, 61, 0.15)',
+      color: 'var(--accent-green)',
+      background: 'var(--accent-green-glass)',
+      border: 'var(--accent-green-border)',
     },
   }
 
   const v = visuals[transaction.reason]
   const fallback = {
     icon: ArrowUpRight as typeof Gift,
-    darkColor: '#86efac',
-    color: '#15803d',
-    darkBackground: 'rgba(134, 239, 172, 0.12)',
-    background: 'rgba(21, 128, 61, 0.08)',
-    darkBorder: 'rgba(134, 239, 172, 0.22)',
-    border: 'rgba(21, 128, 61, 0.15)',
+    color: 'var(--accent-green)',
+    background: 'var(--accent-green-glass)',
+    border: 'var(--accent-green-border)',
   }
 
   const visual = v || fallback
 
   return {
     icon: visual.icon,
-    iconColor: isDark ? visual.darkColor : visual.color,
-    iconBackground: isDark ? visual.darkBackground : visual.background,
-    iconBorder: isDark ? visual.darkBorder : visual.border,
-    amountColor: isDark ? visual.darkColor : visual.color,
+    iconColor: visual.color,
+    iconBackground: visual.background,
+    iconBorder: visual.border,
+    amountColor: visual.color,
     directionLabel: 'Начисление',
   }
 }
@@ -144,14 +128,12 @@ function TransactionCard({
   transaction,
   selected,
   onClick,
-  isDark,
 }: {
   transaction: Transaction
   selected: boolean
   onClick: () => void
-  isDark: boolean
 }) {
-  const visual = getTransactionVisual(transaction, isDark)
+  const visual = getTransactionVisual(transaction)
   const Icon = visual.icon
   const title = transaction.description?.trim() || REASON_LABELS[transaction.reason] || 'Операция'
 
@@ -166,16 +148,12 @@ function TransactionCard({
         borderRadius: 18,
         border: `1px solid ${
           selected
-            ? isDark ? 'rgba(212,175,55,0.22)' : 'rgba(158,122,26,0.18)'
-            : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'
+            ? 'var(--border-gold)'
+            : 'var(--surface-hover)'
         }`,
         background: selected
-          ? isDark
-            ? 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(255,255,255,0.03))'
-            : 'linear-gradient(135deg, rgba(158,122,26,0.06), rgba(255,255,255,0.92))'
-          : isDark
-            ? 'rgba(255,255,255,0.03)'
-            : 'rgba(255,255,255,0.88)',
+          ? 'linear-gradient(135deg, var(--gold-glass-subtle), var(--bg-glass))'
+          : 'var(--bg-glass)',
         display: 'flex',
         alignItems: 'center',
         gap: 12,
@@ -202,7 +180,7 @@ function TransactionCard({
         <div style={{
           fontSize: 14,
           fontWeight: 700,
-          color: isDark ? '#fff' : 'rgba(28,25,23,0.92)',
+          color: 'var(--text-primary)',
           marginBottom: 4,
         }}>
           {title}
@@ -218,7 +196,7 @@ function TransactionCard({
         </div>
         <ChevronRight
           size={16}
-          color={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(120,113,108,0.5)'}
+          color="var(--text-muted)"
           style={{ marginLeft: 'auto' }}
         />
       </div>
@@ -227,9 +205,6 @@ function TransactionCard({
 }
 
 export function TransactionsModal({ isOpen, onClose, transactions, balance, onViewAll }: TransactionsModalProps) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
-
   const sortedTransactions = useMemo(
     () => [...transactions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [transactions]
@@ -247,7 +222,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
   }, [isOpen, sortedTransactions])
 
   const selectedTransaction = sortedTransactions.find((transaction) => transaction.id === selectedTransactionId) || sortedTransactions[0] || null
-  const selectedVisual = selectedTransaction ? getTransactionVisual(selectedTransaction, isDark) : null
+  const selectedVisual = selectedTransaction ? getTransactionVisual(selectedTransaction) : null
 
   return (
     <ModalWrapper
@@ -255,7 +230,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
       onClose={onClose}
       modalId="transactions-modal"
       title="История начислений и списаний"
-      accentColor={isDark ? '#D4AF37' : '#9e7a1a'}
+      accentColor="var(--gold-400)"
     >
       <div style={{ padding: '0 20px 20px' }}>
         <m.div
@@ -270,9 +245,9 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               gap: 8,
               padding: '6px 10px',
               borderRadius: 999,
-              background: isDark ? 'rgba(212,175,55,0.08)' : 'rgba(158,122,26,0.07)',
-              border: isDark ? '1px solid rgba(212,175,55,0.16)' : '1px solid rgba(158,122,26,0.14)',
-              color: isDark ? '#d4af37' : '#9e7a1a',
+              background: 'var(--gold-glass-subtle)',
+              border: '1px solid var(--gold-glass-medium)',
+              color: 'var(--gold-400)',
               fontSize: 11,
               fontWeight: 700,
               textTransform: 'uppercase',
@@ -287,7 +262,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
           <div style={{
             fontSize: 26,
             fontWeight: 700,
-            color: isDark ? '#fff' : 'rgba(28,25,23,0.92)',
+            color: 'var(--text-primary)',
             lineHeight: 1.15,
             marginBottom: 8,
           }}>
@@ -303,18 +278,14 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             marginBottom: 16,
             padding: 18,
             borderRadius: 22,
-            background: isDark
-              ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(255,255,255,0.03))'
-              : 'linear-gradient(135deg, rgba(158,122,26,0.07), rgba(255,255,255,0.92))',
-            border: isDark
-              ? '1px solid rgba(212,175,55,0.18)'
-              : '1px solid rgba(158,122,26,0.14)',
+            background: 'linear-gradient(135deg, var(--gold-glass-subtle), var(--bg-glass))',
+            border: '1px solid var(--gold-glass-medium)',
           }}
         >
           <div style={{
             fontSize: 11,
             fontWeight: 700,
-            color: isDark ? 'rgba(212,175,55,0.72)' : 'rgba(158,122,26,0.7)',
+            color: 'var(--gold-400)',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
             marginBottom: 8,
@@ -324,7 +295,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
           <div style={{
             fontSize: 34,
             fontWeight: 800,
-            color: isDark ? '#fff' : 'rgba(28,25,23,0.95)',
+            color: 'var(--text-primary)',
             lineHeight: 1,
             marginBottom: 8,
           }}>
@@ -341,8 +312,8 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               marginBottom: 16,
               padding: 16,
               borderRadius: 20,
-              background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.90)',
-              border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(120,85,40,0.08)',
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-default)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
@@ -366,7 +337,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 <div style={{
                   fontSize: 16,
                   fontWeight: 700,
-                  color: isDark ? '#fff' : 'rgba(28,25,23,0.92)',
+                  color: 'var(--text-primary)',
                   marginBottom: 4,
                 }}>
                   {selectedTransaction.description?.trim() || REASON_LABELS[selectedTransaction.reason] || 'Операция'}
@@ -385,13 +356,13 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               <div style={{
                 padding: '10px 12px',
                 borderRadius: 14,
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
-                border: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(120,85,40,0.06)',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-subtle)',
               }}>
                 <div style={{
                   fontSize: 10.5,
                   fontWeight: 700,
-                  color: isDark ? 'rgba(255,255,255,0.44)' : 'rgba(120,113,108,0.65)',
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
                   marginBottom: 6,
@@ -401,7 +372,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 <div style={{
                   fontSize: 13,
                   fontWeight: 700,
-                  color: isDark ? '#fff' : 'rgba(28,25,23,0.90)',
+                  color: 'var(--text-primary)',
                 }}>
                   {selectedVisual.directionLabel}
                 </div>
@@ -409,13 +380,13 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               <div style={{
                 padding: '10px 12px',
                 borderRadius: 14,
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
-                border: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(120,85,40,0.06)',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-subtle)',
               }}>
                 <div style={{
                   fontSize: 10.5,
                   fontWeight: 700,
-                  color: isDark ? 'rgba(255,255,255,0.44)' : 'rgba(120,113,108,0.65)',
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
                   marginBottom: 6,
@@ -425,7 +396,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 <div style={{
                   fontSize: 13,
                   fontWeight: 700,
-                  color: isDark ? '#fff' : 'rgba(28,25,23,0.90)',
+                  color: 'var(--text-primary)',
                 }}>
                   {REASON_LABELS[selectedTransaction.reason] || 'Операция'}
                 </div>
@@ -433,13 +404,13 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               <div style={{
                 padding: '10px 12px',
                 borderRadius: 14,
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
-                border: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(120,85,40,0.06)',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-subtle)',
               }}>
                 <div style={{
                   fontSize: 10.5,
                   fontWeight: 700,
-                  color: isDark ? 'rgba(255,255,255,0.44)' : 'rgba(120,113,108,0.65)',
+                  color: 'var(--text-muted)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
                   marginBottom: 6,
@@ -449,7 +420,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 <div style={{
                   fontSize: 13,
                   fontWeight: 700,
-                  color: isDark ? '#fff' : 'rgba(28,25,23,0.90)',
+                  color: 'var(--text-primary)',
                 }}>
                   {new Date(selectedTransaction.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                 </div>
@@ -461,7 +432,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               alignItems: 'center',
               gap: 8,
               marginTop: 12,
-              color: isDark ? 'rgba(255,255,255,0.46)' : 'rgba(120,113,108,0.65)',
+              color: 'var(--text-muted)',
               fontSize: 12.5,
             }}>
               <Clock3 size={14} />
@@ -478,7 +449,6 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 transaction={transaction}
                 selected={transaction.id === selectedTransaction?.id}
                 onClick={() => setSelectedTransactionId(transaction.id)}
-                isDark={isDark}
               />
             ))
           ) : (
@@ -486,8 +456,8 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               style={{
                 padding: '18px 16px',
                 borderRadius: 18,
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.88)',
-                border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(120,85,40,0.08)',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-default)',
                 color: 'var(--text-secondary)',
                 fontSize: 13,
                 lineHeight: 1.6,
@@ -506,9 +476,9 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             width: '100%',
             minHeight: 46,
             borderRadius: 16,
-            border: isDark ? '1px solid rgba(212,175,55,0.18)' : '1px solid rgba(158,122,26,0.16)',
-            background: isDark ? 'rgba(212,175,55,0.1)' : 'rgba(158,122,26,0.08)',
-            color: isDark ? '#d4af37' : '#9e7a1a',
+            border: '1px solid var(--gold-glass-medium)',
+            background: 'var(--gold-glass-subtle)',
+            color: 'var(--gold-400)',
             fontSize: 14,
             fontWeight: 700,
             display: 'flex',

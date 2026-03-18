@@ -36,7 +36,6 @@ import {
   parseOrderDateSafe,
   toSafeString,
 } from '../lib/orderView'
-import { useThemeValue } from '../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ORDERS PAGE — Quiet Luxury Redesign
@@ -345,13 +344,11 @@ function FilterChip({
   count,
   active,
   onClick,
-  isDark,
 }: {
   label: string
   count: number
   active: boolean
   onClick: () => void
-  isDark: boolean
 }) {
   return (
     <motion.button
@@ -364,14 +361,14 @@ function FilterChip({
         padding: '0 14px',
         borderRadius: 99,
         border: `1px solid ${active
-          ? (isDark ? 'rgba(212,175,55,0.25)' : 'rgba(158,122,26,0.25)')
-          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)')}`,
+          ? 'var(--gold-glass-strong)'
+          : 'var(--surface-hover)'}`,
         background: active
-          ? (isDark ? 'rgba(212,175,55,0.10)' : 'rgba(158,122,26,0.10)')
+          ? 'var(--gold-glass-subtle)'
           : 'transparent',
         color: active
-          ? (isDark ? '#E8D5A3' : '#7d5c12')
-          : (isDark ? 'rgba(255,255,255,0.45)' : 'rgba(87,83,78,0.7)'),
+          ? 'var(--gold-200)'
+          : 'var(--text-secondary)',
         cursor: 'pointer',
         display: 'inline-flex',
         alignItems: 'center',
@@ -394,14 +391,12 @@ function ActionBanner({
   payableTotal,
   onOpenOrder,
   onBatchPay,
-  isDark,
 }: {
   order: Order | null
   payableCount: number
   payableTotal: number
   onOpenOrder: (order: Order, path?: string) => void
   onBatchPay: () => void
-  isDark: boolean
 }) {
   // Batch payment banner
   if (payableCount > 1) {
@@ -417,8 +412,8 @@ function ActionBanner({
           padding: '14px 16px',
           marginBottom: 16,
           borderRadius: 16,
-          background: isDark ? 'rgba(212,175,55,0.05)' : 'rgba(158,122,26,0.06)',
-          border: `1px solid ${isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.14)'}`,
+          background: 'var(--gold-glass-subtle)',
+          border: '1px solid var(--border-gold)',
           cursor: 'pointer',
           textAlign: 'left',
           display: 'flex',
@@ -428,29 +423,27 @@ function ActionBanner({
       >
         <div style={{
           width: 40, height: 40, borderRadius: 12,
-          background: isDark ? 'rgba(212,175,55,0.10)' : 'rgba(158,122,26,0.10)',
+          background: 'var(--gold-glass-subtle)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <CreditCard size={18} color={isDark ? '#E8D5A3' : '#7d5c12'} />
+          <CreditCard size={18} color="var(--gold-200)" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#E8D5A3' : '#7d5c12', marginBottom: 2 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold-200)', marginBottom: 2 }}>
             Оплатить {payableCount} {pluralize(payableCount, ['заказ', 'заказа', 'заказов'])}
           </div>
-          <div style={{ fontSize: 12.5, color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)' }}>
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
             Одним платежом · {formatMoney(payableTotal)}
           </div>
         </div>
         <div style={{
           width: 36, height: 36, borderRadius: 12,
-          background: isDark
-            ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
-            : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
+          background: 'var(--gold-metallic)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <ArrowUpRight size={16} color={isDark ? '#090909' : '#FFFFFF'} />
+          <ArrowUpRight size={16} color="var(--text-on-gold)" />
         </div>
       </motion.button>
     )
@@ -472,8 +465,8 @@ function ActionBanner({
         padding: '14px 16px',
         marginBottom: 16,
         borderRadius: 16,
-        background: isDark ? 'rgba(212,175,55,0.05)' : 'rgba(158,122,26,0.06)',
-        border: `1px solid ${isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.14)'}`,
+        background: 'var(--gold-glass-subtle)',
+        border: '1px solid var(--border-gold)',
         cursor: 'pointer',
         textAlign: 'left',
         display: 'flex',
@@ -492,14 +485,14 @@ function ActionBanner({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 14, fontWeight: 700,
-          color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(28,25,23,0.88)',
+          color: 'var(--text-primary)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {meta.actionLabel}: {getOrderDisplayTitle(order)}
         </div>
         <div style={{
           fontSize: 12.5,
-          color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)',
+          color: 'var(--text-secondary)',
           marginTop: 2,
         }}>
           {meta.hint}
@@ -507,12 +500,10 @@ function ActionBanner({
       </div>
       <div style={{
         height: 32, padding: '0 12px', borderRadius: 10,
-        background: isDark
-          ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
-          : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
+        background: 'var(--gold-metallic)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, fontSize: 12, fontWeight: 700,
-        color: isDark ? '#090909' : '#FFFFFF',
+        color: 'var(--text-on-gold)',
       }}>
         {meta.actionLabel || 'Открыть'}
       </div>
@@ -524,12 +515,10 @@ const OrderCard = memo(function OrderCard({
   order,
   index,
   onOpenOrder,
-  isDark,
 }: {
   order: Order
   index: number
   onOpenOrder: (order: Order) => void
-  isDark: boolean
 }) {
   const meta = getStatusMeta(order.status)
   const WorkIcon = WORK_TYPE_ICONS[order.work_type] || FileText
@@ -553,19 +542,17 @@ const OrderCard = memo(function OrderCard({
         padding: '18px',
         borderRadius: 20,
         background: meta.needsAction
-          ? (isDark
-            ? 'linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(212,175,55,0.01) 100%)'
-            : 'linear-gradient(135deg, rgba(158,122,26,0.05) 0%, rgba(158,122,26,0.02) 100%)')
-          : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.88)'),
+          ? 'var(--gold-glass-subtle)'
+          : 'var(--bg-card)',
         border: `1px solid ${meta.needsAction
-          ? (isDark ? 'rgba(212,175,55,0.10)' : 'rgba(158,122,26,0.12)')
-          : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)')}`,
+          ? 'var(--border-gold)'
+          : 'var(--border-default)'}`,
         cursor: 'pointer',
         textAlign: 'left',
         marginBottom: 10,
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: isDark ? 'none' : '0 2px 8px rgba(120,85,40,0.06)',
+        boxShadow: 'var(--card-shadow)',
       }}
     >
       {/* Action indicator — thin gold top line */}
@@ -574,9 +561,7 @@ const OrderCard = memo(function OrderCard({
           position: 'absolute',
           top: 0, left: 24, right: 24,
           height: 1,
-          background: isDark
-            ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)'
-            : 'linear-gradient(90deg, transparent, rgba(158,122,26,0.25), transparent)',
+          background: 'var(--gold-glass-medium)',
         }} />
       )}
 
@@ -586,7 +571,7 @@ const OrderCard = memo(function OrderCard({
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
           height: 2,
-          background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(120,85,40,0.06)',
+          background: 'var(--border-subtle)',
         }}>
           <div style={{
             height: '100%',
@@ -605,17 +590,14 @@ const OrderCard = memo(function OrderCard({
       }}>
         <div style={{
           width: 44, height: 44, borderRadius: 14,
-          background: meta.needsAction
-            ? (isDark ? 'rgba(212,175,55,0.07)' : 'rgba(158,122,26,0.08)')
-            : (isDark ? 'rgba(212,175,55,0.05)' : 'rgba(158,122,26,0.06)'),
+          background: 'var(--gold-glass-subtle)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
           <WorkIcon
             size={20}
-            color={meta.needsAction
-              ? (isDark ? 'rgba(212,175,55,0.60)' : 'rgba(158,122,26,0.65)')
-              : (isDark ? 'rgba(212,175,55,0.45)' : 'rgba(158,122,26,0.50)')}
+            color="var(--gold-400)"
+            style={{ opacity: meta.needsAction ? 0.6 : 0.45 }}
             strokeWidth={1.5}
           />
         </div>
@@ -623,7 +605,7 @@ const OrderCard = memo(function OrderCard({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 15, fontWeight: 700,
-            color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(28,25,23,0.88)',
+            color: 'var(--text-primary)',
             letterSpacing: '-0.01em',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             marginBottom: 3,
@@ -632,7 +614,7 @@ const OrderCard = memo(function OrderCard({
           </div>
           <div style={{
             fontSize: 13,
-            color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(120,113,108,0.65)',
+            color: 'var(--text-muted)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {subtitle}
@@ -643,7 +625,7 @@ const OrderCard = memo(function OrderCard({
         <div style={{ flexShrink: 0, textAlign: 'right' }}>
           <div style={{
             fontSize: 16, fontWeight: 700,
-            color: isDark ? '#E8D5A3' : '#7d5c12',
+            color: 'var(--gold-200)',
             letterSpacing: '-0.01em',
           }}>
             {formatMoney(amount)}
@@ -655,8 +637,8 @@ const OrderCard = memo(function OrderCard({
       <div style={{
         height: 1, marginBottom: 12,
         background: meta.needsAction
-          ? (isDark ? 'rgba(212,175,55,0.06)' : 'rgba(158,122,26,0.08)')
-          : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(120,85,40,0.06)'),
+          ? 'var(--border-gold)'
+          : 'var(--border-subtle)',
       }} />
 
       {/* Row 2: Status + Deadline + Arrow */}
@@ -681,10 +663,10 @@ const OrderCard = memo(function OrderCard({
         <span style={{
           fontSize: 12.5, fontWeight: 500,
           color: isOverdue
-            ? '#ef4444'
+            ? 'var(--error-text)'
             : isUrgent
               ? '#fbbf24'
-              : (isDark ? 'rgba(255,255,255,0.35)' : 'rgba(120,113,108,0.6)'),
+              : 'var(--text-muted)',
         }}>
           {deadlineText}
         </span>
@@ -692,14 +674,14 @@ const OrderCard = memo(function OrderCard({
         {/* Order ID */}
         <span style={{
           fontSize: 11,
-          color: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(120,113,108,0.45)',
+          color: 'var(--text-muted)',
         }}>
           #{order.id}
         </span>
 
         <ChevronRight
           size={14}
-          color={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(120,113,108,0.4)'}
+          color="var(--text-muted)"
           style={{ marginLeft: 'auto', flexShrink: 0 }}
         />
       </div>
@@ -707,7 +689,7 @@ const OrderCard = memo(function OrderCard({
   )
 })
 
-const SectionHeader = memo(function SectionHeader({ title, count, isDark }: { title: string; count: number; isDark: boolean }) {
+const SectionHeader = memo(function SectionHeader({ title, count }: { title: string; count: number }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
@@ -715,14 +697,14 @@ const SectionHeader = memo(function SectionHeader({ title, count, isDark }: { ti
     }}>
       <span style={{
         fontSize: 14, fontWeight: 700,
-        color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(87,83,78,0.8)',
+        color: 'var(--text-secondary)',
         letterSpacing: '-0.01em',
       }}>
         {title}
       </span>
       <span style={{
         fontSize: 11, fontWeight: 600,
-        color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(120,113,108,0.5)',
+        color: 'var(--text-muted)',
       }}>
         {count}
       </span>
@@ -734,12 +716,10 @@ function EmptyState({
   onCreateOrder,
   hasSearch,
   onReset,
-  isDark,
 }: {
   onCreateOrder: () => void
   hasSearch: boolean
   onReset: () => void
-  isDark: boolean
 }) {
   return (
     <div style={{
@@ -753,24 +733,24 @@ function EmptyState({
         <div style={{
           width: 56, height: 56, borderRadius: 18,
           margin: '0 auto 20px',
-          background: isDark ? 'rgba(212,175,55,0.06)' : 'rgba(158,122,26,0.07)',
-          border: `1px solid ${isDark ? 'rgba(212,175,55,0.10)' : 'rgba(158,122,26,0.12)'}`,
+          background: 'var(--gold-glass-subtle)',
+          border: '1px solid var(--border-gold)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <FolderOpen size={24} color={isDark ? 'rgba(212,175,55,0.50)' : 'rgba(158,122,26,0.55)'} />
+          <FolderOpen size={24} color="var(--gold-400)" style={{ opacity: 0.5 }} />
         </div>
       </motion.div>
 
       <div style={{
         fontSize: 18, fontWeight: 700,
-        color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(28,25,23,0.88)',
+        color: 'var(--text-primary)',
         marginBottom: 8,
       }}>
         {hasSearch ? 'Ничего не нашли' : 'Пока нет заказов'}
       </div>
       <div style={{
         fontSize: 13, lineHeight: 1.6,
-        color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)',
+        color: 'var(--text-secondary)',
         marginBottom: 24,
         maxWidth: 260,
         margin: '0 auto 24px',
@@ -788,10 +768,8 @@ function EmptyState({
           style={{
             height: 44, padding: '0 20px', borderRadius: 14,
             border: 'none',
-            background: isDark
-              ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
-              : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
-            color: isDark ? '#090909' : '#FFFFFF',
+            background: 'var(--gold-metallic)',
+            color: 'var(--text-on-gold)',
             fontSize: 14, fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -805,9 +783,9 @@ function EmptyState({
             onClick={onReset}
             style={{
               height: 44, padding: '0 20px', borderRadius: 14,
-              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(120,85,40,0.10)'}`,
+              border: '1px solid var(--border-strong)',
               background: 'transparent',
-              color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(87,83,78,0.7)',
+              color: 'var(--text-secondary)',
               fontSize: 14, fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -825,8 +803,6 @@ function EmptyState({
 export function OrdersPage({ orders, loading, onRefresh }: Props) {
   const navigate = useNavigate()
   const { haptic } = useTelegram()
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
 
   const { containerRef, PullIndicator } = usePullToRefresh({
     onRefresh: async () => { if (onRefresh) await onRefresh() },
@@ -964,7 +940,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             margin: 0,
             fontSize: 24,
             fontWeight: 800,
-            color: isDark ? '#E8D5A3' : '#7d5c12',
+            color: 'var(--gold-200)',
             fontFamily: "'Manrope', sans-serif",
             letterSpacing: '-0.02em',
           }}>
@@ -977,13 +953,13 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             onClick={handleCreateOrder}
             style={{
               width: 42, height: 42, borderRadius: 14,
-              background: isDark ? 'rgba(212,175,55,0.08)' : 'rgba(158,122,26,0.08)',
-              border: `1px solid ${isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.14)'}`,
+              background: 'var(--gold-glass-subtle)',
+              border: '1px solid var(--border-gold)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
             }}
           >
-            <Plus size={20} color={isDark ? '#E8D5A3' : '#7d5c12'} />
+            <Plus size={20} color="var(--gold-200)" />
           </motion.button>
         </motion.div>
 
@@ -997,28 +973,28 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
               marginBottom: 16,
               padding: '12px 16px',
               borderRadius: 14,
-              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.88)',
-              border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)'}`,
-              boxShadow: isDark ? 'none' : '0 2px 8px rgba(120,85,40,0.05)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-default)',
+              boxShadow: 'var(--card-shadow)',
             }}
           >
             {stats.action > 0 && (
-              <span style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#E8D5A3' : '#7d5c12' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gold-200)' }}>
                 {stats.action} {pluralize(stats.action, ['ждёт', 'ждут', 'ждут'])} вас
               </span>
             )}
             {stats.action > 0 && stats.active > 0 && (
-              <span style={{ width: 3, height: 3, borderRadius: '50%', background: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(120,85,40,0.2)' }} />
+              <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--surface-overlay)' }} />
             )}
             {stats.active > 0 && (
-              <span style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                 {stats.active} в работе
               </span>
             )}
             <span style={{
               marginLeft: 'auto',
               fontSize: 13, fontWeight: 600,
-              color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(120,113,108,0.6)',
+              color: 'var(--text-muted)',
             }}>
               {formatMoney(stats.totalValue)}
             </span>
@@ -1032,7 +1008,6 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
           payableTotal={batchPaymentTotal}
           onOpenOrder={handleOpenOrder}
           onBatchPay={handleBatchPay}
-          isDark={isDark}
         />
 
         {/* ═══════ Search ═══════ */}
@@ -1040,12 +1015,12 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '10px 14px',
           borderRadius: 14,
-          background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.88)',
-          border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)'}`,
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
           marginBottom: 12,
-          boxShadow: isDark ? 'none' : '0 2px 8px rgba(120,85,40,0.05)',
+          boxShadow: 'var(--card-shadow)',
         }}>
-          <Search size={16} color={isDark ? 'rgba(212,175,55,0.45)' : 'rgba(158,122,26,0.50)'} />
+          <Search size={16} color="var(--gold-400)" style={{ opacity: 0.45 }} />
           <input
             type="search"
             value={searchQuery}
@@ -1054,7 +1029,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             style={{
               flex: 1, minWidth: 0,
               background: 'transparent', border: 'none', outline: 'none',
-              color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(28,25,23,0.88)',
+              color: 'var(--text-primary)',
               fontSize: 14,
             }}
           />
@@ -1074,7 +1049,6 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
               count={item.count}
               active={filter === item.key}
               onClick={() => { haptic('light'); setFilter(item.key) }}
-              isDark={isDark}
             />
           ))}
         </div>
@@ -1089,19 +1063,17 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             onCreateOrder={handleCreateOrder}
             hasSearch={Boolean(searchQuery.trim()) || filter !== 'all'}
             onReset={handleReset}
-            isDark={isDark}
           />
         ) : (
           sections.map(section => (
             <section key={section.key} style={{ marginBottom: 20 }}>
-              <SectionHeader title={section.title} count={section.orders.length} isDark={isDark} />
+              <SectionHeader title={section.title} count={section.orders.length} />
               {section.orders.map((order, i) => (
                 <OrderCard
                   key={order.id}
                   order={order}
                   index={i}
                   onOpenOrder={(o) => handleOpenOrder(o)}
-                  isDark={isDark}
                 />
               ))}
             </section>

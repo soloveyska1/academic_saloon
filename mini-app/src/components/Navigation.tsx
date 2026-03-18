@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Home, List, Crown, User, LucideIcon } from 'lucide-react'
 import { useHapticFeedback } from '../hooks/useHapticFeedback'
 import { useNavigation } from '../contexts/NavigationContext'
-import { useThemeValue } from '../contexts/ThemeContext'
 import { isNavigationItemActive, shouldHideBottomNavigation } from '../utils/navigation'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -84,9 +83,6 @@ export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { impactOccurred: haptic } = useHapticFeedback()
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
-
   // Context & Scroll State
   const { isHidden, isForcedHidden, isModalOpen } = useNavigation()
   const [isVisible, setIsVisible] = useState(true)
@@ -190,9 +186,9 @@ export const Navigation = () => {
   const activeIndex = navItems.findIndex(item => isNavigationItemActive(location.pathname, item.path))
 
   // Theme-aware colors
-  const goldAccent = isDark ? '#D4AF37' : '#9e7a1a'
-  const inactiveIconColor = isDark ? '#71717a' : 'rgba(87,83,78,0.7)'
-  const inactiveLabelColor = isDark ? '#9a9aa6' : 'rgba(87,83,78,0.75)'
+  const goldAccent = 'var(--gold-400)'
+  const inactiveIconColor = 'var(--text-muted)'
+  const inactiveLabelColor = 'var(--text-secondary)'
 
   return (
     <AnimatePresence>
@@ -218,9 +214,7 @@ export const Navigation = () => {
         >
           {/* Dynamic Island Capsule */}
           <div style={{
-            background: isDark
-              ? 'rgba(15, 15, 18, 0.85)'
-              : 'rgba(255, 255, 255, 0.82)',
+            background: 'var(--nav-capsule-bg)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             borderRadius: '100px',
@@ -229,20 +223,8 @@ export const Navigation = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 4,
-            border: isDark
-              ? '1px solid rgba(255, 255, 255, 0.08)'
-              : '1px solid rgba(120, 85, 40, 0.1)',
-            boxShadow: isDark
-              ? `
-                0 20px 40px -10px rgba(0,0,0,0.6),
-                0 0 0 1px rgba(0,0,0,1),
-                inset 0 1px 0 rgba(255,255,255,0.15)
-              `
-              : `
-                0 20px 40px -10px rgba(120,85,40,0.18),
-                0 0 0 1px rgba(120,85,40,0.06),
-                inset 0 1px 0 rgba(255,255,255,0.9)
-              `,
+            border: '1px solid var(--border-strong)',
+            boxShadow: 'var(--card-shadow)',
             position: 'relative',
             overflow: 'hidden'
           }}>
@@ -250,18 +232,14 @@ export const Navigation = () => {
             {/* Top Gloss Highlight */}
             <div style={{
               position: 'absolute', top: 0, left: 20, right: 20, height: 1,
-              background: isDark
-                ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)'
-                : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+              background: 'linear-gradient(90deg, transparent, var(--surface-strong), transparent)',
               zIndex: 10
             }} />
 
             {/* Bottom Golden Glow (Ambient) */}
             <div style={{
               position: 'absolute', bottom: -15, left: '20%', right: '20%', height: 30,
-              background: isDark
-                ? 'radial-gradient(ellipse at center, rgba(212,175,55,0.15) 0%, transparent 70%)'
-                : 'radial-gradient(ellipse at center, rgba(158,122,26,0.1) 0%, transparent 70%)',
+              background: 'radial-gradient(ellipse at center, var(--gold-glass-medium) 0%, transparent 70%)',
               filter: 'blur(15px)',
               zIndex: 0
             }} />
@@ -299,15 +277,9 @@ export const Navigation = () => {
                         position: 'absolute',
                         inset: 6,
                         borderRadius: '50px',
-                        background: isDark
-                          ? 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.05) 100%)'
-                          : 'linear-gradient(135deg, rgba(158,122,26,0.12) 0%, rgba(158,122,26,0.03) 100%)',
-                        boxShadow: isDark
-                          ? '0 0 20px rgba(212,175,55,0.15)'
-                          : '0 0 20px rgba(158,122,26,0.08)',
-                        border: isDark
-                          ? '1px solid rgba(212,175,55,0.1)'
-                          : '1px solid rgba(158,122,26,0.1)',
+                        background: 'linear-gradient(135deg, var(--gold-glass-strong) 0%, var(--gold-glass-subtle) 100%)',
+                        boxShadow: 'var(--glow-gold)',
+                        border: '1px solid var(--gold-glass-subtle)',
                         zIndex: 0
                       }}
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
