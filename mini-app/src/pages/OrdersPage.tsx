@@ -1040,11 +1040,12 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '10px 14px',
           borderRadius: 14,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.04)',
+          background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.88)',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)'}`,
           marginBottom: 12,
+          boxShadow: isDark ? 'none' : '0 2px 8px rgba(120,85,40,0.05)',
         }}>
-          <Search size={16} color="rgba(212,175,55,0.45)" />
+          <Search size={16} color={isDark ? 'rgba(212,175,55,0.45)' : 'rgba(158,122,26,0.50)'} />
           <input
             type="search"
             value={searchQuery}
@@ -1053,7 +1054,8 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             style={{
               flex: 1, minWidth: 0,
               background: 'transparent', border: 'none', outline: 'none',
-              color: 'rgba(255,255,255,0.88)', fontSize: 14,
+              color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(28,25,23,0.88)',
+              fontSize: 14,
             }}
           />
         </div>
@@ -1072,6 +1074,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
               count={item.count}
               active={filter === item.key}
               onClick={() => { haptic('light'); setFilter(item.key) }}
+              isDark={isDark}
             />
           ))}
         </div>
@@ -1086,17 +1089,19 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             onCreateOrder={handleCreateOrder}
             hasSearch={Boolean(searchQuery.trim()) || filter !== 'all'}
             onReset={handleReset}
+            isDark={isDark}
           />
         ) : (
           sections.map(section => (
             <section key={section.key} style={{ marginBottom: 20 }}>
-              <SectionHeader title={section.title} count={section.orders.length} />
+              <SectionHeader title={section.title} count={section.orders.length} isDark={isDark} />
               {section.orders.map((order, i) => (
                 <OrderCard
                   key={order.id}
                   order={order}
                   index={i}
                   onOpenOrder={(o) => handleOpenOrder(o)}
+                  isDark={isDark}
                 />
               ))}
             </section>

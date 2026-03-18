@@ -21,6 +21,7 @@ import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { useTelegram } from '../hooks/useUserData'
 import { RANKS, getRankByCashback, getNextRank, isMaxRank, getRankIndexByCashback } from '../lib/ranks'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
+import { useThemeValue } from '../contexts/ThemeContext'
 import homeStyles from './HomePage.module.css'
 
 interface ClubPageProps {
