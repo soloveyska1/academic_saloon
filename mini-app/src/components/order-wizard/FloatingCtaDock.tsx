@@ -55,7 +55,7 @@ export function FloatingCtaDock({
               alignItems: 'center',
               gap: 14,
               padding: '14px 24px',
-              background: 'rgba(10, 10, 12, 0.85)',
+              background: 'var(--bg-card)',
               backdropFilter: 'blur(20px) saturate(180%)',
               WebkitBackdropFilter: 'blur(20px) saturate(180%)',
               border: '1px solid rgba(212, 175, 55, 0.25)',

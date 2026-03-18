@@ -40,7 +40,7 @@ function RevisionToken({ used, index }: { used: boolean; index: number }) {
       {used ? (
         <CheckCircle2 size={16} color="#6b7280" />
       ) : (
-        <Sparkles size={14} color="#22c55e" />
+        <Sparkles size={14} color="var(--success-text)" />
       )}
     </motion.div>
   )
@@ -125,8 +125,8 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
         }}
       >
         {/* Decorative corners */}
-        <DecorativeCorner position="top-left" color="#22c55e" />
-        <DecorativeCorner position="bottom-right" color="#22c55e" />
+        <DecorativeCorner position="top-left" color="var(--success-text)" />
+        <DecorativeCorner position="bottom-right" color="var(--success-text)" />
 
         <div style={{
           width: 40,
@@ -139,7 +139,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
           justifyContent: 'center',
           marginBottom: 12,
         }}>
-          <Shield size={20} color="#22c55e" />
+          <Shield size={20} color="var(--success-text)" />
         </div>
 
         <div style={{
@@ -156,7 +156,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
         <div style={{
           fontSize: 22,
           fontWeight: 800,
-          background: 'linear-gradient(135deg, #22c55e, #4ade80)',
+          background: 'linear-gradient(135deg, var(--success-text), var(--success-text))',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           marginBottom: 4,
@@ -165,7 +165,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
         </div>
         <div style={{
           fontSize: 12,
-          color: 'rgba(255,255,255,0.5)',
+          color: 'var(--text-muted)',
           lineHeight: 1.4,
         }}>
           бесплатных правок
@@ -230,7 +230,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
 
         <div style={{
           fontSize: 12,
-          color: revisionCount >= maxFreeRevisions ? '#f59e0b' : 'rgba(255,255,255,0.5)',
+          color: revisionCount >= maxFreeRevisions ? 'var(--warning-text)' : 'var(--text-muted)',
           display: 'flex',
           alignItems: 'center',
           gap: 4,
@@ -303,7 +303,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
                 justifyContent: 'center',
               }}
             >
-              <Gift size={20} color="#D4AF37" />
+              <Gift size={20} color="var(--gold-400)" />
             </motion.div>
             <div>
               <div style={{
@@ -316,7 +316,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
               </div>
               <div style={{
                 fontSize: 11,
-                color: 'rgba(255,255,255,0.4)',
+                color: 'var(--text-muted)',
               }}>
                 Начисляется после завершения
               </div>
@@ -333,7 +333,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
               alignItems: 'center',
               gap: 4,
             }}>
-              <Percent size={12} color="#D4AF37" />
+              <Percent size={12} color="var(--gold-400)" />
               <span style={{
                 fontSize: 12,
                 fontWeight: 700,
@@ -355,7 +355,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
                 fontSize: 20,
                 fontWeight: 800,
                 fontFamily: 'var(--font-mono)',
-                background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                background: 'linear-gradient(135deg, var(--gold-100), var(--gold-400))',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}

@@ -64,7 +64,7 @@ function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color =
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: enabled ? '#f2f2f2' : '#a1a1aa',
+            color: enabled ? 'var(--text-primary)' : 'var(--text-secondary)',
             marginBottom: 2,
           }}
         >
@@ -73,7 +73,7 @@ function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color =
         <div
           style={{
             fontSize: 11,
-            color: '#71717a',
+            color: 'var(--text-muted)',
           }}
         >
           {description}
@@ -88,7 +88,7 @@ function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color =
           borderRadius: 12,
           background: enabled
             ? `linear-gradient(90deg, ${color}, ${color}cc)`
-            : 'rgba(255,255,255,0.1)',
+            : 'var(--surface-active)',
           padding: 2,
           display: 'flex',
           alignItems: enabled ? 'center' : 'center',
@@ -102,7 +102,7 @@ function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color =
             width: 20,
             height: 20,
             borderRadius: 10,
-            background: enabled ? '#0a0a0c' : '#52525b',
+            background: enabled ? 'var(--bg-void)' : 'var(--text-muted)',
           }}
         />
       </div>
@@ -199,7 +199,7 @@ export function AdminPanel() {
                 background: 'linear-gradient(180deg, rgba(20, 20, 23, 0.98) 0%, rgba(10, 10, 12, 0.99) 100%)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
-                borderLeft: '1px solid rgba(212, 175, 55, 0.2)',
+                borderLeft: '1px solid var(--border-gold)',
                 overflow: 'hidden',
                 boxShadow: `
                   -20px 0 60px -15px rgba(0, 0, 0, 0.8),
@@ -215,7 +215,7 @@ export function AdminPanel() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '20px 18px 16px',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  borderBottom: '1px solid var(--surface-hover)',
                   background: 'rgba(212, 175, 55, 0.05)',
                 }}
               >
@@ -225,13 +225,13 @@ export function AdminPanel() {
                       width: 32,
                       height: 32,
                       borderRadius: 8,
-                      background: 'linear-gradient(135deg, #d4af37, #8b6914)',
+                      background: 'var(--gold-metallic)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <Shield size={16} color="#0a0a0c" />
+                    <Shield size={16} color="var(--text-on-gold)" />
                   </div>
                   <div>
                     <div
@@ -239,7 +239,7 @@ export function AdminPanel() {
                         fontFamily: "var(--font-serif)",
                         fontSize: 15,
                         fontWeight: 700,
-                        color: '#f2f2f2',
+                        color: 'var(--text-primary)',
                       }}
                     >
                       ADMIN PANEL

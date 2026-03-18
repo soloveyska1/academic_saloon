@@ -342,7 +342,7 @@ export function PromoCodeSection({
                       fontSize: 14,
                       fontWeight: 700,
                       fontFamily: 'var(--font-mono)',
-                      color: '#22c55e',
+                      color: 'var(--success-text)',
                       letterSpacing: '0.03em',
                     }}>
                       {activePromo.code}
@@ -509,7 +509,7 @@ export function PromoCodeSection({
               exit={{ opacity: 0, y: -5 }}
               style={{
                 fontSize: 12,
-                color: '#ef4444',
+                color: 'var(--error-text)',
                 marginTop: -8,
                 marginBottom: 12,
                 paddingLeft: 4,
@@ -607,7 +607,7 @@ export function PromoCodeSection({
                 justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <CheckCircle2 size={24} color="#22c55e" />
+                <CheckCircle2 size={24} color="var(--success-text)" />
               </div>
 
               {/* Content */}
@@ -892,7 +892,7 @@ export function PromoCodeSection({
                     background: 'rgba(239, 68, 68, 0.1)',
                     border: '1px solid rgba(239, 68, 68, 0.2)',
                     fontSize: 13,
-                    color: '#ef4444',
+                    color: 'var(--error-text)',
                   }}
                 >
                   {validationError}
@@ -930,14 +930,14 @@ export function PromoCodeSection({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {activePromo ? (
-              <CheckCircle2 size={18} color="#22c55e" />
+              <CheckCircle2 size={18} color="var(--success-text)" />
             ) : (
               <Tag size={18} color="var(--text-muted)" />
             )}
             <span style={{
               fontSize: 14,
               fontWeight: 600,
-              color: activePromo ? '#22c55e' : 'var(--text-secondary)',
+              color: activePromo ? 'var(--success-text)' : 'var(--text-secondary)',
             }}>
               {activePromo ? `${activePromo.code} (-${activePromo.discount}%)` : 'Есть промокод?'}
             </span>
@@ -1047,11 +1047,11 @@ export function PromoPriceDisplay({ originalPrice, className = '' }: PromoPriceD
             borderRadius: 8,
           }}
         >
-          <Percent size={12} color="#22c55e" />
+          <Percent size={12} color="var(--success-text)" />
           <span style={{
             fontSize: 12,
             fontWeight: 700,
-            color: '#22c55e',
+            color: 'var(--success-text)',
           }}>
             -{activePromo.discount}%
           </span>
@@ -1061,7 +1061,7 @@ export function PromoPriceDisplay({ originalPrice, className = '' }: PromoPriceD
       {/* Savings text */}
       <div style={{
         fontSize: 12,
-        color: '#22c55e',
+        color: 'var(--success-text)',
         marginTop: 4,
         display: 'flex',
         alignItems: 'center',
