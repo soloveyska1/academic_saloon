@@ -105,7 +105,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               </div>
               <div className={s.userStatus}>
                 <div className={s.statusDot} />
-                ДОБРО ПОЖАЛОВАТЬ В САЛОН
+                АКАДЕМИЧЕСКИЙ САЛОН
               </div>
             </>
           ) : (

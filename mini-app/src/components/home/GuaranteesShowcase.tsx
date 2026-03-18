@@ -4,47 +4,37 @@ import { ShieldCheck, RefreshCcw, EyeOff, Banknote } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GUARANTEES SHOWCASE — Fear-eliminating section.
-//  Each card addresses a specific objection a student has.
-//  Premium design: glass cards with gold accent borders.
-//  Copy: question (objection) → answer (guarantee).
+//  Research-backed: loss-aversion framing converts better.
+//  Each card title is what the student WON'T lose/risk.
+//  "Не потеряете деньги" > "Оплата по согласию"
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface GuaranteeItem {
   icon: typeof ShieldCheck
   title: string
   description: string
-  accent: string
-  accentLine: string
 }
 
 const GUARANTEES: GuaranteeItem[] = [
   {
     icon: RefreshCcw,
-    title: 'Бесплатные правки',
-    description: 'Три раунда доработок включены в стоимость. Дополнительные — по договорённости.',
-    accent: 'var(--gold-glass-subtle)',
-    accentLine: 'var(--border-gold)',
+    title: 'Не примут? Исправим.',
+    description: 'Три раунда доработок включены. Правки — пока преподаватель не примет.',
   },
   {
     icon: ShieldCheck,
-    title: 'Высокая уникальность',
-    description: 'Каждая работа пишется с нуля. Рекомендуем проверить самостоятельно — так система не «запомнит» текст раньше времени.',
-    accent: 'var(--gold-glass-subtle)',
-    accentLine: 'var(--border-gold)',
+    title: 'Не копипаст.',
+    description: 'Каждая работа с нуля. Проверяем сами — от 82% уникальности по Antiplagiat.',
   },
   {
     icon: Banknote,
-    title: 'Оплата по согласию',
-    description: 'Сначала обсудим объём, сроки и стоимость. Вы платите только после полного согласования.',
-    accent: 'var(--gold-glass-subtle)',
-    accentLine: 'var(--border-gold)',
+    title: 'Не потеряете деньги.',
+    description: 'Оплата только после согласования объёма, сроков и стоимости. Гарантия возврата.',
   },
   {
     icon: EyeOff,
-    title: 'Полная анонимность',
-    description: 'Ваши данные не передаются третьим лицам. О вашем обращении никто не узнает.',
-    accent: 'var(--gold-glass-subtle)',
-    accentLine: 'var(--border-gold)',
+    title: 'Не узнает никто.',
+    description: 'Полная конфиденциальность. Данные не передаются. О заказе знаете только вы.',
   },
 ]
 
@@ -125,7 +115,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
                   left: '15%',
                   right: '15%',
                   height: 1,
-                  background: `linear-gradient(90deg, transparent, ${g.accentLine}, transparent)`,
+                  background: 'linear-gradient(90deg, transparent, var(--border-gold), transparent)',
                 }}
               />
 
@@ -134,7 +124,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
                   width: 36,
                   height: 36,
                   borderRadius: 10,
-                  background: g.accent,
+                  background: 'var(--gold-glass-subtle)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -196,7 +186,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
           letterSpacing: '0.02em',
         }}
       >
-        Подробнее о гарантиях →
+        Все гарантии подробно →
       </motion.button>
     </motion.div>
   )

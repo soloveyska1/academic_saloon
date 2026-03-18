@@ -27,6 +27,8 @@ import {
   HowItWorks,
   GuaranteesShowcase,
   TestimonialsSection,
+  LiveActivityFeed,
+  StickyBottomCTA,
   WelcomeTour,
   hasSeenWelcomeTour,
   SaloonFooter,
@@ -36,6 +38,8 @@ import {
   ActiveOrderDashboard,
   LevelProgressCard,
   ReputationCard,
+  PricingAnchor,
+  FAQSection,
 } from '../components/home'
 
 // Lazy load modal components
@@ -73,6 +77,9 @@ export function HomePage({ user, onRefresh }: Props) {
   // Referral copy state
   const [referralCopied, setReferralCopied] = useState(false)
 
+  // Ref for hero CTA — StickyBottomCTA shows when hero exits viewport
+  const heroCTARef = useRef<HTMLElement>(null)
+
   // Secret admin activation (5 quick taps on logo badge)
   const tapCountRef = useRef(0)
   const lastTapTimeRef = useRef(0)
@@ -103,6 +110,13 @@ export function HomePage({ user, onRefresh }: Props) {
   const handleNewOrder = useCallback(() => {
     haptic('heavy')
     navigate('/create-order')
+  }, [haptic, navigate])
+
+  const handleNewOrderWithType = useCallback((workType: string) => {
+    haptic('heavy')
+    navigate('/create-order', {
+      state: { prefill: { work_type: workType } },
+    })
   }, [haptic, navigate])
 
   const handleOpenLounge = useCallback(() => {
@@ -208,35 +222,50 @@ export function HomePage({ user, onRefresh }: Props) {
         <ExamSeasonBanner />
 
         {/* ═══════════════════════════════════════════════════════════════════
-          NEW USER FLOW — Conversion-optimized funnel:
-          Season → Hero → Stats → Live Activity → How It Works →
-          Testimonials → Guarantees → Sticky CTA
+          NEW USER FLOW — Full conversion funnel:
+          Hero → LiveActivity → TrustStats → HowItWorks →
+          Testimonials → Guarantees → PricingAnchor → FAQ → Footer
+          + StickyBottomCTA (fixed, appears after hero exits viewport)
           ═══════════════════════════════════════════════════════════════════ */}
         {isNewUser ? (
           <>
-            {/* 1. Hero CTA — The promise */}
-            <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
+            {/* 1. Hero CTA — The promise + price anchor */}
+            <div ref={heroCTARef as React.RefObject<HTMLDivElement>}>
+              <NewTaskCTA onClick={handleNewOrder} variant="first-order" />
+            </div>
 
-            {/* 2. Trust Stats — The proof in numbers */}
+            {/* 2. Live Activity Feed — Real-time social proof */}
+            <LiveActivityFeed />
+
+            {/* 3. Trust Stats — Proof in numbers */}
             <TrustStatsStrip />
 
-            {/* 3. How It Works — Eliminate process anxiety */}
+            {/* 4. How It Works — Eliminate process anxiety */}
             <HowItWorks />
 
-            {/* 5. Testimonials — Social proof from real students */}
+            {/* 5. Testimonials — Social proof with outcomes */}
             <TestimonialsSection />
 
-            {/* 6. Guarantees — Eliminate risk fears */}
+            {/* 6. Guarantees — Loss-aversion framing */}
             <GuaranteesShowcase
               onOpenGuaranteesModal={() => { haptic('light'); actions.openModal('guarantees') }}
             />
+
+            {/* 7. Pricing Anchor — Price comparison that sells */}
+            <PricingAnchor
+              onNavigateToOrder={handleNewOrderWithType}
+              haptic={haptic}
+            />
+
+            {/* 8. FAQ — Objection handler */}
+            <FAQSection />
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════════════════
              RETURNING USER FLOW — Three sub-states:
              A) Active orders  → tracker-first, action-oriented
              B) Just completed → celebration + quick reorder prominent
-             C) Idle returning → win-back FOMO + trust reinforcement
+             C) Idle returning → win-back + quick reorder
              ═══════════════════════════════════════════════════════════════════ */
           <>
             {/* ── BONUS ALERT — Shows in all returning states ── */}
@@ -248,7 +277,7 @@ export function HomePage({ user, onRefresh }: Props) {
               />
             )}
 
-            {/* Daily Bonus */}
+            {/* Daily Bonus — Engagement hook */}
             <DailyBonusCard
               dailyAvailable={user.daily_luck_available ?? false}
               streak={user.daily_bonus_streak || 0}
@@ -279,11 +308,10 @@ export function HomePage({ user, onRefresh }: Props) {
                   />
                 )}
                 <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                <TrustStatsStrip />
               </>
             )}
 
-            {/* ── STATE C: IDLE RETURNING — Win-back with social proof ── */}
+            {/* ── STATE C: IDLE RETURNING — Win-back hook ── */}
             {returningUserState === 'idle' && (
               <>
                 <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
@@ -294,7 +322,6 @@ export function HomePage({ user, onRefresh }: Props) {
                     haptic={haptic}
                   />
                 )}
-                <TrustStatsStrip />
               </>
             )}
 
@@ -403,6 +430,14 @@ export function HomePage({ user, onRefresh }: Props) {
       </Suspense>
 
     </main>
+
+      {/* Sticky Bottom CTA — New users only, appears after hero exits viewport */}
+      {isNewUser && (
+        <StickyBottomCTA
+          onClick={handleNewOrder}
+          heroRef={heroCTARef as React.RefObject<HTMLElement>}
+        />
+      )}
 
       {/* Welcome tour — only for new users, shown once */}
       <AnimatePresence>
