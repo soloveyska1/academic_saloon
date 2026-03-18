@@ -93,8 +93,8 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
         style={{
           padding: 24,
           borderRadius: 24,
-          background: 'linear-gradient(145deg, rgba(28,28,32,0.95), rgba(18,18,22,0.98))',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'linear-gradient(145deg, var(--bg-card), var(--bg-card))',
+          border: '1px solid var(--border-strong)',
           marginBottom: 20,
           position: 'relative',
           overflow: 'hidden',
@@ -136,7 +136,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             </div>
             <div style={{
               fontSize: 13,
-              color: 'rgba(255,255,255,0.5)',
+              color: 'var(--text-muted)',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
@@ -172,11 +172,11 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <Shield size={18} color="#3b82f6" />
+            <Shield size={18} color="var(--info-text)" />
           </div>
           <div style={{
             fontSize: 13,
-            color: '#60a5fa',
+            color: 'var(--info-text)',
             lineHeight: 1.5,
           }}>
             Все файлы проходят проверку на вирусы и качество
@@ -319,8 +319,8 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
           style={{
             padding: 16,
             borderRadius: 16,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-strong)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -338,7 +338,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <FileText size={22} color="#3b82f6" />
+              <FileText size={22} color="var(--info-text)" />
             </div>
             <div>
               <div style={{
@@ -351,7 +351,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
               </div>
               <div style={{
                 fontSize: 12,
-                color: 'rgba(255,255,255,0.5)',
+                color: 'var(--text-muted)',
               }}>
                 Яндекс.Диск • Нажмите для скачивания
               </div>
@@ -365,14 +365,14 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
               width: 44,
               height: 44,
               borderRadius: 14,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--surface-hover)',
+              border: '1px solid var(--surface-active)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ExternalLink size={20} color="rgba(255,255,255,0.6)" />
+            <ExternalLink size={20} color="var(--text-secondary)" />
           </motion.div>
         </motion.div>
       </div>

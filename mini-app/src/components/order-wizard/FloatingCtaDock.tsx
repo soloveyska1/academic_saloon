@@ -58,14 +58,14 @@ export function FloatingCtaDock({
               background: 'var(--bg-card)',
               backdropFilter: 'blur(20px) saturate(180%)',
               WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              border: '1px solid rgba(212, 175, 55, 0.25)',
+              border: '1px solid var(--gold-glass-strong)',
               borderRadius: 50,
               cursor: submitting ? 'wait' : 'pointer',
               pointerEvents: 'auto',
               boxShadow: `
                 0 10px 40px -10px rgba(0, 0, 0, 0.6),
-                0 0 30px -5px rgba(212, 175, 55, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05)
+                0 0 30px -5px var(--gold-glass-medium),
+                inset 0 1px 0 var(--border-default)
               `,
             }}
           >
@@ -79,7 +79,7 @@ export function FloatingCtaDock({
                   alignItems: 'center',
                   gap: 8,
                   paddingRight: 14,
-                  borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRight: '1px solid var(--surface-active)',
                 }}
               >
                 <div
@@ -87,15 +87,15 @@ export function FloatingCtaDock({
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #d4af37, #f5d061)',
-                    boxShadow: '0 0 8px rgba(212, 175, 55, 0.5)',
+                    background: 'var(--gold-metallic)',
+                    boxShadow: '0 0 8px var(--gold-glass-strong)',
                   }}
                 />
                 <span
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: 'rgba(255, 255, 255, 0.7)',
+                    color: 'var(--text-secondary)',
                     maxWidth: 120,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -112,7 +112,7 @@ export function FloatingCtaDock({
               style={{
                 fontSize: 15,
                 fontWeight: 600,
-                color: '#d4af37',
+                color: 'var(--gold-400)',
                 letterSpacing: '0.01em',
               }}
             >
