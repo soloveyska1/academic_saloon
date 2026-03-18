@@ -4,54 +4,67 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useScrollLock, useSheetRegistration } from '../../ui/GestureGuard'
 import { useModalRegistration } from '../../../contexts/NavigationContext'
+import { useThemeValue } from '../../../contexts/ThemeContext'
 import { triggerHaptic } from './ModalWrapper'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  СТИЛИ
+//  THEME-AWARE STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 
-const styles = {
-  backdrop: {
-    position: 'fixed' as const,
-    inset: 0,
-    background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.96) 100%)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    zIndex: 2000,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  dialog: {
-    position: 'relative' as const,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '90vh',
-    overflowY: 'auto' as const,
-    overflowX: 'hidden' as const,
-    overscrollBehavior: 'contain' as const,
-    WebkitOverflowScrolling: 'touch' as const,
-    background: 'linear-gradient(180deg, rgba(18,18,20,0.98) 0%, rgba(12,12,14,0.99) 100%)',
-    borderRadius: 28,
-    boxShadow: '0 30px 100px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
-    zIndex: 2001,
-  },
-  closeButton: {
-    position: 'absolute' as const,
-    top: 16,
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    zIndex: 10,
-  },
+function getStyles(isDark: boolean) {
+  return {
+    backdrop: {
+      position: 'fixed' as const,
+      inset: 0,
+      background: isDark
+        ? 'radial-gradient(ellipse at center, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.96) 100%)'
+        : 'radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)',
+      backdropFilter: isDark ? 'blur(20px) saturate(180%)' : 'blur(16px) saturate(150%)',
+      WebkitBackdropFilter: isDark ? 'blur(20px) saturate(180%)' : 'blur(16px) saturate(150%)',
+      zIndex: 2000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+    },
+    dialog: {
+      position: 'relative' as const,
+      width: '100%',
+      maxWidth: 400,
+      maxHeight: '90vh',
+      overflowY: 'auto' as const,
+      overflowX: 'hidden' as const,
+      overscrollBehavior: 'contain' as const,
+      WebkitOverflowScrolling: 'touch' as const,
+      background: isDark
+        ? 'linear-gradient(180deg, rgba(18,18,20,0.98) 0%, rgba(12,12,14,0.99) 100%)'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(250,249,247,0.99) 100%)',
+      borderRadius: 28,
+      boxShadow: isDark
+        ? '0 30px 100px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)'
+        : '0 30px 100px rgba(120,85,40,0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
+      zIndex: 2001,
+    },
+    closeButton: {
+      position: 'absolute' as const,
+      top: 16,
+      right: 16,
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      background: isDark
+        ? 'rgba(255,255,255,0.06)'
+        : 'rgba(120,85,40,0.06)',
+      border: isDark
+        ? '1px solid rgba(255,255,255,0.08)'
+        : '1px solid rgba(120,85,40,0.1)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      zIndex: 10,
+    },
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -97,6 +110,10 @@ export function CenteredModalWrapper({
   const dialogRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
 
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+  const styles = useMemo(() => getStyles(isDark), [isDark])
+
   useScrollLock(isOpen)
   useSheetRegistration(isOpen)
   useModalRegistration(isOpen, modalId)
@@ -137,8 +154,10 @@ export function CenteredModalWrapper({
 
   const dialogStyle = useMemo(() => ({
     ...styles.dialog,
-    border: `1px solid ${accentColor}20`,
-  }), [accentColor])
+    border: `1px solid ${isDark ? accentColor + '20' : 'rgba(120,85,40,0.1)'}`,
+  }), [accentColor, styles.dialog, isDark])
+
+  const closeIconColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(87,83,78,0.6)'
 
   return createPortal(
     <LazyMotion features={domAnimation}>
@@ -182,7 +201,7 @@ export function CenteredModalWrapper({
                     style={styles.closeButton}
                     aria-label="Закрыть"
                   >
-                    <X size={18} color="rgba(255,255,255,0.5)" />
+                    <X size={18} color={closeIconColor} />
                   </m.button>
                 )}
 

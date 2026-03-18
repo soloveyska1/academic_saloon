@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
 import { Shield, RefreshCw, Award, Clock, Lock, ChevronDown, CheckCircle2, Sparkles } from 'lucide-react'
 import { ModalWrapper } from '../shared'
+import { useThemeValue } from '../../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  GUARANTEES MODAL — Proof Wall
@@ -75,7 +76,7 @@ const FAQ = [
 ]
 
 // ═══════════ FAQ ITEM ═══════════
-function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
+function FAQItem({ q, a, index, isDark }: { q: string; a: string; index: number; isDark: boolean }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -85,8 +86,12 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
       transition={{ delay: 0.45 + index * 0.05 }}
       style={{
         borderRadius: 14,
-        background: open ? 'rgba(212,175,55,0.03)' : 'rgba(255,255,255,0.02)',
-        border: open ? '1px solid rgba(212,175,55,0.08)' : '1px solid rgba(255,255,255,0.05)',
+        background: open
+          ? (isDark ? 'rgba(212,175,55,0.03)' : 'rgba(180,142,38,0.05)')
+          : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.90)'),
+        border: open
+          ? (isDark ? '1px solid rgba(212,175,55,0.08)' : '1px solid rgba(180,142,38,0.18)')
+          : (isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(120,85,40,0.08)'),
         overflow: 'hidden',
         transition: 'background 0.2s, border-color 0.2s',
       }}
@@ -110,7 +115,9 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
         <span style={{
           fontSize: 13,
           fontWeight: 600,
-          color: open ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.55)',
+          color: open
+            ? (isDark ? 'rgba(255,255,255,0.80)' : 'rgba(28,25,23,0.90)')
+            : (isDark ? 'rgba(255,255,255,0.55)' : 'rgba(87,83,78,0.80)'),
           lineHeight: 1.4,
           flex: 1,
           transition: 'color 0.2s',
@@ -122,7 +129,13 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
           transition={{ duration: 0.2 }}
           style={{ flexShrink: 0 }}
         >
-          <ChevronDown size={15} color={open ? 'rgba(212,175,55,0.60)' : 'rgba(212,175,55,0.30)'} />
+          <ChevronDown
+            size={15}
+            color={open
+              ? (isDark ? 'rgba(212,175,55,0.60)' : 'rgba(158,122,26,0.70)')
+              : (isDark ? 'rgba(212,175,55,0.30)' : 'rgba(158,122,26,0.35)')
+            }
+          />
         </m.div>
       </button>
 
@@ -139,7 +152,7 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
               padding: '0 16px 14px',
               fontSize: 12.5,
               lineHeight: 1.6,
-              color: 'rgba(255,255,255,0.45)',
+              color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(87,83,78,0.75)',
               fontWeight: 500,
             }}>
               {a}
@@ -152,7 +165,7 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
 }
 
 // ═══════════ GUARANTEE CARD ═══════════
-function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
+function GuaranteeCard({ item, index, isDark }: { item: Guarantee; index: number; isDark: boolean }) {
   const Icon = item.icon
   const isFeatured = index === 0
 
@@ -165,11 +178,13 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
         padding: isFeatured ? '16px 16px 14px' : '14px 16px',
         borderRadius: 16,
         background: isFeatured
-          ? 'linear-gradient(135deg, rgba(212,175,55,0.07) 0%, rgba(212,175,55,0.02) 100%)'
-          : 'rgba(255,255,255,0.02)',
+          ? (isDark
+            ? 'linear-gradient(135deg, rgba(212,175,55,0.07) 0%, rgba(212,175,55,0.02) 100%)'
+            : 'linear-gradient(135deg, rgba(180,142,38,0.08) 0%, rgba(180,142,38,0.02) 100%)')
+          : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.90)'),
         border: isFeatured
-          ? '1px solid rgba(212,175,55,0.14)'
-          : '1px solid rgba(255,255,255,0.05)',
+          ? (isDark ? '1px solid rgba(212,175,55,0.14)' : '1px solid rgba(180,142,38,0.22)')
+          : (isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(120,85,40,0.08)'),
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -178,7 +193,9 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
       {isFeatured && (
         <div aria-hidden="true" style={{
           position: 'absolute', top: 0, left: 16, right: 16, height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.30), transparent)',
+          background: isDark
+            ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.30), transparent)'
+            : 'linear-gradient(90deg, transparent, rgba(180,142,38,0.25), transparent)',
         }} />
       )}
 
@@ -189,17 +206,24 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
           height: 40,
           borderRadius: 12,
           background: isFeatured
-            ? 'linear-gradient(135deg, rgba(212,175,55,0.14), rgba(212,175,55,0.06))'
-            : 'rgba(212,175,55,0.05)',
+            ? (isDark
+              ? 'linear-gradient(135deg, rgba(212,175,55,0.14), rgba(212,175,55,0.06))'
+              : 'linear-gradient(135deg, rgba(180,142,38,0.14), rgba(180,142,38,0.06))')
+            : (isDark ? 'rgba(212,175,55,0.05)' : 'rgba(180,142,38,0.07)'),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          border: isFeatured ? '1px solid rgba(212,175,55,0.10)' : 'none',
+          border: isFeatured
+            ? (isDark ? '1px solid rgba(212,175,55,0.10)' : '1px solid rgba(180,142,38,0.15)')
+            : 'none',
         }}>
           <Icon
             size={18}
-            color={isFeatured ? 'rgba(212,175,55,0.75)' : 'rgba(212,175,55,0.45)'}
+            color={isFeatured
+              ? (isDark ? 'rgba(212,175,55,0.75)' : 'rgba(158,122,26,0.80)')
+              : (isDark ? 'rgba(212,175,55,0.45)' : 'rgba(158,122,26,0.55)')
+            }
             strokeWidth={1.6}
           />
         </div>
@@ -216,7 +240,9 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
             <div style={{
               fontSize: 14,
               fontWeight: 700,
-              color: isFeatured ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.82)',
+              color: isFeatured
+                ? (isDark ? 'rgba(255,255,255,0.92)' : 'rgba(28,25,23,0.93)')
+                : (isDark ? 'rgba(255,255,255,0.82)' : 'rgba(28,25,23,0.85)'),
               lineHeight: 1.25,
               letterSpacing: '-0.01em',
             }}>
@@ -231,13 +257,20 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
               flexShrink: 0,
               padding: '3px 8px',
               borderRadius: 8,
-              background: isFeatured ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${isFeatured ? 'rgba(212,175,55,0.10)' : 'rgba(255,255,255,0.04)'}`,
+              background: isFeatured
+                ? (isDark ? 'rgba(212,175,55,0.08)' : 'rgba(180,142,38,0.08)')
+                : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(120,85,40,0.04)'),
+              border: `1px solid ${isFeatured
+                ? (isDark ? 'rgba(212,175,55,0.10)' : 'rgba(180,142,38,0.16)')
+                : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.06)')
+              }`,
             }}>
               <span style={{
                 fontSize: 13,
                 fontWeight: 800,
-                color: isFeatured ? '#E8D5A3' : 'rgba(212,175,55,0.60)',
+                color: isFeatured
+                  ? (isDark ? '#E8D5A3' : '#7d5c12')
+                  : (isDark ? 'rgba(212,175,55,0.60)' : 'rgba(158,122,26,0.70)'),
                 letterSpacing: '-0.02em',
                 fontFamily: "'Manrope', sans-serif",
               }}>
@@ -246,7 +279,9 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
               <span style={{
                 fontSize: 9,
                 fontWeight: 600,
-                color: isFeatured ? 'rgba(212,175,55,0.50)' : 'rgba(212,175,55,0.30)',
+                color: isFeatured
+                  ? (isDark ? 'rgba(212,175,55,0.50)' : 'rgba(158,122,26,0.55)')
+                  : (isDark ? 'rgba(212,175,55,0.30)' : 'rgba(158,122,26,0.38)'),
                 whiteSpace: 'nowrap',
               }}>
                 {item.proofLabel}
@@ -257,7 +292,9 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
           <div style={{
             fontSize: 11,
             fontWeight: 600,
-            color: isFeatured ? 'rgba(212,175,55,0.55)' : 'rgba(212,175,55,0.35)',
+            color: isFeatured
+              ? (isDark ? 'rgba(212,175,55,0.55)' : 'rgba(158,122,26,0.60)')
+              : (isDark ? 'rgba(212,175,55,0.35)' : 'rgba(158,122,26,0.45)'),
             marginBottom: 6,
           }}>
             {item.hook}
@@ -266,7 +303,7 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
           <div style={{
             fontSize: 12.5,
             lineHeight: 1.55,
-            color: 'rgba(255,255,255,0.40)',
+            color: isDark ? 'rgba(255,255,255,0.40)' : 'rgba(87,83,78,0.72)',
             fontWeight: 500,
           }}>
             {item.desc}
@@ -278,13 +315,13 @@ function GuaranteeCard({ item, index }: { item: Guarantee; index: number }) {
 }
 
 // ═══════════ STAT PILL ═══════════
-function StatPill({ value, label }: { value: string; label: string }) {
+function StatPill({ value, label, isDark }: { value: string; label: string; isDark: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
       <span style={{
         fontSize: 15,
         fontWeight: 800,
-        color: '#4ade80',
+        color: isDark ? '#4ade80' : '#15803d',
         letterSpacing: '-0.02em',
         fontFamily: "'Manrope', sans-serif",
       }}>
@@ -293,7 +330,7 @@ function StatPill({ value, label }: { value: string; label: string }) {
       <span style={{
         fontSize: 10,
         fontWeight: 600,
-        color: 'rgba(34,197,94,0.50)',
+        color: isDark ? 'rgba(34,197,94,0.50)' : 'rgba(22,163,74,0.60)',
       }}>
         {label}
       </span>
@@ -303,6 +340,9 @@ function StatPill({ value, label }: { value: string; label: string }) {
 
 // ═══════════ MAIN MODAL ═══════════
 export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesModalProps) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
   const handleCTA = useCallback(() => {
     onClose()
     onCreateOrder?.()
@@ -314,7 +354,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
       onClose={onClose}
       modalId="guarantees-modal"
       title="Гарантии"
-      accentColor="#D4AF37"
+      accentColor={isDark ? '#D4AF37' : '#9e7a1a'}
     >
       <div style={{ padding: '0 20px 20px' }}>
 
@@ -334,17 +374,27 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
               width: 76,
               height: 76,
               borderRadius: 22,
-              background: 'linear-gradient(145deg, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.04) 100%)',
-              border: '1.5px solid rgba(212,175,55,0.18)',
+              background: isDark
+                ? 'linear-gradient(145deg, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.04) 100%)'
+                : 'linear-gradient(145deg, rgba(180,142,38,0.14) 0%, rgba(180,142,38,0.04) 100%)',
+              border: isDark
+                ? '1.5px solid rgba(212,175,55,0.18)'
+                : '1.5px solid rgba(180,142,38,0.22)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 18px',
-              boxShadow: '0 20px 48px -14px rgba(212,175,55,0.25)',
+              boxShadow: isDark
+                ? '0 20px 48px -14px rgba(212,175,55,0.25)'
+                : '0 20px 48px -14px rgba(180,142,38,0.18)',
               position: 'relative',
             }}
           >
-            <Shield size={32} color="rgba(212,175,55,0.75)" strokeWidth={1.3} />
+            <Shield
+              size={32}
+              color={isDark ? 'rgba(212,175,55,0.75)' : 'rgba(158,122,26,0.75)'}
+              strokeWidth={1.3}
+            />
             <m.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -356,12 +406,16 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
                 width: 24,
                 height: 24,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                background: isDark
+                  ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                  : 'linear-gradient(135deg, #16a34a, #15803d)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '2.5px solid #09090b',
-                boxShadow: '0 4px 12px rgba(34,197,94,0.30)',
+                border: isDark ? '2.5px solid #09090b' : '2.5px solid #FFFFFF',
+                boxShadow: isDark
+                  ? '0 4px 12px rgba(34,197,94,0.30)'
+                  : '0 4px 12px rgba(22,163,74,0.25)',
               }}
             >
               <CheckCircle2 size={12} color="#fff" strokeWidth={2.5} />
@@ -375,7 +429,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             letterSpacing: '-0.02em',
             marginBottom: 8,
             fontFamily: "'Manrope', sans-serif",
-            color: '#E8D5A3',
+            color: isDark ? '#E8D5A3' : '#7d5c12',
           }}>
             Гарантии, а не обещания
           </div>
@@ -383,7 +437,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           <div style={{
             fontSize: 13,
             lineHeight: 1.5,
-            color: 'rgba(255,255,255,0.42)',
+            color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(120,113,108,0.65)',
             fontWeight: 500,
             maxWidth: 260,
             margin: '0 auto',
@@ -400,8 +454,12 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           style={{
             padding: '14px 18px',
             borderRadius: 16,
-            background: 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(34,197,94,0.02) 100%)',
-            border: '1px solid rgba(34,197,94,0.12)',
+            background: isDark
+              ? 'linear-gradient(135deg, rgba(34,197,94,0.06) 0%, rgba(34,197,94,0.02) 100%)'
+              : 'linear-gradient(135deg, rgba(22,163,74,0.06) 0%, rgba(22,163,74,0.02) 100%)',
+            border: isDark
+              ? '1px solid rgba(34,197,94,0.12)'
+              : '1px solid rgba(22,163,74,0.14)',
             marginBottom: 20,
             display: 'flex',
             alignItems: 'center',
@@ -409,23 +467,23 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             gap: 16,
           }}
         >
-          <StatPill value="2 400+" label="работ" />
+          <StatPill value="2 400+" label="работ" isDark={isDark} />
           <div style={{
             width: 3,
             height: 3,
             borderRadius: '50%',
-            background: 'rgba(34,197,94,0.20)',
+            background: isDark ? 'rgba(34,197,94,0.20)' : 'rgba(22,163,74,0.15)',
             flexShrink: 0,
           }} />
-          <StatPill value="98%" label="в срок" />
+          <StatPill value="98%" label="в срок" isDark={isDark} />
           <div style={{
             width: 3,
             height: 3,
             borderRadius: '50%',
-            background: 'rgba(34,197,94,0.20)',
+            background: isDark ? 'rgba(34,197,94,0.20)' : 'rgba(22,163,74,0.15)',
             flexShrink: 0,
           }} />
-          <StatPill value="93%" label="с 1-го раза" />
+          <StatPill value="93%" label="с 1-го раза" isDark={isDark} />
         </m.div>
 
         {/* ═══════════ DIVIDER ═══════════ */}
@@ -433,7 +491,9 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
           aria-hidden="true"
           style={{
             height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)',
+            background: isDark
+              ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)'
+              : 'linear-gradient(90deg, transparent, rgba(180,142,38,0.18), transparent)',
             marginBottom: 18,
           }}
         />
@@ -441,7 +501,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
         {/* ═══════════ GUARANTEE CARDS ═══════════ */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {GUARANTEES.map((item, index) => (
-            <GuaranteeCard key={item.title} item={item} index={index} />
+            <GuaranteeCard key={item.title} item={item} index={index} isDark={isDark} />
           ))}
         </div>
 
@@ -459,14 +519,18 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             marginBottom: 10,
             paddingLeft: 2,
           }}>
-            <Sparkles size={10} color="rgba(212,175,55,0.40)" strokeWidth={2} />
+            <Sparkles
+              size={10}
+              color={isDark ? 'rgba(212,175,55,0.40)' : 'rgba(158,122,26,0.45)'}
+              strokeWidth={2}
+            />
             <span style={{
               fontFamily: "'Manrope', sans-serif",
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.28)',
+              color: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(120,113,108,0.55)',
             }}>
               Частые вопросы
             </span>
@@ -474,7 +538,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {FAQ.map((item, i) => (
-              <FAQItem key={item.q} q={item.q} a={item.a} index={i} />
+              <FAQItem key={item.q} q={item.q} a={item.a} index={i} isDark={isDark} />
             ))}
           </div>
         </m.div>
@@ -495,13 +559,19 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
                 width: '100%',
                 padding: '15px 24px',
                 borderRadius: 14,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.08) 100%)',
-                border: '1px solid rgba(212,175,55,0.25)',
+                background: isDark
+                  ? 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.08) 100%)'
+                  : 'linear-gradient(135deg, rgba(180,142,38,0.16) 0%, rgba(180,142,38,0.06) 100%)',
+                border: isDark
+                  ? '1px solid rgba(212,175,55,0.25)'
+                  : '1px solid rgba(180,142,38,0.28)',
                 cursor: 'pointer',
                 textAlign: 'center',
                 position: 'relative',
                 overflow: 'hidden',
-                boxShadow: '0 8px 24px -8px rgba(212,175,55,0.15)',
+                boxShadow: isDark
+                  ? '0 8px 24px -8px rgba(212,175,55,0.15)'
+                  : '0 8px 24px -8px rgba(180,142,38,0.12)',
               }}
             >
               {/* Shimmer */}
@@ -511,13 +581,15 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
                 style={{
                   position: 'absolute', top: 0, left: 0,
                   width: '40%', height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
+                  background: isDark
+                    ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)'
+                    : 'linear-gradient(90deg, transparent, rgba(180,142,38,0.08), transparent)',
                 }}
               />
               <span style={{
                 fontSize: 14,
                 fontWeight: 700,
-                color: '#E8D5A3',
+                color: isDark ? '#E8D5A3' : '#7d5c12',
                 letterSpacing: '-0.01em',
                 position: 'relative',
               }}>
@@ -536,7 +608,7 @@ export function GuaranteesModal({ isOpen, onClose, onCreateOrder }: GuaranteesMo
             marginTop: 16,
             textAlign: 'center',
             fontSize: 11,
-            color: 'rgba(255,255,255,0.25)',
+            color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(120,113,108,0.50)',
             fontWeight: 500,
           }}
         >

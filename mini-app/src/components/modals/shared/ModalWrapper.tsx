@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useScrollLock, useSheetRegistration } from '../../ui/GestureGuard'
 import { useModalRegistration } from '../../../contexts/NavigationContext'
+import { useThemeValue } from '../../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HAPTIC FEEDBACK
@@ -67,6 +68,9 @@ export function ModalWrapper({
   const dragStartRef = useRef<{ y: number; time: number } | null>(null)
   const [dragY, setDragY] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
 
   // System hooks
   useScrollLock(isOpen)
@@ -164,13 +168,15 @@ export function ModalWrapper({
     maxHeight: '92vh',
     display: 'flex',
     flexDirection: 'column',
-    background: '#09090b',
+    background: isDark ? '#09090b' : '#FFFFFF',
     borderRadius: '24px 24px 0 0',
-    boxShadow: `0 -8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)`,
+    boxShadow: isDark
+      ? `0 -8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)`
+      : `0 -8px 40px rgba(120,85,40,0.12), inset 0 1px 0 rgba(255,255,255,0.9)`,
     zIndex: 2001,
     outline: 'none',
     overflow: 'hidden',
-  }), [])
+  }), [isDark])
 
   return createPortal(
     <LazyMotion features={domAnimation}>
@@ -188,9 +194,9 @@ export function ModalWrapper({
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'rgba(0,0,0,0.6)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
+                background: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
+                backdropFilter: isDark ? 'blur(8px)' : 'blur(12px)',
+                WebkitBackdropFilter: isDark ? 'blur(8px)' : 'blur(12px)',
                 zIndex: 2000,
               }}
               aria-hidden="true"
@@ -218,7 +224,9 @@ export function ModalWrapper({
                 position: 'absolute',
                 top: 0, left: 0, right: 0,
                 height: 1,
-                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
+                background: isDark
+                  ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)'
+                  : 'linear-gradient(90deg, transparent, rgba(158,122,26,0.2), transparent)',
                 opacity: 0.6,
                 zIndex: 5,
               }} />
@@ -242,7 +250,9 @@ export function ModalWrapper({
                   width: 36,
                   height: 4,
                   borderRadius: 2,
-                  background: 'rgba(212,175,55,0.25)',
+                  background: isDark
+                    ? 'rgba(212,175,55,0.25)'
+                    : 'rgba(158,122,26,0.2)',
                 }} />
               </div>
 
@@ -257,8 +267,12 @@ export function ModalWrapper({
                   width: 34,
                   height: 34,
                   borderRadius: 17,
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: isDark
+                    ? 'rgba(255,255,255,0.06)'
+                    : 'rgba(120,85,40,0.06)',
+                  border: isDark
+                    ? '1px solid rgba(255,255,255,0.08)'
+                    : '1px solid rgba(120,85,40,0.1)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -267,7 +281,7 @@ export function ModalWrapper({
                 }}
                 aria-label="Закрыть"
               >
-                <X size={16} color="rgba(255,255,255,0.4)" />
+                <X size={16} color={isDark ? 'rgba(255,255,255,0.4)' : 'rgba(87,83,78,0.6)'} />
               </m.button>
 
               <h2 id={`${modalId}-title`} className="sr-only">{title}</h2>

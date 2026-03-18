@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { BookOpen, Gift, LifeBuoy, LucideIcon } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
+import { useThemeValue } from '../../contexts/ThemeContext'
 import { formatCountWithWord, prefersReducedMotion, toSafeNumber } from './profileHelpers'
 
 interface ActionItem {

@@ -1,6 +1,7 @@
 import { memo, useRef, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
+import { useThemeValue } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  TESTIMONIALS — Social proof that sells.
@@ -54,17 +55,21 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ]
 
-function StarRating({ count }: { count: number }) {
+function StarRating({ count, isDark }: { count: number; isDark: boolean }) {
+  const starColor = isDark ? '#d4af37' : '#9e7a1a'
   return (
     <div style={{ display: 'flex', gap: 2 }}>
       {Array.from({ length: count }).map((_, i) => (
-        <Star key={i} size={11} fill="#d4af37" color="#d4af37" strokeWidth={0} />
+        <Star key={i} size={11} fill={starColor} color={starColor} strokeWidth={0} />
       ))}
     </div>
   )
 }
 
 export const TestimonialsSection = memo(function TestimonialsSection() {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
   const [activeIndex, setActiveIndex] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -111,7 +116,11 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Quote size={13} color="rgba(212,175,55,0.5)" strokeWidth={2} />
+          <Quote
+            size={13}
+            color={isDark ? 'rgba(212,175,55,0.5)' : 'rgba(158,122,26,0.5)'}
+            strokeWidth={2}
+          />
           <span
             style={{
               fontFamily: "'Manrope', sans-serif",
@@ -119,7 +128,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
               fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.30)',
+              color: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(120,113,108,0.6)',
             }}
           >
             Отзывы клиентов
@@ -128,12 +137,12 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
 
         {/* Aggregate rating */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <StarRating count={5} />
+          <StarRating count={5} isDark={isDark} />
           <span
             style={{
               fontSize: 12,
               fontWeight: 700,
-              color: '#d4af37',
+              color: isDark ? '#d4af37' : '#9e7a1a',
               fontFamily: "'Manrope', sans-serif",
             }}
           >
@@ -156,92 +165,110 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
           msOverflowStyle: 'none',
         }}
       >
-        {TESTIMONIALS.map((t, i) => (
-          <motion.div
-            key={t.name}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25 + i * 0.06 }}
-            onClick={() => { setActiveIndex(i); resetAutoplay() }}
-            style={{
-              minWidth: 270,
-              maxWidth: 300,
-              padding: '20px',
-              borderRadius: 18,
-              background: i === activeIndex
-                ? 'linear-gradient(145deg, rgba(212,175,55,0.06), rgba(255,255,255,0.02))'
-                : 'rgba(255,255,255,0.015)',
-              border: `1px solid ${i === activeIndex ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.04)'}`,
-              scrollSnapAlign: 'start',
-              flexShrink: 0,
-              cursor: 'pointer',
-              transition: 'border-color 0.3s, background 0.3s',
-            }}
-          >
-            {/* Stars */}
-            <div style={{ marginBottom: 12 }}>
-              <StarRating count={t.stars} />
-            </div>
-
-            {/* Quote text */}
-            <p
+        {TESTIMONIALS.map((t, i) => {
+          const isActive = i === activeIndex
+          return (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.25 + i * 0.06 }}
+              onClick={() => { setActiveIndex(i); resetAutoplay() }}
               style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: 'rgba(255,255,255,0.58)',
-                lineHeight: 1.6,
-                marginBottom: 16,
-                fontStyle: 'italic',
+                minWidth: 270,
+                maxWidth: 300,
+                padding: '20px',
+                borderRadius: 18,
+                background: isDark
+                  ? (isActive
+                    ? 'linear-gradient(145deg, rgba(212,175,55,0.06), rgba(255,255,255,0.02))'
+                    : 'rgba(255,255,255,0.015)')
+                  : (isActive
+                    ? 'linear-gradient(145deg, rgba(158,122,26,0.05), rgba(255,255,255,0.92))'
+                    : 'rgba(255,255,255,0.88)'),
+                border: isDark
+                  ? `1px solid ${isActive ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.04)'}`
+                  : `1px solid ${isActive ? 'rgba(158,122,26,0.16)' : 'rgba(120,85,40,0.08)'}`,
+                scrollSnapAlign: 'start',
+                flexShrink: 0,
+                cursor: 'pointer',
+                transition: 'border-color 0.3s, background 0.3s',
+                boxShadow: isDark
+                  ? 'none'
+                  : (isActive
+                    ? '0 2px 12px rgba(120,85,40,0.06)'
+                    : '0 1px 4px rgba(120,85,40,0.04)'),
               }}
             >
-              &laquo;{t.text}&raquo;
-            </p>
+              {/* Stars */}
+              <div style={{ marginBottom: 12 }}>
+                <StarRating count={t.stars} isDark={isDark} />
+              </div>
 
-            {/* Author */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {/* Avatar placeholder */}
-              <div
+              {/* Quote text */}
+              <p
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
-                  border: '1px solid rgba(212,175,55,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   fontSize: 13,
-                  fontWeight: 700,
-                  color: 'rgba(212,175,55,0.65)',
-                  fontFamily: "'Manrope', sans-serif",
+                  fontWeight: 500,
+                  color: isDark ? 'rgba(255,255,255,0.58)' : 'rgba(87,83,78,0.8)',
+                  lineHeight: 1.6,
+                  marginBottom: 16,
+                  fontStyle: 'italic',
                 }}
               >
-                {t.name.charAt(0)}
-              </div>
-              <div>
+                &laquo;{t.text}&raquo;
+              </p>
+
+              {/* Author */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* Avatar placeholder */}
                 <div
                   style={{
-                    fontSize: 12,
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: isDark
+                      ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
+                      : 'linear-gradient(135deg, rgba(158,122,26,0.10), rgba(158,122,26,0.04))',
+                    border: isDark
+                      ? '1px solid rgba(212,175,55,0.15)'
+                      : '1px solid rgba(158,122,26,0.14)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 13,
                     fontWeight: 700,
-                    color: 'rgba(255,255,255,0.7)',
-                    marginBottom: 2,
+                    color: isDark ? 'rgba(212,175,55,0.65)' : 'rgba(158,122,26,0.7)',
+                    fontFamily: "'Manrope', sans-serif",
                   }}
                 >
-                  {t.name}
+                  {t.name.charAt(0)}
                 </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: 'rgba(255,255,255,0.30)',
-                  }}
-                >
-                  {t.workType} · {t.university}
+                <div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(28,25,23,0.85)',
+                      marginBottom: 2,
+                    }}
+                  >
+                    {t.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(120,113,108,0.6)',
+                    }}
+                  >
+                    {t.workType} · {t.university}
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          )
+        })}
       </div>
 
       {/* Pagination dots */}
@@ -251,7 +278,9 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
             key={i}
             animate={{
               width: i === activeIndex ? 16 : 4,
-              background: i === activeIndex ? '#d4af37' : 'rgba(255,255,255,0.10)',
+              background: i === activeIndex
+                ? (isDark ? '#d4af37' : '#9e7a1a')
+                : (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(120,85,40,0.12)'),
             }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
             onClick={() => { setActiveIndex(i); resetAutoplay() }}

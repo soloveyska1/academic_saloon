@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Transaction } from '../../../types'
 import { ModalWrapper } from '../shared'
+import { useThemeValue } from '../../../contexts/ThemeContext'
 
 export interface TransactionsModalProps {
   isOpen: boolean
@@ -65,58 +66,76 @@ function formatDateTime(value: string): string {
   })
 }
 
-function getTransactionVisual(transaction: Transaction) {
+function getTransactionVisual(transaction: Transaction, isDark: boolean) {
   if (transaction.type === 'debit') {
     return {
       icon: CreditCard,
-      iconColor: '#f59e0b',
-      iconBackground: 'rgba(245, 158, 11, 0.14)',
-      iconBorder: 'rgba(245, 158, 11, 0.24)',
-      amountColor: '#fbbf24',
+      iconColor: isDark ? '#f59e0b' : '#b45309',
+      iconBackground: isDark ? 'rgba(245, 158, 11, 0.14)' : 'rgba(245, 158, 11, 0.10)',
+      iconBorder: isDark ? 'rgba(245, 158, 11, 0.24)' : 'rgba(245, 158, 11, 0.18)',
+      amountColor: isDark ? '#fbbf24' : '#b45309',
       directionLabel: 'Списание',
     }
   }
 
-  const visuals: Record<string, { icon: typeof Gift; color: string; background: string; border: string }> = {
+  const visuals: Record<string, { icon: typeof Gift; color: string; darkColor: string; background: string; darkBackground: string; border: string; darkBorder: string }> = {
     order_cashback: {
       icon: Wallet2,
-      color: '#93c5fd',
-      background: 'rgba(147, 197, 253, 0.12)',
-      border: 'rgba(147, 197, 253, 0.22)',
+      darkColor: '#93c5fd',
+      color: '#1d4ed8',
+      darkBackground: 'rgba(147, 197, 253, 0.12)',
+      background: 'rgba(29, 78, 216, 0.08)',
+      darkBorder: 'rgba(147, 197, 253, 0.22)',
+      border: 'rgba(29, 78, 216, 0.15)',
     },
     referral_bonus: {
       icon: Users,
-      color: '#c4b5fd',
-      background: 'rgba(196, 181, 253, 0.12)',
-      border: 'rgba(196, 181, 253, 0.22)',
+      darkColor: '#c4b5fd',
+      color: '#6d28d9',
+      darkBackground: 'rgba(196, 181, 253, 0.12)',
+      background: 'rgba(109, 40, 217, 0.08)',
+      darkBorder: 'rgba(196, 181, 253, 0.22)',
+      border: 'rgba(109, 40, 217, 0.15)',
     },
     compensation: {
       icon: Sparkles,
-      color: '#f9a8d4',
-      background: 'rgba(249, 168, 212, 0.12)',
-      border: 'rgba(249, 168, 212, 0.22)',
+      darkColor: '#f9a8d4',
+      color: '#be185d',
+      darkBackground: 'rgba(249, 168, 212, 0.12)',
+      background: 'rgba(190, 24, 93, 0.08)',
+      darkBorder: 'rgba(249, 168, 212, 0.22)',
+      border: 'rgba(190, 24, 93, 0.15)',
     },
     promo_code: {
       icon: Tag,
-      color: '#86efac',
-      background: 'rgba(134, 239, 172, 0.12)',
-      border: 'rgba(134, 239, 172, 0.22)',
+      darkColor: '#86efac',
+      color: '#15803d',
+      darkBackground: 'rgba(134, 239, 172, 0.12)',
+      background: 'rgba(21, 128, 61, 0.08)',
+      darkBorder: 'rgba(134, 239, 172, 0.22)',
+      border: 'rgba(21, 128, 61, 0.15)',
     },
   }
 
-  const visual = visuals[transaction.reason] || {
-    icon: ArrowUpRight,
-    color: '#86efac',
-    background: 'rgba(134, 239, 172, 0.12)',
-    border: 'rgba(134, 239, 172, 0.22)',
+  const v = visuals[transaction.reason]
+  const fallback = {
+    icon: ArrowUpRight as typeof Gift,
+    darkColor: '#86efac',
+    color: '#15803d',
+    darkBackground: 'rgba(134, 239, 172, 0.12)',
+    background: 'rgba(21, 128, 61, 0.08)',
+    darkBorder: 'rgba(134, 239, 172, 0.22)',
+    border: 'rgba(21, 128, 61, 0.15)',
   }
+
+  const visual = v || fallback
 
   return {
     icon: visual.icon,
-    iconColor: visual.color,
-    iconBackground: visual.background,
-    iconBorder: visual.border,
-    amountColor: visual.color,
+    iconColor: isDark ? visual.darkColor : visual.color,
+    iconBackground: isDark ? visual.darkBackground : visual.background,
+    iconBorder: isDark ? visual.darkBorder : visual.border,
+    amountColor: isDark ? visual.darkColor : visual.color,
     directionLabel: 'Начисление',
   }
 }
@@ -125,12 +144,14 @@ function TransactionCard({
   transaction,
   selected,
   onClick,
+  isDark,
 }: {
   transaction: Transaction
   selected: boolean
   onClick: () => void
+  isDark: boolean
 }) {
-  const visual = getTransactionVisual(transaction)
+  const visual = getTransactionVisual(transaction, isDark)
   const Icon = visual.icon
   const title = transaction.description?.trim() || REASON_LABELS[transaction.reason] || 'Операция'
 
@@ -143,10 +164,18 @@ function TransactionCard({
         width: '100%',
         padding: '14px 16px',
         borderRadius: 18,
-        border: `1px solid ${selected ? 'rgba(212,175,55,0.22)' : 'rgba(255,255,255,0.06)'}`,
+        border: `1px solid ${
+          selected
+            ? isDark ? 'rgba(212,175,55,0.22)' : 'rgba(158,122,26,0.18)'
+            : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'
+        }`,
         background: selected
-          ? 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(255,255,255,0.03))'
-          : 'rgba(255,255,255,0.03)',
+          ? isDark
+            ? 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(255,255,255,0.03))'
+            : 'linear-gradient(135deg, rgba(158,122,26,0.06), rgba(255,255,255,0.92))'
+          : isDark
+            ? 'rgba(255,255,255,0.03)'
+            : 'rgba(255,255,255,0.88)',
         display: 'flex',
         alignItems: 'center',
         gap: 12,
@@ -170,7 +199,12 @@ function TransactionCard({
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: isDark ? '#fff' : 'rgba(28,25,23,0.92)',
+          marginBottom: 4,
+        }}>
           {title}
         </div>
         <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-secondary)' }}>
@@ -182,13 +216,20 @@ function TransactionCard({
         <div style={{ fontSize: 15, fontWeight: 800, color: visual.amountColor, marginBottom: 4 }}>
           {transaction.type === 'debit' ? '-' : '+'}{formatMoney(transaction.amount)}
         </div>
-        <ChevronRight size={16} color="rgba(255,255,255,0.3)" style={{ marginLeft: 'auto' }} />
+        <ChevronRight
+          size={16}
+          color={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(120,113,108,0.5)'}
+          style={{ marginLeft: 'auto' }}
+        />
       </div>
     </m.button>
   )
 }
 
 export function TransactionsModal({ isOpen, onClose, transactions, balance, onViewAll }: TransactionsModalProps) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
   const sortedTransactions = useMemo(
     () => [...transactions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [transactions]
@@ -206,7 +247,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
   }, [isOpen, sortedTransactions])
 
   const selectedTransaction = sortedTransactions.find((transaction) => transaction.id === selectedTransactionId) || sortedTransactions[0] || null
-  const selectedVisual = selectedTransaction ? getTransactionVisual(selectedTransaction) : null
+  const selectedVisual = selectedTransaction ? getTransactionVisual(selectedTransaction, isDark) : null
 
   return (
     <ModalWrapper
@@ -214,7 +255,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
       onClose={onClose}
       modalId="transactions-modal"
       title="История начислений и списаний"
-      accentColor="#D4AF37"
+      accentColor={isDark ? '#D4AF37' : '#9e7a1a'}
     >
       <div style={{ padding: '0 20px 20px' }}>
         <m.div
@@ -229,9 +270,9 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               gap: 8,
               padding: '6px 10px',
               borderRadius: 999,
-              background: 'rgba(212,175,55,0.08)',
-              border: '1px solid rgba(212,175,55,0.16)',
-              color: '#d4af37',
+              background: isDark ? 'rgba(212,175,55,0.08)' : 'rgba(158,122,26,0.07)',
+              border: isDark ? '1px solid rgba(212,175,55,0.16)' : '1px solid rgba(158,122,26,0.14)',
+              color: isDark ? '#d4af37' : '#9e7a1a',
               fontSize: 11,
               fontWeight: 700,
               textTransform: 'uppercase',
@@ -243,7 +284,13 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             Баланс
           </div>
 
-          <div style={{ fontSize: 26, fontWeight: 700, color: '#fff', lineHeight: 1.15, marginBottom: 8 }}>
+          <div style={{
+            fontSize: 26,
+            fontWeight: 700,
+            color: isDark ? '#fff' : 'rgba(28,25,23,0.92)',
+            lineHeight: 1.15,
+            marginBottom: 8,
+          }}>
             Все начисления и списания по бонусному балансу
           </div>
           <div style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
@@ -256,14 +303,31 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             marginBottom: 16,
             padding: 18,
             borderRadius: 22,
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(255,255,255,0.03))',
-            border: '1px solid rgba(212,175,55,0.18)',
+            background: isDark
+              ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(255,255,255,0.03))'
+              : 'linear-gradient(135deg, rgba(158,122,26,0.07), rgba(255,255,255,0.92))',
+            border: isDark
+              ? '1px solid rgba(212,175,55,0.18)'
+              : '1px solid rgba(158,122,26,0.14)',
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(212,175,55,0.72)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: isDark ? 'rgba(212,175,55,0.72)' : 'rgba(158,122,26,0.7)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            marginBottom: 8,
+          }}>
             Доступно сейчас
           </div>
-          <div style={{ fontSize: 34, fontWeight: 800, color: '#fff', lineHeight: 1, marginBottom: 8 }}>
+          <div style={{
+            fontSize: 34,
+            fontWeight: 800,
+            color: isDark ? '#fff' : 'rgba(28,25,23,0.95)',
+            lineHeight: 1,
+            marginBottom: 8,
+          }}>
             {Math.round(balance).toLocaleString('ru-RU')} ₽
           </div>
           <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-secondary)' }}>
@@ -277,8 +341,8 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               marginBottom: 16,
               padding: 16,
               borderRadius: 20,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.05)',
+              background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.90)',
+              border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(120,85,40,0.08)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
@@ -299,7 +363,12 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+                <div style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: isDark ? '#fff' : 'rgba(28,25,23,0.92)',
+                  marginBottom: 4,
+                }}>
                   {selectedTransaction.description?.trim() || REASON_LABELS[selectedTransaction.reason] || 'Операция'}
                 </div>
                 <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-secondary)' }}>
@@ -313,33 +382,88 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-              <div style={{ padding: '10px 12px', borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: 'rgba(255,255,255,0.44)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+              <div style={{
+                padding: '10px 12px',
+                borderRadius: 14,
+                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
+                border: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(120,85,40,0.06)',
+              }}>
+                <div style={{
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: isDark ? 'rgba(255,255,255,0.44)' : 'rgba(120,113,108,0.65)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: 6,
+                }}>
                   Тип
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: isDark ? '#fff' : 'rgba(28,25,23,0.90)',
+                }}>
                   {selectedVisual.directionLabel}
                 </div>
               </div>
-              <div style={{ padding: '10px 12px', borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: 'rgba(255,255,255,0.44)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+              <div style={{
+                padding: '10px 12px',
+                borderRadius: 14,
+                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
+                border: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(120,85,40,0.06)',
+              }}>
+                <div style={{
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: isDark ? 'rgba(255,255,255,0.44)' : 'rgba(120,113,108,0.65)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: 6,
+                }}>
                   Основание
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: isDark ? '#fff' : 'rgba(28,25,23,0.90)',
+                }}>
                   {REASON_LABELS[selectedTransaction.reason] || 'Операция'}
                 </div>
               </div>
-              <div style={{ padding: '10px 12px', borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: 'rgba(255,255,255,0.44)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+              <div style={{
+                padding: '10px 12px',
+                borderRadius: 14,
+                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
+                border: isDark ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(120,85,40,0.06)',
+              }}>
+                <div style={{
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: isDark ? 'rgba(255,255,255,0.44)' : 'rgba(120,113,108,0.65)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: 6,
+                }}>
                   Время
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: isDark ? '#fff' : 'rgba(28,25,23,0.90)',
+                }}>
                   {new Date(selectedTransaction.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, color: 'rgba(255,255,255,0.46)', fontSize: 12.5 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginTop: 12,
+              color: isDark ? 'rgba(255,255,255,0.46)' : 'rgba(120,113,108,0.65)',
+              fontSize: 12.5,
+            }}>
               <Clock3 size={14} />
               {formatDateTime(selectedTransaction.created_at)}
             </div>
@@ -354,6 +478,7 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
                 transaction={transaction}
                 selected={transaction.id === selectedTransaction?.id}
                 onClick={() => setSelectedTransactionId(transaction.id)}
+                isDark={isDark}
               />
             ))
           ) : (
@@ -361,8 +486,8 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
               style={{
                 padding: '18px 16px',
                 borderRadius: 18,
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.88)',
+                border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(120,85,40,0.08)',
                 color: 'var(--text-secondary)',
                 fontSize: 13,
                 lineHeight: 1.6,
@@ -381,9 +506,9 @@ export function TransactionsModal({ isOpen, onClose, transactions, balance, onVi
             width: '100%',
             minHeight: 46,
             borderRadius: 16,
-            border: '1px solid rgba(212,175,55,0.18)',
-            background: 'rgba(212,175,55,0.1)',
-            color: '#d4af37',
+            border: isDark ? '1px solid rgba(212,175,55,0.18)' : '1px solid rgba(158,122,26,0.16)',
+            background: isDark ? 'rgba(212,175,55,0.1)' : 'rgba(158,122,26,0.08)',
+            color: isDark ? '#d4af37' : '#9e7a1a',
             fontSize: 14,
             fontWeight: 700,
             display: 'flex',

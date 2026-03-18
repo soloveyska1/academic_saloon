@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, Crown, Percent, Star } from 'lucide-react'
+import { useThemeValue } from '../../contexts/ThemeContext'
 
 // Glass card style
 const glassStyle: React.CSSProperties = {
@@ -35,6 +36,9 @@ interface LevelProgressCardProps {
 //  MAX RANK CARD — Crown achievement instead of empty space
 // ═══════════════════════════════════════════════════════════════════════════
 function MaxRankCard({ rank }: { rank: Rank }) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -44,8 +48,12 @@ function MaxRankCard({ rank }: { rank: Rank }) {
       style={{
         ...glassStyle,
         marginBottom: 16,
-        border: '1px solid rgba(212,175,55,0.25)',
-        background: 'linear-gradient(145deg, rgba(212,175,55,0.08), var(--bg-card) 40%)',
+        border: isDark
+          ? '1px solid rgba(212,175,55,0.25)'
+          : '1px solid rgba(158,122,26,0.20)',
+        background: isDark
+          ? 'linear-gradient(145deg, rgba(212,175,55,0.08), var(--bg-card) 40%)'
+          : 'linear-gradient(145deg, rgba(158,122,26,0.05), var(--bg-card) 40%)',
       }}
     >
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -55,12 +63,18 @@ function MaxRankCard({ rank }: { rank: Rank }) {
             width: 48,
             height: 48,
             borderRadius: 12,
-            background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.08))',
-            border: '1px solid rgba(212,175,55,0.35)',
+            background: isDark
+              ? 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.08))'
+              : 'linear-gradient(135deg, rgba(158,122,26,0.15), rgba(158,122,26,0.04))',
+            border: isDark
+              ? '1px solid rgba(212,175,55,0.35)'
+              : '1px solid rgba(158,122,26,0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 20px -5px rgba(212,175,55,0.3)',
+            boxShadow: isDark
+              ? '0 0 20px -5px rgba(212,175,55,0.3)'
+              : '0 0 20px -5px rgba(158,122,26,0.15)',
           }}>
             <Crown size={22} color="var(--gold-400)" strokeWidth={1.5} />
           </div>
@@ -70,7 +84,7 @@ function MaxRankCard({ rank }: { rank: Rank }) {
               fontWeight: 700,
               letterSpacing: '0.06em',
               textTransform: 'uppercase' as const,
-              color: 'rgba(255,255,255,0.35)',
+              color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(120,113,108,0.65)',
               marginBottom: 2,
             }}>
               Максимальный уровень
@@ -95,8 +109,12 @@ function MaxRankCard({ rank }: { rank: Rank }) {
               flex: 1,
               padding: '10px 12px',
               borderRadius: 12,
-              background: 'rgba(212,175,55,0.06)',
-              border: '1px solid rgba(212,175,55,0.12)',
+              background: isDark
+                ? 'rgba(212,175,55,0.06)'
+                : 'rgba(158,122,26,0.04)',
+              border: isDark
+                ? '1px solid rgba(212,175,55,0.12)'
+                : '1px solid rgba(158,122,26,0.10)',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
@@ -115,8 +133,12 @@ function MaxRankCard({ rank }: { rank: Rank }) {
               flex: 1,
               padding: '10px 12px',
               borderRadius: 12,
-              background: 'rgba(212,175,55,0.06)',
-              border: '1px solid rgba(212,175,55,0.12)',
+              background: isDark
+                ? 'rgba(212,175,55,0.06)'
+                : 'rgba(158,122,26,0.04)',
+              border: isDark
+                ? '1px solid rgba(212,175,55,0.12)'
+                : '1px solid rgba(158,122,26,0.10)',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
@@ -137,6 +159,9 @@ export const LevelProgressCard = memo(function LevelProgressCard({
   rank,
   displayNextRank,
 }: LevelProgressCardProps) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
   // Max rank: show achievement card with benefits
   if (rank.is_max || !displayNextRank) {
     return <MaxRankCard rank={rank} />
@@ -159,12 +184,16 @@ export const LevelProgressCard = memo(function LevelProgressCard({
               width: 48,
               height: 48,
               borderRadius: 12,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
+              background: isDark
+                ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))'
+                : 'linear-gradient(135deg, rgba(158,122,26,0.12), rgba(158,122,26,0.03))',
               border: '1px solid var(--border-gold)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 15px -5px rgba(212,175,55,0.2)',
+              boxShadow: isDark
+                ? '0 0 15px -5px rgba(212,175,55,0.2)'
+                : '0 0 15px -5px rgba(158,122,26,0.10)',
             }}
           >
             <TrendingUp size={22} color="var(--gold-400)" strokeWidth={1.5} />
@@ -226,7 +255,9 @@ export const LevelProgressCard = memo(function LevelProgressCard({
             style={{
               height: '100%',
               borderRadius: 100,
-              boxShadow: '0 0 15px rgba(212,175,55,0.5)',
+              boxShadow: isDark
+                ? '0 0 15px rgba(212,175,55,0.5)'
+                : '0 0 15px rgba(158,122,26,0.25)',
             }}
           />
         </div>

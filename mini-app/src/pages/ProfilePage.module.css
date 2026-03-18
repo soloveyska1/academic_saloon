@@ -343,3 +343,146 @@
   line-height: 1.55;
   word-break: break-all;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES — Premium Boutique
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] .voidGlass {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(120, 85, 40, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 1px 2px rgba(120, 85, 40, 0.06),
+    0 8px 24px -6px rgba(120, 85, 40, 0.12);
+}
+
+[data-theme="light"] .glassCard {
+  background:
+    radial-gradient(circle at top right, rgba(158, 122, 26, 0.06), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.90));
+  border: 1px solid rgba(120, 85, 40, 0.10);
+  box-shadow: 0 20px 42px -36px rgba(120, 85, 40, 0.18);
+}
+
+[data-theme="light"] .glassCardActive {
+  border-color: rgba(158, 122, 26, 0.20);
+  box-shadow: 0 22px 50px -36px rgba(158, 122, 26, 0.15);
+}
+
+[data-theme="light"] .goldAccent {
+  color: #7d5c12;
+}
+
+[data-theme="light"] .sectionTitle {
+  color: rgba(87, 83, 78, 0.6);
+}
+
+[data-theme="light"] .sectionTitle::after {
+  background: linear-gradient(90deg, rgba(120, 85, 40, 0.10), transparent);
+}
+
+[data-theme="light"] .statCard {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(120, 85, 40, 0.08);
+}
+
+[data-theme="light"] .statLabel {
+  color: rgba(87, 83, 78, 0.65);
+}
+
+[data-theme="light"] .statHelper {
+  color: #78716C;
+}
+
+[data-theme="light"] .progressTrack {
+  background: rgba(120, 85, 40, 0.08);
+}
+
+[data-theme="light"] .progressFill {
+  background: linear-gradient(90deg, #9e7a1a, #c9a436);
+  box-shadow: 0 0 14px rgba(158, 122, 26, 0.25);
+}
+
+[data-theme="light"] .metaPill {
+  background: rgba(120, 85, 40, 0.05);
+  border: 1px solid rgba(120, 85, 40, 0.08);
+  color: #78716C;
+}
+
+[data-theme="light"] .metaPillGold {
+  background: rgba(158, 122, 26, 0.08);
+  border-color: rgba(158, 122, 26, 0.16);
+  color: #9e7a1a;
+}
+
+[data-theme="light"] .quickActionItem {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(120, 85, 40, 0.08);
+}
+
+[data-theme="light"] .quickActionLabel {
+  color: #57534E;
+}
+
+[data-theme="light"] .transactionRow {
+  border-bottom: 1px solid rgba(120, 85, 40, 0.06);
+}
+
+[data-theme="light"] .transactionTitle {
+  color: #1C1917;
+}
+
+[data-theme="light"] .transactionSub {
+  color: #78716C;
+}
+
+[data-theme="light"] .goldButton {
+  border: 1px solid rgba(158, 122, 26, 0.20);
+  background: rgba(158, 122, 26, 0.08);
+  color: #9e7a1a;
+}
+
+[data-theme="light"] .miniButton {
+  border: 1px solid rgba(120, 85, 40, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  color: #1C1917;
+}
+
+[data-theme="light"] .miniButtonLabel {
+  color: #57534E;
+}
+
+[data-theme="light"] .bannerCard {
+  background:
+    radial-gradient(circle at 80% -5%, rgba(158, 122, 26, 0.10), transparent 40%),
+    linear-gradient(165deg, rgba(255, 250, 240, 0.95) 0%, rgba(255, 255, 255, 0.96) 50%, rgba(250, 249, 247, 0.98) 100%);
+  border: 1px solid rgba(158, 122, 26, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 1px 2px rgba(120, 85, 40, 0.08),
+    0 20px 40px -10px rgba(120, 85, 40, 0.12);
+}
+
+[data-theme="light"] .bannerShine {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 30%);
+}
+
+[data-theme="light"] .bannerArrow {
+  background: linear-gradient(180deg, #b8941e 0%, #9e7a1a 100%);
+  box-shadow: 0 4px 12px rgba(158, 122, 26, 0.20);
+}
+
+[data-theme="light"] .footerLine {
+  background: linear-gradient(90deg, transparent, rgba(158, 122, 26, 0.25));
+}
+
+[data-theme="light"] .footerLineRight {
+  background: linear-gradient(90deg, rgba(158, 122, 26, 0.25), transparent);
+}
+
+[data-theme="light"] .linkBox {
+  background: rgba(120, 85, 40, 0.04);
+  border: 1px solid rgba(120, 85, 40, 0.08);
+  color: #78716C;
+}
