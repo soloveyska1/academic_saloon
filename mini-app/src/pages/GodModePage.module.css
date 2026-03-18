@@ -77,6 +77,16 @@
 .topBarBtnActive { composes: topBarBtn; background: rgba(212, 175, 55, 0.15); color: #d4af37; }
 .topBarBtnDanger { composes: topBarBtn; background: rgba(239, 68, 68, 0.12); color: #ef4444; }
 
+.exitBtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 8px; border: none;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s;
+  white-space: nowrap;
+}
+.exitBtn:active { background: rgba(239, 68, 68, 0.22); }
+
 .unreadBadge {
   position: absolute; top: -2px; right: -2px;
   min-width: 14px; height: 14px; border-radius: 7px;
