@@ -129,7 +129,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                                 <span style={{
                                     fontSize: 10,
                                     fontWeight: 700,
-                                    color: '#22c55e',
+                                    color: 'var(--success-text)',
                                     fontFamily: 'var(--font-mono)',
                                 }}>
                                     {order.promo_code} −{order.promo_discount}%
@@ -207,7 +207,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                         <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 16, marginBottom: 4 }}>
                             {hasFiles ? 'Готовая работа' : 'Файлы заказа'}
                         </div>
-                        <div style={{ fontSize: 13, color: hasFiles ? '#22c55e' : 'var(--text-muted)' }}>
+                        <div style={{ fontSize: 13, color: hasFiles ? 'var(--success-text)' : 'var(--text-muted)' }}>
                             {hasFiles ? 'Нажмите, чтобы скачать' : 'Материалы еще не загружены'}
                         </div>
                     </div>
@@ -215,10 +215,10 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                 {hasFiles && (
                     <div style={{
                         width: 36, height: 36, borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.05)',
+                        background: 'var(--border-default)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
-                        <ArrowUpRight size={18} color="#fff" />
+                        <ArrowUpRight size={18} color="var(--text-primary)" />
                     </div>
                 )}
             </motion.div>
@@ -232,8 +232,8 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     gridColumn: 'span 2',
                     padding: 24,
                     borderRadius: 24,
-                    background: 'rgba(20,20,20,0.6)',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-default)',
                 }}
             >
                 <div style={{

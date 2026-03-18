@@ -709,8 +709,8 @@ function RequirementsEditorModal({
                 width: 38,
                 height: 38,
                 borderRadius: 12,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-strong)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -774,8 +774,8 @@ function RequirementsEditorModal({
                         padding: '8px 12px',
                         fontSize: 12,
                         fontWeight: 600,
-                        color: key === primaryKey ? '#d4af37' : 'var(--text-secondary)',
-                        background: key === primaryKey ? goldSoft : 'rgba(255,255,255,0.04)',
+                        color: key === primaryKey ? 'var(--gold-400)' : 'var(--text-secondary)',
+                        background: key === primaryKey ? goldSoft : 'var(--bg-glass)',
                         border: `1px solid ${key === primaryKey ? goldBorder : cardBorder}`,
                         borderRadius: 10,
                         cursor: 'pointer',
@@ -836,7 +836,7 @@ function RequirementsEditorModal({
                 borderRadius: 14,
                 border: 'none',
                 background: 'var(--gold-metallic)',
-                color: '#050505',
+                color: 'var(--text-on-gold)',
                 fontSize: 15,
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -880,8 +880,8 @@ function ToolbarBtn({
         padding: '7px 11px',
         fontSize: 12,
         fontWeight: 600,
-        color: danger ? '#ef4444' : active ? '#d4af37' : 'var(--text-secondary)',
-        background: active ? goldSoft : 'rgba(255,255,255,0.04)',
+        color: danger ? 'var(--error-text)' : active ? 'var(--gold-400)' : 'var(--text-secondary)',
+        background: active ? goldSoft : 'var(--bg-glass)',
         border: `1px solid ${active ? goldBorder : cardBorder}`,
         borderRadius: 10,
         cursor: 'pointer',
@@ -895,10 +895,10 @@ function ToolbarBtn({
 
 function Pill({ label, tone }: { label: string; tone: 'good' | 'muted' | 'accent' }) {
   const colors = tone === 'good'
-    ? { bg: 'rgba(34, 197, 94, 0.10)', border: 'rgba(34, 197, 94, 0.18)', text: '#7dd3a6' }
+    ? { bg: 'rgba(34, 197, 94, 0.10)', border: 'rgba(34, 197, 94, 0.18)', text: 'var(--success-text)' }
     : tone === 'accent'
-      ? { bg: goldSoft, border: goldBorder, text: '#d4af37' }
-      : { bg: 'rgba(255,255,255,0.04)', border: cardBorder, text: 'var(--text-muted)' }
+      ? { bg: goldSoft, border: goldBorder, text: 'var(--gold-400)' }
+      : { bg: 'var(--bg-glass)', border: cardBorder, text: 'var(--text-muted)' }
 
   return (
     <span style={{
