@@ -831,7 +831,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
                     minWidth: 20,
                     height: 20,
                     borderRadius: 10,
-                    background: '#ef4444',
+                    background: 'var(--error-text)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -874,7 +874,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
                         width: 6,
                         height: 6,
                         borderRadius: '50%',
-                        background: '#22c55e',
+                        background: 'var(--success-text)',
                       }}
                     />
                     Онлайн • Отвечаем быстро
@@ -968,7 +968,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           </div>
           <div style={{
             fontSize: 12,
-            color: isTyping ? '#d4af37' : (isConnected ? '#22c55e' : 'var(--text-muted)'),
+            color: isTyping ? 'var(--gold-400)' : (isConnected ? 'var(--success-text)' : 'var(--text-muted)'),
             display: 'flex',
             alignItems: 'center',
             gap: 6,
@@ -1085,7 +1085,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             <motion.div
               animate={{ scale: [1, 1.2, 1], opacity: [1, 0.5, 1] }}
               transition={{ repeat: Infinity, duration: 1 }}
-              style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }}
+              style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--error-text)', flexShrink: 0 }}
             />
             <span style={{ fontSize: 14, color: 'var(--error-text)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
               {formatDuration(recordingDuration)}
@@ -1203,7 +1203,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               onClick={cancelRecording}
               style={{
                 width: 44, height: 44, borderRadius: 14,
-                background: '#ef4444',
+                background: 'var(--error-text)',
                 border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
