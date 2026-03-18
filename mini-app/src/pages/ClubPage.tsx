@@ -637,8 +637,8 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                 padding: '16px 18px',
                 borderRadius: 20,
                 border: isCurrent
-                  ? '1px solid rgba(212,175,55,0.3)'
-                  : '1px solid rgba(255,255,255,0.06)',
+                  ? `1px solid ${isDark ? 'rgba(212,175,55,0.3)' : 'rgba(158,122,26,0.28)'}`
+                  : `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 14,
@@ -650,8 +650,12 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                   width: 42,
                   height: 42,
                   borderRadius: 14,
-                  background: isCurrent ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: isCurrent ? '1px solid rgba(212,175,55,0.25)' : '1px solid rgba(255,255,255,0.06)',
+                  background: isCurrent
+                    ? (isDark ? 'rgba(212,175,55,0.15)' : 'rgba(158,122,26,0.12)')
+                    : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.05)'),
+                  border: isCurrent
+                    ? `1px solid ${isDark ? 'rgba(212,175,55,0.25)' : 'rgba(158,122,26,0.22)'}`
+                    : `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -659,9 +663,9 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                 }}
               >
                 {isLocked ? (
-                  <Lock size={18} color="rgba(228,213,163,0.3)" />
+                  <Lock size={18} color={isDark ? 'rgba(228,213,163,0.3)' : 'rgba(120,113,108,0.4)'} />
                 ) : (
-                  <RankIcon size={18} color={isCurrent ? '#d4af37' : 'rgba(228,213,163,0.5)'} />
+                  <RankIcon size={18} color={isCurrent ? (isDark ? '#d4af37' : '#9e7a1a') : (isDark ? 'rgba(228,213,163,0.5)' : 'rgba(125,92,18,0.5)')} />
                 )}
               </div>
 
@@ -671,7 +675,7 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                     style={{
                       fontSize: 14,
                       fontWeight: 700,
-                      color: isCurrent ? '#E8D5A3' : 'rgba(228,213,163,0.65)',
+                      color: isCurrent ? (isDark ? '#E8D5A3' : '#7d5c12') : (isDark ? 'rgba(228,213,163,0.65)' : 'rgba(125,92,18,0.65)'),
                       fontFamily: "'Manrope', sans-serif",
                     }}
                   >
@@ -682,8 +686,8 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                       style={{
                         fontSize: 10,
                         fontWeight: 700,
-                        color: '#d4af37',
-                        background: 'rgba(212,175,55,0.12)',
+                        color: isDark ? '#d4af37' : '#9e7a1a',
+                        background: isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.10)',
                         padding: '3px 8px',
                         borderRadius: 6,
                         textTransform: 'uppercase' as const,
@@ -694,7 +698,7 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 12, color: 'rgba(228,213,163,0.4)', marginTop: 3 }}>
+                <div style={{ fontSize: 12, color: isDark ? 'rgba(228,213,163,0.4)' : 'rgba(125,92,18,0.4)', marginTop: 3 }}>
                   {rank.minSpent > 0 ? `от ${formatMoney(rank.minSpent)} потрачено` : 'Начальный уровень'}
                 </div>
               </div>
@@ -703,7 +707,7 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                 style={{
                   fontSize: 18,
                   fontWeight: 800,
-                  color: isCurrent ? '#d4af37' : 'rgba(228,213,163,0.4)',
+                  color: isCurrent ? (isDark ? '#d4af37' : '#9e7a1a') : (isDark ? 'rgba(228,213,163,0.4)' : 'rgba(125,92,18,0.4)'),
                   fontFamily: "'Manrope', sans-serif",
                   flexShrink: 0,
                 }}
@@ -722,6 +726,8 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
 
 function ClubPage({ user }: ClubPageProps) {
   const handleBack = useSafeBackNavigation('/')
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
 
   if (!user) {
     return (
