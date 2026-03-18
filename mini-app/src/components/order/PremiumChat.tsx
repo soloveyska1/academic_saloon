@@ -819,7 +819,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               boxShadow: '0 4px 20px rgba(212, 175, 55, 0.4)',
               position: 'relative',
             }}>
-              <Headphones size={24} color="#050505" />
+              <Headphones size={24} color="var(--text-on-gold)" />
               {unreadCount > 0 && (
                 <motion.div
                   initial={{ scale: 0 }}
@@ -837,7 +837,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
                     justifyContent: 'center',
                     fontSize: 11,
                     fontWeight: 700,
-                    color: '#fff',
+                    color: 'var(--text-primary)',
                     border: '2px solid var(--bg-main)',
                   }}
                 >
@@ -850,7 +850,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               <div style={{
                 fontSize: 16,
                 fontWeight: 700,
-                color: '#fff',
+                color: 'var(--text-primary)',
                 marginBottom: 4,
                 fontFamily: 'var(--font-serif)',
               }}>
@@ -1061,7 +1061,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               boxShadow: '0 4px 20px rgba(212, 175, 55, 0.4)',
             }}
           >
-            <ArrowDown size={20} color="#050505" />
+            <ArrowDown size={20} color="var(--text-on-gold)" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -1190,9 +1190,9 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             }}
           >
             {sending ? (
-              <Loader size={20} color="#050505" className="animate-spin" />
+              <Loader size={20} color="var(--text-on-gold)" className="animate-spin" />
             ) : (
-              <Send size={20} color="#050505" />
+              <Send size={20} color="var(--text-on-gold)" />
             )}
           </motion.button>
         ) : isRecording ? (
@@ -1224,7 +1224,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
                 boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
               }}
             >
-              <Send size={20} color="#050505" />
+              <Send size={20} color="var(--text-on-gold)" />
             </motion.button>
           </div>
         ) : (
