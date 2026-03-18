@@ -238,7 +238,7 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
       style={{
         padding: '22px 20px',
         borderRadius: 24,
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
         marginBottom: 22,
       }}
     >
@@ -248,21 +248,21 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             width: 44,
             height: 44,
             borderRadius: 16,
-            background: 'rgba(212,175,55,0.12)',
-            border: '1px solid rgba(212,175,55,0.18)',
+            background: isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.10)',
+            border: `1px solid ${isDark ? 'rgba(212,175,55,0.18)' : 'rgba(158,122,26,0.16)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}
         >
-          <Users size={20} color="#d4af37" />
+          <Users size={20} color={isDark ? '#d4af37' : '#9e7a1a'} />
         </div>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#E8D5A3', fontFamily: "'Manrope', sans-serif" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: isDark ? '#E8D5A3' : '#7d5c12', fontFamily: "'Manrope', sans-serif" }}>
             Пригласи друга
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(228,213,163,0.55)', marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: isDark ? 'rgba(228,213,163,0.55)' : 'rgba(125,92,18,0.55)', marginTop: 2 }}>
             Вы оба получите бонус
           </div>
         </div>
@@ -277,9 +277,13 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             flex: 1,
             padding: '13px 16px',
             borderRadius: 16,
-            background: copied ? 'rgba(34,197,94,0.15)' : 'rgba(212,175,55,0.1)',
-            border: `1px solid ${copied ? 'rgba(34,197,94,0.25)' : 'rgba(212,175,55,0.18)'}`,
-            color: copied ? '#22c55e' : '#E8D5A3',
+            background: copied
+              ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(21,128,61,0.10)')
+              : (isDark ? 'rgba(212,175,55,0.1)' : 'rgba(158,122,26,0.08)'),
+            border: `1px solid ${copied
+              ? (isDark ? 'rgba(34,197,94,0.25)' : 'rgba(21,128,61,0.20)')
+              : (isDark ? 'rgba(212,175,55,0.18)' : 'rgba(158,122,26,0.16)')}`,
+            color: copied ? (isDark ? '#22c55e' : '#15803d') : (isDark ? '#E8D5A3' : '#7d5c12'),
             fontSize: 14,
             fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",
@@ -302,9 +306,9 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             flex: 1,
             padding: '13px 16px',
             borderRadius: 16,
-            background: 'rgba(212,175,55,0.18)',
-            border: '1px solid rgba(212,175,55,0.28)',
-            color: '#E8D5A3',
+            background: isDark ? 'rgba(212,175,55,0.18)' : 'rgba(158,122,26,0.14)',
+            border: `1px solid ${isDark ? 'rgba(212,175,55,0.28)' : 'rgba(158,122,26,0.22)'}`,
+            color: isDark ? '#E8D5A3' : '#7d5c12',
             fontSize: 14,
             fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",
@@ -332,15 +336,15 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             flex: 1,
             padding: '12px 14px',
             borderRadius: 14,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)'}`,
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#E8D5A3', fontFamily: "'Manrope', sans-serif" }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: isDark ? '#E8D5A3' : '#7d5c12', fontFamily: "'Manrope', sans-serif" }}>
             {user.referrals_count || 0}
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(228,213,163,0.45)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: isDark ? 'rgba(228,213,163,0.45)' : 'rgba(125,92,18,0.45)', marginTop: 2 }}>
             приглашено
           </div>
         </div>
@@ -349,15 +353,15 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             flex: 1,
             padding: '12px 14px',
             borderRadius: 14,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)'}`,
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#E8D5A3', fontFamily: "'Manrope', sans-serif" }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: isDark ? '#E8D5A3' : '#7d5c12', fontFamily: "'Manrope', sans-serif" }}>
             {formatMoney(user.referral_earnings || 0)}
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(228,213,163,0.45)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: isDark ? 'rgba(228,213,163,0.45)' : 'rgba(125,92,18,0.45)', marginTop: 2 }}>
             заработано
           </div>
         </div>
@@ -368,7 +372,7 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
 
 // ─── Transaction History ────────────────────────────────────────────────────
 
-function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
+function TransactionHistory({ transactions, isDark }: { transactions: Transaction[]; isDark: boolean }) {
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
   const sorted = useMemo(
@@ -387,7 +391,7 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
         style={{
           padding: '28px 20px',
           borderRadius: 24,
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
           marginBottom: 22,
           textAlign: 'center',
           fontFamily: "'Manrope', sans-serif",
@@ -397,12 +401,12 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
           gap: 0,
         }}
       >
-        <Receipt size={40} color="rgba(212,175,55,0.3)" style={{ marginBottom: 14 }} />
+        <Receipt size={40} color={isDark ? 'rgba(212,175,55,0.3)' : 'rgba(158,122,26,0.3)'} style={{ marginBottom: 14 }} />
         <div
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: 'rgba(228,213,163,0.65)',
+            color: isDark ? 'rgba(228,213,163,0.65)' : 'rgba(125,92,18,0.65)',
             marginBottom: 6,
           }}
         >
@@ -411,7 +415,7 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
         <div
           style={{
             fontSize: 12,
-            color: 'rgba(228,213,163,0.35)',
+            color: isDark ? 'rgba(228,213,163,0.35)' : 'rgba(125,92,18,0.35)',
             lineHeight: 1.5,
             maxWidth: 220,
             marginBottom: 18,
@@ -428,8 +432,10 @@ function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
             padding: '0 22px',
             borderRadius: 14,
             border: 'none',
-            background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
-            color: '#090909',
+            background: isDark
+              ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
+              : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
+            color: isDark ? '#090909' : '#FFFFFF',
             fontSize: 13,
             fontWeight: 700,
             fontFamily: "'Manrope', sans-serif",
