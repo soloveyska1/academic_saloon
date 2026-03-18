@@ -39,7 +39,6 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
 
   const GOLD = isDark ? '#d4af37' : '#9e7a1a'
   const GOLD_LIGHT = isDark ? '#E8D5A3' : '#7d5c12'
-  const GOLD_DIM = isDark ? 'rgba(212, 175, 55, 0.3)' : 'rgba(158, 122, 26, 0.3)'
 
   const CARD_STYLE: React.CSSProperties = {
     background: isDark ? 'rgba(20, 20, 23, 0.8)' : 'rgba(255, 255, 255, 0.9)',

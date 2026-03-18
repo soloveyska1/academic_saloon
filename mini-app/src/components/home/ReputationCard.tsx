@@ -1,18 +1,7 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Copy, Check, QrCode, Send, Users, Coins } from 'lucide-react'
-
-// Glass gold style
-const glassGoldStyle: React.CSSProperties = {
-  position: 'relative',
-  overflow: 'hidden',
-  background:
-    'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-  backdropFilter: 'blur(12px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
-  border: '1px solid var(--border-gold)',
-  boxShadow: 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)',
-}
+import { useThemeValue } from '../../contexts/ThemeContext'
 
 interface ReputationCardProps {
   referralCode: string
@@ -33,6 +22,24 @@ export const ReputationCard = memo(function ReputationCard({
   onShowQR,
   onTelegramShare,
 }: ReputationCardProps) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
+  // Glass gold style — theme-aware
+  const glassGoldStyle: React.CSSProperties = {
+    position: 'relative',
+    overflow: 'hidden',
+    background: isDark
+      ? 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)'
+      : 'linear-gradient(135deg, rgba(158,122,26,0.06) 0%, var(--bg-card) 40%, rgba(158,122,26,0.03) 100%)',
+    backdropFilter: 'blur(12px) saturate(130%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(130%)',
+    border: '1px solid var(--border-gold)',
+    boxShadow: isDark
+      ? 'var(--card-shadow), inset 0 0 60px rgba(212, 175, 55, 0.03)'
+      : 'var(--card-shadow), inset 0 0 60px rgba(158, 122, 26, 0.02)',
+  }
+
   // Default Telegram share handler
   const handleTelegramShare = () => {
     if (onTelegramShare) {
@@ -90,13 +97,17 @@ export const ReputationCard = memo(function ReputationCard({
                   alignItems: 'center',
                   gap: 4,
                   padding: '4px 8px',
-                  background: 'rgba(74, 222, 128, 0.1)',
-                  border: '1px solid rgba(74, 222, 128, 0.3)',
+                  background: isDark
+                    ? 'rgba(74, 222, 128, 0.1)'
+                    : 'rgba(21, 128, 61, 0.08)',
+                  border: isDark
+                    ? '1px solid rgba(74, 222, 128, 0.3)'
+                    : '1px solid rgba(21, 128, 61, 0.20)',
                   borderRadius: 100,
                 }}
               >
-                <Users size={10} color="#22c55e" strokeWidth={1.5} />
-                <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>
+                <Users size={10} color="var(--success-text)" strokeWidth={1.5} />
+                <span style={{ fontSize: 11, color: 'var(--success-text)', fontWeight: 600 }}>
                   {referralsCount}
                 </span>
               </div>
@@ -108,8 +119,12 @@ export const ReputationCard = memo(function ReputationCard({
                   alignItems: 'center',
                   gap: 4,
                   padding: '4px 8px',
-                  background: 'rgba(212, 175, 55, 0.15)',
-                  border: '1px solid rgba(212, 175, 55, 0.3)',
+                  background: isDark
+                    ? 'rgba(212, 175, 55, 0.15)'
+                    : 'rgba(158, 122, 26, 0.08)',
+                  border: isDark
+                    ? '1px solid rgba(212, 175, 55, 0.3)'
+                    : '1px solid rgba(158, 122, 26, 0.20)',
                   borderRadius: 100,
                 }}
               >
@@ -212,14 +227,18 @@ export const ReputationCard = memo(function ReputationCard({
             aria-label="Поделиться в Telegram"
             style={{
               padding: '12px 16px',
-              background: 'linear-gradient(135deg, #0088cc 0%, #0077b5 100%)',
+              background: isDark
+                ? 'linear-gradient(135deg, #0088cc 0%, #0077b5 100%)'
+                : 'linear-gradient(135deg, #0088cc 0%, #006da3 100%)',
               border: 'none',
               borderRadius: 12,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              boxShadow: '0 4px 12px rgba(0, 136, 204, 0.3)',
+              boxShadow: isDark
+                ? '0 4px 12px rgba(0, 136, 204, 0.3)'
+                : '0 4px 12px rgba(0, 136, 204, 0.2)',
             }}
           >
             <Send size={16} color="white" strokeWidth={1.5} />
@@ -239,7 +258,9 @@ export const ReputationCard = memo(function ReputationCard({
             style={{
               width: 46,
               height: 46,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
+              background: isDark
+                ? 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))'
+                : 'linear-gradient(135deg, rgba(158,122,26,0.12), rgba(158,122,26,0.04))',
               border: '1px solid var(--border-gold)',
               borderRadius: 12,
               cursor: 'pointer',
@@ -262,9 +283,13 @@ export const ReputationCard = memo(function ReputationCard({
             style={{
               marginTop: 12,
               padding: '10px 12px',
-              background: 'rgba(212, 175, 55, 0.06)',
+              background: isDark
+                ? 'rgba(212, 175, 55, 0.06)'
+                : 'rgba(158, 122, 26, 0.04)',
               borderRadius: 10,
-              border: '1px solid rgba(212, 175, 55, 0.1)',
+              border: isDark
+                ? '1px solid rgba(212, 175, 55, 0.1)'
+                : '1px solid rgba(158, 122, 26, 0.08)',
             }}
           >
             <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>

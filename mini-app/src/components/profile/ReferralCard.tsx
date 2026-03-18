@@ -36,6 +36,8 @@ export const ReferralCard = memo(function ReferralCard({
   onOpenQR,
   onOpenProgram,
 }: Props) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
   const count = toSafeNumber(referralsCount)
   const earnings = toSafeNumber(referralEarnings)
   const pct = referralPercent || 5
@@ -62,13 +64,13 @@ export const ReferralCard = memo(function ReferralCard({
             width: 40,
             height: 40,
             borderRadius: 14,
-            background: 'rgba(196, 181, 253, 0.12)',
-            border: '1px solid rgba(196, 181, 253, 0.20)',
+            background: isDark ? 'rgba(196, 181, 253, 0.12)' : 'rgba(124, 58, 237, 0.08)',
+            border: isDark ? '1px solid rgba(196, 181, 253, 0.20)' : '1px solid rgba(124, 58, 237, 0.16)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <Users size={18} color="#c4b5fd" />
+            <Users size={18} color={isDark ? '#c4b5fd' : '#7c3aed'} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{
@@ -101,12 +103,14 @@ export const ReferralCard = memo(function ReferralCard({
                 textAlign: 'center',
                 fontSize: 11.5,
                 fontWeight: tier.percent === pct ? 700 : 500,
-                color: tier.percent === pct ? '#c4b5fd' : 'var(--text-muted)',
+                color: tier.percent === pct
+                  ? (isDark ? '#c4b5fd' : '#7c3aed')
+                  : 'var(--text-muted)',
                 background: tier.percent === pct
-                  ? 'rgba(196, 181, 253, 0.12)'
-                  : 'rgba(255,255,255,0.04)',
+                  ? (isDark ? 'rgba(196, 181, 253, 0.12)' : 'rgba(124, 58, 237, 0.08)')
+                  : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120, 85, 40, 0.04)'),
                 border: tier.percent === pct
-                  ? '1px solid rgba(196, 181, 253, 0.25)'
+                  ? (isDark ? '1px solid rgba(196, 181, 253, 0.25)' : '1px solid rgba(124, 58, 237, 0.20)')
                   : '1px solid transparent',
                 transition: 'all 0.3s ease',
               }}
@@ -136,15 +140,15 @@ export const ReferralCard = memo(function ReferralCard({
         }}>
           <div className={s.statCard}>
             <div className={s.statLabel}>Друзей</div>
-            <div className={s.statValue} style={{ color: '#c4b5fd' }}>{count}</div>
+            <div className={s.statValue} style={{ color: isDark ? '#c4b5fd' : '#7c3aed' }}>{count}</div>
           </div>
           <div className={s.statCard}>
             <div className={s.statLabel}>Бонус</div>
-            <div className={s.statValue} style={{ color: '#a78bfa' }}>{pct}%</div>
+            <div className={s.statValue} style={{ color: isDark ? '#a78bfa' : '#6d28d9' }}>{pct}%</div>
           </div>
           <div className={s.statCard}>
             <div className={s.statLabel}>Заработано</div>
-            <div className={s.statValue} style={{ color: '#93c5fd' }}>{formatMoney(earnings)}</div>
+            <div className={s.statValue} style={{ color: isDark ? '#93c5fd' : '#1d4ed8' }}>{formatMoney(earnings)}</div>
           </div>
         </div>
 
