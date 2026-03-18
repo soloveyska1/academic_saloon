@@ -337,7 +337,7 @@ export function PremiumBentoGrid({ order, cashbackPercent = 5 }: PremiumBentoGri
               <span style={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: '#D4AF37',
+                color: 'var(--gold-400)',
               }}>
                 {cashbackPercent}%
               </span>

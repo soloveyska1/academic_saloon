@@ -247,7 +247,7 @@ export function AdminPanel() {
                     <div
                       style={{
                         fontSize: 10,
-                        color: '#71717a',
+                        color: 'var(--text-muted)',
                         letterSpacing: '0.05em',
                       }}
                     >
@@ -271,7 +271,7 @@ export function AdminPanel() {
                     justifyContent: 'center',
                   }}
                 >
-                  <X size={16} color="#ef4444" />
+                  <X size={16} color="var(--error-text)" />
                 </motion.button>
               </div>
 
@@ -318,11 +318,11 @@ export function AdminPanel() {
                       gap: 8,
                       padding: '12px 14px',
                       marginTop: 8,
-                      background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1))',
+                      background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), var(--gold-glass-subtle))',
                       border: '1px solid rgba(212, 175, 55, 0.3)',
                       borderRadius: 12,
                       cursor: 'pointer',
-                      color: '#d4af37',
+                      color: 'var(--gold-400)',
                       fontSize: 13,
                       fontWeight: 600,
                     }}
@@ -347,7 +347,7 @@ export function AdminPanel() {
                       border: '1px solid rgba(59, 130, 246, 0.2)',
                       borderRadius: 12,
                       cursor: 'pointer',
-                      color: '#3b82f6',
+                      color: 'var(--info-text)',
                       fontSize: 13,
                       fontWeight: 600,
                     }}
@@ -372,7 +372,7 @@ export function AdminPanel() {
                       border: '1px solid rgba(239, 68, 68, 0.2)',
                       borderRadius: 12,
                       cursor: 'pointer',
-                      color: '#ef4444',
+                      color: 'var(--error-text)',
                       fontSize: 13,
                       fontWeight: 600,
                     }}
@@ -388,7 +388,7 @@ export function AdminPanel() {
                     marginTop: 16,
                     padding: 12,
                     background: 'rgba(212, 175, 55, 0.05)',
-                    border: '1px solid rgba(212, 175, 55, 0.2)',
+                    border: '1px solid var(--border-gold)',
                     borderRadius: 12,
                   }}
                 >
@@ -400,8 +400,8 @@ export function AdminPanel() {
                       marginBottom: 12,
                     }}
                   >
-                    <Trophy size={16} color="#d4af37" />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#d4af37' }}>
+                    <Trophy size={16} color="var(--gold-400)" />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gold-400)' }}>
                       СИМУЛЯЦИЯ УРОВНЯ
                     </span>
                   </div>

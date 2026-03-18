@@ -490,7 +490,7 @@ export function PromoCodeSection({
                   <span style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: inputCode.trim() ? '#d4af37' : 'var(--text-muted)',
+                    color: inputCode.trim() ? 'var(--gold-400)' : 'var(--text-muted)',
                   }}>
                     ОК
                   </span>
@@ -849,7 +849,7 @@ export function PromoCodeSection({
                         justifyContent: 'center',
                       }}
                     >
-                      <Loader size={20} color="#0a0a0c" strokeWidth={3} />
+                      <Loader size={20} color="var(--text-on-gold)" strokeWidth={3} />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -864,11 +864,11 @@ export function PromoCodeSection({
                         gap: 8,
                       }}
                     >
-                      <Sparkles size={18} color={inputCode.trim() ? '#0a0a0c' : 'var(--text-muted)'} />
+                      <Sparkles size={18} color={inputCode.trim() ? 'var(--text-on-gold)' : 'var(--text-muted)'} />
                       <span style={{
                         fontSize: 15,
                         fontWeight: 700,
-                        color: inputCode.trim() ? '#0a0a0c' : 'var(--text-muted)',
+                        color: inputCode.trim() ? 'var(--text-on-gold)' : 'var(--text-muted)',
                       }}>
                         Применить
                       </span>
