@@ -1,5 +1,6 @@
 import { AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion'
 import React, { useEffect, useCallback, useRef, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useScrollLock, useSheetRegistration } from '../../ui/GestureGuard'
 import { useModalRegistration } from '../../../contexts/NavigationContext'
@@ -171,7 +172,7 @@ export function ModalWrapper({
     overflow: 'hidden',
   }), [])
 
-  return (
+  return createPortal(
     <LazyMotion features={domAnimation}>
       <AnimatePresence>
         {isOpen && (
@@ -292,7 +293,8 @@ export function ModalWrapper({
           </>
         )}
       </AnimatePresence>
-    </LazyMotion>
+    </LazyMotion>,
+    document.body,
   )
 }
 

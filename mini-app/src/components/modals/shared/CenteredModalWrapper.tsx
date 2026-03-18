@@ -1,5 +1,6 @@
 import { AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion'
 import React, { useEffect, useCallback, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useScrollLock, useSheetRegistration } from '../../ui/GestureGuard'
 import { useModalRegistration } from '../../../contexts/NavigationContext'
@@ -139,7 +140,7 @@ export function CenteredModalWrapper({
     border: `1px solid ${accentColor}20`,
   }), [accentColor])
 
-  return (
+  return createPortal(
     <LazyMotion features={domAnimation}>
       <AnimatePresence>
         {isOpen && (
@@ -195,6 +196,7 @@ export function CenteredModalWrapper({
           </>
         )}
       </AnimatePresence>
-    </LazyMotion>
+    </LazyMotion>,
+    document.body,
   )
 }
