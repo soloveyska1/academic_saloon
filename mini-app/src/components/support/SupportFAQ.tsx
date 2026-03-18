@@ -130,7 +130,7 @@ export const SupportFAQ = memo(function SupportFAQ({
           pointerEvents: 'none',
         }}>
           {searching ? (
-            <Sparkles size={17} color="#d4af37" style={{ animation: 'pulse 1s ease-in-out infinite' }} />
+            <Sparkles size={17} color="var(--gold-400)" style={{ animation: 'pulse 1s ease-in-out infinite' }} />
           ) : (
             <Search size={17} color="var(--text-muted)" />
           )}
@@ -174,7 +174,7 @@ export const SupportFAQ = memo(function SupportFAQ({
               width: 28,
               height: 28,
               borderRadius: 8,
-              background: 'rgba(255,255,255,0.08)',
+              background: 'var(--border-strong)',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
@@ -182,7 +182,7 @@ export const SupportFAQ = memo(function SupportFAQ({
               justifyContent: 'center',
             }}
           >
-            <X size={14} color="rgba(255,255,255,0.5)" />
+            <X size={14} color="var(--text-secondary)" />
           </motion.button>
         )}
       </div>
@@ -199,8 +199,8 @@ export const SupportFAQ = memo(function SupportFAQ({
             style={{
               padding: 16,
               borderRadius: 16,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.02))',
-              border: '1px solid rgba(212,175,55,0.20)',
+              background: 'linear-gradient(135deg, var(--gold-glass-subtle), rgba(212,175,55,0.02))',
+              border: '1px solid var(--border-gold)',
             }}
           >
             <div style={{
@@ -209,7 +209,7 @@ export const SupportFAQ = memo(function SupportFAQ({
               gap: 8,
               marginBottom: 10,
             }}>
-              <Sparkles size={15} color="#d4af37" />
+              <Sparkles size={15} color="var(--gold-400)" />
               <span style={{
                 fontSize: 12,
                 fontWeight: 700,
@@ -411,7 +411,7 @@ const FaqItemRow = memo(function FaqItemRow({
     >
       <div className={s.faqHeader}>
         <div className={s.faqIcon}>
-          <Icon size={18} color="#d4af37" />
+          <Icon size={18} color="var(--gold-400)" />
         </div>
         <div className={s.faqTitle}>{item.title}</div>
         <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>

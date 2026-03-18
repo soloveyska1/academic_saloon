@@ -362,7 +362,7 @@ function PremiumSuccessScreen() {
                         fontFamily: "var(--font-serif)",
                         fontSize: 26,
                         fontWeight: 700,
-                        background: 'linear-gradient(135deg, #4ade80, #22c55e)',
+                        background: 'linear-gradient(135deg, var(--success-text), var(--success-text))',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         margin: 0,
@@ -652,7 +652,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                 fontSize: 52,
                                 fontWeight: 700,
                                 fontFamily: "var(--font-mono)",
-                                background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
+                                background: 'linear-gradient(135deg, var(--gold-100) 0%, var(--gold-400) 50%, var(--gold-500) 100%)',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                                 backgroundClip: 'text',
@@ -1074,7 +1074,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         color: processing ? 'var(--text-muted)' : 'var(--text-on-gold)',
                         background: processing
                             ? 'rgba(255,255,255,0.08)'
-                            : 'linear-gradient(180deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
+                            : 'linear-gradient(180deg, var(--gold-100) 0%, var(--gold-400) 50%, var(--gold-500) 100%)',
                         border: 'none',
                         borderRadius: 18,
                         cursor: processing ? 'not-allowed' : 'pointer',
