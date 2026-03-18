@@ -132,7 +132,7 @@ export const SupportFAQ = memo(function SupportFAQ({
           {searching ? (
             <Sparkles size={17} color="#d4af37" style={{ animation: 'pulse 1s ease-in-out infinite' }} />
           ) : (
-            <Search size={17} color="rgba(255,255,255,0.35)" />
+            <Search size={17} color="var(--text-muted)" />
           )}
         </div>
         <input
@@ -144,8 +144,8 @@ export const SupportFAQ = memo(function SupportFAQ({
             width: '100%',
             padding: '13px 40px 13px 42px',
             borderRadius: 14,
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: 'var(--surface-hover)',
+            border: '1px solid var(--surface-active)',
             color: 'var(--text-main, #f0f0f0)',
             fontSize: 14.5,
             fontWeight: 500,
@@ -154,7 +154,7 @@ export const SupportFAQ = memo(function SupportFAQ({
             transition: 'border-color 0.2s ease',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)'
+            e.currentTarget.style.borderColor = 'var(--gold-glass-strong)'
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'
