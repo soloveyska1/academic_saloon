@@ -126,13 +126,13 @@ function AnimatedTimer() {
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
             >
-                <Timer size={16} color="#f59e0b" />
+                <Timer size={16} color="var(--warning-text)" />
             </motion.div>
             <span style={{
                 fontSize: 14,
                 fontWeight: 700,
                 fontFamily: 'var(--font-mono)',
-                color: '#f59e0b',
+                color: 'var(--warning-text)',
             }}>
                 {hours}ч {minutes.toString().padStart(2, '0')}м
             </span>
@@ -763,7 +763,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                             borderRadius: 6,
                                             fontSize: 10,
                                             fontWeight: 600,
-                                            color: '#D4AF37',
+                                            color: 'var(--gold-400)',
                                             display: 'inline-block',
                                         }}>
                                             ✓ {scheme.benefit}
@@ -1022,7 +1022,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         }}>
                             <span style={{ fontSize: 14 }}>⚠️</span>
                         </div>
-                        <p style={{ fontSize: 13, color: '#ef4444', margin: 0 }}>{error}</p>
+                        <p style={{ fontSize: 13, color: 'var(--error-text)', margin: 0 }}>{error}</p>
                     </motion.div>
                 )}
 

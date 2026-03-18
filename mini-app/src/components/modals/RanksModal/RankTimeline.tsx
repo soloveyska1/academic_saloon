@@ -178,7 +178,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
             )}
             <Icon
               size={26}
-              color={isPassed ? '#fff' : isActive ? '#fff' : 'rgba(255,255,255,0.3)'}
+              color={isPassed ? 'var(--text-primary)' : isActive ? 'var(--text-primary)' : 'var(--text-muted)'}
               strokeWidth={isPassed || isActive ? 2 : 1.5}
               style={{ position: 'relative', zIndex: 1 }}
             />
@@ -196,7 +196,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
             }}>
               {rank.displayName}
             </div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Кэшбэк {rank.cashback}% • от {rank.minSpent.toLocaleString('ru-RU')} ₽
             </div>
           </div>
@@ -209,9 +209,9 @@ const RankTimelineItem = memo(function RankTimelineItem({
               transition={{ delay: 0.5, type: 'spring' }}
               style={{
                 padding: '6px 12px',
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.15))',
+                background: 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))',
                 borderRadius: 100,
-                border: '1px solid rgba(212,175,55,0.4)',
+                border: '1px solid var(--gold-glass-strong)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -221,7 +221,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
               <span style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: '#D4AF37',
+                color: 'var(--gold-400)',
                 letterSpacing: '0.05em',
                 lineHeight: 1,
               }}>
