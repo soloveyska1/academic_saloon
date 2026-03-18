@@ -59,7 +59,7 @@ export const PricingAnchor = memo(function PricingAnchor({
 }: PricingAnchorProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.34 }}
       style={{ marginBottom: 24 }}
@@ -85,7 +85,7 @@ export const PricingAnchor = memo(function PricingAnchor({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 10,
+          gap: 12,
         }}
       >
         {PRICING_ITEMS.map((item, i) => {
@@ -103,7 +103,7 @@ export const PricingAnchor = memo(function PricingAnchor({
                 onNavigateToOrder(item.workTypeKey)
               }}
               style={{
-                padding: '18px 16px',
+                padding: 20,
                 borderRadius: 16,
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border-default)',
@@ -132,7 +132,7 @@ export const PricingAnchor = memo(function PricingAnchor({
 
               {/* Work type */}
               <div style={{
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: 700,
                 color: 'var(--text-primary)',
                 marginBottom: 8,

@@ -165,7 +165,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
               <Flame size={16} color="var(--gold-400)" style={{ flexShrink: 0 }} />
               <span style={{
                 fontFamily: "'Manrope', sans-serif",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 700,
                 color: 'var(--gold-200)',
               }}>
@@ -236,7 +236,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
               >
                 <div style={{
                   fontFamily: "'Manrope', sans-serif",
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: 800,
                   color: 'var(--gold-400)',
                   letterSpacing: '-0.02em',
@@ -266,7 +266,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                 style={{
                   width: '100%',
                   padding: '14px 20px',
-                  borderRadius: 14,
+                  borderRadius: 16,
                   border: 'none',
                   cursor: claiming ? 'not-allowed' : 'pointer',
                   background: claiming
@@ -276,7 +276,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                     ? 'var(--gold-200)'
                     : 'var(--text-on-gold)',
                   fontFamily: "'Manrope', sans-serif",
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: 700,
                   letterSpacing: '0.01em',
                   display: 'flex',
@@ -293,8 +293,8 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                 {claiming ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <motion.span
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
                       style={{ display: 'inline-flex' }}
                     >
                       <Gift size={18} />
@@ -417,7 +417,7 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: day * 0.04, duration: 0.3 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
         style={{
           width: size,
           height: size,
@@ -439,26 +439,6 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
           }),
         }}
       >
-        {/* Pulsing glow for current day */}
-        {isCurrent && (
-          <motion.div
-            animate={{
-              boxShadow: [
-                '0 0 8px var(--gold-glass-medium)',
-                '0 0 20px var(--gold-glass-strong)',
-                '0 0 8px var(--gold-glass-medium)',
-              ],
-            }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              position: 'absolute',
-              inset: -1,
-              borderRadius: '50%',
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-
         {isClaimed ? (
           <Check size={18} color="var(--text-on-gold)" strokeWidth={3} />
         ) : (

@@ -37,13 +37,13 @@ interface LevelProgressCardProps {
 function MaxRankCard({ rank }: { rank: Rank }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.32 }}
       className="card-padding card-radius"
       style={{
         ...glassStyle,
-        marginBottom: 16,
+        marginBottom: 24,
         border: '1px solid var(--border-gold-strong)',
         background: 'linear-gradient(145deg, var(--gold-glass-subtle), var(--bg-card) 40%)',
       }}
@@ -52,8 +52,8 @@ function MaxRankCard({ rank }: { rank: Rank }) {
         {/* Header with crown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
           <div style={{
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             borderRadius: 12,
             background: 'var(--gold-glass-strong)',
             border: '1px solid var(--border-gold-strong)',
@@ -62,11 +62,11 @@ function MaxRankCard({ rank }: { rank: Rank }) {
             justifyContent: 'center',
             boxShadow: 'var(--glow-gold)',
           }}>
-            <Crown size={22} color="var(--gold-400)" strokeWidth={1.5} />
+            <Crown size={18} color="var(--gold-400)" strokeWidth={1.5} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: 700,
               letterSpacing: '0.06em',
               textTransform: 'uppercase' as const,
@@ -89,11 +89,11 @@ function MaxRankCard({ rank }: { rank: Rank }) {
         </div>
 
         {/* Benefits grid */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 12 }}>
           {rank.cashback > 0 && (
             <div style={{
               flex: 1,
-              padding: '10px 12px',
+              padding: '12px 16px',
               borderRadius: 12,
               background: 'var(--gold-glass-subtle)',
               border: '1px solid var(--border-gold)',
@@ -113,7 +113,7 @@ function MaxRankCard({ rank }: { rank: Rank }) {
           {rank.bonus && (
             <div style={{
               flex: 1,
-              padding: '10px 12px',
+              padding: '12px 16px',
               borderRadius: 12,
               background: 'var(--gold-glass-subtle)',
               border: '1px solid var(--border-gold)',
@@ -144,7 +144,7 @@ export const LevelProgressCard = memo(function LevelProgressCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.32 }}
       className="card-padding card-radius"
@@ -156,8 +156,8 @@ export const LevelProgressCard = memo(function LevelProgressCard({
         >
           <div
             style={{
-              width: 48,
-              height: 48,
+              width: 40,
+              height: 40,
               borderRadius: 12,
               background: 'var(--gold-glass-medium)',
               border: '1px solid var(--border-gold)',
@@ -167,7 +167,7 @@ export const LevelProgressCard = memo(function LevelProgressCard({
               boxShadow: 'var(--glow-gold)',
             }}
           >
-            <TrendingUp size={22} color="var(--gold-400)" strokeWidth={1.5} />
+            <TrendingUp size={18} color="var(--gold-400)" strokeWidth={1.5} />
           </div>
           <div style={{ flex: 1 }}>
             <div
@@ -209,7 +209,7 @@ export const LevelProgressCard = memo(function LevelProgressCard({
           aria-valuemax={100}
           aria-label={`Прогресс до следующего уровня ${displayNextRank}: ${rank.progress}%`}
           style={{
-            height: 10,
+            height: 6,
             background: 'var(--bg-glass)',
             borderRadius: 100,
             overflow: 'hidden',
@@ -226,12 +226,11 @@ export const LevelProgressCard = memo(function LevelProgressCard({
             style={{
               height: '100%',
               borderRadius: 100,
-              boxShadow: 'var(--glow-gold)',
             }}
           />
         </div>
         <div
-          style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}
+          style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}
         >
           Осталось{' '}
           <span

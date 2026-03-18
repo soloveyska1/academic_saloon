@@ -63,13 +63,13 @@ function AnimatedCounter({ target, decimals, duration = 1.6 }: {
 export const TrustStatsStrip = memo(function TrustStatsStrip() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.10 }}
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 4,
+        gap: 16,
         padding: '24px 0',
         marginBottom: 8,
         position: 'relative',
@@ -78,7 +78,7 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
       {STATS.map((stat, i) => (
         <motion.div
           key={stat.label}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.16 + i * 0.08 }}
           style={{
@@ -92,7 +92,7 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
           <div
             style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: 800,
               letterSpacing: '-0.03em',
               color: 'var(--gold-200)',

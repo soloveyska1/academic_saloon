@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { GraduationCap, Clock, Zap, Snowflake, Sun } from 'lucide-react'
+import { Clock, Zap, Snowflake, Sun } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  EXAM SEASON BANNER — Contextual info banner during exam periods
@@ -134,14 +134,14 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1 }}
       style={{
         position: 'relative',
         marginBottom: 16,
         padding: '14px 16px',
-        borderRadius: 14,
+        borderRadius: 16,
         background: season.gradient,
         border: `1px solid ${season.borderColor}`,
         boxShadow: isPeak
@@ -169,9 +169,9 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
         {/* Icon */}
         <div
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
+            width: 36,
+            height: 36,
+            borderRadius: 8,
             background: `${season.iconColor}15`,
             display: 'flex',
             alignItems: 'center',
@@ -191,13 +191,9 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
         <div style={{ flex: 1 }}>
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
               marginBottom: 2,
             }}
           >
-            <GraduationCap size={13} color={season.iconColor} strokeWidth={1.5} />
             <span
               style={{
                 fontSize: 13,

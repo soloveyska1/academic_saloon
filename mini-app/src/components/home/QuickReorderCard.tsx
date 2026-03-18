@@ -42,38 +42,25 @@ export const QuickReorderCard = memo(function QuickReorderCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
       onClick={() => {
         haptic('medium')
         onReorder(lastOrder.id)
       }}
-      whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
       style={{
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 16,
-        padding: 16,
+        padding: 20,
         marginBottom: 16,
         background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 60%, rgba(212,175,55,0.04) 100%)',
-        border: '1px solid rgba(212,175,55,0.2)',
+        border: '1px solid var(--border-gold)',
         cursor: 'pointer',
       }}
     >
-      {/* Inner shine */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%)',
-          pointerEvents: 'none',
-          borderRadius: 'inherit',
-        }}
-      />
-
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Header */}
         <div
@@ -90,8 +77,8 @@ export const QuickReorderCard = memo(function QuickReorderCard({
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))',
-                border: '1px solid rgba(212,175,55,0.3)',
+                background: 'var(--gold-glass-medium)',
+                border: '1px solid var(--border-gold)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -112,15 +99,14 @@ export const QuickReorderCard = memo(function QuickReorderCard({
           </div>
 
           <motion.div
-            whileHover={{ x: 3 }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 4,
               padding: '4px 10px',
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+              background: 'var(--gold-glass-subtle)',
               borderRadius: 16,
-              border: '1px solid rgba(212,175,55,0.3)',
+              border: '1px solid var(--border-gold)',
             }}
           >
             <span

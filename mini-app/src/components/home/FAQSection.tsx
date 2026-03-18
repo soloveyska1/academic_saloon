@@ -47,7 +47,7 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
   return (
     <div
       style={{
-        borderRadius: 14,
+        borderRadius: 16,
         background: isOpen ? 'var(--gold-glass-subtle)' : 'var(--bg-card)',
         border: `1px solid ${isOpen ? 'var(--border-gold)' : 'var(--border-default)'}`,
         overflow: 'hidden',
@@ -63,7 +63,7 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
           alignItems: 'center',
           gap: 12,
           width: '100%',
-          padding: '16px',
+          padding: '20px',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -73,7 +73,7 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
       >
         <span style={{
           flex: 1,
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: 700,
           color: isOpen ? 'var(--gold-400)' : 'var(--text-primary)',
           lineHeight: 1.4,
@@ -104,8 +104,8 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '0 16px 16px',
-              fontSize: 13,
+              padding: '0 20px 20px',
+              fontSize: 14,
               fontWeight: 500,
               color: 'var(--text-secondary)',
               lineHeight: 1.6,
@@ -128,7 +128,7 @@ export const FAQSection = memo(function FAQSection() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.38 }}
       style={{ marginBottom: 24 }}

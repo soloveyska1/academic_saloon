@@ -95,7 +95,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.08, type: 'spring', stiffness: 300, damping: 25 }}
+      transition={{ delay: 0.08, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       style={{ marginBottom: 16 }}
     >
       {/* Card */}
@@ -137,7 +137,6 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 borderRadius: '50%',
                 background: statusInfo?.color ?? 'var(--gold-400)',
                 boxShadow: `0 0 8px ${statusInfo?.color ?? 'var(--gold-400)'}60`,
-                animation: needsAction ? 'pulse 2s infinite' : undefined,
               }}
             />
             <span style={{
@@ -179,7 +178,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           </div>
           {activeOrder.subject && (
             <div style={{
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 500,
               color: 'var(--text-muted)',
               overflow: 'hidden',
@@ -230,7 +229,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 {i < STAGES.length - 1 && (
                   <div style={{
                     flex: 1,
-                    height: 2,
+                    height: 4,
                     marginLeft: 4,
                     marginRight: 4,
                     borderRadius: 1,
@@ -267,7 +266,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             const isCurrent = i === stageIdx
             return (
               <span key={stage.key} style={{
-                fontSize: 9,
+                fontSize: 10,
                 fontWeight: isCurrent ? 700 : 500,
                 color: isCompleted ? 'rgba(34,197,94,0.7)' : isCurrent ? (statusInfo?.color ?? 'var(--gold-400)') : 'var(--surface-overlay)',
                 textAlign: 'center',

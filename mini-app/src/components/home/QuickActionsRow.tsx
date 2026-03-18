@@ -48,22 +48,22 @@ export const QuickActionsRow = memo(function QuickActionsRow({
   }
 
   return (
-    <div className={s.scrollRow} style={{ marginBottom: 20, gap: 10 }}>
+    <div className={s.scrollRow} style={{ marginBottom: 20, gap: 12 }}>
       {actions.map((action, index) => (
         <motion.button
           key={action.id}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 + index * 0.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => handleClick(action)}
           style={{
             minWidth: '120px',
-            padding: '12px 14px',
+            padding: '12px 16px',
             borderRadius: '999px',
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 12,
             cursor: 'pointer',
             background: 'var(--bg-card)',
             border: '1px solid var(--border-default)',
@@ -73,8 +73,8 @@ export const QuickActionsRow = memo(function QuickActionsRow({
           }}
         >
           <div style={{
-            width: 34,
-            height: 34,
+            width: 32,
+            height: 32,
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
@@ -88,7 +88,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
           <div style={{ textAlign: 'left' }}>
             <div style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: '12px',
+              fontSize: '14px',
               fontWeight: 700,
               color: 'var(--text-primary)',
               lineHeight: 1.1,

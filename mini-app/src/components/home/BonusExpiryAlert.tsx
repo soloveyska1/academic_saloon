@@ -75,9 +75,9 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
   return (
     <motion.button
       type="button"
-      initial={{ opacity: 0, y: 12, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: 0.15, type: 'spring', stiffness: 300, damping: 25 }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       whileTap={{ scale: 0.98 }}
       onClick={onUseBonus}
       style={{
@@ -85,7 +85,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         alignItems: 'center',
         gap: 12,
         width: '100%',
-        padding: '14px 16px',
+        padding: '16px 20px',
         marginBottom: 12,
         borderRadius: 16,
         background: config.gradient,
@@ -97,25 +97,11 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         overflow: 'hidden',
       }}
     >
-      {/* Pulse glow for critical urgency */}
-      {config.pulse && (
-        <motion.div
-          animate={{ opacity: [0.03, 0.12, 0.03] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'radial-gradient(circle at 20% 50%, rgba(239,68,68,0.15), transparent 60%)',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
       {/* Icon */}
       <div
         style={{
-          width: 40,
-          height: 40,
+          width: 36,
+          height: 36,
           borderRadius: 12,
           background: `${config.iconColor}15`,
           border: `1px solid ${config.iconColor}25`,
