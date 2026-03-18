@@ -786,8 +786,8 @@ function ClubPage({ user }: ClubPageProps) {
               width: 42,
               height: 42,
               borderRadius: 14,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(120,85,40,0.05)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(120,85,40,0.10)'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -803,7 +803,7 @@ function ClubPage({ user }: ClubPageProps) {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: 'rgba(212,175,55,0.72)',
+                color: isDark ? 'rgba(212,175,55,0.72)' : 'rgba(158,122,26,0.72)',
                 textTransform: 'uppercase' as const,
                 letterSpacing: '0.08em',
                 marginBottom: 4,
@@ -825,10 +825,10 @@ function ClubPage({ user }: ClubPageProps) {
           </div>
         </motion.div>
 
-        <HeroCard user={user} />
-        <ReferralBlock user={user} />
-        <TransactionHistory transactions={user.transactions || []} />
-        <HowItWorks userCashback={user.rank.cashback || 0} />
+        <HeroCard user={user} isDark={isDark} />
+        <ReferralBlock user={user} isDark={isDark} />
+        <TransactionHistory transactions={user.transactions || []} isDark={isDark} />
+        <HowItWorks userCashback={user.rank.cashback || 0} isDark={isDark} />
       </div>
     </div>
   )

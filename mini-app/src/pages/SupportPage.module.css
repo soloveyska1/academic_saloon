@@ -681,3 +681,248 @@
 .spinner {
   animation: spin 1s linear infinite;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES — Warm Ivory + Bronze Gold + Charcoal
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] .backButton {
+  background: rgba(120, 85, 40, 0.05);
+  border-color: rgba(120, 85, 40, 0.10);
+}
+
+[data-theme="light"] .headerLabel {
+  color: rgba(158, 122, 26, 0.72);
+}
+
+[data-theme="light"] .telegramButton {
+  border-color: rgba(158, 122, 26, 0.16);
+  background: rgba(158, 122, 26, 0.08);
+  color: #9e7a1a;
+}
+
+[data-theme="light"] .heroCard {
+  background:
+    linear-gradient(135deg, rgba(158, 122, 26, 0.07) 0%, rgba(255, 255, 255, 0.92) 55%, rgba(250, 249, 247, 0.98) 100%);
+  border-color: rgba(158, 122, 26, 0.14);
+  box-shadow: 0 20px 42px -36px rgba(120, 85, 40, 0.08);
+}
+
+[data-theme="light"] .heroIcon {
+  background: rgba(158, 122, 26, 0.08);
+  border-color: rgba(158, 122, 26, 0.14);
+}
+
+[data-theme="light"] .heroTitle {
+  color: #1C1917;
+}
+
+[data-theme="light"] .topicCard {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(120, 85, 40, 0.08);
+  box-shadow: 0 2px 8px rgba(120, 85, 40, 0.05);
+}
+
+[data-theme="light"] .topicIcon {
+  background: rgba(158, 122, 26, 0.08);
+  border-color: rgba(158, 122, 26, 0.12);
+}
+
+[data-theme="light"] .topicTitle {
+  color: #1C1917;
+}
+
+[data-theme="light"] .segmentedButton {
+  border-color: rgba(120, 85, 40, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .segmentedActive {
+  border-color: rgba(158, 122, 26, 0.22);
+  background: linear-gradient(135deg, rgba(158, 122, 26, 0.10) 0%, rgba(255, 255, 255, 0.92) 100%);
+  color: #7d5c12;
+}
+
+[data-theme="light"] .faqItem {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(120, 85, 40, 0.08);
+}
+
+[data-theme="light"] .faqItemExpanded {
+  background: linear-gradient(135deg, rgba(158, 122, 26, 0.06) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border-color: rgba(158, 122, 26, 0.16);
+}
+
+[data-theme="light"] .faqIcon {
+  background: rgba(158, 122, 26, 0.08);
+  border-color: rgba(158, 122, 26, 0.12);
+}
+
+[data-theme="light"] .faqTitle {
+  color: #1C1917;
+}
+
+[data-theme="light"] .faqAnswer {
+  border-top-color: rgba(120, 85, 40, 0.06);
+}
+
+[data-theme="light"] .notFoundCard {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(120, 85, 40, 0.08);
+  box-shadow: 0 24px 46px -36px rgba(120, 85, 40, 0.12);
+}
+
+[data-theme="light"] .notFoundTitle {
+  color: #1C1917;
+}
+
+[data-theme="light"] .secondaryButton {
+  border-color: rgba(120, 85, 40, 0.10);
+  background: rgba(120, 85, 40, 0.04);
+  color: rgba(28, 25, 23, 0.85);
+}
+
+[data-theme="light"] .chatContainer {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(120, 85, 40, 0.08);
+  box-shadow: 0 24px 46px -36px rgba(120, 85, 40, 0.12);
+}
+
+[data-theme="light"] .chatHeader {
+  border-bottom-color: rgba(120, 85, 40, 0.06);
+  background: rgba(250, 249, 247, 0.95);
+}
+
+[data-theme="light"] .chatHeaderTitle {
+  color: #1C1917;
+}
+
+[data-theme="light"] .chatHeaderSub {
+  color: rgba(87, 83, 78, 0.7);
+}
+
+[data-theme="light"] .chatTelegramMini {
+  border-color: rgba(158, 122, 26, 0.14);
+  background: rgba(158, 122, 26, 0.06);
+  color: #9e7a1a;
+}
+
+[data-theme="light"] .chatHints {
+  border-bottom-color: rgba(120, 85, 40, 0.05);
+  background: rgba(250, 249, 247, 0.95);
+}
+
+[data-theme="light"] .dayLabel {
+  background: rgba(120, 85, 40, 0.05);
+  border-color: rgba(120, 85, 40, 0.05);
+  color: rgba(87, 83, 78, 0.65);
+}
+
+[data-theme="light"] .supportAvatar {
+  background: rgba(158, 122, 26, 0.08);
+  border-color: rgba(158, 122, 26, 0.14);
+}
+
+[data-theme="light"] .supportName {
+  color: #1C1917;
+}
+
+[data-theme="light"] .supportSub {
+  color: rgba(87, 83, 78, 0.6);
+}
+
+[data-theme="light"] .bubbleClient {
+  background: linear-gradient(135deg, #c4a535 0%, #9e7a1a 55%, #7d5c12 100%);
+  color: #FFFFFF;
+  box-shadow: 0 8px 22px rgba(120, 85, 40, 0.12);
+}
+
+[data-theme="light"] .bubbleAdmin {
+  background: rgba(250, 249, 247, 0.95);
+  border-color: rgba(120, 85, 40, 0.08);
+  color: rgba(28, 25, 23, 0.88);
+}
+
+[data-theme="light"] .bubbleTimeClient {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+[data-theme="light"] .bubbleTimeAdmin {
+  color: rgba(87, 83, 78, 0.6);
+}
+
+[data-theme="light"] .emptyChat {
+  background: linear-gradient(135deg, rgba(158, 122, 26, 0.06) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border-color: rgba(158, 122, 26, 0.14);
+}
+
+[data-theme="light"] .emptyChatIcon {
+  background: rgba(158, 122, 26, 0.08);
+  border-color: rgba(158, 122, 26, 0.14);
+}
+
+[data-theme="light"] .emptyChatTitle {
+  color: #1C1917;
+}
+
+[data-theme="light"] .emptyChatButton {
+  border-color: rgba(120, 85, 40, 0.10);
+  background: rgba(120, 85, 40, 0.04);
+  color: rgba(28, 25, 23, 0.85);
+}
+
+[data-theme="light"] .errorCard {
+  background: rgba(255, 255, 255, 0.90);
+  border-color: rgba(120, 85, 40, 0.08);
+}
+
+[data-theme="light"] .errorTitle {
+  color: #1C1917;
+}
+
+[data-theme="light"] .retryButton {
+  border-color: rgba(120, 85, 40, 0.10);
+  background: rgba(120, 85, 40, 0.04);
+  color: rgba(28, 25, 23, 0.85);
+}
+
+[data-theme="light"] .telegramAltButton {
+  border-color: rgba(158, 122, 26, 0.16);
+  background: rgba(158, 122, 26, 0.08);
+  color: #9e7a1a;
+}
+
+[data-theme="light"] .composerBar {
+  border-top-color: rgba(120, 85, 40, 0.06);
+  background: rgba(250, 249, 247, 0.92);
+}
+
+[data-theme="light"] .composerInner {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(120, 85, 40, 0.08);
+}
+
+[data-theme="light"] .composerTextarea {
+  color: rgba(28, 25, 23, 0.88);
+}
+
+[data-theme="light"] .composerTextarea::placeholder {
+  color: rgba(120, 113, 108, 0.55);
+}
+
+[data-theme="light"] .sendButtonInactive {
+  background: rgba(120, 85, 40, 0.06);
+  color: rgba(120, 113, 108, 0.45);
+}
+
+[data-theme="light"] .composerFooter {
+  color: rgba(87, 83, 78, 0.6);
+}
+
+[data-theme="light"] .composerLink {
+  color: #9e7a1a;
+}
+
+[data-theme="light"] .primaryButton {
+  color: #FFFFFF;
+}
