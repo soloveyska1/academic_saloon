@@ -64,7 +64,7 @@ export const OrdersTab = memo(function OrdersTab() {
 
       {/* Search */}
       <div className={s.searchWrap}>
-        <Search size={14} color="#52525b" />
+        <Search size={14} color="var(--text-muted)" />
         <input
           type="text"
           className={s.searchInput}
@@ -81,7 +81,7 @@ export const OrdersTab = memo(function OrdersTab() {
       {/* Order List */}
       <div className={`${s.flexCol} ${s.gap6}`}>
         {orders.map((o) => {
-          const cfg = STATUS_CONFIG[o.status] || { label: o.status, emoji: '?', color: '#71717a', bg: 'rgba(113,113,122,0.15)' }
+          const cfg = STATUS_CONFIG[o.status] || { label: o.status, emoji: '?', color: 'var(--text-muted)', bg: 'rgba(113,113,122,0.15)' }
           return (
             <div key={o.id} className={s.cardClickable} onClick={() => setSelectedOrder(o.id)}>
               <div className={`${s.flexRow} ${s.gap6}`} style={{ marginBottom: 6 }}>
@@ -94,7 +94,7 @@ export const OrdersTab = memo(function OrdersTab() {
                   {formatMoney(o.final_price || o.price)}
                 </span>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>
                 {o.work_type_label || o.work_type}
               </div>
               <div className={s.mutedSmall}>
@@ -103,8 +103,8 @@ export const OrdersTab = memo(function OrdersTab() {
                 {o.deadline && <span> · до {formatDateTime(o.deadline)}</span>}
               </div>
               {o.progress > 0 && o.progress < 100 && (
-                <div style={{ marginTop: 6, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
-                  <div style={{ width: `${o.progress}%`, height: '100%', borderRadius: 2, background: '#d4af37' }} />
+                <div style={{ marginTop: 6, height: 3, borderRadius: 2, background: 'var(--surface-hover)' }}>
+                  <div style={{ width: `${o.progress}%`, height: '100%', borderRadius: 2, background: 'var(--gold-400)' }} />
                 </div>
               )}
             </div>

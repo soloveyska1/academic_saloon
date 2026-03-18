@@ -259,7 +259,7 @@ function NotificationItem({
                 borderRadius: 12,
                 fontSize: 12,
                 fontWeight: 600,
-                color: '#09090b',
+                color: 'var(--text-on-gold)',
                 cursor: 'pointer',
               }}
             >
@@ -286,13 +286,13 @@ function NotificationItem({
               width: 28,
               height: 28,
               borderRadius: '50%',
-              background: 'rgba(255,255,255,0.1)',
+              background: 'var(--surface-active)',
               border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              color: '#a1a1aa',
+              color: 'var(--text-secondary)',
               flexShrink: 0,
             }}
           >
