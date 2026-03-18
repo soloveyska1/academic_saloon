@@ -6,10 +6,9 @@ interface EstimateCardProps {
   baseEstimate: number | null
   loyaltyDiscount: number
   activePromo: { code: string; discount: number } | null
-  isDark: boolean
 }
 
-export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePromo, isDark }: EstimateCardProps) {
+export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePromo }: EstimateCardProps) {
   const priceAfterLoyalty = baseEstimate
     ? Math.round(baseEstimate * (1 - loyaltyDiscount / 100))
     : null
@@ -23,12 +22,8 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
       style={{
         marginTop: 20,
         padding: '20px 24px',
-        background: isDark
-          ? 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.04) 100%)'
-          : 'linear-gradient(135deg, rgba(180,142,38,0.1) 0%, rgba(180,142,38,0.03) 100%)',
-        border: isDark
-          ? '2px solid rgba(212, 175, 55, 0.3)'
-          : '2px solid rgba(180, 142, 38, 0.25)',
+        background: 'var(--gold-glass-medium)',
+        border: '2px solid var(--border-gold)',
         borderRadius: 20,
         position: 'relative',
         overflow: 'hidden',
@@ -37,7 +32,7 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: isDark ? '#a1a1aa' : '#52525b' }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
               Ориентировочно
             </span>
           </div>
@@ -83,7 +78,7 @@ export function EstimateCard({ estimate, baseEstimate, loyaltyDiscount, activePr
             style={{
               fontSize: 24,
               fontWeight: 800,
-              color: activePromo || hasLoyaltyDiscount ? '#22c55e' : (isDark ? '#d4af37' : '#9e7a1a'),
+              color: activePromo || hasLoyaltyDiscount ? 'var(--success-text)' : 'var(--gold-400)',
               fontFamily: "'JetBrains Mono', monospace",
             }}
           >

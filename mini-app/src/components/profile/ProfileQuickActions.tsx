@@ -2,7 +2,6 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { BookOpen, Gift, LifeBuoy, LucideIcon } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
-import { useThemeValue } from '../../contexts/ThemeContext'
 import { formatCountWithWord, prefersReducedMotion, toSafeNumber } from './profileHelpers'
 
 interface ActionItem {
@@ -28,8 +27,6 @@ export const ProfileQuickActions = memo(function ProfileQuickActions({
   onOpenSupport,
   onOpenClub,
 }: Props) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
   const count = toSafeNumber(ordersCount)
 
   const actions: ActionItem[] = [
@@ -37,27 +34,27 @@ export const ProfileQuickActions = memo(function ProfileQuickActions({
       icon: BookOpen,
       label: 'Заказы',
       hint: formatCountWithWord(count, 'заказ', 'заказа', 'заказов'),
-      color: isDark ? '#d4af37' : '#9e7a1a',
-      background: isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(158, 122, 26, 0.08)',
-      border: isDark ? 'rgba(212, 175, 55, 0.18)' : 'rgba(158, 122, 26, 0.14)',
+      color: 'var(--gold-400)',
+      background: 'var(--gold-glass-subtle)',
+      border: 'var(--border-gold)',
       onClick: onOpenOrders,
     },
     {
       icon: LifeBuoy,
       label: 'Поддержка',
       hint: 'Связаться',
-      color: isDark ? '#93c5fd' : '#1d4ed8',
-      background: isDark ? 'rgba(147, 197, 253, 0.12)' : 'rgba(29, 78, 216, 0.08)',
-      border: isDark ? 'rgba(147, 197, 253, 0.18)' : 'rgba(29, 78, 216, 0.14)',
+      color: 'var(--accent-blue)',
+      background: 'var(--accent-blue-glass)',
+      border: 'var(--accent-blue-border)',
       onClick: onOpenSupport,
     },
     {
       icon: Gift,
       label: 'Бонусы',
       hint: 'Кэшбэк',
-      color: isDark ? '#86efac' : '#15803d',
-      background: isDark ? 'rgba(134, 239, 172, 0.12)' : 'rgba(21, 128, 61, 0.08)',
-      border: isDark ? 'rgba(134, 239, 172, 0.18)' : 'rgba(21, 128, 61, 0.14)',
+      color: 'var(--accent-green)',
+      background: 'var(--accent-green-glass)',
+      border: 'var(--accent-green-border)',
       onClick: onOpenClub,
     },
   ]

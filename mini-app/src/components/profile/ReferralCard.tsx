@@ -2,7 +2,6 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight, Copy, LucideIcon, QrCode, Users } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
-import { useThemeValue } from '../../contexts/ThemeContext'
 import { formatMoney, prefersReducedMotion, toSafeNumber } from './profileHelpers'
 
 interface Props {
@@ -36,8 +35,6 @@ export const ReferralCard = memo(function ReferralCard({
   onOpenQR,
   onOpenProgram,
 }: Props) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
   const count = toSafeNumber(referralsCount)
   const earnings = toSafeNumber(referralEarnings)
   const pct = referralPercent || 5
@@ -64,13 +61,13 @@ export const ReferralCard = memo(function ReferralCard({
             width: 40,
             height: 40,
             borderRadius: 14,
-            background: isDark ? 'rgba(196, 181, 253, 0.12)' : 'rgba(124, 58, 237, 0.08)',
-            border: isDark ? '1px solid rgba(196, 181, 253, 0.20)' : '1px solid rgba(124, 58, 237, 0.16)',
+            background: 'var(--accent-purple-glass)',
+            border: '1px solid var(--accent-purple-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <Users size={18} color={isDark ? '#c4b5fd' : '#7c3aed'} />
+            <Users size={18} color="var(--accent-purple)" />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{
@@ -104,13 +101,13 @@ export const ReferralCard = memo(function ReferralCard({
                 fontSize: 11.5,
                 fontWeight: tier.percent === pct ? 700 : 500,
                 color: tier.percent === pct
-                  ? (isDark ? '#c4b5fd' : '#7c3aed')
+                  ? 'var(--accent-purple)'
                   : 'var(--text-muted)',
                 background: tier.percent === pct
-                  ? (isDark ? 'rgba(196, 181, 253, 0.12)' : 'rgba(124, 58, 237, 0.08)')
-                  : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120, 85, 40, 0.04)'),
+                  ? 'var(--accent-purple-glass)'
+                  : 'var(--bg-glass)',
                 border: tier.percent === pct
-                  ? (isDark ? '1px solid rgba(196, 181, 253, 0.25)' : '1px solid rgba(124, 58, 237, 0.20)')
+                  ? '1px solid var(--accent-purple-border)'
                   : '1px solid transparent',
                 transition: 'all 0.3s ease',
               }}
@@ -140,15 +137,15 @@ export const ReferralCard = memo(function ReferralCard({
         }}>
           <div className={s.statCard}>
             <div className={s.statLabel}>Друзей</div>
-            <div className={s.statValue} style={{ color: isDark ? '#c4b5fd' : '#7c3aed' }}>{count}</div>
+            <div className={s.statValue} style={{ color: 'var(--accent-purple)' }}>{count}</div>
           </div>
           <div className={s.statCard}>
             <div className={s.statLabel}>Бонус</div>
-            <div className={s.statValue} style={{ color: isDark ? '#a78bfa' : '#6d28d9' }}>{pct}%</div>
+            <div className={s.statValue} style={{ color: 'var(--accent-purple)' }}>{pct}%</div>
           </div>
           <div className={s.statCard}>
             <div className={s.statLabel}>Заработано</div>
-            <div className={s.statValue} style={{ color: isDark ? '#93c5fd' : '#1d4ed8' }}>{formatMoney(earnings)}</div>
+            <div className={s.statValue} style={{ color: 'var(--accent-blue)' }}>{formatMoney(earnings)}</div>
           </div>
         </div>
 

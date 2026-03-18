@@ -1,7 +1,6 @@
 import { memo, useRef, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
-import { useThemeValue } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  TESTIMONIALS — Social proof that sells.
@@ -55,21 +54,17 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ]
 
-function StarRating({ count, isDark }: { count: number; isDark: boolean }) {
-  const starColor = isDark ? '#d4af37' : '#9e7a1a'
+function StarRating({ count }: { count: number }) {
   return (
     <div style={{ display: 'flex', gap: 2 }}>
       {Array.from({ length: count }).map((_, i) => (
-        <Star key={i} size={11} fill={starColor} color={starColor} strokeWidth={0} />
+        <Star key={i} size={11} fill="var(--gold-400)" color="var(--gold-400)" strokeWidth={0} />
       ))}
     </div>
   )
 }
 
 export const TestimonialsSection = memo(function TestimonialsSection() {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
-
   const [activeIndex, setActiveIndex] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -118,7 +113,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Quote
             size={13}
-            color={isDark ? 'rgba(212,175,55,0.5)' : 'rgba(158,122,26,0.5)'}
+            color="var(--gold-400)"
             strokeWidth={2}
           />
           <span
@@ -128,7 +123,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
               fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(120,113,108,0.6)',
+              color: 'var(--text-muted)',
             }}
           >
             Отзывы клиентов
@@ -137,12 +132,12 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
 
         {/* Aggregate rating */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <StarRating count={5} isDark={isDark} />
+          <StarRating count={5} />
           <span
             style={{
               fontSize: 12,
               fontWeight: 700,
-              color: isDark ? '#d4af37' : '#9e7a1a',
+              color: 'var(--gold-400)',
               fontFamily: "'Manrope', sans-serif",
             }}
           >
@@ -179,30 +174,20 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                 maxWidth: 300,
                 padding: '20px',
                 borderRadius: 18,
-                background: isDark
-                  ? (isActive
-                    ? 'linear-gradient(145deg, rgba(212,175,55,0.06), rgba(255,255,255,0.02))'
-                    : 'rgba(255,255,255,0.015)')
-                  : (isActive
-                    ? 'linear-gradient(145deg, rgba(158,122,26,0.05), rgba(255,255,255,0.92))'
-                    : 'rgba(255,255,255,0.88)'),
-                border: isDark
-                  ? `1px solid ${isActive ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.04)'}`
-                  : `1px solid ${isActive ? 'rgba(158,122,26,0.16)' : 'rgba(120,85,40,0.08)'}`,
+                background: isActive
+                  ? 'var(--gold-glass-subtle)'
+                  : 'var(--bg-card)',
+                border: `1px solid ${isActive ? 'var(--border-gold)' : 'var(--border-subtle)'}`,
                 scrollSnapAlign: 'start',
                 flexShrink: 0,
                 cursor: 'pointer',
                 transition: 'border-color 0.3s, background 0.3s',
-                boxShadow: isDark
-                  ? 'none'
-                  : (isActive
-                    ? '0 2px 12px rgba(120,85,40,0.06)'
-                    : '0 1px 4px rgba(120,85,40,0.04)'),
+                boxShadow: 'var(--card-shadow)',
               }}
             >
               {/* Stars */}
               <div style={{ marginBottom: 12 }}>
-                <StarRating count={t.stars} isDark={isDark} />
+                <StarRating count={t.stars} />
               </div>
 
               {/* Quote text */}
@@ -210,7 +195,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                 style={{
                   fontSize: 13,
                   fontWeight: 500,
-                  color: isDark ? 'rgba(255,255,255,0.58)' : 'rgba(87,83,78,0.8)',
+                  color: 'var(--text-secondary)',
                   lineHeight: 1.6,
                   marginBottom: 16,
                   fontStyle: 'italic',
@@ -227,18 +212,14 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                     width: 32,
                     height: 32,
                     borderRadius: '50%',
-                    background: isDark
-                      ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
-                      : 'linear-gradient(135deg, rgba(158,122,26,0.10), rgba(158,122,26,0.04))',
-                    border: isDark
-                      ? '1px solid rgba(212,175,55,0.15)'
-                      : '1px solid rgba(158,122,26,0.14)',
+                    background: 'var(--gold-glass-subtle)',
+                    border: '1px solid var(--border-gold)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 13,
                     fontWeight: 700,
-                    color: isDark ? 'rgba(212,175,55,0.65)' : 'rgba(158,122,26,0.7)',
+                    color: 'var(--gold-400)',
                     fontFamily: "'Manrope', sans-serif",
                   }}
                 >
@@ -249,7 +230,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                     style={{
                       fontSize: 12,
                       fontWeight: 700,
-                      color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(28,25,23,0.85)',
+                      color: 'var(--text-primary)',
                       marginBottom: 2,
                     }}
                   >
@@ -259,7 +240,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                     style={{
                       fontSize: 11,
                       fontWeight: 500,
-                      color: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(120,113,108,0.6)',
+                      color: 'var(--text-muted)',
                     }}
                   >
                     {t.workType} · {t.university}
@@ -279,8 +260,8 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
             animate={{
               width: i === activeIndex ? 16 : 4,
               background: i === activeIndex
-                ? (isDark ? '#d4af37' : '#9e7a1a')
-                : (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(120,85,40,0.12)'),
+                ? 'var(--gold-400)'
+                : 'var(--surface-active)',
             }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
             onClick={() => { setActiveIndex(i); resetAutoplay() }}

@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import { Order } from '../types'
 import { usePremiumGesture } from '../hooks/usePremiumGesture'
-import { useThemeValue } from '../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ORDER CARD — Premium Zero-Latency Touch Component
@@ -61,8 +60,6 @@ interface OrderCardProps {
 
 export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
   const navigate = useNavigate()
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
 
   // Premium gesture hook — direct DOM manipulation for zero-latency
   const { ref, handlers } = usePremiumGesture({
@@ -97,7 +94,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
             width: 44,
             height: 44,
             borderRadius: 12,
-            background: isDark ? 'rgba(212,175,55,0.1)' : 'rgba(158,122,26,0.08)',
+            background: 'var(--gold-glass-subtle)',
             border: '1px solid var(--border-gold)',
             display: 'flex',
             alignItems: 'center',
@@ -145,7 +142,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
             height: 6,
             borderRadius: '50%',
             background: statusConfig.color,
-            boxShadow: isDark ? `0 0 8px ${statusConfig.color}` : 'none',
+            boxShadow: `0 0 8px ${statusConfig.color}`,
           }} />
           <span style={{
             fontSize: 12,
@@ -162,7 +159,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
         <div style={{ marginBottom: 14 }}>
           <div style={{
             height: 4,
-            background: isDark ? 'var(--bg-glass)' : 'rgba(120,85,40,0.06)',
+            background: 'var(--bg-glass)',
             borderRadius: 2,
             overflow: 'hidden',
           }}>
@@ -172,7 +169,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
                 width: `${order.progress}%`,
                 background: 'var(--gold-metallic)',
                 borderRadius: 2,
-                boxShadow: isDark ? 'var(--glow-gold)' : 'none',
+                boxShadow: 'var(--glow-gold)',
                 transition: 'width 0.5s ease-out',
               }}
             />
@@ -202,24 +199,24 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
           justifyContent: 'space-between',
           marginBottom: 12,
           padding: '8px 12px',
-          background: isDark ? 'rgba(139,92,246,0.1)' : 'rgba(139,92,246,0.07)',
+          background: 'rgba(139,92,246,0.1)',
           borderRadius: 10,
-          border: isDark ? '1px solid rgba(139,92,246,0.2)' : '1px solid rgba(139,92,246,0.15)',
+          border: '1px solid rgba(139,92,246,0.2)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 12 }}>🎟️</span>
             <span style={{
               fontSize: 12,
               fontWeight: 600,
-              color: isDark ? '#a78bfa' : '#7c3aed',
+              color: '#a78bfa',
             }}>
               {order.promo_code}
             </span>
             <span style={{
               fontSize: 11,
               fontWeight: 700,
-              color: isDark ? '#22c55e' : '#15803d',
-              background: isDark ? 'rgba(34,197,94,0.15)' : 'rgba(21,128,61,0.10)',
+              color: 'var(--success-text)',
+              background: 'rgba(34,197,94,0.15)',
               padding: '2px 6px',
               borderRadius: 4,
             }}>
@@ -228,7 +225,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
           </div>
           <span style={{
             fontSize: 11,
-            color: isDark ? '#22c55e' : '#15803d',
+            color: 'var(--success-text)',
             fontWeight: 500,
           }}>
             💚 Экономия {Math.round(order.price - (order.final_price || order.price)).toLocaleString('ru-RU')} ₽
@@ -267,7 +264,7 @@ export const OrderCard = React.memo(({ order, index }: OrderCardProps) => {
           <span style={{
             fontSize: 18,
             fontWeight: 700,
-            color: order.promo_code ? (isDark ? '#22c55e' : '#15803d') : 'var(--gold-200)',
+            color: order.promo_code ? 'var(--success-text)' : 'var(--gold-200)',
             fontFamily: "var(--font-mono)",
           }}>
             {(order.final_price || order.price).toLocaleString('ru-RU')} ₽

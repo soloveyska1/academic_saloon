@@ -21,7 +21,7 @@ function ConfettiParticles() {
     delay: Math.random() * 2,
     duration: 3 + Math.random() * 2,
     size: 4 + Math.random() * 6,
-    color: ['#D4AF37', '#FCF6BA', '#B38728', '#f5d485', '#fff'][Math.floor(Math.random() * 5)],
+    color: ['var(--gold-400)', 'var(--gold-100)', 'var(--gold-700)', 'var(--gold-150)', 'var(--text-primary)'][Math.floor(Math.random() * 5)],
   }))
 
   return (
@@ -50,7 +50,6 @@ function ConfettiParticles() {
             height: p.size,
             borderRadius: Math.random() > 0.5 ? '50%' : '2px',
             background: p.color,
-            boxShadow: `0 0 ${p.size}px ${p.color}60`,
           }}
         />
       ))}
@@ -73,7 +72,7 @@ function GoldenShimmer() {
         left: 0,
         width: '50%',
         height: '100%',
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+        background: 'linear-gradient(90deg, transparent, var(--surface-overlay), transparent)',
         transform: 'skewX(-20deg)',
         pointerEvents: 'none',
         zIndex: 1,
@@ -104,7 +103,7 @@ function PromoCodeDisplay({ code, discount, onCopy, copied }: PromoCodeDisplayPr
         padding: 24,
         marginBottom: 24,
         borderRadius: 20,
-        background: 'linear-gradient(145deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
+        background: 'linear-gradient(145deg, var(--border-gold), var(--gold-glass-subtle))',
         border: '2px solid rgba(212,175,55,0.5)',
         boxShadow: '0 0 60px rgba(212,175,55,0.3), inset 0 0 30px rgba(212,175,55,0.1)',
         overflow: 'hidden',
@@ -129,15 +128,15 @@ function PromoCodeDisplay({ code, discount, onCopy, copied }: PromoCodeDisplayPr
           gap: 6,
           padding: '8px 16px',
           marginBottom: 16,
-          background: 'linear-gradient(135deg, #D4AF37, #FCF6BA)',
+          background: 'var(--liquid-gold)',
           borderRadius: 100,
         }}
       >
-        <Sparkles size={16} color="#0a0a0c" />
+        <Sparkles size={16} color="var(--text-on-gold)" />
         <span style={{
           fontSize: 14,
           fontWeight: 700,
-          color: '#0a0a0c',
+          color: 'var(--text-on-gold)',
           letterSpacing: '0.05em',
         }}>СКИДКА {discount}%</span>
       </motion.div>
@@ -157,7 +156,7 @@ function PromoCodeDisplay({ code, discount, onCopy, copied }: PromoCodeDisplayPr
           fontWeight: 800,
           fontFamily: "var(--font-mono)",
           letterSpacing: '0.15em',
-          background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 30%, #B38728 60%, #FCF6BA 100%)',
+          background: 'var(--gold-text-shine)',
           backgroundSize: '200% 100%',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
@@ -179,9 +178,9 @@ function PromoCodeDisplay({ code, discount, onCopy, copied }: PromoCodeDisplayPr
           gap: 8,
           padding: '12px 24px',
           background: copied
-            ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-            : 'linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',
-          border: `1px solid ${copied ? '#22c55e' : 'rgba(255,255,255,0.2)'}`,
+            ? 'linear-gradient(135deg, var(--success-text), var(--success-text))'
+            : 'linear-gradient(135deg, var(--surface-overlay), var(--border-default))',
+          border: `1px solid ${copied ? 'var(--success-text)' : 'rgba(255,255,255,0.2)'}`,
           borderRadius: 12,
           cursor: 'pointer',
           transition: 'all 0.3s ease',
@@ -189,13 +188,13 @@ function PromoCodeDisplay({ code, discount, onCopy, copied }: PromoCodeDisplayPr
       >
         {copied ? (
           <>
-            <Check size={18} color="#fff" />
-            <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Скопировано!</span>
+            <Check size={18} color="var(--text-primary)" />
+            <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>Скопировано!</span>
           </>
         ) : (
           <>
-            <Copy size={18} color="rgba(255,255,255,0.8)" />
-            <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 600 }}>
+            <Copy size={18} color="var(--text-secondary)" />
+            <span style={{ color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600 }}>
               Скопировать код
             </span>
           </>
@@ -280,7 +279,7 @@ export function WelcomePromoModal({
           left: 0,
           right: 0,
           height: 3,
-          background: 'linear-gradient(90deg, transparent, #D4AF37, transparent)',
+          background: 'linear-gradient(90deg, transparent, var(--gold-400), transparent)',
         }}
       />
 
@@ -306,7 +305,7 @@ export function WelcomePromoModal({
               width: 100,
               height: 100,
               borderRadius: 28,
-              background: 'linear-gradient(145deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
+              background: 'linear-gradient(145deg, var(--border-gold), var(--gold-glass-subtle))',
               border: '2px solid rgba(212,175,55,0.4)',
               boxShadow: '0 0 50px rgba(212,175,55,0.3)',
               position: 'relative',
@@ -326,7 +325,7 @@ export function WelcomePromoModal({
                 border: '2px solid rgba(212,175,55,0.3)',
               }}
             />
-            <Gift size={48} color="#D4AF37" strokeWidth={1.5} />
+            <Gift size={48} color="var(--gold-400)" strokeWidth={1.5} />
           </motion.div>
         </motion.div>
 
@@ -344,14 +343,14 @@ export function WelcomePromoModal({
                 marginBottom: 12,
               }}
             >
-              <PartyPopper size={20} color="#D4AF37" />
+              <PartyPopper size={20} color="var(--gold-400)" />
               <span style={{
                 fontSize: 13,
                 fontWeight: 600,
                 color: 'rgba(212,175,55,0.9)',
                 letterSpacing: '0.1em',
               }}>ДОБРО ПОЖАЛОВАТЬ!</span>
-              <PartyPopper size={20} color="#D4AF37" style={{ transform: 'scaleX(-1)' }} />
+              <PartyPopper size={20} color="var(--gold-400)" style={{ transform: 'scaleX(-1)' }} />
             </motion.div>
 
             <motion.h2
@@ -363,14 +362,14 @@ export function WelcomePromoModal({
                 fontSize: 28,
                 fontWeight: 700,
                 marginBottom: 12,
-                color: '#fff',
+                color: 'var(--text-primary)',
                 lineHeight: 1.2,
               }}
             >
               Ваш приветственный
               <br />
               <span style={{
-                background: 'linear-gradient(135deg, #FCF6BA, #D4AF37)',
+                background: 'var(--gold-text-shine)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>подарок</span>
@@ -413,7 +412,7 @@ export function WelcomePromoModal({
               {[
                 { icon: Crown, text: 'Премиум' },
                 { icon: Zap, text: 'Быстро' },
-                { icon: Star, text: '4.9\u2605' },
+                { icon: Star, text: '4.9★' },
               ].map((item, i) => (
                 <div key={i} style={{ textAlign: 'center' }}>
                   <div style={{
@@ -421,7 +420,7 @@ export function WelcomePromoModal({
                     height: 44,
                     borderRadius: 14,
                     background: 'rgba(212,175,55,0.1)',
-                    border: '1px solid rgba(212,175,55,0.2)',
+                    border: '1px solid var(--border-gold)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -446,7 +445,7 @@ export function WelcomePromoModal({
               style={{
                 width: '100%',
                 padding: '18px 28px',
-                background: 'linear-gradient(135deg, #D4AF37, #f5d485)',
+                background: 'var(--liquid-gold)',
                 border: 'none',
                 borderRadius: 16,
                 cursor: 'pointer',
@@ -463,11 +462,11 @@ export function WelcomePromoModal({
               <span style={{
                 fontSize: 16,
                 fontWeight: 700,
-                color: '#0a0a0c',
+                color: 'var(--text-on-gold)',
                 position: 'relative',
                 zIndex: 1,
               }}>Оформить первый заказ</span>
-              <ArrowRight size={20} color="#0a0a0c" style={{ position: 'relative', zIndex: 1 }} />
+              <ArrowRight size={20} color="var(--text-on-gold)" style={{ position: 'relative', zIndex: 1 }} />
             </motion.button>
 
             {/* Subtitle */}

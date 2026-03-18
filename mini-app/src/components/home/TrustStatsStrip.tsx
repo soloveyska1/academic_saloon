@@ -1,6 +1,5 @@
 import { memo, useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { useThemeValue } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  TRUST STATS STRIP — Impressive metrics with count-up animation.
@@ -62,9 +61,6 @@ function AnimatedCounter({ target, decimals, duration = 1.6 }: {
 }
 
 export const TrustStatsStrip = memo(function TrustStatsStrip() {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -99,7 +95,7 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
               fontSize: 26,
               fontWeight: 800,
               letterSpacing: '-0.03em',
-              color: isDark ? '#F0E6C8' : '#7d5c12',
+              color: 'var(--gold-200)',
               lineHeight: 1,
               marginBottom: 6,
             }}
@@ -115,7 +111,7 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
               fontFamily: "'Manrope', sans-serif",
               fontSize: 11,
               fontWeight: 600,
-              color: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(120,113,108,0.6)',
+              color: 'var(--text-muted)',
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
             }}
@@ -133,9 +129,7 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
                 top: '15%',
                 height: '70%',
                 width: 1,
-                background: isDark
-                  ? 'linear-gradient(180deg, transparent, rgba(212,175,55,0.12), transparent)'
-                  : 'linear-gradient(180deg, transparent, rgba(158,122,26,0.15), transparent)',
+                background: 'linear-gradient(180deg, transparent, var(--border-gold), transparent)',
               }}
             />
           )}

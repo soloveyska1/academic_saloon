@@ -162,6 +162,33 @@ textarea:focus-visible,
   --bg-card-solid: #101015;
   --bg-glass: rgba(255, 255, 255, 0.04);
 
+  /* === GLASS OVERLAY SURFACES === */
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-active: rgba(255, 255, 255, 0.1);
+  --surface-overlay: rgba(255, 255, 255, 0.15);
+  --surface-strong: rgba(255, 255, 255, 0.2);
+
+  /* Gold Glass Overlays */
+  --gold-glass-subtle: rgba(212, 175, 55, 0.08);
+  --gold-glass-medium: rgba(212, 175, 55, 0.15);
+  --gold-glass-strong: rgba(212, 175, 55, 0.25);
+
+  /* Text on gold/accent backgrounds */
+  --text-on-gold: #050507;
+  --text-inverse: #050507;
+
+  /* === ACCENT COLOR SCALE (for semantic UI) === */
+  --accent-purple: #c4b5fd;
+  --accent-purple-glass: rgba(196, 181, 253, 0.12);
+  --accent-purple-border: rgba(196, 181, 253, 0.20);
+  --accent-blue: #93c5fd;
+  --accent-blue-glass: rgba(147, 197, 253, 0.12);
+  --accent-blue-border: rgba(147, 197, 253, 0.18);
+  --accent-green: #86efac;
+  --accent-green-glass: rgba(134, 239, 172, 0.12);
+  --accent-green-border: rgba(134, 239, 172, 0.18);
+  --gold-label: rgba(212, 175, 55, 0.72);
+
   /* === THE ROYAL GOLD SCALE === */
   --gold-950: #5c4510;
   --gold-900: #6b4f0f;
@@ -329,6 +356,33 @@ textarea:focus-visible,
   --bg-card: rgba(255, 255, 255, 0.85);
   --bg-card-solid: #FFFFFF;
   --bg-glass: rgba(180, 142, 38, 0.02);
+
+  /* Glass Overlay Surfaces — Warm Bronze */
+  --surface-hover: rgba(120, 85, 40, 0.04);
+  --surface-active: rgba(120, 85, 40, 0.06);
+  --surface-overlay: rgba(120, 85, 40, 0.1);
+  --surface-strong: rgba(120, 85, 40, 0.15);
+
+  /* Gold Glass Overlays */
+  --gold-glass-subtle: rgba(180, 142, 38, 0.06);
+  --gold-glass-medium: rgba(180, 142, 38, 0.12);
+  --gold-glass-strong: rgba(180, 142, 38, 0.2);
+
+  /* Text on gold/accent backgrounds */
+  --text-on-gold: #FFFFFF;
+  --text-inverse: #FFFFFF;
+
+  /* Accent Colors (richer for light) */
+  --accent-purple: #7c3aed;
+  --accent-purple-glass: rgba(124, 58, 237, 0.08);
+  --accent-purple-border: rgba(124, 58, 237, 0.16);
+  --accent-blue: #1d4ed8;
+  --accent-blue-glass: rgba(29, 78, 216, 0.08);
+  --accent-blue-border: rgba(29, 78, 216, 0.14);
+  --accent-green: #15803d;
+  --accent-green-glass: rgba(21, 128, 61, 0.08);
+  --accent-green-border: rgba(21, 128, 61, 0.14);
+  --gold-label: rgba(158, 122, 26, 0.72);
 
   /* Card border — subtle warm edge */
   --card-border: rgba(180, 142, 38, 0.08);

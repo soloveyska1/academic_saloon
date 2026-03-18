@@ -21,7 +21,6 @@ import { useSafeBackNavigation } from '../hooks/useSafeBackNavigation'
 import { useTelegram } from '../hooks/useUserData'
 import { RANKS, getRankByCashback, getNextRank, isMaxRank, getRankIndexByCashback } from '../lib/ranks'
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
-import { useThemeValue } from '../contexts/ThemeContext'
 import homeStyles from './HomePage.module.css'
 
 interface ClubPageProps {
@@ -40,7 +39,7 @@ function formatTransactionDate(isoDate: string): string {
 
 // ─── Hero Card ──────────────────────────────────────────────────────────────
 
-function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
+function HeroCard({ user }: { user: UserData }) {
   const cashback = user.rank.cashback || 0
   const balance = user.bonus_balance || 0
   const rank = getRankByCashback(cashback)
@@ -60,7 +59,7 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
         borderRadius: 28,
         marginBottom: 22,
         overflow: 'hidden',
-        border: `1px solid ${isDark ? 'rgba(212,175,55,0.16)' : 'rgba(158,122,26,0.18)'}`,
+        border: '1px solid var(--border-gold)',
         isolation: 'isolate',
         textAlign: 'left',
       }}
@@ -78,14 +77,14 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
             gap: 8,
             padding: '8px 12px',
             borderRadius: 999,
-            background: isDark ? 'rgba(9, 9, 11, 0.58)' : 'rgba(255,255,255,0.85)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(120,85,40,0.12)'}`,
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-strong)',
             fontFamily: "'Manrope', sans-serif",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: '0.08em',
             textTransform: 'uppercase' as const,
-            color: isDark ? 'var(--gold-100)' : '#7d5c12',
+            color: 'var(--gold-200)',
             marginBottom: 18,
           }}
         >
@@ -94,8 +93,8 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: isDark ? '#d4af37' : '#9e7a1a',
-              boxShadow: isDark ? '0 0 12px rgba(212,175,55,0.72)' : '0 0 12px rgba(158,122,26,0.5)',
+              background: 'var(--gold-400)',
+              boxShadow: 'var(--glow-gold)',
               flexShrink: 0,
             }}
           />
@@ -117,7 +116,8 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
         </div>
         <div
           style={{
-            color: isDark ? 'rgba(228,213,163,0.7)' : 'rgba(125,92,18,0.7)',
+            color: 'var(--gold-200)',
+            opacity: 0.7,
             fontFamily: "'Manrope', sans-serif",
             fontSize: 14,
             fontWeight: 500,
@@ -130,11 +130,11 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
         {/* Stats row */}
         <div className={homeStyles.heroProofRail}>
           <div className={homeStyles.heroProofItem}>
-            <Wallet2 size={15} color={isDark ? '#d4af37' : '#9e7a1a'} />
+            <Wallet2 size={15} color="var(--gold-400)" />
             На балансе: {formatMoney(balance)}
           </div>
           <div className={homeStyles.heroProofItem}>
-            <BadgePercent size={15} color={isDark ? '#d4af37' : '#9e7a1a'} />
+            <BadgePercent size={15} color="var(--gold-400)" />
             Потрачено: {formatMoney(user.total_spent || 0)}
           </div>
         </div>
@@ -148,7 +148,8 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
                 justifyContent: 'space-between',
                 fontSize: 12,
                 fontWeight: 600,
-                color: isDark ? 'rgba(228,213,163,0.6)' : 'rgba(125,92,18,0.6)',
+                color: 'var(--gold-200)',
+                opacity: 0.6,
                 marginBottom: 8,
                 fontFamily: "'Manrope', sans-serif",
               }}
@@ -161,7 +162,7 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
                 width: '100%',
                 height: 6,
                 borderRadius: 3,
-                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)',
+                background: 'var(--surface-hover)',
                 overflow: 'hidden',
               }}
             >
@@ -172,9 +173,7 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
                 style={{
                   height: '100%',
                   borderRadius: 3,
-                  background: isDark
-                    ? 'linear-gradient(90deg, #D4AF37, #F5D061)'
-                    : 'linear-gradient(90deg, #9e7a1a, #b8922d)',
+                  background: 'var(--gold-metallic)',
                 }}
               />
             </div>
@@ -182,7 +181,7 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
         )}
 
         {maxRank && (
-          <div style={{ marginTop: 12, fontSize: 13, color: isDark ? 'rgba(212,175,55,0.7)' : 'rgba(158,122,26,0.7)', fontWeight: 600 }}>
+          <div style={{ marginTop: 12, fontSize: 13, color: 'var(--gold-400)', opacity: 0.7, fontWeight: 600 }}>
             Максимальный ранг достигнут
           </div>
         )}
@@ -193,7 +192,7 @@ function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
 
 // ─── Referral Block ─────────────────────────────────────────────────────────
 
-function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
+function ReferralBlock({ user }: { user: UserData }) {
   const { botUsername, haptic } = useTelegram()
   const [copied, setCopied] = useState(false)
 
@@ -238,7 +237,7 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
       style={{
         padding: '22px 20px',
         borderRadius: 24,
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
+        border: '1px solid var(--surface-hover)',
         marginBottom: 22,
       }}
     >
@@ -248,21 +247,21 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             width: 44,
             height: 44,
             borderRadius: 16,
-            background: isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.10)',
-            border: `1px solid ${isDark ? 'rgba(212,175,55,0.18)' : 'rgba(158,122,26,0.16)'}`,
+            background: 'var(--gold-glass-medium)',
+            border: '1px solid var(--border-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}
         >
-          <Users size={20} color={isDark ? '#d4af37' : '#9e7a1a'} />
+          <Users size={20} color="var(--gold-400)" />
         </div>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: isDark ? '#E8D5A3' : '#7d5c12', fontFamily: "'Manrope', sans-serif" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold-200)', fontFamily: "'Manrope', sans-serif" }}>
             Пригласи друга
           </div>
-          <div style={{ fontSize: 13, color: isDark ? 'rgba(228,213,163,0.55)' : 'rgba(125,92,18,0.55)', marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: 'var(--gold-200)', opacity: 0.55, marginTop: 2 }}>
             Вы оба получите бонус
           </div>
         </div>
@@ -278,12 +277,12 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             padding: '13px 16px',
             borderRadius: 16,
             background: copied
-              ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(21,128,61,0.10)')
-              : (isDark ? 'rgba(212,175,55,0.1)' : 'rgba(158,122,26,0.08)'),
+              ? 'rgba(34,197,94,0.15)'
+              : 'var(--gold-glass-subtle)',
             border: `1px solid ${copied
-              ? (isDark ? 'rgba(34,197,94,0.25)' : 'rgba(21,128,61,0.20)')
-              : (isDark ? 'rgba(212,175,55,0.18)' : 'rgba(158,122,26,0.16)')}`,
-            color: copied ? (isDark ? '#22c55e' : '#15803d') : (isDark ? '#E8D5A3' : '#7d5c12'),
+              ? 'rgba(34,197,94,0.25)'
+              : 'var(--border-gold)'}`,
+            color: copied ? 'var(--success-text)' : 'var(--gold-200)',
             fontSize: 14,
             fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",
@@ -306,9 +305,9 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             flex: 1,
             padding: '13px 16px',
             borderRadius: 16,
-            background: isDark ? 'rgba(212,175,55,0.18)' : 'rgba(158,122,26,0.14)',
-            border: `1px solid ${isDark ? 'rgba(212,175,55,0.28)' : 'rgba(158,122,26,0.22)'}`,
-            color: isDark ? '#E8D5A3' : '#7d5c12',
+            background: 'var(--gold-glass-medium)',
+            border: '1px solid var(--gold-glass-strong)',
+            color: 'var(--gold-200)',
             fontSize: 14,
             fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",
@@ -336,15 +335,15 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             flex: 1,
             padding: '12px 14px',
             borderRadius: 14,
-            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)'}`,
+            background: 'var(--border-subtle)',
+            border: '1px solid var(--border-default)',
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 800, color: isDark ? '#E8D5A3' : '#7d5c12', fontFamily: "'Manrope', sans-serif" }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--gold-200)', fontFamily: "'Manrope', sans-serif" }}>
             {user.referrals_count || 0}
           </div>
-          <div style={{ fontSize: 11, color: isDark ? 'rgba(228,213,163,0.45)' : 'rgba(125,92,18,0.45)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--gold-200)', opacity: 0.45, marginTop: 2 }}>
             приглашено
           </div>
         </div>
@@ -353,15 +352,15 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
             flex: 1,
             padding: '12px 14px',
             borderRadius: 14,
-            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)'}`,
+            background: 'var(--border-subtle)',
+            border: '1px solid var(--border-default)',
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 800, color: isDark ? '#E8D5A3' : '#7d5c12', fontFamily: "'Manrope', sans-serif" }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--gold-200)', fontFamily: "'Manrope', sans-serif" }}>
             {formatMoney(user.referral_earnings || 0)}
           </div>
-          <div style={{ fontSize: 11, color: isDark ? 'rgba(228,213,163,0.45)' : 'rgba(125,92,18,0.45)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--gold-200)', opacity: 0.45, marginTop: 2 }}>
             заработано
           </div>
         </div>
@@ -372,7 +371,7 @@ function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
 
 // ─── Transaction History ────────────────────────────────────────────────────
 
-function TransactionHistory({ transactions, isDark }: { transactions: Transaction[]; isDark: boolean }) {
+function TransactionHistory({ transactions }: { transactions: Transaction[] }) {
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
   const sorted = useMemo(
@@ -391,7 +390,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
         style={{
           padding: '28px 20px',
           borderRadius: 24,
-          border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
+          border: '1px solid var(--surface-hover)',
           marginBottom: 22,
           textAlign: 'center',
           fontFamily: "'Manrope', sans-serif",
@@ -401,12 +400,13 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
           gap: 0,
         }}
       >
-        <Receipt size={40} color={isDark ? 'rgba(212,175,55,0.3)' : 'rgba(158,122,26,0.3)'} style={{ marginBottom: 14 }} />
+        <Receipt size={40} color="var(--gold-400)" style={{ opacity: 0.3, marginBottom: 14 }} />
         <div
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: isDark ? 'rgba(228,213,163,0.65)' : 'rgba(125,92,18,0.65)',
+            color: 'var(--gold-200)',
+            opacity: 0.65,
             marginBottom: 6,
           }}
         >
@@ -415,7 +415,8 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
         <div
           style={{
             fontSize: 12,
-            color: isDark ? 'rgba(228,213,163,0.35)' : 'rgba(125,92,18,0.35)',
+            color: 'var(--gold-200)',
+            opacity: 0.35,
             lineHeight: 1.5,
             maxWidth: 220,
             marginBottom: 18,
@@ -432,10 +433,8 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
             padding: '0 22px',
             borderRadius: 14,
             border: 'none',
-            background: isDark
-              ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
-              : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
-            color: isDark ? '#090909' : '#FFFFFF',
+            background: 'var(--gold-metallic)',
+            color: 'var(--text-on-gold)',
             fontSize: 13,
             fontWeight: 700,
             fontFamily: "'Manrope', sans-serif",
@@ -458,7 +457,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
       style={{
         padding: '18px 16px',
         borderRadius: 24,
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
+        border: '1px solid var(--surface-hover)',
         marginBottom: 22,
       }}
     >
@@ -466,7 +465,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
         style={{
           fontSize: 14,
           fontWeight: 700,
-          color: isDark ? '#E8D5A3' : '#7d5c12',
+          color: 'var(--gold-200)',
           fontFamily: "'Manrope', sans-serif",
           marginBottom: 14,
           padding: '0 4px',
@@ -488,7 +487,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 6px',
-                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.06)'}`,
+                borderBottom: '1px solid var(--border-default)',
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -496,7 +495,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
                   style={{
                     fontSize: 13.5,
                     fontWeight: 600,
-                    color: isDark ? 'rgba(228,213,163,0.85)' : 'rgba(28,25,23,0.85)',
+                    color: 'var(--text-primary)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -504,7 +503,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
                 >
                   {tx.description || tx.reason}
                 </div>
-                <div style={{ fontSize: 11, color: isDark ? 'rgba(228,213,163,0.35)' : 'rgba(120,113,108,0.55)', marginTop: 3 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
                   {formatTransactionDate(tx.created_at)}
                 </div>
               </div>
@@ -513,7 +512,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
                   fontSize: 14,
                   fontWeight: 700,
                   fontFamily: "'Manrope', sans-serif",
-                  color: tx.type === 'credit' ? (isDark ? '#22c55e' : '#15803d') : '#ef4444',
+                  color: tx.type === 'credit' ? 'var(--success-text)' : 'var(--error-text)',
                   flexShrink: 0,
                   marginLeft: 12,
                 }}
@@ -535,7 +534,8 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
             padding: '12px 0 4px',
             background: 'none',
             border: 'none',
-            color: isDark ? 'rgba(212,175,55,0.7)' : 'rgba(158,122,26,0.7)',
+            color: 'var(--gold-400)',
+            opacity: 0.7,
             fontSize: 13,
             fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",
@@ -559,7 +559,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
 
 // ─── How It Works ───────────────────────────────────────────────────────────
 
-function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: boolean }) {
+function HowItWorks({ userCashback }: { userCashback: number }) {
   const userRankIndex = getRankIndexByCashback(userCashback)
 
   return (
@@ -584,7 +584,7 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
             style={{
               padding: '16px 18px',
               borderRadius: 20,
-              border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
+              border: '1px solid var(--surface-hover)',
               display: 'flex',
               alignItems: 'center',
               gap: 14,
@@ -595,14 +595,14 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                 width: 38,
                 height: 38,
                 borderRadius: 12,
-                background: isDark ? 'rgba(212,175,55,0.1)' : 'rgba(158,122,26,0.08)',
-                border: `1px solid ${isDark ? 'rgba(212,175,55,0.16)' : 'rgba(158,122,26,0.14)'}`,
+                background: 'var(--gold-glass-subtle)',
+                border: '1px solid var(--border-gold)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 15,
                 fontWeight: 800,
-                color: isDark ? '#d4af37' : '#9e7a1a',
+                color: 'var(--gold-400)',
                 flexShrink: 0,
                 fontFamily: "'Manrope', sans-serif",
               }}
@@ -610,10 +610,10 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
               {step.num}
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#E8D5A3' : '#7d5c12', marginBottom: 3 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold-200)', marginBottom: 3 }}>
                 {step.title}
               </div>
-              <div style={{ fontSize: 12.5, color: isDark ? 'rgba(228,213,163,0.5)' : 'rgba(125,92,18,0.5)', lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12.5, color: 'var(--gold-200)', opacity: 0.5, lineHeight: 1.5 }}>
                 {step.desc}
               </div>
             </div>
@@ -637,8 +637,8 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                 padding: '16px 18px',
                 borderRadius: 20,
                 border: isCurrent
-                  ? `1px solid ${isDark ? 'rgba(212,175,55,0.3)' : 'rgba(158,122,26,0.28)'}`
-                  : `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
+                  ? '1px solid var(--gold-glass-strong)'
+                  : '1px solid var(--surface-hover)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 14,
@@ -651,11 +651,11 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                   height: 42,
                   borderRadius: 14,
                   background: isCurrent
-                    ? (isDark ? 'rgba(212,175,55,0.15)' : 'rgba(158,122,26,0.12)')
-                    : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.05)'),
+                    ? 'var(--gold-glass-medium)'
+                    : 'var(--bg-glass)',
                   border: isCurrent
-                    ? `1px solid ${isDark ? 'rgba(212,175,55,0.25)' : 'rgba(158,122,26,0.22)'}`
-                    : `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
+                    ? '1px solid var(--gold-glass-strong)'
+                    : '1px solid var(--surface-hover)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -663,9 +663,9 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                 }}
               >
                 {isLocked ? (
-                  <Lock size={18} color={isDark ? 'rgba(228,213,163,0.3)' : 'rgba(120,113,108,0.4)'} />
+                  <Lock size={18} color="var(--text-muted)" />
                 ) : (
-                  <RankIcon size={18} color={isCurrent ? (isDark ? '#d4af37' : '#9e7a1a') : (isDark ? 'rgba(228,213,163,0.5)' : 'rgba(125,92,18,0.5)')} />
+                  <RankIcon size={18} color={isCurrent ? 'var(--gold-400)' : 'var(--gold-200)'} style={{ opacity: isCurrent ? 1 : 0.5 }} />
                 )}
               </div>
 
@@ -675,7 +675,8 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                     style={{
                       fontSize: 14,
                       fontWeight: 700,
-                      color: isCurrent ? (isDark ? '#E8D5A3' : '#7d5c12') : (isDark ? 'rgba(228,213,163,0.65)' : 'rgba(125,92,18,0.65)'),
+                      color: isCurrent ? 'var(--gold-200)' : 'var(--gold-200)',
+                      opacity: isCurrent ? 1 : 0.65,
                       fontFamily: "'Manrope', sans-serif",
                     }}
                   >
@@ -686,8 +687,8 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                       style={{
                         fontSize: 10,
                         fontWeight: 700,
-                        color: isDark ? '#d4af37' : '#9e7a1a',
-                        background: isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.10)',
+                        color: 'var(--gold-400)',
+                        background: 'var(--gold-glass-subtle)',
                         padding: '3px 8px',
                         borderRadius: 6,
                         textTransform: 'uppercase' as const,
@@ -698,7 +699,7 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 12, color: isDark ? 'rgba(228,213,163,0.4)' : 'rgba(125,92,18,0.4)', marginTop: 3 }}>
+                <div style={{ fontSize: 12, color: 'var(--gold-200)', opacity: 0.4, marginTop: 3 }}>
                   {rank.minSpent > 0 ? `от ${formatMoney(rank.minSpent)} потрачено` : 'Начальный уровень'}
                 </div>
               </div>
@@ -707,7 +708,8 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                 style={{
                   fontSize: 18,
                   fontWeight: 800,
-                  color: isCurrent ? (isDark ? '#d4af37' : '#9e7a1a') : (isDark ? 'rgba(228,213,163,0.4)' : 'rgba(125,92,18,0.4)'),
+                  color: isCurrent ? 'var(--gold-400)' : 'var(--gold-200)',
+                  opacity: isCurrent ? 1 : 0.4,
                   fontFamily: "'Manrope', sans-serif",
                   flexShrink: 0,
                 }}
@@ -726,8 +728,6 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
 
 function ClubPage({ user }: ClubPageProps) {
   const handleBack = useSafeBackNavigation('/')
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
 
   if (!user) {
     return (
@@ -786,8 +786,8 @@ function ClubPage({ user }: ClubPageProps) {
               width: 42,
               height: 42,
               borderRadius: 14,
-              background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(120,85,40,0.05)',
-              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(120,85,40,0.10)'}`,
+              background: 'var(--border-default)',
+              border: '1px solid var(--border-strong)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -803,7 +803,8 @@ function ClubPage({ user }: ClubPageProps) {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: isDark ? 'rgba(212,175,55,0.72)' : 'rgba(158,122,26,0.72)',
+                color: 'var(--gold-400)',
+                opacity: 0.72,
                 textTransform: 'uppercase' as const,
                 letterSpacing: '0.08em',
                 marginBottom: 4,
@@ -825,10 +826,10 @@ function ClubPage({ user }: ClubPageProps) {
           </div>
         </motion.div>
 
-        <HeroCard user={user} isDark={isDark} />
-        <ReferralBlock user={user} isDark={isDark} />
-        <TransactionHistory transactions={user.transactions || []} isDark={isDark} />
-        <HowItWorks userCashback={user.rank.cashback || 0} isDark={isDark} />
+        <HeroCard user={user} />
+        <ReferralBlock user={user} />
+        <TransactionHistory transactions={user.transactions || []} />
+        <HowItWorks userCashback={user.rank.cashback || 0} />
       </div>
     </div>
   )

@@ -2,7 +2,6 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { LifeBuoy } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
-import { useThemeValue } from '../../contexts/ThemeContext'
 import { prefersReducedMotion } from './profileHelpers'
 
 interface Props {
@@ -10,9 +9,6 @@ interface Props {
 }
 
 export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport }: Props) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
-
   return (
     <motion.footer
       initial={prefersReducedMotion ? {} : { opacity: 0 }}
@@ -41,16 +37,16 @@ export const ProfileFooter = memo(function ProfileFooter({ onOpenSupport }: Prop
         <div className={s.footerLine} />
         <span style={{
           fontSize: 9,
-          color: isDark ? 'rgba(212,175,55,0.4)' : 'rgba(158,122,26,0.45)',
+          color: 'var(--gold-label)',
           letterSpacing: '0.15em',
           fontFamily: "var(--font-serif, 'Playfair Display', serif)",
         }}>
           АКАДЕМИЧЕСКИЙ САЛОН
         </span>
-        <span style={{ fontSize: 8, color: isDark ? 'rgba(212,175,55,0.3)' : 'rgba(158,122,26,0.35)' }}>✦</span>
+        <span style={{ fontSize: 8, color: 'var(--gold-label)' }}>✦</span>
         <span style={{
           fontSize: 8,
-          color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(28,25,23,0.3)',
+          color: 'var(--text-muted)',
           letterSpacing: '0.1em',
         }}>
           EST. {new Date().getFullYear()}

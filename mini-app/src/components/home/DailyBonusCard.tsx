@@ -6,7 +6,6 @@ import {
   claimDailyBonus,
   type DailyBonusInfo,
 } from '../../api/userApi'
-import { useThemeValue } from '../../contexts/ThemeContext'
 import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -34,24 +33,16 @@ const childVariants = {
 }
 
 function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }: DailyBonusCardProps) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
-
-  const GOLD = isDark ? '#d4af37' : '#9e7a1a'
-  const GOLD_LIGHT = isDark ? '#E8D5A3' : '#7d5c12'
-
   const CARD_STYLE: React.CSSProperties = {
-    background: isDark ? 'rgba(20, 20, 23, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+    background: 'var(--bg-card)',
     backdropFilter: 'blur(24px) saturate(180%)',
     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-    border: isDark
-      ? '1px solid rgba(212, 175, 55, 0.15)'
-      : '1px solid rgba(120, 85, 40, 0.10)',
+    border: '1px solid var(--border-gold)',
     borderRadius: 20,
     padding: 20,
     position: 'relative',
     overflow: 'hidden',
-    boxShadow: isDark ? 'none' : '0 2px 12px rgba(120, 85, 40, 0.06)',
+    boxShadow: 'var(--card-shadow)',
   }
 
   const [info, setInfo] = useState<DailyBonusInfo | null>(null)
@@ -152,9 +143,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
             width: 160,
             height: 160,
             borderRadius: '50%',
-            background: isDark
-              ? 'radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(180, 142, 38, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, var(--gold-glass-subtle) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -173,12 +162,12 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                 marginBottom: 16,
               }}
             >
-              <Flame size={16} color={GOLD} style={{ flexShrink: 0 }} />
+              <Flame size={16} color="var(--gold-400)" style={{ flexShrink: 0 }} />
               <span style={{
                 fontFamily: "'Manrope', sans-serif",
                 fontSize: 13,
                 fontWeight: 700,
-                color: GOLD_LIGHT,
+                color: 'var(--gold-200)',
               }}>
                 Серия: {currentStreak} дн.
               </span>
@@ -190,7 +179,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                     fontFamily: "'Manrope', sans-serif",
                     fontSize: 11,
                     fontWeight: 500,
-                    color: isDark ? 'rgba(228, 213, 163, 0.4)' : 'rgba(120, 85, 40, 0.45)',
+                    color: 'var(--text-muted)',
                     marginLeft: 4,
                   }}>
                     &middot; {nextMilestone.day} дн. = +{nextMilestone.bonus} ₽
@@ -249,7 +238,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                   fontFamily: "'Manrope', sans-serif",
                   fontSize: 24,
                   fontWeight: 800,
-                  color: GOLD,
+                  color: 'var(--gold-400)',
                   letterSpacing: '-0.02em',
                 }}>
                   +{claimedAmount} ₽
@@ -258,7 +247,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                   fontFamily: "'Manrope', sans-serif",
                   fontSize: 13,
                   fontWeight: 500,
-                  color: isDark ? 'rgba(228, 213, 163, 0.6)' : 'rgba(120, 85, 40, 0.55)',
+                  color: 'var(--text-muted)',
                   marginTop: 4,
                 }}>
                   Бонус зачислен на баланс
@@ -281,13 +270,11 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                   border: 'none',
                   cursor: claiming ? 'not-allowed' : 'pointer',
                   background: claiming
-                    ? (isDark ? 'rgba(212, 175, 55, 0.15)' : 'rgba(158, 122, 26, 0.12)')
-                    : isDark
-                      ? 'linear-gradient(135deg, #d4af37 0%, #C9A436 50%, #B8942F 100%)'
-                      : 'linear-gradient(135deg, #b8942f 0%, #9e7a1a 50%, #8a6b15 100%)',
+                    ? 'var(--gold-glass-medium)'
+                    : 'var(--gold-metallic)',
                   color: claiming
-                    ? GOLD_LIGHT
-                    : isDark ? '#09090b' : '#FFFFFF',
+                    ? 'var(--gold-200)'
+                    : 'var(--text-on-gold)',
                   fontFamily: "'Manrope', sans-serif",
                   fontSize: 15,
                   fontWeight: 700,
@@ -298,9 +285,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                   gap: 8,
                   boxShadow: claiming
                     ? 'none'
-                    : isDark
-                      ? '0 4px 16px rgba(212, 175, 55, 0.25)'
-                      : '0 4px 16px rgba(120, 85, 40, 0.18)',
+                    : 'var(--glow-gold)',
                   transition: 'box-shadow 0.2s ease',
                   opacity: claiming ? 0.7 : 1,
                 }}
@@ -338,12 +323,12 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                   padding: '14px 0',
                 }}
               >
-                <Clock size={16} color={isDark ? 'rgba(228, 213, 163, 0.45)' : 'rgba(120, 85, 40, 0.4)'} />
+                <Clock size={16} color="var(--text-muted)" />
                 <span style={{
                   fontFamily: "'Manrope', sans-serif",
                   fontSize: 13,
                   fontWeight: 600,
-                  color: isDark ? 'rgba(228, 213, 163, 0.5)' : 'rgba(120, 85, 40, 0.5)',
+                  color: 'var(--text-muted)',
                 }}>
                   Следующий бонус через {info?.cooldown_remaining || '...'}
                 </span>
@@ -364,7 +349,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                 fontFamily: "'Manrope', sans-serif",
                 fontSize: 12,
                 fontWeight: 500,
-                color: '#f87171',
+                color: 'var(--error-text)',
                 textAlign: 'center',
               }}
             >
@@ -391,13 +376,6 @@ interface DayCircleProps {
 }
 
 const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, isFuture, loading }: DayCircleProps) {
-  const theme = useThemeValue()
-  const isDark = theme === 'dark'
-
-  const GOLD = isDark ? '#d4af37' : '#9e7a1a'
-  const GOLD_LIGHT = isDark ? '#E8D5A3' : '#7d5c12'
-  const GOLD_DIM = isDark ? 'rgba(212, 175, 55, 0.3)' : 'rgba(158, 122, 26, 0.3)'
-
   const size = isCurrent ? 44 : 40
 
   if (loading) {
@@ -413,16 +391,14 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
           width: size,
           height: size,
           borderRadius: '50%',
-          background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(120, 85, 40, 0.04)',
-          border: isDark
-            ? '1px solid rgba(255, 255, 255, 0.06)'
-            : '1px solid rgba(120, 85, 40, 0.06)',
+          background: 'var(--bg-glass)',
+          border: '1px solid var(--surface-hover)',
         }} />
         <div style={{
           width: 20,
           height: 8,
           borderRadius: 4,
-          background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(120, 85, 40, 0.04)',
+          background: 'var(--bg-glass)',
         }} />
       </div>
     )
@@ -451,23 +427,15 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
           justifyContent: 'center',
           position: 'relative',
           ...(isClaimed ? {
-            background: isDark
-              ? 'linear-gradient(135deg, #d4af37 0%, #C9A436 100%)'
-              : 'linear-gradient(135deg, #b8942f 0%, #9e7a1a 100%)',
-            boxShadow: isDark
-              ? '0 2px 8px rgba(212, 175, 55, 0.3)'
-              : '0 2px 8px rgba(120, 85, 40, 0.18)',
+            background: 'var(--gold-metallic)',
+            boxShadow: 'var(--glow-gold)',
           } : isCurrent ? {
-            background: isDark ? 'rgba(212, 175, 55, 0.1)' : 'rgba(180, 142, 38, 0.08)',
-            border: `2px solid ${GOLD}`,
-            boxShadow: isDark
-              ? '0 0 12px rgba(212, 175, 55, 0.25), 0 0 24px rgba(212, 175, 55, 0.1)'
-              : '0 0 12px rgba(158, 122, 26, 0.15), 0 0 24px rgba(158, 122, 26, 0.06)',
+            background: 'var(--gold-glass-subtle)',
+            border: '2px solid var(--gold-400)',
+            boxShadow: 'var(--glow-gold)',
           } : {
-            background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(120, 85, 40, 0.04)',
-            border: isDark
-              ? '1px solid rgba(255, 255, 255, 0.08)'
-              : '1px solid rgba(120, 85, 40, 0.08)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-strong)',
           }),
         }}
       >
@@ -475,17 +443,11 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
         {isCurrent && (
           <motion.div
             animate={{
-              boxShadow: isDark
-                ? [
-                    '0 0 8px rgba(212, 175, 55, 0.2)',
-                    '0 0 20px rgba(212, 175, 55, 0.4)',
-                    '0 0 8px rgba(212, 175, 55, 0.2)',
-                  ]
-                : [
-                    '0 0 8px rgba(158, 122, 26, 0.12)',
-                    '0 0 20px rgba(158, 122, 26, 0.25)',
-                    '0 0 8px rgba(158, 122, 26, 0.12)',
-                  ],
+              boxShadow: [
+                '0 0 8px var(--gold-glass-medium)',
+                '0 0 20px var(--gold-glass-strong)',
+                '0 0 8px var(--gold-glass-medium)',
+              ],
             }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             style={{
@@ -498,17 +460,17 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
         )}
 
         {isClaimed ? (
-          <Check size={18} color={isDark ? '#09090b' : '#FFFFFF'} strokeWidth={3} />
+          <Check size={18} color="var(--text-on-gold)" strokeWidth={3} />
         ) : (
           <span style={{
             fontFamily: "'Manrope', sans-serif",
             fontSize: isCurrent ? 14 : 12,
             fontWeight: isCurrent ? 700 : 600,
             color: isCurrent
-              ? GOLD
+              ? 'var(--gold-400)'
               : (isFuture
-                ? (isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(120, 113, 108, 0.5)')
-                : GOLD_LIGHT),
+                ? 'var(--text-muted)'
+                : 'var(--gold-200)'),
             lineHeight: 1,
           }}>
             {day}
@@ -522,10 +484,10 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
         fontSize: 10,
         fontWeight: 600,
         color: isClaimed
-          ? GOLD_DIM
+          ? 'var(--gold-glass-strong)'
           : (isCurrent
-            ? GOLD_LIGHT
-            : (isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(120, 113, 108, 0.5)')),
+            ? 'var(--gold-200)'
+            : 'var(--text-muted)'),
         lineHeight: 1,
         whiteSpace: 'nowrap',
       }}>

@@ -41,7 +41,7 @@ const FILE_ICONS: Record<string, typeof FileText> = {
 // Message status indicator
 const MessageStatus = ({ isRead }: { isRead: boolean }) => {
   if (isRead) {
-    return <CheckCheck size={14} color="#3b82f6" />
+    return <CheckCheck size={14} color="var(--info-text)" />
   }
   return <Check size={14} color="var(--text-muted)" />
 }
@@ -424,7 +424,8 @@ export function OrderChatPage() {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="px-4 py-3 flex items-center gap-3 relative z-[1] shrink-0 bg-[rgba(10,10,12,0.8)] backdrop-blur-[20px] border-b border-white/5"
+        className="px-4 py-3 flex items-center gap-3 relative z-[1] shrink-0 backdrop-blur-[20px] border-b border-white/5"
+        style={{ background: 'var(--bg-card-solid)' }}
       >
         <motion.button
           whileTap={{ scale: 0.9 }}
@@ -438,9 +439,9 @@ export function OrderChatPage() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           className="w-9 h-9 rounded-[10px] flex items-center justify-center shadow-gold-glow"
-          style={{ background: 'linear-gradient(135deg, #d4af37, #8b6914)' }}
+          style={{ background: 'var(--gold-metallic)' }}
         >
-          <MessageCircle size={18} color="#0a0a0c" />
+          <MessageCircle size={18} color="var(--text-on-gold)" />
         </motion.div>
 
         <div className="flex-1">
@@ -464,11 +465,11 @@ export function OrderChatPage() {
       <div data-scroll-container="true" className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 relative z-[2]">
         {isLoading && messages.length === 0 ? (
           <div className="flex justify-center p-5">
-            <Loader2 className="animate-spin" color="#d4af37" />
+            <Loader2 className="animate-spin" color="var(--gold-400)" />
           </div>
         ) : error ? (
           <div className="text-center text-text-muted mt-10">
-            <AlertCircle size={48} color="rgba(239,68,68,0.5)" className="mx-auto mb-4" />
+            <AlertCircle size={48} color="var(--error-text)" className="mx-auto mb-4" />
             <p className="mb-4">{error}</p>
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -481,7 +482,7 @@ export function OrderChatPage() {
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center text-text-muted mt-10">
-            <MessageCircle size={48} color="rgba(212,175,55,0.3)" className="mx-auto mb-4" />
+            <MessageCircle size={48} color="var(--gold-glass-subtle)" className="mx-auto mb-4" />
             <p>Задайте вопрос по этому заказу</p>
             <p className="text-[12px] opacity-60">Мы ответим в ближайшее время</p>
           </div>
@@ -517,11 +518,11 @@ export function OrderChatPage() {
                       borderTopRightRadius: isMe ? 4 : 18,
                       borderTopLeftRadius: !isMe ? 4 : 18,
                       background: isMe
-                        ? 'linear-gradient(135deg, #d4af37, #b38728)'
-                        : 'rgba(255,255,255,0.05)',
-                      color: isMe ? '#000' : 'var(--text-main)',
-                      border: !isMe ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                      boxShadow: isMe ? '0 4px 12px rgba(212,175,55,0.2)' : 'none'
+                        ? 'var(--liquid-gold)'
+                        : 'var(--border-default)',
+                      color: isMe ? 'var(--text-on-gold)' : 'var(--text-main)',
+                      border: !isMe ? '1px solid var(--surface-active)' : 'none',
+                      boxShadow: isMe ? '0 4px 12px var(--border-gold)' : 'none'
                     }}>
                     {/* Text message */}
                     {msg.message_text && <span>{msg.message_text}</span>}
@@ -542,23 +543,23 @@ export function OrderChatPage() {
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handlePlayAudio(msg.id, msg.file_url!)}
                           className="w-9 h-9 rounded-full border-none flex items-center justify-center cursor-pointer"
-                          style={{ background: isMe ? 'rgba(0,0,0,0.2)' : 'rgba(212,175,55,0.2)' }}
+                          style={{ background: isMe ? 'var(--surface-strong)' : 'var(--border-gold)' }}
                         >
                           {playingAudioId === msg.id ? (
-                            <Pause size={18} color={isMe ? '#000' : '#d4af37'} />
+                            <Pause size={18} color={isMe ? 'var(--text-on-gold)' : 'var(--gold-400)'} />
                           ) : (
-                            <Play size={18} color={isMe ? '#000' : '#d4af37'} />
+                            <Play size={18} color={isMe ? 'var(--text-on-gold)' : 'var(--gold-400)'} />
                           )}
                         </motion.button>
                         <div
                           className="flex-1 h-1 rounded-sm"
-                          style={{ background: isMe ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)' }}
+                          style={{ background: isMe ? 'var(--surface-strong)' : 'var(--surface-active)' }}
                         >
                           <div
                             className="h-full rounded-sm transition-[width] duration-300"
                             style={{
                               width: playingAudioId === msg.id ? '50%' : '0%',
-                              background: isMe ? '#000' : '#d4af37',
+                              background: isMe ? 'var(--text-on-gold)' : 'var(--gold-400)',
                             }}
                           />
                         </div>
@@ -573,9 +574,9 @@ export function OrderChatPage() {
                         rel="noopener noreferrer"
                         whileTap={{ scale: 0.98 }}
                         className="flex items-center gap-3 px-3 py-2 rounded-xl no-underline text-inherit"
-                        style={{ background: isMe ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.05)' }}
+                        style={{ background: isMe ? 'var(--surface-active)' : 'var(--border-default)' }}
                       >
-                        <FileIcon size={24} color={isMe ? '#000' : '#d4af37'} />
+                        <FileIcon size={24} color={isMe ? 'var(--text-on-gold)' : 'var(--gold-400)'} />
                         <div className="flex-1 min-w-0">
                           <div className="text-[13px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
                             {msg.file_name || 'Файл'}
@@ -642,7 +643,7 @@ export function OrderChatPage() {
       {uploading && (
         <div className="px-4 py-2 bg-gold-400/10 border-t border-gold-400/20">
           <div className="flex items-center gap-3">
-            <Loader2 size={16} color="#d4af37" className="animate-spin" />
+            <Loader2 size={16} color="var(--gold-400)" className="animate-spin" />
             <span className="text-[13px] text-gold-400">
               Загрузка... {uploadProgress}%
             </span>
@@ -682,7 +683,7 @@ export function OrderChatPage() {
               onClick={stopRecording}
               className="w-9 h-9 rounded-full bg-red-500 border-none flex items-center justify-center cursor-pointer"
             >
-              <StopCircle size={18} color="#fff" />
+              <StopCircle size={18} color="var(--text-primary)" />
             </motion.button>
           </div>
         </div>
@@ -693,7 +694,7 @@ export function OrderChatPage() {
         className="px-4 pt-3 relative z-[3] border-t border-white/10 backdrop-blur-[20px]"
         style={{
           paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-          background: 'rgba(20, 20, 23, 0.95)',
+          background: 'var(--bg-card-solid)',
         }}
       >
         <div className="flex items-end gap-2 bg-white/5 rounded-3xl py-2 pr-2 pl-4 border border-white/5">
@@ -747,13 +748,13 @@ export function OrderChatPage() {
               disabled={uploading}
               className="w-10 h-10 rounded-full flex items-center justify-center border-none shrink-0"
               style={{
-                background: isRecording ? '#ef4444' : 'rgba(255,255,255,0.1)',
+                background: isRecording ? 'var(--error-text)' : 'var(--surface-active)',
                 cursor: uploading ? 'default' : 'pointer',
                 opacity: uploading ? 0.5 : 1
               }}
             >
               {isRecording ? (
-                <MicOff size={18} color="#fff" />
+                <MicOff size={18} color="var(--text-primary)" />
               ) : (
                 <Mic size={18} color="var(--text-muted)" />
               )}
