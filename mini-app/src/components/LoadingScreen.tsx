@@ -23,7 +23,7 @@ export function LoadingScreen() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#050505',
+        background: 'var(--bg-void)',
         zIndex: 9999,
         overflow: 'hidden',
       }}

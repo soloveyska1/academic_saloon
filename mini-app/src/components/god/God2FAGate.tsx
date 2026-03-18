@@ -102,7 +102,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
     return (
       <div style={containerStyle}>
         <div style={glowStyle} />
-        <Loader2 size={28} color="#d4af37" style={{ animation: 'spin 1s linear infinite' }} />
+        <Loader2 size={28} color="var(--gold-400)" style={{ animation: 'spin 1s linear infinite' }} />
         <p style={{
           fontFamily: "'Manrope', sans-serif",
           color: 'rgba(255,255,255,0.35)',
@@ -147,8 +147,8 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
             left: 0,
             padding: '7px 12px',
             borderRadius: 12,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-strong)',
             color: 'rgba(255,255,255,0.35)',
             fontFamily: "'Manrope', sans-serif",
             fontSize: 12,
@@ -166,19 +166,19 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
         {/* Icon — gold glass */}
         <div style={{
           width: 56, height: 56, borderRadius: 16,
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+          background: 'linear-gradient(135deg, var(--gold-glass-medium), rgba(212,175,55,0.05))',
           border: '1px solid rgba(212,175,55,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           marginBottom: 20,
           boxShadow: '0 8px 32px -8px rgba(212,175,55,0.2)',
         }}>
-          <Shield size={24} color="#d4af37" strokeWidth={1.5} />
+          <Shield size={24} color="var(--gold-400)" strokeWidth={1.5} />
         </div>
 
         <h1 style={{
           fontFamily: "'Playfair Display', 'Cinzel', Georgia, serif",
           fontSize: 22, fontWeight: 700, fontStyle: 'italic',
-          color: '#fff',
+          color: 'var(--text-primary)',
           marginBottom: 8, letterSpacing: '-0.01em',
         }}>
           Подтверждение
@@ -250,7 +250,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
               padding: '20px 16px',
               borderRadius: 20,
               background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              border: '1px solid var(--surface-hover)',
               marginBottom: 16,
             }}>
               <input
@@ -267,8 +267,8 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
                   borderRadius: 14, fontSize: 26, fontWeight: 700,
                   textAlign: 'center', letterSpacing: '0.3em',
                   background: 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${error ? 'rgba(239,68,68,0.2)' : 'rgba(212,175,55,0.15)'}`,
-                  color: '#d4af37', outline: 'none',
+                  border: `1px solid ${error ? 'rgba(239,68,68,0.2)' : 'var(--gold-glass-medium)'}`,
+                  color: 'var(--gold-400)', outline: 'none',
                   fontFamily: "'JetBrains Mono', monospace",
                   caretColor: '#d4af37',
                 }}

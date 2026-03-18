@@ -202,7 +202,7 @@ export function PromoCodeSection({
           fontSize: 12,
           fontWeight: 700,
           fontFamily: 'var(--font-mono)',
-          color: '#22c55e',
+          color: 'var(--success-text)',
           letterSpacing: '0.03em',
         }}>
           {activePromo.code}
@@ -328,7 +328,7 @@ export function PromoCodeSection({
                     animate={showSuccess ? { scale: [1, 1.2, 1], rotate: [0, 360] } : {}}
                     transition={{ duration: 0.5 }}
                   >
-                    <CheckCircle2 size={18} color="#22c55e" strokeWidth={2.5} />
+                    <CheckCircle2 size={18} color="var(--success-text)" strokeWidth={2.5} />
                   </motion.div>
                 </motion.div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -357,7 +357,7 @@ export function PromoCodeSection({
                         background: 'rgba(34, 197, 94, 0.25)',
                         fontSize: 11,
                         fontWeight: 700,
-                        color: '#22c55e',
+                        color: 'var(--success-text)',
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -373,7 +373,7 @@ export function PromoCodeSection({
                     flexWrap: 'wrap',
                   }}>
                     {savings > 0 && (
-                      <span style={{ color: '#22c55e', fontWeight: 600 }}>
+                      <span style={{ color: 'var(--success-text)', fontWeight: 600 }}>
                         Экономия {savings.toLocaleString('ru-RU')} ₽
                       </span>
                     )}

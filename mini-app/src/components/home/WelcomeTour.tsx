@@ -295,7 +295,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
                     background: 'var(--gold-400)',
                     flexShrink: 0,
                     marginTop: 7,
-                    boxShadow: '0 0 6px rgba(212,175,55,0.4)',
+                    boxShadow: '0 0 6px var(--gold-glass-strong)',
                   }} />
                   <span style={{
                     fontFamily: "'Manrope', sans-serif",
@@ -339,7 +339,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
               style={{
                 height: 6,
                 borderRadius: 3,
-                boxShadow: i === step ? '0 0 8px rgba(212,175,55,0.3)' : 'none',
+                boxShadow: i === step ? '0 0 8px var(--gold-glass-strong)' : 'none',
               }}
             />
           ))}
@@ -355,12 +355,12 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
             padding: '15px 24px',
             borderRadius: 16,
             background: isLast
-              ? 'linear-gradient(135deg, #d4af37, #f5d76e)'
-              : 'rgba(255,255,255,0.04)',
+              ? 'var(--gold-metallic)'
+              : 'var(--bg-glass)',
             border: isLast
-              ? '1px solid rgba(212,175,55,0.4)'
-              : '1px solid rgba(255,255,255,0.08)',
-            color: isLast ? '#09090b' : 'rgba(255,255,255,0.7)',
+              ? '1px solid var(--gold-glass-strong)'
+              : '1px solid var(--border-strong)',
+            color: isLast ? 'var(--text-on-gold)' : 'var(--text-secondary)',
             fontFamily: "'Manrope', sans-serif",
             fontSize: 14,
             fontWeight: 700,
@@ -370,7 +370,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
-            boxShadow: isLast ? '0 8px 24px -4px rgba(212,175,55,0.3)' : 'none',
+            boxShadow: isLast ? 'var(--glow-gold)' : 'none',
           }}
         >
           {isLast ? 'Начать' : 'Далее'}
