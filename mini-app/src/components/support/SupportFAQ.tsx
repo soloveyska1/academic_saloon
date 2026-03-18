@@ -213,7 +213,7 @@ export const SupportFAQ = memo(function SupportFAQ({
               <span style={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: '#d4af37',
+                color: 'var(--gold-400)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
               }}>
@@ -235,7 +235,7 @@ export const SupportFAQ = memo(function SupportFAQ({
                 <div style={{
                   fontSize: 11.5,
                   fontWeight: 600,
-                  color: 'rgba(255,255,255,0.4)',
+                  color: 'var(--text-muted)',
                   marginBottom: 8,
                 }}>
                   Похожие вопросы:
@@ -253,8 +253,8 @@ export const SupportFAQ = memo(function SupportFAQ({
                       padding: '8px 12px',
                       marginBottom: 4,
                       borderRadius: 10,
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      background: 'var(--bg-glass)',
+                      border: '1px solid var(--surface-hover)',
                       cursor: 'pointer',
                       fontSize: 13,
                       color: 'var(--text-secondary, #b8b8b8)',
@@ -287,7 +287,7 @@ export const SupportFAQ = memo(function SupportFAQ({
                   cursor: 'pointer',
                   fontSize: 13.5,
                   fontWeight: 600,
-                  color: '#d4af37',
+                  color: 'var(--gold-400)',
                 }}
               >
                 <MessageCircle size={15} />
@@ -334,7 +334,7 @@ export const SupportFAQ = memo(function SupportFAQ({
                 cursor: 'pointer',
                 fontSize: 13.5,
                 fontWeight: 600,
-                color: '#d4af37',
+                color: 'var(--gold-400)',
               }}
             >
               <MessageCircle size={15} />
