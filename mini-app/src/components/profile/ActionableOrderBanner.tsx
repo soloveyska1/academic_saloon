@@ -77,14 +77,14 @@ export const ActionableOrderBanner = memo(function ActionableOrderBanner({ order
             <div style={{
               fontSize: 15.5,
               fontWeight: 800,
-              color: '#faf7e3',
+              color: 'var(--text-primary)',
               marginBottom: 2,
             }}>
               {title}
             </div>
             <div style={{
               fontSize: 13,
-              color: '#d4d4d8',
+              color: 'var(--text-secondary)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',

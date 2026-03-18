@@ -1132,7 +1132,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     {[
                         { icon: Shield, label: 'Безопасно', color: 'var(--success-text)' },
                         { icon: Lock, label: 'Защищено', color: '#3b82f6' },
-                        { icon: Star, label: '5-15 мин', color: '#D4AF37' },
+                        { icon: Star, label: '5-15 мин', color: 'var(--gold-400)' },
                     ].map((badge, i) => (
                         <motion.div
                             key={i}

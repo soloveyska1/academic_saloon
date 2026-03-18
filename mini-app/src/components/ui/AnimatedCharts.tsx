@@ -29,7 +29,7 @@ export function AnimatedBarChart({
     }}>
       {data.map((item, index) => {
         const barHeight = (item.value / maxValue) * (height - 30)
-        const color = item.color || '#d4af37'
+        const color = item.color || 'var(--gold-400)'
 
         return (
           <div
