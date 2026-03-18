@@ -829,8 +829,8 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         {[
-                            { key: 'card' as const, icon: CreditCard, label: 'На карту', color: var(--info-text) },
-                            { key: 'sbp' as const, icon: Smartphone, label: 'СБП', color: var(--accent-purple) },
+                            { key: 'card' as const, icon: CreditCard, label: 'На карту', color: 'var(--info-text)' },
+                            { key: 'sbp' as const, icon: Smartphone, label: 'СБП', color: 'var(--accent-purple)' },
                         ].map((method) => (
                             <motion.button
                                 key={method.key}
@@ -884,7 +884,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                                 <Lock size={14} color="var(--info-text)" />
-                                <span style={{ fontSize: 11, fontWeight: 700, color: var(--info-text), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--info-text)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                                     Реквизиты карты
                                 </span>
                             </div>
@@ -947,7 +947,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                                 <Lock size={14} color="var(--accent-purple)" />
-                                <span style={{ fontSize: 11, fontWeight: 700, color: var(--accent-purple), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-purple)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                                     Реквизиты СБП
                                 </span>
                             </div>
@@ -1131,7 +1131,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                 }}>
                     {[
                         { icon: Shield, label: 'Безопасно', color: 'var(--success-text)' },
-                        { icon: Lock, label: 'Защищено', color: var(--info-text) },
+                        { icon: Lock, label: 'Защищено', color: 'var(--info-text)' },
                         { icon: Star, label: '5-15 мин', color: 'var(--gold-400)' },
                     ].map((badge, i) => (
                         <motion.div
