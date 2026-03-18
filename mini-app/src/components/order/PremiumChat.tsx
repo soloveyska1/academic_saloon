@@ -73,7 +73,7 @@ const EmptyState = ({ onSendHello }: { onSendHello: () => void }) => (
         marginBottom: 24,
       }}
     >
-      <Headphones size={36} color="#d4af37" />
+      <Headphones size={36} color="var(--gold-400)" />
     </motion.div>
 
     <h3 style={{
@@ -104,7 +104,7 @@ const EmptyState = ({ onSendHello }: { onSendHello: () => void }) => (
         borderRadius: 14,
         background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1))',
         border: '1px solid rgba(212, 175, 55, 0.3)',
-        color: '#d4af37',
+        color: 'var(--gold-400)',
         fontSize: 15,
         fontWeight: 600,
         cursor: 'pointer',
@@ -145,7 +145,7 @@ const ErrorState = ({ message, onRetry }: { message: string; onRetry: () => void
       justifyContent: 'center',
       marginBottom: 16,
     }}>
-      <AlertCircle size={28} color="#ef4444" />
+      <AlertCircle size={28} color="var(--error-text)" />
     </div>
 
     <p style={{
@@ -230,7 +230,7 @@ const TypingIndicator = () => (
       alignSelf: 'flex-start',
     }}
   >
-    <Headphones size={14} color="#d4af37" />
+    <Headphones size={14} color="var(--gold-400)" />
     <div style={{ display: 'flex', gap: 3 }}>
       {[0, 1, 2].map((i) => (
         <motion.div
@@ -282,7 +282,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
         marginBottom: 4,
         padding: '0 4px',
       }}>
-        {!isClient && <Headphones size={12} color="#d4af37" />}
+        {!isClient && <Headphones size={12} color="var(--gold-400)" />}
         <span style={{
           fontSize: 11,
           fontWeight: 600,
@@ -295,7 +295,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
         </span>
         {isClient && (
           msg.is_read
-            ? <CheckCheck size={12} color="#3b82f6" />
+            ? <CheckCheck size={12} color="var(--info-text)" />
             : <Check size={12} color="var(--text-muted)" />
         )}
       </div>
@@ -345,9 +345,9 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
             }}
           >
             {isPlaying ? (
-              <Pause size={18} color="#d4af37" />
+              <Pause size={18} color="var(--gold-400)" />
             ) : (
-              <Play size={18} color="#d4af37" />
+              <Play size={18} color="var(--gold-400)" />
             )}
             <div style={{
               flex: 1,
@@ -396,11 +396,11 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
               justifyContent: 'center',
             }}>
               {msg.file_type === 'photo' ? (
-                <Image size={18} color="#3b82f6" />
+                <Image size={18} color="var(--info-text)" />
               ) : msg.file_type === 'video' ? (
-                <Video size={18} color="#3b82f6" />
+                <Video size={18} color="var(--info-text)" />
               ) : (
-                <FileText size={18} color="#3b82f6" />
+                <FileText size={18} color="var(--info-text)" />
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -954,7 +954,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <Headphones size={22} color="#d4af37" />
+          <Headphones size={22} color="var(--gold-400)" />
         </div>
 
         <div style={{ flex: 1 }}>
@@ -1087,7 +1087,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               transition={{ repeat: Infinity, duration: 1 }}
               style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }}
             />
-            <span style={{ fontSize: 14, color: '#ef4444', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: 14, color: 'var(--error-text)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
               {formatDuration(recordingDuration)}
             </span>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>
@@ -1113,8 +1113,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               gap: 10,
             }}
           >
-            <Loader size={16} color="#d4af37" className="animate-spin" />
-            <span style={{ fontSize: 13, color: '#d4af37' }}>Загрузка...</span>
+            <Loader size={16} color="var(--gold-400)" className="animate-spin" />
+            <span style={{ fontSize: 13, color: 'var(--gold-400)' }}>Загрузка...</span>
           </motion.div>
         )}
       </AnimatePresence>
