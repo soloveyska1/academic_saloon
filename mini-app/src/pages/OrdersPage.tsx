@@ -964,7 +964,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             margin: 0,
             fontSize: 24,
             fontWeight: 800,
-            color: '#E8D5A3',
+            color: isDark ? '#E8D5A3' : '#7d5c12',
             fontFamily: "'Manrope', sans-serif",
             letterSpacing: '-0.02em',
           }}>
@@ -977,13 +977,13 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
             onClick={handleCreateOrder}
             style={{
               width: 42, height: 42, borderRadius: 14,
-              background: 'rgba(212,175,55,0.08)',
-              border: '1px solid rgba(212,175,55,0.12)',
+              background: isDark ? 'rgba(212,175,55,0.08)' : 'rgba(158,122,26,0.08)',
+              border: `1px solid ${isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.14)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
             }}
           >
-            <Plus size={20} color="#E8D5A3" />
+            <Plus size={20} color={isDark ? '#E8D5A3' : '#7d5c12'} />
           </motion.button>
         </motion.div>
 
@@ -997,26 +997,28 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
               marginBottom: 16,
               padding: '12px 16px',
               borderRadius: 14,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.04)',
+              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.88)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)'}`,
+              boxShadow: isDark ? 'none' : '0 2px 8px rgba(120,85,40,0.05)',
             }}
           >
             {stats.action > 0 && (
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#E8D5A3' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#E8D5A3' : '#7d5c12' }}>
                 {stats.action} {pluralize(stats.action, ['ждёт', 'ждут', 'ждут'])} вас
               </span>
             )}
             {stats.action > 0 && stats.active > 0 && (
-              <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.15)' }} />
+              <span style={{ width: 3, height: 3, borderRadius: '50%', background: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(120,85,40,0.2)' }} />
             )}
             {stats.active > 0 && (
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.42)' }}>
+              <span style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)' }}>
                 {stats.active} в работе
               </span>
             )}
             <span style={{
               marginLeft: 'auto',
-              fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.35)',
+              fontSize: 13, fontWeight: 600,
+              color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(120,113,108,0.6)',
             }}>
               {formatMoney(stats.totalValue)}
             </span>
@@ -1030,6 +1032,7 @@ export function OrdersPage({ orders, loading, onRefresh }: Props) {
           payableTotal={batchPaymentTotal}
           onOpenOrder={handleOpenOrder}
           onBatchPay={handleBatchPay}
+          isDark={isDark}
         />
 
         {/* ═══════ Search ═══════ */}

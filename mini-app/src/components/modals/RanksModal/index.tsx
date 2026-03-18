@@ -3,6 +3,7 @@ import { m } from 'framer-motion'
 import { ArrowRight, CheckCircle2, Crown, Lock } from 'lucide-react'
 import { ModalWrapper } from '../shared'
 import { RANKS, getRankIndexByCashback, getDisplayName } from '../../../lib/ranks'
+import { useThemeValue } from '../../../contexts/ThemeContext'
 import type { UserData } from '../../../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -44,6 +45,8 @@ function formatMoney(value: number): string {
 }
 
 export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalProps) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
   const displayRankName = useMemo(() => getDisplayName(user.rank.name), [user.rank.name])
   const currentRankIndex = useMemo(
     () => Math.max(getRankIndexByCashback(user.rank.cashback), 0),
@@ -58,7 +61,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
       onClose={onClose}
       modalId="ranks-modal"
       title="Путь клиента"
-      accentColor="#D4AF37"
+      accentColor={isDark ? '#D4AF37' : '#9e7a1a'}
     >
       <div style={{ padding: '0 20px 20px' }}>
 
@@ -77,16 +80,26 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
               width: 84,
               height: 84,
               borderRadius: 26,
-              background: 'linear-gradient(145deg, rgba(212,175,55,0.16), rgba(212,175,55,0.04))',
-              border: '1.5px solid rgba(212,175,55,0.18)',
+              background: isDark
+                ? 'linear-gradient(145deg, rgba(212,175,55,0.16), rgba(212,175,55,0.04))'
+                : 'linear-gradient(145deg, rgba(180,142,38,0.10), rgba(180,142,38,0.03))',
+              border: isDark
+                ? '1.5px solid rgba(212,175,55,0.18)'
+                : '1.5px solid rgba(180,142,38,0.20)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 22px',
-              boxShadow: '0 24px 56px -14px rgba(212,175,55,0.22)',
+              boxShadow: isDark
+                ? '0 24px 56px -14px rgba(212,175,55,0.22)'
+                : '0 24px 56px -14px rgba(158,122,26,0.12)',
             }}
           >
-            <Crown size={36} color="rgba(212,175,55,0.72)" strokeWidth={1.3} />
+            <Crown
+              size={36}
+              color={isDark ? 'rgba(212,175,55,0.72)' : 'rgba(158,122,26,0.55)'}
+              strokeWidth={1.3}
+            />
           </m.div>
 
           <m.div
@@ -99,7 +112,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
               lineHeight: 1.15,
               letterSpacing: '-0.025em',
               fontFamily: "'Manrope', sans-serif",
-              color: '#E8D5A3',
+              color: isDark ? '#E8D5A3' : '#7d5c12',
               marginBottom: 10,
             }}
           >
@@ -112,12 +125,15 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             transition={{ delay: 0.3 }}
             style={{
               fontSize: 14,
-              color: 'rgba(255,255,255,0.42)',
+              color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)',
               fontWeight: 500,
             }}
           >
             Сейчас вы —{' '}
-            <span style={{ color: '#E8D5A3', fontWeight: 700 }}>
+            <span style={{
+              color: isDark ? '#E8D5A3' : '#7d5c12',
+              fontWeight: 700,
+            }}>
               {displayRankName}
             </span>
           </m.div>
@@ -148,13 +164,13 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                   background: isActive
                     ? `linear-gradient(135deg, ${rank.color}12 0%, ${rank.color}04 100%)`
                     : isPassed
-                      ? 'rgba(34,197,94,0.03)'
-                      : 'rgba(255,255,255,0.02)',
+                      ? isDark ? 'rgba(34,197,94,0.03)' : 'rgba(21,128,61,0.03)'
+                      : isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.90)',
                   border: isActive
                     ? `1.5px solid ${rank.color}30`
                     : isPassed
-                      ? '1px solid rgba(34,197,94,0.08)'
-                      : '1px solid rgba(255,255,255,0.05)',
+                      ? isDark ? '1px solid rgba(34,197,94,0.08)' : '1px solid rgba(21,128,61,0.10)'
+                      : isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(120,85,40,0.06)',
                   position: 'relative',
                   overflow: 'hidden',
                 }}
@@ -187,9 +203,11 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                     height: isActive ? 48 : 40,
                     borderRadius: isActive ? 16 : 12,
                     background: isLocked
-                      ? 'rgba(255,255,255,0.04)'
+                      ? isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.04)'
                       : `linear-gradient(135deg, ${rank.color}20, ${rank.color}08)`,
-                    border: `1px solid ${isLocked ? 'rgba(255,255,255,0.06)' : `${rank.color}25`}`,
+                    border: `1px solid ${isLocked
+                      ? isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'
+                      : `${rank.color}25`}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -198,7 +216,9 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                   }}>
                     <Icon
                       size={isActive ? 22 : 18}
-                      color={isLocked ? 'rgba(255,255,255,0.15)' : rank.color}
+                      color={isLocked
+                        ? isDark ? 'rgba(255,255,255,0.15)' : 'rgba(120,113,108,0.3)'
+                        : rank.color}
                       strokeWidth={1.6}
                     />
                     {/* Passed checkmark */}
@@ -210,11 +230,11 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                         width: 16,
                         height: 16,
                         borderRadius: '50%',
-                        background: '#22c55e',
+                        background: isDark ? '#22c55e' : '#16a34a',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        border: '2px solid #09090b',
+                        border: isDark ? '2px solid #09090b' : '2px solid #FAF9F7',
                       }}>
                         <CheckCircle2 size={10} color="#fff" strokeWidth={3} />
                       </div>
@@ -233,10 +253,10 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                         fontSize: 15,
                         fontWeight: 700,
                         color: isLocked
-                          ? 'rgba(255,255,255,0.30)'
+                          ? isDark ? 'rgba(255,255,255,0.30)' : 'rgba(120,113,108,0.5)'
                           : isActive
-                            ? 'rgba(255,255,255,0.90)'
-                            : 'rgba(255,255,255,0.60)',
+                            ? isDark ? 'rgba(255,255,255,0.90)' : 'rgba(28,25,23,0.90)'
+                            : isDark ? 'rgba(255,255,255,0.60)' : 'rgba(87,83,78,0.75)',
                         letterSpacing: '-0.01em',
                       }}>
                         {rank.displayName}
@@ -245,10 +265,10 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                         fontSize: isActive ? 20 : 16,
                         fontWeight: 800,
                         color: isLocked
-                          ? 'rgba(255,255,255,0.12)'
+                          ? isDark ? 'rgba(255,255,255,0.12)' : 'rgba(120,113,108,0.2)'
                           : isActive
-                            ? '#E8D5A3'
-                            : 'rgba(255,255,255,0.40)',
+                            ? isDark ? '#E8D5A3' : '#7d5c12'
+                            : isDark ? 'rgba(255,255,255,0.40)' : 'rgba(87,83,78,0.55)',
                         fontFamily: "'Manrope', sans-serif",
                       }}>
                         {rank.cashback}%
@@ -258,8 +278,8 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                       <div style={{
                         fontSize: 12,
                         color: isLocked
-                          ? 'rgba(255,255,255,0.15)'
-                          : 'rgba(255,255,255,0.30)',
+                          ? isDark ? 'rgba(255,255,255,0.15)' : 'rgba(120,113,108,0.35)'
+                          : isDark ? 'rgba(255,255,255,0.30)' : 'rgba(120,113,108,0.5)',
                         marginTop: 2,
                       }}>
                         {isPassed ? 'Пройден' : `от ${formatMoney(rank.minSpent)}`}
@@ -276,14 +296,18 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                       style={{
                         padding: '5px 10px',
                         borderRadius: 100,
-                        background: 'rgba(212,175,55,0.12)',
-                        border: '1px solid rgba(212,175,55,0.20)',
+                        background: isDark
+                          ? 'rgba(212,175,55,0.12)'
+                          : 'rgba(180,142,38,0.08)',
+                        border: isDark
+                          ? '1px solid rgba(212,175,55,0.20)'
+                          : '1px solid rgba(180,142,38,0.18)',
                       }}
                     >
                       <span style={{
                         fontSize: 10,
                         fontWeight: 700,
-                        color: '#D4AF37',
+                        color: isDark ? '#D4AF37' : '#9e7a1a',
                         letterSpacing: '0.04em',
                         textTransform: 'uppercase',
                       }}>
@@ -293,7 +317,10 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                   )}
 
                   {isLocked && (
-                    <Lock size={14} color="rgba(255,255,255,0.12)" />
+                    <Lock
+                      size={14}
+                      color={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(120,113,108,0.25)'}
+                    />
                   )}
                 </div>
 
@@ -329,7 +356,7 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                             alignItems: 'center',
                             gap: 8,
                             fontSize: 13,
-                            color: 'rgba(255,255,255,0.50)',
+                            color: isDark ? 'rgba(255,255,255,0.50)' : 'rgba(87,83,78,0.7)',
                             fontWeight: 500,
                           }}
                         >
@@ -361,8 +388,12 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
               marginTop: 20,
               padding: '18px 18px',
               borderRadius: 18,
-              background: 'rgba(212,175,55,0.04)',
-              border: '1px solid rgba(212,175,55,0.10)',
+              background: isDark
+                ? 'rgba(212,175,55,0.04)'
+                : 'rgba(180,142,38,0.04)',
+              border: isDark
+                ? '1px solid rgba(212,175,55,0.10)'
+                : '1px solid rgba(180,142,38,0.15)',
             }}
           >
             <div style={{
@@ -374,14 +405,14 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
               <span style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.65)',
+                color: isDark ? 'rgba(255,255,255,0.65)' : 'rgba(28,25,23,0.75)',
               }}>
                 До «{nextRank.displayName}»
               </span>
               <span style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: '#E8D5A3',
+                color: isDark ? '#E8D5A3' : '#7d5c12',
               }}>
                 {formatMoney(user.rank.spent_to_next)}
               </span>
@@ -391,7 +422,9 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
             <div style={{
               height: 6,
               borderRadius: 99,
-              background: 'rgba(255,255,255,0.06)',
+              background: isDark
+                ? 'rgba(255,255,255,0.06)'
+                : 'rgba(120,85,40,0.08)',
               overflow: 'hidden',
               marginBottom: 8,
             }}>
@@ -402,14 +435,16 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                 style={{
                   height: '100%',
                   borderRadius: 99,
-                  background: 'linear-gradient(90deg, rgba(212,175,55,0.5), #D4AF37)',
+                  background: isDark
+                    ? 'linear-gradient(90deg, rgba(212,175,55,0.5), #D4AF37)'
+                    : 'linear-gradient(90deg, rgba(158,122,26,0.45), #9e7a1a)',
                 }}
               />
             </div>
 
             <div style={{
               fontSize: 12,
-              color: 'rgba(255,255,255,0.28)',
+              color: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(120,113,108,0.55)',
               fontWeight: 500,
             }}>
               {progress}% пройдено — кэшбэк вырастет до {nextRank.cashback}%
@@ -427,22 +462,26 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
               marginTop: 20,
               padding: '22px 18px',
               borderRadius: 18,
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.10), rgba(212,175,55,0.03))',
-              border: '1px solid rgba(212,175,55,0.18)',
+              background: isDark
+                ? 'linear-gradient(135deg, rgba(212,175,55,0.10), rgba(212,175,55,0.03))'
+                : 'linear-gradient(135deg, rgba(180,142,38,0.08), rgba(180,142,38,0.02))',
+              border: isDark
+                ? '1px solid rgba(212,175,55,0.18)'
+                : '1px solid rgba(180,142,38,0.20)',
               textAlign: 'center',
             }}
           >
             <div style={{
               fontSize: 16,
               fontWeight: 700,
-              color: '#E8D5A3',
+              color: isDark ? '#E8D5A3' : '#7d5c12',
               marginBottom: 6,
             }}>
               Вы на вершине
             </div>
             <div style={{
               fontSize: 13,
-              color: 'rgba(255,255,255,0.38)',
+              color: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(120,113,108,0.6)',
               lineHeight: 1.5,
             }}>
               Максимальный кэшбэк 10% активен. Все привилегии разблокированы
@@ -466,8 +505,12 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
                 width: '100%',
                 padding: '16px 20px',
                 borderRadius: 16,
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.06))',
-                border: '1px solid rgba(212,175,55,0.20)',
+                background: isDark
+                  ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.06))'
+                  : 'linear-gradient(135deg, rgba(180,142,38,0.12), rgba(180,142,38,0.04))',
+                border: isDark
+                  ? '1px solid rgba(212,175,55,0.20)'
+                  : '1px solid rgba(180,142,38,0.22)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -478,11 +521,11 @@ export function RanksModal({ isOpen, onClose, user, onCreateOrder }: RanksModalP
               <span style={{
                 fontSize: 14,
                 fontWeight: 700,
-                color: '#E8D5A3',
+                color: isDark ? '#E8D5A3' : '#7d5c12',
               }}>
                 Оформить заказ
               </span>
-              <ArrowRight size={16} color="#E8D5A3" />
+              <ArrowRight size={16} color={isDark ? '#E8D5A3' : '#7d5c12'} />
             </m.button>
           </m.div>
         )}
