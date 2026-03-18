@@ -524,10 +524,12 @@ const OrderCard = memo(function OrderCard({
   order,
   index,
   onOpenOrder,
+  isDark,
 }: {
   order: Order
   index: number
   onOpenOrder: (order: Order) => void
+  isDark: boolean
 }) {
   const meta = getStatusMeta(order.status)
   const WorkIcon = WORK_TYPE_ICONS[order.work_type] || FileText
@@ -551,16 +553,19 @@ const OrderCard = memo(function OrderCard({
         padding: '18px',
         borderRadius: 20,
         background: meta.needsAction
-          ? 'linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(212,175,55,0.01) 100%)'
-          : 'rgba(255,255,255,0.02)',
+          ? (isDark
+            ? 'linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(212,175,55,0.01) 100%)'
+            : 'linear-gradient(135deg, rgba(158,122,26,0.05) 0%, rgba(158,122,26,0.02) 100%)')
+          : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.88)'),
         border: `1px solid ${meta.needsAction
-          ? 'rgba(212,175,55,0.10)'
-          : 'rgba(255,255,255,0.04)'}`,
+          ? (isDark ? 'rgba(212,175,55,0.10)' : 'rgba(158,122,26,0.12)')
+          : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.08)')}`,
         cursor: 'pointer',
         textAlign: 'left',
         marginBottom: 10,
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: isDark ? 'none' : '0 2px 8px rgba(120,85,40,0.06)',
       }}
     >
       {/* Action indicator — thin gold top line */}
@@ -569,7 +574,9 @@ const OrderCard = memo(function OrderCard({
           position: 'absolute',
           top: 0, left: 24, right: 24,
           height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)',
+          background: isDark
+            ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)'
+            : 'linear-gradient(90deg, transparent, rgba(158,122,26,0.25), transparent)',
         }} />
       )}
 
@@ -579,7 +586,7 @@ const OrderCard = memo(function OrderCard({
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
           height: 2,
-          background: 'rgba(255,255,255,0.03)',
+          background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(120,85,40,0.06)',
         }}>
           <div style={{
             height: '100%',
@@ -599,16 +606,16 @@ const OrderCard = memo(function OrderCard({
         <div style={{
           width: 44, height: 44, borderRadius: 14,
           background: meta.needsAction
-            ? 'rgba(212,175,55,0.07)'
-            : 'rgba(212,175,55,0.05)',
+            ? (isDark ? 'rgba(212,175,55,0.07)' : 'rgba(158,122,26,0.08)')
+            : (isDark ? 'rgba(212,175,55,0.05)' : 'rgba(158,122,26,0.06)'),
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
           <WorkIcon
             size={20}
             color={meta.needsAction
-              ? 'rgba(212,175,55,0.60)'
-              : 'rgba(212,175,55,0.45)'}
+              ? (isDark ? 'rgba(212,175,55,0.60)' : 'rgba(158,122,26,0.65)')
+              : (isDark ? 'rgba(212,175,55,0.45)' : 'rgba(158,122,26,0.50)')}
             strokeWidth={1.5}
           />
         </div>
@@ -616,7 +623,7 @@ const OrderCard = memo(function OrderCard({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 15, fontWeight: 700,
-            color: 'rgba(255,255,255,0.88)',
+            color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(28,25,23,0.88)',
             letterSpacing: '-0.01em',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             marginBottom: 3,
@@ -624,7 +631,8 @@ const OrderCard = memo(function OrderCard({
             {getOrderDisplayTitle(order)}
           </div>
           <div style={{
-            fontSize: 13, color: 'rgba(255,255,255,0.35)',
+            fontSize: 13,
+            color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(120,113,108,0.65)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {subtitle}
@@ -634,7 +642,8 @@ const OrderCard = memo(function OrderCard({
         {/* Price — prominent, right-aligned */}
         <div style={{ flexShrink: 0, textAlign: 'right' }}>
           <div style={{
-            fontSize: 16, fontWeight: 700, color: '#E8D5A3',
+            fontSize: 16, fontWeight: 700,
+            color: isDark ? '#E8D5A3' : '#7d5c12',
             letterSpacing: '-0.01em',
           }}>
             {formatMoney(amount)}
@@ -646,8 +655,8 @@ const OrderCard = memo(function OrderCard({
       <div style={{
         height: 1, marginBottom: 12,
         background: meta.needsAction
-          ? 'rgba(212,175,55,0.06)'
-          : 'rgba(255,255,255,0.03)',
+          ? (isDark ? 'rgba(212,175,55,0.06)' : 'rgba(158,122,26,0.08)')
+          : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(120,85,40,0.06)'),
       }} />
 
       {/* Row 2: Status + Deadline + Arrow */}
@@ -675,21 +684,22 @@ const OrderCard = memo(function OrderCard({
             ? '#ef4444'
             : isUrgent
               ? '#fbbf24'
-              : 'rgba(255,255,255,0.35)',
+              : (isDark ? 'rgba(255,255,255,0.35)' : 'rgba(120,113,108,0.6)'),
         }}>
           {deadlineText}
         </span>
 
         {/* Order ID */}
         <span style={{
-          fontSize: 11, color: 'rgba(255,255,255,0.18)',
+          fontSize: 11,
+          color: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(120,113,108,0.45)',
         }}>
           #{order.id}
         </span>
 
         <ChevronRight
           size={14}
-          color="rgba(255,255,255,0.18)"
+          color={isDark ? 'rgba(255,255,255,0.18)' : 'rgba(120,113,108,0.4)'}
           style={{ marginLeft: 'auto', flexShrink: 0 }}
         />
       </div>

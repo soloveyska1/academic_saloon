@@ -28,6 +28,8 @@ export const ProfileQuickActions = memo(function ProfileQuickActions({
   onOpenSupport,
   onOpenClub,
 }: Props) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
   const count = toSafeNumber(ordersCount)
 
   const actions: ActionItem[] = [
@@ -35,27 +37,27 @@ export const ProfileQuickActions = memo(function ProfileQuickActions({
       icon: BookOpen,
       label: 'Заказы',
       hint: formatCountWithWord(count, 'заказ', 'заказа', 'заказов'),
-      color: '#d4af37',
-      background: 'rgba(212, 175, 55, 0.12)',
-      border: 'rgba(212, 175, 55, 0.18)',
+      color: isDark ? '#d4af37' : '#9e7a1a',
+      background: isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(158, 122, 26, 0.08)',
+      border: isDark ? 'rgba(212, 175, 55, 0.18)' : 'rgba(158, 122, 26, 0.14)',
       onClick: onOpenOrders,
     },
     {
       icon: LifeBuoy,
       label: 'Поддержка',
       hint: 'Связаться',
-      color: '#93c5fd',
-      background: 'rgba(147, 197, 253, 0.12)',
-      border: 'rgba(147, 197, 253, 0.18)',
+      color: isDark ? '#93c5fd' : '#1d4ed8',
+      background: isDark ? 'rgba(147, 197, 253, 0.12)' : 'rgba(29, 78, 216, 0.08)',
+      border: isDark ? 'rgba(147, 197, 253, 0.18)' : 'rgba(29, 78, 216, 0.14)',
       onClick: onOpenSupport,
     },
     {
       icon: Gift,
       label: 'Бонусы',
       hint: 'Кэшбэк',
-      color: '#86efac',
-      background: 'rgba(134, 239, 172, 0.12)',
-      border: 'rgba(134, 239, 172, 0.18)',
+      color: isDark ? '#86efac' : '#15803d',
+      background: isDark ? 'rgba(134, 239, 172, 0.12)' : 'rgba(21, 128, 61, 0.08)',
+      border: isDark ? 'rgba(134, 239, 172, 0.18)' : 'rgba(21, 128, 61, 0.14)',
       onClick: onOpenClub,
     },
   ]
