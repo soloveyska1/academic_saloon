@@ -24,6 +24,9 @@ export { RankUpCelebration } from './RankUpCelebration'
 export { ExamSeasonBanner } from './ExamSeasonBanner'
 export { BonusExpiryAlert } from './BonusExpiryAlert'
 export { ActiveOrderDashboard } from './ActiveOrderDashboard'
+export { LiveActivityFeed } from './LiveActivityFeed'
+export { PricingAnchor } from './PricingAnchor'
+export { FAQSection } from './FAQSection'
 // Skeleton Loaders
 export {
   BenefitsCardSkeleton,
