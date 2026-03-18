@@ -584,7 +584,7 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
             style={{
               padding: '16px 18px',
               borderRadius: 20,
-              border: '1px solid rgba(255,255,255,0.06)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
               display: 'flex',
               alignItems: 'center',
               gap: 14,
@@ -595,14 +595,14 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
                 width: 38,
                 height: 38,
                 borderRadius: 12,
-                background: 'rgba(212,175,55,0.1)',
-                border: '1px solid rgba(212,175,55,0.16)',
+                background: isDark ? 'rgba(212,175,55,0.1)' : 'rgba(158,122,26,0.08)',
+                border: `1px solid ${isDark ? 'rgba(212,175,55,0.16)' : 'rgba(158,122,26,0.14)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 15,
                 fontWeight: 800,
-                color: '#d4af37',
+                color: isDark ? '#d4af37' : '#9e7a1a',
                 flexShrink: 0,
                 fontFamily: "'Manrope', sans-serif",
               }}
@@ -610,10 +610,10 @@ function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: bo
               {step.num}
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#E8D5A3', marginBottom: 3 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#E8D5A3' : '#7d5c12', marginBottom: 3 }}>
                 {step.title}
               </div>
-              <div style={{ fontSize: 12.5, color: 'rgba(228,213,163,0.5)', lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12.5, color: isDark ? 'rgba(228,213,163,0.5)' : 'rgba(125,92,18,0.5)', lineHeight: 1.5 }}>
                 {step.desc}
               </div>
             </div>
