@@ -378,7 +378,7 @@ function PremiumSuccessScreen() {
                     transition={{ delay: 0.5 }}
                     style={{
                         fontSize: 14,
-                        color: 'rgba(255,255,255,0.6)',
+                        color: 'var(--text-secondary)',
                         margin: 0,
                         lineHeight: 1.7,
                     }}
@@ -624,7 +624,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     <p style={{
                         fontSize: 12,
                         fontWeight: 600,
-                        color: 'rgba(212,175,55,0.8)',
+                        color: 'var(--gold-400)',
                         margin: 0,
                         marginBottom: 10,
                         textTransform: 'uppercase',
@@ -693,7 +693,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         <div style={{
                             fontSize: 11,
                             fontWeight: 700,
-                            color: 'rgba(255,255,255,0.4)',
+                            color: 'var(--text-muted)',
                             marginBottom: 12,
                             textTransform: 'uppercase',
                             letterSpacing: '0.1em',
@@ -816,7 +816,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     <div style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: 'rgba(255,255,255,0.4)',
+                        color: 'var(--text-muted)',
                         marginBottom: 12,
                         textTransform: 'uppercase',
                         letterSpacing: '0.1em',
@@ -1046,7 +1046,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         }}
                     >
                         <Headphones size={18} color="rgba(255,255,255,0.5)" />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
                             Нужна помощь? Написать менеджеру
                         </span>
                     </motion.button>

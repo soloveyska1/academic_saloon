@@ -157,7 +157,7 @@ export const SupportFAQ = memo(function SupportFAQ({
             e.currentTarget.style.borderColor = 'var(--gold-glass-strong)'
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'
+            e.currentTarget.style.borderColor = 'var(--surface-active)'
           }}
         />
         {query && (
