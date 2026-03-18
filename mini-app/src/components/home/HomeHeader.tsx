@@ -2,6 +2,7 @@ import { useState, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import s from '../../pages/HomePage.module.css'
 import { isImageAvatar, normalizeAvatarUrl } from '../../utils/avatar'
+import { useThemeValue } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  HOME HEADER — Refined Premium Edition
@@ -24,6 +25,8 @@ interface HomeHeaderProps {
 
 export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTap, onOpenLounge, isNewUser }: HomeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false)
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
   const firstName = user.fullname?.split(' ')[0] || 'ГОСТЬ'
   const isPremiumClub = user.rank.is_max
   const avatarSrc = useMemo(() => normalizeAvatarUrl(userPhoto), [userPhoto])

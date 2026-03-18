@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
+import { useThemeValue } from '../../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  SALOON FOOTER — Quiet confidence.
@@ -7,6 +8,9 @@ import { motion } from 'framer-motion'
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const SaloonFooter = memo(function SaloonFooter() {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
   return (
     <motion.footer
       initial={{ opacity: 0 }}
@@ -21,7 +25,9 @@ export const SaloonFooter = memo(function SaloonFooter() {
           width: 40,
           height: 1,
           margin: '0 auto 16px',
-          background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)',
+          background: isDark
+            ? 'linear-gradient(90deg, transparent, rgba(212,175,55,0.20), transparent)'
+            : 'linear-gradient(90deg, transparent, rgba(158,122,26,0.25), transparent)',
         }}
       />
 
@@ -29,17 +35,20 @@ export const SaloonFooter = memo(function SaloonFooter() {
         <span style={{
           fontSize: 10,
           fontFamily: "'Playfair Display', 'Cinzel', Georgia, serif",
-          color: 'rgba(212,175,55,0.40)',
+          color: isDark ? 'rgba(212,175,55,0.40)' : 'rgba(158,122,26,0.50)',
           letterSpacing: '0.18em',
           fontWeight: 500,
           textTransform: 'uppercase',
         }}>
           АКАДЕМИЧЕСКИЙ САЛОН
         </span>
-        <span style={{ fontSize: 7, color: 'rgba(212,175,55,0.30)' }}>&#x2726;</span>
+        <span style={{
+          fontSize: 7,
+          color: isDark ? 'rgba(212,175,55,0.30)' : 'rgba(158,122,26,0.40)',
+        }}>&#x2726;</span>
         <span style={{
           fontSize: 10,
-          color: 'rgba(255,255,255,0.20)',
+          color: isDark ? 'rgba(255,255,255,0.20)' : 'rgba(120,113,108,0.50)',
           letterSpacing: '0.10em',
           fontWeight: 500,
         }}>
@@ -51,7 +60,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
         style={{
           marginTop: 8,
           fontSize: 10,
-          color: 'rgba(255,255,255,0.12)',
+          color: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(120,113,108,0.40)',
           letterSpacing: '0.02em',
         }}
       >
