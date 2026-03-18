@@ -302,7 +302,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
                 <div className={s.timelineItem}>
                   <div className={s.timelineDot} style={{ borderColor: '#6366f1' }} />
                   <div className={s.timelineContent}>
-                    <div style={{ color: '#e4e4e7' }}>Прогресс: {order.progress}%</div>
+                    <div style={{ color: 'var(--text-primary)' }}>Прогресс: {order.progress}%</div>
                   </div>
                 </div>
               )}
@@ -315,9 +315,9 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
                 </div>
               )}
               <div className={s.timelineItem}>
-                <div className={s.timelineDot} style={{ borderColor: '#71717a' }} />
+                <div className={s.timelineDot} style={{ borderColor: 'var(--text-muted)' }} />
                 <div className={s.timelineContent}>
-                  <div style={{ color: '#e4e4e7' }}>Создан</div>
+                  <div style={{ color: 'var(--text-primary)' }}>Создан</div>
                   <div className={s.timelineTime}>{formatDateTime(order.created_at)}</div>
                 </div>
               </div>

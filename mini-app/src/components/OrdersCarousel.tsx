@@ -224,7 +224,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
             justifyContent: 'center',
             boxShadow: isActive ? `0 0 15px -5px ${colors.glow}` : 'none',
           }}>
-            <FileText size={15} color={isActive ? colors.text : '#71717a'} />
+            <FileText size={15} color={isActive ? colors.text : 'var(--text-muted)'} />
           </div>
           <div style={{ flex: 1 }}>
             <span
@@ -388,7 +388,7 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
                 width: 7,
                 height: 7,
                 borderRadius: '50%',
-                background: isActive ? colors.text : '#71717a',
+                background: isActive ? colors.text : 'var(--text-muted)',
                 boxShadow: isActive ? `0 0 8px ${colors.text}` : 'none',
               }}
             />
@@ -469,8 +469,8 @@ function CaseFileCard({ order, isActive, position, onClick }: CaseFileCardProps)
               boxShadow: '0 0 20px -8px rgba(212, 175, 55, 0.3)',
             }}
           >
-            <Eye size={12} color="#d4af37" />
-            <span style={{ fontSize: 10, color: '#d4af37', fontWeight: 600, letterSpacing: '0.05em' }}>Открыть</span>
+            <Eye size={12} color="var(--gold-400)" />
+            <span style={{ fontSize: 10, color: 'var(--gold-400)', fontWeight: 600, letterSpacing: '0.05em' }}>Открыть</span>
           </motion.div>
         )}
       </div>
@@ -513,7 +513,7 @@ function EmptyState() {
           justifyContent: 'center',
         }}
       >
-        <FileText size={32} color="#d4af37" strokeWidth={1.5} />
+        <FileText size={32} color="var(--gold-400)" strokeWidth={1.5} />
       </motion.div>
       <h3 style={{
         fontFamily: "'Playfair Display', serif",
@@ -640,7 +640,7 @@ export function OrdersCarousel({ orders, onOrderClick }: OrdersCarouselProps) {
               onClick={() => goToSlide(i)}
               animate={{
                 scale: i === activeIndex ? 1.3 : 1,
-                backgroundColor: i === activeIndex ? '#d4af37' : 'rgba(255,255,255,0.15)',
+                backgroundColor: i === activeIndex ? 'var(--gold-400)' : 'var(--surface-overlay)',
               }}
               whileTap={{ scale: 0.9 }}
               style={{

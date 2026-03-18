@@ -171,7 +171,7 @@ export function FloatingMenu({
                   boxShadow: `0 4px 20px ${item.color}40, 0 0 30px ${item.color}20`,
                 }}
               >
-                <Icon size={22} color="#fff" />
+                <Icon size={22} color="var(--text-primary)" />
 
                 {/* Label tooltip */}
                 <motion.div
@@ -184,12 +184,12 @@ export function FloatingMenu({
                     marginRight: 10,
                     padding: '6px 12px',
                     background: 'rgba(20, 20, 23, 0.95)',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    border: '1px solid var(--surface-active)',
                     borderRadius: 8,
                     whiteSpace: 'nowrap',
                     fontSize: 12,
                     fontWeight: 500,
-                    color: '#fff',
+                    color: 'var(--text-primary)',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                   }}
                 >
@@ -234,7 +234,7 @@ export function FloatingMenu({
                 exit={{ rotate: 90, opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <X size={26} color="#fff" />
+                <X size={26} color="var(--text-primary)" />
               </motion.div>
             ) : (
               <motion.div
@@ -244,7 +244,7 @@ export function FloatingMenu({
                 exit={{ rotate: -90, opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <Plus size={26} color="#09090b" />
+                <Plus size={26} color="var(--text-on-gold)" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -325,7 +325,7 @@ export function QuickFAB({
         zIndex: 900,
       }}
     >
-      <Icon size={24} color="#fff" />
+      <Icon size={24} color="var(--text-primary)" />
 
       {/* Label on hover/focus */}
       <AnimatePresence>
@@ -340,12 +340,12 @@ export function QuickFAB({
               [position === 'right' ? 'marginRight' : 'marginLeft']: 12,
               padding: '8px 14px',
               background: 'rgba(20, 20, 23, 0.95)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              border: '1px solid var(--surface-active)',
               borderRadius: 10,
               whiteSpace: 'nowrap',
               fontSize: 13,
               fontWeight: 500,
-              color: '#fff',
+              color: 'var(--text-primary)',
               boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
             }}
           >

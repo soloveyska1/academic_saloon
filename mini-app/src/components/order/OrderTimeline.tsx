@@ -128,8 +128,8 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
         style={{
           padding: 24,
           borderRadius: 24,
-          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(20, 20, 23, 0.9) 100%)',
-          border: '1px solid rgba(239, 68, 68, 0.2)',
+          background: 'linear-gradient(135deg, var(--error-glass) 0%, var(--bg-card) 100%)',
+          border: '1px solid var(--error-border)',
           marginBottom: 24,
         }}
       >
@@ -138,19 +138,19 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
             width: 48,
             height: 48,
             borderRadius: 16,
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
+            background: 'var(--error-glass)',
+            border: '1px solid var(--error-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <XCircle size={24} color="#ef4444" />
+            <XCircle size={24} color="var(--error-text)" />
           </div>
           <div>
             <div style={{
               fontSize: 16,
               fontWeight: 700,
-              color: '#ef4444',
+              color: 'var(--error-text)',
               marginBottom: 4,
             }}>
               Заказ {order.status === 'cancelled' ? 'отменён' : 'отклонён'}
@@ -174,8 +174,8 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
       style={{
         padding: 24,
         borderRadius: 24,
-        background: 'linear-gradient(145deg, rgba(20, 20, 23, 0.9), rgba(25, 25, 30, 0.95))',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        background: 'linear-gradient(145deg, var(--bg-card), var(--bg-card))',
+        border: '1px solid var(--border-strong)',
         marginBottom: 24,
       }}
     >
@@ -185,13 +185,13 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
           width: 40,
           height: 40,
           borderRadius: 12,
-          background: 'rgba(212, 175, 55, 0.15)',
-          border: '1px solid rgba(212, 175, 55, 0.2)',
+          background: 'var(--gold-glass-medium)',
+          border: '1px solid var(--border-gold)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <Clock size={18} color="#d4af37" />
+          <Clock size={18} color="var(--gold-400)" />
         </div>
         <div>
           <div style={{

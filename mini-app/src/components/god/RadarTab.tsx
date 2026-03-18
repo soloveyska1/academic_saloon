@@ -76,7 +76,7 @@ const OnlineSection = memo(function OnlineSection() {
       ) : users.map((u) => (
         <div key={u.telegram_id} className={s.card}>
           <div className={`${s.flexRow} ${s.gap6}`}>
-            <Wifi size={12} color="#22c55e" />
+            <Wifi size={12} color="var(--success-text)" />
             <span style={{ fontSize: 13, fontWeight: 600, color: '#e4e4e7' }}>
               {u.fullname || 'Без имени'}
             </span>

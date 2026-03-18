@@ -553,7 +553,7 @@ export function DeliveryTracker({ status }: { status: string }) {
 
       <p style={{
         fontSize: 13,
-        color: '#a1a1aa',
+        color: 'var(--text-secondary)',
       }}>
         {isCompleted
           ? 'Ваш заказ успешно выполнен и готов к скачиванию'
@@ -571,7 +571,7 @@ export function DeliveryTracker({ status }: { status: string }) {
             justifyContent: 'center',
             gap: 6,
             marginTop: 16,
-            color: '#22c55e',
+            color: 'var(--success-text)',
             fontSize: 13,
             fontWeight: 600,
           }}

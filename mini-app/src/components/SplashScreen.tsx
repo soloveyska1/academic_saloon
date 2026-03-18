@@ -14,10 +14,10 @@ interface SplashScreenProps {
 }
 
 const GOLD = {
-  primary: '#D4AF37',
-  shine: '#FCF6BA',
-  deep: '#8E6E27',
-  white: '#FFFEF5',
+  primary: 'var(--gold-400)',
+  shine: 'var(--gold-100)',
+  deep: 'var(--gold-700)',
+  white: 'var(--gold-200)',
 }
 
 const EASE_CINEMATIC = [0.76, 0, 0.24, 1] as const
@@ -61,7 +61,7 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
     return (
       <motion.div
         className="fixed inset-0 z-[9999] flex items-center justify-center"
-        style={{ background: '#050505' }}
+        style={{ background: 'var(--bg-void)' }}
         initial={{ opacity: 1 }}
         animate={{ opacity: 0 }}
         transition={{ duration: 0.4 }}
@@ -77,7 +77,7 @@ export const SplashScreen = ({ onComplete, ready = false }: SplashScreenProps) =
       <motion.div
         key="seal-splash"
         className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
-        style={{ background: '#050505' }}
+        style={{ background: 'var(--bg-void)' }}
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
@@ -176,7 +176,7 @@ const SealEmblem = ({ phase }: { phase: string }) => {
           <linearGradient id="splGold" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={GOLD.shine} />
             <stop offset="50%" stopColor={GOLD.primary} />
-            <stop offset="100%" stopColor="#B38728" />
+            <stop offset="100%" stopColor="var(--gold-700)" />
           </linearGradient>
         </defs>
 
@@ -280,7 +280,7 @@ const ShimmeringBrandName = ({ active }: { active: boolean }) => (
       className="text-2xl font-bold tracking-[0.3em]"
       style={{
         fontFamily: "'Cinzel', 'Playfair Display', serif",
-        color: '#1a1408',
+        color: 'var(--text-on-gold)',
         textShadow: '0 4px 20px rgba(0,0,0,0.8)',
       }}
     >
@@ -290,7 +290,7 @@ const ShimmeringBrandName = ({ active }: { active: boolean }) => (
       className="absolute inset-0 text-2xl font-bold tracking-[0.3em]"
       style={{
         fontFamily: "'Cinzel', 'Playfair Display', serif",
-        background: `linear-gradient(90deg, #B38728 0%, #B38728 30%, ${GOLD.shine} 50%, #B38728 70%, #B38728 100%)`,
+        background: `linear-gradient(90deg, var(--gold-700) 0%, var(--gold-700) 30%, ${GOLD.shine} 50%, var(--gold-700) 70%, var(--gold-700) 100%)`,
         backgroundSize: '250% 100%',
         WebkitBackgroundClip: 'text',
         backgroundClip: 'text',

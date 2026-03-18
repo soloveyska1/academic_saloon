@@ -96,9 +96,9 @@ export const OrderStatsCard = memo(function OrderStatsCard({
             padding: 16,
             borderRadius: 14,
             background: activeOrders > 0
-              ? 'linear-gradient(145deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
-              : 'linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
-            border: `1px solid ${activeOrders > 0 ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`,
+              ? 'linear-gradient(145deg, var(--gold-glass-medium), var(--gold-glass-subtle))'
+              : 'linear-gradient(145deg, var(--bg-glass), rgba(255,255,255,0.02))',
+            border: `1px solid ${activeOrders > 0 ? 'var(--gold-glass-strong)' : 'var(--surface-hover)'}`,
             textAlign: 'center',
           }}>
             <div style={{
@@ -106,7 +106,7 @@ export const OrderStatsCard = memo(function OrderStatsCard({
               fontWeight: 800,
               fontFamily: 'var(--font-serif)',
               background: activeOrders > 0
-                ? 'linear-gradient(180deg, #f5d485, #D4AF37)'
+                ? 'linear-gradient(180deg, var(--gold-150), var(--gold-400))'
                 : 'linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -117,7 +117,7 @@ export const OrderStatsCard = memo(function OrderStatsCard({
             <div style={{
               fontSize: 11,
               fontWeight: 700,
-              color: activeOrders > 0 ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.35)',
+              color: activeOrders > 0 ? 'var(--gold-400)' : 'var(--text-muted)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -134,8 +134,8 @@ export const OrderStatsCard = memo(function OrderStatsCard({
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    background: '#D4AF37',
-                    boxShadow: '0 0 8px rgba(212,175,55,0.6)',
+                    background: 'var(--gold-400)',
+                    boxShadow: '0 0 8px var(--gold-glass-strong)',
                   }}
                 />
               )}
