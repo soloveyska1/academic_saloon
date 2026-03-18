@@ -7,8 +7,8 @@ import { motion } from 'framer-motion'
  */
 
 const GOLD = {
-  primary: '#D4AF37',
-  shine: '#FCF6BA',
+  primary: 'var(--gold-400)',
+  shine: 'var(--gold-100)',
   deep: '#8E6E27',
   white: '#FFFEF5',
 }

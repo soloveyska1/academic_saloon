@@ -354,13 +354,14 @@ function RequirementsButton({
                 borderRadius: 8,
                 background: 'rgba(239, 68, 68, 0.1)',
                 border: '1px solid rgba(239, 68, 68, 0.18)',
+
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
               }}
             >
-              <Trash2 size={12} color="#ef4444" />
+              <Trash2 size={12} color="var(--error-text)" />
             </motion.div>
           )}
           <ChevronRight size={16} color="var(--text-muted)" style={{ opacity: 0.5 }} />
@@ -451,14 +452,14 @@ function AttachmentsCard({
             width: 36,
             height: 36,
             borderRadius: 10,
-            background: files.length > 0 ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+            background: files.length > 0 ? 'var(--gold-glass-medium)' : 'var(--border-default)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}>
             {files.length > 0
-              ? <Paperclip size={16} color="#d4af37" />
+              ? <Paperclip size={16} color="var(--gold-400)" />
               : <FileUp size={16} color="var(--text-muted)" />}
           </div>
 
@@ -497,11 +498,12 @@ function AttachmentsCard({
           borderRadius: 10,
           background: 'rgba(245, 158, 11, 0.08)',
           border: '1px solid rgba(245, 158, 11, 0.18)',
+
           display: 'flex',
           alignItems: 'flex-start',
           gap: 8,
         }}>
-          <AlertTriangle size={14} color="#f59e0b" style={{ flexShrink: 0, marginTop: 1 }} />
+          <AlertTriangle size={14} color="var(--warning-text)" style={{ flexShrink: 0, marginTop: 1 }} />
           <span style={{ fontSize: 12, lineHeight: 1.5, color: '#f8c26a' }}>{notice}</span>
         </div>
       )}
@@ -509,7 +511,7 @@ function AttachmentsCard({
       {/* File list */}
       {files.length > 0 && (
         <div style={{
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          borderTop: '1px solid var(--surface-hover)',
           padding: '10px 14px',
           display: 'flex',
           flexDirection: 'column',
@@ -551,13 +553,13 @@ function FileRow({
       gap: 10,
       padding: '8px 10px',
       borderRadius: 10,
-      background: 'rgba(255, 255, 255, 0.03)',
+      background: 'var(--border-subtle)',
     }}>
       <span style={{
         padding: '4px 8px',
         borderRadius: 6,
         background: goldSoft,
-        color: '#d4af37',
+        color: 'var(--gold-400)',
         fontSize: 10,
         fontWeight: 700,
         letterSpacing: '0.05em',
@@ -601,7 +603,7 @@ function FileRow({
             flexShrink: 0,
           }}
         >
-          <X size={12} color="#ef4444" />
+          <X size={12} color="var(--error-text)" />
         </motion.button>
       )}
     </div>
@@ -697,7 +699,7 @@ function RequirementsEditorModal({
             gap: 12,
             padding: '14px 16px',
             paddingTop: 'calc(14px + env(safe-area-inset-top, 0px))',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            borderBottom: '1px solid var(--surface-hover)',
           }}>
             <motion.button
               type="button"
@@ -739,7 +741,7 @@ function RequirementsEditorModal({
             alignItems: 'center',
             gap: 8,
             padding: '10px 16px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+            borderBottom: '1px solid var(--bg-glass)',
           }}>
             <ToolbarBtn icon={ClipboardPaste} label="Вставить" onClick={handlePaste} />
             <ToolbarBtn
@@ -822,7 +824,7 @@ function RequirementsEditorModal({
           {/* Save button */}
           <div style={{
             padding: '12px 16px calc(14px + env(safe-area-inset-bottom, 0px))',
-            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+            borderTop: '1px solid var(--surface-hover)',
           }}>
             <motion.button
               type="button"
