@@ -36,7 +36,7 @@ function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color =
         background: enabled
           ? `linear-gradient(135deg, ${color}15 0%, transparent 100%)`
           : 'rgba(255,255,255,0.02)',
-        border: `1px solid ${enabled ? `${color}40` : 'rgba(255,255,255,0.05)'}`,
+        border: `1px solid ${enabled ? `${color}40` : 'var(--border-default)'}`,
         borderRadius: 12,
         cursor: 'pointer',
         transition: 'all 0.2s',
@@ -49,14 +49,14 @@ function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color =
           borderRadius: 10,
           background: enabled
             ? `linear-gradient(135deg, ${color}, ${color}aa)`
-            : 'rgba(255,255,255,0.05)',
+            : 'var(--border-default)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
         }}
       >
-        <Icon size={18} color={enabled ? '#0a0a0c' : '#71717a'} />
+        <Icon size={18} color={enabled ? 'var(--text-on-gold)' : 'var(--text-muted)'} />
       </div>
 
       <div style={{ flex: 1, textAlign: 'left' }}>

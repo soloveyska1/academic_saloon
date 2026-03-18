@@ -64,7 +64,7 @@ const STATUS_INFO: Record<OrderStatus, StatusInfo> = {
     description: 'Заказ оценён! Оплатите, чтобы мы начали работу.',
     nextStep: 'Выберите способ оплаты и переведите средства.',
     action: { label: 'Оплатить', action: 'payment', icon: CreditCard },
-    color: '#d4af37',
+    color: 'var(--gold-400)',
     bgColor: 'rgba(212, 175, 55, 0.1)',
     borderColor: 'rgba(212, 175, 55, 0.3)',
     glowColor: 'rgba(212, 175, 55, 0.2)',
@@ -75,7 +75,7 @@ const STATUS_INFO: Record<OrderStatus, StatusInfo> = {
     description: 'Расчёт подтверждён. Оплатите заказ, чтобы мы сразу запустили работу.',
     nextStep: 'Прокрутите вниз к форме оплаты.',
     action: { label: 'К оплате', action: 'payment', icon: CreditCard },
-    color: '#d4af37',
+    color: 'var(--gold-400)',
     bgColor: 'rgba(212, 175, 55, 0.1)',
     borderColor: 'rgba(212, 175, 55, 0.3)',
     glowColor: 'rgba(212, 175, 55, 0.2)',
@@ -401,13 +401,13 @@ export function SmartStatusCard({ order, onActionClick }: SmartStatusCardProps) 
             justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <ArrowRight size={12} color="#d4af37" />
+            <ArrowRight size={12} color="var(--gold-400)" />
           </div>
           <div>
             <div style={{
               fontSize: 11,
               fontWeight: 700,
-              color: '#d4af37',
+              color: 'var(--gold-400)',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               marginBottom: 4,

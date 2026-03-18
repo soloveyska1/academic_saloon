@@ -623,7 +623,7 @@ export function PromoCodeSection({
                     fontSize: 17,
                     fontWeight: 700,
                     fontFamily: 'var(--font-mono)',
-                    color: '#22c55e',
+                    color: 'var(--success-text)',
                     letterSpacing: '0.05em',
                   }}>
                     {activePromo.code}
@@ -638,7 +638,7 @@ export function PromoCodeSection({
                       background: 'rgba(34, 197, 94, 0.25)',
                       fontSize: 13,
                       fontWeight: 700,
-                      color: '#22c55e',
+                      color: 'var(--success-text)',
                     }}
                   >
                     -{activePromo.discount}%
@@ -666,7 +666,7 @@ export function PromoCodeSection({
                       border: '1px solid rgba(34, 197, 94, 0.2)',
                       borderRadius: 8,
                       fontSize: 12,
-                      color: '#22c55e',
+                      color: 'var(--success-text)',
                       width: 'fit-content',
                     }}
                   >

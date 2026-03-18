@@ -223,9 +223,9 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
             whileTap={{ scale: 0.97 }}
             style={{
               width: '100%', padding: '15px 24px', borderRadius: 16,
-              background: 'linear-gradient(135deg, #d4af37, #f5d76e)',
+              background: 'var(--gold-metallic)',
               border: '1px solid rgba(212,175,55,0.4)',
-              color: '#09090b',
+              color: 'var(--text-on-gold)',
               fontFamily: "'Manrope', sans-serif",
               fontSize: 14, fontWeight: 700,
               cursor: loading ? 'wait' : 'pointer',
@@ -270,7 +270,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
                   border: `1px solid ${error ? 'rgba(239,68,68,0.2)' : 'var(--gold-glass-medium)'}`,
                   color: 'var(--gold-400)', outline: 'none',
                   fontFamily: "'JetBrains Mono', monospace",
-                  caretColor: '#d4af37',
+                  caretColor: 'var(--gold-400)',
                 }}
               />
 
@@ -282,7 +282,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} style={{
                     width: 8, height: 8, borderRadius: 4,
-                    background: i < code.length ? '#d4af37' : 'rgba(255,255,255,0.08)',
+                    background: i < code.length ? 'var(--gold-400)' : 'var(--border-strong)',
                     transition: 'background 0.15s ease',
                     boxShadow: i < code.length ? '0 0 6px rgba(212,175,55,0.3)' : 'none',
                   }} />
@@ -298,12 +298,12 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
               style={{
                 width: '100%', padding: '15px 24px', borderRadius: 16,
                 background: code.length === 6
-                  ? 'linear-gradient(135deg, #d4af37, #f5d76e)'
-                  : 'rgba(255,255,255,0.04)',
+                  ? 'var(--gold-metallic)'
+                  : 'var(--bg-glass)',
                 border: code.length === 6
                   ? '1px solid rgba(212,175,55,0.4)'
-                  : '1px solid rgba(255,255,255,0.08)',
-                color: code.length === 6 ? '#09090b' : 'rgba(255,255,255,0.2)',
+                  : '1px solid var(--border-strong)',
+                color: code.length === 6 ? 'var(--text-on-gold)' : 'rgba(255,255,255,0.2)',
                 fontFamily: "'Manrope', sans-serif",
                 fontSize: 14, fontWeight: 700,
                 cursor: loading || code.length !== 6 ? 'default' : 'pointer',
@@ -346,7 +346,7 @@ export function God2FAGate({ onAuthenticated, onBack }: God2FAGateProps) {
 const containerStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: '#09090b',
+  background: 'var(--bg-void)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
