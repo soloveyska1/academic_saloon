@@ -44,7 +44,7 @@ function RankTimelineComponent({ userCashback }: RankTimelineProps) {
           left: 13,
           top: 24,
           width: 3,
-          background: 'linear-gradient(180deg, #D4AF37 0%, rgba(212,175,55,0.2) 100%)',
+          background: 'linear-gradient(180deg, var(--gold-400) 0%, var(--border-gold) 100%)',
           borderRadius: 2,
         }}
       />
@@ -98,9 +98,9 @@ const RankTimelineItem = memo(function RankTimelineItem({
     height: 28,
     borderRadius: '50%',
     background: isPassed || isActive
-      ? 'linear-gradient(135deg, #D4AF37, #B38728)'
+      ? 'var(--gold-metallic)'
       : 'rgba(60,60,60,0.6)',
-    border: `3px solid ${isPassed || isActive ? '#D4AF37' : 'rgba(80,80,80,0.5)'}`,
+    border: `3px solid ${isPassed || isActive ? 'var(--gold-400)' : 'rgba(80,80,80,0.5)'}`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -142,7 +142,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
         style={nodeStyle}
       >
         {(isPassed || isActive) && (
-          <CheckCircle size={14} color="#09090b" strokeWidth={3} />
+          <CheckCircle size={14} color="var(--text-on-gold)" strokeWidth={3} />
         )}
       </m.div>
 
@@ -150,9 +150,9 @@ const RankTimelineItem = memo(function RankTimelineItem({
       <LuxuryCard
         gradient={isActive
           ? `linear-gradient(135deg, ${rank.color}18 0%, ${rank.color}06 100%)`
-          : 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)'
+          : 'linear-gradient(135deg, var(--border-subtle) 0%, rgba(255,255,255,0.01) 100%)'
         }
-        borderColor={isActive ? `${rank.color}45` : 'rgba(255,255,255,0.06)'}
+        borderColor={isActive ? `${rank.color}45` : 'var(--surface-hover)'}
         glowColor={isActive ? rank.color : undefined}
         isActive={isActive}
         style={{ padding: 18 }}
@@ -178,7 +178,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
             )}
             <Icon
               size={26}
-              color={isPassed ? '#fff' : isActive ? '#fff' : 'rgba(255,255,255,0.3)'}
+              color={isPassed ? 'var(--text-primary)' : isActive ? 'var(--text-primary)' : 'var(--text-muted)'}
               strokeWidth={isPassed || isActive ? 2 : 1.5}
               style={{ position: 'relative', zIndex: 1 }}
             />
@@ -190,13 +190,13 @@ const RankTimelineItem = memo(function RankTimelineItem({
               fontSize: 17,
               fontWeight: 700,
               fontFamily: 'var(--font-serif)',
-              color: isActive ? rank.color : isPassed ? '#22c55e' : 'rgba(255,255,255,0.4)',
+              color: isActive ? rank.color : isPassed ? 'var(--success-text)' : 'var(--text-muted)',
               marginBottom: 4,
               textShadow: isActive ? `0 0 16px ${rank.color}40` : 'none',
             }}>
               {rank.displayName}
             </div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Кэшбэк {rank.cashback}% • от {rank.minSpent.toLocaleString('ru-RU')} ₽
             </div>
           </div>
@@ -209,9 +209,9 @@ const RankTimelineItem = memo(function RankTimelineItem({
               transition={{ delay: 0.5, type: 'spring' }}
               style={{
                 padding: '6px 12px',
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.15))',
+                background: 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))',
                 borderRadius: 100,
-                border: '1px solid rgba(212,175,55,0.4)',
+                border: '1px solid var(--gold-glass-strong)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -221,7 +221,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
               <span style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: '#D4AF37',
+                color: 'var(--gold-400)',
                 letterSpacing: '0.05em',
                 lineHeight: 1,
               }}>

@@ -126,13 +126,13 @@ function AnimatedTimer() {
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
             >
-                <Timer size={16} color="#f59e0b" />
+                <Timer size={16} color="var(--warning-text)" />
             </motion.div>
             <span style={{
                 fontSize: 14,
                 fontWeight: 700,
                 fontFamily: 'var(--font-mono)',
-                color: '#f59e0b',
+                color: 'var(--warning-text)',
             }}>
                 {hours}ч {minutes.toString().padStart(2, '0')}м
             </span>
@@ -188,10 +188,10 @@ function PriceBreakdown({ order }: { order: Order }) {
                         alignItems: 'center',
                         justifyContent: 'center',
                     }}>
-                        <Gift size={16} color="#22c55e" />
+                        <Gift size={16} color="var(--success-text)" />
                     </div>
                     <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#22c55e' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--success-text)' }}>
                             Ваша экономия
                         </div>
                         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
@@ -204,7 +204,7 @@ function PriceBreakdown({ order }: { order: Order }) {
                         fontSize: 16,
                         fontWeight: 700,
                         fontFamily: 'var(--font-mono)',
-                        color: '#22c55e',
+                        color: 'var(--success-text)',
                     }}>
                         −{savings.toLocaleString('ru-RU')} ₽
                     </span>
@@ -212,7 +212,7 @@ function PriceBreakdown({ order }: { order: Order }) {
                         animate={{ rotate: isOpen ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
                     >
-                        <ChevronDown size={18} color="#22c55e" />
+                        <ChevronDown size={18} color="var(--success-text)" />
                     </motion.div>
                 </div>
             </motion.button>
@@ -238,7 +238,7 @@ function PriceBreakdown({ order }: { order: Order }) {
                             {order.promo_code && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                                     <span style={{ color: '#a78bfa' }}>🎟️ Промокод:</span>
-                                    <span style={{ color: '#22c55e', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                                    <span style={{ color: 'var(--success-text)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                                         −{order.promo_discount || 0}%
                                     </span>
                                 </div>
@@ -246,7 +246,7 @@ function PriceBreakdown({ order }: { order: Order }) {
                             {(order.discount || 0) > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                                     <span style={{ color: '#60a5fa' }}>🎖️ Лояльность:</span>
-                                    <span style={{ color: '#22c55e', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                                    <span style={{ color: 'var(--success-text)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                                         −{order.discount}%
                                     </span>
                                 </div>
@@ -254,7 +254,7 @@ function PriceBreakdown({ order }: { order: Order }) {
                             {(order.bonus_used || 0) > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                                     <span style={{ color: '#fbbf24' }}>⭐ Бонусы:</span>
-                                    <span style={{ color: '#22c55e', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                                    <span style={{ color: 'var(--success-text)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                                         −{order.bonus_used?.toLocaleString('ru-RU')} ₽
                                     </span>
                                 </div>
@@ -291,11 +291,11 @@ function PremiumSuccessScreen() {
                 overflow: 'hidden',
             }}
         >
-            <FloatingParticles color="#22c55e" count={8} />
-            <DecorativeCorner position="top-left" color="#22c55e" />
-            <DecorativeCorner position="top-right" color="#22c55e" />
-            <DecorativeCorner position="bottom-left" color="#22c55e" />
-            <DecorativeCorner position="bottom-right" color="#22c55e" />
+            <FloatingParticles color="var(--success-text)" count={8} />
+            <DecorativeCorner position="top-left" color="var(--success-text)" />
+            <DecorativeCorner position="top-right" color="var(--success-text)" />
+            <DecorativeCorner position="bottom-left" color="var(--success-text)" />
+            <DecorativeCorner position="bottom-right" color="var(--success-text)" />
 
             {/* Shimmer */}
             <motion.div
@@ -349,7 +349,7 @@ function PremiumSuccessScreen() {
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ delay: 0.3, type: 'spring' }}
                 >
-                    <CheckCircle size={48} color="#22c55e" strokeWidth={1.5} />
+                    <CheckCircle size={48} color="var(--success-text)" strokeWidth={1.5} />
                 </motion.div>
             </motion.div>
 
@@ -407,9 +407,9 @@ function PremiumSuccessScreen() {
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                 >
-                    <Loader size={14} color="#22c55e" />
+                    <Loader size={14} color="var(--success-text)" />
                 </motion.div>
-                <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>
+                <span style={{ fontSize: 12, color: 'var(--success-text)', fontWeight: 600 }}>
                     Проверяем платёж...
                 </span>
             </motion.div>
@@ -503,7 +503,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
             }}
         >
             {/* Floating particles */}
-            <FloatingParticles color="#D4AF37" count={5} />
+            <FloatingParticles color="var(--gold-400)" count={5} />
 
             {/* Decorative corners */}
             <DecorativeCorner position="top-left" />
@@ -558,7 +558,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             justifyContent: 'center',
                         }}
                     >
-                        <Receipt size={24} color="#D4AF37" />
+                        <Receipt size={24} color="var(--gold-400)" />
                     </motion.div>
                     <div>
                         <h3 style={{
@@ -701,7 +701,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             alignItems: 'center',
                             gap: 8,
                         }}>
-                            <Sparkles size={12} color="#D4AF37" />
+                            <Sparkles size={12} color="var(--gold-400)" />
                             Схема оплаты
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -763,7 +763,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                             borderRadius: 6,
                                             fontSize: 10,
                                             fontWeight: 600,
-                                            color: '#D4AF37',
+                                            color: 'var(--gold-400)',
                                             display: 'inline-block',
                                         }}>
                                             ✓ {scheme.benefit}
@@ -798,10 +798,10 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             alignItems: 'center',
                             justifyContent: 'center',
                         }}>
-                            <CheckCircle size={22} color="#22c55e" />
+                            <CheckCircle size={22} color="var(--success-text)" />
                         </div>
                         <div>
-                            <p style={{ fontSize: 14, fontWeight: 600, color: '#22c55e', margin: 0, marginBottom: 4 }}>
+                            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--success-text)', margin: 0, marginBottom: 4 }}>
                                 Предоплата: {order.paid_amount?.toLocaleString('ru-RU')} ₽
                             </p>
                             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
@@ -918,7 +918,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     animate={copied === 'card' ? { scale: [1, 1.2, 1] } : {}}
                                 >
                                     {copied === 'card' ? (
-                                        <Check size={20} color="#22c55e" />
+                                        <Check size={20} color="var(--success-text)" />
                                     ) : (
                                         <Copy size={20} color="#3b82f6" />
                                     )}
@@ -980,7 +980,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     animate={copied === 'phone' ? { scale: [1, 1.2, 1] } : {}}
                                 >
                                     {copied === 'phone' ? (
-                                        <Check size={20} color="#22c55e" />
+                                        <Check size={20} color="var(--success-text)" />
                                     ) : (
                                         <Copy size={20} color="#8b5cf6" />
                                     )}
@@ -1022,7 +1022,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         }}>
                             <span style={{ fontSize: 14 }}>⚠️</span>
                         </div>
-                        <p style={{ fontSize: 13, color: '#ef4444', margin: 0 }}>{error}</p>
+                        <p style={{ fontSize: 13, color: 'var(--error-text)', margin: 0 }}>{error}</p>
                     </motion.div>
                 )}
 
@@ -1130,7 +1130,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     flexWrap: 'wrap',
                 }}>
                     {[
-                        { icon: Shield, label: 'Безопасно', color: '#22c55e' },
+                        { icon: Shield, label: 'Безопасно', color: 'var(--success-text)' },
                         { icon: Lock, label: 'Защищено', color: '#3b82f6' },
                         { icon: Star, label: '5-15 мин', color: '#D4AF37' },
                     ].map((badge, i) => (

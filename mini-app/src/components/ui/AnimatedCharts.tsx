@@ -325,7 +325,7 @@ export function AnimatedDonutChart({
           }}>
             {total.toLocaleString('ru-RU')}
           </div>
-          <div style={{ fontSize: 9, color: '#71717a' }}>всего</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>всего</div>
         </motion.div>
       </div>
 
@@ -483,7 +483,7 @@ export function StatTrendCard({
         </div>
         <div style={{
           fontSize: 11,
-          color: '#71717a',
+          color: 'var(--text-muted)',
           marginTop: 2,
         }}>
           {title}
