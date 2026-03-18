@@ -107,7 +107,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                       'var(--warning-text)',
                       '#fbbf24',
                     ][Math.floor(Math.random() * 5)],
-                    boxShadow: '0 0 10px rgba(212,175,55,0.5)',
+                    boxShadow: '0 0 10px var(--gold-glass-strong)',
                   }}
                 />
               ))}
@@ -168,15 +168,15 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                 height: 80,
                 margin: '0 auto 20px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.3), rgba(212,175,55,0.1))',
-                border: '2px solid rgba(212,175,55,0.5)',
+                background: 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))',
+                border: '2px solid var(--gold-glass-strong)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 0 40px rgba(212,175,55,0.4)',
+                boxShadow: 'var(--glow-gold)',
               }}
             >
-              <Crown size={40} color="#D4AF37" strokeWidth={1.5} />
+              <Crown size={40} color="var(--gold-400)" strokeWidth={1.5} />
             </motion.div>
 
             {/* Celebration text */}
@@ -202,7 +202,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                   fontSize: 28,
                   fontWeight: 800,
                   fontFamily: 'var(--font-serif)',
-                  background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #BF953F 100%)',
+                  background: 'var(--gold-metallic)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   marginBottom: 8,
@@ -231,11 +231,11 @@ export const RankUpCelebration = memo(function RankUpCelebration({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               style={{
-                background: 'rgba(212,175,55,0.08)',
+                background: 'var(--gold-glass-subtle)',
                 borderRadius: 16,
                 padding: 16,
                 marginBottom: 24,
-                border: '1px solid rgba(212,175,55,0.15)',
+                border: '1px solid var(--gold-glass-medium)',
               }}
             >
               <div
@@ -270,7 +270,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                       color: 'var(--text-main)',
                     }}
                   >
-                    <span style={{ color: '#4ade80' }}>✓</span>
+                    <span style={{ color: 'var(--success-text)' }}>✓</span>
                     {perk}
                   </motion.div>
                 ))}
@@ -287,9 +287,9 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                 alignItems: 'center',
                 gap: 8,
                 padding: '12px 24px',
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(180,140,40,0.15) 100%)',
+                background: 'linear-gradient(135deg, var(--gold-glass-strong) 0%, var(--gold-glass-medium) 100%)',
                 borderRadius: 100,
-                border: '1px solid rgba(212,175,55,0.4)',
+                border: '1px solid var(--gold-glass-strong)',
               }}
             >
               <span style={{ fontSize: 20 }}>💰</span>
