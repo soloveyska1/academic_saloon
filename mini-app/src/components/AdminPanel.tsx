@@ -22,7 +22,7 @@ interface ToggleItemProps {
   color?: string
 }
 
-function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color = '#d4af37' }: ToggleItemProps) {
+function ToggleItem({ icon: Icon, label, description, enabled, onToggle, color = 'var(--gold-400)' }: ToggleItemProps) {
   return (
     <motion.button
       onClick={onToggle}

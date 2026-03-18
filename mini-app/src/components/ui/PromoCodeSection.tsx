@@ -727,7 +727,7 @@ export function PromoCodeSection({
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <Gift size={18} color="#d4af37" />
+                <Gift size={18} color="var(--gold-400)" />
               </div>
               <div>
                 <div style={{
@@ -816,7 +816,7 @@ export function PromoCodeSection({
                   padding: '0 20px',
                   borderRadius: 14,
                   background: inputCode.trim()
-                    ? 'linear-gradient(135deg, #d4af37, #b8962e)'
+                    ? 'linear-gradient(135deg, var(--gold-400), var(--gold-700))'
                     : 'var(--border-default)',
                   border: 'none',
                   cursor: inputCode.trim() && !isValidating ? 'pointer' : 'default',
@@ -995,7 +995,7 @@ export function PromoPriceDisplay({ originalPrice, className = '' }: PromoPriceD
         fontSize: 24,
         fontWeight: 800,
         fontFamily: 'var(--font-mono)',
-        background: 'linear-gradient(135deg, #d4af37, #f5d061)',
+        background: 'linear-gradient(135deg, var(--gold-400), var(--gold-150))',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
       }}>

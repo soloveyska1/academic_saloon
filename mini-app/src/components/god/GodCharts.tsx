@@ -137,7 +137,7 @@ interface SparkLineProps {
   color?: string
 }
 
-export const SparkLine = memo(function SparkLine({ values, width = 56, height = 20, color = '#d4af37' }: SparkLineProps) {
+export const SparkLine = memo(function SparkLine({ values, width = 56, height = 20, color = 'var(--gold-400)' }: SparkLineProps) {
   if (!values || values.length < 2) return null
 
   const min = Math.min(...values)

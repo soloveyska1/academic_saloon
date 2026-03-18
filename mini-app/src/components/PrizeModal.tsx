@@ -106,7 +106,7 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
           style={{
             fontSize: 24,
             fontWeight: 700,
-            color: '#D4AF37',
+            color: 'var(--gold-400)',
             marginBottom: 12,
             textShadow: '0 0 20px rgba(212,175,55,0.4)',
           }}
@@ -125,7 +125,7 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
             style={{
               fontSize: 22,
               fontWeight: 700,
-              background: 'linear-gradient(135deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',
+              background: 'linear-gradient(135deg, var(--gold-100) 0%, var(--gold-400) 50%, var(--gold-700) 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}
@@ -161,8 +161,8 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
             padding: '16px 32px',
             fontSize: 16,
             fontWeight: 600,
-            color: '#0a0a0c',
-            background: 'linear-gradient(135deg, #D4AF37, #f5d485)',
+            color: 'var(--text-on-gold)',
+            background: 'linear-gradient(135deg, var(--gold-400), var(--gold-150))',
             border: 'none',
             borderRadius: 14,
             cursor: 'pointer',
@@ -187,11 +187,11 @@ export const PrizeModal = memo(function PrizeModal({ prize, onClose }: PrizeModa
                 position: 'absolute',
                 width: 4,
                 height: 4,
-                background: '#D4AF37',
+                background: 'var(--gold-400)',
                 borderRadius: '50%',
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
-                boxShadow: '0 0 8px #D4AF37',
+                boxShadow: '0 0 8px var(--gold-400)',
               }}
               animate={{
                 y: [0, -100],

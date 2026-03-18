@@ -50,8 +50,8 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                 <div>
                     <div style={{
                         width: 38, height: 38, borderRadius: 12,
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.05)',
+                        background: 'var(--border-default)',
+                        border: '1px solid var(--border-default)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         marginBottom: 16
                     }}>
@@ -61,7 +61,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                         Дедлайн
                     </div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#f8fafc', letterSpacing: '-0.01em' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                     {formatDate(order.deadline)}
                 </div>
             </motion.div>
@@ -80,8 +80,8 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     minHeight: 140,
                     borderRadius: 24,
                     // Gold Gradient
-                    background: 'linear-gradient(145deg, rgba(212,175,55,0.1) 0%, rgba(20,20,20,0.8) 100%)',
-                    border: '1px solid rgba(212,175,55,0.2)',
+                    background: 'linear-gradient(145deg, var(--gold-glass-medium) 0%, var(--bg-card) 100%)',
+                    border: '1px solid var(--border-gold)',
                     boxShadow: '0 10px 30px -5px rgba(212,175,55,0.1)',
                     position: 'relative',
                     overflow: 'hidden'
@@ -98,14 +98,14 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                 <div>
                     <div style={{
                         width: 38, height: 38, borderRadius: 12,
-                        background: 'rgba(212,175,55,0.15)',
-                        border: '1px solid rgba(212,175,55,0.2)',
+                        background: 'var(--gold-glass-medium)',
+                        border: '1px solid var(--border-gold)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         marginBottom: 16
                     }}>
                         <Coins size={18} color="var(--gold-400)" />
                     </div>
-                    <div style={{ fontSize: 13, color: 'rgba(212,175,55,0.8)', fontWeight: 600, letterSpacing: '0.02em' }}>
+                    <div style={{ fontSize: 13, color: 'var(--gold-400)', fontWeight: 600, letterSpacing: '0.02em' }}>
                         Бюджет
                     </div>
                 </div>
@@ -140,7 +140,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                         {order.promo_code && order.price && order.price !== order.final_price && (
                             <div style={{
                                 fontSize: 12,
-                                color: 'rgba(212,175,55,0.5)',
+                                color: 'var(--gold-400)',
                                 textDecoration: 'line-through',
                                 fontFamily: 'var(--font-mono)',
                                 marginBottom: 2,
@@ -152,7 +152,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                         <div style={{
                             fontSize: 18,
                             fontWeight: 700,
-                            color: order.promo_code && order.promo_discount ? '#22c55e' : '#d4af37',
+                            color: order.promo_code && order.promo_discount ? 'var(--success-text)' : 'var(--gold-400)',
                             letterSpacing: '-0.01em',
                             fontFamily: 'var(--font-mono)',
                         }}>
@@ -181,8 +181,8 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     borderRadius: 24,
                     cursor: hasFiles ? 'pointer' : 'default',
                     // Clean dark look
-                    background: 'linear-gradient(145deg, rgba(20,20,20,0.9), rgba(25,25,25,0.95))',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'linear-gradient(145deg, var(--bg-card), var(--bg-card))',
+                    border: '1px solid var(--border-strong)',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
                 }}
                 onClick={() => {
@@ -193,8 +193,8 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     <div style={{
                         width: 48, height: 48,
                         borderRadius: 16,
-                        background: hasFiles ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
-                        border: hasFiles ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.05)',
+                        background: hasFiles ? 'var(--success-glass)' : 'var(--border-default)',
+                        border: hasFiles ? '1px solid var(--success-border)' : '1px solid var(--border-default)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
                         {hasFiles ? (

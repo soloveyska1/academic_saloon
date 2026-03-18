@@ -19,7 +19,7 @@ interface KPICardProps {
   accent?: string
 }
 
-export const KPICard = memo(function KPICard({ label, value, trend, sparkData, accent = '#d4af37' }: KPICardProps) {
+export const KPICard = memo(function KPICard({ label, value, trend, sparkData, accent = 'var(--gold-400)' }: KPICardProps) {
   return (
     <div className={s.kpiCard} style={{ '--accent': accent } as React.CSSProperties}>
       <div className={`${s.flexRow} ${s.gap4}`} style={{ marginBottom: 4 }}>
