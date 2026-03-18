@@ -33,7 +33,7 @@ const STEPS = [
 export const HowItWorks = memo(function HowItWorks() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.26 }}
       style={{ marginBottom: 28 }}
@@ -63,7 +63,7 @@ export const HowItWorks = memo(function HowItWorks() {
           return (
             <motion.div
               key={s.step}
-              initial={{ opacity: 0, x: -12 }}
+              initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.30 + i * 0.08 }}
               style={{
@@ -87,7 +87,7 @@ export const HowItWorks = memo(function HowItWorks() {
                   style={{
                     width: 40,
                     height: 40,
-                    borderRadius: 12,
+                    borderRadius: 8,
                     background: 'var(--gold-glass-subtle)',
                     border: '1px solid var(--border-gold)',
                     display: 'flex',
@@ -115,7 +115,7 @@ export const HowItWorks = memo(function HowItWorks() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: 9,
+                      fontSize: 10,
                       fontWeight: 800,
                       color: 'var(--text-on-gold)',
                       boxShadow: 'var(--shadow-sm)',
@@ -145,7 +145,7 @@ export const HowItWorks = memo(function HowItWorks() {
               <div style={{ flex: 1, paddingBottom: isLast ? 0 : 24, paddingTop: 2 }}>
                 <div
                   style={{
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: 700,
                     color: 'var(--text-primary)',
                     lineHeight: 1.3,
@@ -157,7 +157,7 @@ export const HowItWorks = memo(function HowItWorks() {
                 </div>
                 <div
                   style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 500,
                     color: 'var(--text-secondary)',
                     lineHeight: 1.55,

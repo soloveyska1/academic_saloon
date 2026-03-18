@@ -27,10 +27,10 @@ export const SaloonFooter = memo(function SaloonFooter() {
 
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
         <span style={{
-          fontSize: 10,
-          fontFamily: "'Playfair Display', 'Cinzel', Georgia, serif",
+          fontSize: 11,
+          fontFamily: 'var(--font-serif)',
           color: 'var(--gold-400)',
-          letterSpacing: '0.18em',
+          letterSpacing: '0.10em',
           fontWeight: 500,
           textTransform: 'uppercase',
         }}>

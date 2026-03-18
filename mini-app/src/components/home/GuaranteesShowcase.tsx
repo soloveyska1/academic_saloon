@@ -47,7 +47,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
 }: GuaranteesShowcaseProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.30 }}
       style={{ marginBottom: 20 }}
@@ -86,7 +86,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 10,
+          gap: 12,
         }}
       >
         {GUARANTEES.map((g, i) => {
@@ -98,7 +98,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.34 + i * 0.06 }}
               style={{
-                padding: '18px 16px',
+                padding: 20,
                 borderRadius: 16,
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border-default)',
@@ -123,7 +123,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
                 style={{
                   width: 36,
                   height: 36,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   background: 'var(--gold-glass-subtle)',
                   display: 'flex',
                   alignItems: 'center',
@@ -139,7 +139,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
               </div>
               <div
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 700,
                   color: 'var(--text-primary)',
                   lineHeight: 1.3,

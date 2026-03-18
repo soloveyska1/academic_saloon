@@ -121,7 +121,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
   return (
     <motion.div
       ref={sectionRef}
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.22 }}
       style={{ marginBottom: 24 }}
@@ -208,7 +208,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                 minWidth: 270,
                 maxWidth: 300,
                 padding: '20px',
-                borderRadius: 18,
+                borderRadius: 16,
                 background: isActive
                   ? 'var(--gold-glass-subtle)'
                   : 'var(--bg-card)',
@@ -251,7 +251,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
               {/* Quote text */}
               <p
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 500,
                   color: 'var(--text-secondary)',
                   lineHeight: 1.6,
@@ -263,7 +263,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
               </p>
 
               {/* Author */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {/* Avatar placeholder */}
                 <div
                   style={{
@@ -316,7 +316,7 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
           <motion.div
             key={i}
             animate={{
-              width: i === activeIndex ? 16 : 4,
+              width: i === activeIndex ? 12 : 4,
               background: i === activeIndex
                 ? 'var(--gold-400)'
                 : 'var(--surface-active)',

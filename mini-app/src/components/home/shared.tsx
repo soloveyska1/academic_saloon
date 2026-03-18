@@ -25,19 +25,6 @@ export const glassGoldStyle: React.CSSProperties = {
   boxShadow: 'var(--card-shadow)',
 }
 
-/** Theme-aware glass gold style factory — now uses CSS variables that auto-switch */
-export function getGlassGoldStyle(): React.CSSProperties {
-  return {
-    position: 'relative',
-    overflow: 'hidden',
-    background: 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-    backdropFilter: 'blur(12px) saturate(130%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(130%)',
-    border: '1px solid var(--border-gold)',
-    boxShadow: 'var(--card-shadow)',
-  }
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 //  SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════

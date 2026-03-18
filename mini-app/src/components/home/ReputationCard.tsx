@@ -46,10 +46,9 @@ export const ReputationCard = memo(function ReputationCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.32 }}
-      whileHover={{ scale: 1.005 }}
       className="card-padding card-radius"
       style={{
         ...glassGoldStyle,
@@ -69,11 +68,7 @@ export const ReputationCard = memo(function ReputationCard({
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                fontFamily: 'var(--font-serif)',
-                background: 'var(--gold-text-shine)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '0.1em',
+                letterSpacing: '0.08em',
               }}
             >
               ПАРТНЁРСКАЯ ПРОГРАММА
@@ -91,7 +86,7 @@ export const ReputationCard = memo(function ReputationCard({
                   padding: '4px 8px',
                   background: 'rgba(74, 222, 128, 0.08)',
                   border: '1px solid rgba(74, 222, 128, 0.25)',
-                  borderRadius: 100,
+                  borderRadius: 8,
                 }}
               >
                 <Users size={10} color="var(--success-text)" strokeWidth={1.5} />
@@ -109,7 +104,7 @@ export const ReputationCard = memo(function ReputationCard({
                   padding: '4px 8px',
                   background: 'var(--gold-glass-medium)',
                   border: '1px solid var(--border-gold)',
-                  borderRadius: 100,
+                  borderRadius: 8,
                 }}
               >
                 <Coins size={10} color="var(--gold-400)" strokeWidth={1.5} />
@@ -171,7 +166,7 @@ export const ReputationCard = memo(function ReputationCard({
               padding: '12px 14px',
               background: 'var(--bg-glass)',
               border: '1px solid var(--border-gold)',
-              borderRadius: 12,
+              borderRadius: 16,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -207,22 +202,20 @@ export const ReputationCard = memo(function ReputationCard({
               handleTelegramShare()
             }}
             whileTap={{ scale: 0.95 }}
-            whileHover={{ scale: 1.02 }}
             aria-label="Поделиться в Telegram"
             style={{
               padding: '12px 16px',
-              background: 'linear-gradient(135deg, #0088cc 0%, #0077b5 100%)',
-              border: 'none',
-              borderRadius: 12,
+              background: 'var(--gold-glass-medium)',
+              border: '1px solid var(--border-gold)',
+              borderRadius: 16,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              boxShadow: '0 4px 12px rgba(0, 136, 204, 0.25)',
             }}
           >
-            <Send size={16} color="white" strokeWidth={1.5} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>
+            <Send size={14} color="var(--gold-400)" strokeWidth={1.5} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gold-400)' }}>
               Telegram
             </span>
           </motion.button>
@@ -240,7 +233,7 @@ export const ReputationCard = memo(function ReputationCard({
               height: 46,
               background: 'var(--gold-glass-medium)',
               border: '1px solid var(--border-gold)',
-              borderRadius: 12,
+              borderRadius: 16,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -262,7 +255,7 @@ export const ReputationCard = memo(function ReputationCard({
               marginTop: 12,
               padding: '10px 12px',
               background: 'var(--gold-glass-subtle)',
-              borderRadius: 10,
+              borderRadius: 8,
               border: '1px solid var(--border-gold)',
             }}
           >

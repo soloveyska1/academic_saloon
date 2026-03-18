@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, Star, Shield, Clock, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Star, Shield, Clock } from 'lucide-react'
 import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -42,13 +42,13 @@ export const NewTaskCTA = memo(function NewTaskCTA({
     return (
       <motion.section
         className={`${s.voidGlass} ${s.primaryActionCard} ${s.firstOrderActionCard}`}
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
           position: 'relative',
           width: '100%',
           padding: '36px 24px 28px',
-          borderRadius: 24,
+          borderRadius: 20,
           marginBottom: 28,
           overflow: 'hidden',
           isolation: 'isolate',
@@ -63,7 +63,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           <div
             style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 700,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
@@ -101,7 +101,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           <p
             style={{
               color: 'var(--text-secondary)',
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: 500,
               lineHeight: 1.55,
               marginBottom: 28,
@@ -120,7 +120,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 8,
+              gap: 12,
               marginBottom: 28,
             }}
           >
@@ -132,9 +132,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
-                    padding: '9px 14px',
-                    borderRadius: 12,
+                    gap: 12,
+                    padding: '12px 16px',
+                    borderRadius: 8,
                     background: 'var(--bg-glass)',
                     border: '1px solid var(--border-default)',
                   }}
@@ -172,48 +172,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             </div>
           </motion.button>
 
-          {/* Micro-reassurance + guarantee badge */}
-          <div
-            style={{
-              marginTop: 14,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 12,
-            }}
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}>
-              <ShieldCheck size={12} color="var(--success-text)" strokeWidth={2} />
-              <span style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--success-text)',
-                letterSpacing: '0.01em',
-              }}>
-                Гарантия возврата
-              </span>
-            </div>
-            <span style={{
-              fontSize: 11,
-              color: 'var(--text-muted)',
-              fontWeight: 500,
-            }}>
-              ·
-            </span>
-            <span
-              style={{
-                fontSize: 11,
-                color: 'var(--text-muted)',
-                fontWeight: 500,
-                letterSpacing: '0.01em',
-              }}
-            >
-              Без предоплаты · Ответ за 5 минут
-            </span>
+          <div style={{ marginTop: 14, fontSize: 12, color: 'var(--text-muted)', fontWeight: 500, textAlign: 'center', letterSpacing: '0.01em' }}>
+            Без предоплаты · Гарантия возврата · Ответ за 5 минут
           </div>
         </div>
       </motion.section>
