@@ -85,7 +85,7 @@ export function AnimatedBarChart({
               transition={{ delay: index * 0.1 + 0.2 }}
               style={{
                 fontSize: 9,
-                color: '#71717a',
+                color: 'var(--text-muted)',
                 marginTop: 6,
                 textAlign: 'center',
                 maxWidth: '100%',
@@ -192,7 +192,7 @@ export function AnimatedLineChart({
           cx={point.x}
           cy={point.y}
           r={4}
-          fill="#0a0a0c"
+          fill="var(--bg-void)"
           stroke={color}
           strokeWidth={2}
           initial={{ scale: 0, opacity: 0 }}
@@ -208,7 +208,7 @@ export function AnimatedLineChart({
           x={points[index]?.x || 0}
           y={height - 4}
           textAnchor="middle"
-          fill="#52525b"
+          fill="var(--text-muted)"
           fontSize="9"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -320,7 +320,7 @@ export function AnimatedDonutChart({
           <div style={{
             fontSize: 20,
             fontWeight: 700,
-            color: '#fff',
+            color: 'var(--text-primary)',
             fontFamily: "'JetBrains Mono', monospace",
           }}>
             {total.toLocaleString('ru-RU')}
@@ -352,11 +352,11 @@ export function AnimatedDonutChart({
                 boxShadow: `0 0 8px ${item.color}60`,
               }} />
               <div>
-                <div style={{ fontSize: 11, color: '#a1a1aa' }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.label}</div>
                 <div style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                   fontFamily: "'JetBrains Mono', monospace",
                 }}>
                   {item.value.toLocaleString('ru-RU')}
@@ -420,7 +420,7 @@ export function StatTrendCard({
       animate={{ opacity: 1, y: 0 }}
       style={{
         background: 'rgba(20, 20, 23, 0.7)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        border: '1px solid var(--border-default)',
         borderRadius: 16,
         padding: 16,
         position: 'relative',
@@ -464,7 +464,7 @@ export function StatTrendCard({
             borderRadius: 6,
             fontSize: 11,
             fontWeight: 600,
-            color: isPositive ? '#22c55e' : '#ef4444',
+            color: isPositive ? 'var(--success-text)' : 'var(--error-text)',
           }}>
             {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
             {Math.abs(trend).toFixed(1)}%
@@ -476,7 +476,7 @@ export function StatTrendCard({
         <div style={{
           fontSize: 24,
           fontWeight: 700,
-          color: '#fff',
+          color: 'var(--text-primary)',
           fontFamily: "'JetBrains Mono', monospace",
         }}>
           {prefix}{displayValue.toLocaleString('ru-RU')}{suffix}

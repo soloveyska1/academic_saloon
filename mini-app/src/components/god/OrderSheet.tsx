@@ -107,7 +107,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
 
               {/* Order Info */}
               <div className={s.card}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{order.work_type_label || order.work_type}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{order.work_type_label || order.work_type}</div>
                 {order.subject && <div className={s.mutedSmall}>Предмет: {order.subject}</div>}
                 {order.topic && <div className={s.mutedSmall}>Тема: {order.topic}</div>}
                 {order.deadline && <div className={s.mutedSmall}>Дедлайн: {formatDateTime(order.deadline)}</div>}
@@ -116,7 +116,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
               {/* User Info */}
               {user && (
                 <div className={s.card}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
                     {user.fullname || 'Без имени'} {user.username ? `@${user.username}` : ''}
                   </div>
                   <div className={`${s.flexRow} ${s.gap8} ${s.flexWrap}`} style={{ marginTop: 6 }}>
@@ -141,11 +141,11 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
                 <div className={`${s.flexRow} ${s.gap8}`}>
                   <div className={s.flex1}>
                     <div className={s.mutedSmall}>Цена</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#d4af37' }}>{formatMoney(order.final_price || order.price)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold-400)' }}>{formatMoney(order.final_price || order.price)}</div>
                   </div>
                   <div>
                     <div className={s.mutedSmall}>Оплачено</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: order.paid_amount >= (order.final_price || order.price) ? '#22c55e' : '#f59e0b' }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: order.paid_amount >= (order.final_price || order.price) ? 'var(--success-text)' : 'var(--warning-text)' }}>
                       {formatMoney(order.paid_amount)}
                     </div>
                   </div>
@@ -212,7 +212,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
               <div className={s.formSection}>
                 <div className={s.formLabel}>Прогресс: {newProgress}%</div>
                 <input type="range" min={0} max={100} value={newProgress} onChange={(e) => setNewProgress(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: '#d4af37' }} />
+                  style={{ width: '100%', accentColor: 'var(--gold-400)' }} />
                 <button type="button" className={s.secondaryBtn} disabled={busy || newProgress === order.progress}
                   onClick={() => act('Прогресс обновлён', () => updateGodOrderProgress(order.id, newProgress))} style={{ marginTop: 4 }}>
                   Сохранить
@@ -258,10 +258,10 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
                       maxWidth: '85%',
                       padding: '8px 10px',
                       borderRadius: 10,
-                      background: isAdmin ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${isAdmin ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                      background: isAdmin ? 'var(--gold-glass-subtle)' : 'var(--bg-glass)',
+                      border: `1px solid ${isAdmin ? 'var(--border-gold)' : 'var(--surface-hover)'}`,
                     }}>
-                      <div style={{ fontSize: 12, color: isAdmin ? '#d4af37' : '#e4e4e7', whiteSpace: 'pre-wrap' }}>
+                      <div style={{ fontSize: 12, color: isAdmin ? 'var(--gold-400)' : 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
                         {msg.message_text || (msg.file_name ? `📎 ${msg.file_name}` : '—')}
                       </div>
                       <div className={s.mutedSmall} style={{ marginTop: 2, textAlign: 'right' }}>
@@ -294,7 +294,7 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
               <div className={s.timelineItem}>
                 <div className={s.timelineDot} />
                 <div className={s.timelineContent}>
-                  <div style={{ color: '#fff', fontWeight: 500 }}>Текущий статус: {cfg?.label}</div>
+                  <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Текущий статус: {cfg?.label}</div>
                   <div className={s.timelineTime}>{cfg?.emoji}</div>
                 </div>
               </div>
@@ -308,9 +308,9 @@ export const OrderSheet = memo(function OrderSheet({ orderId, onClose }: OrderSh
               )}
               {order.paid_amount > 0 && (
                 <div className={s.timelineItem}>
-                  <div className={s.timelineDot} style={{ borderColor: '#22c55e' }} />
+                  <div className={s.timelineDot} style={{ borderColor: 'var(--success-text)' }} />
                   <div className={s.timelineContent}>
-                    <div style={{ color: '#e4e4e7' }}>Оплата: {formatMoney(order.paid_amount)}</div>
+                    <div style={{ color: 'var(--text-primary)' }}>Оплата: {formatMoney(order.paid_amount)}</div>
                   </div>
                 </div>
               )}

@@ -121,12 +121,12 @@ function HorizontalTracker({ status }: { status: string }) {
           <div style={{
             fontSize: 16,
             fontWeight: 700,
-            color: '#fff',
+            color: 'var(--text-primary)',
             marginBottom: 2,
           }}>
             {currentConfig.label}
           </div>
-          <div style={{ fontSize: 12, color: '#71717a' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {currentConfig.description}
           </div>
         </div>
@@ -141,7 +141,7 @@ function HorizontalTracker({ status }: { status: string }) {
               borderRadius: 8,
             }}
           >
-            <Sparkles size={16} color="#22c55e" />
+            <Sparkles size={16} color="var(--success-text)" />
           </motion.div>
         )}
       </motion.div>
@@ -150,7 +150,7 @@ function HorizontalTracker({ status }: { status: string }) {
       <div style={{
         position: 'relative',
         height: 8,
-        background: 'rgba(255,255,255,0.05)',
+        background: 'var(--border-default)',
         borderRadius: 4,
         overflow: 'hidden',
         marginBottom: 16,
@@ -230,10 +230,10 @@ function HorizontalTracker({ status }: { status: string }) {
                     ? isCurrent
                       ? `linear-gradient(135deg, ${config.color}, ${config.color}80)`
                       : `${config.color}30`
-                    : 'rgba(255,255,255,0.05)',
+                    : 'var(--border-default)',
                   border: isCompleted
                     ? `2px solid ${config.color}`
-                    : '2px solid rgba(255,255,255,0.1)',
+                    : '2px solid var(--surface-active)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -243,12 +243,12 @@ function HorizontalTracker({ status }: { status: string }) {
                 {isCompleted && !isCurrent ? (
                   <Check size={14} color={config.color} />
                 ) : (
-                  <Icon size={14} color={isCompleted ? '#fff' : '#52525b'} />
+                  <Icon size={14} color={isCompleted ? 'var(--text-primary)' : 'var(--text-muted)'} />
                 )}
               </motion.div>
               <span style={{
                 fontSize: 9,
-                color: isCompleted ? '#a1a1aa' : '#52525b',
+                color: isCompleted ? 'var(--text-secondary)' : 'var(--text-muted)',
                 textAlign: 'center',
                 fontWeight: isCurrent ? 600 : 400,
               }}>
@@ -296,10 +296,10 @@ function VerticalTracker({ status }: { status: string }) {
                     ? isCurrent
                       ? `linear-gradient(135deg, ${config.color}, ${config.color}80)`
                       : `${config.color}20`
-                    : 'rgba(255,255,255,0.05)',
+                    : 'var(--border-default)',
                   border: isCompleted
                     ? `2px solid ${config.color}`
-                    : '2px solid rgba(255,255,255,0.1)',
+                    : '2px solid var(--surface-active)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -312,7 +312,7 @@ function VerticalTracker({ status }: { status: string }) {
                 >
                   <Icon
                     size={16}
-                    color={isCompleted ? (isCurrent ? '#fff' : config.color) : '#52525b'}
+                    color={isCompleted ? (isCurrent ? 'var(--text-primary)' : config.color) : 'var(--text-muted)'}
                   />
                 </motion.div>
               </motion.div>
@@ -327,7 +327,7 @@ function VerticalTracker({ status }: { status: string }) {
                     width: 2,
                     background: isCompleted && activeSteps.includes(ALL_STEPS[index + 1])
                       ? `linear-gradient(180deg, ${config.color}, ${STEP_CONFIG[ALL_STEPS[index + 1] as keyof typeof STEP_CONFIG].color})`
-                      : 'rgba(255,255,255,0.1)',
+                      : 'var(--surface-active)',
                     marginTop: 4,
                     marginBottom: 4,
                     borderRadius: 1,
@@ -344,7 +344,7 @@ function VerticalTracker({ status }: { status: string }) {
               <div style={{
                 fontSize: 14,
                 fontWeight: isCurrent ? 700 : 500,
-                color: isCompleted ? '#fff' : '#52525b',
+                color: isCompleted ? 'var(--text-primary)' : 'var(--text-muted)',
                 marginBottom: 2,
               }}>
                 {config.label}
@@ -411,14 +411,14 @@ function CompactTracker({ status }: { status: string }) {
         <div style={{
           fontSize: 12,
           fontWeight: 600,
-          color: '#fff',
+          color: 'var(--text-primary)',
           marginBottom: 4,
         }}>
           {config.label}
         </div>
         <div style={{
           height: 3,
-          background: 'rgba(255,255,255,0.1)',
+          background: 'var(--surface-active)',
           borderRadius: 2,
           overflow: 'hidden',
         }}>
@@ -437,7 +437,7 @@ function CompactTracker({ status }: { status: string }) {
 
       <span style={{
         fontSize: 11,
-        color: '#71717a',
+        color: 'var(--text-muted)',
         fontFamily: "'JetBrains Mono', monospace",
       }}>
         {activeSteps.length}/{ALL_STEPS.length}
@@ -474,13 +474,13 @@ export function OrderTracker({ status, variant = 'horizontal' }: Props) {
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <AlertCircle size={20} color="#ef4444" />
+          <AlertCircle size={20} color="var(--error-text)" />
         </div>
         <div>
-          <div style={{ color: '#ef4444', fontWeight: 600, fontSize: 14 }}>
+          <div style={{ color: 'var(--error-text)', fontWeight: 600, fontSize: 14 }}>
             {status === 'cancelled' ? 'Заказ отменён' : 'Заказ отклонён'}
           </div>
-          <div style={{ fontSize: 11, color: '#71717a', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
             {config.description}
           </div>
         </div>
@@ -536,16 +536,16 @@ export function DeliveryTracker({ status }: { status: string }) {
         }}
       >
         {isCompleted ? (
-          <CheckCircle size={36} color="#fff" />
+          <CheckCircle size={36} color="var(--text-primary)" />
         ) : (
-          <Truck size={36} color="#09090b" />
+          <Truck size={36} color="var(--text-on-gold)" />
         )}
       </motion.div>
 
       <h3 style={{
         fontSize: 18,
         fontWeight: 700,
-        color: '#fff',
+        color: 'var(--text-primary)',
         marginBottom: 6,
       }}>
         {isCompleted ? 'Заказ готов!' : 'Заказ в работе'}
