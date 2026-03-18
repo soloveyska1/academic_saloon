@@ -734,10 +734,12 @@ function EmptyState({
   onCreateOrder,
   hasSearch,
   onReset,
+  isDark,
 }: {
   onCreateOrder: () => void
   hasSearch: boolean
   onReset: () => void
+  isDark: boolean
 }) {
   return (
     <div style={{
@@ -751,24 +753,24 @@ function EmptyState({
         <div style={{
           width: 56, height: 56, borderRadius: 18,
           margin: '0 auto 20px',
-          background: 'rgba(212,175,55,0.06)',
-          border: '1px solid rgba(212,175,55,0.10)',
+          background: isDark ? 'rgba(212,175,55,0.06)' : 'rgba(158,122,26,0.07)',
+          border: `1px solid ${isDark ? 'rgba(212,175,55,0.10)' : 'rgba(158,122,26,0.12)'}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <FolderOpen size={24} color="rgba(212,175,55,0.50)" />
+          <FolderOpen size={24} color={isDark ? 'rgba(212,175,55,0.50)' : 'rgba(158,122,26,0.55)'} />
         </div>
       </motion.div>
 
       <div style={{
         fontSize: 18, fontWeight: 700,
-        color: 'rgba(255,255,255,0.88)',
+        color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(28,25,23,0.88)',
         marginBottom: 8,
       }}>
         {hasSearch ? 'Ничего не нашли' : 'Пока нет заказов'}
       </div>
       <div style={{
         fontSize: 13, lineHeight: 1.6,
-        color: 'rgba(255,255,255,0.42)',
+        color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)',
         marginBottom: 24,
         maxWidth: 260,
         margin: '0 auto 24px',
@@ -786,8 +788,11 @@ function EmptyState({
           style={{
             height: 44, padding: '0 20px', borderRadius: 14,
             border: 'none',
-            background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
-            color: '#090909', fontSize: 14, fontWeight: 700,
+            background: isDark
+              ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
+              : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
+            color: isDark ? '#090909' : '#FFFFFF',
+            fontSize: 14, fontWeight: 700,
             cursor: 'pointer',
           }}
         >
@@ -800,9 +805,10 @@ function EmptyState({
             onClick={onReset}
             style={{
               height: 44, padding: '0 20px', borderRadius: 14,
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(120,85,40,0.10)'}`,
               background: 'transparent',
-              color: 'rgba(255,255,255,0.55)', fontSize: 14, fontWeight: 600,
+              color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(87,83,78,0.7)',
+              fontSize: 14, fontWeight: 600,
               cursor: 'pointer',
             }}
           >
@@ -819,6 +825,8 @@ function EmptyState({
 export function OrdersPage({ orders, loading, onRefresh }: Props) {
   const navigate = useNavigate()
   const { haptic } = useTelegram()
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
 
   const { containerRef, PullIndicator } = usePullToRefresh({
     onRefresh: async () => { if (onRefresh) await onRefresh() },
