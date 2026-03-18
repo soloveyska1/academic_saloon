@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Star, Shield, Clock } from 'lucide-react'
+import { useThemeValue } from '../../contexts/ThemeContext'
 import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -26,6 +27,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
   haptic,
   variant = 'repeat-order',
 }: NewTaskCTAProps) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
   const handleClick = () => {
     haptic?.('heavy')
     onClick()
@@ -60,7 +64,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               fontWeight: 700,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              color: 'rgba(212,175,55,0.55)',
+              color: isDark ? 'rgba(212,175,55,0.55)' : 'rgba(158,122,26,0.6)',
               marginBottom: 20,
               display: 'flex',
               alignItems: 'center',
@@ -70,7 +74,9 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             <div style={{
               width: 16,
               height: 1,
-              background: 'linear-gradient(90deg, rgba(212,175,55,0.5), transparent)',
+              background: isDark
+                ? 'linear-gradient(90deg, rgba(212,175,55,0.5), transparent)'
+                : 'linear-gradient(90deg, rgba(158,122,26,0.5), transparent)',
             }} />
             Академический Салон
           </div>
@@ -93,7 +99,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           {/* Subhead — clarity + scope */}
           <p
             style={{
-              color: 'rgba(255,255,255,0.48)',
+              color: isDark ? 'rgba(255,255,255,0.48)' : 'rgba(87,83,78,0.75)',
               fontSize: 15,
               fontWeight: 500,
               lineHeight: 1.55,
@@ -125,16 +131,22 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                     gap: 10,
                     padding: '9px 14px',
                     borderRadius: 12,
-                    background: 'rgba(255,255,255,0.025)',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(180,142,38,0.04)',
+                    border: isDark
+                      ? '1px solid rgba(255,255,255,0.05)'
+                      : '1px solid rgba(120,85,40,0.08)',
                   }}
                 >
-                  <Icon size={14} color="rgba(212,175,55,0.65)" strokeWidth={2} />
+                  <Icon
+                    size={14}
+                    color={isDark ? 'rgba(212,175,55,0.65)' : 'rgba(158,122,26,0.7)'}
+                    strokeWidth={2}
+                  />
                   <span
                     style={{
                       fontSize: 13,
                       fontWeight: 600,
-                      color: 'rgba(255,255,255,0.58)',
+                      color: isDark ? 'rgba(255,255,255,0.58)' : 'rgba(87,83,78,0.8)',
                       letterSpacing: '-0.005em',
                     }}
                   >
@@ -154,7 +166,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           >
             <span>Рассчитать стоимость бесплатно</span>
             <div className={s.primaryActionArrow}>
-              <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
+              <ArrowRight size={18} color={isDark ? '#09090b' : '#09090b'} strokeWidth={2.6} />
             </div>
           </motion.button>
 
@@ -163,7 +175,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             style={{
               marginTop: 14,
               fontSize: 12,
-              color: 'rgba(255,255,255,0.22)',
+              color: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(120,113,108,0.5)',
               fontWeight: 500,
               textAlign: 'center',
               letterSpacing: '0.01em',
@@ -228,12 +240,16 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           >
             Новый заказ
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>
+          <div style={{
+            fontSize: 13,
+            color: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(87,83,78,0.65)',
+            fontWeight: 500,
+          }}>
             Любой тип работы · от 1 дня · бесплатный расчёт
           </div>
         </div>
         <div className={s.primaryActionArrow} style={{ flexShrink: 0 }}>
-          <ArrowRight size={18} color="#09090b" strokeWidth={2.6} />
+          <ArrowRight size={18} color={isDark ? '#09090b' : '#09090b'} strokeWidth={2.6} />
         </div>
       </motion.button>
     </motion.section>

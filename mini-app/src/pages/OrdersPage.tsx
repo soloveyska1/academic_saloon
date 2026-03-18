@@ -707,7 +707,7 @@ const OrderCard = memo(function OrderCard({
   )
 })
 
-const SectionHeader = memo(function SectionHeader({ title, count }: { title: string; count: number }) {
+const SectionHeader = memo(function SectionHeader({ title, count, isDark }: { title: string; count: number; isDark: boolean }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
@@ -715,14 +715,14 @@ const SectionHeader = memo(function SectionHeader({ title, count }: { title: str
     }}>
       <span style={{
         fontSize: 14, fontWeight: 700,
-        color: 'rgba(255,255,255,0.55)',
+        color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(87,83,78,0.8)',
         letterSpacing: '-0.01em',
       }}>
         {title}
       </span>
       <span style={{
         fontSize: 11, fontWeight: 600,
-        color: 'rgba(255,255,255,0.25)',
+        color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(120,113,108,0.5)',
       }}>
         {count}
       </span>
