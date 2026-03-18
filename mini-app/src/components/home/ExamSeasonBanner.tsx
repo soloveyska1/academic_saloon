@@ -39,9 +39,9 @@ function getExamSeason(): SeasonConfig | null {
       title: 'Зимняя сессия',
       subtitle: 'Время закрыть задачи до каникул',
       // Gold theme to match app style (not blue!)
-      gradient: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(20,20,23,0.6) 100%)',
-      borderColor: 'rgba(212,175,55,0.25)',
-      iconColor: '#D4AF37',
+      gradient: 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, var(--bg-card) 100%)',
+      borderColor: 'var(--gold-glass-strong)',
+      iconColor: 'var(--gold-400)',
       urgencyLevel: 'high',
     }
   }
@@ -56,7 +56,7 @@ function getExamSeason(): SeasonConfig | null {
         subtitle: 'До конца сессии остаются считанные дни',
         gradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.08) 100%)',
         borderColor: 'rgba(239, 68, 68, 0.4)',
-        iconColor: '#f87171',
+        iconColor: 'var(--error-text)',
         urgencyLevel: 'peak',
       }
     }
@@ -67,9 +67,9 @@ function getExamSeason(): SeasonConfig | null {
       title: 'Зимняя сессия',
       subtitle: 'Самое время закрыть долги до февраля',
       // Gold theme to match app style (not blue!)
-      gradient: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(20,20,23,0.6) 100%)',
-      borderColor: 'rgba(212,175,55,0.25)',
-      iconColor: '#D4AF37',
+      gradient: 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, var(--bg-card) 100%)',
+      borderColor: 'var(--gold-glass-strong)',
+      iconColor: 'var(--gold-400)',
       urgencyLevel: 'high',
     }
   }
@@ -99,7 +99,7 @@ function getExamSeason(): SeasonConfig | null {
         subtitle: 'Завершаем сессию — ещё можно успеть',
         gradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.08) 100%)',
         borderColor: 'rgba(239, 68, 68, 0.4)',
-        iconColor: '#f87171',
+        iconColor: 'var(--error-text)',
         urgencyLevel: 'peak',
       }
     }

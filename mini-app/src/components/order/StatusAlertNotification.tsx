@@ -97,10 +97,10 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                         flexShrink: 0,
                     }}
                 >
-                    {alert.icon === 'check' && <CheckCircle size={24} color="#0a0a0c" />}
-                    {alert.icon === 'clock' && <Clock size={24} color="#0a0a0c" />}
-                    {alert.icon === 'play' && <Sparkles size={24} color="#0a0a0c" />}
-                    {alert.icon === 'trophy' && <Sparkles size={24} color="#0a0a0c" />}
+                    {alert.icon === 'check' && <CheckCircle size={24} color="var(--text-on-gold)" />}
+                    {alert.icon === 'clock' && <Clock size={24} color="var(--text-on-gold)" />}
+                    {alert.icon === 'play' && <Sparkles size={24} color="var(--text-on-gold)" />}
+                    {alert.icon === 'trophy' && <Sparkles size={24} color="var(--text-on-gold)" />}
                 </motion.div>
                 <div style={{ flex: 1 }}>
                     <div style={{
@@ -113,7 +113,7 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                     </div>
                     <div style={{
                         fontSize: 13,
-                        color: 'rgba(242,242,242,0.8)',
+                        color: 'var(--text-primary)',
                         lineHeight: 1.4,
                     }}>
                         {alert.message}
@@ -141,7 +141,7 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                                 <div>
                                     <div style={{
                                         fontSize: 11,
-                                        color: 'rgba(255,255,255,0.6)',
+                                        color: 'var(--text-secondary)',
                                         textTransform: 'uppercase',
                                         letterSpacing: '0.05em',
                                         marginBottom: 4,
@@ -171,7 +171,7 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                                     }}>
                                         <div style={{
                                             fontSize: 10,
-                                            color: '#f59e0b',
+                                            color: 'var(--warning-text)',
                                             marginBottom: 2,
                                         }}>
                                             Бонусы
@@ -179,7 +179,7 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                                         <div style={{
                                             fontSize: 14,
                                             fontWeight: 600,
-                                            color: '#f59e0b',
+                                            color: 'var(--warning-text)',
                                             fontFamily: "var(--font-mono)",
                                         }}>
                                             −{alert.bonusUsed.toLocaleString('ru-RU')} ₽
@@ -197,7 +197,7 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                         width: 28,
                         height: 28,
                         borderRadius: 8,
-                        background: 'rgba(255,255,255,0.1)',
+                        background: 'var(--surface-active)',
                         border: 'none',
                         display: 'flex',
                         alignItems: 'center',
@@ -206,7 +206,7 @@ export function StatusAlertNotification({ alert, onDismiss }: StatusAlertNotific
                         flexShrink: 0,
                     }}
                 >
-                    <XCircle size={16} color="rgba(255,255,255,0.6)" />
+                    <XCircle size={16} color="var(--text-secondary)" />
                 </motion.button>
             </div>
 
