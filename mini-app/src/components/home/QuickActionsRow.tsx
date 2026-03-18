@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { QUICK_ACTIONS } from './constants'
+import { useThemeValue } from '../../contexts/ThemeContext'
 import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -23,6 +24,9 @@ export const QuickActionsRow = memo(function QuickActionsRow({
   haptic,
   cashbackPercent,
 }: QuickActionsRowProps) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
+
   // Override static subtitles with real user data
   const actions = useMemo(() => {
     return QUICK_ACTIONS.map(action => {
@@ -65,10 +69,13 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             alignItems: 'center',
             gap: 10,
             cursor: 'pointer',
-            background: 'rgba(12, 12, 15, 0.78)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            background: isDark ? 'rgba(12, 12, 15, 0.78)' : 'rgba(255, 255, 255, 0.88)',
+            border: isDark
+              ? '1px solid rgba(255,255,255,0.07)'
+              : '1px solid rgba(120,85,40,0.10)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
+            boxShadow: isDark ? 'none' : '0 1px 6px rgba(120, 85, 40, 0.06)',
           }}
         >
           <div style={{
@@ -78,18 +85,20 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(212,175,55,0.12)',
-            border: '1px solid rgba(212,175,55,0.18)',
+            background: isDark ? 'rgba(212,175,55,0.12)' : 'rgba(180,142,38,0.08)',
+            border: isDark
+              ? '1px solid rgba(212,175,55,0.18)'
+              : '1px solid rgba(158,122,26,0.14)',
             flexShrink: 0,
           }}>
-            <action.icon size={16} color="#d4af37" strokeWidth={2} />
+            <action.icon size={16} color={isDark ? '#d4af37' : '#9e7a1a'} strokeWidth={2} />
           </div>
           <div style={{ textAlign: 'left' }}>
             <div style={{
               fontFamily: "'Manrope', sans-serif",
               fontSize: '12px',
               fontWeight: 700,
-              color: '#f4f4f5',
+              color: isDark ? '#f4f4f5' : '#1C1917',
               lineHeight: 1.1,
               marginBottom: 3,
             }}>
@@ -99,7 +108,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               fontFamily: "'Manrope', sans-serif",
               fontSize: '11px',
               fontWeight: 600,
-              color: '#a1a1aa',
+              color: isDark ? '#a1a1aa' : 'rgba(87, 83, 78, 0.75)',
               lineHeight: 1.1,
             }}>
               {action.subtitle}

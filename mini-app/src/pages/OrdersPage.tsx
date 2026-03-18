@@ -36,6 +36,7 @@ import {
   parseOrderDateSafe,
   toSafeString,
 } from '../lib/orderView'
+import { useThemeValue } from '../contexts/ThemeContext'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  ORDERS PAGE — Quiet Luxury Redesign
@@ -344,11 +345,13 @@ function FilterChip({
   count,
   active,
   onClick,
+  isDark,
 }: {
   label: string
   count: number
   active: boolean
   onClick: () => void
+  isDark: boolean
 }) {
   return (
     <motion.button
@@ -360,9 +363,15 @@ function FilterChip({
         height: 36,
         padding: '0 14px',
         borderRadius: 99,
-        border: `1px solid ${active ? 'rgba(212,175,55,0.25)' : 'rgba(255,255,255,0.06)'}`,
-        background: active ? 'rgba(212,175,55,0.10)' : 'transparent',
-        color: active ? '#E8D5A3' : 'rgba(255,255,255,0.45)',
+        border: `1px solid ${active
+          ? (isDark ? 'rgba(212,175,55,0.25)' : 'rgba(158,122,26,0.25)')
+          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)')}`,
+        background: active
+          ? (isDark ? 'rgba(212,175,55,0.10)' : 'rgba(158,122,26,0.10)')
+          : 'transparent',
+        color: active
+          ? (isDark ? '#E8D5A3' : '#7d5c12')
+          : (isDark ? 'rgba(255,255,255,0.45)' : 'rgba(87,83,78,0.7)'),
         cursor: 'pointer',
         display: 'inline-flex',
         alignItems: 'center',
@@ -385,12 +394,14 @@ function ActionBanner({
   payableTotal,
   onOpenOrder,
   onBatchPay,
+  isDark,
 }: {
   order: Order | null
   payableCount: number
   payableTotal: number
   onOpenOrder: (order: Order, path?: string) => void
   onBatchPay: () => void
+  isDark: boolean
 }) {
   // Batch payment banner
   if (payableCount > 1) {
@@ -406,8 +417,8 @@ function ActionBanner({
           padding: '14px 16px',
           marginBottom: 16,
           borderRadius: 16,
-          background: 'rgba(212,175,55,0.05)',
-          border: '1px solid rgba(212,175,55,0.12)',
+          background: isDark ? 'rgba(212,175,55,0.05)' : 'rgba(158,122,26,0.06)',
+          border: `1px solid ${isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.14)'}`,
           cursor: 'pointer',
           textAlign: 'left',
           display: 'flex',
@@ -417,27 +428,29 @@ function ActionBanner({
       >
         <div style={{
           width: 40, height: 40, borderRadius: 12,
-          background: 'rgba(212,175,55,0.10)',
+          background: isDark ? 'rgba(212,175,55,0.10)' : 'rgba(158,122,26,0.10)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <CreditCard size={18} color="#E8D5A3" />
+          <CreditCard size={18} color={isDark ? '#E8D5A3' : '#7d5c12'} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#E8D5A3', marginBottom: 2 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#E8D5A3' : '#7d5c12', marginBottom: 2 }}>
             Оплатить {payableCount} {pluralize(payableCount, ['заказ', 'заказа', 'заказов'])}
           </div>
-          <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.42)' }}>
+          <div style={{ fontSize: 12.5, color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)' }}>
             Одним платежом · {formatMoney(payableTotal)}
           </div>
         </div>
         <div style={{
           width: 36, height: 36, borderRadius: 12,
-          background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
+          background: isDark
+            ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
+            : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <ArrowUpRight size={16} color="#090909" />
+          <ArrowUpRight size={16} color={isDark ? '#090909' : '#FFFFFF'} />
         </div>
       </motion.button>
     )
@@ -459,8 +472,8 @@ function ActionBanner({
         padding: '14px 16px',
         marginBottom: 16,
         borderRadius: 16,
-        background: 'rgba(212,175,55,0.05)',
-        border: '1px solid rgba(212,175,55,0.12)',
+        background: isDark ? 'rgba(212,175,55,0.05)' : 'rgba(158,122,26,0.06)',
+        border: `1px solid ${isDark ? 'rgba(212,175,55,0.12)' : 'rgba(158,122,26,0.14)'}`,
         cursor: 'pointer',
         textAlign: 'left',
         display: 'flex',
@@ -478,20 +491,28 @@ function ActionBanner({
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)',
+          fontSize: 14, fontWeight: 700,
+          color: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(28,25,23,0.88)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {meta.actionLabel}: {getOrderDisplayTitle(order)}
         </div>
-        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>
+        <div style={{
+          fontSize: 12.5,
+          color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(87,83,78,0.7)',
+          marginTop: 2,
+        }}>
           {meta.hint}
         </div>
       </div>
       <div style={{
         height: 32, padding: '0 12px', borderRadius: 10,
-        background: 'linear-gradient(135deg, #C9A227, #D4AF37)',
+        background: isDark
+          ? 'linear-gradient(135deg, #C9A227, #D4AF37)'
+          : 'linear-gradient(135deg, #9e7a1a, #b8922d)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#090909',
+        flexShrink: 0, fontSize: 12, fontWeight: 700,
+        color: isDark ? '#090909' : '#FFFFFF',
       }}>
         {meta.actionLabel || 'Открыть'}
       </div>

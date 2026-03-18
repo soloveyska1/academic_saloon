@@ -51,7 +51,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       {/* LEFT: Identity */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div className={s.avatarContainer} onClick={onSecretTap}>
-          <div className={s.avatar} style={{ position: 'relative', background: '#121214' }}>
+          <div className={s.avatar} style={{ position: 'relative', background: isDark ? '#121214' : '#F5F0E8' }}>
             {/* Fallback Layer */}
             <div style={{
               position: 'absolute',
@@ -59,11 +59,13 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
+              background: isDark
+                ? 'linear-gradient(135deg, #18181b 0%, #09090b 100%)'
+                : 'linear-gradient(135deg, #FAF7F0 0%, #F0EBE0 100%)',
               zIndex: 1
             }}>
               <span style={{
-                color: '#d4af37',
+                color: isDark ? '#d4af37' : '#9e7a1a',
                 fontWeight: 700,
                 fontFamily: "'Cormorant Garamond', 'Times New Roman', serif",
                 fontSize: '18px',
@@ -130,17 +132,17 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
           whileTap={{ scale: 0.95 }}
           onClick={onOpenLounge}
           style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(212,175,55,0.18)',
+            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(158,122,26,0.05)',
+            border: isDark ? '1px solid rgba(212,175,55,0.18)' : '1px solid rgba(158,122,26,0.15)',
             borderRadius: '12px',
             padding: '8px 16px',
-            color: 'rgba(212,175,55,0.75)',
+            color: isDark ? 'rgba(212,175,55,0.75)' : 'rgba(125,92,18,0.8)',
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: '12px',
             fontWeight: 600,
             letterSpacing: '0.06em',
             backdropFilter: 'blur(10px)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 20px rgba(120,85,40,0.08)',
             textTransform: 'uppercase',
           }}
         >
