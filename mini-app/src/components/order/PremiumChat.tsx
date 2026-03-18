@@ -295,7 +295,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
         </span>
         {isClient && (
           msg.is_read
-            ? <CheckCheck size={12} color="#3b82f6" />
+            ? <CheckCheck size={12} color="var(--info-text)" />
             : <Check size={12} color="var(--text-muted)" />
         )}
       </div>
@@ -396,11 +396,11 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
               justifyContent: 'center',
             }}>
               {msg.file_type === 'photo' ? (
-                <Image size={18} color="#3b82f6" />
+                <Image size={18} color="var(--info-text)" />
               ) : msg.file_type === 'video' ? (
-                <Video size={18} color="#3b82f6" />
+                <Video size={18} color="var(--info-text)" />
               ) : (
-                <FileText size={18} color="#3b82f6" />
+                <FileText size={18} color="var(--info-text)" />
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -1087,7 +1087,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               transition={{ repeat: Infinity, duration: 1 }}
               style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }}
             />
-            <span style={{ fontSize: 14, color: '#ef4444', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: 14, color: 'var(--error-text)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
               {formatDuration(recordingDuration)}
             </span>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>
