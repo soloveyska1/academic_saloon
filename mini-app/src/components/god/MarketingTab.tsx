@@ -159,7 +159,7 @@ const PromosSection = memo(function PromosSection() {
 
               <label className={`${s.flexRow} ${s.gap6}`} style={{ cursor: 'pointer' }}>
                 <input type="checkbox" checked={newUsersOnly} onChange={(e) => setNewUsersOnly(e.target.checked)} />
-                <span style={{ fontSize: 12, color: '#a1a1aa' }}>Только новые пользователи</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Только новые пользователи</span>
               </label>
 
               <button type="button" className={s.successBtn} disabled={creating || !newCode.trim()} onClick={handleCreate}>
@@ -178,7 +178,7 @@ const PromosSection = memo(function PromosSection() {
         return (
           <div key={p.id} className={s.card}>
             <div className={`${s.flexRow} ${s.gap6}`}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#d4af37', fontFamily: 'monospace' }}>{p.code}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold-400)', fontFamily: 'monospace' }}>{p.code}</span>
               <span className={s.tagGold}>-{p.discount_percent}%</span>
               {p.is_active && !expired && <span className={s.tagGreen}>Активен</span>}
               {expired && <span className={s.tagRed}>Истёк</span>}
@@ -194,10 +194,10 @@ const PromosSection = memo(function PromosSection() {
 
             <div className={`${s.flexRow} ${s.gap4}`} style={{ marginTop: 6 }}>
               <button type="button" className={s.ghostBtn} onClick={() => handleToggle(p.id)}>
-                {p.is_active ? <ToggleRight size={16} color="#22c55e" /> : <ToggleLeft size={16} color="#6b7280" />}
+                {p.is_active ? <ToggleRight size={16} color="var(--success-text)" /> : <ToggleLeft size={16} color="#6b7280" />}
               </button>
               <button type="button" className={s.ghostBtn} onClick={() => handleDelete(p.id)}>
-                <Trash2 size={14} color="#ef4444" />
+                <Trash2 size={14} color="var(--error-text)" />
               </button>
             </div>
           </div>

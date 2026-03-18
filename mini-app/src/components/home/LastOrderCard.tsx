@@ -26,9 +26,9 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
   const shouldReduceMotion = useReducedMotion()
   const status = ORDER_STATUS_MAP[order.status] || {
     label: order.status,
-    color: '#a1a1aa',
+    color: 'var(--text-secondary)',
     // In elite theme we override this with CSS but keep fallback
-    bg: 'rgba(255,255,255,0.05)',
+    bg: 'var(--border-default)',
   }
 
   const title = order.subject || order.work_type_label || `Заказ #${order.id}`
@@ -51,11 +51,11 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
           borderRadius: '20px',
           padding: '20px',
           cursor: 'pointer',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid var(--border-strong)',
           position: 'relative',
           background: `
-            radial-gradient(circle at top right, rgba(212,175,55,0.10), transparent 34%),
-            linear-gradient(180deg, rgba(19,18,24,0.96), rgba(10,10,16,0.96))
+            radial-gradient(circle at top right, var(--gold-glass-medium), transparent 34%),
+            linear-gradient(180deg, var(--bg-surface), var(--bg-void))
           `,
         }}
       >
@@ -63,12 +63,12 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
           {/* Icon Container */}
           <div style={{
             width: 50, height: 50, borderRadius: '14px',
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'linear-gradient(135deg, var(--border-default) 0%, rgba(255,255,255,0.01) 100%)',
+            border: '1px solid var(--border-strong)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: isActive ? '0 0 20px rgba(212,175,55,0.1)' : 'none'
+            boxShadow: isActive ? '0 0 20px var(--gold-glass-medium)' : 'none'
           }}>
-            <WorkTypeIcon size={24} color={isActive ? '#d4af37' : '#a1a1aa'} />
+            <WorkTypeIcon size={24} color={isActive ? 'var(--gold-400)' : 'var(--text-secondary)'} />
           </div>
 
           {/* Info */}
@@ -78,7 +78,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
             }}>
               <span style={{
                 fontSize: '11px',
-                color: isActive ? '#d4af37' : '#71717a',
+                color: isActive ? 'var(--gold-400)' : 'var(--text-muted)',
                 fontWeight: 600,
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase'
@@ -87,7 +87,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
               </span>
               <span style={{
                 fontSize: '11px',
-                color: '#71717a',
+                color: 'var(--text-muted)',
               }}>
                 {createdAt}
               </span>
@@ -95,14 +95,14 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
                 <motion.div
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  style={{ width: 6, height: 6, borderRadius: '50%', background: '#d4af37' }}
+                  style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold-400)' }}
                 />
               )}
             </div>
             <div style={{
               fontSize: '16px',
               fontWeight: 700,
-              color: '#f2f2f2',
+              color: 'var(--text-primary)',
               lineHeight: 1.35,
               marginBottom: 4,
               display: '-webkit-box',
@@ -114,7 +114,7 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
             </div>
             <div style={{
               fontSize: '13px',
-              color: '#a1a1aa',
+              color: 'var(--text-secondary)',
               lineHeight: 1.5,
             }}>
               Нажмите, чтобы увидеть статус и написать менеджеру
@@ -124,10 +124,10 @@ export const LastOrderCard = memo(function LastOrderCard({ order, onClick, hapti
           {/* Arrow */}
           <div style={{
             width: 32, height: 32, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.03)',
+            background: 'var(--border-subtle)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <ArrowRight size={16} color="#71717a" />
+            <ArrowRight size={16} color="var(--text-muted)" />
           </div>
         </div>
       </motion.div>

@@ -112,30 +112,30 @@ import {
 const DS = {
   colors: {
     // Gold
-    gold: '#D4AF37',
-    goldLight: '#F5E6A3',
-    goldDark: '#B38728',
+    gold: 'var(--gold-400)',
+    goldLight: 'var(--gold-150)',
+    goldDark: 'var(--gold-500)',
     // Semantic
-    success: '#22c55e',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    info: '#3b82f6',
-    purple: '#8b5cf6',
+    success: 'var(--success-text)',
+    warning: 'var(--warning-text)',
+    error: 'var(--error-text)',
+    info: 'var(--info-text)',
+    purple: 'var(--accent-purple)',
     cyan: '#06b6d4',
     // Neutral
     white: '#ffffff',
-    textPrimary: '#EDEDED',
-    textSecondary: 'rgba(255,255,255,0.65)',
-    textMuted: 'rgba(255,255,255,0.4)',
+    textPrimary: 'var(--text-primary)',
+    textSecondary: 'var(--text-secondary)',
+    textMuted: 'var(--text-muted)',
     // Surfaces
-    bgVoid: '#050507',
-    bgSurface: '#0c0c10',
-    bgElevated: '#121218',
-    bgCard: 'rgba(18, 18, 22, 0.95)',
+    bgVoid: 'var(--bg-void)',
+    bgSurface: 'var(--bg-surface)',
+    bgElevated: 'var(--bg-elevated)',
+    bgCard: 'var(--bg-card)',
     // Borders
-    border: 'rgba(255,255,255,0.08)',
+    border: 'var(--border-strong)',
     borderLight: 'rgba(255,255,255,0.12)',
-    borderGold: 'rgba(212,175,55,0.25)',
+    borderGold: 'var(--border-gold)',
   },
   space: {
     xs: 4,
@@ -182,20 +182,20 @@ interface StatusConfig {
 
 // Gold monochrome status palette — quiet luxury, no rainbow
 const STATUS_CONFIG: Record<OrderStatus, StatusConfig> = {
-  draft:                { label: 'Черновик',         color: 'rgba(255,255,255,0.45)', bgColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', icon: Clock,        step: 0 },
-  pending:              { label: 'На оценке',        color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.08)',  borderColor: 'rgba(212,175,55,0.15)', icon: Clock,        step: 1 },
-  waiting_estimation:   { label: 'На оценке',        color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.08)',  borderColor: 'rgba(212,175,55,0.15)', icon: Clock,        step: 1 },
-  waiting_payment:      { label: 'К оплате',         color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.10)',  borderColor: 'rgba(212,175,55,0.18)', icon: CreditCard,   step: 2 },
-  confirmed:            { label: 'К оплате',         color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.10)',  borderColor: 'rgba(212,175,55,0.18)', icon: CreditCard,   step: 2 },
-  verification_pending: { label: 'Проверка оплаты',  color: 'rgba(212,175,55,0.70)', bgColor: 'rgba(212,175,55,0.06)',  borderColor: 'rgba(212,175,55,0.12)', icon: Loader2,      step: 2 },
-  paid:                 { label: 'В работе',         color: 'rgba(255,255,255,0.65)', bgColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', icon: Loader2,     step: 3 },
-  paid_full:            { label: 'В работе',         color: 'rgba(255,255,255,0.65)', bgColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', icon: Loader2,     step: 3 },
-  in_progress:          { label: 'В работе',         color: 'rgba(255,255,255,0.65)', bgColor: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', icon: Loader2,     step: 3 },
-  revision:             { label: 'На доработке',     color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.08)',  borderColor: 'rgba(212,175,55,0.15)', icon: Clock,        step: 3 },
-  review:               { label: 'На проверке',      color: '#E8D5A3',               bgColor: 'rgba(212,175,55,0.08)',  borderColor: 'rgba(212,175,55,0.15)', icon: Clock,        step: 4 },
-  completed:            { label: 'Выполнен',         color: 'rgba(34,197,94,0.85)',   bgColor: 'rgba(34,197,94,0.08)',   borderColor: 'rgba(34,197,94,0.15)', icon: CheckCircle2, step: 5 },
-  cancelled:            { label: 'Отменён',          color: 'rgba(239,68,68,0.70)',   bgColor: 'rgba(239,68,68,0.06)',   borderColor: 'rgba(239,68,68,0.12)', icon: XCircle,      step: -1 },
-  rejected:             { label: 'Отклонён',         color: 'rgba(239,68,68,0.70)',   bgColor: 'rgba(239,68,68,0.06)',   borderColor: 'rgba(239,68,68,0.12)', icon: XCircle,      step: -1 },
+  draft:                { label: 'Черновик',         color: 'var(--text-muted)',       bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Clock,        step: 0 },
+  pending:              { label: 'На оценке',        color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 1 },
+  waiting_estimation:   { label: 'На оценке',        color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 1 },
+  waiting_payment:      { label: 'К оплате',         color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-medium)', borderColor: 'var(--gold-glass-medium)', icon: CreditCard,   step: 2 },
+  confirmed:            { label: 'К оплате',         color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-medium)', borderColor: 'var(--gold-glass-medium)', icon: CreditCard,   step: 2 },
+  verification_pending: { label: 'Проверка оплаты',  color: 'var(--gold-400)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-subtle)', icon: Loader2,      step: 2 },
+  paid:                 { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Loader2,     step: 3 },
+  paid_full:            { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Loader2,     step: 3 },
+  in_progress:          { label: 'В работе',         color: 'var(--text-secondary)',  bgColor: 'var(--bg-glass)',        borderColor: 'var(--border-strong)',    icon: Loader2,     step: 3 },
+  revision:             { label: 'На доработке',     color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 3 },
+  review:               { label: 'На проверке',      color: 'var(--gold-200)',        bgColor: 'var(--gold-glass-subtle)',  borderColor: 'var(--gold-glass-medium)', icon: Clock,        step: 4 },
+  completed:            { label: 'Выполнен',         color: 'var(--success-text)',     bgColor: 'var(--success-glass)',   borderColor: 'var(--success-border)', icon: CheckCircle2, step: 5 },
+  cancelled:            { label: 'Отменён',          color: 'var(--error-text)',       bgColor: 'var(--error-glass)',     borderColor: 'var(--error-border)',  icon: XCircle,      step: -1 },
+  rejected:             { label: 'Отклонён',         color: 'var(--error-text)',       bgColor: 'var(--error-glass)',     borderColor: 'var(--error-border)',  icon: XCircle,      step: -1 },
 }
 
 
@@ -365,7 +365,7 @@ const OrderAppBar = memo(function OrderAppBar({
       <div
         className="flex items-center gap-3 px-4 py-[14px] sticky top-0 z-[100] backdrop-blur-[18px]"
         style={{
-          background: 'rgba(5,5,7,0.92)',
+          background: 'var(--bg-void)',
           WebkitBackdropFilter: 'blur(18px)',
         }}
       >
@@ -636,7 +636,7 @@ const StickyActionBar = memo(function StickyActionBar({
       showAmount: true,
       buttonText: 'Перейти к оплате',
       buttonIcon: ChevronRight,
-      buttonColor: '#0a0a0c',
+      buttonColor: 'var(--text-on-gold)',
       buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
       disabled: false,
       onClick: onPaymentClick,
@@ -663,7 +663,7 @@ const StickyActionBar = memo(function StickyActionBar({
       showAmount: false,
       buttonText: 'Проверить работу',
       buttonIcon: CheckCircle2,
-      buttonColor: '#0a0a0c',
+      buttonColor: 'var(--text-on-gold)',
       buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
       disabled: false,
       onClick: onContactManager,
@@ -672,7 +672,7 @@ const StickyActionBar = memo(function StickyActionBar({
       showAmount: false,
       buttonText: 'Скачать файлы',
       buttonIcon: Download,
-      buttonColor: '#0a0a0c',
+      buttonColor: 'var(--text-on-gold)',
       buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
       disabled: !order.files_url,
       onClick: onDownloadFiles,
@@ -682,7 +682,7 @@ const StickyActionBar = memo(function StickyActionBar({
       buttonText: 'Заказ отменён',
       buttonIcon: XCircle,
       buttonColor: DS.colors.error,
-      buttonBg: 'rgba(239,68,68,0.15)',
+      buttonBg: 'var(--error-glass)',
       disabled: true,
       onClick: () => {},
     },
@@ -703,7 +703,7 @@ const StickyActionBar = memo(function StickyActionBar({
       className="fixed bottom-0 left-0 right-0 z-[90] pt-4 px-4 backdrop-blur-[12px]"
       style={{
         paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
-        background: 'linear-gradient(180deg, transparent 0%, rgba(5,5,7,0.95) 20%, rgba(5,5,7,0.99) 100%)',
+        background: 'linear-gradient(180deg, transparent 0%, var(--bg-void) 20%, var(--bg-void) 100%)',
         WebkitBackdropFilter: 'blur(12px)',
       }}
     >
@@ -1040,7 +1040,7 @@ const PaymentSheet = memo(function PaymentSheet({
                       className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
                       style={{ background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})` }}
                     >
-                      <ShieldCheck size={28} color="#0a0a0c" />
+                      <ShieldCheck size={28} color="var(--text-on-gold)" />
                     </div>
                     <div className="text-[15px] font-bold text-text-primary mb-2">
                       Безопасная оплата
@@ -1067,11 +1067,11 @@ const PaymentSheet = memo(function PaymentSheet({
                       {onlinePaymentLoading ? (
                         <Loader2 size={20} color={DS.colors.textMuted} className="animate-spin" />
                       ) : (
-                        <Globe size={20} color="#0a0a0c" />
+                        <Globe size={20} color="var(--text-on-gold)" />
                       )}
                       <span
                         className="text-[15px] font-bold"
-                        style={{ color: onlinePaymentLoading ? DS.colors.textMuted : '#0a0a0c' }}
+                        style={{ color: onlinePaymentLoading ? DS.colors.textMuted : 'var(--text-on-gold)' }}
                       >
                         {onlinePaymentLoading ? 'Создаём платёж...' : 'Перейти к оплате'}
                       </span>
@@ -1358,10 +1358,10 @@ const PaymentSheet = memo(function PaymentSheet({
                     boxShadow: hasPaymentInfo ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
                   }}
                 >
-                  <CheckCircle2 size={20} color={hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted} />
+                  <CheckCircle2 size={20} color={hasPaymentInfo ? 'var(--text-on-gold)' : DS.colors.textMuted} />
                   <span
                     className="text-[15px] font-bold"
-                    style={{ color: hasPaymentInfo ? '#0a0a0c' : DS.colors.textMuted }}
+                    style={{ color: hasPaymentInfo ? 'var(--text-on-gold)' : DS.colors.textMuted }}
                   >
                     Я оплатил(а)
                   </span>
@@ -1667,17 +1667,17 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 size={20} color="#0a0a0c" className="animate-spin" />
-                    <span className="text-[15px] font-bold text-[#0a0a0c]">
+                    <Loader2 size={20} color="var(--text-on-gold)" className="animate-spin" />
+                    <span className="text-[15px] font-bold text-[var(--text-on-gold)]">
                       Отправка...
                     </span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck size={20} color={allChecked ? '#0a0a0c' : DS.colors.textMuted} />
+                    <ShieldCheck size={20} color={allChecked ? 'var(--text-on-gold)' : DS.colors.textMuted} />
                     <span
                       className="text-[15px] font-bold"
-                      style={{ color: allChecked ? '#0a0a0c' : DS.colors.textMuted }}
+                      style={{ color: allChecked ? 'var(--text-on-gold)' : DS.colors.textMuted }}
                     >
                       Отправить на проверку
                     </span>
@@ -2106,10 +2106,10 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
               haptic?.('medium')
               onOpenChat()
             }}
-            className="min-h-[48px] rounded-2xl border-none cursor-pointer flex items-center justify-center gap-2 text-[#0a0a0c] text-[14px] font-bold"
+            className="min-h-[48px] rounded-2xl border-none cursor-pointer flex items-center justify-center gap-2 text-[var(--text-on-gold)] text-[14px] font-bold"
             style={{ background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})` }}
           >
-            <MessageCircle size={16} color="#0a0a0c" />
+            <MessageCircle size={16} color="var(--text-on-gold)" />
             Написать в чат
           </motion.button>
 
@@ -2426,7 +2426,7 @@ const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps)
                   ) : step.status === 'current' ? (
                     <StepIcon
                       size={16}
-                      color="#0a0a0c"
+                      color="var(--text-on-gold)"
                       className={step.icon === Loader2 ? 'animate-spin' : ''}
                     />
                   ) : (

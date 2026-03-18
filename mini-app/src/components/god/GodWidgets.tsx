@@ -63,10 +63,10 @@ export const AlertStrip = memo(function AlertStrip({ items, onConfirm, onReject 
         <div key={item.id} className={s.alertCard}>
           <div className={`${s.flexRow} ${s.gap6}`}>
             <div className={s.flex1}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#ec4899' }}>#{item.id}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#ec4899' /* pink, no CSS var */ }}>#{item.id}</div>
               <div className={s.mutedSmall}>{item.label}</div>
               {item.amount != null && (
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginTop: 2 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginTop: 2 }}>
                   {formatMoney(item.amount)}
                 </div>
               )}
@@ -270,7 +270,7 @@ export const StateCard = memo(function StateCard({ tone, title, description, act
       <div className={`${s.flexRow} ${s.gap6}`}>
         <span style={{ fontSize: 14 }}>{isError ? '⚠️' : 'ℹ️'}</span>
         <div className={s.flex1}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: isError ? '#ef4444' : '#e4e4e7' }}>{title}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: isError ? 'var(--error-text)' : 'var(--text-primary)' }}>{title}</div>
           {description && <div className={s.mutedSmall} style={{ marginTop: 2 }}>{description}</div>}
         </div>
       </div>

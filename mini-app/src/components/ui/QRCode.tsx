@@ -181,23 +181,23 @@ export function QRCodeModal({
             width: 32,
             height: 32,
             borderRadius: 8,
-            background: 'rgba(255,255,255,0.06)',
+            background: 'var(--surface-hover)',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#71717a',
+            color: 'var(--text-muted)',
           }}
         >
           <X size={16} />
         </motion.button>
 
         <div style={{ marginTop: 8, marginBottom: 18 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 6px 0' }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
             {title}
           </h3>
-          <p style={{ fontSize: 12.5, color: '#a1a1aa', lineHeight: 1.55, margin: 0 }}>
+          <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
             {subtitle}
           </p>
         </div>
@@ -213,8 +213,8 @@ export function QRCodeModal({
         >
           {assetState.loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-              <Loader2 size={28} color="#d4af37" style={{ animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: 11, color: '#71717a' }}>Готовим QR-код…</span>
+              <Loader2 size={28} color="var(--gold-400)" style={{ animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Готовим QR-код…</span>
             </div>
           ) : visibleImageUrl ? (
             <img
@@ -235,9 +235,9 @@ export function QRCodeModal({
                 maxWidth: 280,
                 padding: '22px 20px',
                 borderRadius: 18,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                color: '#a1a1aa',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--surface-hover)',
+                color: 'var(--text-secondary)',
                 lineHeight: 1.6,
                 fontSize: 13,
               }}
@@ -252,8 +252,8 @@ export function QRCodeModal({
             padding: '14px 16px',
             marginBottom: 16,
             borderRadius: 14,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.05)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-default)',
           }}
         >
           <div
@@ -261,7 +261,7 @@ export function QRCodeModal({
               fontSize: 9,
               fontWeight: 700,
               letterSpacing: '0.12em',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               textTransform: 'uppercase',
               marginBottom: 6,
             }}
@@ -270,7 +270,7 @@ export function QRCodeModal({
           </div>
           <code
             style={{
-              color: '#d4af37',
+              color: 'var(--gold-400)',
               fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
               fontSize: 13,
               fontWeight: 700,
@@ -291,9 +291,9 @@ export function QRCodeModal({
             style={{
               minHeight: 48,
               borderRadius: 14,
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: 'rgba(255,255,255,0.05)',
-              color: downloaded ? '#22c55e' : '#f4f4f5',
+              border: '1px solid var(--border-strong)',
+              background: 'var(--border-default)',
+              color: downloaded ? 'var(--success-text)' : 'var(--text-primary)',
               fontSize: 12.5,
               fontWeight: 600,
               cursor: downloading || !visibleImageUrl ? 'default' : 'pointer',
@@ -317,7 +317,7 @@ export function QRCodeModal({
               borderRadius: 14,
               border: 'none',
               background: 'var(--gold-metallic)',
-              color: '#09090b',
+              color: 'var(--text-on-gold)',
               fontSize: 12.5,
               fontWeight: 700,
               cursor: sharing || !value ? 'default' : 'pointer',
@@ -341,7 +341,7 @@ export function QRCodeModal({
               borderRadius: 14,
               border: '1px solid rgba(212,175,55,0.18)',
               background: 'rgba(212,175,55,0.1)',
-              color: '#d4af37',
+              color: 'var(--gold-400)',
               fontSize: 12.5,
               fontWeight: 700,
               cursor: value ? 'pointer' : 'default',
@@ -357,7 +357,7 @@ export function QRCodeModal({
           </motion.button>
         </div>
 
-        <p style={{ fontSize: 11, color: '#71717a', lineHeight: 1.6, margin: '14px 4px 0' }}>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6, margin: '14px 4px 0' }}>
           Если QR не сканируется с экрана, можно скачать карточку или сразу открыть ссылку в Telegram.
         </p>
       </div>
