@@ -194,7 +194,7 @@ function PriceBreakdown({ order }: { order: Order }) {
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--success-text)' }}>
                             Ваша экономия
                         </div>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                             {order.promo_code ? `Промокод ${order.promo_code}` : 'Скидки и бонусы'}
                         </div>
                     </div>
@@ -230,14 +230,14 @@ function PriceBreakdown({ order }: { order: Order }) {
                     >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                                <span style={{ color: 'rgba(255,255,255,0.5)' }}>Базовая цена:</span>
-                                <span style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'line-through', fontFamily: 'var(--font-mono)' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Базовая цена:</span>
+                                <span style={{ color: 'var(--text-muted)', textDecoration: 'line-through', fontFamily: 'var(--font-mono)' }}>
                                     {order.price?.toLocaleString('ru-RU')} ₽
                                 </span>
                             </div>
                             {order.promo_code && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                                    <span style={{ color: '#a78bfa' }}>🎟️ Промокод:</span>
+                                    <span style={{ color: 'var(--accent-purple)' }}>🎟️ Промокод:</span>
                                     <span style={{ color: 'var(--success-text)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                                         −{order.promo_discount || 0}%
                                     </span>
@@ -378,7 +378,7 @@ function PremiumSuccessScreen() {
                     transition={{ delay: 0.5 }}
                     style={{
                         fontSize: 14,
-                        color: 'rgba(255,255,255,0.6)',
+                        color: 'var(--text-secondary)',
                         margin: 0,
                         lineHeight: 1.7,
                     }}
@@ -573,7 +573,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         </h3>
                         <p style={{
                             fontSize: 12,
-                            color: 'rgba(255,255,255,0.5)',
+                            color: 'var(--text-muted)',
                             margin: 0,
                             fontFamily: "var(--font-mono)",
                         }}>
@@ -624,7 +624,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     <p style={{
                         fontSize: 12,
                         fontWeight: 600,
-                        color: 'rgba(212,175,55,0.8)',
+                        color: 'var(--gold-400)',
                         margin: 0,
                         marginBottom: 10,
                         textTransform: 'uppercase',
@@ -680,7 +680,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             }}
                         >
                             <Shield size={14} color="#8b5cf6" />
-                            <span style={{ fontSize: 12, color: '#a78bfa' }}>
+                            <span style={{ fontSize: 12, color: 'var(--accent-purple)' }}>
                                 Доплата после: <strong style={{ fontFamily: 'var(--font-mono)' }}>{amountToPay.toLocaleString('ru-RU')} ₽</strong>
                             </span>
                         </motion.div>
@@ -693,7 +693,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         <div style={{
                             fontSize: 11,
                             fontWeight: 700,
-                            color: 'rgba(255,255,255,0.4)',
+                            color: 'var(--text-muted)',
                             marginBottom: 12,
                             textTransform: 'uppercase',
                             letterSpacing: '0.1em',
@@ -743,11 +743,11 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                         />
                                     )}
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-                                        <scheme.icon size={18} color={paymentScheme === scheme.key ? '#D4AF37' : '#52525b'} />
+                                        <scheme.icon size={18} color={paymentScheme === scheme.key ? '#D4AF37' : 'var(--text-muted)'} />
                                         <span style={{
                                             fontSize: 18,
                                             fontWeight: 700,
-                                            color: paymentScheme === scheme.key ? '#D4AF37' : '#71717a',
+                                            color: paymentScheme === scheme.key ? '#D4AF37' : 'var(--text-muted)',
                                         }}>
                                             {scheme.label}
                                         </span>
@@ -804,7 +804,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--success-text)', margin: 0, marginBottom: 4 }}>
                                 Предоплата: {order.paid_amount?.toLocaleString('ru-RU')} ₽
                             </p>
-                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
                                 Осталось внести полную сумму остатка
                             </p>
                         </div>
@@ -816,7 +816,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     <div style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: 'rgba(255,255,255,0.4)',
+                        color: 'var(--text-muted)',
                         marginBottom: 12,
                         textTransform: 'uppercase',
                         letterSpacing: '0.1em',
@@ -850,13 +850,13 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             >
                                 <method.icon
                                     size={26}
-                                    color={paymentMethod === method.key ? method.color : '#52525b'}
+                                    color={paymentMethod === method.key ? method.color : 'var(--text-muted)'}
                                     style={{ marginBottom: 10 }}
                                 />
                                 <p style={{
                                     fontSize: 14,
                                     fontWeight: 600,
-                                    color: paymentMethod === method.key ? method.color : '#71717a',
+                                    color: paymentMethod === method.key ? method.color : 'var(--text-muted)',
                                     margin: 0,
                                 }}>
                                     {method.label}
@@ -925,7 +925,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                 </motion.div>
                             </motion.button>
 
-                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0, textAlign: 'center' }}>
+                            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, textAlign: 'center' }}>
                                 {paymentInfo.card_holder}
                             </p>
                         </motion.div>
@@ -987,7 +987,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                 </motion.div>
                             </motion.button>
 
-                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0, textAlign: 'center' }}>
+                            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, textAlign: 'center' }}>
                                 Банк: {paymentInfo.sbp_bank}
                             </p>
                         </motion.div>
@@ -1046,7 +1046,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         }}
                     >
                         <Headphones size={18} color="rgba(255,255,255,0.5)" />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
                             Нужна помощь? Написать менеджеру
                         </span>
                     </motion.button>
@@ -1071,7 +1071,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         fontSize: 17,
                         fontWeight: 700,
                         fontFamily: "var(--font-serif)",
-                        color: processing ? '#71717a' : '#0a0a0c',
+                        color: processing ? 'var(--text-muted)' : 'var(--text-on-gold)',
                         background: processing
                             ? 'rgba(255,255,255,0.08)'
                             : 'linear-gradient(180deg, #FCF6BA 0%, #D4AF37 50%, #B38728 100%)',

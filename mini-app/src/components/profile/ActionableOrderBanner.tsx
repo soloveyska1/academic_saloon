@@ -94,7 +94,7 @@ export const ActionableOrderBanner = memo(function ActionableOrderBanner({ order
           </div>
 
           <div className={s.bannerArrow}>
-            <ArrowUpRight size={18} color="#09090b" strokeWidth={2.6} />
+            <ArrowUpRight size={18} color="var(--text-on-gold)" strokeWidth={2.6} />
           </div>
         </div>
 
@@ -102,7 +102,7 @@ export const ActionableOrderBanner = memo(function ActionableOrderBanner({ order
         <div style={{
           fontSize: 12,
           fontWeight: 600,
-          color: '#a1a1aa',
+          color: 'var(--text-secondary)',
           lineHeight: 1.5,
         }}>
           {footnote}
