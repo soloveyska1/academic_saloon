@@ -514,7 +514,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
                   height: 10,
                   borderRadius: '50%',
                   background: statusConfig.color,
-                  border: '2px solid rgba(20,20,23,1)',
+                  border: '2px solid var(--bg-card-solid)',
                   boxShadow: `0 0 8px ${statusConfig.color}`,
                 }}
               />
@@ -537,7 +537,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
                   flex: 1,
                   height: 4,
                   borderRadius: 2,
-                  background: 'rgba(255,255,255,0.1)',
+                  background: 'var(--surface-active)',
                   overflow: 'hidden',
                 }}>
                   <motion.div
@@ -620,7 +620,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
         justifyContent: 'space-between',
         gap: 12,
         paddingTop: 16,
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid var(--surface-hover)',
         position: 'relative',
         zIndex: 1,
       }}>
@@ -645,15 +645,15 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
                     gap: 4,
                     padding: '4px 8px',
                     borderRadius: 8,
-                    background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1))',
-                    border: '1px solid rgba(34,197,94,0.35)',
+                    background: 'linear-gradient(135deg, var(--success-glass), var(--success-glass))',
+                    border: '1px solid var(--success-border)',
                   }}
                 >
-                  <Zap size={12} color="#22c55e" fill="#22c55e" />
+                  <Zap size={12} color="var(--success-text)" fill="var(--success-text)" />
                   <span style={{
                     fontSize: 11,
                     fontWeight: 800,
-                    color: '#22c55e',
+                    color: 'var(--success-text)',
                     fontFamily: 'var(--font-mono)',
                   }}>
                     −{order.promo_discount}%
@@ -674,10 +674,10 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
                   fontWeight: 800,
                   fontFamily: 'var(--font-mono)',
                   background: order.promo_code
-                    ? 'linear-gradient(135deg, #22c55e, #4ade80)'
+                    ? 'linear-gradient(135deg, var(--success-text), var(--success-text))'
                     : needsPayment
-                      ? 'linear-gradient(135deg, #FCF6BA, #D4AF37)'
-                      : 'linear-gradient(135deg, #fff, #e5e5e5)',
+                      ? 'linear-gradient(135deg, var(--gold-100), var(--gold-400))'
+                      : 'linear-gradient(135deg, var(--text-primary), var(--text-primary))',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}
@@ -695,9 +695,9 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
                 animate={{ rotate: 360 }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
               >
-                <Clock size={18} color="#f59e0b" />
+                <Clock size={18} color="var(--warning-text)" />
               </motion.div>
-              <span style={{ fontSize: 15, fontWeight: 600, color: '#f59e0b' }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--warning-text)' }}>
                 На оценке...
               </span>
             </div>
@@ -707,7 +707,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
           {finalPrice > 0 && paidAmount > 0 && paidAmount < finalPrice && (
             <div style={{
               fontSize: 12,
-              color: 'rgba(255,255,255,0.5)',
+              color: 'var(--text-muted)',
               marginTop: 4,
               display: 'flex',
               alignItems: 'center',
@@ -720,7 +720,7 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
           {finalPrice > 0 && paidAmount >= finalPrice && (
             <div style={{
               fontSize: 12,
-              color: '#22c55e',
+              color: 'var(--success-text)',
               marginTop: 4,
               display: 'flex',
               alignItems: 'center',
@@ -750,10 +750,10 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
               padding: '14px 24px',
               borderRadius: 14,
               background: needsPayment
-                ? 'linear-gradient(135deg, #D4AF37, #B38728)'
+                ? 'var(--gold-metallic)'
                 : `linear-gradient(135deg, ${primaryAction.color}, ${primaryAction.color}cc)`,
               border: 'none',
-              color: needsPayment ? '#0a0a0c' : '#fff',
+              color: needsPayment ? 'var(--text-on-gold)' : 'var(--text-primary)',
               fontSize: 15,
               fontWeight: 700,
               cursor: 'pointer',
@@ -778,8 +778,8 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             marginTop: 16,
             padding: '12px 16px',
             borderRadius: 14,
-            background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.08))',
-            border: '1px solid rgba(34,197,94,0.3)',
+            background: 'linear-gradient(135deg, var(--success-glass), var(--success-glass))',
+            border: '1px solid var(--success-border)',
             display: 'flex',
             alignItems: 'center',
             gap: 12,
@@ -787,8 +787,8 @@ export function OrderHeroHeader({ order, onBack, onActionClick }: OrderHeroHeade
             zIndex: 1,
           }}
         >
-          <Sparkles size={20} color="#22c55e" />
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#22c55e' }}>
+          <Sparkles size={20} color="var(--success-text)" />
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--success-text)' }}>
             Заказ успешно выполнен! Спасибо за доверие.
           </span>
         </motion.div>

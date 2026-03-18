@@ -923,7 +923,7 @@ export const OrderChat = forwardRef<OrderChatHandle, Props>(({ orderId }, ref) =
                         border: '1px solid var(--border-default)',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                          <Headphones size={12} color="#d4af37" />
+                          <Headphones size={12} color="var(--gold-400)" />
                           <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--gold-400)' }}>
                             Менеджер
                           </span>

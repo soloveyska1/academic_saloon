@@ -212,7 +212,7 @@ function NotificationItem({
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#EDEDED',
+            color: 'var(--text-primary)',
             whiteSpace: isExpanded ? 'normal' : 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -229,7 +229,7 @@ function NotificationItem({
               exit={{ opacity: 0, height: 0 }}
               style={{
                 fontSize: 12,
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 marginTop: 4,
                 lineHeight: 1.4,
               }}

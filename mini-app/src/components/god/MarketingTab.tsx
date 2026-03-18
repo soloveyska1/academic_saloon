@@ -243,7 +243,7 @@ const BroadcastSection = memo(function BroadcastSection() {
   return (
     <div className={`${s.flexCol} ${s.gap8}`}>
       {/* Warning */}
-      <div className={s.card} style={{ borderLeft: '3px solid #ef4444' }}>
+      <div className={s.card} style={{ borderLeft: '3px solid var(--error-text)' }}>
         <div style={{ fontSize: 12, color: '#f87171' }}>
           ⚠️ Рассылка отправляется всем выбранным пользователям. Используйте осторожно.
         </div>
@@ -289,11 +289,11 @@ const BroadcastSection = memo(function BroadcastSection() {
         <div className={s.card}>
           <div className={`${s.flexRow} ${s.gap10}`}>
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#22c55e' }}>{result.sent}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--success-text)' }}>{result.sent}</div>
               <div className={s.mutedSmall}>Доставлено</div>
             </div>
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#ef4444' }}>{result.failed}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--error-text)' }}>{result.failed}</div>
               <div className={s.mutedSmall}>Ошибок</div>
             </div>
           </div>

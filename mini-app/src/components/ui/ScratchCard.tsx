@@ -388,10 +388,10 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
             </div>
             <div style={{
               fontSize: 11,
-              color: '#71717a',
+              color: 'var(--text-muted)',
             }}>
               {revealed ? (
-                <span style={{ color: '#22c55e' }}>Приз получен!</span>
+                <span style={{ color: 'var(--success-text)' }}>Приз получен!</span>
               ) : (
                 `Стёрто: ${Math.round(scratchPercent)}%`
               )}
@@ -413,7 +413,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
                   background: 'linear-gradient(90deg, #22c55e, #16a34a)',
                   border: 'none',
                   borderRadius: 14,
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                   fontSize: 16,
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -436,7 +436,7 @@ export function ScratchCard({ prize, prizeAmount, onReveal, onClose }: Props) {
                   background: 'rgba(212,175,55,0.1)',
                   border: '1px solid rgba(212,175,55,0.2)',
                   borderRadius: 12,
-                  color: '#d4af37',
+                  color: 'var(--gold-400)',
                   fontSize: 13,
                 }}
               >

@@ -142,13 +142,13 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
             borderRadius: '20px',
             padding: '2px',
             cursor: 'pointer',
-            background: `linear-gradient(135deg, ${nextAction.color}36, rgba(255,255,255,0.05))`,
+            background: `linear-gradient(135deg, ${nextAction.color}36, var(--border-default))`,
             position: 'relative',
             boxShadow: `0 18px 34px -26px ${nextAction.color}66`,
           }}
         >
           <div style={{
-            background: '#0c0c0e',
+            background: 'var(--bg-surface)',
             borderRadius: '18px',
             padding: '18px',
             display: 'flex',
@@ -180,12 +180,12 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
                   СЕЙЧАС ВАЖНО
                 </span>
               </div>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#f2f2f2', marginBottom: '4px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
                 {nextAction.title}
               </div>
               <div style={{
                 fontSize: '13px',
-                color: '#a1a1aa',
+                color: 'var(--text-secondary)',
                 lineHeight: 1.5,
                 marginBottom: 10,
               }}>
@@ -197,9 +197,9 @@ export const NextActionCard = memo(function NextActionCard({ orders, onNavigate,
                 gap: 6,
                 padding: '7px 10px',
                 borderRadius: '999px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                color: '#f4f4f5',
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-primary)',
                 fontSize: '11px',
                 fontWeight: 700,
               }}>

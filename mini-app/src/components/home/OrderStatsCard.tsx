@@ -38,9 +38,9 @@ export const OrderStatsCard = memo(function OrderStatsCard({
       style={{
         ...glassStyle,
         cursor: 'pointer',
-        border: '1px solid rgba(212,175,55,0.2)',
-        background: 'linear-gradient(145deg, rgba(25,25,28,0.95) 0%, rgba(18,18,20,0.98) 100%)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(212,175,55,0.05)',
+        border: '1px solid var(--border-gold)',
+        background: 'linear-gradient(145deg, var(--bg-elevated) 0%, var(--bg-surface) 100%)',
+        boxShadow: 'var(--card-shadow), 0 0 40px var(--gold-glass-subtle)',
       }}
     >
       <div
@@ -63,30 +63,30 @@ export const OrderStatsCard = memo(function OrderStatsCard({
                 width: 42,
                 height: 42,
                 borderRadius: 12,
-                background: 'linear-gradient(145deg, rgba(30,30,35,0.9), rgba(20,20,24,0.95))',
-                border: '1px solid rgba(212,175,55,0.3)',
+                background: 'linear-gradient(145deg, var(--bg-elevated), var(--bg-surface))',
+                border: '1px solid var(--gold-glass-strong)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-              <Briefcase size={20} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
+              <Briefcase size={20} color="var(--gold-400)" strokeWidth={1.5} />
             </div>
             <div>
               <div style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: 'rgba(212,175,55,0.7)',
+                color: 'var(--gold-400)',
                 letterSpacing: '0.1em',
               }}>МОИ ЗАКАЗЫ</div>
               <div style={{
                 fontSize: 12,
-                color: 'rgba(255,255,255,0.4)',
+                color: 'var(--text-muted)',
                 marginTop: 3,
                 fontStyle: 'italic',
               }}>Статус выполнения</div>
             </div>
           </div>
-          <ChevronRight size={18} color="rgba(212,175,55,0.4)" strokeWidth={1.5} />
+          <ChevronRight size={18} color="var(--gold-400)" strokeWidth={1.5} />
         </div>
 
         {/* Stats Grid */}
