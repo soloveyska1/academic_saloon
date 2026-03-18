@@ -232,12 +232,12 @@ export function PremiumMagneticButton({
   const variants = {
     gold: {
       background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #D4AF37 50%, #B38728 75%, #FBF5B7 100%)',
-      color: '#09090b',
+      color: 'var(--text-on-gold)',
       shadow: '0 0 50px -10px rgba(212,175,55,0.6), 0 15px 35px -10px rgba(0,0,0,0.4)',
     },
     glass: {
-      background: 'rgba(255,255,255,0.08)',
-      color: '#EDEDED',
+      background: 'var(--border-strong)',
+      color: 'var(--text-primary)',
       shadow: '0 10px 30px -10px rgba(0,0,0,0.3)',
     },
     danger: {

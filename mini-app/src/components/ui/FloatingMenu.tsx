@@ -467,7 +467,7 @@ export function SpeedDialFAB({
                 <span style={{
                   fontSize: 13,
                   fontWeight: 500,
-                  color: '#fff',
+                  color: 'var(--text-primary)',
                 }}>
                   {item.label}
                 </span>
@@ -498,9 +498,9 @@ export function SpeedDialFAB({
         >
           <motion.div animate={{ rotate: isOpen ? 45 : 0 }}>
             {isOpen ? (
-              <X size={26} color="#09090b" />
+              <X size={26} color="var(--text-on-gold)" />
             ) : (
-              <MainIcon size={26} color="#09090b" />
+              <MainIcon size={26} color="var(--text-on-gold)" />
             )}
           </motion.div>
         </motion.button>

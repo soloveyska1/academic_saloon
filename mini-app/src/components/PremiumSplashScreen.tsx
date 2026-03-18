@@ -12,10 +12,10 @@ interface PremiumSplashScreenProps {
 }
 
 const G = {
-  deep: '#8E6E27',
-  primary: '#D4AF37',
-  shine: '#FCF6BA',
-  white: '#FFFEF5',
+  deep: 'var(--gold-700)',
+  primary: 'var(--gold-400)',
+  shine: 'var(--gold-100)',
+  white: 'var(--gold-200)',
 }
 
 export function PremiumSplashScreen({
@@ -54,7 +54,7 @@ export function PremiumSplashScreen({
         position: 'fixed',
         inset: 0,
         zIndex: 10000,
-        background: '#050505',
+        background: 'var(--bg-void)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -212,10 +212,10 @@ function Seal({ phase }: { phase: number }) {
           <linearGradient id="sg1" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={G.shine} />
             <stop offset="50%" stopColor={G.primary} />
-            <stop offset="100%" stopColor="#B38728" />
+            <stop offset="100%" stopColor="var(--gold-700)" />
           </linearGradient>
           <linearGradient id="sg2" x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#B38728" />
+            <stop offset="0%" stopColor="var(--gold-700)" />
             <stop offset="50%" stopColor={G.shine} />
             <stop offset="100%" stopColor={G.primary} />
           </linearGradient>

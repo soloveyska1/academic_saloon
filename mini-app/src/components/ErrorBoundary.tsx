@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div style={{
           minHeight: '100vh',
-          background: '#09090b', // Darker black
+          background: 'var(--bg-void)', // Darker black
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -69,15 +69,15 @@ export class ErrorBoundary extends Component<Props, State> {
               width: 80,
               height: 80,
               borderRadius: 24,
-              background: 'linear-gradient(135deg, #18181b 0%, #09090b 100%)',
-              border: '1px solid rgba(212,175,55,0.3)',
+              background: 'linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-void) 100%)',
+              border: '1px solid var(--gold-glass-strong)',
               boxShadow: '0 0 30px rgba(0,0,0,0.5)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 1
             }}>
-              <AlertTriangle size={40} color="#d4af37" strokeWidth={1.5} />
+              <AlertTriangle size={40} color="var(--gold-400)" strokeWidth={1.5} />
             </div>
           </div>
 
@@ -87,7 +87,7 @@ export class ErrorBoundary extends Component<Props, State> {
               fontFamily: "'Cinzel', serif",
               fontSize: 28,
               fontWeight: 700,
-              background: 'linear-gradient(180deg, #FFFFFF 0%, #d4af37 100%)',
+              background: 'linear-gradient(180deg, var(--text-primary) 0%, var(--gold-400) 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               margin: '0 0 16px 0',
@@ -96,7 +96,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </h2>
             <p style={{
               fontSize: 15,
-              color: '#a1a1aa',
+              color: 'var(--text-secondary)',
               margin: 0,
               lineHeight: 1.6,
             }}>
@@ -120,8 +120,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 padding: '16px',
                 fontSize: 16,
                 fontWeight: 700,
-                color: '#09090b',
-                background: 'linear-gradient(90deg, #d4af37 0%, #fcd34d 50%, #d4af37 100%)',
+                color: 'var(--text-on-gold)',
+                background: 'linear-gradient(90deg, var(--gold-400) 0%, #fcd34d 50%, var(--gold-400) 100%)',
                 backgroundSize: '200% auto',
                 border: 'none',
                 borderRadius: 14,
@@ -144,9 +144,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 padding: '16px',
                 fontSize: 16,
                 fontWeight: 600,
-                color: '#a1a1aa',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                color: 'var(--text-secondary)',
+                background: 'var(--border-subtle)',
+                border: '1px solid var(--border-default)',
                 borderRadius: 14,
                 cursor: 'pointer',
                 display: 'flex',
@@ -175,7 +175,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <p style={{
                 fontSize: 12,
                 fontFamily: "'JetBrains Mono', monospace",
-                color: '#ef4444',
+                color: 'var(--error-text)',
                 margin: 0,
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',

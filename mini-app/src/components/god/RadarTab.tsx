@@ -77,7 +77,7 @@ const OnlineSection = memo(function OnlineSection() {
         <div key={u.telegram_id} className={s.card}>
           <div className={`${s.flexRow} ${s.gap6}`}>
             <Wifi size={12} color="var(--success-text)" />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#e4e4e7' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
               {u.fullname || 'Без имени'}
             </span>
             {u.username && <span className={s.mutedSmall}>@{u.username}</span>}
@@ -110,9 +110,9 @@ interface LiveEvent {
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  critical: '#ef4444',
-  high: '#f59e0b',
-  normal: '#3b82f6',
+  critical: 'var(--error-text)',
+  high: 'var(--warning-text)',
+  normal: 'var(--info-text)',
   low: '#6b7280',
 }
 
@@ -130,7 +130,7 @@ const EventsSection = memo(function EventsSection() {
     <div className={`${s.flexCol} ${s.gap6}`}>
       {/* Critical alert */}
       {hasCritical && (
-        <div className={s.card} style={{ borderLeft: '3px solid #ef4444' }}>
+        <div className={s.card} style={{ borderLeft: '3px solid var(--error-text)' }}>
           <div style={{ fontSize: 12, color: '#f87171', fontWeight: 600 }}>
             🔴 Есть критические события, требующие внимания
           </div>
@@ -139,7 +139,7 @@ const EventsSection = memo(function EventsSection() {
 
       {/* Header */}
       <div className={`${s.flexRow} ${s.gap6}`}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#e4e4e7' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
           Лента событий
         </span>
         <span className={s.tagMuted}>{events.length}</span>
@@ -162,7 +162,7 @@ const EventsSection = memo(function EventsSection() {
           }}
         >
           <div className={`${s.flexRow} ${s.gap6}`}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: PRIORITY_COLORS[ev.priority] || '#a1a1aa' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: PRIORITY_COLORS[ev.priority] || 'var(--text-secondary)' }}>
               {ev.title}
             </span>
             {ev.is_new && <span className={s.tagGreen} style={{ fontSize: 9 }}>NEW</span>}
@@ -196,7 +196,7 @@ const LogsSection = memo(function LogsSection() {
     <div className={`${s.flexCol} ${s.gap4}`}>
       {/* Header */}
       <div className={`${s.flexRow} ${s.gap6}`}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#e4e4e7' }}>Журнал действий</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Журнал действий</span>
         <span className={s.tagMuted}>{list.length}</span>
         <button type="button" className={`${s.ghostBtn} ${s.mlAuto}`}
           onClick={() => { impact('light'); logs.refresh() }}>
@@ -209,10 +209,10 @@ const LogsSection = memo(function LogsSection() {
         <StateCard tone="empty" title="Пусто" description="Нет записей в журнале" />
       ) : list.map((log) => (
         <div key={log.id} className={`${s.flexRow} ${s.gap6}`}
-          style={{ padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          style={{ padding: '6px 0', borderBottom: '1px solid var(--border-default)' }}>
           <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{log.action_emoji}</span>
           <div className={s.flex1}>
-            <div style={{ fontSize: 12, color: '#e4e4e7' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>
               {log.action_type}
               {log.target_type && <span className={s.mutedSmall}> · {log.target_type} #{log.target_id}</span>}
             </div>

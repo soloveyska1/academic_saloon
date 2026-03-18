@@ -7,10 +7,10 @@ import { motion } from 'framer-motion'
  */
 
 const GOLD = {
-  primary: '#D4AF37',
-  shine: '#FCF6BA',
-  deep: '#8E6E27',
-  white: '#FFFEF5',
+  primary: 'var(--gold-400)',
+  shine: 'var(--gold-100)',
+  deep: 'var(--gold-700)',
+  white: 'var(--gold-200)',
 }
 
 export function LoadingScreen() {

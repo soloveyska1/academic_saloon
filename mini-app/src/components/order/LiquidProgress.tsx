@@ -36,7 +36,7 @@ export function LiquidProgress({ activeStep }: LiquidProgressProps) {
                     height: 4,
                     transform: 'translateY(-50%)',
                     zIndex: 0,
-                    background: 'rgba(255,255,255,0.05)',
+                    background: 'var(--border-default)',
                     borderRadius: 4,
                 }}>
                     {/* Liquid Fill */}
@@ -46,7 +46,7 @@ export function LiquidProgress({ activeStep }: LiquidProgressProps) {
                         transition={{ duration: 1.5, ease: "anticipate" }}
                         style={{
                             height: '100%',
-                            background: 'linear-gradient(90deg, #d4af37, #fef08a, #d4af37)',
+                            background: 'var(--liquid-gold)',
                             backgroundSize: '200% 100%',
                             boxShadow: '0 0 20px rgba(212,175,55,0.4)',
                             position: 'relative',
@@ -85,8 +85,8 @@ export function LiquidProgress({ activeStep }: LiquidProgressProps) {
                                 initial={false}
                                 animate={{
                                     scale: isCurrent ? 1.3 : 1,
-                                    borderColor: isActive ? '#d4af37' : 'rgba(255,255,255,0.1)',
-                                    background: isActive ? '#1a1a1a' : '#0a0a0a',
+                                    borderColor: isActive ? 'var(--gold-400)' : 'var(--surface-active)',
+                                    background: isActive ? 'var(--bg-elevated)' : 'var(--bg-void)',
                                 }}
                                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                                 style={{

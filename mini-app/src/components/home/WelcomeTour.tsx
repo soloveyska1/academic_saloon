@@ -233,10 +233,10 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 20,
-                boxShadow: '0 8px 32px -8px rgba(212,175,55,0.2)',
+                boxShadow: '0 8px 32px -8px var(--gold-glass-strong)',
               }}
             >
-              <Icon size={24} color="#d4af37" strokeWidth={1.5} />
+              <Icon size={24} color="var(--gold-400)" strokeWidth={1.5} />
             </motion.div>
 
             {/* Title — serif display font */}
@@ -245,7 +245,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
               fontSize: 24,
               fontWeight: 700,
               fontStyle: 'italic',
-              color: '#fff',
+              color: 'var(--text-primary)',
               marginBottom: 8,
               letterSpacing: '-0.01em',
               lineHeight: 1.2,
@@ -257,7 +257,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
             <p style={{
               fontFamily: "'Manrope', sans-serif",
               fontSize: 13,
-              color: 'rgba(255,255,255,0.40)',
+              color: 'var(--text-muted)',
               lineHeight: 1.55,
               marginBottom: 20,
               maxWidth: 280,
@@ -286,13 +286,13 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
                     gap: 10,
                     padding: '10px 14px',
                     borderRadius: 14,
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'var(--border-subtle)',
+                    border: '1px solid var(--surface-hover)',
                   }}
                 >
                   <div style={{
                     width: 4, height: 4, borderRadius: 2,
-                    background: '#d4af37',
+                    background: 'var(--gold-400)',
                     flexShrink: 0,
                     marginTop: 7,
                     boxShadow: '0 0 6px rgba(212,175,55,0.4)',
@@ -301,7 +301,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
                     fontFamily: "'Manrope', sans-serif",
                     fontSize: 13,
                     fontWeight: 500,
-                    color: 'rgba(255,255,255,0.55)',
+                    color: 'var(--text-secondary)',
                     lineHeight: 1.5,
                   }}>
                     {bullet}
@@ -333,7 +333,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
               key={i}
               animate={{
                 width: i === step ? 20 : 6,
-                background: i === step ? '#d4af37' : 'rgba(255,255,255,0.10)',
+                background: i === step ? 'var(--gold-400)' : 'var(--surface-active)',
               }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               style={{
