@@ -6,7 +6,7 @@ import { memo, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Crown, Volume2, VolumeX, UserPlus, Bell,
-  ArrowLeft, Package, CreditCard, X,
+  LogOut, Package, CreditCard, X,
   Zap, Package as PackageIcon, Users, BarChart3, Target, Radar, Terminal,
 } from 'lucide-react'
 import { TABS, type TabId } from './godConstants'
@@ -65,8 +65,9 @@ export const GodShell = memo(function GodShell({
               </button>
               {unreadCount > 0 && <div className={s.unreadBadge}>{unreadCount > 9 ? '9+' : unreadCount}</div>}
             </div>
-            <button type="button" className={s.topBarBtn} onClick={onBack}>
-              <ArrowLeft size={14} />
+            <button type="button" className={s.exitBtn} onClick={onBack}>
+              <LogOut size={13} />
+              Выйти
             </button>
           </div>
         </div>
