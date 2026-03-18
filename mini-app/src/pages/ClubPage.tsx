@@ -458,7 +458,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
       style={{
         padding: '18px 16px',
         borderRadius: 24,
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)'}`,
         marginBottom: 22,
       }}
     >
@@ -466,7 +466,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
         style={{
           fontSize: 14,
           fontWeight: 700,
-          color: '#E8D5A3',
+          color: isDark ? '#E8D5A3' : '#7d5c12',
           fontFamily: "'Manrope', sans-serif",
           marginBottom: 14,
           padding: '0 4px',
@@ -488,7 +488,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 6px',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(120,85,40,0.06)'}`,
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -496,7 +496,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
                   style={{
                     fontSize: 13.5,
                     fontWeight: 600,
-                    color: 'rgba(228,213,163,0.85)',
+                    color: isDark ? 'rgba(228,213,163,0.85)' : 'rgba(28,25,23,0.85)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -504,7 +504,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
                 >
                   {tx.description || tx.reason}
                 </div>
-                <div style={{ fontSize: 11, color: 'rgba(228,213,163,0.35)', marginTop: 3 }}>
+                <div style={{ fontSize: 11, color: isDark ? 'rgba(228,213,163,0.35)' : 'rgba(120,113,108,0.55)', marginTop: 3 }}>
                   {formatTransactionDate(tx.created_at)}
                 </div>
               </div>
@@ -513,7 +513,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
                   fontSize: 14,
                   fontWeight: 700,
                   fontFamily: "'Manrope', sans-serif",
-                  color: tx.type === 'credit' ? '#22c55e' : '#ef4444',
+                  color: tx.type === 'credit' ? (isDark ? '#22c55e' : '#15803d') : '#ef4444',
                   flexShrink: 0,
                   marginLeft: 12,
                 }}
@@ -535,7 +535,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
             padding: '12px 0 4px',
             background: 'none',
             border: 'none',
-            color: 'rgba(212,175,55,0.7)',
+            color: isDark ? 'rgba(212,175,55,0.7)' : 'rgba(158,122,26,0.7)',
             fontSize: 13,
             fontWeight: 600,
             fontFamily: "'Manrope', sans-serif",
@@ -559,7 +559,7 @@ function TransactionHistory({ transactions, isDark }: { transactions: Transactio
 
 // ─── How It Works ───────────────────────────────────────────────────────────
 
-function HowItWorks({ userCashback }: { userCashback: number }) {
+function HowItWorks({ userCashback, isDark }: { userCashback: number; isDark: boolean }) {
   const userRankIndex = getRankIndexByCashback(userCashback)
 
   return (
