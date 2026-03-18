@@ -424,7 +424,7 @@ export function AdminPanel() {
                             background: isActive ? 'rgba(212, 175, 55, 0.2)' : 'rgba(212, 175, 55, 0.05)',
                             border: `1px solid ${isActive ? 'rgba(212, 175, 55, 0.4)' : 'rgba(212, 175, 55, 0.1)'}`,
                             borderRadius: 8,
-                            color: isActive ? '#f2f2f2' : '#a1a1aa',
+                            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                             fontSize: 11,
                             fontWeight: 600,
                             cursor: 'pointer',
@@ -435,7 +435,7 @@ export function AdminPanel() {
                       )
                     })}
                   </div>
-                  <div style={{ fontSize: 9, color: '#71717a', marginTop: 8, textAlign: 'center' }}>
+                  <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 8, textAlign: 'center' }}>
                     {admin.simulatedRank ? `Активна симуляция: ${admin.simulatedRank}%` : 'Симуляция отключена (реальные данные)'}
                   </div>
                 </div>
@@ -451,7 +451,7 @@ export function AdminPanel() {
                       borderRadius: 10,
                       fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 10,
-                      color: '#a1a1aa',
+                      color: 'var(--text-secondary)',
                       lineHeight: 1.6,
                     }}
                   >

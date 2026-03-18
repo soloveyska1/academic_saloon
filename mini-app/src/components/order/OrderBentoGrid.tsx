@@ -40,8 +40,8 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     minHeight: 140,
                     borderRadius: 24,
                     // Premium Dark Gradient
-                    background: 'linear-gradient(145deg, rgba(20,20,20,0.8) 0%, rgba(30,30,35,0.9) 100%)',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    background: 'linear-gradient(145deg, var(--bg-card) 0%, var(--bg-card) 100%)',
+                    border: '1px solid var(--border-default)',
                     boxShadow: '0 10px 30px -5px rgba(0,0,0,0.3)',
                     position: 'relative',
                     overflow: 'hidden'
@@ -57,7 +57,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                     }}>
                         <Calendar size={18} color="#94a3b8" />
                     </div>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: '0.02em' }}>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.02em' }}>
                         Дедлайн
                     </div>
                 </div>
@@ -103,7 +103,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         marginBottom: 16
                     }}>
-                        <Coins size={18} color="#d4af37" />
+                        <Coins size={18} color="var(--gold-400)" />
                     </div>
                     <div style={{ fontSize: 13, color: 'rgba(212,175,55,0.8)', fontWeight: 600, letterSpacing: '0.02em' }}>
                         Бюджет
@@ -198,7 +198,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
                         {hasFiles ? (
-                            <Download size={24} color="#22c55e" />
+                            <Download size={24} color="var(--success-text)" />
                         ) : (
                             <FileText size={24} color="#64748b" />
                         )}
@@ -238,7 +238,7 @@ export function OrderBentoGrid({ order }: BentoGridProps) {
             >
                 <div style={{
                     fontSize: 12,
-                    color: 'rgba(255,255,255,0.4)',
+                    color: 'var(--text-muted)',
                     fontWeight: 600,
                     marginBottom: 8,
                     textTransform: 'uppercase',

@@ -137,19 +137,19 @@ export function FloatingCtaDock({
                 width: 36,
                 height: 36,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #d4af37, #b48e26)',
+                background: 'var(--gold-metallic)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 0 16px rgba(212, 175, 55, 0.4)',
+                boxShadow: 'var(--glow-gold)',
               }}
             >
               {submitting ? (
-                <Loader2 size={18} color="#050505" strokeWidth={2.5} />
+                <Loader2 size={18} color="var(--text-on-gold)" strokeWidth={2.5} />
               ) : step === totalSteps ? (
-                <Send size={16} color="#050505" strokeWidth={2.5} />
+                <Send size={16} color="var(--text-on-gold)" strokeWidth={2.5} />
               ) : (
-                <ChevronRight size={20} color="#050505" strokeWidth={2.5} />
+                <ChevronRight size={20} color="var(--text-on-gold)" strokeWidth={2.5} />
               )}
             </motion.div>
           </motion.button>

@@ -396,8 +396,8 @@ export function PromoCodeSection({
                   width: 28,
                   height: 28,
                   borderRadius: 8,
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'var(--border-default)',
+                  border: '1px solid var(--surface-active)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -429,7 +429,7 @@ export function PromoCodeSection({
                 gap: 10,
                 padding: '10px 14px',
                 background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-strong)',
                 borderRadius: 12,
               }}>
                 <Tag size={16} color="var(--text-muted)" />
@@ -466,7 +466,7 @@ export function PromoCodeSection({
                     : 'rgba(255, 255, 255, 0.03)',
                   border: inputCode.trim()
                     ? '1px solid rgba(212, 175, 55, 0.3)'
-                    : '1px solid rgba(255, 255, 255, 0.08)',
+                    : '1px solid var(--border-strong)',
                   cursor: inputCode.trim() && !isValidating ? 'pointer' : 'default',
                   opacity: isValidating ? 0.7 : (inputCode.trim() ? 1 : 0.5),
                   flexShrink: 0,
@@ -484,7 +484,7 @@ export function PromoCodeSection({
                       justifyContent: 'center',
                     }}
                   >
-                    <Loader size={16} color="#d4af37" strokeWidth={3} />
+                    <Loader size={16} color="var(--gold-400)" strokeWidth={3} />
                   </motion.div>
                 ) : (
                   <span style={{
@@ -684,8 +684,8 @@ export function PromoCodeSection({
                   width: 32,
                   height: 32,
                   borderRadius: 10,
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'var(--border-default)',
+                  border: '1px solid var(--surface-active)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -769,7 +769,7 @@ export function PromoCodeSection({
                 background: 'rgba(255, 255, 255, 0.03)',
                 border: validationError
                   ? '1px solid rgba(239, 68, 68, 0.4)'
-                  : '1px solid rgba(255, 255, 255, 0.1)',
+                  : '1px solid var(--surface-active)',
                 borderRadius: 14,
                 transition: 'border-color 0.2s, box-shadow 0.2s',
                 boxShadow: isValidating ? '0 0 0 2px rgba(212,175,55,0.2)' : 'none',
@@ -817,7 +817,7 @@ export function PromoCodeSection({
                   borderRadius: 14,
                   background: inputCode.trim()
                     ? 'linear-gradient(135deg, #d4af37, #b8962e)'
-                    : 'rgba(255, 255, 255, 0.05)',
+                    : 'var(--border-default)',
                   border: 'none',
                   cursor: inputCode.trim() && !isValidating ? 'pointer' : 'default',
                   opacity: isValidating ? 0.8 : 1,
@@ -923,7 +923,7 @@ export function PromoCodeSection({
               : 'rgba(255, 255, 255, 0.03)',
             border: activePromo
               ? '1px solid rgba(34, 197, 94, 0.2)'
-              : '1px solid rgba(255, 255, 255, 0.08)',
+              : '1px solid var(--border-strong)',
             borderRadius: isExpanded ? '16px 16px 0 0' : 16,
             cursor: 'pointer',
           }}
@@ -959,9 +959,9 @@ export function PromoCodeSection({
                 overflow: 'hidden',
                 borderRadius: '0 0 16px 16px',
                 background: 'rgba(255, 255, 255, 0.02)',
-                borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                borderLeft: '1px solid var(--border-strong)',
+                borderRight: '1px solid var(--border-strong)',
+                borderBottom: '1px solid var(--border-strong)',
               }}
             >
               <div style={{ padding: 16 }}>
