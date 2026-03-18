@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight, Copy, LucideIcon, QrCode, Users } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
+import { useThemeValue } from '../../contexts/ThemeContext'
 import { formatMoney, prefersReducedMotion, toSafeNumber } from './profileHelpers'
 
 interface Props {

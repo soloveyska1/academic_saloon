@@ -18,6 +18,8 @@ interface Props {
 }
 
 export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions }: Props) {
+  const theme = useThemeValue()
+  const isDark = theme === 'dark'
   const bonusBalance = toSafeNumber(user.balance)
 
   const latestTransactions = useMemo(
@@ -52,7 +54,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
             <div style={{
               fontSize: 24,
               fontWeight: 800,
-              color: '#E8D5A3',
+              color: isDark ? '#E8D5A3' : '#7d5c12',
               fontFamily: "'Manrope', sans-serif",
               marginBottom: 2,
             }}>
@@ -67,8 +69,8 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
             width: 44,
             height: 44,
             borderRadius: 14,
-            background: 'rgba(212, 175, 55, 0.10)',
-            border: '1px solid rgba(212, 175, 55, 0.16)',
+            background: isDark ? 'rgba(212, 175, 55, 0.10)' : 'rgba(158, 122, 26, 0.08)',
+            border: isDark ? '1px solid rgba(212, 175, 55, 0.16)' : '1px solid rgba(158, 122, 26, 0.14)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -85,9 +87,9 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
             gap: 6,
             padding: '6px 10px',
             borderRadius: 999,
-            background: 'rgba(251, 191, 36, 0.10)',
-            border: '1px solid rgba(251, 191, 36, 0.18)',
-            color: '#fbbf24',
+            background: isDark ? 'rgba(251, 191, 36, 0.10)' : 'rgba(180, 130, 10, 0.08)',
+            border: isDark ? '1px solid rgba(251, 191, 36, 0.18)' : '1px solid rgba(180, 130, 10, 0.16)',
+            color: isDark ? '#fbbf24' : '#92600a',
             fontSize: 11.5,
             fontWeight: 700,
             marginBottom: 14,
@@ -101,7 +103,7 @@ export const BonusWallet = memo(function BonusWallet({ user, onOpenTransactions 
         <div style={{
           fontSize: 11,
           fontWeight: 700,
-          color: 'rgba(255,255,255,0.44)',
+          color: isDark ? 'rgba(255,255,255,0.44)' : 'rgba(87,83,78,0.65)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
           marginBottom: 8,
