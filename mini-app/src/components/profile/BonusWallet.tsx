@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Clock3, Wallet2 } from 'lucide-react'
 import s from '../../pages/ProfilePage.module.css'
+import { useThemeValue } from '../../contexts/ThemeContext'
 import {
   formatExpiryHint,
   formatMoney,
