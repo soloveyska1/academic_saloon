@@ -105,7 +105,7 @@ export const AnalyticsTab = memo(function AnalyticsTab() {
             <div className={s.weekCompareVs}>vs</div>
             <div className={s.weekCompareBlock}>
               <div className={s.mutedSmall}>Прошлая</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#a1a1aa' }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-secondary)' }}>
                 {formatMoney(stats.data.revenue_last_week)}
               </div>
             </div>

@@ -70,14 +70,14 @@ function WSStatusIndicator({ showDebug }: { showDebug: boolean }) {
       onClick={() => !isConnected && reconnect()}
     >
       {isConnected ? (
-        <Wifi size={14} color="#22c55e" />
+        <Wifi size={14} color="var(--success-text)" />
       ) : (
-        <WifiOff size={14} color="#ef4444" />
+        <WifiOff size={14} color="var(--error-text)" />
       )}
       <span style={{
         fontSize: 10,
         fontWeight: 600,
-        color: isConnected ? '#22c55e' : '#ef4444',
+        color: isConnected ? 'var(--success-text)' : 'var(--error-text)',
       }}>
         {isConnected ? 'WS' : 'Offline'}
       </span>
@@ -124,7 +124,7 @@ function NotFoundPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#09090b',
+      background: 'var(--bg-void)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -141,11 +141,11 @@ function NotFoundPage() {
           height: 80,
           borderRadius: 24,
           background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
-          border: '1px solid rgba(212,175,55,0.3)',
+          border: '1px solid var(--gold-glass-strong)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(212,175,55,0.1)',
+          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <Search size={36} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
@@ -161,7 +161,7 @@ function NotFoundPage() {
           fontFamily: "var(--font-serif, 'Playfair Display', serif)",
           fontSize: 24,
           fontWeight: 700,
-          color: 'rgba(255,255,255,0.9)',
+          color: 'var(--text-primary)',
           margin: 0,
           marginBottom: 12,
         }}>
@@ -169,7 +169,7 @@ function NotFoundPage() {
         </h2>
         <p style={{
           fontSize: 13,
-          color: 'rgba(255,255,255,0.4)',
+          color: 'var(--text-muted)',
           margin: 0,
           lineHeight: 1.6,
           maxWidth: 280,
@@ -188,15 +188,15 @@ function NotFoundPage() {
           padding: '14px 32px',
           fontSize: 14,
           fontWeight: 600,
-          color: '#0a0a0c',
-          background: 'linear-gradient(180deg, #f5d485, #D4AF37)',
+          color: 'var(--text-on-gold)',
+          background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
           border: 'none',
           borderRadius: 14,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          boxShadow: '0 4px 20px rgba(212,175,55,0.3)',
+          boxShadow: 'var(--glow-gold)',
         }}
       >
         <ArrowLeft size={16} strokeWidth={2} />
@@ -359,7 +359,7 @@ function AppContent() {
                 ═══════════════════════════════════════════════════════════════════ */}
             <div style={{
               minHeight: '100vh',
-              background: 'linear-gradient(180deg, #0a0a0c 0%, #0d0d10 50%, #0a0a0c 100%)',
+              background: 'linear-gradient(180deg, var(--bg-void) 0%, var(--bg-surface) 50%, var(--bg-void) 100%)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -392,11 +392,11 @@ function AppContent() {
                   height: 80,
                   borderRadius: 24,
                   background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
-                  border: '1px solid rgba(212,175,55,0.3)',
+                  border: '1px solid var(--gold-glass-strong)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(212,175,55,0.1)',
+                  boxShadow: 'var(--shadow-lg)',
                   position: 'relative',
                 }}
               >
@@ -424,7 +424,7 @@ function AppContent() {
                   fontFamily: "var(--font-serif, 'Playfair Display', serif)",
                   fontSize: 24,
                   fontWeight: 700,
-                  color: 'rgba(255,255,255,0.9)',
+                  color: 'var(--text-primary)',
                   margin: 0,
                   marginBottom: 12,
                   letterSpacing: '0.02em',
@@ -433,7 +433,7 @@ function AppContent() {
                 </h2>
                 <p style={{
                   fontSize: 13,
-                  color: 'rgba(255,255,255,0.4)',
+                  color: 'var(--text-muted)',
                   margin: 0,
                   lineHeight: 1.6,
                   maxWidth: 280,
@@ -453,15 +453,15 @@ function AppContent() {
                   padding: '14px 32px',
                   fontSize: 14,
                   fontWeight: 600,
-                  color: '#0a0a0c',
-                  background: 'linear-gradient(180deg, #f5d485, #D4AF37)',
+                  color: 'var(--text-on-gold)',
+                  background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
                   border: 'none',
                   borderRadius: 14,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 10,
-                  boxShadow: '0 4px 20px rgba(212,175,55,0.3)',
+                  boxShadow: 'var(--glow-gold)',
                   letterSpacing: '0.02em',
                   position: 'relative',
                   zIndex: 1,

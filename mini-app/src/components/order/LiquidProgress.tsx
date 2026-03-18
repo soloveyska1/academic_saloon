@@ -109,8 +109,8 @@ export function LiquidProgress({ activeStep }: LiquidProgressProps) {
                                             width: isCurrent ? 8 : 12,
                                             height: isCurrent ? 8 : 12,
                                             borderRadius: isCurrent ? '50%' : 2,
-                                            background: '#d4af37',
-                                            boxShadow: '0 0 10px #d4af37',
+                                            background: 'var(--gold-400)',
+                                            boxShadow: 'var(--glow-gold)',
                                         }}
                                     >
                                         {isCurrent && (
@@ -121,11 +121,11 @@ export function LiquidProgress({ activeStep }: LiquidProgressProps) {
                                                     position: 'absolute',
                                                     inset: -4,
                                                     borderRadius: '50%',
-                                                    border: '1px solid #d4af37'
+                                                    border: '1px solid var(--gold-400)'
                                                 }}
                                             />
                                         )}
-                                        {!isCurrent && <Sparkles size={12} color="#000" style={{ transform: 'scale(0.8)' }} />}
+                                        {!isCurrent && <Sparkles size={12} color="var(--text-on-gold)" style={{ transform: 'scale(0.8)' }} />}
                                     </motion.div>
                                 )}
                             </motion.div>
@@ -135,7 +135,7 @@ export function LiquidProgress({ activeStep }: LiquidProgressProps) {
                                 fontWeight: isActive ? 700 : 500,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.05em',
-                                color: isActive ? '#d4af37' : 'rgba(255,255,255,0.4)',
+                                color: isActive ? 'var(--gold-400)' : 'var(--text-muted)',
                                 position: 'absolute',
                                 top: 44,
                                 whiteSpace: 'nowrap',

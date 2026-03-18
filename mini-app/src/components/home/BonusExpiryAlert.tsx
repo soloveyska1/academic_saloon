@@ -37,7 +37,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         subtitle: `${Math.round(amount).toLocaleString('ru-RU')} ₽ исчезнут навсегда`,
         gradient: 'linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(220,38,38,0.06) 100%)',
         border: 'rgba(239,68,68,0.30)',
-        iconColor: '#f87171',
+        iconColor: 'var(--error-text)',
         textColor: '#fca5a5',
         pulse: true,
       }
@@ -60,10 +60,10 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
       icon: Gift,
       title: `Используйте ${Math.round(amount).toLocaleString('ru-RU')} ₽ бонусов`,
       subtitle: `Истекают через ${days} дней`,
-      gradient: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(20,20,23,0.6) 100%)',
-      border: 'rgba(212,175,55,0.20)',
-      iconColor: '#d4af37',
-      textColor: '#e8d5a3',
+      gradient: 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, var(--bg-card) 100%)',
+      border: 'var(--border-gold)',
+      iconColor: 'var(--gold-400)',
+      textColor: 'var(--gold-200)',
       pulse: false,
     }
   }, [bonusExpiry, bonusBalance])
@@ -150,7 +150,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
           style={{
             fontSize: 11,
             fontWeight: 500,
-            color: 'rgba(255,255,255,0.35)',
+            color: 'var(--text-muted)',
             lineHeight: 1.3,
           }}
         >

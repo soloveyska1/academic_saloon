@@ -340,7 +340,7 @@ export function SmartStatusCard({ order, onActionClick }: SmartStatusCardProps) 
             <div style={{
               height: 8,
               borderRadius: 4,
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'var(--border-default)',
               overflow: 'hidden',
             }}>
               <motion.div
@@ -387,15 +387,15 @@ export function SmartStatusCard({ order, onActionClick }: SmartStatusCardProps) 
           gap: 10,
           padding: 14,
           borderRadius: 14,
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
+          background: 'var(--border-subtle)',
+          border: '1px solid var(--border-default)',
         }}>
           <div style={{
             width: 24,
             height: 24,
             borderRadius: 8,
-            background: 'rgba(212, 175, 55, 0.15)',
-            border: '1px solid rgba(212, 175, 55, 0.2)',
+            background: 'var(--gold-glass-medium)',
+            border: '1px solid var(--border-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
