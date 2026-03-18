@@ -219,7 +219,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
           top: 0,
           bottom: 0,
           width: 2,
-          background: 'rgba(255, 255, 255, 0.05)',
+          background: 'var(--border-default)',
           borderRadius: 1,
         }}>
           {/* Progress fill */}
@@ -229,7 +229,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
             transition={{ duration: 1, ease: 'easeOut' }}
             style={{
               width: '100%',
-              background: 'linear-gradient(180deg, #d4af37, #22c55e)',
+              background: 'linear-gradient(180deg, var(--gold-400), var(--success-text))',
               borderRadius: 1,
             }}
           />
@@ -271,8 +271,8 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
                     width: 40,
                     height: 40,
                     borderRadius: 12,
-                    background: isCompleted || isCurrent ? step.bgColor : 'rgba(255, 255, 255, 0.03)',
-                    border: `2px solid ${isCompleted || isCurrent ? step.borderColor : 'rgba(255, 255, 255, 0.08)'}`,
+                    background: isCompleted || isCurrent ? step.bgColor : 'var(--border-subtle)',
+                    border: `2px solid ${isCompleted || isCurrent ? step.borderColor : 'var(--border-strong)'}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -291,7 +291,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
                   ) : (
                     <StepIcon
                       size={18}
-                      color={isCompleted || isCurrent ? step.color : 'rgba(255, 255, 255, 0.3)'}
+                      color={isCompleted || isCurrent ? step.color : 'var(--text-muted)'}
                     />
                   )}
                 </motion.div>
@@ -359,14 +359,14 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
                       marginTop: 8,
                       padding: '4px 10px',
                       borderRadius: 8,
-                      background: 'rgba(34, 197, 94, 0.1)',
-                      border: '1px solid rgba(34, 197, 94, 0.2)',
+                      background: 'var(--success-glass)',
+                      border: '1px solid var(--success-border)',
                     }}>
-                      <CheckCircle2 size={12} color="#22c55e" />
+                      <CheckCircle2 size={12} color="var(--success-text)" />
                       <span style={{
                         fontSize: 11,
                         fontWeight: 600,
-                        color: '#22c55e',
+                        color: 'var(--success-text)',
                       }}>
                         Выполнено
                       </span>

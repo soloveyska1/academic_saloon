@@ -197,7 +197,7 @@ export function PromoCodeSection({
           borderRadius: 20,
         }}
       >
-        <Tag size={12} color="#22c55e" />
+        <Tag size={12} color="var(--success-text)" />
         <span style={{
           fontSize: 12,
           fontWeight: 700,

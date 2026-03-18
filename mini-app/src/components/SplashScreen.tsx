@@ -380,7 +380,7 @@ const QuickMonogram = () => (
         className="text-3xl font-bold"
         style={{
           fontFamily: "'Cinzel', serif",
-          background: `linear-gradient(135deg, ${GOLD.shine}, ${GOLD.primary}, #B38728)`,
+          background: `linear-gradient(135deg, ${GOLD.shine}, ${GOLD.primary}, var(--gold-700))`,
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
           color: 'transparent',
