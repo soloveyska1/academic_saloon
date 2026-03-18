@@ -40,7 +40,7 @@ function formatTransactionDate(isoDate: string): string {
 
 // ─── Hero Card ──────────────────────────────────────────────────────────────
 
-function HeroCard({ user }: { user: UserData }) {
+function HeroCard({ user, isDark }: { user: UserData; isDark: boolean }) {
   const cashback = user.rank.cashback || 0
   const balance = user.bonus_balance || 0
   const rank = getRankByCashback(cashback)
@@ -60,7 +60,7 @@ function HeroCard({ user }: { user: UserData }) {
         borderRadius: 28,
         marginBottom: 22,
         overflow: 'hidden',
-        border: '1px solid rgba(212,175,55,0.16)',
+        border: `1px solid ${isDark ? 'rgba(212,175,55,0.16)' : 'rgba(158,122,26,0.18)'}`,
         isolation: 'isolate',
         textAlign: 'left',
       }}
@@ -78,14 +78,14 @@ function HeroCard({ user }: { user: UserData }) {
             gap: 8,
             padding: '8px 12px',
             borderRadius: 999,
-            background: 'rgba(9, 9, 11, 0.58)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: isDark ? 'rgba(9, 9, 11, 0.58)' : 'rgba(255,255,255,0.85)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(120,85,40,0.12)'}`,
             fontFamily: "'Manrope', sans-serif",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: '0.08em',
             textTransform: 'uppercase' as const,
-            color: 'var(--gold-100)',
+            color: isDark ? 'var(--gold-100)' : '#7d5c12',
             marginBottom: 18,
           }}
         >
@@ -94,8 +94,8 @@ function HeroCard({ user }: { user: UserData }) {
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: '#d4af37',
-              boxShadow: '0 0 12px rgba(212,175,55,0.72)',
+              background: isDark ? '#d4af37' : '#9e7a1a',
+              boxShadow: isDark ? '0 0 12px rgba(212,175,55,0.72)' : '0 0 12px rgba(158,122,26,0.5)',
               flexShrink: 0,
             }}
           />
@@ -117,7 +117,7 @@ function HeroCard({ user }: { user: UserData }) {
         </div>
         <div
           style={{
-            color: 'rgba(228,213,163,0.7)',
+            color: isDark ? 'rgba(228,213,163,0.7)' : 'rgba(125,92,18,0.7)',
             fontFamily: "'Manrope', sans-serif",
             fontSize: 14,
             fontWeight: 500,
@@ -130,11 +130,11 @@ function HeroCard({ user }: { user: UserData }) {
         {/* Stats row */}
         <div className={homeStyles.heroProofRail}>
           <div className={homeStyles.heroProofItem}>
-            <Wallet2 size={15} color="#d4af37" />
+            <Wallet2 size={15} color={isDark ? '#d4af37' : '#9e7a1a'} />
             На балансе: {formatMoney(balance)}
           </div>
           <div className={homeStyles.heroProofItem}>
-            <BadgePercent size={15} color="#d4af37" />
+            <BadgePercent size={15} color={isDark ? '#d4af37' : '#9e7a1a'} />
             Потрачено: {formatMoney(user.total_spent || 0)}
           </div>
         </div>
@@ -148,7 +148,7 @@ function HeroCard({ user }: { user: UserData }) {
                 justifyContent: 'space-between',
                 fontSize: 12,
                 fontWeight: 600,
-                color: 'rgba(228,213,163,0.6)',
+                color: isDark ? 'rgba(228,213,163,0.6)' : 'rgba(125,92,18,0.6)',
                 marginBottom: 8,
                 fontFamily: "'Manrope', sans-serif",
               }}
@@ -161,7 +161,7 @@ function HeroCard({ user }: { user: UserData }) {
                 width: '100%',
                 height: 6,
                 borderRadius: 3,
-                background: 'rgba(255,255,255,0.06)',
+                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(120,85,40,0.08)',
                 overflow: 'hidden',
               }}
             >
@@ -172,7 +172,9 @@ function HeroCard({ user }: { user: UserData }) {
                 style={{
                   height: '100%',
                   borderRadius: 3,
-                  background: 'linear-gradient(90deg, #D4AF37, #F5D061)',
+                  background: isDark
+                    ? 'linear-gradient(90deg, #D4AF37, #F5D061)'
+                    : 'linear-gradient(90deg, #9e7a1a, #b8922d)',
                 }}
               />
             </div>
@@ -180,7 +182,7 @@ function HeroCard({ user }: { user: UserData }) {
         )}
 
         {maxRank && (
-          <div style={{ marginTop: 12, fontSize: 13, color: 'rgba(212,175,55,0.7)', fontWeight: 600 }}>
+          <div style={{ marginTop: 12, fontSize: 13, color: isDark ? 'rgba(212,175,55,0.7)' : 'rgba(158,122,26,0.7)', fontWeight: 600 }}>
             Максимальный ранг достигнут
           </div>
         )}
@@ -191,7 +193,7 @@ function HeroCard({ user }: { user: UserData }) {
 
 // ─── Referral Block ─────────────────────────────────────────────────────────
 
-function ReferralBlock({ user }: { user: UserData }) {
+function ReferralBlock({ user, isDark }: { user: UserData; isDark: boolean }) {
   const { botUsername, haptic } = useTelegram()
   const [copied, setCopied] = useState(false)
 
