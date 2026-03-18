@@ -65,8 +65,8 @@ const EmptyState = ({ onSendHello }: { onSendHello: () => void }) => (
         width: 80,
         height: 80,
         borderRadius: 24,
-        background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05))',
-        border: '1px solid rgba(212, 175, 55, 0.3)',
+        background: 'linear-gradient(135deg, var(--gold-glass-strong), rgba(212, 175, 55, 0.05))',
+        border: '1px solid var(--border-gold)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -102,8 +102,8 @@ const EmptyState = ({ onSendHello }: { onSendHello: () => void }) => (
       style={{
         padding: '14px 28px',
         borderRadius: 14,
-        background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1))',
-        border: '1px solid rgba(212, 175, 55, 0.3)',
+        background: 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))',
+        border: '1px solid var(--border-gold)',
         color: 'var(--gold-400)',
         fontSize: 15,
         fontWeight: 600,
@@ -138,8 +138,8 @@ const ErrorState = ({ message, onRetry }: { message: string; onRetry: () => void
       width: 64,
       height: 64,
       borderRadius: 20,
-      background: 'rgba(239, 68, 68, 0.1)',
-      border: '1px solid rgba(239, 68, 68, 0.2)',
+      background: 'var(--error-glass)',
+      border: '1px solid var(--error-border)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -162,8 +162,8 @@ const ErrorState = ({ message, onRetry }: { message: string; onRetry: () => void
       style={{
         padding: '12px 24px',
         borderRadius: 12,
-        background: 'rgba(255, 255, 255, 0.05)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'var(--bg-glass)',
+        border: '1px solid var(--surface-active)',
         color: 'var(--text-main)',
         fontSize: 14,
         fontWeight: 600,
@@ -202,7 +202,7 @@ const DateSeparator = ({ date }: { date: string }) => {
       <div style={{
         padding: '6px 14px',
         borderRadius: 10,
-        background: 'rgba(255, 255, 255, 0.05)',
+        background: 'var(--bg-glass)',
         fontSize: 12,
         fontWeight: 600,
         color: 'var(--text-muted)',
@@ -224,9 +224,9 @@ const TypingIndicator = () => (
       alignItems: 'center',
       gap: 8,
       padding: '8px 14px',
-      background: 'rgba(212, 175, 55, 0.1)',
+      background: 'var(--gold-glass-medium)',
       borderRadius: '16px 16px 16px 4px',
-      border: '1px solid rgba(212, 175, 55, 0.2)',
+      border: '1px solid var(--gold-glass-strong)',
       alignSelf: 'flex-start',
     }}
   >
@@ -305,13 +305,13 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
         padding: msg.file_type && !msg.message_text ? 8 : '12px 16px',
         borderRadius: isClient ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
         background: isClient
-          ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1))'
-          : 'rgba(255, 255, 255, 0.05)',
+          ? 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))'
+          : 'var(--border-default)',
         border: isClient
-          ? '1px solid rgba(212, 175, 55, 0.3)'
-          : '1px solid rgba(255, 255, 255, 0.08)',
+          ? '1px solid var(--border-gold)'
+          : '1px solid var(--border-strong)',
         boxShadow: isClient
-          ? '0 4px 15px -5px rgba(212, 175, 55, 0.2)'
+          ? '0 4px 15px -5px var(--gold-glass-strong)'
           : 'none',
       }}>
         {/* Text message */}
@@ -338,7 +338,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
               gap: 10,
               padding: '8px 12px',
               background: 'rgba(212, 175, 55, 0.15)',
-              border: '1px solid rgba(212, 175, 55, 0.3)',
+              border: '1px solid var(--border-gold)',
               borderRadius: 20,
               cursor: 'pointer',
               minWidth: 140,
@@ -352,7 +352,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
             <div style={{
               flex: 1,
               height: 4,
-              background: 'rgba(212, 175, 55, 0.3)',
+              background: 'var(--border-gold)',
               borderRadius: 2,
             }}>
               <motion.div
@@ -380,8 +380,8 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
               alignItems: 'center',
               gap: 10,
               padding: '10px 14px',
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'var(--border-subtle)',
+              border: '1px solid var(--border-strong)',
               borderRadius: 12,
               textDecoration: 'none',
             }}
@@ -390,7 +390,7 @@ const Message = ({ msg, isPlaying, onPlayAudio }: {
               width: 40,
               height: 40,
               borderRadius: 10,
-              background: 'rgba(59, 130, 246, 0.15)',
+              background: 'var(--info-glass)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -783,7 +783,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             borderRadius: 20,
             background: 'linear-gradient(135deg, rgba(25, 25, 30, 0.95), rgba(30, 30, 35, 0.9))',
             border: '1px solid rgba(212, 175, 55, 0.25)',
-            boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(212, 175, 55, 0.1)',
+            boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px var(--gold-glass-medium)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -802,7 +802,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
               left: 0,
               width: '50%',
               height: '100%',
-              background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent)',
+              background: 'linear-gradient(90deg, transparent, var(--gold-glass-medium), transparent)',
               transform: 'skewX(-20deg)',
             }}
           />
@@ -888,14 +888,14 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             width: 40,
             height: 40,
             borderRadius: 12,
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: 'var(--bg-glass)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
             zIndex: 1,
           }}>
-            <ChevronDown size={20} color="rgba(255, 255, 255, 0.6)" style={{ transform: 'rotate(180deg)' }} />
+            <ChevronDown size={20} color="var(--text-secondary)" style={{ transform: 'rotate(180deg)' }} />
           </div>
         </motion.button>
       </motion.div>
@@ -919,8 +919,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       {/* Header */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        background: 'rgba(20, 20, 23, 0.95)',
+        borderBottom: '1px solid var(--border-strong)',
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(20px)',
         display: 'flex',
         alignItems: 'center',
@@ -933,7 +933,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             width: 40,
             height: 40,
             borderRadius: 12,
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: 'var(--bg-glass)',
             border: 'none',
             display: 'flex',
             alignItems: 'center',
@@ -948,8 +948,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           width: 44,
           height: 44,
           borderRadius: 14,
-          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1))',
-          border: '1px solid rgba(212, 175, 55, 0.3)',
+          background: 'linear-gradient(135deg, var(--gold-glass-strong), var(--gold-glass-medium))',
+          border: '1px solid var(--border-gold)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1076,7 +1076,7 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             style={{
               padding: '10px 16px',
               background: 'rgba(239, 68, 68, 0.08)',
-              borderTop: '1px solid rgba(239, 68, 68, 0.15)',
+              borderTop: '1px solid var(--error-glass)',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
@@ -1106,8 +1106,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             exit={{ opacity: 0 }}
             style={{
               padding: '12px 16px',
-              background: 'rgba(212, 175, 55, 0.1)',
-              borderTop: '1px solid rgba(212, 175, 55, 0.2)',
+              background: 'var(--gold-glass-medium)',
+              borderTop: '1px solid var(--gold-glass-strong)',
               display: 'flex',
               alignItems: 'center',
               gap: 10,
@@ -1123,8 +1123,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
       <div style={{
         padding: '12px 16px',
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-        background: 'rgba(20, 20, 23, 0.95)',
+        borderTop: '1px solid var(--border-strong)',
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(20px)',
         display: 'flex',
         gap: 10,
@@ -1144,8 +1144,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           disabled={uploading || isRecording}
           style={{
             width: 44, height: 44, borderRadius: 14,
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-strong)',
             display: isRecording ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', opacity: uploading || isRecording ? 0.5 : 1,
           }}
@@ -1165,8 +1165,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
           style={{
             flex: 1,
             padding: '14px 18px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--bg-glass)',
+            border: '1px solid var(--border-strong)',
             borderRadius: 14,
             fontSize: 16,
             color: 'var(--text-main)',
@@ -1235,8 +1235,8 @@ export const PremiumChat = forwardRef<PremiumChatHandle, Props>(({ orderId }, re
             disabled={uploading}
             style={{
               width: 44, height: 44, borderRadius: 14,
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-strong)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', opacity: uploading ? 0.5 : 1,
             }}
