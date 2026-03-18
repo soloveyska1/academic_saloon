@@ -293,14 +293,14 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
               width: 40,
               height: 40,
               borderRadius: 12,
-              background: 'linear-gradient(135deg, #D4AF37, #B38728)',
+              background: 'var(--gold-metallic)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 4px 16px rgba(212,175,55,0.3)',
             }}
           >
-            <Star size={20} color="#0a0a0c" fill="#0a0a0c" />
+            <Star size={20} color="var(--text-on-gold)" fill="var(--text-on-gold)" />
           </motion.div>
         )}
       </div>
@@ -402,7 +402,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
             borderRadius: 16,
             background: `linear-gradient(135deg, ${accentColor} 0%, ${isCompleted ? '#16a34a' : '#7c3aed'} 100%)`,
             border: 'none',
-            color: '#fff',
+            color: 'var(--text-primary)',
             fontSize: 16,
             fontWeight: 700,
             cursor: 'pointer',
@@ -420,7 +420,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
       {/* Quality badges */}
       <div style={{
         padding: '16px 24px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid var(--surface-hover)',
         display: 'flex',
         gap: 10,
         justifyContent: 'center',

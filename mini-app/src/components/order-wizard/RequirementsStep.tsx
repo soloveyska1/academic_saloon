@@ -77,8 +77,8 @@ export function RequirementsStep({
         style={{
           padding: '12px 14px',
           borderRadius: 12,
-          background: 'rgba(212, 175, 55, 0.06)',
-          border: '1px solid rgba(212, 175, 55, 0.12)',
+          background: 'var(--gold-glass-subtle)',
+          border: '1px solid var(--gold-glass-medium)',
           fontSize: 13,
           lineHeight: 1.5,
           color: 'var(--text-secondary)',
@@ -172,10 +172,10 @@ const inputStyle: React.CSSProperties = {
   padding: 0,
 }
 
-const cardBorder = 'rgba(255, 255, 255, 0.08)'
-const cardBg = 'rgba(255, 255, 255, 0.025)'
-const goldSoft = 'rgba(212, 175, 55, 0.10)'
-const goldBorder = 'rgba(212, 175, 55, 0.25)'
+const cardBorder = 'var(--border-strong)'
+const cardBg = 'var(--border-subtle)'
+const goldSoft = 'var(--gold-glass-medium)'
+const goldBorder = 'var(--gold-glass-strong)'
 
 /* ─────────────────────────────────────────────────────────────────────────
    FIELD CARD — Simple labeled input wrapper
@@ -225,14 +225,14 @@ function FieldCard({
       }}>
         <Icon
           size={15}
-          color={focused ? '#d4af37' : 'var(--text-muted)'}
+          color={focused ? 'var(--gold-400)' : 'var(--text-muted)'}
           strokeWidth={2}
           style={{ flexShrink: 0, transition: 'color 0.2s' }}
         />
         <span style={{
           fontSize: 12,
           fontWeight: 700,
-          color: focused ? '#d4af37' : 'var(--text-muted)',
+          color: focused ? 'var(--gold-400)' : 'var(--text-muted)',
           letterSpacing: '0.04em',
           transition: 'color 0.2s',
         }}>
@@ -308,13 +308,13 @@ function RequirementsButton({
           width: 36,
           height: 36,
           borderRadius: 10,
-          background: hasContent ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+          background: hasContent ? 'var(--gold-glass-medium)' : 'var(--border-default)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <PenTool size={16} color={hasContent ? '#d4af37' : 'var(--text-muted)'} />
+          <PenTool size={16} color={hasContent ? 'var(--gold-400)' : 'var(--text-muted)'} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
