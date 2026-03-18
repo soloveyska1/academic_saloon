@@ -308,7 +308,7 @@ export function PremiumFilesSection({ order, onDownload }: PremiumFilesSectionPr
       {/* File preview */}
       <div style={{ padding: '16px 24px', position: 'relative', zIndex: 1 }}>
         <motion.div
-          whileHover={{ scale: 1.01, background: 'rgba(255,255,255,0.06)' }}
+          whileHover={{ scale: 1.01, background: 'var(--surface-hover)' }}
           whileTap={{ scale: 0.99 }}
           onClick={() => {
             if (order.files_url) {

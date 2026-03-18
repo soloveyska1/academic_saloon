@@ -35,7 +35,7 @@ const MessageSkeleton = () => (
             width: `${50 + Math.random() * 30}%`,
             height: 60,
             borderRadius: 16,
-            background: 'linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.06), rgba(255,255,255,0.03))',
+            background: 'linear-gradient(90deg, var(--border-subtle), var(--surface-hover), var(--border-subtle))',
           }}
         />
       </div>

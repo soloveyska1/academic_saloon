@@ -495,9 +495,9 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
             animate={{ opacity: 1, y: 0 }}
             style={{
                 borderRadius: 28,
-                background: 'linear-gradient(145deg, rgba(212,175,55,0.08) 0%, rgba(20,20,23,0.98) 100%)',
-                border: '1px solid rgba(212,175,55,0.25)',
-                boxShadow: '0 20px 60px -15px rgba(212,175,55,0.2)',
+                background: 'linear-gradient(145deg, var(--gold-glass-subtle) 0%, rgba(20,20,23,0.98) 100%)',
+                border: '1px solid var(--border-gold)',
+                boxShadow: '0 20px 60px -15px var(--border-gold)',
                 overflow: 'hidden',
                 position: 'relative',
             }}
@@ -521,7 +521,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     left: 0,
                     width: '30%',
                     height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.08), transparent)',
+                    background: 'linear-gradient(90deg, transparent, var(--gold-glass-subtle), transparent)',
                     transform: 'skewX(-20deg)',
                     pointerEvents: 'none',
                 }}
@@ -530,7 +530,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
             {/* ═══ HEADER ═══ */}
             <div style={{
                 padding: '24px 24px 20px',
-                borderBottom: '1px solid rgba(212,175,55,0.15)',
+                borderBottom: '1px solid var(--gold-glass-medium)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -542,7 +542,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         animate={{
                             boxShadow: [
                                 '0 0 0 rgba(212,175,55,0)',
-                                '0 0 25px rgba(212,175,55,0.3)',
+                                '0 0 25px var(--border-gold)',
                                 '0 0 0 rgba(212,175,55,0)',
                             ],
                         }}
@@ -551,8 +551,8 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             width: 52,
                             height: 52,
                             borderRadius: 16,
-                            background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
-                            border: '1.5px solid rgba(212,175,55,0.4)',
+                            background: 'linear-gradient(135deg, var(--border-gold), var(--gold-glass-subtle))',
+                            border: '1.5px solid var(--border-gold-strong)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -601,7 +601,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         marginBottom: 24,
                         borderRadius: 20,
                         background: 'linear-gradient(145deg, rgba(212,175,55,0.1), rgba(212,175,55,0.03))',
-                        border: '1px solid rgba(212,175,55,0.2)',
+                        border: '1px solid var(--border-gold)',
                         position: 'relative',
                         overflow: 'hidden',
                     }}
@@ -616,7 +616,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             left: 0,
                             width: '50%',
                             height: '100%',
-                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+                            background: 'linear-gradient(90deg, transparent, var(--border-default), transparent)',
                             pointerEvents: 'none',
                         }}
                     />
@@ -643,7 +643,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             animate={{
                                 textShadow: [
                                     '0 0 0 rgba(212,175,55,0)',
-                                    '0 0 30px rgba(212,175,55,0.4)',
+                                    '0 0 30px var(--border-gold-strong)',
                                     '0 0 0 rgba(212,175,55,0)',
                                 ],
                             }}
@@ -679,7 +679,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                 gap: 6,
                             }}
                         >
-                            <Shield size={14} color="#8b5cf6" />
+                            <Shield size={14} color="var(--accent-purple)" />
                             <span style={{ fontSize: 12, color: 'var(--accent-purple)' }}>
                                 Доплата после: <strong style={{ fontFamily: 'var(--font-mono)' }}>{amountToPay.toLocaleString('ru-RU')} ₽</strong>
                             </span>
@@ -716,11 +716,11 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     style={{
                                         padding: 18,
                                         background: paymentScheme === scheme.key
-                                            ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
-                                            : 'rgba(255,255,255,0.02)',
+                                            ? 'linear-gradient(135deg, var(--gold-glass-medium), var(--gold-glass-subtle))'
+                                            : 'var(--border-subtle)',
                                         border: paymentScheme === scheme.key
-                                            ? '2px solid rgba(212,175,55,0.5)'
-                                            : '1px solid rgba(255,255,255,0.08)',
+                                            ? '2px solid var(--border-gold-strong)'
+                                            : '1px solid var(--border-strong)',
                                         borderRadius: 18,
                                         cursor: 'pointer',
                                         position: 'relative',
@@ -759,7 +759,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                         <div style={{
                                             marginTop: 8,
                                             padding: '4px 8px',
-                                            background: 'rgba(212,175,55,0.15)',
+                                            background: 'var(--gold-glass-medium)',
                                             borderRadius: 6,
                                             fontSize: 10,
                                             fontWeight: 600,
@@ -824,13 +824,13 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         alignItems: 'center',
                         gap: 8,
                     }}>
-                        <CreditCard size={12} color="#3b82f6" />
+                        <CreditCard size={12} color="var(--info-text)" />
                         Способ оплаты
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         {[
-                            { key: 'card' as const, icon: CreditCard, label: 'На карту', color: '#3b82f6' },
-                            { key: 'sbp' as const, icon: Smartphone, label: 'СБП', color: '#8b5cf6' },
+                            { key: 'card' as const, icon: CreditCard, label: 'На карту', color: var(--info-text) },
+                            { key: 'sbp' as const, icon: Smartphone, label: 'СБП', color: var(--accent-purple) },
                         ].map((method) => (
                             <motion.button
                                 key={method.key}
@@ -840,10 +840,10 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     padding: 18,
                                     background: paymentMethod === method.key
                                         ? `linear-gradient(135deg, ${method.color}20, ${method.color}08)`
-                                        : 'rgba(255,255,255,0.02)',
+                                        : 'var(--border-subtle)',
                                     border: paymentMethod === method.key
                                         ? `2px solid ${method.color}60`
-                                        : '1px solid rgba(255,255,255,0.08)',
+                                        : '1px solid var(--border-strong)',
                                     borderRadius: 18,
                                     cursor: 'pointer',
                                 }}
@@ -883,8 +883,8 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             }}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                <Lock size={14} color="#3b82f6" />
-                                <span style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                <Lock size={14} color="var(--info-text)" />
+                                <span style={{ fontSize: 11, fontWeight: 700, color: var(--info-text), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                                     Реквизиты карты
                                 </span>
                             </div>
@@ -920,7 +920,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     {copied === 'card' ? (
                                         <Check size={20} color="var(--success-text)" />
                                     ) : (
-                                        <Copy size={20} color="#3b82f6" />
+                                        <Copy size={20} color="var(--info-text)" />
                                     )}
                                 </motion.div>
                             </motion.button>
@@ -946,8 +946,8 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             }}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                <Lock size={14} color="#8b5cf6" />
-                                <span style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                <Lock size={14} color="var(--accent-purple)" />
+                                <span style={{ fontSize: 11, fontWeight: 700, color: var(--accent-purple), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                                     Реквизиты СБП
                                 </span>
                             </div>
@@ -982,7 +982,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                                     {copied === 'phone' ? (
                                         <Check size={20} color="var(--success-text)" />
                                     ) : (
-                                        <Copy size={20} color="#8b5cf6" />
+                                        <Copy size={20} color="var(--accent-purple)" />
                                     )}
                                 </motion.div>
                             </motion.button>
@@ -1035,8 +1035,8 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                             width: '100%',
                             marginBottom: 16,
                             padding: '14px',
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(255,255,255,0.08)',
+                            background: 'var(--border-subtle)',
+                            border: '1px solid var(--border-strong)',
                             borderRadius: 14,
                             cursor: 'pointer',
                             display: 'flex',
@@ -1059,9 +1059,9 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                     disabled={processing}
                     animate={!processing ? {
                         boxShadow: [
-                            '0 8px 30px -8px rgba(212,175,55,0.4)',
+                            '0 8px 30px -8px var(--border-gold-strong)',
                             '0 12px 40px -8px rgba(212,175,55,0.6)',
-                            '0 8px 30px -8px rgba(212,175,55,0.4)',
+                            '0 8px 30px -8px var(--border-gold-strong)',
                         ],
                     } : {}}
                     transition={{ duration: 2, repeat: Infinity }}
@@ -1073,7 +1073,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                         fontFamily: "var(--font-serif)",
                         color: processing ? 'var(--text-muted)' : 'var(--text-on-gold)',
                         background: processing
-                            ? 'rgba(255,255,255,0.08)'
+                            ? 'var(--border-strong)'
                             : 'linear-gradient(180deg, var(--gold-100) 0%, var(--gold-400) 50%, var(--gold-500) 100%)',
                         border: 'none',
                         borderRadius: 18,
@@ -1131,7 +1131,7 @@ export function GoldenInvoice({ order, paymentInfo, onPaymentConfirmed, paymentS
                 }}>
                     {[
                         { icon: Shield, label: 'Безопасно', color: 'var(--success-text)' },
-                        { icon: Lock, label: 'Защищено', color: '#3b82f6' },
+                        { icon: Lock, label: 'Защищено', color: var(--info-text) },
                         { icon: Star, label: '5-15 мин', color: 'var(--gold-400)' },
                     ].map((badge, i) => (
                         <motion.div
