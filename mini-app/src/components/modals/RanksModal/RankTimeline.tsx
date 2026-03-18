@@ -44,7 +44,7 @@ function RankTimelineComponent({ userCashback }: RankTimelineProps) {
           left: 13,
           top: 24,
           width: 3,
-          background: 'linear-gradient(180deg, #D4AF37 0%, rgba(212,175,55,0.2) 100%)',
+          background: 'linear-gradient(180deg, var(--gold-400) 0%, var(--border-gold) 100%)',
           borderRadius: 2,
         }}
       />
@@ -98,9 +98,9 @@ const RankTimelineItem = memo(function RankTimelineItem({
     height: 28,
     borderRadius: '50%',
     background: isPassed || isActive
-      ? 'linear-gradient(135deg, #D4AF37, #B38728)'
+      ? 'var(--gold-metallic)'
       : 'rgba(60,60,60,0.6)',
-    border: `3px solid ${isPassed || isActive ? '#D4AF37' : 'rgba(80,80,80,0.5)'}`,
+    border: `3px solid ${isPassed || isActive ? 'var(--gold-400)' : 'rgba(80,80,80,0.5)'}`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -142,7 +142,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
         style={nodeStyle}
       >
         {(isPassed || isActive) && (
-          <CheckCircle size={14} color="#09090b" strokeWidth={3} />
+          <CheckCircle size={14} color="var(--text-on-gold)" strokeWidth={3} />
         )}
       </m.div>
 
@@ -150,9 +150,9 @@ const RankTimelineItem = memo(function RankTimelineItem({
       <LuxuryCard
         gradient={isActive
           ? `linear-gradient(135deg, ${rank.color}18 0%, ${rank.color}06 100%)`
-          : 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)'
+          : 'linear-gradient(135deg, var(--border-subtle) 0%, rgba(255,255,255,0.01) 100%)'
         }
-        borderColor={isActive ? `${rank.color}45` : 'rgba(255,255,255,0.06)'}
+        borderColor={isActive ? `${rank.color}45` : 'var(--surface-hover)'}
         glowColor={isActive ? rank.color : undefined}
         isActive={isActive}
         style={{ padding: 18 }}
@@ -190,7 +190,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
               fontSize: 17,
               fontWeight: 700,
               fontFamily: 'var(--font-serif)',
-              color: isActive ? rank.color : isPassed ? '#22c55e' : 'rgba(255,255,255,0.4)',
+              color: isActive ? rank.color : isPassed ? 'var(--success-text)' : 'var(--text-muted)',
               marginBottom: 4,
               textShadow: isActive ? `0 0 16px ${rank.color}40` : 'none',
             }}>

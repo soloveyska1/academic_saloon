@@ -174,10 +174,10 @@ export function FloatingActionBar(props: FloatingActionBarProps) {
         gap: 10,
         padding: 8,
         borderRadius: 22,
-        background: 'rgba(20, 20, 23, 0.95)',
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        border: '1px solid var(--surface-active)',
         boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(212, 175, 55, 0.1)',
       }}>
         <AnimatePresence mode="popLayout">
@@ -250,8 +250,8 @@ export function FloatingActionBar(props: FloatingActionBarProps) {
                     minWidth: 18,
                     height: 18,
                     borderRadius: 9,
-                    background: '#ef4444',
-                    border: '2px solid rgba(20, 20, 23, 0.95)',
+                    background: 'var(--error-text)',
+                    border: '2px solid var(--bg-card)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -261,7 +261,7 @@ export function FloatingActionBar(props: FloatingActionBarProps) {
                   <span style={{
                     fontSize: 10,
                     fontWeight: 700,
-                    color: '#fff',
+                    color: 'var(--text-primary)',
                   }}>
                     {action.badge > 9 ? '9+' : action.badge}
                   </span>
