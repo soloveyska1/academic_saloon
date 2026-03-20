@@ -221,8 +221,8 @@ textarea:focus-visible,
   /* Text Colors — Never pure white! Off-white for warmth */
   --text-primary: #EDEDED;
   --text-main: #EDEDED;
-  --text-secondary: #a1a1aa;
-  --text-muted: #A1A1AA;
+  --text-secondary: #a8a29e;
+  --text-muted: #8C857F;
   --text-gold: var(--gold-400);
 
   /* Borders — Must simulate light hitting edges */
