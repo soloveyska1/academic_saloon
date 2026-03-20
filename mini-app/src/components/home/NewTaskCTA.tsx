@@ -100,7 +100,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           {/* Subhead — clarity + price anchor */}
           <p
             style={{
-              color: 'var(--text-secondary)',
+              color: '#a8a29e',
               fontSize: 14,
               fontWeight: 500,
               lineHeight: 1.55,
@@ -120,7 +120,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 10,
               marginBottom: 28,
             }}
           >
@@ -133,23 +133,38 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
-                    padding: '12px 16px',
-                    borderRadius: 8,
-                    background: 'var(--bg-glass)',
-                    border: '1px solid var(--border-default)',
+                    padding: '14px 16px',
+                    borderRadius: 16,
+                    background: 'rgba(212, 175, 55, 0.04)',
+                    border: '1px solid rgba(212, 175, 55, 0.10)',
                   }}
                 >
-                  <Icon
-                    size={14}
-                    color="var(--gold-400)"
-                    strokeWidth={2}
-                  />
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      background: 'rgba(212, 175, 55, 0.08)',
+                      border: '1px solid rgba(212, 175, 55, 0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon
+                      size={15}
+                      color="var(--gold-300)"
+                      strokeWidth={2.2}
+                    />
+                  </div>
                   <span
                     style={{
                       fontSize: 13,
                       fontWeight: 600,
-                      color: 'var(--text-secondary)',
+                      color: 'var(--text-primary)',
                       letterSpacing: '-0.005em',
+                      lineHeight: 1.4,
                     }}
                   >
                     {p.text}
@@ -172,7 +187,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             </div>
           </motion.button>
 
-          <div style={{ marginTop: 14, fontSize: 12, color: 'var(--text-muted)', fontWeight: 500, textAlign: 'center', letterSpacing: '0.01em' }}>
+          <div style={{ marginTop: 14, fontSize: 12, color: 'rgba(168, 162, 158, 0.7)', fontWeight: 500, textAlign: 'center', letterSpacing: '0.01em' }}>
             Без предоплаты · Гарантия возврата · Ответ за 5 минут
           </div>
         </div>
