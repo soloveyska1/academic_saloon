@@ -35,10 +35,12 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         icon: Flame,
         title: 'Бонусы сгорают сегодня!',
         subtitle: `${Math.round(amount).toLocaleString('ru-RU')} ₽ исчезнут навсегда`,
-        gradient: 'linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(220,38,38,0.06) 100%)',
-        border: 'rgba(239,68,68,0.30)',
+        gradient: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(12,12,10,0.6) 100%)',
+        border: 'rgba(239,68,68,0.20)',
+        iconBg: 'rgba(239,68,68,0.08)',
+        iconBorder: 'rgba(239,68,68,0.12)',
         iconColor: 'var(--error-text)',
-        textColor: '#fca5a5',
+        textColor: 'var(--error-text)',
         pulse: true,
       }
     }
@@ -48,10 +50,12 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         icon: Clock,
         title: `Бонусы сгорят через ${days} ${days === 1 ? 'день' : days <= 4 ? 'дня' : 'дней'}`,
         subtitle: `${Math.round(amount).toLocaleString('ru-RU')} ₽ — используйте в заказе`,
-        gradient: 'linear-gradient(135deg, rgba(251,191,36,0.10) 0%, rgba(245,158,11,0.05) 100%)',
-        border: 'rgba(251,191,36,0.25)',
-        iconColor: '#fbbf24',
-        textColor: '#fde68a',
+        gradient: 'linear-gradient(135deg, rgba(201,162,39,0.08) 0%, rgba(12,12,10,0.6) 100%)',
+        border: 'rgba(201,162,39,0.12)',
+        iconBg: 'rgba(201,162,39,0.06)',
+        iconBorder: 'rgba(201,162,39,0.08)',
+        iconColor: 'var(--gold-400)',
+        textColor: 'var(--gold-400)',
         pulse: false,
       }
     }
@@ -60,10 +64,12 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
       icon: Gift,
       title: `Используйте ${Math.round(amount).toLocaleString('ru-RU')} ₽ бонусов`,
       subtitle: `Истекают через ${days} дней`,
-      gradient: 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, var(--bg-card) 100%)',
-      border: 'var(--border-gold)',
+      gradient: 'linear-gradient(135deg, rgba(201,162,39,0.06) 0%, rgba(12,12,10,0.6) 100%)',
+      border: 'rgba(201,162,39,0.08)',
+      iconBg: 'rgba(201,162,39,0.06)',
+      iconBorder: 'rgba(201,162,39,0.08)',
       iconColor: 'var(--gold-400)',
-      textColor: 'var(--gold-200)',
+      textColor: 'var(--text-primary)',
       pulse: false,
     }
   }, [bonusExpiry, bonusBalance])
@@ -75,10 +81,10 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
   return (
     <motion.button
       type="button"
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.97 }}
       onClick={onUseBonus}
       style={{
         display: 'flex',
@@ -103,8 +109,8 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
           width: 36,
           height: 36,
           borderRadius: 12,
-          background: `${config.iconColor}15`,
-          border: `1px solid ${config.iconColor}25`,
+          background: config.iconBg,
+          border: `1px solid ${config.iconBorder}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -115,7 +121,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
           size={18}
           color={config.iconColor}
           strokeWidth={2}
-          fill={config.urgency === 'critical' ? `${config.iconColor}30` : 'none'}
+          fill="none"
         />
       </div>
 

@@ -28,21 +28,20 @@ const containerVariants = {
 }
 
 const childVariants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 }
 
 function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }: DailyBonusCardProps) {
   const CARD_STYLE: React.CSSProperties = {
-    background: 'var(--bg-card)',
-    backdropFilter: 'blur(24px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-    border: '1px solid var(--border-gold)',
-    borderRadius: 20,
+    background: 'rgba(12, 12, 10, 0.6)',
+    backdropFilter: 'blur(16px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+    border: '1px solid rgba(255,255,255,0.04)',
+    borderRadius: 16,
     padding: 20,
     position: 'relative',
     overflow: 'hidden',
-    boxShadow: 'var(--card-shadow)',
   }
 
   const [info, setInfo] = useState<DailyBonusInfo | null>(null)

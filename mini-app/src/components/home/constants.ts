@@ -65,20 +65,20 @@ export const URGENT_OPTIONS: UrgentOption[] = [
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const ORDER_STATUS_MAP: Record<string, OrderStatusInfo> = {
-  'draft': { label: 'Черновик', color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
-  'pending': { label: 'Ожидает', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
-  'waiting_estimation': { label: 'Оценка', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
-  'waiting_payment': { label: 'К оплате', color: '#D4AF37', bg: 'rgba(212,175,55,0.15)', border: 'rgba(212,175,55,0.4)' },
-  'verification_pending': { label: 'Проверка', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)' },
-  'confirmed': { label: 'Подтверждён', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
-  'paid': { label: 'Оплачен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
-  'paid_full': { label: 'Оплачен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
-  'in_progress': { label: 'В работе', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.3)' },
-  'review': { label: 'На проверке', color: '#06b6d4', bg: 'rgba(6,182,212,0.15)', border: 'rgba(6,182,212,0.3)' },
-  'revision': { label: 'Доработка', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.3)' },
-  'completed': { label: 'Выполнен', color: '#22c55e', bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.3)' },
-  'cancelled': { label: 'Отменён', color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
-  'rejected': { label: 'Отклонён', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)' },
+  'draft': { label: 'Черновик', color: 'var(--text-muted)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'pending': { label: 'Ожидает', color: 'var(--text-muted)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'waiting_estimation': { label: 'Оценка', color: 'var(--text-muted)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'waiting_payment': { label: 'К оплате', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'verification_pending': { label: 'Проверка', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'confirmed': { label: 'Подтверждён', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
+  'paid': { label: 'Оплачен', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
+  'paid_full': { label: 'Оплачен', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
+  'in_progress': { label: 'В работе', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'review': { label: 'На проверке', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'revision': { label: 'Доработка', color: 'var(--gold-400)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'completed': { label: 'Выполнен', color: 'var(--success-text)', bg: 'var(--success-glass)', border: 'var(--success-border)' },
+  'cancelled': { label: 'Отменён', color: 'var(--text-muted)', bg: 'rgba(201,162,39,0.06)', border: 'rgba(201,162,39,0.08)' },
+  'rejected': { label: 'Отклонён', color: 'var(--error-text)', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.12)' },
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -110,16 +110,16 @@ export const NEXT_ACTION_CONFIG = {
   review: {
     priority: 4,
     icon: CheckCircle2,
-    color: '#06b6d4',
-    bgColor: 'rgba(6,182,212,0.12)',
-    borderColor: 'rgba(6,182,212,0.35)',
+    color: 'var(--gold-400)',
+    bgColor: 'rgba(201,162,39,0.06)',
+    borderColor: 'rgba(201,162,39,0.08)',
   },
   new_message: {
     priority: 5,
     icon: MessageCircle,
-    color: '#8b5cf6',
-    bgColor: 'rgba(139,92,246,0.12)',
-    borderColor: 'rgba(139,92,246,0.35)',
+    color: 'var(--gold-400)',
+    bgColor: 'rgba(201,162,39,0.06)',
+    borderColor: 'rgba(201,162,39,0.08)',
   },
 }
 

@@ -28,7 +28,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
         <span style={{
           fontSize: 11,
-          fontFamily: 'var(--font-serif)',
+          fontFamily: "'Manrope', sans-serif",
           color: 'var(--gold-400)',
           letterSpacing: '0.10em',
           fontWeight: 500,

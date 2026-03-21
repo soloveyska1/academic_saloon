@@ -63,7 +63,7 @@ function AnimatedCounter({ target, decimals, duration = 1.6 }: {
 export const TrustStatsStrip = memo(function TrustStatsStrip() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.10 }}
       style={{
@@ -78,7 +78,7 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
       {STATS.map((stat, i) => (
         <motion.div
           key={stat.label}
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.16 + i * 0.08 }}
           style={{

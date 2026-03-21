@@ -59,7 +59,7 @@ export const PricingAnchor = memo(function PricingAnchor({
 }: PricingAnchorProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.34 }}
       style={{ marginBottom: 24 }}
@@ -68,9 +68,9 @@ export const PricingAnchor = memo(function PricingAnchor({
       <div
         style={{
           fontFamily: "'Manrope', sans-serif",
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.08em',
+          fontSize: 12,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
           textTransform: 'uppercase',
           color: 'var(--text-muted)',
           marginBottom: 14,
@@ -94,7 +94,7 @@ export const PricingAnchor = memo(function PricingAnchor({
             <motion.button
               key={item.workTypeKey}
               type="button"
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.38 + i * 0.06 }}
               whileTap={{ scale: 0.97 }}
@@ -105,8 +105,8 @@ export const PricingAnchor = memo(function PricingAnchor({
               style={{
                 padding: 20,
                 borderRadius: 16,
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-default)',
+                background: 'rgba(12, 12, 10, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.04)',
                 cursor: 'pointer',
                 appearance: 'none',
                 textAlign: 'left',
@@ -119,8 +119,9 @@ export const PricingAnchor = memo(function PricingAnchor({
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 8,
-                  background: 'var(--gold-glass-subtle)',
+                  borderRadius: 12,
+                  background: 'rgba(201, 162, 39, 0.06)',
+                  border: '1px solid rgba(201, 162, 39, 0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -132,6 +133,7 @@ export const PricingAnchor = memo(function PricingAnchor({
 
               {/* Work type */}
               <div style={{
+                fontFamily: "'Manrope', sans-serif",
                 fontSize: 16,
                 fontWeight: 700,
                 color: 'var(--text-primary)',

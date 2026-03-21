@@ -42,22 +42,24 @@ export const QuickReorderCard = memo(function QuickReorderCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
       onClick={() => {
         haptic('medium')
         onReorder(lastOrder.id)
       }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.97 }}
       style={{
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 16,
         padding: 20,
         marginBottom: 16,
-        background: 'linear-gradient(135deg, rgba(212,175,55,0.08) 0%, var(--bg-card) 60%, rgba(212,175,55,0.04) 100%)',
-        border: '1px solid var(--border-gold)',
+        background: 'linear-gradient(135deg, rgba(201,162,39,0.06) 0%, rgba(12, 12, 10, 0.6) 60%, rgba(201,162,39,0.04) 100%)',
+        border: '1px solid rgba(255,255,255,0.04)',
+        backdropFilter: 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
         cursor: 'pointer',
       }}
     >
@@ -76,7 +78,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
               style={{
                 width: 28,
                 height: 28,
-                borderRadius: 8,
+                borderRadius: 12,
                 background: 'var(--gold-glass-medium)',
                 border: '1px solid var(--border-gold)',
                 display: 'flex',
@@ -130,7 +132,7 @@ export const QuickReorderCard = memo(function QuickReorderCard({
             style={{
               fontSize: 14,
               fontWeight: 600,
-              color: 'var(--text-main)',
+              color: 'var(--text-primary)',
               marginBottom: 4,
             }}
           >

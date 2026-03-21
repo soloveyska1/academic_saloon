@@ -215,53 +215,21 @@ export const Navigation = () => {
           {/* Dynamic Island Capsule */}
           <div style={{
             background: 'var(--nav-capsule-bg)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            backdropFilter: 'blur(24px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(160%)',
             borderRadius: '100px',
             padding: '6px 12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 4,
-            border: '1px solid var(--border-strong)',
-            boxShadow: 'var(--card-shadow)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
             position: 'relative',
             overflow: 'hidden'
           }}>
 
-            {/* Top Gloss Highlight */}
-            <div style={{
-              position: 'absolute', top: 0, left: 20, right: 20, height: 1,
-              background: 'linear-gradient(90deg, transparent, var(--surface-strong), transparent)',
-              zIndex: 10
-            }} />
 
-            {/* Bottom Golden Glow (Ambient) */}
-            <div style={{
-              position: 'absolute', bottom: -15, left: '20%', right: '20%', height: 30,
-              background: 'radial-gradient(ellipse at center, var(--gold-glass-medium) 0%, transparent 70%)',
-              filter: 'blur(15px)',
-              zIndex: 0
-            }} />
-
-            {/* Moving SPOTLIGHT Background for Active Item */}
-            {activeIndex !== -1 && (
-              <motion.div
-                layoutId="navSpotlight"
-                initial={false}
-                transition={{
-                  type: 'spring',
-                  stiffness: 400,
-                  damping: 30
-                }}
-                style={{
-                  position: 'absolute',
-                  top: 6,
-                  bottom: 6,
-                  display: 'none' // We'll do it inside the map loop for perfect alignment
-                }}
-              />
-            )}
 
             {navItems.map((item) => {
               const isActive = isNavigationItemActive(location.pathname, item.path)
@@ -277,9 +245,9 @@ export const Navigation = () => {
                         position: 'absolute',
                         inset: 6,
                         borderRadius: '50px',
-                        background: 'linear-gradient(135deg, var(--gold-glass-strong) 0%, var(--gold-glass-subtle) 100%)',
-                        boxShadow: 'var(--glow-gold)',
-                        border: '1px solid var(--gold-glass-subtle)',
+                        background: 'var(--nav-pill-bg)',
+                        boxShadow: 'var(--nav-glow)',
+                        border: 'none',
                         zIndex: 0
                       }}
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -301,16 +269,14 @@ export const Navigation = () => {
                   >
                     <motion.div
                       animate={{
-                        y: isActive ? -2 : 0,
-                        scale: isActive ? 1.1 : 1,
+                        scale: isActive ? 1.05 : 1,
                         color: isActive ? goldAccent : inactiveIconColor
                       }}
                     >
                       <Icon
                         size={24}
-                        strokeWidth={isActive ? 2.5 : 2}
-                        fill={isActive ? "currentColor" : "none"}
-                        fillOpacity={isActive ? 0.2 : 0}
+                        strokeWidth={isActive ? 2.2 : 1.8}
+                        fill="none"
                       />
                     </motion.div>
 
@@ -321,9 +287,9 @@ export const Navigation = () => {
                         color: isActive ? goldAccent : inactiveLabelColor
                       }}
                       style={{
-                        fontSize: 9,
-                        fontWeight: isActive ? 700 : 600,
-                        letterSpacing: '0.04em',
+                        fontSize: 10,
+                        fontWeight: isActive ? 600 : 500,
+                        letterSpacing: '0.02em',
                         marginTop: 3,
                       }}
                     >

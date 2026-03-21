@@ -1,20 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Star, Shield, Clock } from 'lucide-react'
-import s from '../../pages/HomePage.module.css'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  NEW TASK CTA — The Hero. The ONE element that sells.
-//  Two variants:
-//    first-order  — full hero with price anchor, proof points, guarantee badge
-//    repeat-order — compact CTA with price hint for returning users
-//
-//  Research-backed:
-//    - Price anchor (from X ₽) — students are price-sensitive
-//    - Specific numbers in proof (4.8 not 4.9 — more believable)
-//    - Guarantee badge near CTA (+32% conversions)
-//    - Loss-aversion micro-reassurance
-// ═══════════════════════════════════════════════════════════════════════════
 
 interface NewTaskCTAProps {
   onClick: () => void
@@ -22,10 +8,10 @@ interface NewTaskCTAProps {
   variant?: 'first-order' | 'repeat-order'
 }
 
-const PROOF_POINTS = [
-  { icon: Star, text: '4.8 из 5 — оценка 2 400+ клиентов' },
-  { icon: Shield, text: 'Каждая работа с нуля — от 82% уникальности' },
-  { icon: Clock, text: '3 бесплатные правки · оплата после согласования' },
+const PROOF_ITEMS = [
+  { icon: Star, label: '4.8 · 2 400+ оценок' },
+  { icon: Shield, label: '82%+ уникальности' },
+  { icon: Clock, label: '3 правки бесплатно' },
 ] as const
 
 export const NewTaskCTA = memo(function NewTaskCTA({
@@ -41,133 +27,123 @@ export const NewTaskCTA = memo(function NewTaskCTA({
   if (variant === 'first-order') {
     return (
       <motion.section
-        className={`${s.voidGlass} ${s.primaryActionCard} ${s.firstOrderActionCard}`}
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: 'relative',
           width: '100%',
-          padding: '36px 24px 28px',
-          borderRadius: 20,
-          marginBottom: 28,
+          padding: '32px 20px 24px',
+          borderRadius: 24,
+          marginBottom: 24,
+          background: 'var(--surface-base, rgba(12,12,10,0.95))',
+          border: '1px solid rgba(201, 162, 39, 0.10)',
+          boxShadow: '0 8px 24px -6px rgba(0, 0, 0, 0.4)',
           overflow: 'hidden',
-          isolation: 'isolate',
-          textAlign: 'left',
         }}
       >
-        <div className={s.primaryActionGlow} aria-hidden="true" />
-        <div className={s.primaryActionShine} aria-hidden="true" />
+        {/* Subtle top-right gold ambient */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: -40,
+            right: -20,
+            width: 160,
+            height: 160,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(201,162,39,0.06) 0%, transparent 70%)',
+            filter: 'blur(24px)',
+            pointerEvents: 'none',
+          }}
+        />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Eyebrow — establishment + trust */}
+          {/* Eyebrow */}
           <div
             style={{
-              fontFamily: "'Manrope', sans-serif",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'var(--gold-400)',
-              marginBottom: 20,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase' as const,
+              color: 'var(--text-muted)',
+              marginBottom: 16,
             }}
           >
-            <div style={{
-              width: 16,
-              height: 1,
-              background: 'linear-gradient(90deg, var(--gold-400), transparent)',
-            }} />
             Академический Салон · с 2020 года
           </div>
 
-          {/* Headline — emotional, benefit-first */}
+          {/* Headline */}
           <h1
-            className={s.goldAccent}
             style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: 'clamp(32px, 8.5vw, 42px)',
+              fontSize: 'clamp(28px, 7vw, 36px)',
               fontWeight: 800,
-              lineHeight: 1.0,
-              letterSpacing: '-0.025em',
-              marginBottom: 14,
+              lineHeight: 1.05,
+              letterSpacing: '-0.03em',
+              color: 'var(--text-primary)',
+              marginBottom: 12,
             }}
           >
             Учись спокойно.{'\n'}Мы сделаем.
           </h1>
 
-          {/* Subhead — clarity + price anchor */}
+          {/* Subhead with price anchor */}
           <p
             style={{
-              color: '#a8a29e',
+              color: 'var(--text-secondary)',
               fontSize: 14,
               fontWeight: 500,
-              lineHeight: 1.55,
-              marginBottom: 28,
-              maxWidth: 320,
+              lineHeight: 1.5,
+              marginBottom: 20,
+              maxWidth: 300,
             }}
           >
             Курсовые, дипломы, рефераты и ещё 15+ видов работ.{' '}
             <span style={{ color: 'var(--gold-400)', fontWeight: 700 }}>
               От 990 ₽.
             </span>
-            {' '}Эксперты с опытом от 5 лет.
           </p>
 
-          {/* Proof points — specific, measurable, believable */}
+          {/* Proof strip — compact, one line each */}
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-              marginBottom: 28,
+              gap: 8,
+              marginBottom: 24,
+              flexWrap: 'wrap',
             }}
           >
-            {PROOF_POINTS.map((p) => {
+            {PROOF_ITEMS.map((p) => {
               const Icon = p.icon
               return (
                 <div
-                  key={p.text}
+                  key={p.label}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 12,
-                    padding: '14px 16px',
-                    borderRadius: 16,
-                    background: 'rgba(212, 175, 55, 0.04)',
-                    border: '1px solid rgba(212, 175, 55, 0.10)',
+                    gap: 6,
+                    padding: '6px 10px',
+                    borderRadius: 8,
+                    background: 'rgba(201, 162, 39, 0.06)',
+                    border: '1px solid rgba(201, 162, 39, 0.08)',
                   }}
                 >
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 10,
-                      background: 'rgba(212, 175, 55, 0.08)',
-                      border: '1px solid rgba(212, 175, 55, 0.12)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Icon
-                      size={15}
-                      color="var(--gold-300)"
-                      strokeWidth={2.2}
-                    />
-                  </div>
+                  <Icon
+                    size={12}
+                    color="var(--gold-400)"
+                    strokeWidth={2.2}
+                  />
                   <span
                     style={{
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: 600,
-                      color: 'var(--text-primary)',
-                      letterSpacing: '-0.005em',
-                      lineHeight: 1.4,
+                      color: 'var(--text-secondary)',
+                      letterSpacing: '-0.01em',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {p.text}
+                    {p.label}
                   </span>
                 </div>
               )
@@ -177,49 +153,73 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           {/* Primary CTA */}
           <motion.button
             type="button"
-            whileTap={{ scale: 0.985 }}
+            whileTap={{ scale: 0.97 }}
             onClick={handleClick}
-            className={s.heroPrimaryButton}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              width: '100%',
+              minHeight: 52,
+              padding: '12px 14px 12px 20px',
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, var(--gold-500) 0%, var(--gold-400) 50%, var(--gold-300) 100%)',
+              border: 'none',
+              boxShadow: '0 4px 16px rgba(201, 162, 39, 0.2)',
+              color: 'var(--text-on-gold)',
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: 15,
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              textAlign: 'left' as const,
+              cursor: 'pointer',
+              appearance: 'none' as const,
+            }}
           >
-            <span>Рассчитать стоимость бесплатно</span>
-            <div className={s.primaryActionArrow}>
-              <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.6} />
-            </div>
+            <span>Рассчитать стоимость</span>
+            <ArrowRight size={18} strokeWidth={2.5} />
           </motion.button>
 
-          <div style={{ marginTop: 14, fontSize: 12, color: 'rgba(168, 162, 158, 0.7)', fontWeight: 500, textAlign: 'center', letterSpacing: '0.01em' }}>
-            Без предоплаты · Гарантия возврата · Ответ за 5 минут
+          {/* Micro-reassurance */}
+          <div
+            style={{
+              marginTop: 12,
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              fontWeight: 500,
+              textAlign: 'center' as const,
+              letterSpacing: '0.01em',
+            }}
+          >
+            Бесплатно · без предоплаты · ответ за 5 мин
           </div>
         </div>
       </motion.section>
     )
   }
 
-  // ── Returning user: compact but premium CTA with price anchor ──
+  // ── Returning user: compact CTA ──
   return (
     <motion.section
-      className={`${s.voidGlass} ${s.primaryActionCard} ${s.returningOrderActionCard}`}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
         position: 'relative',
         width: '100%',
-        padding: '20px 20px',
-        borderRadius: 20,
+        padding: 20,
+        borderRadius: 16,
         marginBottom: 16,
-        overflow: 'hidden',
-        isolation: 'isolate',
+        background: 'var(--surface-base, rgba(12,12,10,0.95))',
+        border: '1px solid rgba(201, 162, 39, 0.08)',
+        boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.3)',
       }}
     >
-      <div className={s.primaryActionGlow} aria-hidden="true" />
-
       <motion.button
         type="button"
-        whileTap={{ scale: 0.985 }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleClick}
         style={{
-          position: 'relative',
-          zIndex: 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -229,34 +229,46 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           border: 'none',
           padding: 0,
           cursor: 'pointer',
-          appearance: 'none',
-          textAlign: 'left',
+          appearance: 'none' as const,
+          textAlign: 'left' as const,
         }}
       >
         <div style={{ flex: 1 }}>
           <div
-            className={s.goldAccent}
             style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: 800,
-              lineHeight: 1.15,
-              letterSpacing: '-0.01em',
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
               marginBottom: 4,
             }}
           >
-            Новый заказ · <span style={{ fontSize: 16, fontWeight: 700 }}>от 990 ₽</span>
+            Новый заказ · <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold-400)' }}>от 990 ₽</span>
           </div>
           <div style={{
             fontSize: 13,
-            color: 'var(--text-secondary)',
+            color: 'var(--text-muted)',
             fontWeight: 500,
           }}>
             Бесплатный расчёт · от 1 дня
           </div>
         </div>
-        <div className={s.primaryActionArrow} style={{ flexShrink: 0 }}>
-          <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.6} />
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            background: 'linear-gradient(135deg, var(--gold-500), var(--gold-400))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(201, 162, 39, 0.15)',
+          }}
+        >
+          <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.5} />
         </div>
       </motion.button>
     </motion.section>

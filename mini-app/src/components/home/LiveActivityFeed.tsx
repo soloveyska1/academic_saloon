@@ -63,7 +63,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
       style={{
@@ -72,9 +72,9 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
         gap: 12,
         padding: '10px 14px',
         marginBottom: 16,
-        borderRadius: 16,
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-default)',
+        borderRadius: 12,
+        background: 'rgba(12, 12, 10, 0.6)',
+        border: '1px solid rgba(255, 255, 255, 0.04)',
         minHeight: 38,
       }}
     >

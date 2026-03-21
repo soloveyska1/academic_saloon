@@ -33,7 +33,7 @@ const STEPS = [
 export const HowItWorks = memo(function HowItWorks() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.26 }}
       style={{ marginBottom: 28 }}
@@ -42,9 +42,9 @@ export const HowItWorks = memo(function HowItWorks() {
       <div
         style={{
           fontFamily: "'Manrope', sans-serif",
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.08em',
+          fontSize: 12,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
           textTransform: 'uppercase',
           color: 'var(--text-muted)',
           marginBottom: 18,
@@ -55,7 +55,7 @@ export const HowItWorks = memo(function HowItWorks() {
       </div>
 
       {/* Steps timeline */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }} >
         {STEPS.map((s, i) => {
           const Icon = s.icon
           const isLast = i === STEPS.length - 1
@@ -63,13 +63,19 @@ export const HowItWorks = memo(function HowItWorks() {
           return (
             <motion.div
               key={s.step}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileTap={{ scale: 0.97 }}
               transition={{ delay: 0.30 + i * 0.08 }}
               style={{
                 display: 'flex',
                 gap: 16,
                 position: 'relative',
+                background: 'rgba(12, 12, 10, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.04)',
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: isLast ? 0 : 12,
               }}
             >
               {/* Timeline column */}
@@ -87,9 +93,9 @@ export const HowItWorks = memo(function HowItWorks() {
                   style={{
                     width: 40,
                     height: 40,
-                    borderRadius: 8,
-                    background: 'var(--gold-glass-subtle)',
-                    border: '1px solid var(--border-gold)',
+                    borderRadius: 12,
+                    background: 'rgba(201, 162, 39, 0.06)',
+                    border: '1px solid rgba(201, 162, 39, 0.08)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -125,26 +131,14 @@ export const HowItWorks = memo(function HowItWorks() {
                   </div>
                 </div>
 
-                {/* Connector line */}
-                {!isLast && (
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      width: 1,
-                      flex: 1,
-                      minHeight: 16,
-                      background: 'linear-gradient(180deg, var(--border-gold), transparent)',
-                      marginTop: 4,
-                      marginBottom: 4,
-                    }}
-                  />
-                )}
+                {/* Connector line (hidden — steps are now separate cards) */}
               </div>
 
               {/* Content */}
-              <div style={{ flex: 1, paddingBottom: isLast ? 0 : 24, paddingTop: 2 }}>
+              <div style={{ flex: 1, paddingTop: 2 }}>
                 <div
                   style={{
+                    fontFamily: "'Manrope', sans-serif",
                     fontSize: 16,
                     fontWeight: 700,
                     color: 'var(--text-primary)',
@@ -157,6 +151,7 @@ export const HowItWorks = memo(function HowItWorks() {
                 </div>
                 <div
                   style={{
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: 14,
                     fontWeight: 500,
                     color: 'var(--text-secondary)',

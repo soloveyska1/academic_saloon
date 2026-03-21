@@ -245,8 +245,8 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: rgba(212, 175, 55, 0.7);
-  box-shadow: 0 0 6px rgba(212, 175, 55, 0.4);
+  background: rgba(201, 162, 39, 0.6);
+  box-shadow: 0 0 4px rgba(201, 162, 39, 0.2);
 
 }
 
@@ -323,7 +323,7 @@
   font-family: 'Manrope', sans-serif;
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 16px;

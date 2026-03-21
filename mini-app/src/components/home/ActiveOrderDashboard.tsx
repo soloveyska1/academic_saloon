@@ -101,7 +101,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
       {/* Card */}
       <motion.button
         type="button"
-        whileTap={{ scale: 0.985 }}
+        whileTap={{ scale: 0.97 }}
         onClick={() => {
           haptic('light')
           onNavigate(`/order/${activeOrder.id}`)
@@ -110,16 +110,14 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           display: 'block',
           width: '100%',
           padding: '20px',
-          borderRadius: 20,
+          borderRadius: 16,
           background: needsAction
-            ? `linear-gradient(145deg, ${statusInfo?.bg ?? 'var(--gold-glass-subtle)'}, var(--bg-card))`
-            : 'var(--bg-card)',
-          backdropFilter: 'blur(24px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-          border: `1px solid ${needsAction ? (statusInfo?.border ?? 'var(--gold-glass-medium)') : 'var(--surface-hover)'}`,
-          boxShadow: needsAction
-            ? `0 8px 24px -6px rgba(0,0,0,0.4), 0 0 20px -5px ${statusInfo?.bg ?? 'var(--gold-glass-medium)'}`
-            : 'inset 0 1px 0 var(--bg-glass), 0 1px 2px rgba(0,0,0,0.2)',
+            ? `linear-gradient(145deg, rgba(201, 162, 39, 0.06), rgba(12, 12, 10, 0.6))`
+            : 'rgba(12, 12, 10, 0.6)',
+          backdropFilter: 'blur(16px) saturate(140%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+          border: `1px solid ${needsAction ? 'rgba(201, 162, 39, 0.08)' : 'rgba(255,255,255,0.04)'}`,
+          boxShadow: 'none',
           cursor: 'pointer',
           appearance: 'none',
           textAlign: 'left',
@@ -135,8 +133,8 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
-                background: statusInfo?.color ?? 'var(--gold-400)',
-                boxShadow: `0 0 8px ${statusInfo?.color ?? 'var(--gold-400)'}60`,
+                background: 'var(--gold-400)',
+                boxShadow: '0 0 8px rgba(201, 162, 39, 0.4)',
               }}
             />
             <span style={{
@@ -199,8 +197,8 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
             const color = isCompleted
               ? 'var(--success-text)'
               : isCurrent
-                ? (statusInfo?.color ?? 'var(--gold-400)')
-                : 'var(--surface-overlay)'
+                ? 'var(--gold-400)'
+                : 'var(--text-muted)'
 
             return (
               <div key={stage.key} style={{ display: 'flex', alignItems: 'center', flex: i < STAGES.length - 1 ? 1 : 0 }}>
@@ -209,7 +207,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   width: isCurrent ? 28 : 20,
                   height: isCurrent ? 28 : 20,
                   borderRadius: '50%',
-                  background: isCompleted ? 'rgba(34,197,94,0.15)' : isCurrent ? `${color}18` : 'var(--bg-glass)',
+                  background: isCompleted ? 'var(--success-glass)' : isCurrent ? 'rgba(201, 162, 39, 0.06)' : 'var(--bg-glass)',
                   border: `1.5px solid ${color}`,
                   display: 'flex',
                   alignItems: 'center',
@@ -248,7 +246,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                           left: 0,
                           height: '100%',
                           borderRadius: 1,
-                          background: statusInfo?.color ?? 'var(--gold-400)',
+                          background: 'var(--gold-400)',
                         }}
                       />
                     )}
@@ -268,7 +266,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
               <span key={stage.key} style={{
                 fontSize: 10,
                 fontWeight: isCurrent ? 700 : 500,
-                color: isCompleted ? 'rgba(34,197,94,0.7)' : isCurrent ? (statusInfo?.color ?? 'var(--gold-400)') : 'var(--surface-overlay)',
+                color: isCompleted ? 'var(--success-text)' : isCurrent ? 'var(--gold-400)' : 'var(--text-muted)',
                 textAlign: 'center',
                 flex: 1,
                 letterSpacing: '0.02em',
@@ -286,24 +284,24 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           justifyContent: 'space-between',
           padding: '10px 14px',
           borderRadius: 12,
-          background: needsAction ? `${statusInfo?.color ?? 'var(--gold-400)'}10` : 'var(--border-subtle)',
-          border: `1px solid ${needsAction ? `${statusInfo?.color ?? 'var(--gold-400)'}20` : 'var(--bg-glass)'}`,
+          background: needsAction ? 'rgba(201, 162, 39, 0.06)' : 'var(--border-subtle)',
+          border: `1px solid ${needsAction ? 'rgba(201, 162, 39, 0.08)' : 'var(--bg-glass)'}`,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {needsAction ? (
-              <AlertCircle size={14} color={statusInfo?.color ?? 'var(--gold-400)'} strokeWidth={2} />
+              <AlertCircle size={14} color="var(--gold-400)" strokeWidth={2} />
             ) : (
               <Clock size={14} color="var(--text-muted)" strokeWidth={2} />
             )}
             <span style={{
               fontSize: 12,
               fontWeight: 600,
-              color: needsAction ? (statusInfo?.color ?? 'var(--gold-400)') : 'var(--text-muted)',
+              color: needsAction ? 'var(--gold-400)' : 'var(--text-muted)',
             }}>
               {getStatusMessage(activeOrder.status, activeOrder.progress)}
             </span>
           </div>
-          <ArrowRight size={14} color={needsAction ? (statusInfo?.color ?? 'var(--gold-400)') : 'var(--surface-overlay)'} strokeWidth={2} />
+          <ArrowRight size={14} color={needsAction ? 'var(--gold-400)' : 'var(--text-muted)'} strokeWidth={2} />
         </div>
 
         {/* Other active orders hint */}

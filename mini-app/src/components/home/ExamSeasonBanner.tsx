@@ -82,9 +82,9 @@ function getExamSeason(): SeasonConfig | null {
       icon: Sun,
       title: 'Летняя сессия',
       subtitle: 'Подготовьтесь к экзаменам заблаговременно',
-      gradient: 'linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(245, 158, 11, 0.08) 100%)',
-      borderColor: 'rgba(251, 191, 36, 0.3)',
-      iconColor: '#fbbf24',
+      gradient: 'linear-gradient(135deg, rgba(201, 162, 39, 0.08) 0%, rgba(12, 12, 10, 0.6) 100%)',
+      borderColor: 'rgba(201, 162, 39, 0.12)',
+      iconColor: 'var(--gold-400)',
       urgencyLevel: 'high',
     }
   }
@@ -97,8 +97,8 @@ function getExamSeason(): SeasonConfig | null {
         icon: Sun,
         title: 'Финальная неделя',
         subtitle: 'Завершаем сессию — ещё можно успеть',
-        gradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.08) 100%)',
-        borderColor: 'rgba(239, 68, 68, 0.4)',
+        gradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(12, 12, 10, 0.6) 100%)',
+        borderColor: 'rgba(239, 68, 68, 0.2)',
         iconColor: 'var(--error-text)',
         urgencyLevel: 'peak',
       }
@@ -109,9 +109,9 @@ function getExamSeason(): SeasonConfig | null {
       icon: Sun,
       title: 'Летняя сессия',
       subtitle: 'Закрываем задачи до каникул',
-      gradient: 'linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(245, 158, 11, 0.08) 100%)',
-      borderColor: 'rgba(251, 191, 36, 0.3)',
-      iconColor: '#fbbf24',
+      gradient: 'linear-gradient(135deg, rgba(201, 162, 39, 0.08) 0%, rgba(12, 12, 10, 0.6) 100%)',
+      borderColor: 'rgba(201, 162, 39, 0.12)',
+      iconColor: 'var(--gold-400)',
       urgencyLevel: 'high',
     }
   }
@@ -134,7 +134,7 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1 }}
       style={{
@@ -144,9 +144,7 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
         borderRadius: 16,
         background: season.gradient,
         border: `1px solid ${season.borderColor}`,
-        boxShadow: isPeak
-          ? '0 4px 16px rgba(239, 68, 68, 0.12)'
-          : '0 2px 12px rgba(0, 0, 0, 0.08)',
+        boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.3)',
         overflow: 'hidden',
       }}
     >
@@ -171,17 +169,17 @@ export const ExamSeasonBanner = memo(function ExamSeasonBanner({
           style={{
             width: 36,
             height: 36,
-            borderRadius: 8,
-            background: `${season.iconColor}15`,
+            borderRadius: 12,
+            background: 'rgba(201, 162, 39, 0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: `1px solid ${season.iconColor}30`,
+            border: '1px solid rgba(201, 162, 39, 0.08)',
             flexShrink: 0,
           }}
         >
           {isPeak ? (
-            <Zap size={20} color={season.iconColor} strokeWidth={1.5} fill={`${season.iconColor}30`} />
+            <Zap size={20} color={season.iconColor} strokeWidth={1.5} fill="none" />
           ) : (
             <IconComponent size={20} color={season.iconColor} strokeWidth={1.5} />
           )}

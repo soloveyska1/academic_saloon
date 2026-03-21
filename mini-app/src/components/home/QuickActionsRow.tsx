@@ -52,10 +52,10 @@ export const QuickActionsRow = memo(function QuickActionsRow({
       {actions.map((action, index) => (
         <motion.button
           key={action.id}
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 + index * 0.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => handleClick(action)}
           style={{
             minWidth: '120px',
@@ -65,11 +65,10 @@ export const QuickActionsRow = memo(function QuickActionsRow({
             alignItems: 'center',
             gap: 12,
             cursor: 'pointer',
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-default)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            boxShadow: 'var(--card-shadow)',
+            background: 'rgba(12, 12, 10, 0.6)',
+            border: '1px solid rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(16px) saturate(140%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(140%)',
           }}
         >
           <div style={{

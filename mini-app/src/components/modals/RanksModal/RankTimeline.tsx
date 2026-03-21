@@ -189,7 +189,7 @@ const RankTimelineItem = memo(function RankTimelineItem({
             <div style={{
               fontSize: 17,
               fontWeight: 700,
-              fontFamily: 'var(--font-serif)',
+              fontFamily: "'Manrope', sans-serif",
               color: isActive ? rank.color : isPassed ? 'var(--success-text)' : 'var(--text-muted)',
               marginBottom: 4,
               textShadow: isActive ? `0 0 16px ${rank.color}40` : 'none',

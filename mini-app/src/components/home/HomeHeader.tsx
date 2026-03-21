@@ -62,7 +62,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
               <span style={{
                 color: 'var(--gold-400)',
                 fontWeight: 700,
-                fontFamily: "'Cormorant Garamond', 'Times New Roman', serif",
+                fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
                 fontSize: '18px',
                 lineHeight: 1,
                 textTransform: 'uppercase'
@@ -124,7 +124,7 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
       {!isNewUser && (
         <motion.button
           type="button"
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.97 }}
           onClick={onOpenLounge}
           style={{
             background: 'var(--border-subtle)',
@@ -132,11 +132,11 @@ export const HomeHeader = memo(function HomeHeader({ user, userPhoto, onSecretTa
             borderRadius: '12px',
             padding: '8px 16px',
             color: 'var(--gold-400)',
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-sans, 'Manrope', sans-serif)",
             fontSize: '12px',
             fontWeight: 600,
             letterSpacing: '0.06em',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(16px) saturate(140%)',
             boxShadow: 'var(--card-shadow)',
             textTransform: 'uppercase',
           }}

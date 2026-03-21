@@ -167,7 +167,7 @@ export const BenefitsCard = memo(function BenefitsCard({
             style={{
               fontSize: 26,
               fontWeight: 800,
-              fontFamily: "var(--font-serif)",
+              fontFamily: "'Manrope', sans-serif",
               color: 'var(--text-main)',
               display: 'flex',
               alignItems: 'baseline',
@@ -309,7 +309,7 @@ export const BenefitsCard = memo(function BenefitsCard({
             style={{
               fontSize: 16,
               fontWeight: 700,
-              fontFamily: "var(--font-serif)",
+              fontFamily: "'Manrope', sans-serif",
               marginBottom: 8,
               background: 'var(--gold-text-shine)',
               WebkitBackgroundClip: 'text',

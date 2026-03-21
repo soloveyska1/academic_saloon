@@ -1,5 +1,5 @@
-import { memo, useRef, useState, useEffect, useCallback } from 'react'
-import { motion, useReducedMotion, useInView } from 'framer-motion'
+import { memo, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -82,46 +82,13 @@ function StarRating({ count }: { count: number }) {
 
 export const TestimonialsSection = memo(function TestimonialsSection() {
   const [activeIndex, setActiveIndex] = useState(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval>>()
   const scrollRef = useRef<HTMLDivElement>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
-  const isInView = useInView(sectionRef, { amount: 0.3 })
-  const shouldReduceMotion = useReducedMotion()
-  const [isTouching, setIsTouching] = useState(false)
-
-  const resetAutoplay = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    intervalRef.current = setInterval(() => {
-      setActiveIndex(prev => (prev + 1) % TESTIMONIALS.length)
-    }, 5000)
-  }, [])
-
-  // Only autoplay when in viewport and not being touched
-  useEffect(() => {
-    if (isInView && !isTouching && !shouldReduceMotion) {
-      resetAutoplay()
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [isInView, isTouching, shouldReduceMotion, resetAutoplay])
-
-  // Scroll to active card
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const card = el.children[activeIndex] as HTMLElement
-    if (!card) return
-    el.scrollTo({
-      left: card.offsetLeft - 20,
-      behavior: shouldReduceMotion ? 'auto' : 'smooth',
-    })
-  }, [activeIndex, shouldReduceMotion])
 
   return (
     <motion.div
       ref={sectionRef}
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.22 }}
       style={{ marginBottom: 24 }}
@@ -145,9 +112,9 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
           <span
             style={{
               fontFamily: "'Manrope', sans-serif",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.08em',
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
               color: 'var(--text-muted)',
             }}
@@ -182,8 +149,6 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
       {/* Testimonial cards — horizontal scroll */}
       <div
         ref={scrollRef}
-        onTouchStart={() => setIsTouching(true)}
-        onTouchEnd={() => { setIsTouching(false); resetAutoplay() }}
         style={{
           display: 'flex',
           gap: 12,
@@ -196,28 +161,24 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
         }}
       >
         {TESTIMONIALS.map((t, i) => {
-          const isActive = i === activeIndex
           return (
             <motion.div
               key={t.name}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 + i * 0.06 }}
-              onClick={() => { setActiveIndex(i); resetAutoplay() }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setActiveIndex(i)}
               style={{
                 minWidth: 270,
                 maxWidth: 300,
                 padding: '20px',
                 borderRadius: 16,
-                background: isActive
-                  ? 'var(--gold-glass-subtle)'
-                  : 'var(--bg-card)',
-                border: `1px solid ${isActive ? 'var(--border-gold)' : 'var(--border-subtle)'}`,
+                background: 'rgba(12, 12, 10, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.04)',
                 scrollSnapAlign: 'start',
                 flexShrink: 0,
                 cursor: 'pointer',
-                transition: 'border-color 0.3s, background 0.3s',
-                boxShadow: 'var(--card-shadow)',
               }}
             >
               {/* Outcome badge — the hook */}
@@ -227,9 +188,9 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
                   alignItems: 'center',
                   gap: 4,
                   padding: '4px 10px',
-                  borderRadius: 8,
-                  background: 'var(--gold-glass-subtle)',
-                  border: '1px solid var(--border-gold)',
+                  borderRadius: 12,
+                  background: 'rgba(201, 162, 39, 0.06)',
+                  border: '1px solid rgba(201, 162, 39, 0.08)',
                   marginBottom: 10,
                 }}
               >
@@ -316,16 +277,16 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
           <motion.div
             key={i}
             animate={{
-              width: i === activeIndex ? 12 : 4,
+              width: i === activeIndex ? 16 : 6,
               background: i === activeIndex
                 ? 'var(--gold-400)'
                 : 'var(--surface-active)',
             }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            onClick={() => { setActiveIndex(i); resetAutoplay() }}
+            onClick={() => setActiveIndex(i)}
             style={{
-              height: 4,
-              borderRadius: 2,
+              height: 6,
+              borderRadius: 3,
               cursor: 'pointer',
             }}
           />
