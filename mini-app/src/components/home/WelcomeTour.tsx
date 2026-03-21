@@ -241,7 +241,7 @@ export function WelcomeTour({ onComplete, haptic }: WelcomeTourProps) {
 
             {/* Title — serif display font */}
             <h2 style={{
-              fontFamily: "'Playfair Display', 'Cinzel', Georgia, serif",
+              fontFamily: "'Manrope', sans-serif",
               fontSize: 24,
               fontWeight: 700,
               fontStyle: 'italic',

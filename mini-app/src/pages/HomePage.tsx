@@ -12,7 +12,7 @@ import { openAdminPanel } from '../components/AdminPanel'
 import { useAdmin } from '../contexts/AdminContext'
 import { useCapability } from '../contexts/DeviceCapabilityContext'
 import { PremiumBackground } from '../components/ui/PremiumBackground'
-import { FloatingGoldParticles } from '../components/ui/AdaptiveParticles'
+// FloatingGoldParticles removed — visual noise
 import { buildReferralLink, buildReferralShareText } from '../lib/appLinks'
 
 // Home Components
@@ -190,10 +190,9 @@ export function HomePage({ user, onRefresh }: Props) {
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
         <PremiumBackground
           variant="gold"
-          intensity="medium"
-          interactive={capability.tier >= 3}
+          intensity="low"
+          interactive={false}
         />
-        <FloatingGoldParticles count={capability.getParticleCount(12)} />
       </div>
 
       {/* Content */}
@@ -247,9 +246,7 @@ export function HomePage({ user, onRefresh }: Props) {
             <TestimonialsSection />
 
             {/* 6. Guarantees — Loss-aversion framing */}
-            <GuaranteesShowcase
-              onOpenGuaranteesModal={() => { haptic('light'); actions.openModal('guarantees') }}
-            />
+            <GuaranteesShowcase />
 
             {/* 7. Pricing Anchor — Price comparison that sells */}
             <PricingAnchor

@@ -82,7 +82,7 @@ export const StickyBottomCTA = memo(function StickyBottomCTA({ onClick, heroRef 
               borderRadius: 16,
               background: 'var(--gold-metallic)',
               border: 'none',
-              boxShadow: 'var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.15)',
+              boxShadow: '0 4px 16px rgba(201, 162, 39, 0.15)',
               cursor: 'pointer',
               appearance: 'none',
               fontFamily: "'Manrope', sans-serif",

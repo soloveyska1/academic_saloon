@@ -8,21 +8,21 @@ import { memo } from 'react'
 export const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
-  background: 'var(--bg-card)',
-  backdropFilter: 'blur(12px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
-  border: '1px solid var(--card-border)',
-  boxShadow: 'var(--card-shadow)',
+  background: 'rgba(12, 12, 10, 0.6)',
+  backdropFilter: 'blur(16px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+  border: '1px solid rgba(255, 255, 255, 0.04)',
+  boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.3)',
 }
 
 export const glassGoldStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
-  background: 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-  backdropFilter: 'blur(12px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
-  border: '1px solid var(--border-gold)',
-  boxShadow: 'var(--card-shadow)',
+  background: 'rgba(12, 12, 10, 0.6)',
+  backdropFilter: 'blur(16px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+  border: '1px solid rgba(201, 162, 39, 0.08)',
+  boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.3)',
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

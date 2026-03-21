@@ -201,7 +201,7 @@ export const RankUpCelebration = memo(function RankUpCelebration({
                 style={{
                   fontSize: 28,
                   fontWeight: 800,
-                  fontFamily: 'var(--font-serif)',
+                  fontFamily: "'Manrope', sans-serif",
                   background: 'var(--gold-metallic)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',

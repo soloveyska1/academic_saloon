@@ -48,15 +48,15 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
     <div
       style={{
         borderRadius: 16,
-        background: isOpen ? 'var(--gold-glass-subtle)' : 'var(--bg-card)',
-        border: `1px solid ${isOpen ? 'var(--border-gold)' : 'var(--border-default)'}`,
+        background: isOpen ? 'rgba(201, 162, 39, 0.06)' : 'rgba(12, 12, 10, 0.6)',
+        border: `1px solid ${isOpen ? 'rgba(201, 162, 39, 0.08)' : 'rgba(255, 255, 255, 0.04)'}`,
         overflow: 'hidden',
         transition: 'background 0.2s, border-color 0.2s',
       }}
     >
       <motion.button
         type="button"
-        whileTap={{ scale: 0.99 }}
+        whileTap={{ scale: 0.97 }}
         onClick={onToggle}
         style={{
           display: 'flex',
@@ -73,6 +73,7 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
       >
         <span style={{
           flex: 1,
+          fontFamily: "'Manrope', sans-serif",
           fontSize: 14,
           fontWeight: 700,
           color: isOpen ? 'var(--gold-400)' : 'var(--text-primary)',
@@ -88,7 +89,7 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
         >
           <ChevronDown
             size={16}
-            color={isOpen ? 'var(--gold-400)' : 'var(--text-muted)'}
+            color="var(--text-muted)"
             strokeWidth={2}
           />
         </motion.div>
@@ -128,7 +129,7 @@ export const FAQSection = memo(function FAQSection() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.38 }}
       style={{ marginBottom: 24 }}
@@ -151,9 +152,9 @@ export const FAQSection = memo(function FAQSection() {
         <span
           style={{
             fontFamily: "'Manrope', sans-serif",
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.06em',
             textTransform: 'uppercase',
             color: 'var(--text-muted)',
           }}

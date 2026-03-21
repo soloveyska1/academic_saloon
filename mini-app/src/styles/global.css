@@ -4,7 +4,7 @@
    Cartier aesthetics + High-end dark mode crypto wallet
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TAILWIND CSS — MUST BE AT THE TOP
@@ -173,6 +173,11 @@ textarea:focus-visible,
   --gold-glass-medium: rgba(212, 175, 55, 0.15);
   --gold-glass-strong: rgba(212, 175, 55, 0.25);
 
+  /* Navigation */
+  --nav-capsule-bg: rgba(14, 14, 11, 0.82);
+  --nav-pill-bg: rgba(201, 162, 39, 0.10);
+  --nav-glow: 0 0 12px rgba(201, 162, 39, 0.08);
+
   /* Text on gold/accent backgrounds */
   --text-on-gold: #050507;
   --text-inverse: #050507;
@@ -233,26 +238,24 @@ textarea:focus-visible,
   --border-gold-strong: rgba(212, 175, 55, 0.35);
   --card-border: rgba(255, 255, 255, 0.08);
 
-  /* === TYPOGRAPHY — Editorial Luxury === */
-  /* Headers: Cinzel or Playfair Display — MUST be serif for premium feel */
-  --font-display: 'Cinzel', 'Playfair Display', Georgia, serif;
-  --font-serif: 'Cinzel', 'Playfair Display', Georgia, serif;
-  --font-heading: 'Cinzel', 'Playfair Display', Georgia, serif;
-  /* Body: Manrope — Clean, modern, readable */
-  --font-sans: 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Typography — Two fonts only */
+  --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
 
   /* === THE SECRET SAUCE: GOLD GLOW SHADOWS === */
   /* Rule: Shadows must have gold/bronze tint to simulate light through glass */
-  --glow-gold: 0 0 20px -5px rgba(212, 175, 55, 0.4);
+  --glow-gold: 0 0 20px -5px rgba(212, 175, 55, 0.15);
   --glow-gold-strong: 0 0 40px -5px rgba(212, 175, 55, 0.6);
   --glow-gold-intense: 0 0 60px -10px rgba(212, 175, 55, 0.8);
   --glow-red: 0 0 20px -5px rgba(185, 60, 60, 0.4);
 
   /* Card Shadow — Gold Aura Effect (THE SIGNATURE) */
   --card-shadow:
-    0 20px 40px -10px rgba(0, 0, 0, 0.8),
-    0 0 20px -5px rgba(212, 175, 55, 0.1);
+    0 4px 12px -4px rgba(0, 0, 0, 0.4),
+    0 0 8px -4px rgba(212, 175, 55, 0.06);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      DESIGN TOKENS — Standardized values for consistency
@@ -262,10 +265,12 @@ textarea:focus-visible,
   --gold-bright: #E8D04B;
 
   /* Border Radius Scale — Consistent corners */
-  --radius-sm: 8px;     /* Small elements, badges */
-  --radius-md: 12px;    /* Standard cards, inputs */
-  --radius-lg: 16px;    /* Featured cards, modals */
-  --radius-xl: 20px;    /* Hero sections */
+  --radius-sm: 12px;     /* buttons, badges, icon boxes */
+  --radius-md: 16px;     /* standard cards */
+  --radius-lg: 24px;     /* hero sections, modals */
+  --radius-xl: 20px;     /* legacy compat */
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
   --radius-full: 9999px; /* Pills, avatars */
 
   /* Spacing Scale — Consistent padding/gaps */
@@ -275,6 +280,9 @@ textarea:focus-visible,
   --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
 
   /* Card Padding Standards */
   --card-padding-sm: 12px;
@@ -308,26 +316,6 @@ textarea:focus-visible,
   --shadow-vault: 0 30px 60px -15px rgba(0, 0, 0, 0.85), 0 0 80px -20px rgba(212, 175, 55, 0.15);
   --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.04);
   --shadow-dossier: 0 15px 35px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.04);
-
-  /* === SPACING === */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-
-  /* === RADIUS === */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
-  --radius-3xl: 32px;
-  --radius-full: 9999px;
 
   /* === TRANSITIONS === */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -367,6 +355,11 @@ textarea:focus-visible,
   --gold-glass-subtle: rgba(180, 142, 38, 0.06);
   --gold-glass-medium: rgba(180, 142, 38, 0.12);
   --gold-glass-strong: rgba(180, 142, 38, 0.2);
+
+  /* Navigation */
+  --nav-capsule-bg: rgba(255, 253, 248, 0.85);
+  --nav-pill-bg: rgba(180, 142, 38, 0.10);
+  --nav-glow: 0 0 12px rgba(180, 142, 38, 0.06);
 
   /* Text on gold/accent backgrounds */
   --text-on-gold: #FFFFFF;

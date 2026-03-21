@@ -104,7 +104,7 @@ export const OrderStatsCard = memo(function OrderStatsCard({
             <div style={{
               fontSize: 38,
               fontWeight: 800,
-              fontFamily: 'var(--font-serif)',
+              fontFamily: "'Manrope', sans-serif",
               background: activeOrders > 0
                 ? 'linear-gradient(180deg, var(--gold-150), var(--gold-400))'
                 : 'linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2))',
@@ -154,7 +154,7 @@ export const OrderStatsCard = memo(function OrderStatsCard({
             <div style={{
               fontSize: 38,
               fontWeight: 800,
-              fontFamily: 'var(--font-serif)',
+              fontFamily: "'Manrope', sans-serif",
               background: 'linear-gradient(180deg, rgba(74,222,128,0.9), rgba(34,197,94,0.8))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',

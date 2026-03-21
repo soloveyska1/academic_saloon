@@ -38,16 +38,10 @@ const GUARANTEES: GuaranteeItem[] = [
   },
 ]
 
-interface GuaranteesShowcaseProps {
-  onOpenGuaranteesModal: () => void
-}
-
-export const GuaranteesShowcase = memo(function GuaranteesShowcase({
-  onOpenGuaranteesModal,
-}: GuaranteesShowcaseProps) {
+export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.30 }}
       style={{ marginBottom: 20 }}
@@ -70,9 +64,9 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
         <span
           style={{
             fontFamily: "'Manrope', sans-serif",
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.06em',
             textTransform: 'uppercase',
             color: 'var(--text-muted)',
           }}
@@ -94,14 +88,15 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
           return (
             <motion.div
               key={g.title}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
+              whileTap={{ scale: 0.97 }}
               transition={{ delay: 0.34 + i * 0.06 }}
               style={{
                 padding: 20,
                 borderRadius: 16,
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-default)',
+                background: 'rgba(12, 12, 10, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.04)',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -123,8 +118,9 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
                 style={{
                   width: 36,
                   height: 36,
-                  borderRadius: 8,
-                  background: 'var(--gold-glass-subtle)',
+                  borderRadius: 12,
+                  background: 'rgba(201, 162, 39, 0.06)',
+                  border: '1px solid rgba(201, 162, 39, 0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -139,6 +135,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
               </div>
               <div
                 style={{
+                  fontFamily: "'Manrope', sans-serif",
                   fontSize: 14,
                   fontWeight: 700,
                   color: 'var(--text-primary)',
@@ -164,30 +161,6 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase({
         })}
       </div>
 
-      {/* Footer link */}
-      <motion.button
-        type="button"
-        whileTap={{ scale: 0.98 }}
-        onClick={onOpenGuaranteesModal}
-        style={{
-          display: 'block',
-          width: '100%',
-          marginTop: 14,
-          padding: '10px 0',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          appearance: 'none',
-          textAlign: 'center',
-          fontFamily: "'Manrope', sans-serif",
-          fontSize: 12,
-          fontWeight: 600,
-          color: 'var(--gold-400)',
-          letterSpacing: '0.02em',
-        }}
-      >
-        Все гарантии подробно →
-      </motion.button>
     </motion.div>
   )
 })

@@ -25,11 +25,10 @@ export const ReputationCard = memo(function ReputationCard({
   const glassGoldStyle: React.CSSProperties = {
     position: 'relative',
     overflow: 'hidden',
-    background: 'linear-gradient(135deg, var(--gold-glass-subtle) 0%, var(--bg-card) 40%, rgba(212,175,55,0.04) 100%)',
-    backdropFilter: 'blur(12px) saturate(130%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(130%)',
-    border: '1px solid var(--border-gold)',
-    boxShadow: 'var(--card-shadow)',
+    background: 'linear-gradient(135deg, rgba(201, 162, 39, 0.06) 0%, rgba(12, 12, 10, 0.6) 40%, rgba(201,162,39,0.04) 100%)',
+    backdropFilter: 'blur(16px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+    border: '1px solid rgba(255,255,255,0.04)',
   }
 
   // Default Telegram share handler
@@ -46,12 +45,13 @@ export const ReputationCard = memo(function ReputationCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.32 }}
-      className="card-padding card-radius"
       style={{
         ...glassGoldStyle,
+        borderRadius: 16,
+        padding: 20,
         marginBottom: 16,
         transition: 'transform 0.2s ease-out',
       }}
@@ -84,8 +84,8 @@ export const ReputationCard = memo(function ReputationCard({
                   alignItems: 'center',
                   gap: 4,
                   padding: '4px 8px',
-                  background: 'rgba(74, 222, 128, 0.08)',
-                  border: '1px solid rgba(74, 222, 128, 0.25)',
+                  background: 'var(--success-glass)',
+                  border: '1px solid var(--success-border)',
                   borderRadius: 8,
                 }}
               >
@@ -201,7 +201,7 @@ export const ReputationCard = memo(function ReputationCard({
               e.stopPropagation()
               handleTelegramShare()
             }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
             aria-label="Поделиться в Telegram"
             style={{
               padding: '12px 16px',
@@ -226,7 +226,7 @@ export const ReputationCard = memo(function ReputationCard({
               e.stopPropagation()
               onShowQR()
             }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.97 }}
             aria-label="Показать QR-код реферальной ссылки"
             style={{
               width: 46,

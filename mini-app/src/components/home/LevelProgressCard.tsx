@@ -6,11 +6,10 @@ import { TrendingUp, Crown, Percent, Star } from 'lucide-react'
 const glassStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
-  background: 'var(--bg-card)',
-  backdropFilter: 'blur(12px) saturate(130%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(130%)',
-  border: '1px solid var(--card-border)',
-  boxShadow: 'var(--card-shadow)',
+  background: 'rgba(12, 12, 10, 0.6)',
+  backdropFilter: 'blur(16px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+  border: '1px solid rgba(255,255,255,0.04)',
 }
 
 interface Rank {
@@ -37,15 +36,16 @@ interface LevelProgressCardProps {
 function MaxRankCard({ rank }: { rank: Rank }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.32 }}
-      className="card-padding card-radius"
       style={{
         ...glassStyle,
+        borderRadius: 16,
+        padding: 20,
         marginBottom: 24,
-        border: '1px solid var(--border-gold-strong)',
-        background: 'linear-gradient(145deg, var(--gold-glass-subtle), var(--bg-card) 40%)',
+        border: '1px solid rgba(201, 162, 39, 0.08)',
+        background: 'linear-gradient(145deg, rgba(201, 162, 39, 0.06), rgba(12, 12, 10, 0.6) 40%)',
       }}
     >
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -78,7 +78,7 @@ function MaxRankCard({ rank }: { rank: Rank }) {
             <div style={{
               fontSize: 16,
               fontWeight: 700,
-              fontFamily: 'var(--font-serif)',
+              fontFamily: "'Manrope', sans-serif",
               background: 'var(--gold-text-shine)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -103,7 +103,7 @@ function MaxRankCard({ rank }: { rank: Rank }) {
             }}>
               <Percent size={14} color="var(--gold-400)" strokeWidth={2} />
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
                   {rank.cashback}%
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>кэшбэк</div>
@@ -144,11 +144,10 @@ export const LevelProgressCard = memo(function LevelProgressCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.32 }}
-      className="card-padding card-radius"
-      style={{ ...glassStyle, marginBottom: 16 }}
+      style={{ ...glassStyle, borderRadius: 16, padding: 20, marginBottom: 16 }}
     >
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div
@@ -171,7 +170,7 @@ export const LevelProgressCard = memo(function LevelProgressCard({
           </div>
           <div style={{ flex: 1 }}>
             <div
-              style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-main)' }}
+              style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}
             >
               Следующий уровень
             </div>
@@ -179,7 +178,7 @@ export const LevelProgressCard = memo(function LevelProgressCard({
               style={{
                 fontSize: 12,
                 fontWeight: 600,
-                fontFamily: 'var(--font-serif)',
+                fontFamily: "'Manrope', sans-serif",
                 background: 'var(--gold-text-shine)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
