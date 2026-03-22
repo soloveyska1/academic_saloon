@@ -26,9 +26,13 @@ export function FloatingCtaDock({
   onSubmit,
   selectedServiceLabel,
 }: FloatingCtaDockProps) {
+  // In fast mode, always show the dock (disabled state when can't proceed)
+  const alwaysShow = isFastMode
+  const isVisible = canProceed || alwaysShow
+
   return (
     <AnimatePresence>
-      {canProceed && (
+      {isVisible && (
         <motion.div
           initial={{ y: 100, opacity: 0, scale: 0.9 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -47,7 +51,7 @@ export function FloatingCtaDock({
         >
           {/* The Floating Dock */}
           <motion.button
-            whileTap={{ scale: 0.97 }}
+            whileTap={canProceed ? { scale: 0.97 } : undefined}
             onClick={step === totalSteps ? onSubmit : onNext}
             disabled={!canProceed || submitting}
             style={{
@@ -58,15 +62,17 @@ export function FloatingCtaDock({
               background: 'var(--bg-card)',
               backdropFilter: 'blur(20px) saturate(180%)',
               WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              border: '1px solid var(--gold-glass-strong)',
+              border: `1px solid ${canProceed ? 'var(--gold-glass-strong)' : 'var(--border-strong)'}`,
               borderRadius: 50,
-              cursor: submitting ? 'wait' : 'pointer',
+              cursor: !canProceed ? 'default' : submitting ? 'wait' : 'pointer',
               pointerEvents: 'auto',
-              boxShadow: `
+              opacity: canProceed ? 1 : 0.5,
+              transition: 'opacity 0.3s ease, border-color 0.3s ease',
+              boxShadow: canProceed ? `
                 0 10px 40px -10px rgba(0, 0, 0, 0.6),
                 0 0 30px -5px var(--gold-glass-medium),
                 inset 0 1px 0 var(--border-default)
-              `,
+              ` : '0 4px 20px -8px rgba(0, 0, 0, 0.4)',
             }}
           >
             {/* Left side: Context info */}
