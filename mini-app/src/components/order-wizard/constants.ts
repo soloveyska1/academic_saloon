@@ -57,7 +57,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'essay',
     label: 'Эссе',
-    description: 'Аргументы вместо воды. Сдашь сразу',
+    description: 'Аргументированно и без воды',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: PenTool,
@@ -67,7 +67,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'presentation',
     label: 'Презентация',
-    description: 'Слайды + речь. Выступишь уверенно',
+    description: 'Слайды + речь. Готовы к выступлению',
     price: 'от 7 000 ₽',
     priceNum: 7000,
     icon: Presentation,
@@ -98,7 +98,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'report',
     label: 'Реферат',
-    description: 'Оформлен по ГОСТу. Бери и сдавай',
+    description: 'Оформлен по ГОСТу. Готов к сдаче',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: FileText,

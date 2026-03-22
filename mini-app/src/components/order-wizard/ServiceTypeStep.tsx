@@ -1,37 +1,43 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, Check, ChevronRight, Timer, MessageSquare, Shield, Star, Eye } from 'lucide-react'
+import {
+  ArrowRight, Check, ChevronRight, Timer, MessageSquare, Shield,
+  Star, Eye, Camera, HelpCircle,
+} from 'lucide-react'
 import type { ServiceType } from './types'
 import { SERVICE_TYPES } from './constants'
 import { SPACING, RADIUS, COLORS, FONT, TAP_SCALE } from './design-tokens'
 import { useCapability } from '../../contexts/DeviceCapabilityContext'
 import { useSocialProofBatch, formatOrderCount } from './useSocialProof'
-import type { SocialProofData, ServiceMetaForProof } from './useSocialProof'
+import type { SocialProofData, ServiceMetaForProof, ActivityEvent } from './useSocialProof'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SERVICE TYPE STEP — v9 «Quiet Luxury + Trust»
+   SERVICE TYPE STEP — v10 «Quiet Luxury + Trust + Smart Flows»
 
    Principles:
-   - ONE card size for all services (no hero/row/compact tiers)
-   - Popular services FIRST (what 80% of users need)
-   - Unified glass style matching homepage
-   - Price whispered, not screamed
-   - Trust signals woven in, not bolted on
-   - Social proof connected to cards
+   - ONE card size for all academic services
+   - Popular services FIRST (80% of users)
+   - photo_task / other / assist → fast mode (different wizard flow)
+   - Live activity ticker for ambient social proof
+   - Smart default: highlight last ordered / coursework for new users
    - Gold celebration on selection + haptic
    - Device-adaptive animations (tier 1/2/3)
    - Premium cards get subtle visual distinction
+   - All copy in Вы-form (professional tone)
 
-   Order: Popular → Standard → Express → Custom
+   Order: Popular → Standard → Express → [section] Premium → [special] Custom
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface ServiceTypeStepProps {
   selected: string | null
   onSelect: (id: string) => void
-  onUrgentRequest?: () => void
+  /** Triggers fast mode — optionally with a specific service id (photo_task, other) */
+  onUrgentRequest?: (serviceId?: string) => void
 }
 
-// ─── Display order: popular first, then by natural flow ──────────────────
+// ─── Services that go through standard wizard ────────────────────────────
+// photo_task and other are routed to fast mode instead
+const CUSTOM_FLOW_IDS = new Set(['photo_task', 'other'])
 
 const DISPLAY_ORDER: string[] = [
   // Popular / high-conversion
@@ -40,8 +46,6 @@ const DISPLAY_ORDER: string[] = [
   'presentation', 'practice', 'control', 'independent',
   // Premium
   'diploma', 'masters',
-  // Custom
-  'photo_task', 'other',
 ]
 
 // Section breaks
@@ -66,7 +70,6 @@ const CATALOG: CatalogItem[] = (() => {
     const service = byId.get(id)
     if (!service) continue
 
-    // Check if previous item triggers a section break
     const prevId = i > 0 ? DISPLAY_ORDER[i - 1] : null
     const sectionBefore = prevId ? sectionMap.get(prevId) : undefined
 
@@ -74,9 +77,9 @@ const CATALOG: CatalogItem[] = (() => {
     seen.add(id)
   }
 
-  // Catch any new services not in DISPLAY_ORDER
+  // Catch any new services not in DISPLAY_ORDER (excluding custom flow)
   for (const service of SERVICE_TYPES) {
-    if (!seen.has(service.id)) {
+    if (!seen.has(service.id) && !CUSTOM_FLOW_IDS.has(service.id)) {
       result.push({ service })
     }
   }
@@ -84,14 +87,26 @@ const CATALOG: CatalogItem[] = (() => {
   return result
 })()
 
-// Service metas for social proof batch hook
-const SERVICE_METAS: ServiceMetaForProof[] = CATALOG.map(({ service }) => ({
-  id: service.id,
-  category: service.category,
-  popular: service.popular,
+// Service metas for social proof batch hook (all services, including custom)
+const SERVICE_METAS: ServiceMetaForProof[] = SERVICE_TYPES.map(s => ({
+  id: s.id,
+  category: s.category,
+  popular: s.popular,
 }))
 
-// Haptic helpers
+// ─── Smart default: remember last ordered service ────────────────────────
+const LAST_SERVICE_KEY = 'last_ordered_service_v1'
+
+function getSmartDefault(): string | null {
+  try {
+    return localStorage.getItem(LAST_SERVICE_KEY)
+  } catch {
+    return null
+  }
+}
+
+// ─── Haptic helpers ──────────────────────────────────────────────────────
+
 interface TelegramHaptic {
   selectionChanged?: () => void
   impactOccurred?: (style: string) => void
@@ -167,6 +182,77 @@ function TrustStrip() {
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
+   LIVE TICKER — Rotating activity events for ambient social proof
+   ═════════════════════════════════════════════════════════════════════════ */
+
+function LiveTicker({ events }: { events: (ActivityEvent | null)[] }) {
+  const { tier } = useCapability()
+  const validEvents = useMemo(() => events.filter(Boolean) as ActivityEvent[], [events])
+  const [currentIdx, setCurrentIdx] = useState(0)
+
+  useEffect(() => {
+    if (validEvents.length === 0) return
+    const interval = setInterval(() => {
+      setCurrentIdx(prev => (prev + 1) % validEvents.length)
+    }, 6000)
+    return () => clearInterval(interval)
+  }, [validEvents.length])
+
+  if (validEvents.length === 0) return null
+
+  const event = validEvents[currentIdx]
+  if (!event) return null
+
+  return (
+    <div style={{
+      overflow: 'hidden',
+      height: 28,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: `0 ${SPACING.sm}px`,
+      marginBottom: SPACING.xs,
+    }}>
+      {/* Pulsing green dot */}
+      <motion.div
+        animate={tier >= 2 ? {
+          scale: [1, 1.4, 1],
+          opacity: [0.6, 1, 0.6],
+        } : undefined}
+        transition={tier >= 2 ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : undefined}
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: '50%',
+          background: '#22c55e',
+          flexShrink: 0,
+        }}
+      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentIdx}
+          initial={tier >= 2 ? { y: 16, opacity: 0 } : false}
+          animate={{ y: 0, opacity: 1 }}
+          exit={tier >= 2 ? { y: -16, opacity: 0 } : undefined}
+          transition={{ duration: 0.3 }}
+          style={{
+            fontSize: FONT.size['2xs'],
+            color: 'var(--text-muted)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            flex: 1,
+          }}
+        >
+          {event.text}
+          <span style={{ opacity: 0.4, marginLeft: 6 }}>· {event.timeAgo}</span>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  )
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
    ROOT
    ═════════════════════════════════════════════════════════════════════════ */
 
@@ -180,33 +266,50 @@ export function ServiceTypeStep({
   const [justSelected, setJustSelected] = useState<string | null>(null)
   const selectedCardRef = useRef<HTMLDivElement>(null)
 
+  // Smart default: what to suggest
+  const smartDefault = useMemo(() => getSmartDefault() || 'coursework', [])
+
   // Find index to insert assist card (before "Дипломы и диссертации")
   const assistIndex = useMemo(() => {
     return CATALOG.findIndex(item => item.sectionBefore === 'Дипломы и диссертации')
   }, [])
 
+  // Collect activity events for live ticker
+  const activityEvents = useMemo(() => {
+    return Array.from(socialProofMap.values()).map(sp => sp.recentActivity)
+  }, [socialProofMap])
+
   const handleSelect = useCallback((id: string) => {
-    // Haptic feedback
     triggerHaptic('selection')
     setTimeout(() => triggerHaptic('light'), 150)
 
-    // Celebration state
     setJustSelected(id)
     setTimeout(() => setJustSelected(null), 600)
 
+    // Save for smart default on next visit
+    try { localStorage.setItem(LAST_SERVICE_KEY, id) } catch { /* noop */ }
+
     onSelect(id)
 
-    // Auto-scroll to selected card after brief delay
     setTimeout(() => {
       selectedCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }, 100)
   }, [onSelect])
+
+  const handleFastMode = useCallback((serviceId?: string) => {
+    triggerHaptic('light')
+    onUrgentRequest?.(serviceId)
+  }, [onUrgentRequest])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
       {/* Trust strip */}
       <TrustStrip />
 
+      {/* Live activity ticker */}
+      <LiveTicker events={activityEvents} />
+
+      {/* Standard service cards */}
       {CATALOG.map(({ service, sectionBefore }, i) => (
         <div key={service.id} ref={selected === service.id ? selectedCardRef : undefined}>
           {/* Section label */}
@@ -234,7 +337,7 @@ export function ServiceTypeStep({
           {/* Assist card before "Дипломы и диссертации" */}
           {i === assistIndex && onUrgentRequest && (
             <div style={{ marginBottom: SPACING.sm }}>
-              <AssistCard onPress={onUrgentRequest} index={i} />
+              <AssistCard onPress={() => handleFastMode()} index={i} />
             </div>
           )}
 
@@ -242,24 +345,62 @@ export function ServiceTypeStep({
             service={service}
             selected={selected === service.id}
             justSelected={justSelected === service.id}
+            isSuggested={!selected && service.id === smartDefault}
             onSelect={() => handleSelect(service.id)}
             index={i}
             socialProof={socialProofMap.get(service.id)}
           />
         </div>
       ))}
+
+      {/* ─── Custom flow cards (fast mode routing) ──────────────── */}
+      {onUrgentRequest && (
+        <>
+          <motion.div
+            initial={tier >= 2 ? { opacity: 0, x: -8 } : false}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '-20px' }}
+            transition={{ duration: 0.3 }}
+            style={{
+              fontSize: FONT.size.xs,
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              padding: `0 2px`,
+              marginTop: SPACING.lg,
+              marginBottom: SPACING.sm,
+            }}
+          >
+            Особые запросы
+          </motion.div>
+
+          <PhotoTaskCard
+            onPress={() => handleFastMode('photo_task')}
+            index={CATALOG.length}
+          />
+
+          <div style={{ height: SPACING.sm }} />
+
+          <CustomRequestCard
+            onPress={() => handleFastMode('other')}
+            index={CATALOG.length + 1}
+          />
+        </>
+      )}
     </div>
   )
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   SERVICE CARD — Unified size, glass style, social proof, celebration
+   SERVICE CARD — Standard wizard flow
    ═════════════════════════════════════════════════════════════════════════ */
 
 function ServiceCard({
   service,
   selected,
   justSelected,
+  isSuggested,
   onSelect,
   index,
   socialProof,
@@ -267,6 +408,7 @@ function ServiceCard({
   service: ServiceType
   selected: boolean
   justSelected: boolean
+  isSuggested: boolean
   onSelect: () => void
   index: number
   socialProof?: SocialProofData
@@ -277,7 +419,6 @@ function ServiceCard({
   const isPremium = service.category === 'premium'
   const { tier, canUseBlur } = useCapability()
 
-  // Device-adaptive entrance animation
   const entranceTransition = tier === 1
     ? { duration: 0 }
     : {
@@ -287,7 +428,6 @@ function ServiceCard({
         damping: 28,
       }
 
-  // Adaptive blur
   const backdropFilter = canUseBlur ? 'blur(16px) saturate(140%)' : 'none'
   const cardBg = canUseBlur ? COLORS.card.bg : 'rgba(12, 12, 10, 0.92)'
 
@@ -298,6 +438,11 @@ function ServiceCard({
     backgroundOrigin: 'border-box' as const,
     backgroundClip: 'padding-box, border-box' as const,
   } : {}
+
+  // Suggested pulse border (subtle)
+  const suggestedBorder = isSuggested && !selected
+    ? `1px solid rgba(201, 162, 39, 0.12)`
+    : undefined
 
   return (
     <motion.button
@@ -319,7 +464,7 @@ function ServiceCard({
         WebkitBackdropFilter: backdropFilter,
         border: selected
           ? `1.5px solid ${COLORS.gold.borderStrong}`
-          : `1px solid ${COLORS.card.border}`,
+          : suggestedBorder || `1px solid ${COLORS.card.border}`,
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
@@ -372,7 +517,6 @@ function ServiceCard({
         alignItems: 'center',
         gap: SPACING.md,
       }}>
-
         {/* Icon with bounce on selection */}
         <motion.div
           animate={justSelected ? {
@@ -433,9 +577,23 @@ function ServiceCard({
                 Топ
               </span>
             )}
+
+            {isSuggested && !selected && !isPopular && (
+              <span style={{
+                padding: '2px 6px',
+                borderRadius: 6,
+                background: 'rgba(34, 197, 94, 0.06)',
+                color: '#22c55e',
+                fontSize: FONT.size['2xs'],
+                fontWeight: 600,
+                lineHeight: 1,
+              }}>
+                Для вас
+              </span>
+            )}
           </div>
 
-          {/* Description — 2-line capable, no truncation */}
+          {/* Description — 2-line capable */}
           <div style={{
             fontSize: FONT.size.sm,
             color: 'var(--text-muted)',
@@ -477,7 +635,7 @@ function ServiceCard({
           )}
         </div>
 
-        {/* Right: duration + price + trust line */}
+        {/* Right: price + duration */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -611,7 +769,119 @@ function SelectionIndicator({ selected }: { selected: boolean }) {
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   ASSIST CARD — Redesigned: dashed border, bubble feel, pulse on icon
+   SPECIAL CARDS — Route to fast mode (different wizard flow)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/** "Задача по фото" — opens fast mode with photo_task service id */
+function PhotoTaskCard({ onPress, index }: { onPress: () => void; index: number }) {
+  const { tier } = useCapability()
+
+  return (
+    <motion.button
+      type="button"
+      initial={tier >= 2 ? { opacity: 0, y: 8 } : false}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.04 }}
+      whileTap={{ scale: tier >= 2 ? TAP_SCALE.card : 1 }}
+      onClick={onPress}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: SPACING.md,
+        padding: `${SPACING.lg}px ${SPACING.lg}px`,
+        background: 'rgba(201, 162, 39, 0.02)',
+        border: `1.5px dashed rgba(201, 162, 39, 0.12)`,
+        borderRadius: RADIUS.md,
+        cursor: 'pointer',
+        textAlign: 'left',
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
+        touchAction: 'pan-y',
+      }}
+    >
+      <div style={{
+        width: 36,
+        height: 36,
+        borderRadius: RADIUS.sm,
+        background: 'rgba(201, 162, 39, 0.06)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Camera size={17} color="var(--gold-400)" strokeWidth={1.7} />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: FONT.size.base, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+          Задача по фото
+        </div>
+        <div style={{ fontSize: FONT.size.sm, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>
+          Сфотографируйте задание — пришлём решение
+        </div>
+      </div>
+      <ArrowRight size={14} color="var(--gold-400)" style={{ flexShrink: 0, opacity: 0.4 }} />
+    </motion.button>
+  )
+}
+
+/** "Другое" — opens fast mode with other service id */
+function CustomRequestCard({ onPress, index }: { onPress: () => void; index: number }) {
+  const { tier } = useCapability()
+
+  return (
+    <motion.button
+      type="button"
+      initial={tier >= 2 ? { opacity: 0, y: 8 } : false}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.04 }}
+      whileTap={{ scale: tier >= 2 ? TAP_SCALE.card : 1 }}
+      onClick={onPress}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: SPACING.md,
+        padding: `${SPACING.lg}px ${SPACING.lg}px`,
+        background: 'rgba(255, 255, 255, 0.01)',
+        border: `1px dashed rgba(255, 255, 255, 0.06)`,
+        borderRadius: RADIUS.md,
+        cursor: 'pointer',
+        textAlign: 'left',
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
+        touchAction: 'pan-y',
+      }}
+    >
+      <div style={{
+        width: 36,
+        height: 36,
+        borderRadius: RADIUS.sm,
+        background: 'rgba(255, 255, 255, 0.03)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <HelpCircle size={17} color="var(--text-muted)" strokeWidth={1.7} />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: FONT.size.base, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+          Другое
+        </div>
+        <div style={{ fontSize: FONT.size.sm, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>
+          Опишите задачу — подберём формат и автора
+        </div>
+      </div>
+      <ArrowRight size={14} color="var(--text-muted)" style={{ flexShrink: 0, opacity: 0.3 }} />
+    </motion.button>
+  )
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   ASSIST CARD — "Не уверены?" → fast mode
    ═════════════════════════════════════════════════════════════════════════ */
 
 function AssistCard({ onPress, index }: { onPress: () => void; index: number }) {
@@ -625,10 +895,7 @@ function AssistCard({ onPress, index }: { onPress: () => void; index: number }) 
       viewport={{ once: true }}
       transition={{ delay: index * 0.04 }}
       whileTap={{ scale: tier >= 2 ? TAP_SCALE.card : 1 }}
-      onClick={() => {
-        triggerHaptic('light')
-        onPress()
-      }}
+      onClick={onPress}
       style={{
         width: '100%',
         display: 'flex',
