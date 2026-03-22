@@ -845,14 +845,16 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
             marginBottom: 16,
           }}>
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.97 }}
               onClick={goBack}
               style={{
                 width: 40,
                 height: 40,
                 borderRadius: 12,
-                background: 'rgba(255, 255, 255, 0.04)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'rgba(12, 12, 10, 0.6)',
+                backdropFilter: 'blur(16px) saturate(140%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+                border: '1px solid rgba(255, 255, 255, 0.04)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -870,28 +872,24 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
             }}>
               <div style={{ display: 'flex', gap: 4 }}>
                 {Array.from({ length: totalSteps }, (_, index) => index + 1).map((s) => (
-                  <motion.div
+                  <div
                     key={s}
-                    animate={{
-                      background: s <= step
-                        ? 'linear-gradient(90deg, #d4af37, #f5d061)'
-                        : 'rgba(255, 255, 255, 0.08)',
-                      boxShadow: s === step ? '0 0 8px rgba(212, 175, 55, 0.4)' : 'none',
-                    }}
                     style={{
-                      width: s === step ? 24 : 8,
-                      height: 8,
-                      borderRadius: 4,
-                      transition: 'width 0.3s ease',
+                      width: s === step ? 20 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      background: s <= step
+                        ? 'var(--gold-400)'
+                        : 'rgba(255, 255, 255, 0.06)',
+                      transition: 'width 0.3s ease, background 0.3s ease',
                     }}
                   />
                 ))}
               </div>
               <span style={{
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 600,
                 color: 'var(--text-muted)',
-                fontFamily: "'JetBrains Mono', monospace",
               }}>
                 {step}/{totalSteps}
               </span>
@@ -907,16 +905,17 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h1 style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: 'var(--text-main)',
-                fontFamily: "'Manrope', sans-serif",
+                fontSize: 20,
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-display)',
                 lineHeight: 1.2,
-                marginBottom: 4,
+                letterSpacing: '-0.02em',
+                marginBottom: 3,
               }}>
                 {currentConfig?.title}
               </h1>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.4, fontWeight: 500 }}>
                 {currentConfig?.subtitle}
               </p>
             </div>

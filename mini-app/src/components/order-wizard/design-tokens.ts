@@ -1,9 +1,9 @@
 /**
- * Design tokens for Order Wizard components.
- * Centralized spacing, colors, and typography to replace hardcoded values.
+ * Design tokens for Order Wizard — aligned with global design system.
+ * Uses the same values as homepage glass cards.
  */
 
-// ─── Spacing Scale ───────────────────────────────────────────────────────
+// ─── Spacing Scale (8px rhythm) ─────────────────────────────────────────
 export const SPACING = {
   xs: 4,
   sm: 8,
@@ -14,43 +14,37 @@ export const SPACING = {
   '3xl': 32,
 } as const
 
-// ─── Border Radius ───────────────────────────────────────────────────────
+// ─── Border Radius — matches global --radius-sm/md/lg ───────────────────
 export const RADIUS = {
-  sm: 8,
-  md: 10,
-  lg: 12,
-  xl: 14,
-  '2xl': 16,
-  '3xl': 20,
-  full: 999,
+  sm: 12,
+  md: 16,
+  lg: 24,
+  full: 9999,
 } as const
 
-// ─── Colors ──────────────────────────────────────────────────────────────
+// ─── Colors — aligned with global CSS variables ─────────────────────────
 export const COLORS = {
   gold: {
     primary: '#d4af37',
     light: '#E8D5A3',
-    soft: 'rgba(212, 175, 55, 0.10)',
-    soft06: 'rgba(212, 175, 55, 0.06)',
-    border: 'rgba(212, 175, 55, 0.25)',
-    borderStrong: 'rgba(212, 175, 55, 0.45)',
-    gradient: 'linear-gradient(135deg, #d4af37, #f5d061)',
-    shadow: 'rgba(212, 175, 55, 0.20)',
-    badge: 'rgba(212, 175, 55, 0.75)',
+    soft: 'rgba(201, 162, 39, 0.06)',
+    border: 'rgba(201, 162, 39, 0.08)',
+    borderStrong: 'rgba(201, 162, 39, 0.20)',
+    gradient: 'linear-gradient(135deg, var(--gold-600), var(--gold-400))',
+    shadow: 'rgba(201, 162, 39, 0.12)',
+    badge: 'rgba(201, 162, 39, 0.75)',
   },
   card: {
-    bg: 'rgba(255, 255, 255, 0.025)',
-    bgSubtle: 'rgba(255, 255, 255, 0.04)',
-    border: 'rgba(255, 255, 255, 0.08)',
-    borderSubtle: 'rgba(255, 255, 255, 0.04)',
-    borderFocused: 'rgba(212, 175, 55, 0.25)',
+    bg: 'rgba(12, 12, 10, 0.6)',
+    border: 'rgba(255, 255, 255, 0.04)',
+    borderFocused: 'rgba(201, 162, 39, 0.15)',
   },
   assist: {
-    primary: '#60a5fa',
-    bg: 'rgba(96, 165, 250, 0.04)',
-    border: 'rgba(96, 165, 250, 0.15)',
-    icon: 'rgba(96, 165, 250, 0.07)',
-    text: '#93bbfc',
+    primary: 'var(--gold-400)',
+    bg: 'rgba(201, 162, 39, 0.03)',
+    border: 'rgba(201, 162, 39, 0.08)',
+    icon: 'rgba(201, 162, 39, 0.06)',
+    text: 'var(--text-secondary)',
   },
   status: {
     success: '#22c55e',
@@ -59,14 +53,14 @@ export const COLORS = {
   },
 } as const
 
-// ─── Typography ──────────────────────────────────────────────────────────
+// ─── Typography ─────────────────────────────────────────────────────────
 export const FONT = {
   family: {
-    sans: "'Manrope', sans-serif",
-    mono: "'JetBrains Mono', monospace",
+    sans: "var(--font-display, 'Manrope', sans-serif)",
+    mono: "var(--font-mono, 'JetBrains Mono', monospace)",
   },
   size: {
-    '2xs': 10.5,
+    '2xs': 10,
     xs: 11,
     sm: 12,
     md: 13,
@@ -77,7 +71,7 @@ export const FONT = {
   },
 } as const
 
-// ─── Component Sizes ─────────────────────────────────────────────────────
+// ─── Component Sizes ────────────────────────────────────────────────────
 export const ICON_BOX = {
   xs: 24,
   sm: 28,
@@ -88,9 +82,9 @@ export const ICON_BOX = {
 
 // ─── Animation ──────────────────────────────────────────────────────────
 export const TAP_SCALE = {
-  card: 0.98,
-  tile: 0.96,
+  card: 0.97,
+  tile: 0.97,
 } as const
 
-// ─── Card Padding ────────────────────────────────────────────────────────
-export const CARD_PADDING = `${SPACING.xl}px` // 14px → standardize on 14px
+// ─── Card Padding ───────────────────────────────────────────────────────
+export const CARD_PADDING = `${SPACING.xl}px`
