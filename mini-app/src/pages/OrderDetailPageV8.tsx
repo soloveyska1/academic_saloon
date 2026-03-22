@@ -472,9 +472,25 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const rawSubject = order.subject?.trim() || ''
   const subject = stripEmoji(rawSubject)
   const totalPrice = order.final_price || order.price || 0
-  const remainingAmount = Math.max(totalPrice - (order.paid_amount || 0), 0)
+  const paidAmount = Math.max(order.paid_amount || 0, 0)
+  const remainingAmount = Math.max(totalPrice - paidAmount, 0)
   const displayPrice = remainingAmount > 0 && remainingAmount !== totalPrice ? remainingAmount : totalPrice
   const priceLabel = remainingAmount > 0 && remainingAmount !== totalPrice ? 'ОСТАЛОСЬ К ОПЛАТЕ' : 'СТОИМОСТЬ'
+  const hasPaymentRecorded = paidAmount > 0
+  const hasPartialPayment = hasPaymentRecorded && remainingAmount > 0
+  const isFullyPaid = hasPaymentRecorded && remainingAmount <= 0
+  const paymentPlanLabel = order.payment_scheme === 'half'
+    ? 'Схема 50/50'
+    : isFullyPaid
+      ? 'Оплачено полностью'
+      : 'Оплата зафиксирована'
+  const paymentHeadline = hasPartialPayment
+    ? order.payment_scheme === 'half'
+      ? 'Аванс 50% уже внесён'
+      : 'Часть суммы уже оплачена'
+    : isFullyPaid
+      ? 'Оплата зафиксирована полностью'
+      : null
 
   // Countdown urgency color
   const urgencyColor = countdown?.urgency === 'expired' || countdown?.urgency === 'critical'
@@ -625,7 +641,9 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
         {/* ─── Row 3 alt: Price for non-payment statuses ─── */}
         {!isAwaitingPayment && totalPrice > 0 && (
           <div style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Стоимость</span>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+              {hasPaymentRecorded ? 'Общая стоимость' : 'Стоимость'}
+            </span>
             <span
               style={{
                 fontSize: 18,
@@ -637,6 +655,133 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
               {formatPrice(totalPrice)} ₽
             </span>
           </div>
+        )}
+
+        {/* ─── Payment breakdown: always show when any payment was already recorded ─── */}
+        {hasPaymentRecorded && totalPrice > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              marginTop: 16,
+              padding: '16px 16px 14px',
+              borderRadius: 18,
+              background: 'linear-gradient(180deg, rgba(212,175,55,0.06) 0%, rgba(255,255,255,0.02) 100%)',
+              border: '1px solid rgba(212,175,55,0.10)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+                marginBottom: 12,
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                {paymentHeadline && (
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: '#E8D5A3',
+                      marginBottom: 4,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {paymentHeadline}
+                  </div>
+                )}
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1.45,
+                    color: 'rgba(255,255,255,0.45)',
+                  }}
+                >
+                  {hasPartialPayment
+                    ? 'Клиентская карточка показывает и внесённый аванс, и остаток к финальной доплате.'
+                    : 'Оплата уже подтверждена, заказ можно отслеживать без неясности по финансам.'}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  flexShrink: 0,
+                  padding: '7px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(212,175,55,0.72)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {paymentPlanLabel}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: hasPartialPayment ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))',
+                gap: 10,
+              }}
+            >
+              {[
+                { label: 'Общая сумма', value: `${formatPrice(totalPrice)} ₽`, accent: false },
+                {
+                  label: hasPartialPayment && order.payment_scheme === 'half' ? 'Аванс внесён' : 'Оплачено',
+                  value: `${formatPrice(paidAmount)} ₽`,
+                  accent: true,
+                },
+                ...(hasPartialPayment
+                  ? [{ label: 'Остаток', value: `${formatPrice(remainingAmount)} ₽`, accent: false }]
+                  : []),
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: '12px 12px 11px',
+                    borderRadius: 14,
+                    background: item.accent ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${item.accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.35)',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      lineHeight: 1.2,
+                      color: item.accent ? '#E8D5A3' : 'rgba(255,255,255,0.86)',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         )}
 
         {/* ─── Row 4: Countdown timer ─── */}
