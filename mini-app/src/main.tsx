@@ -6,6 +6,27 @@ import './styles/responsive.css'
 
 // Development mode flag
 const IS_DEV = import.meta.env.DEV
+const THEME_STORAGE_KEY = 'academic_saloon_theme'
+
+function getBootTheme(): 'dark' | 'light' {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY)
+    if (saved === 'light' || saved === 'dark') {
+      return saved
+    }
+  } catch {
+    // Ignore storage access failures
+  }
+
+  const currentTheme = document.documentElement.getAttribute('data-theme')
+  return currentTheme === 'light' ? 'light' : 'dark'
+}
+
+function getBootThemeColors(theme: 'dark' | 'light') {
+  return theme === 'light'
+    ? { header: '#FAFAF9', background: '#FAFAF9' }
+    : { header: '#050507', background: '#050507' }
+}
 
 // Global error handler for mobile debugging
 window.onerror = function (msg, url, lineNo, columnNo, error) {
@@ -96,12 +117,14 @@ document.addEventListener('touchmove', function (e) {
 
 // Initialize Telegram WebApp
 const tg = window.Telegram?.WebApp
+const bootTheme = getBootTheme()
+const bootColors = getBootThemeColors(bootTheme)
 
 if (tg) {
   tg.ready()
   tg.expand()
-  tg.setHeaderColor('#09090b')
-  tg.setBackgroundColor('#09090b')
+  tg.setHeaderColor(bootColors.header)
+  tg.setBackgroundColor(bootColors.background)
 
   // Disable Telegram's pull-to-close gesture so scrolling up works properly
   if (typeof tg.disableVerticalSwipes === 'function') {

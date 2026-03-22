@@ -340,242 +340,238 @@ function AppContent() {
   if (error && !userData) {
     return (
       <ErrorBoundary>
-        <ThemeProvider>
-          <WebSocketProvider
-            telegramId={telegramId}
-            onOrderUpdate={handleOrderUpdate}
-            onBalanceUpdate={handleBalanceUpdate}
-            onProgressUpdate={handleProgressUpdate}
-            onNotification={handleNotification}
-            onRefresh={handleRefresh}
-          >
-            {/* Always show notifications even on error screen - no navigation action needed */}
-            <SmartNotification
-              notification={notification}
-              onDismiss={() => setNotification(null)}
-            />
-            {/* ═══════════════════════════════════════════════════════════════════
-                PREMIUM ERROR SCREEN — Elegant, not alarming
-                ═══════════════════════════════════════════════════════════════════ */}
+        <WebSocketProvider
+          telegramId={telegramId}
+          onOrderUpdate={handleOrderUpdate}
+          onBalanceUpdate={handleBalanceUpdate}
+          onProgressUpdate={handleProgressUpdate}
+          onNotification={handleNotification}
+          onRefresh={handleRefresh}
+        >
+          {/* Always show notifications even on error screen - no navigation action needed */}
+          <SmartNotification
+            notification={notification}
+            onDismiss={() => setNotification(null)}
+          />
+          {/* ═══════════════════════════════════════════════════════════════════
+              PREMIUM ERROR SCREEN — Elegant, not alarming
+              ═══════════════════════════════════════════════════════════════════ */}
+          <div style={{
+            minHeight: '100vh',
+            background: 'linear-gradient(180deg, var(--bg-void) 0%, var(--bg-surface) 50%, var(--bg-void) 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+            gap: 24,
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Subtle background glow */}
             <div style={{
-              minHeight: '100vh',
-              background: 'linear-gradient(180deg, var(--bg-void) 0%, var(--bg-surface) 50%, var(--bg-void) 100%)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 24,
-              gap: 24,
-              position: 'relative',
-              overflow: 'hidden',
-            }}>
-              {/* Subtle background glow */}
+              position: 'absolute',
+              top: '30%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 300,
+              height: 300,
+              background: 'radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%)',
+              borderRadius: '50%',
+              pointerEvents: 'none',
+            }} />
+
+            {/* Icon container — gold themed, not red */}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 24,
+                background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
+                border: '1px solid var(--gold-glass-strong)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: 'var(--shadow-lg)',
+                position: 'relative',
+              }}
+            >
+              {/* Top gold accent */}
               <div style={{
                 position: 'absolute',
-                top: '30%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 300,
-                height: 300,
-                background: 'radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%)',
-                borderRadius: '50%',
-                pointerEvents: 'none',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent)',
+                borderRadius: '24px 24px 0 0',
               }} />
+              <AlertTriangle size={36} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
+            </motion.div>
 
-              {/* Icon container — gold themed, not red */}
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 200 }}
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 24,
-                  background: 'linear-gradient(145deg, rgba(25,25,28,0.95), rgba(18,18,20,0.98))',
-                  border: '1px solid var(--gold-glass-strong)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: 'var(--shadow-lg)',
-                  position: 'relative',
-                }}
-              >
-                {/* Top gold accent */}
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 1,
-                  background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent)',
-                  borderRadius: '24px 24px 0 0',
-                }} />
-                <AlertTriangle size={36} color="rgba(212,175,55,0.8)" strokeWidth={1.5} />
-              </motion.div>
+            {/* Text content */}
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
+            >
+              <h2 style={{
+                fontFamily: "var(--font-serif, 'Playfair Display', serif)",
+                fontSize: 24,
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                margin: 0,
+                marginBottom: 12,
+                letterSpacing: '0.02em',
+              }}>
+                Что-то пошло не так
+              </h2>
+              <p style={{
+                fontSize: 13,
+                color: 'var(--text-muted)',
+                margin: 0,
+                lineHeight: 1.6,
+                maxWidth: 280,
+              }}>
+                {error}
+              </p>
+            </motion.div>
 
-              {/* Text content */}
-              <motion.div
-                initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
-              >
-                <h2 style={{
-                  fontFamily: "var(--font-serif, 'Playfair Display', serif)",
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: 'var(--text-primary)',
-                  margin: 0,
-                  marginBottom: 12,
-                  letterSpacing: '0.02em',
-                }}>
-                  Что-то пошло не так
-                </h2>
-                <p style={{
-                  fontSize: 13,
-                  color: 'var(--text-muted)',
-                  margin: 0,
-                  lineHeight: 1.6,
-                  maxWidth: 280,
-                }}>
-                  {error}
-                </p>
-              </motion.div>
+            {/* Retry button — premium gold */}
+            <motion.button
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '14px 32px',
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'var(--text-on-gold)',
+                background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
+                border: 'none',
+                borderRadius: 14,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                boxShadow: 'var(--glow-gold)',
+                letterSpacing: '0.02em',
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              <RefreshCw size={16} strokeWidth={2} />
+              Попробовать снова
+            </motion.button>
 
-              {/* Retry button — premium gold */}
-              <motion.button
-                initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => window.location.reload()}
-                style={{
-                  padding: '14px 32px',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'var(--text-on-gold)',
-                  background: 'linear-gradient(180deg, var(--gold-150), var(--gold-400))',
-                  border: 'none',
-                  borderRadius: 14,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  boxShadow: 'var(--glow-gold)',
-                  letterSpacing: '0.02em',
-                  position: 'relative',
-                  zIndex: 1,
-                }}
-              >
-                <RefreshCw size={16} strokeWidth={2} />
-                Попробовать снова
-              </motion.button>
-
-              {/* Elegant footer */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                style={{
-                  position: 'absolute',
-                  bottom: 40,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <div style={{
-                  width: 20,
-                  height: 1,
-                  background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3))',
-                }} />
-                <span style={{
-                  fontSize: 9,
-                  color: 'rgba(212,175,55,0.4)',
-                  letterSpacing: '0.15em',
-                  fontFamily: "var(--font-serif, 'Playfair Display', serif)",
-                }}>
-                  АКАДЕМИЧЕСКИЙ САЛОН
-                </span>
-                <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.3)' }}>✦</span>
-                <span style={{
-                  fontSize: 8,
-                  color: 'rgba(255,255,255,0.25)',
-                  letterSpacing: '0.1em',
-                }}>
-                  EST. {new Date().getFullYear()}
-                </span>
-                <div style={{
-                  width: 20,
-                  height: 1,
-                  background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)',
-                }} />
-              </motion.div>
-            </div>
-          </WebSocketProvider>
-        </ThemeProvider>
+            {/* Elegant footer */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              style={{
+                position: 'absolute',
+                bottom: 40,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <div style={{
+                width: 20,
+                height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3))',
+              }} />
+              <span style={{
+                fontSize: 9,
+                color: 'rgba(212,175,55,0.4)',
+                letterSpacing: '0.15em',
+                fontFamily: "var(--font-serif, 'Playfair Display', serif)",
+              }}>
+                АКАДЕМИЧЕСКИЙ САЛОН
+              </span>
+              <span style={{ fontSize: 8, color: 'rgba(212,175,55,0.3)' }}>✦</span>
+              <span style={{
+                fontSize: 8,
+                color: 'rgba(255,255,255,0.25)',
+                letterSpacing: '0.1em',
+              }}>
+                EST. {new Date().getFullYear()}
+              </span>
+              <div style={{
+                width: 20,
+                height: 1,
+                background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)',
+              }} />
+            </motion.div>
+          </div>
+        </WebSocketProvider>
       </ErrorBoundary>
     )
   }
 
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        {/* DeviceCapabilityProvider - adaptive effects based on device performance */}
-        <DeviceCapabilityProvider>
-          {/* PromoProvider stays mounted even during loading to preserve state */}
-          <PromoProvider>
-              <NavigationProvider>
-                <GestureGuardProvider>
-                  <ToastProvider>
-                  <WebSocketProvider
-                    telegramId={telegramId}
-                    onOrderUpdate={handleOrderUpdate}
-                    onBalanceUpdate={handleBalanceUpdate}
-                    onProgressUpdate={handleProgressUpdate}
-                    onNotification={handleNotification}
-                    onRefresh={handleRefresh}
-                  >
-                    <BrowserRouter>
-                      <div className="app">
-                        <RouteNavigationController />
-                        {/* Smart Realtime Notifications with React Router navigation */}
-                        <NotificationHandler
-                          notification={notification}
-                          onDismiss={() => setNotification(null)}
-                        />
+      {/* DeviceCapabilityProvider - adaptive effects based on device performance */}
+      <DeviceCapabilityProvider>
+        {/* PromoProvider stays mounted even during loading to preserve state */}
+        <PromoProvider>
+            <NavigationProvider>
+              <GestureGuardProvider>
+                <ToastProvider>
+                <WebSocketProvider
+                  telegramId={telegramId}
+                  onOrderUpdate={handleOrderUpdate}
+                  onBalanceUpdate={handleBalanceUpdate}
+                  onProgressUpdate={handleProgressUpdate}
+                  onNotification={handleNotification}
+                  onRefresh={handleRefresh}
+                >
+                  <BrowserRouter>
+                    <div className="app">
+                      <RouteNavigationController />
+                      {/* Smart Realtime Notifications with React Router navigation */}
+                      <NotificationHandler
+                        notification={notification}
+                        onDismiss={() => setNotification(null)}
+                      />
 
-                        <Suspense fallback={<LoadingScreen />}>
-                          <Routes>
-                            <Route path="/" element={<HomePage user={userData} onRefresh={handlePullRefresh} />} />
-                            <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} loading={userDataLoading} onRefresh={handlePullRefresh} />} />
-                            <Route path="/order/:id" element={<OrderDetailPageV8 />} />
-                            <Route path="/order/:id/chat" element={<OrderChatPage />} />
-                            <Route path="/club" element={<ClubPage user={userData} />} />
-                            <Route path="/profile" element={<ProfilePage user={userData} />} />
-                            <Route path="/create-order" element={<CreateOrderPage user={userData} />} />
-                            <Route path="/support" element={<SupportPage />} />
-                            <Route path="/batch-payment" element={<BatchPaymentPage />} />
-                            <Route path="/admin" element={<GodModePage />} />
-                            <Route path="/god" element={<GodModePage />} />
-                            <Route path="*" element={<NotFoundPage />} />
-                          </Routes>
-                        </Suspense>
+                      <Suspense fallback={<LoadingScreen />}>
+                        <Routes>
+                          <Route path="/" element={<HomePage user={userData} onRefresh={handlePullRefresh} />} />
+                          <Route path="/orders" element={<OrdersPage orders={userData?.orders || []} loading={userDataLoading} onRefresh={handlePullRefresh} />} />
+                          <Route path="/order/:id" element={<OrderDetailPageV8 />} />
+                          <Route path="/order/:id/chat" element={<OrderChatPage />} />
+                          <Route path="/club" element={<ClubPage user={userData} />} />
+                          <Route path="/profile" element={<ProfilePage user={userData} />} />
+                          <Route path="/create-order" element={<CreateOrderPage user={userData} />} />
+                          <Route path="/support" element={<SupportPage />} />
+                          <Route path="/batch-payment" element={<BatchPaymentPage />} />
+                          <Route path="/admin" element={<GodModePage />} />
+                          <Route path="/god" element={<GodModePage />} />
+                          <Route path="*" element={<NotFoundPage />} />
+                        </Routes>
+                      </Suspense>
 
-                        <Navigation />
-                        {/* Admin Debug Panel */}
-                        <AdminPanel />
-                        {/* WebSocket Status Indicator - only in debug mode */}
-                        <AdminAwareWSIndicator />
-                      </div>
-                    </BrowserRouter>
-                  </WebSocketProvider>
-                </ToastProvider>
-                </GestureGuardProvider>
-              </NavigationProvider>
-          </PromoProvider>
-        </DeviceCapabilityProvider>
-      </ThemeProvider>
+                      <Navigation />
+                      {/* Admin Debug Panel */}
+                      <AdminPanel />
+                      {/* WebSocket Status Indicator - only in debug mode */}
+                      <AdminAwareWSIndicator />
+                    </div>
+                  </BrowserRouter>
+                </WebSocketProvider>
+              </ToastProvider>
+              </GestureGuardProvider>
+            </NavigationProvider>
+        </PromoProvider>
+      </DeviceCapabilityProvider>
     </ErrorBoundary>
   )
 }
@@ -583,9 +579,11 @@ function AppContent() {
 // Main App wrapper
 function App() {
   return (
-    <AdminProvider>
-      <AppContent />
-    </AdminProvider>
+    <ThemeProvider>
+      <AdminProvider>
+        <AppContent />
+      </AdminProvider>
+    </ThemeProvider>
   )
 }
 
