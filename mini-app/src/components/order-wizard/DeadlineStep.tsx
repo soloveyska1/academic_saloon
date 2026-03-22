@@ -1,28 +1,20 @@
 import { useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import {
-  Check,
-  ChevronRight,
-  Clock,
-  Flame,
-  Leaf,
-  Timer,
-  Zap,
-  CalendarClock,
-  TrendingDown,
-} from 'lucide-react'
+import { Check } from 'lucide-react'
 import { DeadlineOption } from './types'
 import { DEADLINES } from './constants'
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   DEADLINE STEP — v3 «Понятный выбор сроков»
+   DEADLINE STEP — v4 «Честный выбор»
 
    Принципы:
-   - 2 секции: «Срочные» и «Стандартные» — как ServiceTypeStep
-   - Каждая секция — bordered card с цветным accent-баром
-   - Строки: иконка → лейбл + описание → множитель → check
-   - «Оптимально» бейдж на 2-3 дня
-   - Friendly-текст вместо сухих процентов
+   - Стандартные (дешёвые) сверху — якорим на базовую цену
+   - "2-3 дня" перенесён в стандартные — это нормальный срок, не срочный
+   - Убран "ОПТИМАЛЬНО" бейдж с наценочной опции (тёмный паттерн)
+   - Убраны иконки (все были часами — не несли информации)
+   - Убраны описания (дублировали заголовок)
+   - ChevronRight заменён на radio circle (правильный affordance)
+   - Компактные строки ~48px вместо ~70px
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface DeadlineStepProps {
@@ -34,102 +26,60 @@ interface DeadlineStepProps {
 
 // ── Section metadata ──
 
-type UrgencyCategory = 'urgent' | 'standard'
+type UrgencyCategory = 'express' | 'standard'
 
 interface SectionMeta {
   category: UrgencyCategory
   title: string
-  subtitle: string
   accent: string
   accentSoft: string
   accentBorder: string
-  icon: typeof Flame
 }
 
 const SECTION_META: Record<UrgencyCategory, SectionMeta> = {
-  urgent: {
-    category: 'urgent',
-    title: 'Срочные сроки',
-    subtitle: 'Приоритет в очереди',
-    accent: '#f59e0b',
-    accentSoft: 'rgba(245, 158, 11, 0.10)',
-    accentBorder: 'rgba(245, 158, 11, 0.25)',
-    icon: Flame,
-  },
   standard: {
     category: 'standard',
     title: 'Стандартные сроки',
-    subtitle: 'Без наценки за срочность',
     accent: '#22c55e',
-    accentSoft: 'rgba(34, 197, 94, 0.10)',
-    accentBorder: 'rgba(34, 197, 94, 0.20)',
-    icon: Leaf,
+    accentSoft: 'rgba(34, 197, 94, 0.08)',
+    accentBorder: 'rgba(34, 197, 94, 0.16)',
+  },
+  express: {
+    category: 'express',
+    title: 'Экспресс',
+    accent: '#f59e0b',
+    accentSoft: 'rgba(245, 158, 11, 0.08)',
+    accentBorder: 'rgba(245, 158, 11, 0.20)',
   },
 }
 
-const SECTION_ORDER: UrgencyCategory[] = ['urgent', 'standard']
+// Standard first — anchor on base price
+const SECTION_ORDER: UrgencyCategory[] = ['standard', 'express']
 
 // ── Deadline enrichment ──
 
 interface DeadlineMeta {
-  icon: typeof Clock
-  description: string
-  recommended: boolean
   category: UrgencyCategory
-  priceLabel: string // friendly multiplier text
+  surchargeLabel: string // "+40%" or "базовая"
+  popular: boolean
 }
 
 function getDeadlineMeta(value: string): DeadlineMeta {
   switch (value) {
     case 'today':
-      return {
-        icon: Zap,
-        description: 'Максимальный приоритет, работа начнётся сразу',
-        recommended: false,
-        category: 'urgent',
-        priceLabel: '×2',
-      }
+      return { category: 'express', surchargeLabel: '+100%', popular: false }
     case 'tomorrow':
-      return {
-        icon: Timer,
-        description: 'Сдача на следующий день',
-        recommended: false,
-        category: 'urgent',
-        priceLabel: '×1.7',
-      }
+      return { category: 'express', surchargeLabel: '+70%', popular: false }
     case '3days':
-      return {
-        icon: Clock,
-        description: 'Баланс скорости и качества',
-        recommended: true,
-        category: 'urgent',
-        priceLabel: '×1.4',
-      }
+      // Moved to standard — 2-3 days is a normal deadline, not "urgent"
+      return { category: 'standard', surchargeLabel: '+40%', popular: false }
     case 'week':
-      return {
-        icon: CalendarClock,
-        description: 'Комфортный темп без спешки',
-        recommended: false,
-        category: 'standard',
-        priceLabel: '×1.2',
-      }
+      return { category: 'standard', surchargeLabel: '+20%', popular: true }
     case '2weeks':
-      return {
-        icon: CalendarClock,
-        description: 'С запасом на правки и доработки',
-        recommended: false,
-        category: 'standard',
-        priceLabel: '×1.1',
-      }
+      return { category: 'standard', surchargeLabel: '+10%', popular: false }
     case 'month':
     default:
-      return {
-        icon: TrendingDown,
-        description: 'Базовая стоимость, без наценок',
-        recommended: false,
-        category: 'standard',
-        priceLabel: '×1',
-      }
+      return { category: 'standard', surchargeLabel: 'базовая', popular: false }
   }
 }
 
@@ -140,6 +90,8 @@ export function DeadlineStep({ selected, onSelect, basePrice }: DeadlineStepProp
     return SECTION_ORDER.map((category) => {
       const meta = SECTION_META[category]
       const deadlines = DEADLINES.filter(dl => getDeadlineMeta(dl.value).category === category)
+      // Standard section: cheapest first (reverse — month, 2weeks, week, 3days)
+      if (category === 'standard') deadlines.reverse()
       return { ...meta, deadlines }
     }).filter(section => section.deadlines.length > 0)
   }, [])
@@ -150,15 +102,15 @@ export function DeadlineStep({ selected, onSelect, basePrice }: DeadlineStepProp
       <div style={{
         fontSize: 13,
         lineHeight: 1.5,
-        color: 'rgba(255,255,255,0.38)',
+        color: 'rgba(255,255,255,0.35)',
         padding: '0 4px',
         marginBottom: 2,
       }}>
-        Чем спокойнее сроки — тем ниже стоимость
+        Базовая цена — при стандартных сроках. За скорость — наценка.
       </div>
 
       {/* Sections */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {sections.map((section, sectionIndex) => (
           <DeadlineSection
             key={section.category}
@@ -175,7 +127,7 @@ export function DeadlineStep({ selected, onSelect, basePrice }: DeadlineStepProp
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   SECTION — Category group with accent bar (mirrors ServiceTypeStep)
+   SECTION — Minimal header + compact rows
    ───────────────────────────────────────────────────────────────────────── */
 
 function DeadlineSection({
@@ -193,63 +145,43 @@ function DeadlineSection({
 }) {
   return (
     <motion.section
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: sectionIndex * 0.07, type: 'spring', stiffness: 280, damping: 28 }}
+      transition={{ delay: sectionIndex * 0.06, type: 'spring', stiffness: 300, damping: 28 }}
       style={{ display: 'flex', flexDirection: 'column', gap: 0 }}
     >
-      {/* Section header — pill + subtitle */}
+      {/* Section header — plain colored text */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
-        marginBottom: 10,
+        gap: 8,
+        marginBottom: 8,
+        padding: '0 2px',
       }}>
+        <div style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: section.accent,
+          flexShrink: 0,
+        }} />
         <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 5,
-          padding: '5px 10px',
-          borderRadius: 8,
-          background: section.accentSoft,
-          border: `1px solid ${section.accentBorder}`,
           fontSize: 12,
-          fontWeight: 700,
+          fontWeight: 600,
           color: section.accent,
           letterSpacing: '0.02em',
-          lineHeight: 1,
-          whiteSpace: 'nowrap',
         }}>
           {section.title}
         </span>
-        <span style={{
-          fontSize: 12,
-          color: 'var(--text-muted)',
-          lineHeight: 1,
-        }}>
-          {section.subtitle}
-        </span>
       </div>
 
-      {/* Deadline rows inside bordered card */}
+      {/* Rows inside bordered card */}
       <div style={{
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
         border: `1px solid ${section.accentBorder}`,
         background: 'rgba(255, 255, 255, 0.015)',
-        position: 'relative',
       }}>
-        {/* Colored top accent bar */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 2,
-          background: `linear-gradient(90deg, ${section.accent}, transparent)`,
-          opacity: 0.6,
-        }} />
-
         {section.deadlines.map((dl, i) => (
           <DeadlineRow
             key={dl.value}
@@ -267,7 +199,7 @@ function DeadlineSection({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   DEADLINE ROW — Mirrors ServiceRow pattern
+   DEADLINE ROW — Compact: [dot] [label] [popular] ··· [price] [radio]
    ───────────────────────────────────────────────────────────────────────── */
 
 function DeadlineRow({
@@ -286,7 +218,6 @@ function DeadlineRow({
   basePrice?: number | null
 }) {
   const meta = getDeadlineMeta(deadline.value)
-  const Icon = meta.icon
 
   // Calculate real price if base is available
   const estimatedPrice = basePrice && basePrice > 0
@@ -300,12 +231,10 @@ function DeadlineRow({
       onClick={onSelect}
       style={{
         width: '100%',
-        padding: '14px 14px',
-        background: selected
-          ? sectionMeta.accentSoft
-          : 'transparent',
+        padding: '12px 14px',
+        background: selected ? sectionMeta.accentSoft : 'transparent',
         border: 'none',
-        borderBottom: isLast ? 'none' : `1px solid rgba(255, 255, 255, ${selected ? 0 : 0.06})`,
+        borderBottom: isLast ? 'none' : '1px solid rgba(255, 255, 255, 0.05)',
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
@@ -330,122 +259,69 @@ function DeadlineRow({
         />
       )}
 
-      {/* Row layout: [Icon] [Content] [Price/Multiplier] [Check/Chevron] */}
+      {/* Row layout: [Label + popular] ··· [Price] [Radio] */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
       }}>
-        {/* Icon */}
+        {/* Label + popular badge */}
         <div style={{
-          width: 38,
-          height: 38,
-          borderRadius: 10,
-          background: selected
-            ? `${sectionMeta.accent}22`
-            : 'rgba(255, 255, 255, 0.05)',
+          flex: 1,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          transition: 'all 0.2s ease',
+          gap: 8,
+          minWidth: 0,
         }}>
-          <Icon
-            size={18}
-            color={selected ? sectionMeta.accent : 'var(--text-secondary)'}
-            strokeWidth={1.6}
-          />
-        </div>
-
-        {/* Content: label + description */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Line 1: Label + recommended badge */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: 6,
-            marginBottom: 4,
-            flexWrap: 'wrap',
+          <span style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: selected ? 'var(--text-primary)' : 'var(--text-main)',
+            lineHeight: 1.3,
           }}>
-            <span style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-main)',
-              lineHeight: 1.3,
-            }}>
-              {deadline.label}
-            </span>
+            {deadline.label}
+          </span>
 
-            {meta.recommended && (
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 3,
-                padding: '2px 7px',
-                borderRadius: 999,
-                background: 'rgba(212, 175, 55, 0.12)',
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase' as const,
-                color: '#d4af37',
-                lineHeight: 1,
-                flexShrink: 0,
-                position: 'relative' as const,
-                top: -1,
-              }}>
-                оптимально
-              </span>
-            )}
-          </div>
-
-          {/* Line 2: Description ··· Price estimate */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-          }}>
+          {meta.popular && (
             <span style={{
-              fontSize: 12,
-              color: 'var(--text-muted)',
+              padding: '2px 7px',
+              borderRadius: 999,
+              background: 'rgba(34, 197, 94, 0.10)',
+              border: '1px solid rgba(34, 197, 94, 0.18)',
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase' as const,
+              color: '#22c55e',
               lineHeight: 1,
+              flexShrink: 0,
             }}>
-              {meta.description}
+              лучшая цена/скорость
             </span>
-
-            {estimatedPrice ? (
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: selected ? sectionMeta.accent : 'var(--text-secondary)',
-                lineHeight: 1,
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                transition: 'color 0.2s ease',
-              }}>
-                ~{estimatedPrice.toLocaleString('ru-RU')} ₽
-              </span>
-            ) : (
-              <span style={{
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: deadline.multiplierNum === 1.0
-                  ? 'rgba(34, 197, 94, 0.70)'
-                  : `${deadline.color}aa`,
-                lineHeight: 1,
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}>
-                {meta.priceLabel}
-              </span>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Check / Chevron */}
+        {/* Price / Surcharge */}
+        <span style={{
+          fontSize: 13,
+          fontWeight: 600,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: estimatedPrice
+            ? (selected ? sectionMeta.accent : 'var(--text-secondary)')
+            : (deadline.multiplierNum === 1.0
+              ? 'rgba(34, 197, 94, 0.70)'
+              : `${deadline.color}99`),
+          lineHeight: 1,
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+          transition: 'color 0.2s ease',
+        }}>
+          {estimatedPrice
+            ? `~${estimatedPrice.toLocaleString('ru-RU')} ₽`
+            : meta.surchargeLabel}
+        </span>
+
+        {/* Radio circle */}
         <AnimatePresence mode="wait">
           {selected ? (
             <motion.div
@@ -455,8 +331,8 @@ function DeadlineRow({
               exit={{ scale: 0.5, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 500, damping: 25 }}
               style={{
-                width: 24,
-                height: 24,
+                width: 22,
+                height: 22,
                 borderRadius: '50%',
                 background: sectionMeta.accent,
                 display: 'flex',
@@ -465,18 +341,23 @@ function DeadlineRow({
                 flexShrink: 0,
               }}
             >
-              <Check size={13} color="#050505" strokeWidth={3} />
+              <Check size={12} color="#050505" strokeWidth={3} />
             </motion.div>
           ) : (
             <motion.div
-              key="chevron"
+              key="radio"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              style={{ flexShrink: 0, display: 'flex' }}
-            >
-              <ChevronRight size={16} color="var(--text-muted)" />
-            </motion.div>
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                border: '1.5px solid rgba(255, 255, 255, 0.12)',
+                background: 'transparent',
+                flexShrink: 0,
+              }}
+            />
           )}
         </AnimatePresence>
       </div>
