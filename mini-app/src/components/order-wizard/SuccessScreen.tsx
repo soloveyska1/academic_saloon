@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, AlertCircle, ChevronRight, Clock } from 'lucide-react'
@@ -132,7 +132,7 @@ export function SuccessScreen({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...stagger(3) }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={{ scale: 0.975 }}
                   onClick={() => navigate('/')}
                   className={homeStyles.heroPrimaryButton}
                 >
@@ -163,6 +163,15 @@ export function SuccessScreen({
   // ─── Success: Auto-approved vs Manual ───
   const isManual = result.isManual
 
+  // ─── Haptic feedback on success ───
+  useEffect(() => {
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success')
+    } catch {
+      // Haptic not available — silent fail
+    }
+  }, [])
+
   return (
     <div style={PAGE_STYLE}>
       <motion.div
@@ -182,6 +191,21 @@ export function SuccessScreen({
           <div className={homeStyles.primaryActionShine} aria-hidden="true" />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
+            {/* ─── Gold ring pulse — "the moment" ─── */}
+            <div style={RING_ANCHOR}>
+              <motion.div
+                initial={{ width: 0, height: 0, opacity: 0.8 }}
+                animate={{ width: 120, height: 120, opacity: 0 }}
+                transition={{
+                  duration: 0.5,
+                  delay: 0.2,
+                  ease: [0.32, 0.72, 0, 1],
+                }}
+                style={GOLD_RING}
+                aria-hidden="true"
+              />
+            </div>
+
             {/* ─── Gold check stamp ─── */}
             <motion.div
               initial={{ scale: 0, rotate: -45 }}
@@ -354,7 +378,7 @@ export function SuccessScreen({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ ...stagger(isManual ? 6 : 5) }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{ scale: 0.975 }}
                 onClick={() => {
                   if (isManual) {
                     navigate(result.id ? `/order/${result.id}` : '/orders')
@@ -391,7 +415,7 @@ export function SuccessScreen({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ ...stagger(isManual ? 7 : 6) }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{ scale: 0.975 }}
                 onClick={() => navigate('/orders')}
                 style={SECONDARY_BUTTON}
               >
@@ -445,6 +469,26 @@ const goldCircleStyle: React.CSSProperties = {
   justifyContent: 'center',
   margin: '0 auto 20px',
   boxShadow: '0 0 24px -4px rgba(212, 175, 55, 0.5)',
+}
+
+// ─── Gold ring pulse anchor ───
+const RING_ANCHOR: React.CSSProperties = {
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: 0,
+  marginBottom: 0,
+  overflow: 'visible',
+  pointerEvents: 'none',
+}
+
+const GOLD_RING: React.CSSProperties = {
+  position: 'absolute',
+  top: 18,
+  borderRadius: '50%',
+  border: '2px solid #d4af37',
+  boxShadow: '0 0 20px rgba(212, 175, 55, 0.25)',
 }
 
 // ─── Error circle (36px) ───
