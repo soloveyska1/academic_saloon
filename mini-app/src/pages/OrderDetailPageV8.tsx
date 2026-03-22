@@ -62,7 +62,6 @@ import {
   Image,
   FileArchive,
   Archive,
-  Send,
   RotateCcw,
   CalendarCheck,
   Package,
@@ -364,14 +363,15 @@ const OrderAppBar = memo(function OrderAppBar({
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={onBack}
-          className="w-10 h-10 rounded-[14px] bg-white/[0.03] border border-white/[0.06] flex items-center justify-center cursor-pointer shrink-0"
+          className="w-10 h-10 rounded-[14px] flex items-center justify-center cursor-pointer shrink-0"
+          style={{ background: 'transparent', border: 'none' }}
         >
-          <ArrowLeft size={18} color="rgba(255,255,255,0.55)" />
+          <ArrowLeft size={20} color="rgba(255,255,255,0.5)" />
         </motion.button>
 
-        {/* Just order number — no work type (shown in hero) */}
+        {/* Order number — subdued */}
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-bold font-sans text-gold-100">
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>
             Заказ #{order.id}
           </div>
         </div>
@@ -380,9 +380,10 @@ const OrderAppBar = memo(function OrderAppBar({
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={() => setMenuOpen(true)}
-          className="w-11 h-11 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center cursor-pointer shrink-0"
+          className="w-10 h-10 rounded-[14px] flex items-center justify-center cursor-pointer shrink-0"
+          style={{ background: 'transparent', border: 'none' }}
         >
-          <MoreHorizontal size={20} color={DS.colors.textSecondary} />
+          <MoreHorizontal size={20} color="rgba(255,255,255,0.4)" />
         </motion.button>
       </div>
 
@@ -455,32 +456,57 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const totalPrice = order.final_price || order.price || 0
   const remainingAmount = Math.max(totalPrice - (order.paid_amount || 0), 0)
   const displayPrice = remainingAmount > 0 && remainingAmount !== totalPrice ? remainingAmount : totalPrice
-  const priceLabel = remainingAmount > 0 && remainingAmount !== totalPrice ? 'Осталось' : ''
+  const priceLabel = remainingAmount > 0 && remainingAmount !== totalPrice ? 'ОСТАЛОСЬ К ОПЛАТЕ' : 'СТОИМОСТЬ'
 
   // Countdown urgency color
   const urgencyColor = countdown?.urgency === 'expired' || countdown?.urgency === 'critical'
-    ? 'rgba(239,68,68,0.75)' : 'rgba(212,175,55,0.7)'
+    ? 'rgba(239,68,68,0.7)' : 'rgba(212,175,55,0.5)'
 
-  // Compact progress stepper
+  // Dot stepper
   const currentStep = statusConfig.step
-  const STEPS = [
-    { label: 'Создан', step: 0 },
-    { label: 'Оценка', step: 1 },
-    { label: 'Оплата', step: 2 },
-    { label: 'В работе', step: 3 },
-    { label: 'Проверка', step: 4 },
-    { label: 'Готово', step: 5 },
-  ]
+  const STEP_COUNT = 6
 
   return (
-    <div className="mx-4 mb-3">
-      {/* ─── Order info card ─── */}
-      <div className="p-5 rounded-3xl bg-white/[0.02] border border-white/[0.06]">
-        {/* Top row: status + work type + subject */}
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <div
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+    <div style={{ padding: '0 20px', marginBottom: 16 }}>
+      {/* ═══ Single unified invoice card ═══ */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          position: 'relative',
+          padding: '28px 24px 24px',
+          borderRadius: 24,
+          background: 'linear-gradient(165deg, rgba(212,175,55,0.04) 0%, rgba(20,20,23,0.6) 35%, rgba(20,20,23,0.6) 100%)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Top-edge gold highlight */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 24,
+            right: 24,
+            height: 1,
+            background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.15) 30%, rgba(212,175,55,0.2) 50%, rgba(212,175,55,0.15) 70%, transparent 100%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* ─── Row 1: Status pill + Work type ─── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.05 }}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '5px 12px',
+              borderRadius: 100,
               background: statusConfig.bgColor,
               border: `1px solid ${statusConfig.borderColor}`,
             }}
@@ -490,186 +516,247 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
               color={statusConfig.color}
               className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''}
             />
-            <span className="text-[10px] font-bold uppercase tracking-[0.04em]" style={{ color: statusConfig.color }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase' as const,
+                color: statusConfig.color,
+              }}
+            >
               {statusConfig.label}
             </span>
-          </div>
-          <span className="text-[12px] text-white/25 font-medium">
+          </motion.div>
+
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.3)',
+              padding: '5px 10px',
+              borderRadius: 8,
+              background: 'rgba(255,255,255,0.03)',
+            }}
+          >
             {workTypeLabel}
           </span>
         </div>
 
-        {/* Title — compact */}
-        <div className="text-[20px] font-[800] font-sans text-white/90 leading-[1.2] mb-0.5">
-          {headline}
-        </div>
-        {subject && subject !== headline && (
-          <div className="text-[13px] text-white/35 mb-3">
-            {subject}
+        {/* ─── Row 2: Headline ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 800,
+              lineHeight: 1.15,
+              color: 'rgba(255,255,255,0.92)',
+              letterSpacing: '-0.02em',
+              fontFamily: "var(--font-display, 'Manrope', sans-serif)",
+            }}
+          >
+            {headline}
           </div>
-        )}
-        {!(subject && subject !== headline) && <div className="mb-3" />}
+          {subject && subject !== headline && (
+            <div style={{ marginTop: 6, fontSize: 14, color: 'rgba(255,255,255,0.35)', lineHeight: 1.4 }}>
+              {subject}
+            </div>
+          )}
+        </motion.div>
 
-        {/* Meta row: deadline */}
-        {order.deadline && (
-          <div className="flex items-center gap-1.5 mb-3">
-            <Clock size={12} color="rgba(255,255,255,0.3)" />
-            <span className="text-[12px] text-white/40">
-              Срок: {formatOrderDeadlineRu(order.deadline)}
+        {/* ─── Row 3: Price HERO (payment statuses) ─── */}
+        {isAwaitingPayment && displayPrice > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            style={{ marginTop: 24 }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase' as const,
+                color: 'rgba(255,255,255,0.25)',
+                marginBottom: 4,
+              }}
+            >
+              {priceLabel}
+            </div>
+            <div
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 'clamp(36px, 9vw, 44px)',
+                fontWeight: 700,
+                color: '#E8D5A3',
+                letterSpacing: '-0.03em',
+                lineHeight: 1,
+              }}
+            >
+              {formatPrice(displayPrice)}{' '}
+              <span style={{ fontSize: '0.75em', color: '#E8D5A3' }}>₽</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─── Row 3 alt: Price for non-payment statuses ─── */}
+        {!isAwaitingPayment && totalPrice > 0 && (
+          <div style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Стоимость</span>
+            <span
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: '#E8D5A3',
+              }}
+            >
+              {formatPrice(totalPrice)} ₽
             </span>
           </div>
         )}
 
-        {/* ─── Compact horizontal progress stepper ─── */}
-        {currentStep >= 0 && !['cancelled', 'rejected'].includes(order.status) && (
-          <div className="mb-0">
-            {/* Track */}
-            <div className="flex items-center gap-0 mb-1.5">
-              {STEPS.map((s, i) => {
-                const isCompleted = currentStep > s.step
-                const isCurrent = currentStep === s.step
-                const isLast = i === STEPS.length - 1
-                return (
-                  <div key={s.step} className="flex items-center" style={{ flex: isLast ? 'none' : 1 }}>
-                    {/* Dot */}
-                    <div
-                      className="flex items-center justify-center shrink-0"
-                      style={{
-                        width: isCurrent ? 20 : 8,
-                        height: isCurrent ? 20 : 8,
-                        borderRadius: '50%',
-                        background: isCompleted
-                          ? 'rgba(212,175,55,0.5)'
-                          : isCurrent
-                            ? 'rgba(212,175,55,1)'
-                            : 'rgba(255,255,255,0.08)',
-                        border: isCurrent ? '2px solid rgba(212,175,55,0.3)' : 'none',
-                        transition: 'all 0.3s ease',
-                      }}
-                    >
-                      {isCompleted && <Check size={6} color="#fff" strokeWidth={3} />}
-                      {isCurrent && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#09090b' }} />}
-                    </div>
-                    {/* Connector line */}
-                    {!isLast && (
-                      <div
-                        style={{
-                          flex: 1,
-                          height: 2,
-                          background: isCompleted
-                            ? 'rgba(212,175,55,0.25)'
-                            : 'rgba(255,255,255,0.06)',
-                          transition: 'background 0.3s ease',
-                        }}
-                      />
-                    )}
-                  </div>
-                )
-              })}
+        {/* ─── Row 4: Countdown timer ─── */}
+        {isAwaitingPayment && countdown && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
+            style={{ marginTop: 12 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Clock size={14} color={urgencyColor} />
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)' }}>
+                {paymentExpired ? 'Срок оплаты истёк' : 'Время на оплату'}
+              </span>
+              {!paymentExpired && (
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    color: 'rgba(212,175,55,0.7)',
+                    marginLeft: 'auto',
+                  }}
+                >
+                  {countdown.formatted}
+                </span>
+              )}
             </div>
-            {/* Labels — only show current */}
-            <div className="flex items-center justify-between">
-              {STEPS.map((s) => {
-                const isCurrent = currentStep === s.step
+            {/* Subtle progress line */}
+            {!paymentExpired && (
+              <div style={{ marginTop: 8, height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.04)' }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${countdown.progress}%` }}
+                  transition={{ duration: 0.5 }}
+                  style={{ height: '100%', borderRadius: 1, background: urgencyColor }}
+                />
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ─── Row 5: Deadline + dot stepper ─── */}
+        {currentStep >= 0 && !['cancelled', 'rejected'].includes(order.status) && (
+          <div
+            style={{
+              marginTop: 20,
+              paddingTop: 16,
+              borderTop: '1px solid rgba(255,255,255,0.04)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            {/* Deadline */}
+            {order.deadline && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={13} color="rgba(255,255,255,0.25)" />
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>
+                  Срок: {formatOrderDeadlineRu(order.deadline)}
+                </span>
+              </div>
+            )}
+
+            {/* Dot indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              {Array.from({ length: STEP_COUNT }).map((_, i) => {
+                const isCompleted = currentStep > i
+                const isCurrent = currentStep === i
                 return (
-                  <span
-                    key={s.step}
-                    className="text-center"
+                  <motion.div
+                    key={i}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.35 + i * 0.06, duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     style={{
-                      flex: 1,
-                      fontSize: 9,
-                      fontWeight: isCurrent ? 700 : 500,
-                      color: isCurrent ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.18)',
-                      transition: 'color 0.3s ease',
+                      width: isCurrent ? 16 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      background: isCompleted
+                        ? 'rgba(212,175,55,0.4)'
+                        : isCurrent
+                          ? 'rgba(212,175,55,0.9)'
+                          : 'rgba(255,255,255,0.08)',
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
-                  >
-                    {s.label}
-                  </span>
+                  />
                 )
               })}
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
-      {/* ─── Price hero card (for payment statuses) ─── */}
-      {isAwaitingPayment && displayPrice > 0 && (
-        <div className="mt-2 p-5 rounded-3xl bg-white/[0.02] border border-gold-400/[0.12]">
-          {/* Price = HERO */}
-          <div className="text-center mb-3">
-            {priceLabel && (
-              <div className="text-[11px] text-white/30 uppercase tracking-[0.06em] font-semibold mb-1">
-                {priceLabel}
-              </div>
-            )}
+      {/* ═══ Trust signals (outside the card, with breathing room) ═══ */}
+      {isAwaitingPayment && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35 }}
+          style={{ marginTop: 16, padding: '0 4px' }}
+        >
+          {[
+            { icon: ShieldCheck, text: 'Полный возврат до начала работы' },
+            { icon: RotateCcw, text: '3 бесплатных круга правок' },
+            { icon: CalendarCheck, text: 'Гарантия соблюдения сроков' },
+          ].map((g, i) => (
             <div
-              className="font-mono font-[800] leading-none"
+              key={i}
               style={{
-                fontSize: 'clamp(32px, 10vw, 44px)',
-                color: '#E8D5A3',
-                letterSpacing: '-0.02em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '14px 0',
+                borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.03)' : 'none',
               }}
             >
-              {formatPrice(displayPrice)} <span className="text-[0.6em] text-white/30">₽</span>
-            </div>
-          </div>
-
-          {/* Countdown timer */}
-          {countdown && (
-            <div className="mb-3">
-              <div className="flex items-center justify-center gap-1.5 mb-1.5">
-                <Clock size={12} color={urgencyColor} />
-                <span className="text-[12px] font-semibold" style={{ color: urgencyColor }}>
-                  {paymentExpired ? 'Срок оплаты истёк' : `Осталось ${countdown.formatted}`}
-                </span>
-              </div>
-              {!paymentExpired && (
-                <div className="rounded-full bg-white/[0.06] h-1 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${countdown.progress}%` }}
-                    transition={{ duration: 0.5 }}
-                    className="h-full rounded-full"
-                    style={{ background: urgencyColor }}
-                  />
-                </div>
-              )}
-              <div className="text-[11px] text-white/25 text-center mt-1.5">
-                {paymentExpired
-                  ? 'Напишите в поддержку для уточнения'
-                  : 'После оплаты сразу запускаем'}
-              </div>
-            </div>
-          )}
-
-          {/* Inline guarantees */}
-          <div className="flex flex-col gap-0">
-            {[
-              { icon: ShieldCheck, text: 'Возврат до старта работы' },
-              { icon: RotateCcw, text: '3 бесплатных круга правок' },
-              { icon: CalendarCheck, text: 'Срок фиксирован' },
-            ].map((g, i) => (
               <div
-                key={i}
-                className="flex items-center gap-2 py-1.5"
-                style={{ borderTop: i === 0 ? `1px solid rgba(255,255,255,0.04)` : 'none' }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: 'rgba(212,175,55,0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
               >
-                <g.icon size={12} color="rgba(212,175,55,0.4)" />
-                <span className="text-[11px] text-white/30 font-medium">{g.text}</span>
+                <g.icon size={15} color="rgba(212,175,55,0.45)" />
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ─── Price display for non-payment statuses ─── */}
-      {!isAwaitingPayment && totalPrice > 0 && (
-        <div className="mt-2 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-between">
-          <span className="text-[13px] text-white/40">Стоимость</span>
-          <span className="text-[15px] font-bold font-mono text-gold-400">
-            {formatPrice(totalPrice)} ₽
-          </span>
-        </div>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.45)', lineHeight: 1.3 }}>
+                {g.text}
+              </span>
+            </div>
+          ))}
+        </motion.div>
       )}
     </div>
   )
@@ -844,7 +931,9 @@ const StickyActionBar = memo(function StickyActionBar({
             color: config.buttonColor,
             cursor: config.disabled ? 'not-allowed' : 'pointer',
             opacity: config.disabled ? 0.6 : 1,
-            boxShadow: ['payment', 'review', 'completed'].includes(variant) ? '0 8px 24px -4px rgba(212,175,55,0.25)' : 'none',
+            boxShadow: ['payment', 'review', 'completed'].includes(variant)
+              ? '0 4px 16px -2px rgba(212,175,55,0.3), 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)'
+              : 'none',
           }}
         >
           <ButtonIcon
@@ -2048,14 +2137,6 @@ const FilesSection = memo(function FilesSection({
 //                              SUPPORT CARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Support contact configuration
-const SUPPORT_CONFIG = {
-  name: 'Техподдержка',
-  role: 'Академический Салон · поддержка по заказам',
-  telegramUsername: 'Thisissaymoon',
-  responseTime: '~10 мин',
-}
-
 interface SupportCardProps {
   onOpenChat: () => void
 }
@@ -2064,30 +2145,52 @@ const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) 
   const { haptic } = useTelegram()
 
   return (
-    <div className="mx-4 mb-2">
-      <div className="flex gap-2">
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={() => { haptic?.('medium'); onOpenChat() }}
-          className="flex-1 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] cursor-pointer text-left"
-        >
-          <MessageCircle size={16} color="rgba(212,175,55,0.5)" />
-          <span className="text-[13px] text-white/50 font-medium">Написать в чат</span>
-          <ChevronRight size={14} color="rgba(255,255,255,0.2)" className="ml-auto" />
-        </motion.button>
-
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={() => {
-            haptic?.('medium')
-            window.open(`https://t.me/${SUPPORT_CONFIG.telegramUsername}`, '_blank', 'noopener,noreferrer')
-          }}
-          className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] cursor-pointer"
-        >
-          <Send size={14} color="rgba(212,175,55,0.4)" />
-          <span className="text-[12px] text-white/35 font-medium">TG</span>
-        </motion.button>
-      </div>
+    <div style={{ padding: '0 20px', marginBottom: 8 }}>
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        onClick={() => { haptic?.('medium'); onOpenChat() }}
+        style={{
+          width: '100%',
+          padding: '16px 20px',
+          borderRadius: 16,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.04)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          textAlign: 'left' as const,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Avatar */}
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'rgba(212,175,55,0.1)',
+              border: '1px solid rgba(212,175,55,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <MessageCircle size={16} color="rgba(212,175,55,0.6)" />
+          </div>
+          {/* Text */}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>
+              Поддержка
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
+              Обычно отвечаем за ~10 мин
+            </div>
+          </div>
+        </div>
+        <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+      </motion.button>
     </div>
   )
 })
@@ -2537,7 +2640,12 @@ export function OrderDetailPageV8() {
   }
 
   return (
-    <div className="premium-club-page pb-[140px]">
+    <div
+      className="premium-club-page pb-[140px]"
+      style={{
+        background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,175,55,0.03) 0%, transparent 60%), var(--bg-main, #050507)',
+      }}
+    >
       {/* ─── App Bar ─── */}
       <SectionErrorBoundary
         sectionName="order-app-bar"
@@ -2623,14 +2731,21 @@ export function OrderDetailPageV8() {
         <SupportCard onOpenChat={handleOpenChat} />
       </SectionErrorBoundary>
 
-      {/* ─── Cancel (text link, not red button) ─── */}
+      {/* ─── Cancel (subtle text) ─── */}
       {canCancelOrder && (
-        <div className="px-4 mb-4 text-center">
+        <div style={{ textAlign: 'center', margin: '24px 0' }}>
           <button
             type="button"
             onClick={() => { haptic?.('light'); setCancelConfirmOpen(true) }}
-            className="bg-transparent border-none text-white/20 text-[12px] font-medium cursor-pointer py-2 px-4"
-            style={{ textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.1)' }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(255,255,255,0.2)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              padding: '12px 24px',
+            }}
           >
             Отменить заказ
           </button>
