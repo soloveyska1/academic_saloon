@@ -31,6 +31,33 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["payments"])
 
 
+def get_order_remaining_amount(order: Order) -> Decimal:
+    """Return remaining amount that has not been paid yet."""
+    final_price = Decimal(str(order.final_price or 0))
+    paid_amount = Decimal(str(order.paid_amount or 0))
+    return max(final_price - paid_amount, Decimal("0"))
+
+
+def is_followup_payment(order: Order) -> bool:
+    """Whether the next payment should close a half-paid order."""
+    return Decimal(str(order.paid_amount or 0)) > 0 and get_order_remaining_amount(order) > 0
+
+
+def get_requested_payment_amount(order: Order, payment_scheme: str) -> Decimal:
+    """Calculate YooKassa amount for first payment or final доплата."""
+    remaining = get_order_remaining_amount(order)
+    if remaining <= 0:
+        return Decimal("0")
+
+    if is_followup_payment(order):
+        return remaining
+
+    total = Decimal(str(order.final_price or 0))
+    if payment_scheme == "half":
+        return total / Decimal("2")
+    return total
+
+
 # ══════════════════════════════════════════════════════════
 #  YOOKASSA WEBHOOK SECURITY
 # ══════════════════════════════════════════════════════════
@@ -114,18 +141,17 @@ async def create_payment(
     if order.status not in [
         OrderStatus.WAITING_PAYMENT.value,
         OrderStatus.CONFIRMED.value,
+        OrderStatus.PAID.value,
+        OrderStatus.IN_PROGRESS.value,
+        OrderStatus.REVIEW.value,
     ]:
         raise HTTPException(status_code=400, detail="Заказ не ожидает оплаты")
 
     if order.price <= 0:
         raise HTTPException(status_code=400, detail="Цена не установлена")
 
-    # Calculate amount
-    total = order.final_price
-    if body.payment_scheme == "half":
-        amount = total / 2
-    else:
-        amount = total
+    requested_scheme = "half" if body.payment_scheme == "half" else "full"
+    amount = get_requested_payment_amount(order, requested_scheme)
 
     amount = round(amount, 2)
     if amount < 1:
@@ -144,7 +170,10 @@ async def create_payment(
 
     # Save payment ID and scheme on order
     order.yookassa_payment_id = result.payment_id
-    order.payment_scheme = body.payment_scheme
+    if not is_followup_payment(order):
+        order.payment_scheme = requested_scheme
+    elif order.payment_scheme not in {"half", "full"}:
+        order.payment_scheme = "half"
     order.payment_method = "yookassa"
     await session.commit()
 
@@ -269,9 +298,18 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         return
 
     # Validate payment amount matches expected order price (tolerance ±1₽ for rounding)
-    expected_amount = float(order.final_price)
-    if order.payment_scheme == "half":
-        expected_amount = expected_amount / 2
+    remaining_before_payment = get_order_remaining_amount(order)
+    if remaining_before_payment <= 0:
+        logger.info(f"[YooKassa] Order #{order_id} has no remaining balance, skipping")
+        await session.commit()
+        return
+
+    if is_followup_payment(order):
+        expected_amount = float(remaining_before_payment)
+    else:
+        expected_amount = float(order.final_price)
+        if order.payment_scheme == "half":
+            expected_amount = expected_amount / 2
     expected_amount = round(expected_amount, 2)
 
     if abs(amount_value - expected_amount) > 1.0:
@@ -285,7 +323,10 @@ async def _handle_payment_succeeded(session: AsyncSession, payment_obj: dict):
         return
 
     # Update order status (atomic with bonus deduction)
-    if order.payment_scheme == "half":
+    if is_followup_payment(order):
+        order.status = OrderStatus.PAID_FULL.value
+        order.paid_amount = order.final_price
+    elif order.payment_scheme == "half":
         order.status = OrderStatus.PAID.value
         order.paid_amount = order.final_price / 2
     else:

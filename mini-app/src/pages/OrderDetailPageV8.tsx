@@ -206,6 +206,20 @@ const formatPrice = (amount: number | undefined | null): string => {
   return amount.toLocaleString('ru-RU')
 }
 
+const getOrderTotalPrice = (order: Pick<Order, 'final_price' | 'price'> | null | undefined): number =>
+  Math.max(order?.final_price || order?.price || 0, 0)
+
+const getOrderRemainingAmount = (order: Pick<Order, 'final_price' | 'price' | 'paid_amount'> | null | undefined): number =>
+  Math.max(getOrderTotalPrice(order) - (order?.paid_amount || 0), 0)
+
+const hasSecondPaymentDue = (
+  order: Pick<Order, 'payment_scheme' | 'final_price' | 'price' | 'paid_amount'> | null | undefined,
+): boolean => Boolean(
+  order &&
+  (order.paid_amount || 0) > 0 &&
+  getOrderRemainingAmount(order) > 0,
+)
+
 async function copyTextSafely(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard?.writeText) {
@@ -793,9 +807,13 @@ const StickyActionBar = memo(function StickyActionBar({
   onAcceptWork,
   onRequestRevision,
 }: StickyActionBarProps) {
+  const remainingAmount = getOrderRemainingAmount(order)
+  const needsSecondPayment = hasSecondPaymentDue(order)
+
   // Determine variant based on order status
   const getVariant = (): ActionBarVariant => {
     if (['cancelled', 'rejected'].includes(order.status)) return 'cancelled'
+    if (needsSecondPayment && ['paid', 'in_progress'].includes(order.status)) return 'payment'
     if (['waiting_payment', 'confirmed'].includes(order.status)) return 'payment'
     if (order.status === 'verification_pending') return 'verification'
     if (order.status === 'revision') return 'revision_in_progress'
@@ -810,8 +828,12 @@ const StickyActionBar = memo(function StickyActionBar({
   // Calculate amount to pay today
   const calculateTodayAmount = (): number => {
     if (!order.final_price) return 0
-    const remaining = order.final_price - (order.paid_amount || 0)
+    const remaining = remainingAmount
     if (remaining <= 0) return 0
+
+    if (needsSecondPayment) {
+      return remaining
+    }
 
     if (paymentScheme === 'half' && (order.paid_amount || 0) === 0) {
       return Math.ceil(order.final_price / 2)
@@ -841,7 +863,7 @@ const StickyActionBar = memo(function StickyActionBar({
       onClick: onContactManager,
     } : {
       showAmount: true,
-      buttonText: 'Перейти к оплате',
+      buttonText: needsSecondPayment ? 'Оплатить остаток' : 'Перейти к оплате',
       buttonIcon: ChevronRight,
       buttonColor: 'var(--text-on-gold)',
       buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
@@ -915,9 +937,6 @@ const StickyActionBar = memo(function StickyActionBar({
 
   // Review state: split into two buttons (Accept + Request Revision) (Accept + Request Revision)
   if (variant === 'review') {
-    const needsSecondPayment = order.payment_scheme === 'half'
-      && (order.paid_amount || 0) < (order.final_price || 0)
-
     return (
       <motion.div
         initial={{ y: 100, opacity: 0 }}
@@ -959,7 +978,7 @@ const StickyActionBar = memo(function StickyActionBar({
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
                 Для получения полной работы оплатите оставшиеся{' '}
                 <strong style={{ color: '#E8D5A3' }}>
-                  {formatPrice(Math.max(0, (order.final_price || 0) - (order.paid_amount || 0)))} ₽
+                  {formatPrice(remainingAmount)} ₽
                 </strong>
               </span>
             </div>
@@ -1132,10 +1151,12 @@ const PaymentSheet = memo(function PaymentSheet({
   useModalRegistration(isOpen, 'order-payment-sheet')
 
   // Calculate amounts
-  const fullAmount = order.final_price || 0
+  const fullAmount = getOrderTotalPrice(order)
   const halfAmount = Math.ceil(fullAmount / 2)
   const remainingAfterHalf = fullAmount - halfAmount
-  const todayAmount = paymentScheme === 'full' ? fullAmount : halfAmount
+  const remainingAmount = Math.max(paymentInfo?.remaining ?? getOrderRemainingAmount(order), 0)
+  const isSecondPayment = hasSecondPaymentDue(order)
+  const todayAmount = isSecondPayment ? remainingAmount : paymentScheme === 'full' ? fullAmount : halfAmount
   const hasPaymentInfo = Boolean(paymentInfo)
 
   // Card info from paymentInfo
@@ -1293,7 +1314,7 @@ const PaymentSheet = memo(function PaymentSheet({
             >
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.92)', margin: 0 }}>
-                  Оплата
+                  {isSecondPayment ? 'Доплата' : 'Оплата'}
                 </h2>
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '2px 0 0' }}>
                   Заказ #{order.id}
@@ -1327,74 +1348,99 @@ const PaymentSheet = memo(function PaymentSheet({
                   Сумма оплаты
                 </div>
 
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {/* Full */}
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setPaymentScheme('full')}
-                    style={{
-                      flex: 1,
-                      padding: '14px 16px',
-                      borderRadius: 16,
-                      cursor: 'pointer',
-                      textAlign: 'left' as const,
-                      background: paymentScheme === 'full'
-                        ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
-                        : 'rgba(255,255,255,0.02)',
-                      border: paymentScheme === 'full'
-                        ? '1.5px solid rgba(212,175,55,0.4)'
-                        : '1.5px solid rgba(255,255,255,0.06)',
-                    }}
-                  >
-                    <div style={{ fontSize: 13, fontWeight: 600, color: paymentScheme === 'full' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
-                      Полная
+                {isSecondPayment ? (
+                  <div style={{
+                    padding: '16px 18px',
+                    borderRadius: 16,
+                    background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
+                    border: '1.5px solid rgba(212,175,55,0.28)',
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.92)', marginBottom: 6 }}>
+                      Финальная доплата
                     </div>
                     <div style={{
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: 700,
                       fontFamily: "'JetBrains Mono', monospace",
-                      color: paymentScheme === 'full' ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
+                      color: '#E8D5A3',
+                      marginBottom: 6,
                     }}>
-                      {formatPrice(fullAmount)} ₽
+                      {formatPrice(remainingAmount)} ₽
                     </div>
-                  </motion.button>
-
-                  {/* Half */}
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setPaymentScheme('half')}
-                    style={{
-                      flex: 1,
-                      padding: '14px 16px',
-                      borderRadius: 16,
-                      cursor: 'pointer',
-                      textAlign: 'left' as const,
-                      background: paymentScheme === 'half'
-                        ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
-                        : 'rgba(255,255,255,0.02)',
-                      border: paymentScheme === 'half'
-                        ? '1.5px solid rgba(212,175,55,0.4)'
-                        : '1.5px solid rgba(255,255,255,0.06)',
-                    }}
-                  >
-                    <div style={{ fontSize: 13, fontWeight: 600, color: paymentScheme === 'half' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
-                      50% аванс
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', lineHeight: 1.5 }}>
+                      Аванс уже зафиксирован. Сейчас вносится только оставшаяся сумма.
                     </div>
-                    <div style={{
-                      fontSize: 16,
-                      fontWeight: 700,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      color: paymentScheme === 'half' ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
-                    }}>
-                      {formatPrice(halfAmount)} ₽
-                    </div>
-                    {paymentScheme === 'half' && (
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
-                        + {formatPrice(remainingAfterHalf)} ₽ потом
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {/* Full */}
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setPaymentScheme('full')}
+                      style={{
+                        flex: 1,
+                        padding: '14px 16px',
+                        borderRadius: 16,
+                        cursor: 'pointer',
+                        textAlign: 'left' as const,
+                        background: paymentScheme === 'full'
+                          ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
+                          : 'rgba(255,255,255,0.02)',
+                        border: paymentScheme === 'full'
+                          ? '1.5px solid rgba(212,175,55,0.4)'
+                          : '1.5px solid rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: 600, color: paymentScheme === 'full' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
+                        Полная
                       </div>
-                    )}
-                  </motion.button>
-                </div>
+                      <div style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        color: paymentScheme === 'full' ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
+                      }}>
+                        {formatPrice(fullAmount)} ₽
+                      </div>
+                    </motion.button>
+
+                    {/* Half */}
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setPaymentScheme('half')}
+                      style={{
+                        flex: 1,
+                        padding: '14px 16px',
+                        borderRadius: 16,
+                        cursor: 'pointer',
+                        textAlign: 'left' as const,
+                        background: paymentScheme === 'half'
+                          ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
+                          : 'rgba(255,255,255,0.02)',
+                        border: paymentScheme === 'half'
+                          ? '1.5px solid rgba(212,175,55,0.4)'
+                          : '1.5px solid rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: 600, color: paymentScheme === 'half' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
+                        50% аванс
+                      </div>
+                      <div style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        color: paymentScheme === 'half' ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
+                      }}>
+                        {formatPrice(halfAmount)} ₽
+                      </div>
+                      {paymentScheme === 'half' && (
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+                          + {formatPrice(remainingAfterHalf)} ₽ потом
+                        </div>
+                      )}
+                    </motion.button>
+                  </div>
+                )}
               </div>
 
               {/* ═══ Payment method segmented control ═══ */}
@@ -1611,8 +1657,8 @@ const PaymentSheet = memo(function PaymentSheet({
                   {onlinePaymentLoading
                     ? 'Создаём платёж...'
                     : paymentMethod === 'online'
-                      ? 'Перейти к оплате'
-                      : 'Подтвердить перевод'
+                      ? (isSecondPayment ? 'Оплатить остаток' : 'Перейти к оплате')
+                      : (isSecondPayment ? 'Подтвердить доплату' : 'Подтвердить перевод')
                   }
                 </span>
               </motion.button>
@@ -2720,8 +2766,8 @@ export function OrderDetailPageV8() {
       if (
         normalizedOrder.final_price &&
         normalizedOrder.final_price > 0 &&
-        (normalizedOrder.paid_amount || 0) < normalizedOrder.final_price &&
-        ['confirmed', 'waiting_payment', 'paid'].includes(normalizedOrder.status)
+        getOrderRemainingAmount(normalizedOrder) > 0 &&
+        ['confirmed', 'waiting_payment', 'paid', 'in_progress', 'review'].includes(normalizedOrder.status)
       ) {
         try {
           const payment = await fetchPaymentInfo(orderId)
@@ -2771,6 +2817,22 @@ export function OrderDetailPageV8() {
     }, 15_000)
     return () => clearInterval(interval)
   }, [order?.status, loadOrder])
+
+  useEffect(() => {
+    if (!order) return
+
+    if (hasSecondPaymentDue(order)) {
+      setPaymentScheme('full')
+      return
+    }
+
+    if (order.payment_scheme === 'half' && (order.paid_amount || 0) === 0) {
+      setPaymentScheme('half')
+      return
+    }
+
+    setPaymentScheme('full')
+  }, [order?.id, order?.payment_scheme, order?.paid_amount, order?.final_price, order?.price])
 
   // Handlers
   const handleBack = useCallback(() => {
@@ -2982,8 +3044,12 @@ export function OrderDetailPageV8() {
   // Calculate today's payment amount
   const calculateTodayAmount = useCallback((): number => {
     if (!order?.final_price) return 0
-    const remaining = order.final_price - (order.paid_amount || 0)
+    const remaining = getOrderRemainingAmount(order)
     if (remaining <= 0) return 0
+
+    if (hasSecondPaymentDue(order)) {
+      return remaining
+    }
 
     if (paymentScheme === 'half' && (order.paid_amount || 0) === 0) {
       return Math.ceil(order.final_price / 2)
@@ -2994,7 +3060,11 @@ export function OrderDetailPageV8() {
   const todayAmount = calculateTodayAmount()
 
   // Determine if we're in payment flow
-  const isPaymentFlow = ['waiting_payment', 'confirmed'].includes(order?.status || '')
+  const isPaymentFlow = Boolean(
+    order &&
+    getOrderRemainingAmount(order) > 0 &&
+    ['waiting_payment', 'confirmed', 'paid', 'in_progress', 'review'].includes(order.status),
+  )
   const isVerificationPending = order?.status === 'verification_pending'
   const requestedAction = searchParams.get('action')
 

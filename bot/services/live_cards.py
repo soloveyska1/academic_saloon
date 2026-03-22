@@ -356,7 +356,7 @@ def get_card_keyboard(
     payment_scheme = getattr(order, 'payment_scheme', None)
     paid_amount = _to_decimal(getattr(order, 'paid_amount', 0))
     final_price = _to_decimal(getattr(order, 'final_price', 0))
-    is_half_paid = payment_scheme == 'half' and 0 < paid_amount < final_price
+    is_half_paid = 0 < paid_amount < final_price
     is_fully_paid = paid_amount >= final_price
 
     if stage_name == "new":
@@ -416,18 +416,27 @@ def get_card_keyboard(
         # ═══ ПРОВЕРКА ОПЛАТЫ (клиент нажал "Я оплатил") ═══
         half_amount = int(final_price / Decimal("2")) if final_price else 0
 
-        buttons.append([
+        if is_half_paid:
+            remaining = int(max(final_price - paid_amount, Decimal("0")))
+            buttons.append([
                 InlineKeyboardButton(
-                    text=f"Подтвердить 100% ({int(final_price)} ₽)",
-                    callback_data=f"card_confirm_pay:{order.id}:full"
+                    text=f"Подтвердить доплату ({remaining} ₽)",
+                    callback_data=f"card_confirm_pay:{order.id}:final"
                 ),
             ])
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"Подтвердить 50% ({half_amount} ₽)",
-                callback_data=f"card_confirm_pay:{order.id}:half"
-            ),
-        ])
+        else:
+            buttons.append([
+                    InlineKeyboardButton(
+                        text=f"Подтвердить 100% ({int(final_price)} ₽)",
+                        callback_data=f"card_confirm_pay:{order.id}:full"
+                    ),
+                ])
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"Подтвердить 50% ({half_amount} ₽)",
+                    callback_data=f"card_confirm_pay:{order.id}:half"
+                ),
+            ])
         buttons.append([
             InlineKeyboardButton(
                 text="Отклонить платёж",

@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from zoneinfo import ZoneInfo
@@ -75,6 +76,33 @@ def is_allowed_file(filename: str) -> bool:
     if ext in BLOCKED_EXTENSIONS:
         return False
     return ext in ALLOWED_EXTENSIONS
+
+
+def get_order_remaining_amount(order: Order) -> Decimal:
+    """Return remaining amount for an order after already confirmed payments."""
+    final_price = Decimal(str(order.final_price or 0))
+    paid_amount = Decimal(str(order.paid_amount or 0))
+    return max(final_price - paid_amount, Decimal("0"))
+
+
+def is_followup_payment(order: Order) -> bool:
+    """Whether the next payment should be treated as a final settlement."""
+    return Decimal(str(order.paid_amount or 0)) > 0 and get_order_remaining_amount(order) > 0
+
+
+def get_requested_payment_amount(order: Order, payment_scheme: str) -> Decimal:
+    """Calculate amount requested right now for first or final payment."""
+    remaining = get_order_remaining_amount(order)
+    if remaining <= 0:
+        return Decimal("0")
+
+    if is_followup_payment(order):
+        return remaining
+
+    final_price = Decimal(str(order.final_price or 0))
+    if payment_scheme == "half":
+        return final_price / Decimal("2")
+    return final_price
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -834,10 +862,18 @@ async def confirm_payment(
             content={"success": False, "message": "Order not found"}
         )
 
+    allowed_statuses = {
+        OrderStatus.WAITING_PAYMENT.value,
+        OrderStatus.CONFIRMED.value,
+        OrderStatus.PAID.value,
+        OrderStatus.IN_PROGRESS.value,
+        OrderStatus.REVIEW.value,
+    }
+
     # Idempotency: if already in verification_pending, return success without re-processing
     if order.status == OrderStatus.VERIFICATION_PENDING.value:
-        final_price = order.final_price
-        idempotent_amount = final_price / 2 if order.payment_scheme == 'half' else final_price
+        requested_scheme = "half" if data.payment_scheme == "half" else "full"
+        idempotent_amount = get_requested_payment_amount(order, requested_scheme)
         return PaymentConfirmResponse(
             success=True,
             message="Оплата уже на проверке",
@@ -851,25 +887,44 @@ async def confirm_payment(
             content={"success": False, "message": "Order cannot accept payment"}
         )
 
+    if order.status not in allowed_statuses:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Order cannot accept payment right now"}
+        )
+
     if not order.final_price or order.final_price <= 0:
         return JSONResponse(
             status_code=400,
             content={"success": False, "message": "Order has no price"}
         )
 
-    final_price = order.final_price
-    amount_to_pay = final_price / 2 if data.payment_scheme == 'half' else final_price
+    requested_scheme = "half" if data.payment_scheme == "half" else "full"
+    payment_phase = "final" if is_followup_payment(order) else "initial"
+    amount_to_pay = get_requested_payment_amount(order, requested_scheme)
+    if amount_to_pay <= 0:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Order is already fully paid"}
+        )
 
     order.status = OrderStatus.VERIFICATION_PENDING.value
     order.payment_method = data.payment_method
-    order.payment_scheme = data.payment_scheme
+    if payment_phase == "initial":
+        order.payment_scheme = requested_scheme
+    elif order.payment_scheme not in {"half", "full"}:
+        order.payment_scheme = "half"
     await session.commit()
 
     try:
         from bot.services.realtime_notifications import send_order_status_notification
         await send_order_status_notification(
             telegram_id=tg_user.id, order_id=order_id, new_status=order.status,
-            extra_data={"payment_method": data.payment_method, "payment_scheme": data.payment_scheme}
+            extra_data={
+                "payment_method": data.payment_method,
+                "payment_scheme": order.payment_scheme,
+                "payment_phase": payment_phase,
+            }
         )
     except Exception as e:
         logger.warning(f"[Payment] Failed to send WS notification for order #{order_id}: {e}")
@@ -889,7 +944,10 @@ async def confirm_payment(
     try:
         bot = get_bot()
         from bot.services.live_cards import send_or_update_card
-        scheme_text = "100%" if data.payment_scheme == 'full' else "50% аванс"
+        if payment_phase == "final":
+            scheme_text = "доплата"
+        else:
+            scheme_text = "100%" if requested_scheme == 'full' else "50% аванс"
         method_text = {"card": "Карта", "sbp": "СБП", "transfer": "Перевод"}.get(data.payment_method, data.payment_method)
         await send_or_update_card(
             bot=bot, order=order, session=session, client_username=user.username, client_name=user.fullname,
@@ -942,7 +1000,7 @@ async def get_payment_info(
     discount = round(float(order.discount or 0), 2)
     bonus_used = round(float(order.bonus_used or 0), 2)
     paid_amount = round(float(order.paid_amount or 0), 2)
-    remaining = round(float((order.final_price or 0) - (order.paid_amount or 0)), 2)
+    remaining = round(float(max((order.final_price or 0) - (order.paid_amount or 0), 0)), 2)
 
     return PaymentInfoResponse(
         order_id=order.id, status=order.status,

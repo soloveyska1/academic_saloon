@@ -2608,6 +2608,12 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
 def get_payment_amount(order: Order) -> Decimal:
     """Получить сумму к оплате с учётом схемы и скидки промокода"""
     final_price = get_order_final_price(order)
+    paid_amount = _to_decimal(getattr(order, "paid_amount", 0))
+    remaining = max(final_price - paid_amount, Decimal("0"))
+
+    if paid_amount > 0 and remaining > 0:
+        return remaining
+
     if order.payment_scheme == "half":
         return final_price / Decimal("2")
     return final_price
@@ -5447,11 +5453,15 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     if not order.payment_scheme:
         order.payment_scheme = scheme
 
+    existing_paid = _to_decimal(order.paid_amount)
+    final_price = get_order_final_price(order)
     payment_amount = get_payment_amount(order)
-    new_status = OrderStatus.PAID_FULL.value if scheme == "full" else OrderStatus.PAID.value
+    new_total_paid = min(final_price, existing_paid + payment_amount)
+    is_final_settlement = new_total_paid >= final_price and final_price > 0
+    new_status = OrderStatus.PAID_FULL.value if is_final_settlement or scheme == "full" else OrderStatus.PAID.value
 
     order.status = new_status
-    order.paid_amount = payment_amount
+    order.paid_amount = new_total_paid
     await session.commit()
 
     # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
@@ -5479,7 +5489,12 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     )
 
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ С КАРТИНКОЙ ═══
-    payment_line = "💰 Оплата получена" if scheme == "full" else "💰 Аванс получен"
+    if existing_paid > 0 and new_status == OrderStatus.PAID_FULL.value:
+        payment_line = "💰 Доплата получена"
+    elif scheme == "full":
+        payment_line = "💰 Оплата получена"
+    else:
+        payment_line = "💰 Аванс получен"
 
     user_text = f"""🎉 <b>Оплата подтверждена</b>
 
@@ -5517,7 +5532,12 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     # ═══ ОБНОВЛЯЕМ СООБЩЕНИЕ АДМИНА ═══
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
 
-    admin_amount_label = "Оплата" if scheme == "full" else "Аванс"
+    if existing_paid > 0 and new_status == OrderStatus.PAID_FULL.value:
+        admin_amount_label = "Доплата"
+    elif scheme == "full":
+        admin_amount_label = "Оплата"
+    else:
+        admin_amount_label = "Аванс"
 
     admin_text = f"""✅ <b>ОПЛАТА ПОДТВЕРЖДЕНА</b>
 

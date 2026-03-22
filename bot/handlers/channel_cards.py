@@ -582,8 +582,17 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     await callback.answer("Подтверждаю оплату...")
 
     final_price = _to_decimal(order.final_price or order.price or 0)
+    already_paid = _to_decimal(order.paid_amount or 0)
+    remaining_amount = max(final_price - already_paid, Decimal("0"))
+    is_final_payment = already_paid > 0 and remaining_amount > 0
 
-    if payment_type == "half":
+    if is_final_payment:
+        order.status = OrderStatus.PAID_FULL.value
+        order.paid_amount = final_price
+        if not order.payment_scheme:
+            order.payment_scheme = "half"
+        extra_text = f"✅ Доплата ({int(remaining_amount)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
+    elif payment_type == "half":
         # Предоплата 50%
         half_amount = final_price / Decimal("2")
         order.status = OrderStatus.PAID.value  # В работу!
@@ -623,7 +632,14 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ ═══
     paid_formatted = format_price(int(order.paid_amount), False)
 
-    if payment_type == "half":
+    if is_final_payment:
+        user_text = f"""🎉 <b>ДОПЛАТА ПОЛУЧЕНА!</b>
+
+Заказ <b>#{order.id}</b> оплачен полностью.
+✅ Получено всего: <b>{paid_formatted} ₽</b>
+
+Теперь можно передать клиенту полный результат."""
+    elif payment_type == "half":
         remaining = int(max(final_price - _to_decimal(order.paid_amount), Decimal("0")))
         user_text = f"""💰 <b>ПРЕДОПЛАТА ПОЛУЧЕНА!</b>
 
@@ -667,13 +683,14 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
         logger.warning(f"Не удалось уведомить клиента {order.user_id}: {e}")
 
     # ═══ WEBSOCKET УВЕДОМЛЕНИЕ ОБ ОПЛАТЕ ═══
+    confirmed_payment_type = "final" if is_final_payment else payment_type
     try:
         from bot.services.realtime_notifications import send_order_status_notification
         await send_order_status_notification(
             telegram_id=order.user_id,
             order_id=order.id,
             new_status=order.status,
-            extra_data={"paid_amount": float(order.paid_amount or 0), "payment_type": payment_type},
+            extra_data={"paid_amount": float(order.paid_amount or 0), "payment_type": confirmed_payment_type},
         )
     except Exception as ws_err:
         logger.debug(f"WebSocket notification failed: {ws_err}")
