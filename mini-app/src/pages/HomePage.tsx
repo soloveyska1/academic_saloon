@@ -190,7 +190,7 @@ export function HomePage({ user, onRefresh }: Props) {
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
         <PremiumBackground
           variant="gold"
-          intensity="low"
+          intensity="subtle"
           interactive={false}
         />
       </div>
