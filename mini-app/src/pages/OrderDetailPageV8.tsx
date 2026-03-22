@@ -52,28 +52,20 @@ import {
   Check,
   Smartphone,
   Star,
-  Shield,
   ShieldCheck,
   Timer,
   Upload,
   FileImage,
   Trash2,
-  Info,
-  ChevronDown,
   FileText,
   File,
   Image,
   FileArchive,
   Archive,
   Send,
-  Award,
   RotateCcw,
   CalendarCheck,
-  Banknote,
-  Circle,
   Package,
-  FileCheck,
-  Sparkles,
   Globe,
 } from 'lucide-react'
 import { Order, OrderStatus } from '../types'
@@ -97,7 +89,6 @@ import { SectionErrorBoundary } from '../components/ui/SectionErrorBoundary'
 import { ReviewSection } from '../components/order/ReviewSection'
 import {
   formatOrderDeadlineRu,
-  formatOrderTimelineDateSafe,
   getOrderHeadlineSafe,
   normalizeOrder,
   ORDER_WORK_TYPE_LABELS,
@@ -459,105 +450,225 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
   const workTypeRaw = order.work_type_label || ORDER_WORK_TYPE_LABELS[order.work_type] || 'Заказ'
   const workTypeLabel = stripEmoji(workTypeRaw)
   const headline = stripEmoji(getOrderHeadlineSafe(order))
-
-  // Build subline WITHOUT work type (it's already in the status row)
   const rawSubject = order.subject?.trim() || ''
   const subject = stripEmoji(rawSubject)
-  const subline = subject && subject !== headline ? `Предмет: ${subject}` : ''
   const totalPrice = order.final_price || order.price || 0
   const remainingAmount = Math.max(totalPrice - (order.paid_amount || 0), 0)
+  const displayPrice = remainingAmount > 0 && remainingAmount !== totalPrice ? remainingAmount : totalPrice
+  const priceLabel = remainingAmount > 0 && remainingAmount !== totalPrice ? 'Осталось' : ''
 
-  // Countdown: gold-tinted urgency, not rainbow
+  // Countdown urgency color
   const urgencyColor = countdown?.urgency === 'expired' || countdown?.urgency === 'critical'
-    ? 'rgba(239,68,68,0.75)' : '#E8D5A3'
+    ? 'rgba(239,68,68,0.75)' : 'rgba(212,175,55,0.7)'
+
+  // Compact progress stepper
+  const currentStep = statusConfig.step
+  const STEPS = [
+    { label: 'Создан', step: 0 },
+    { label: 'Оценка', step: 1 },
+    { label: 'Оплата', step: 2 },
+    { label: 'В работе', step: 3 },
+    { label: 'Проверка', step: 4 },
+    { label: 'Готово', step: 5 },
+  ]
 
   return (
-    <div className="mx-4 mb-4 p-5 rounded-3xl bg-white/[0.02] border border-white/[0.06]">
-      {/* Status + work type — single clean row */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <div
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-          style={{
-            background: statusConfig.bgColor,
-            border: `1px solid ${statusConfig.borderColor}`,
-          }}
-        >
-          <StatusIcon
-            size={12}
-            color={statusConfig.color}
-            className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''}
-          />
-          <span className="text-[11px] font-bold" style={{ color: statusConfig.color }}>
-            {statusConfig.label}
+    <div className="mx-4 mb-3">
+      {/* ─── Order info card ─── */}
+      <div className="p-5 rounded-3xl bg-white/[0.02] border border-white/[0.06]">
+        {/* Top row: status + work type + subject */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <div
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style={{
+              background: statusConfig.bgColor,
+              border: `1px solid ${statusConfig.borderColor}`,
+            }}
+          >
+            <StatusIcon
+              size={11}
+              color={statusConfig.color}
+              className={order.status === 'verification_pending' || order.status === 'in_progress' ? 'animate-spin' : ''}
+            />
+            <span className="text-[10px] font-bold uppercase tracking-[0.04em]" style={{ color: statusConfig.color }}>
+              {statusConfig.label}
+            </span>
+          </div>
+          <span className="text-[12px] text-white/25 font-medium">
+            {workTypeLabel}
           </span>
         </div>
-        <span className="text-[12px] text-white/30">
-          {workTypeLabel}
-        </span>
-      </div>
 
-      {/* Title */}
-      <div className="text-[22px] font-[800] font-sans text-gold-100 leading-[1.2] mb-1.5">
-        {headline}
-      </div>
-      {subline && (
-        <div className="text-[14px] leading-[1.5] text-white/[0.42] mb-[18px]">
-          {subline}
+        {/* Title — compact */}
+        <div className="text-[20px] font-[800] font-sans text-white/90 leading-[1.2] mb-0.5">
+          {headline}
         </div>
-      )}
+        {subject && subject !== headline && (
+          <div className="text-[13px] text-white/35 mb-3">
+            {subject}
+          </div>
+        )}
+        {!(subject && subject !== headline) && <div className="mb-3" />}
 
-      {/* Info rows — clean list */}
-      <div className="flex flex-col gap-2">
+        {/* Meta row: deadline */}
         {order.deadline && (
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] bg-white/[0.02] border border-white/[0.04]">
-            <Clock size={15} color="rgba(212,175,55,0.55)" />
-            <span className="text-[13px] text-white/60">
+          <div className="flex items-center gap-1.5 mb-3">
+            <Clock size={12} color="rgba(255,255,255,0.3)" />
+            <span className="text-[12px] text-white/40">
               Срок: {formatOrderDeadlineRu(order.deadline)}
             </span>
           </div>
         )}
-        {totalPrice > 0 && (
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] bg-white/[0.02] border border-white/[0.04]">
-            <Banknote size={15} color="rgba(212,175,55,0.55)" />
-            <span className="text-[13px] text-white/60">
-              {remainingAmount > 0 && remainingAmount !== totalPrice
-                ? `Осталось оплатить ${formatPrice(remainingAmount)} ₽`
-                : `Стоимость ${formatPrice(totalPrice)} ₽`}
-            </span>
+
+        {/* ─── Compact horizontal progress stepper ─── */}
+        {currentStep >= 0 && !['cancelled', 'rejected'].includes(order.status) && (
+          <div className="mb-0">
+            {/* Track */}
+            <div className="flex items-center gap-0 mb-1.5">
+              {STEPS.map((s, i) => {
+                const isCompleted = currentStep > s.step
+                const isCurrent = currentStep === s.step
+                const isLast = i === STEPS.length - 1
+                return (
+                  <div key={s.step} className="flex items-center" style={{ flex: isLast ? 'none' : 1 }}>
+                    {/* Dot */}
+                    <div
+                      className="flex items-center justify-center shrink-0"
+                      style={{
+                        width: isCurrent ? 20 : 8,
+                        height: isCurrent ? 20 : 8,
+                        borderRadius: '50%',
+                        background: isCompleted
+                          ? 'rgba(212,175,55,0.5)'
+                          : isCurrent
+                            ? 'rgba(212,175,55,1)'
+                            : 'rgba(255,255,255,0.08)',
+                        border: isCurrent ? '2px solid rgba(212,175,55,0.3)' : 'none',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      {isCompleted && <Check size={6} color="#fff" strokeWidth={3} />}
+                      {isCurrent && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#09090b' }} />}
+                    </div>
+                    {/* Connector line */}
+                    {!isLast && (
+                      <div
+                        style={{
+                          flex: 1,
+                          height: 2,
+                          background: isCompleted
+                            ? 'rgba(212,175,55,0.25)'
+                            : 'rgba(255,255,255,0.06)',
+                          transition: 'background 0.3s ease',
+                        }}
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {/* Labels — only show current */}
+            <div className="flex items-center justify-between">
+              {STEPS.map((s) => {
+                const isCurrent = currentStep === s.step
+                return (
+                  <span
+                    key={s.step}
+                    className="text-center"
+                    style={{
+                      flex: 1,
+                      fontSize: 9,
+                      fontWeight: isCurrent ? 700 : 500,
+                      color: isCurrent ? 'rgba(212,175,55,0.8)' : 'rgba(255,255,255,0.18)',
+                      transition: 'color 0.3s ease',
+                    }}
+                  >
+                    {s.label}
+                  </span>
+                )
+              })}
+            </div>
           </div>
         )}
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-[14px] bg-white/[0.02] border border-white/[0.04]">
-          <Sparkles size={15} color="rgba(212,175,55,0.55)" />
-          <span className="text-[13px] text-white/60">
-            {order.files_url ? 'Файлы будут в этом заказе' : 'Все детали и правки ведём внутри заказа'}
-          </span>
-        </div>
       </div>
 
-      {/* Payment countdown */}
-      {isAwaitingPayment && countdown && (
-        <div className="mt-3.5 p-3.5 rounded-2xl bg-gold-400/[0.04] border border-gold-400/10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Clock size={14} color={urgencyColor} />
-            <span className="text-[13px] font-bold" style={{ color: urgencyColor }}>
-              {paymentExpired ? 'Срок оплаты истёк' : `Оплатить до ${countdown.formatted}`}
-            </span>
+      {/* ─── Price hero card (for payment statuses) ─── */}
+      {isAwaitingPayment && displayPrice > 0 && (
+        <div className="mt-2 p-5 rounded-3xl bg-white/[0.02] border border-gold-400/[0.12]">
+          {/* Price = HERO */}
+          <div className="text-center mb-3">
+            {priceLabel && (
+              <div className="text-[11px] text-white/30 uppercase tracking-[0.06em] font-semibold mb-1">
+                {priceLabel}
+              </div>
+            )}
+            <div
+              className="font-mono font-[800] leading-none"
+              style={{
+                fontSize: 'clamp(32px, 10vw, 44px)',
+                color: '#E8D5A3',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {formatPrice(displayPrice)} <span className="text-[0.6em] text-white/30">₽</span>
+            </div>
           </div>
-          <div className={`text-[12px] text-white/[0.38] ${!paymentExpired ? 'mb-2.5' : ''}`}>
-            {paymentExpired
-              ? 'Напишите в поддержку, чтобы подтвердить актуальность расчёта.'
-              : 'После оплаты сразу запускаем заказ'}
-          </div>
-          {!paymentExpired && (
-            <div className="rounded-full bg-white/[0.06] h-1 overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${countdown.progress}%` }}
-                transition={{ duration: 0.5 }}
-                className="h-full rounded-full bg-gold-400 opacity-60"
-              />
+
+          {/* Countdown timer */}
+          {countdown && (
+            <div className="mb-3">
+              <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                <Clock size={12} color={urgencyColor} />
+                <span className="text-[12px] font-semibold" style={{ color: urgencyColor }}>
+                  {paymentExpired ? 'Срок оплаты истёк' : `Оплатить до ${countdown.formatted}`}
+                </span>
+              </div>
+              {!paymentExpired && (
+                <div className="rounded-full bg-white/[0.06] h-1 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${countdown.progress}%` }}
+                    transition={{ duration: 0.5 }}
+                    className="h-full rounded-full"
+                    style={{ background: urgencyColor }}
+                  />
+                </div>
+              )}
+              <div className="text-[11px] text-white/25 text-center mt-1.5">
+                {paymentExpired
+                  ? 'Напишите в поддержку для уточнения'
+                  : 'После оплаты сразу запускаем'}
+              </div>
             </div>
           )}
+
+          {/* Inline guarantees */}
+          <div className="flex flex-col gap-0">
+            {[
+              { icon: ShieldCheck, text: 'Возврат до старта работы' },
+              { icon: RotateCcw, text: '3 бесплатных круга правок' },
+              { icon: CalendarCheck, text: 'Срок фиксирован' },
+            ].map((g, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 py-1.5"
+                style={{ borderTop: i === 0 ? `1px solid rgba(255,255,255,0.04)` : 'none' }}
+              >
+                <g.icon size={12} color="rgba(212,175,55,0.4)" />
+                <span className="text-[11px] text-white/30 font-medium">{g.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Price display for non-payment statuses ─── */}
+      {!isAwaitingPayment && totalPrice > 0 && (
+        <div className="mt-2 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex items-center justify-between">
+          <span className="text-[13px] text-white/40">Стоимость</span>
+          <span className="text-[15px] font-bold font-mono text-gold-400">
+            {formatPrice(totalPrice)} ₽
+          </span>
         </div>
       )}
     </div>
@@ -1692,122 +1803,7 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
   )
 })
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//                              TRUST SECTION
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface TrustChip {
-  id: string
-  icon: typeof Shield
-  label: string
-  color: string
-  bgColor: string
-  details: string
-}
-
-const TRUST_CHIPS: TrustChip[] = [
-  {
-    id: 'secure',
-    icon: Shield,
-    label: 'Реквизиты по заказу',
-    color: 'rgba(212,175,55,0.65)',
-    bgColor: 'rgba(212,175,55,0.06)',
-    details: 'Показываем только реквизиты и сумму по текущему заказу. После отправки перевода платёж уходит на ручную проверку.',
-  },
-  {
-    id: 'fast',
-    icon: Timer,
-    label: '5-15 мин',
-    color: 'rgba(255,255,255,0.50)',
-    bgColor: 'rgba(255,255,255,0.04)',
-    details: 'Обычно подтверждаем оплату за 5-15 минут. Если нужно дольше, статус всё равно обновится автоматически.',
-  },
-]
-
-interface TrustSectionProps {
-  isPaymentFlow?: boolean
-}
-
-const TrustSection = memo(function TrustSection({ isPaymentFlow: _isPaymentFlow = true }: TrustSectionProps) {
-  const [expandedChip, setExpandedChip] = useState<string | null>(null)
-  const { haptic } = useTelegram()
-
-  const handleChipClick = (id: string) => {
-    haptic?.('light')
-    setExpandedChip(expandedChip === id ? null : id)
-  }
-
-  return (
-    <div className="mx-4 mb-4">
-      {/* Chips Row */}
-      <div className="flex gap-2 flex-wrap">
-        {TRUST_CHIPS.map((chip) => {
-          const ChipIcon = chip.icon
-          const isExpanded = expandedChip === chip.id
-
-          return (
-            <motion.button
-              key={chip.id}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => handleChipClick(chip.id)}
-              className="flex items-center gap-2 px-3 py-2 rounded-full cursor-pointer"
-              style={{
-                background: chip.bgColor,
-                border: `1px solid ${chip.color}30`,
-              }}
-            >
-              <ChipIcon size={14} color={chip.color} />
-              <span
-                className="text-[12px] font-semibold"
-                style={{ color: chip.color }}
-              >
-                {chip.label}
-              </span>
-              <ChevronDown
-                size={12}
-                color={chip.color}
-                className="transition-transform duration-200"
-                style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-              />
-            </motion.button>
-          )
-        })}
-      </div>
-
-      {/* Expanded Detail */}
-      <AnimatePresence>
-        {expandedChip && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            {TRUST_CHIPS.filter((c) => c.id === expandedChip).map((chip) => (
-              <div
-                key={chip.id}
-                className="mt-3 p-4 rounded-2xl"
-                style={{
-                  background: chip.bgColor,
-                  border: `1px solid ${chip.color}25`,
-                }}
-              >
-                <div className="flex items-start gap-3">
-                  <Info size={16} color={chip.color} className="shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-text-secondary leading-[1.5] m-0"
-                  >
-                    {chip.details}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-})
+// TrustSection removed — trust info moved to PaymentSheet context
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              VERIFICATION PENDING BANNER
@@ -2067,402 +2063,37 @@ interface SupportCardProps {
 const SupportCard = memo(function SupportCard({ onOpenChat }: SupportCardProps) {
   const { haptic } = useTelegram()
 
-  const handleTelegramClick = () => {
-    haptic?.('medium')
-    // Open Telegram link
-    window.open(`https://t.me/${SUPPORT_CONFIG.telegramUsername}`, '_blank', 'noopener,noreferrer')
-  }
-
   return (
-    <div className="mx-4 mb-4">
-      {/* Section Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <MessageCircle size={18} color={DS.colors.gold} />
-        <span className="text-[15px] font-bold text-text-primary">
-          Поддержка
-        </span>
-      </div>
+    <div className="mx-4 mb-2">
+      <div className="flex gap-2">
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => { haptic?.('medium'); onOpenChat() }}
+          className="flex-1 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] cursor-pointer text-left"
+        >
+          <MessageCircle size={16} color="rgba(212,175,55,0.5)" />
+          <span className="text-[13px] text-white/50 font-medium">Написать в чат</span>
+          <ChevronRight size={14} color="rgba(255,255,255,0.2)" className="ml-auto" />
+        </motion.button>
 
-      <div className="p-[18px] rounded-[20px] bg-white/[0.02] border border-white/[0.06]">
-        <div className="flex items-center gap-3.5 mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-gold-400/[0.06] border border-gold-400/10 flex items-center justify-center shrink-0">
-            <MessageCircle size={20} color="rgba(212,175,55,0.55)" />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="text-[15px] font-bold text-white/[0.88] mb-1">
-              Поддержка по заказу
-            </div>
-            <div className="text-[13px] leading-[1.5] text-white/[0.42]">
-              По оплате, срокам, правкам и уточнениям
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-[1.2fr_1fr] gap-2.5">
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              haptic?.('medium')
-              onOpenChat()
-            }}
-            className="min-h-[48px] rounded-2xl border-none cursor-pointer flex items-center justify-center gap-2 text-[var(--text-on-gold)] text-[14px] font-bold"
-            style={{ background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})` }}
-          >
-            <MessageCircle size={16} color="var(--text-on-gold)" />
-            Написать в чат
-          </motion.button>
-
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={handleTelegramClick}
-            className="min-h-[48px] rounded-2xl bg-white/[0.03] border border-white/[0.06] cursor-pointer flex items-center justify-center gap-2 text-white/[0.55] text-[13px] font-semibold"
-          >
-            <Send size={14} color="rgba(212,175,55,0.50)" />
-            Telegram
-          </motion.button>
-        </div>
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            haptic?.('medium')
+            window.open(`https://t.me/${SUPPORT_CONFIG.telegramUsername}`, '_blank', 'noopener,noreferrer')
+          }}
+          className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] cursor-pointer"
+        >
+          <Send size={14} color="rgba(212,175,55,0.4)" />
+          <span className="text-[12px] text-white/35 font-medium">TG</span>
+        </motion.button>
       </div>
     </div>
   )
 })
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//                              GUARANTEES ROW
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface Guarantee {
-  id: string
-  icon: typeof Shield
-  title: string
-  description: string
-  color: string
-}
-
-// Gold monochrome guarantees — no rainbow icons
-const GUARANTEES: Guarantee[] = [
-  {
-    id: 'refund',
-    icon: Banknote,
-    title: 'Возврат до старта',
-    description: 'Полный возврат возможен только если работа ещё не начата. После старта заказа доводим результат до требований.',
-    color: 'rgba(212,175,55,0.60)',
-  },
-  {
-    id: 'revisions',
-    icon: RotateCcw,
-    title: '3 круга правок',
-    description: 'В стоимость включены 3 бесплатных круга правок. Дальнейшие доработки обсуждаем отдельно.',
-    color: 'rgba(212,175,55,0.60)',
-  },
-  {
-    id: 'deadline',
-    icon: CalendarCheck,
-    title: 'Срок под контролем',
-    description: 'Срок фиксируем при подтверждении заказа и ведём работу с приоритетом под него.',
-    color: 'rgba(212,175,55,0.60)',
-  },
-]
-
-const GuaranteesRow = memo(function GuaranteesRow() {
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const { haptic } = useTelegram()
-
-  return (
-    <div className="mx-4 mb-4">
-      {/* Section Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <Award size={18} color={DS.colors.gold} />
-        <span className="text-[15px] font-bold text-text-primary">
-          Гарантии
-        </span>
-      </div>
-
-      {/* Guarantees Grid */}
-      <div className="grid grid-cols-3 gap-2">
-        {GUARANTEES.map((g) => {
-          const Icon = g.icon
-          const isExpanded = expandedId === g.id
-
-          return (
-            <motion.button
-              key={g.id}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                haptic?.('light')
-                setExpandedId(isExpanded ? null : g.id)
-              }}
-              className="p-3 rounded-[18px] cursor-pointer flex flex-col items-start gap-2 text-left"
-              style={{
-                background: isExpanded ? `${g.color}15` : DS.colors.bgCard,
-                border: `1px solid ${isExpanded ? `${g.color}40` : DS.colors.border}`,
-              }}
-            >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: `${g.color}15` }}
-              >
-                  <Icon size={18} color={g.color} />
-                </div>
-              <span className="text-[12px] font-semibold text-text-primary">
-                {g.title}
-              </span>
-              <span
-                className="text-[12px] leading-[1.45]"
-                style={{ color: isExpanded ? DS.colors.textSecondary : DS.colors.textMuted }}
-              >
-                {g.id === 'refund' ? 'Если работа не стартовала' : g.id === 'revisions' ? '3 бесплатных круга' : 'Фиксируем при подтверждении'}
-              </span>
-            </motion.button>
-          )
-        })}
-      </div>
-
-      {/* Expanded Description */}
-      <AnimatePresence>
-        {expandedId && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            {GUARANTEES.filter((g) => g.id === expandedId).map((g) => (
-              <div
-                key={g.id}
-                className="mt-3 p-4 rounded-2xl"
-                style={{
-                  background: `${g.color}10`,
-                  border: `1px solid ${g.color}25`,
-                }}
-              >
-                <div className="flex items-start gap-3">
-                  <Info size={16} color={g.color} className="shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-text-secondary leading-[1.5] m-0">
-                    {g.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-})
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//                              ORDER TIMELINE
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface TimelineStep {
-  id: string
-  label: string
-  icon: typeof Circle
-  status: 'completed' | 'current' | 'upcoming'
-  date?: string
-  description?: string
-}
-
-const getTimelineSteps = (order: Order): TimelineStep[] => {
-  const statusStep = STATUS_CONFIG[order.status]?.step || 0
-
-  const steps: TimelineStep[] = [
-    {
-      id: 'created',
-      label: 'Заказ создан',
-      icon: Package,
-      status: statusStep >= 0 ? 'completed' : 'upcoming',
-      date: formatOrderTimelineDateSafe(order.created_at),
-    },
-    {
-      id: 'estimated',
-      label: 'Оценка',
-      icon: Sparkles,
-      status: statusStep >= 1 ? (statusStep === 1 ? 'current' : 'completed') : 'upcoming',
-      description: statusStep === 1 ? 'Рассчитываем стоимость' : undefined,
-    },
-    {
-      id: 'payment',
-      label: 'Оплата',
-      icon: CreditCard,
-      status: statusStep >= 2 ? (statusStep === 2 ? 'current' : 'completed') : 'upcoming',
-      description: statusStep === 2 ? 'Ожидаем оплату' : undefined,
-    },
-    {
-      id: 'work',
-      label: 'В работе',
-      icon: Loader2,
-      status: statusStep >= 3 ? (statusStep === 3 ? 'current' : 'completed') : 'upcoming',
-      description: statusStep === 3 ? 'Выполняем заказ' : undefined,
-    },
-    {
-      id: 'review',
-      label: 'Проверка',
-      icon: FileCheck,
-      status: statusStep >= 4 ? (statusStep === 4 ? 'current' : 'completed') : 'upcoming',
-      description: statusStep === 4 ? 'Проверьте работу' : undefined,
-    },
-    {
-      id: 'completed',
-      label: 'Готово',
-      icon: CheckCircle2,
-      status: statusStep >= 5 ? 'completed' : 'upcoming',
-      date: order.status === 'completed' ? 'Завершён' : undefined,
-    },
-  ]
-
-  // Handle cancelled/rejected
-  if (['cancelled', 'rejected'].includes(order.status)) {
-    return steps.map((step) => ({
-      ...step,
-      status: step.status === 'completed' ? 'completed' : 'upcoming' as const,
-    }))
-  }
-
-  return steps
-}
-
-interface OrderTimelineProps {
-  order: Order
-}
-
-const OrderTimeline = memo(function OrderTimeline({ order }: OrderTimelineProps) {
-  const steps = getTimelineSteps(order)
-  const isCancelled = ['cancelled', 'rejected'].includes(order.status)
-
-  return (
-    <div className="mx-4 mb-4">
-      {/* Section Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <Clock size={18} color={DS.colors.gold} />
-        <span className="text-[15px] font-bold text-text-primary">
-          Ход выполнения
-        </span>
-      </div>
-
-      {/* Timeline Card */}
-      <div
-        className="p-4 rounded-[20px]"
-        style={{
-          background: DS.colors.bgCard,
-          border: `1px solid ${DS.colors.border}`,
-        }}
-      >
-        {/* Cancelled Banner */}
-        {isCancelled && (
-          <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20">
-            <XCircle size={16} color={DS.colors.error} />
-            <span className="text-[12px] text-red-500 font-semibold">
-              Заказ {order.status === 'cancelled' ? 'отменён' : 'отклонён'}
-            </span>
-          </div>
-        )}
-
-        {/* Steps */}
-        <div className="relative">
-          {steps.map((step, index) => {
-            const StepIcon = step.icon
-            const isLast = index === steps.length - 1
-
-            // Colors based on status
-            // Quiet luxury timeline colors — gold monochrome
-            const getColors = () => {
-              switch (step.status) {
-                case 'completed':
-                  return {
-                    bg: 'rgba(212,175,55,0.55)',
-                    border: 'rgba(212,175,55,0.55)',
-                    text: 'rgba(255,255,255,0.75)',
-                    line: 'rgba(212,175,55,0.20)',
-                  }
-                case 'current':
-                  return {
-                    bg: '#D4AF37',
-                    border: '#D4AF37',
-                    text: '#E8D5A3',
-                    line: 'rgba(255,255,255,0.06)',
-                  }
-                default:
-                  return {
-                    bg: 'transparent',
-                    border: 'rgba(255,255,255,0.12)',
-                    text: 'rgba(255,255,255,0.25)',
-                    line: 'rgba(255,255,255,0.06)',
-                  }
-              }
-            }
-
-            const colors = getColors()
-
-            return (
-              <div
-                key={step.id}
-                className="flex gap-3 relative"
-                style={{ paddingBottom: isLast ? 0 : DS.space.lg }}
-              >
-                {/* Vertical Line */}
-                {!isLast && (
-                  <div
-                    className="absolute left-[15px] top-8 w-0.5"
-                    style={{
-                      height: 'calc(100% - 32px)',
-                      background: colors.line,
-                    }}
-                  />
-                )}
-
-                {/* Icon Circle */}
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-[1]"
-                  style={{
-                    background: step.status === 'upcoming' ? DS.colors.bgElevated : colors.bg,
-                    border: `2px solid ${colors.border}`,
-                  }}
-                >
-                  {step.status === 'completed' ? (
-                    <Check size={16} color={DS.colors.white} />
-                  ) : step.status === 'current' ? (
-                    <StepIcon
-                      size={16}
-                      color="var(--text-on-gold)"
-                      className={step.icon === Loader2 ? 'animate-spin' : ''}
-                    />
-                  ) : (
-                    <Circle size={12} color={colors.border} />
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 pt-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`text-[14px] ${step.status === 'current' ? 'font-bold' : 'font-medium'}`}
-                      style={{ color: colors.text }}
-                    >
-                      {step.label}
-                    </span>
-                    {step.date && (
-                      <span className="text-[11px] text-text-muted">
-                        {step.date}
-                      </span>
-                    )}
-                  </div>
-                  {step.description && (
-                    <p className="text-[12px] text-text-secondary m-0 mt-0.5">
-                      {step.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-})
+// GuaranteesRow removed — inline guarantees now in HeroSummary price card
+// OrderTimeline removed — compact horizontal stepper now in HeroSummary
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //                              LOADING & ERROR STATES
@@ -2907,6 +2538,7 @@ export function OrderDetailPageV8() {
 
   return (
     <div className="premium-club-page pb-[140px]">
+      {/* ─── App Bar ─── */}
       <SectionErrorBoundary
         sectionName="order-app-bar"
         resetKey={sectionResetKey}
@@ -2929,6 +2561,7 @@ export function OrderDetailPageV8() {
         />
       </SectionErrorBoundary>
 
+      {/* ─── Hero (order info + price + stepper + inline guarantees) ─── */}
       <SectionErrorBoundary
         sectionName="order-hero"
         resetKey={sectionResetKey}
@@ -2938,7 +2571,7 @@ export function OrderDetailPageV8() {
         <HeroSummary order={order} countdown={countdown} />
       </SectionErrorBoundary>
 
-      {/* Verification Pending Banner */}
+      {/* ─── Verification Pending Banner ─── */}
       {isVerificationPending && (
         <SectionErrorBoundary
           sectionName="order-verification-banner"
@@ -2950,19 +2583,7 @@ export function OrderDetailPageV8() {
         </SectionErrorBoundary>
       )}
 
-      {/* Trust Section - показываем для платёжного flow */}
-      {(isPaymentFlow || isVerificationPending) && (
-        <SectionErrorBoundary
-          sectionName="order-trust"
-          resetKey={sectionResetKey}
-          context={sectionContext}
-          fallback={null}
-        >
-          <TrustSection isPaymentFlow={isPaymentFlow} />
-        </SectionErrorBoundary>
-      )}
-
-      {/* Files Section */}
+      {/* ─── Files ─── */}
       <SectionErrorBoundary
         sectionName="order-files"
         resetKey={sectionResetKey}
@@ -2976,7 +2597,7 @@ export function OrderDetailPageV8() {
         />
       </SectionErrorBoundary>
 
-      {/* Review Section — only for completed orders without a review */}
+      {/* ─── Review (completed only) ─── */}
       {order.status === 'completed' && !order.review_submitted && (
         <SectionErrorBoundary
           sectionName="order-review"
@@ -2992,7 +2613,7 @@ export function OrderDetailPageV8() {
         </SectionErrorBoundary>
       )}
 
-      {/* Support Card */}
+      {/* ─── Support (compact) ─── */}
       <SectionErrorBoundary
         sectionName="order-support"
         resetKey={sectionResetKey}
@@ -3002,15 +2623,15 @@ export function OrderDetailPageV8() {
         <SupportCard onOpenChat={handleOpenChat} />
       </SectionErrorBoundary>
 
-      {/* Cancel Order Button */}
+      {/* ─── Cancel (text link, not red button) ─── */}
       {canCancelOrder && (
-        <div className="px-4 mb-4">
+        <div className="px-4 mb-4 text-center">
           <button
             type="button"
             onClick={() => { haptic?.('light'); setCancelConfirmOpen(true) }}
-            className="w-full py-3 px-4 rounded-2xl bg-red-500/[0.06] border border-red-500/[0.12] text-red-500/70 text-[12px] font-semibold cursor-pointer flex items-center justify-center gap-2"
+            className="bg-transparent border-none text-white/20 text-[12px] font-medium cursor-pointer py-2 px-4"
+            style={{ textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.1)' }}
           >
-            <XCircle size={16} />
             Отменить заказ
           </button>
         </div>
@@ -3147,26 +2768,6 @@ export function OrderDetailPageV8() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Guarantees Row */}
-      <SectionErrorBoundary
-        sectionName="order-guarantees"
-        resetKey={sectionResetKey}
-        context={sectionContext}
-        fallback={null}
-      >
-        <GuaranteesRow />
-      </SectionErrorBoundary>
-
-      {/* Order Timeline */}
-      <SectionErrorBoundary
-        sectionName="order-timeline"
-        resetKey={sectionResetKey}
-        context={sectionContext}
-        fallback={<SectionFallbackCard title="Ход выполнения" message="История этапов временно недоступна, но сам заказ остаётся доступен." />}
-      >
-        <OrderTimeline order={order} />
-      </SectionErrorBoundary>
 
       {/* Payment Sheet */}
       <SectionErrorBoundary
