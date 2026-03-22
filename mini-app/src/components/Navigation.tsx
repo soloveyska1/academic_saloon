@@ -182,9 +182,6 @@ export const Navigation = () => {
 
   if (shouldHideNav && !isVisible) return null
 
-  // Find active index for spotlight
-  const activeIndex = navItems.findIndex(item => isNavigationItemActive(location.pathname, item.path))
-
   // Theme-aware colors
   const goldAccent = 'var(--gold-400)'
   const inactiveIconColor = 'var(--text-muted)'
