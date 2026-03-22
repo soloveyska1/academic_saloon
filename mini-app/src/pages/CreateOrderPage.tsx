@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  AlertCircle, ArrowLeft, Check, ChevronRight, Clock, Tag, Sparkles
+  ArrowLeft, Check, Clock, Sparkles
 } from 'lucide-react'
 import { UserData, WorkType, OrderCreateRequest } from '../types'
 import { createOrder, uploadOrderFiles, FileUploadResponse } from '../api/userApi'
@@ -18,6 +18,7 @@ import {
   EstimateCard,
   FloatingCtaDock,
   PromoWarningModal,
+  SuccessScreen,
   useDrafts,
   SERVICE_TYPES,
   DEADLINES,
@@ -27,7 +28,7 @@ import {
 import { FastComposer } from '../components/order-wizard/FastComposer'
 import { PhotoTaskComposer } from '../components/order-wizard/PhotoTaskComposer'
 import { OtherComposer } from '../components/order-wizard/OtherComposer'
-import homeStyles from './HomePage.module.css'
+// homeStyles moved to SuccessScreen component
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  CREATE ORDER PAGE — Premium Order Wizard
@@ -584,180 +585,27 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   // ─────────────────────────────────────────────────────────────────────────
 
   if (step === 4 && result) {
-    const promoUsed = result.promoUsed
-    const basePrice = result.basePrice
-    const savings = basePrice && promoUsed
-      ? Math.round(basePrice * (1 - loyaltyDiscount / 100) * (promoUsed.discount / 100))
-      : 0
-    const title = result.ok ? 'Заявка принята' : 'Не удалось отправить заявку'
-    const lead = result.ok && result.id
-      ? (result.isManual
-          ? `Заказ #${result.id} создан. Сейчас проверяем вводные и готовим оценку от менеджера.`
-          : `Заказ #${result.id} создан. Можете перейти к оплате.`)
-      : result.msg
+    const selectedService = SERVICE_TYPES.find((s) => s.id === serviceTypeId)
+    const selectedDeadline = DEADLINES.find((d) => d.value === deadline)
     return (
-      <div style={{ padding: 24, paddingBottom: 100, minHeight: '100vh', height: '100dvh', background: 'var(--bg-main)' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100%',
-          }}
-        >
-          <motion.section
-            className={`${homeStyles.voidGlass} ${homeStyles.primaryActionCard} ${homeStyles.returningOrderActionCard}`}
-            style={{
-              position: 'relative',
-              width: '100%',
-              maxWidth: 420,
-              padding: '26px 22px 22px',
-              borderRadius: 30,
-              overflow: 'hidden',
-              border: `1px solid ${result.ok ? 'rgba(74,222,128,0.22)' : 'rgba(239,68,68,0.18)'}`,
-            }}
-          >
-            <div className={homeStyles.primaryActionGlow} aria-hidden="true" />
-            <div className={homeStyles.primaryActionShine} aria-hidden="true" />
-
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                style={{
-                  width: 86,
-                  height: 86,
-                  borderRadius: '50%',
-                  background: result.ok
-                    ? 'linear-gradient(135deg, rgba(74,222,128,0.18), rgba(34,197,94,0.05))'
-                    : 'linear-gradient(135deg, rgba(248,113,113,0.18), rgba(239,68,68,0.05))',
-                  border: `2px solid ${result.ok ? 'rgba(74,222,128,0.42)' : 'rgba(239,68,68,0.35)'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 18px',
-                  boxShadow: `0 0 52px -18px ${result.ok ? 'rgba(74,222,128,0.55)' : 'rgba(239,68,68,0.45)'}`,
-                }}
-              >
-                {result.ok ? (
-                  <Check size={42} color="#4ade80" strokeWidth={2.2} />
-                ) : (
-                  <AlertCircle size={42} color="#f87171" strokeWidth={2.2} />
-                )}
-              </motion.div>
-
-              <motion.div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '8px 12px',
-                  borderRadius: 999,
-                  background: 'rgba(9, 9, 11, 0.58)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: result.ok ? '#ecfccb' : '#fecaca',
-                  margin: '0 auto 14px',
-                }}
-              >
-                {result.ok ? <Check size={12} /> : <AlertCircle size={12} />}
-                {result.ok ? 'Заявка отправлена' : 'Нужна повторная отправка'}
-              </motion.div>
-
-              <div className={homeStyles.goldAccent} style={{
-                fontFamily: "'Manrope', sans-serif",
-                fontSize: 'clamp(30px, 7vw, 40px)',
-                fontWeight: 800,
-                lineHeight: 1.04,
-                textAlign: 'center',
-                marginBottom: 12,
-              }}>
-                {title}
-              </div>
-
-              <div style={{
-                fontSize: 15.5,
-                lineHeight: 1.65,
-                color: '#d4d4d8',
-                textAlign: 'center',
-                marginBottom: 16,
-              }}>
-                {lead}
-              </div>
-
-              {promoUsed && savings > 0 && (
-                <div className={homeStyles.heroProofRail}>
-                  <div className={homeStyles.heroProofItem}>
-                    <Tag size={15} color="#22c55e" />
-                    Промокод {promoUsed.code} сэкономил {savings.toLocaleString('ru-RU')} ₽
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 18 }}>
-                {result.ok && result.id && (
-                  <motion.button
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: promoUsed ? 0.35 : 0.25 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => navigate(`/order/${result.id}`)}
-                    className={homeStyles.heroPrimaryButton}
-                  >
-                    <span>Открыть заказ</span>
-                    <div className={homeStyles.primaryActionArrow}>
-                      <ChevronRight size={18} color="#09090b" strokeWidth={2.6} />
-                    </div>
-                  </motion.button>
-                )}
-
-                <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: promoUsed ? 0.45 : 0.35 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate(result.ok ? '/orders' : '/')}
-                  style={{
-                    minHeight: 56,
-                    padding: '0 18px',
-                    borderRadius: 18,
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    background: 'rgba(255,255,255,0.04)',
-                    color: 'var(--text-main)',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {result.ok ? 'Перейти в мои заказы' : 'Вернуться на главную'}
-                </motion.button>
-              </div>
-            </div>
-          </motion.section>
-
-          {!result.ok && (
-            <div
-              style={{
-                width: '100%',
-                maxWidth: 420,
-                marginTop: 14,
-                fontSize: 12.5,
-                lineHeight: 1.6,
-                color: 'var(--text-muted)',
-                textAlign: 'center',
-              }}
-            >
-              Проверьте подключение и попробуйте ещё раз. Если ошибка повторится, можно написать в поддержку из профиля.
-            </div>
-          )}
-        </motion.div>
-      </div>
+      <>
+        <Confetti
+          active={showConfetti}
+          onComplete={() => setShowConfetti(false)}
+          intensity="low"
+          colors={['#d4af37', '#f5d061', '#b38728', '#FCF6BA', '#fff']}
+          duration={3000}
+        />
+        <SuccessScreen
+          result={result}
+          loyaltyDiscount={loyaltyDiscount}
+          serviceLabel={selectedService?.label}
+          subject={subject || undefined}
+          deadlineLabel={selectedDeadline?.label}
+          finalEstimate={getEstimate()}
+          baseEstimate={getBaseEstimate()}
+        />
+      </>
     )
   }
 
