@@ -841,8 +841,8 @@ const StickyActionBar = memo(function StickyActionBar({
       showAmount: false,
       buttonText: 'Проверяем оплату...',
       buttonIcon: Loader2,
-      buttonColor: DS.colors.cyan,
-      buttonBg: 'rgba(6,182,212,0.15)',
+      buttonColor: '#E8D5A3',
+      buttonBg: 'rgba(212,175,55,0.08)',
       disabled: true,
       onClick: () => {},
     },
@@ -925,10 +925,12 @@ const StickyActionBar = memo(function StickyActionBar({
           style={{
             flex: config.showAmount ? '1 1 auto' : '1 1 100%',
             background: config.buttonBg,
-            border: variant === 'work' ? `1px solid ${DS.colors.borderLight}` : 'none',
+            border: variant === 'work' ? `1px solid ${DS.colors.borderLight}`
+              : variant === 'verification' ? '1px solid rgba(212,175,55,0.12)'
+              : 'none',
             color: config.buttonColor,
-            cursor: config.disabled ? 'not-allowed' : 'pointer',
-            opacity: config.disabled ? 0.6 : 1,
+            cursor: config.disabled ? 'default' : 'pointer',
+            opacity: config.disabled && variant !== 'verification' ? 0.6 : 1,
             boxShadow: ['payment', 'review', 'completed'].includes(variant)
               ? '0 4px 16px -2px rgba(212,175,55,0.3), 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)'
               : 'none',
@@ -1882,26 +1884,41 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mx-4 mb-4 p-[18px] rounded-[20px] bg-gold-400/[0.04] border border-gold-400/10"
+      style={{
+        margin: '0 20px 16px',
+        padding: 16,
+        borderRadius: 16,
+        background: 'rgba(212,175,55,0.04)',
+        border: '1px solid rgba(212,175,55,0.08)',
+      }}
     >
-      <div className="flex items-center gap-3.5 mb-3">
-        <div className="w-11 h-11 rounded-[14px] bg-gold-400/[0.08] flex items-center justify-center shrink-0">
-          <Loader2 size={22} color="rgba(212,175,55,0.60)" className="animate-spin" />
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+          background: 'rgba(212,175,55,0.08)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Loader2 size={18} color="rgba(212,175,55,0.6)" className="animate-spin" />
         </div>
-        <div className="flex-1">
-          <div className="text-[15px] font-bold text-white/[0.88] mb-1">
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)', marginBottom: 3 }}>
             Платёж на проверке
           </div>
-          <div className="text-[13px] leading-[1.55] text-white/[0.42]">
-            Обычно подтверждаем за {estimatedMinutes} минут и переводим заказ в работу автоматически.
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)' }}>
+            Обычно подтверждаем за {estimatedMinutes} минут и переводим в работу.
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-        <ShieldCheck size={14} color="rgba(212,175,55,0.50)" />
-        <span className="text-[12px] text-white/[0.38]">
-          Статус обновится сам, ничего дополнительно отправлять не нужно
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 12px', borderRadius: 10,
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        <ShieldCheck size={13} color="rgba(212,175,55,0.45)" />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+          Статус обновится автоматически
         </span>
       </div>
     </motion.div>
