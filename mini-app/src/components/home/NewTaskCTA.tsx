@@ -203,15 +203,31 @@ export const NewTaskCTA = memo(function NewTaskCTA({
       style={{
         position: 'relative',
         width: '100%',
-        padding: 20,
-        borderRadius: 'var(--radius-md)',
+        padding: 22,
+        borderRadius: 24,
         marginBottom: 12,
-        background: 'rgba(12, 12, 10, 0.85)',
+        background: 'linear-gradient(160deg, rgba(30, 24, 12, 0.96) 0%, rgba(15, 14, 12, 0.94) 42%, rgba(9, 9, 10, 1) 100%)',
         backdropFilter: 'blur(16px) saturate(140%)',
         WebkitBackdropFilter: 'blur(16px) saturate(140%)',
-        border: '1px solid rgba(201, 162, 39, 0.06)',
+        border: '1px solid rgba(212, 175, 55, 0.10)',
+        overflow: 'hidden',
+        boxShadow: '0 24px 40px -34px rgba(0, 0, 0, 0.82)',
       }}
     >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: -54,
+          right: -28,
+          width: 160,
+          height: 160,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.05) 28%, transparent 72%)',
+          pointerEvents: 'none',
+        }}
+      />
+
       <motion.button
         type="button"
         whileTap={{ scale: 0.97 }}
@@ -228,40 +244,78 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           cursor: 'pointer',
           appearance: 'none' as const,
           textAlign: 'left' as const,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <div style={{ flex: 1 }}>
           <div
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 17,
-              fontWeight: 800,
-              lineHeight: 1.2,
-              letterSpacing: '-0.02em',
-              color: 'var(--text-primary)',
-              marginBottom: 4,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'rgba(212, 175, 55, 0.72)',
+              marginBottom: 8,
             }}
           >
-            Новый заказ · <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--gold-400)' }}>от 990 ₽</span>
+            Новый заказ
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 24,
+              fontWeight: 800,
+              lineHeight: 0.98,
+              letterSpacing: '-0.04em',
+              color: 'var(--text-primary)',
+              marginBottom: 8,
+            }}
+          >
+            Запустить новый заказ
           </div>
           <div style={{
             fontSize: 13,
-            color: 'var(--text-muted)',
+            color: 'var(--text-secondary)',
             fontWeight: 500,
+            lineHeight: 1.45,
+            marginBottom: 14,
           }}>
-            Бесплатный расчёт · от 1 дня
+            Быстрый расчёт, мягкий старт и автоматическое списание бонусов в заявке.
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {['от 990 ₽', 'ответ за 5 мин', 'без звонков'].map((item) => (
+              <span
+                key={item}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '7px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: item === 'от 990 ₽' ? 'var(--gold-300)' : 'var(--text-secondary)',
+                }}
+              >
+                {item}
+              </span>
+            ))}
           </div>
         </div>
         <div
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 'var(--radius-sm)',
-            background: 'linear-gradient(135deg, var(--gold-600), var(--gold-400))',
+            width: 48,
+            height: 48,
+            borderRadius: 18,
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.82))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            boxShadow: '0 18px 28px -20px rgba(212, 175, 55, 0.5)',
           }}
         >
           <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.5} />

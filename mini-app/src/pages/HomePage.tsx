@@ -153,16 +153,20 @@ export function HomePage({ user, onRefresh }: Props) {
     window.open(shareUrl, '_blank')
   }, [user, haptic, botUsername])
 
-  if (!user) return null
+  const handleBonusClaimed = useCallback(() => {
+    if (onRefresh) {
+      void onRefresh()
+    }
+  }, [onRefresh])
 
   // User type detection for progressive disclosure
-  const isNewUser = user.orders_count === 0 || admin.simulateNewUser
+  const isNewUser = !user || user.orders_count === 0 || admin.simulateNewUser
   const userPhoto = tg?.initDataUnsafe?.user?.photo_url
-  const inviteLink = buildReferralLink(botUsername, user.telegram_id)
+  const inviteLink = buildReferralLink(botUsername, user?.telegram_id)
 
   // Three returning-user sub-states for personalized flow
   const returningUserState = useMemo(() => {
-    if (isNewUser) return 'new' as const
+    if (!user || isNewUser) return 'new' as const
     const hasActive = activeOrders > 0
     if (hasActive) return 'active' as const
 
@@ -174,7 +178,9 @@ export function HomePage({ user, onRefresh }: Props) {
       if (daysSince <= 7) return 'just-completed' as const
     }
     return 'idle' as const
-  }, [isNewUser, activeOrders, user.orders])
+  }, [isNewUser, activeOrders, user])
+
+  if (!user) return null
 
   return (
     <>
@@ -206,6 +212,12 @@ export function HomePage({ user, onRefresh }: Props) {
             rank: { is_max: user.rank.is_max },
             orders_count: user.orders_count,
             has_active_orders: activeOrders > 0,
+          }}
+          summary={{
+            balance: user.balance,
+            bonusBalance: user.bonus_balance,
+            cashback: user.rank.cashback,
+            activeOrders,
           }}
           userPhoto={userPhoto}
           onSecretTap={handleSecretTap}
@@ -276,14 +288,6 @@ export function HomePage({ user, onRefresh }: Props) {
               />
             )}
 
-            {/* Daily Bonus — Engagement hook */}
-            <DailyBonusCard
-              dailyAvailable={user.daily_luck_available ?? false}
-              streak={user.daily_bonus_streak || 0}
-              haptic={haptic}
-              onBonusClaimed={() => {}}
-            />
-
             {/* ── STATE A: ACTIVE ORDERS — Tracker-first, minimal noise ── */}
             {returningUserState === 'active' && (
               <>
@@ -292,7 +296,16 @@ export function HomePage({ user, onRefresh }: Props) {
                   onNavigate={navigate}
                   haptic={haptic}
                 />
-                <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                  <DailyBonusCard
+                    variant="compact"
+                    dailyAvailable={user.daily_luck_available ?? false}
+                    streak={user.daily_bonus_streak || 0}
+                    haptic={haptic}
+                    onBonusClaimed={handleBonusClaimed}
+                  />
+                </div>
               </>
             )}
 
@@ -306,14 +319,32 @@ export function HomePage({ user, onRefresh }: Props) {
                     haptic={haptic}
                   />
                 )}
-                <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                  <DailyBonusCard
+                    variant="compact"
+                    dailyAvailable={user.daily_luck_available ?? false}
+                    streak={user.daily_bonus_streak || 0}
+                    haptic={haptic}
+                    onBonusClaimed={handleBonusClaimed}
+                  />
+                </div>
               </>
             )}
 
             {/* ── STATE C: IDLE RETURNING — Win-back hook ── */}
             {returningUserState === 'idle' && (
               <>
-                <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
+                  <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
+                  <DailyBonusCard
+                    variant="compact"
+                    dailyAvailable={user.daily_luck_available ?? false}
+                    streak={user.daily_bonus_streak || 0}
+                    haptic={haptic}
+                    onBonusClaimed={handleBonusClaimed}
+                  />
+                </div>
                 {user.orders.length > 0 && (
                   <QuickReorderCard
                     lastOrder={user.orders[0]}

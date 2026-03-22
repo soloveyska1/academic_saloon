@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { ArrowUpRight } from 'lucide-react'
 import { QUICK_ACTIONS } from './constants'
-import s from '../../pages/HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  QUICK ACTIONS ROW — Elite Edition
@@ -48,7 +48,14 @@ export const QuickActionsRow = memo(function QuickActionsRow({
   }
 
   return (
-    <div className={s.scrollRow} style={{ marginBottom: 20, gap: 12 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gap: 12,
+        marginBottom: 18,
+      }}
+    >
       {actions.map((action, index) => (
         <motion.button
           key={action.id}
@@ -58,40 +65,67 @@ export const QuickActionsRow = memo(function QuickActionsRow({
           whileTap={{ scale: 0.97 }}
           onClick={() => handleClick(action)}
           style={{
-            minWidth: '120px',
-            padding: '12px 16px',
-            borderRadius: '999px',
+            minWidth: 0,
+            padding: '16px 14px 14px',
+            minHeight: 118,
+            borderRadius: 22,
             display: 'flex',
-            alignItems: 'center',
-            gap: 12,
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 14,
             cursor: 'pointer',
-            background: 'rgba(12, 12, 10, 0.6)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: action.id === 'urgent'
+              ? 'linear-gradient(160deg, rgba(34, 27, 14, 0.96) 0%, rgba(18, 16, 12, 0.92) 100%)'
+              : 'linear-gradient(160deg, rgba(18, 18, 17, 0.9) 0%, rgba(11, 11, 12, 0.92) 100%)',
+            border: `1px solid ${action.id === 'urgent' ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
             backdropFilter: 'blur(16px) saturate(140%)',
             WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+            textAlign: 'left',
+            boxShadow: '0 22px 34px -30px rgba(0, 0, 0, 0.75)',
           }}
         >
-          <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--gold-glass-subtle)',
-            border: '1px solid var(--border-gold)',
-            flexShrink: 0,
-          }}>
-            <action.icon size={16} color="var(--gold-400)" strokeWidth={2} />
+          <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 14,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: action.id === 'urgent' ? 'rgba(212, 175, 55, 0.12)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${action.id === 'urgent' ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.06)'}`,
+              flexShrink: 0,
+            }}>
+              <action.icon size={17} color={action.id === 'urgent' ? 'var(--gold-300)' : 'var(--gold-400)'} strokeWidth={2} />
+            </div>
+
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                color: action.id === 'urgent' ? 'var(--gold-300)' : 'var(--text-muted)',
+                flexShrink: 0,
+              }}
+            >
+              <ArrowUpRight size={14} strokeWidth={2.2} />
+            </div>
           </div>
-          <div style={{ textAlign: 'left' }}>
+
+          <div style={{ textAlign: 'left', minWidth: 0 }}>
             <div style={{
               fontFamily: "'Manrope', sans-serif",
               fontSize: '14px',
               fontWeight: 700,
               color: 'var(--text-primary)',
-              lineHeight: 1.1,
-              marginBottom: 3,
+              lineHeight: 1.15,
+              marginBottom: 6,
             }}>
               {action.title}
             </div>
@@ -100,7 +134,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
               fontSize: '11px',
               fontWeight: 600,
               color: 'var(--text-secondary)',
-              lineHeight: 1.1,
+              lineHeight: 1.35,
             }}>
               {action.subtitle}
             </div>

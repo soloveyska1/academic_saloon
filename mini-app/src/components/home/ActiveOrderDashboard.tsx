@@ -1,17 +1,17 @@
 import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Package, Clock, CheckCircle2, Loader2, AlertCircle, ArrowRight, FileEdit } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCircle2,
+  CircleDollarSign,
+  Clock3,
+  FileEdit,
+  Loader2,
+  Sparkles,
+} from 'lucide-react'
 import { Order } from '../../types'
+import { formatOrderDeadlineRu, getOrderHeadlineSafe, stripEmoji } from '../../lib/orderView'
 import { ORDER_STATUS_MAP } from './constants'
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  ACTIVE ORDER DASHBOARD — Uber-style delivery tracking on homepage.
-//  Shows the most important active order with visual progress bar,
-//  current status, and quick action. Makes returning users feel
-//  their order is being tracked and cared for.
-//
-//  Psychology: Status visibility → trust → repeat purchase
-// ═══════════════════════════════════════════════════════════════════════════
 
 interface ActiveOrderDashboardProps {
   orders: Order[]
@@ -20,16 +20,23 @@ interface ActiveOrderDashboardProps {
 }
 
 const ACTIVE_STATUSES = [
-  'pending', 'waiting_estimation', 'waiting_payment', 'verification_pending',
-  'confirmed', 'paid', 'paid_full', 'in_progress', 'review', 'revision',
+  'pending',
+  'waiting_estimation',
+  'waiting_payment',
+  'verification_pending',
+  'confirmed',
+  'paid',
+  'paid_full',
+  'in_progress',
+  'review',
+  'revision',
 ]
 
-// Progress stages for visual timeline
 const STAGES = [
   { key: 'created', label: 'Создан', icon: FileEdit },
-  { key: 'paid', label: 'Оплачен', icon: CheckCircle2 },
+  { key: 'paid', label: 'Оплачен', icon: CircleDollarSign },
   { key: 'working', label: 'В работе', icon: Loader2 },
-  { key: 'done', label: 'Готово', icon: Package },
+  { key: 'done', label: 'Готово', icon: CheckCircle2 },
 ] as const
 
 function getStageIndex(status: string): number {
@@ -42,16 +49,46 @@ function getStageIndex(status: string): number {
 
 function getStatusMessage(status: string, progress?: number): string {
   switch (status) {
-    case 'pending': return 'Заказ обрабатывается менеджером'
-    case 'waiting_estimation': return 'Ожидаем уточнение деталей'
-    case 'waiting_payment': return 'Заказ готов к оплате'
-    case 'verification_pending': return 'Проверяем вашу оплату'
-    case 'confirmed': case 'paid': case 'paid_full': return 'Заказ оплачен, ищем эксперта'
-    case 'in_progress': return progress ? `Выполнено ${progress}%` : 'Эксперт работает над заказом'
-    case 'review': return 'Работа готова — проверьте результат'
-    case 'revision': return 'Доработка выполнена'
-    default: return 'Заказ в обработке'
+    case 'pending':
+      return 'Менеджер формирует персональное предложение по заказу.'
+    case 'waiting_estimation':
+      return 'Уточняем детали, чтобы назвать точную стоимость и срок.'
+    case 'waiting_payment':
+      return 'Осталось подтвердить оплату, и работа сразу уйдёт в производство.'
+    case 'verification_pending':
+      return 'Платёж уже принят, сейчас его подтверждает менеджер.'
+    case 'confirmed':
+    case 'paid':
+    case 'paid_full':
+      return 'Заказ закреплён, готовим исполнителя и материалы.'
+    case 'in_progress':
+      return progress ? `Работа выполнена примерно на ${progress}%.` : 'Эксперт уже работает над заказом.'
+    case 'review':
+      return 'Результат готов. Проверьте материал и дайте обратную связь.'
+    case 'revision':
+      return 'Правки приняты. Команда дорабатывает материал.'
+    default:
+      return 'Заказ под контролем команды.'
   }
+}
+
+function getPrimaryActionLabel(status: string): string {
+  switch (status) {
+    case 'waiting_payment':
+      return 'Перейти к оплате'
+    case 'waiting_estimation':
+      return 'Уточнить детали'
+    case 'review':
+      return 'Открыть готовую работу'
+    case 'revision':
+      return 'Посмотреть правки'
+    default:
+      return 'Открыть заказ'
+  }
+}
+
+function formatMoney(value: number): string {
+  return `${Math.max(0, Math.round(value || 0)).toLocaleString('ru-RU')} ₽`
 }
 
 export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
@@ -60,7 +97,6 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
   haptic,
 }: ActiveOrderDashboardProps) {
   const { activeOrder, otherActiveCount } = useMemo(() => {
-    // Find the most important active order (by priority)
     const priority: Record<string, number> = {
       waiting_payment: 1,
       review: 2,
@@ -75,7 +111,7 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
     }
 
     const active = orders
-      .filter(o => ACTIVE_STATUSES.includes(o.status))
+      .filter((order) => ACTIVE_STATUSES.includes(order.status))
       .sort((a, b) => (priority[a.status] ?? 99) - (priority[b.status] ?? 99))
 
     return {
@@ -86,22 +122,34 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
 
   if (!activeOrder) return null
 
-  const statusInfo = ORDER_STATUS_MAP[activeOrder.status]
   const stageIdx = getStageIndex(activeOrder.status)
-  const progressPercent = activeOrder.progress ?? Math.round(((stageIdx + 0.5) / STAGES.length) * 100)
+  const total = Math.max(0, activeOrder.final_price ?? activeOrder.price ?? 0)
+  const paid = Math.max(0, activeOrder.paid_amount ?? 0)
+  const remaining = Math.max(0, total - paid)
+  const statusInfo = ORDER_STATUS_MAP[activeOrder.status]
+  const workType = stripEmoji(activeOrder.work_type_label ?? activeOrder.work_type ?? 'Заказ')
+  const headline = getOrderHeadlineSafe(activeOrder)
+  const deadlineText = activeOrder.deadline ? formatOrderDeadlineRu(activeOrder.deadline) : 'Срок уточняется'
+  const stageText = STAGES[stageIdx]?.label ?? 'Создан'
   const needsAction = ['waiting_payment', 'waiting_estimation', 'review', 'revision'].includes(activeOrder.status)
+  const ctaLabel = getPrimaryActionLabel(activeOrder.status)
+  const moneyLabel = remaining > 0 ? `Осталось ${formatMoney(remaining)}` : formatMoney(total)
+  const spotlightDetail = remaining > 0
+    ? `К оплате осталось ${formatMoney(remaining)}`
+    : activeOrder.status === 'review'
+      ? 'Материал готов к вашему просмотру'
+      : `Этап: ${stageText.toLowerCase()}`
 
   return (
-    <motion.div
+    <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.08, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 16 }}
+      transition={{ delay: 0.08, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      style={{ marginBottom: 14 }}
     >
-      {/* Card */}
       <motion.button
         type="button"
-        whileTap={{ scale: 0.97 }}
+        whileTap={{ scale: 0.985 }}
         onClick={() => {
           haptic('light')
           onNavigate(`/order/${activeOrder.id}`)
@@ -109,15 +157,13 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
         style={{
           display: 'block',
           width: '100%',
-          padding: '20px',
-          borderRadius: 16,
+          padding: '24px 20px 20px',
+          borderRadius: 28,
           background: needsAction
-            ? `linear-gradient(145deg, rgba(201, 162, 39, 0.06), rgba(12, 12, 10, 0.6))`
-            : 'rgba(12, 12, 10, 0.6)',
-          backdropFilter: 'blur(16px) saturate(140%)',
-          WebkitBackdropFilter: 'blur(16px) saturate(140%)',
-          border: `1px solid ${needsAction ? 'rgba(201, 162, 39, 0.08)' : 'rgba(255,255,255,0.04)'}`,
-          boxShadow: 'none',
+            ? 'linear-gradient(158deg, rgba(34, 28, 15, 0.98) 0%, rgba(18, 16, 12, 0.96) 34%, rgba(10, 10, 11, 1) 100%)'
+            : 'linear-gradient(158deg, rgba(24, 22, 17, 0.96) 0%, rgba(14, 14, 15, 0.98) 46%, rgba(9, 9, 11, 1) 100%)',
+          border: `1px solid ${needsAction ? 'rgba(212, 175, 55, 0.16)' : 'rgba(255,255,255,0.05)'}`,
+          boxShadow: '0 30px 60px -42px rgba(0, 0, 0, 0.82)',
           cursor: 'pointer',
           appearance: 'none',
           textAlign: 'left',
@@ -125,199 +171,378 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
           overflow: 'hidden',
         }}
       >
-        {/* Top row: order type + status badge */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: 'var(--gold-400)',
-                boxShadow: '0 0 8px rgba(201, 162, 39, 0.4)',
-              }}
-            />
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: 'var(--text-muted)',
-              fontFamily: "'Manrope', sans-serif",
-            }}>
-              Активный заказ
-            </span>
-          </div>
-          <span
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: -72,
+            right: -36,
+            width: 220,
+            height: 220,
+            borderRadius: '50%',
+            background: needsAction
+              ? 'radial-gradient(circle, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.06) 30%, transparent 72%)'
+              : 'radial-gradient(circle, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 28%, transparent 72%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 18%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div
             style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: statusInfo?.color ?? 'var(--gold-400)',
-              padding: '3px 10px',
-              borderRadius: 100,
-              background: statusInfo?.bg ?? 'var(--gold-glass-medium)',
-              border: `1px solid ${statusInfo?.border ?? 'var(--gold-glass-strong)'}`,
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 18,
             }}
           >
-            {statusInfo?.label ?? activeOrder.status}
-          </span>
-        </div>
-
-        {/* Order info */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{
-            fontSize: 16,
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            lineHeight: 1.3,
-            marginBottom: 4,
-          }}>
-            {activeOrder.work_type_label ?? activeOrder.work_type}
-          </div>
-          {activeOrder.subject && (
-            <div style={{
-              fontSize: 14,
-              fontWeight: 500,
-              color: 'var(--text-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}>
-              {activeOrder.subject}
-            </div>
-          )}
-        </div>
-
-        {/* Progress stages — visual timeline */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 14 }}>
-          {STAGES.map((stage, i) => {
-            const isCompleted = i < stageIdx
-            const isCurrent = i === stageIdx
-            const StageIcon = stage.icon
-            const color = isCompleted
-              ? 'var(--success-text)'
-              : isCurrent
-                ? 'var(--gold-400)'
-                : 'var(--text-muted)'
-
-            return (
-              <div key={stage.key} style={{ display: 'flex', alignItems: 'center', flex: i < STAGES.length - 1 ? 1 : 0 }}>
-                {/* Stage dot/icon */}
-                <div style={{
-                  width: isCurrent ? 28 : 20,
-                  height: isCurrent ? 28 : 20,
-                  borderRadius: '50%',
-                  background: isCompleted ? 'var(--success-glass)' : isCurrent ? 'rgba(201, 162, 39, 0.06)' : 'var(--bg-glass)',
-                  border: `1.5px solid ${color}`,
-                  display: 'flex',
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <span
+                style={{
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all 0.3s ease',
-                }}>
-                  {isCompleted ? (
-                    <CheckCircle2 size={12} color={color} strokeWidth={2.5} />
-                  ) : isCurrent ? (
-                    <StageIcon size={13} color={color} strokeWidth={2} />
-                  ) : (
-                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: color }} />
-                  )}
-                </div>
-                {/* Connecting line */}
-                {i < STAGES.length - 1 && (
-                  <div style={{
-                    flex: 1,
-                    height: 4,
-                    marginLeft: 4,
-                    marginRight: 4,
-                    borderRadius: 1,
-                    background: isCompleted ? 'var(--success-text)' : 'var(--surface-hover)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}>
-                    {isCurrent && (
-                      <motion.div
-                        initial={{ width: '0%' }}
-                        animate={{ width: `${Math.min((progressPercent / 100) * 100, 80)}%` }}
-                        transition={{ duration: 1.2, delay: 0.5 }}
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          height: '100%',
-                          borderRadius: 1,
-                          background: 'var(--gold-400)',
-                        }}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Stage labels */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          {STAGES.map((stage, i) => {
-            const isCompleted = i < stageIdx
-            const isCurrent = i === stageIdx
-            return (
-              <span key={stage.key} style={{
-                fontSize: 10,
-                fontWeight: isCurrent ? 700 : 500,
-                color: isCompleted ? 'var(--success-text)' : isCurrent ? 'var(--gold-400)' : 'var(--text-muted)',
-                textAlign: 'center',
-                flex: 1,
-                letterSpacing: '0.02em',
-              }}>
-                {stage.label}
+                  gap: 6,
+                  padding: '8px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  color: 'var(--text-secondary)',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <Sparkles size={12} color="var(--gold-300)" strokeWidth={1.8} />
+                Priority Desk
               </span>
-            )
-          })}
-        </div>
 
-        {/* Status message + action */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 14px',
-          borderRadius: 12,
-          background: needsAction ? 'rgba(201, 162, 39, 0.06)' : 'var(--border-subtle)',
-          border: `1px solid ${needsAction ? 'rgba(201, 162, 39, 0.08)' : 'var(--bg-glass)'}`,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {needsAction ? (
-              <AlertCircle size={14} color="var(--gold-400)" strokeWidth={2} />
-            ) : (
-              <Clock size={14} color="var(--text-muted)" strokeWidth={2} />
-            )}
-            <span style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: needsAction ? 'var(--gold-400)' : 'var(--text-muted)',
-            }}>
-              {getStatusMessage(activeOrder.status, activeOrder.progress)}
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '8px 10px',
+                  borderRadius: 999,
+                  background: 'rgba(212, 175, 55, 0.05)',
+                  border: '1px solid rgba(212, 175, 55, 0.08)',
+                  color: 'var(--gold-200)',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Заказ #{activeOrder.id}
+              </span>
+
+              {otherActiveCount > 0 && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '8px 10px',
+                    borderRadius: 999,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    color: 'var(--text-muted)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  +{otherActiveCount} ещё
+                </span>
+              )}
+            </div>
+
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '8px 12px',
+                borderRadius: 999,
+                background: statusInfo?.bg ?? 'var(--gold-glass-medium)',
+                border: `1px solid ${statusInfo?.border ?? 'var(--gold-glass-strong)'}`,
+                color: statusInfo?.color ?? 'var(--gold-300)',
+                fontSize: 11,
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {statusInfo?.label ?? activeOrder.status}
             </span>
           </div>
-          <ArrowRight size={14} color={needsAction ? 'var(--gold-400)' : 'var(--text-muted)'} strokeWidth={2} />
-        </div>
 
-        {/* Other active orders hint */}
-        {otherActiveCount > 0 && (
-          <div style={{
-            marginTop: 10,
-            textAlign: 'center',
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'var(--text-muted)',
-            letterSpacing: '0.02em',
-          }}>
-            + ещё {otherActiveCount} {otherActiveCount === 1 ? 'заказ' : otherActiveCount < 5 ? 'заказа' : 'заказов'} в работе
+          <div style={{ marginBottom: 18 }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'rgba(212, 175, 55, 0.7)',
+                marginBottom: 10,
+              }}
+            >
+              {workType}
+            </div>
+
+            <div
+              style={{
+                fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                fontSize: 30,
+                lineHeight: 0.98,
+                letterSpacing: '-0.04em',
+                color: 'var(--text-primary)',
+                marginBottom: 8,
+              }}
+            >
+              {headline}
+            </div>
+
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 500,
+                lineHeight: 1.55,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              {getStatusMessage(activeOrder.status, activeOrder.progress)}
+            </div>
           </div>
-        )}
+
+          <div
+            style={{
+              padding: '16px 16px 14px',
+              borderRadius: 22,
+              marginBottom: 16,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(14,12,10,0.44) 100%)',
+              border: `1px solid ${needsAction ? 'rgba(212, 175, 55, 0.14)' : 'rgba(255,255,255,0.05)'}`,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+                marginBottom: 8,
+              }}
+            >
+              Главное сейчас
+            </div>
+
+            <div
+              style={{
+                fontSize: 17,
+                fontWeight: 700,
+                lineHeight: 1.25,
+                color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
+                marginBottom: 6,
+              }}
+            >
+              {getPrimaryActionLabel(activeOrder.status)}
+            </div>
+
+            <div
+              style={{
+                fontSize: 13,
+                lineHeight: 1.45,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              {spotlightDetail}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: 10,
+              marginBottom: 18,
+            }}
+          >
+            {[
+              { label: 'Срок', value: deadlineText, icon: Clock3 },
+              { label: 'Этап', value: stageText, icon: STAGES[stageIdx]?.icon ?? FileEdit },
+              { label: remaining > 0 ? 'Доплата' : 'Бюджет', value: moneyLabel, icon: CircleDollarSign },
+            ].map((item) => {
+              const Icon = item.icon
+
+              return (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: '14px 12px',
+                    borderRadius: 18,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 28,
+                      height: 28,
+                      borderRadius: 10,
+                      marginBottom: 10,
+                      background: 'rgba(212, 175, 55, 0.08)',
+                      border: '1px solid rgba(212, 175, 55, 0.10)',
+                    }}
+                  >
+                    <Icon size={15} color="var(--gold-300)" strokeWidth={1.8} />
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-muted)',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: item.label === 'Доплата' || item.label === 'Бюджет' ? 15 : 14,
+                      fontWeight: 700,
+                      lineHeight: 1.2,
+                      color: 'var(--text-primary)',
+                      letterSpacing: '-0.03em',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={{ marginBottom: 18 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
+                gap: 8,
+                marginBottom: 8,
+              }}
+            >
+              {STAGES.map((stage, index) => (
+                <div
+                  key={stage.key}
+                  style={{
+                    height: 6,
+                    borderRadius: 999,
+                    background: index <= stageIdx
+                      ? 'linear-gradient(90deg, rgba(212,175,55,0.96), rgba(247,223,150,0.72))'
+                      : 'rgba(255,255,255,0.08)',
+                    boxShadow: index === stageIdx ? '0 0 18px rgba(212,175,55,0.18)' : 'none',
+                  }}
+                />
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
+                gap: 8,
+              }}
+            >
+              {STAGES.map((stage, index) => (
+                <div
+                  key={stage.key}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: index === stageIdx ? 700 : 600,
+                    color: index <= stageIdx ? 'var(--gold-300)' : 'var(--text-muted)',
+                    textAlign: 'center',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {stage.label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '14px 14px 14px 16px',
+              borderRadius: 22,
+              background: needsAction ? 'rgba(212, 175, 55, 0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${needsAction ? 'rgba(212, 175, 55, 0.16)' : 'rgba(255,255,255,0.05)'}`,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                  color: needsAction ? 'var(--gold-300)' : 'var(--text-primary)',
+                  marginBottom: 4,
+                }}
+              >
+                {ctaLabel}
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                {needsAction ? 'Ключевое действие вынесено наверх, чтобы вы не искали его по экрану.' : 'Все детали, чат и материалы доступны внутри заказа.'}
+              </div>
+            </div>
+
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 16,
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.82))',
+                color: 'var(--text-on-gold)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 18px 28px -20px rgba(212, 175, 55, 0.48)',
+              }}
+            >
+              <ArrowRight size={18} strokeWidth={2.3} />
+            </div>
+          </div>
+        </div>
       </motion.button>
-    </motion.div>
+    </motion.section>
   )
 })

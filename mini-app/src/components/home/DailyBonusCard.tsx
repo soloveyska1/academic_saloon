@@ -8,15 +8,12 @@ import {
 } from '../../api/userApi'
 import s from '../../pages/HomePage.module.css'
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  DAILY BONUS CARD — 7-day streak calendar with premium gold design
-// ═══════════════════════════════════════════════════════════════════════════
-
 interface DailyBonusCardProps {
   dailyAvailable: boolean
   streak: number
   haptic: (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => void
   onBonusClaimed: () => void
+  variant?: 'full' | 'compact'
 }
 
 const containerVariants = {
@@ -32,8 +29,14 @@ const childVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 }
 
-function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }: DailyBonusCardProps) {
-  const CARD_STYLE: React.CSSProperties = {
+function DailyBonusCardInner({
+  dailyAvailable,
+  streak,
+  haptic,
+  onBonusClaimed,
+  variant = 'full',
+}: DailyBonusCardProps) {
+  const fullCardStyle: React.CSSProperties = {
     background: 'rgba(12, 12, 10, 0.6)',
     backdropFilter: 'blur(16px) saturate(140%)',
     WebkitBackdropFilter: 'blur(16px) saturate(140%)',
@@ -44,13 +47,24 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
     overflow: 'hidden',
   }
 
+  const compactCardStyle: React.CSSProperties = {
+    background: 'linear-gradient(160deg, rgba(27, 22, 12, 0.94) 0%, rgba(12, 12, 12, 0.98) 46%, rgba(9, 9, 10, 1) 100%)',
+    backdropFilter: 'blur(16px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+    border: '1px solid rgba(212, 175, 55, 0.12)',
+    borderRadius: 24,
+    padding: 18,
+    position: 'relative',
+    overflow: 'hidden',
+    boxShadow: '0 24px 40px -34px rgba(0, 0, 0, 0.78)',
+  }
+
   const [info, setInfo] = useState<DailyBonusInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState(false)
   const [claimedAmount, setClaimedAmount] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Local state derived from props as fallback until API data loads
   const canClaim = info ? info.can_claim : dailyAvailable
   const currentStreak = info ? info.streak : streak
 
@@ -65,10 +79,8 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
           setError(null)
         }
       } catch (err) {
-        if (!cancelled) {
-          if (import.meta.env.DEV) {
-            console.warn('[DailyBonusCard] Failed to fetch info:', err)
-          }
+        if (!cancelled && import.meta.env.DEV) {
+          console.warn('[DailyBonusCard] Failed to fetch info:', err)
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -93,7 +105,6 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
         haptic('success')
         setClaimedAmount(result.bonus)
 
-        // Update local info to reflect claimed state
         setInfo(prev => prev ? {
           ...prev,
           can_claim: false,
@@ -101,10 +112,7 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
           cooldown_remaining: formatCooldown(result.next_claim_at),
         } : prev)
 
-        // Notify parent to refresh user data
         onBonusClaimed()
-
-        // Clear claimed animation after delay
         setTimeout(() => setClaimedAmount(null), 3000)
       } else {
         haptic('error')
@@ -118,9 +126,255 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
     }
   }, [claiming, canClaim, haptic, onBonusClaimed])
 
-  // Build 7-day calendar from bonuses array
   const bonuses = info?.bonuses || [10, 15, 20, 25, 30, 40, 50]
-  const streakDay = currentStreak % 7 // 0-indexed position in current cycle
+  const streakDay = currentStreak % 7
+  const nextClaimBonus = info?.next_bonus ?? bonuses[Math.min(streakDay, bonuses.length - 1)] ?? 0
+  const cooldownText = info?.cooldown_remaining || '...'
+
+  if (variant === 'compact') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        style={compactCardStyle}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: -58,
+            right: -36,
+            width: 180,
+            height: 180,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(212,175,55,0.16) 0%, rgba(212,175,55,0.05) 32%, transparent 74%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(212, 175, 55, 0.72)',
+                  marginBottom: 8,
+                }}
+              >
+                Клубный бонус
+              </div>
+
+              <AnimatePresence mode="wait">
+                {claimedAmount !== null ? (
+                  <motion.div
+                    key="compact-claimed"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                        fontSize: 28,
+                        lineHeight: 0.95,
+                        letterSpacing: '-0.05em',
+                        color: 'var(--gold-300)',
+                        marginBottom: 6,
+                      }}
+                    >
+                      +{claimedAmount} ₽
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                      Бонус уже зачислен. Новое начисление откроется по следующему таймеру.
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="compact-default"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        marginBottom: 6,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                          fontSize: 30,
+                          lineHeight: 0.95,
+                          letterSpacing: '-0.05em',
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        {Math.max(0, currentStreak)}
+                      </span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {currentStreak === 1 ? 'день подряд' : 'дня подряд'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                      {canClaim
+                        ? `Сегодня можно забрать ещё ${nextClaimBonus} ₽ и продолжить серию.`
+                        : `Следующее начисление откроется через ${cooldownText}.`}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div style={{ flexShrink: 0 }}>
+              {canClaim ? (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleClaim}
+                  disabled={claiming}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '12px 14px',
+                    borderRadius: 16,
+                    border: 'none',
+                    background: claiming ? 'rgba(212,175,55,0.16)' : 'var(--gold-metallic)',
+                    color: claiming ? 'var(--gold-200)' : 'var(--text-on-gold)',
+                    cursor: claiming ? 'not-allowed' : 'pointer',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: '0.03em',
+                    boxShadow: claiming ? 'none' : '0 16px 26px -22px rgba(212,175,55,0.72)',
+                    opacity: claiming ? 0.7 : 1,
+                  }}
+                >
+                  {claiming ? (
+                    <>
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+                        style={{ display: 'inline-flex' }}
+                      >
+                        <Gift size={15} />
+                      </motion.span>
+                      Получаем
+                    </>
+                  ) : (
+                    <>
+                      <Gift size={15} />
+                      Забрать
+                    </>
+                  )}
+                </motion.button>
+              ) : (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '11px 12px',
+                    borderRadius: 16,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    color: 'var(--text-secondary)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  <Clock size={15} color="var(--gold-300)" />
+                  {cooldownText}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+              gap: 6,
+            }}
+          >
+            {bonuses.map((bonus, index) => {
+              const isClaimed = index < streakDay
+              const isCurrent = index === streakDay && canClaim
+              const isLocked = index > streakDay || (index === streakDay && !canClaim && !isClaimed)
+
+              return (
+                <div
+                  key={`${bonus}-${index}`}
+                  style={{
+                    padding: '10px 6px 8px',
+                    borderRadius: 16,
+                    textAlign: 'center',
+                    background: isClaimed
+                      ? 'linear-gradient(180deg, rgba(212,175,55,0.96) 0%, rgba(180,141,36,0.88) 100%)'
+                      : isCurrent
+                        ? 'rgba(212,175,55,0.10)'
+                        : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isClaimed ? 'rgba(212,175,55,0.28)' : isCurrent ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.05)'}`,
+                    boxShadow: isCurrent ? '0 16px 24px -24px rgba(212,175,55,0.5)' : 'none',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: isClaimed ? 'var(--text-on-gold)' : isCurrent ? 'var(--gold-200)' : 'var(--text-muted)',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {index + 1}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: isClaimed ? 'var(--text-on-gold)' : isLocked ? 'var(--text-secondary)' : 'var(--text-primary)',
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    +{bonus}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {error && (
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--error-text)',
+                lineHeight: 1.35,
+              }}
+            >
+              {error}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <div className={s.dailyBonusWrapper}>
@@ -130,9 +384,8 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        style={CARD_STYLE}
+        style={fullCardStyle}
       >
-        {/* Ambient glow */}
         <div
           aria-hidden="true"
           style={{
@@ -147,7 +400,6 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
           }}
         />
 
-        {/* Streak info */}
         <AnimatePresence mode="wait">
           {currentStreak > 0 && (
             <motion.div
@@ -189,7 +441,6 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
           )}
         </AnimatePresence>
 
-        {/* 7-day streak calendar */}
         <motion.div
           variants={childVariants}
           style={{
@@ -218,7 +469,6 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
           })}
         </motion.div>
 
-        {/* Claim button or cooldown */}
         <motion.div variants={childVariants}>
           <AnimatePresence mode="wait">
             {claimedAmount !== null ? (
@@ -329,14 +579,13 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
                   fontWeight: 600,
                   color: 'var(--text-muted)',
                 }}>
-                  Следующий бонус через {info?.cooldown_remaining || '...'}
+                  Следующий бонус через {cooldownText}
                 </span>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
 
-        {/* Error message */}
         <AnimatePresence>
           {error && (
             <motion.div
@@ -360,10 +609,6 @@ function DailyBonusCardInner({ dailyAvailable, streak, haptic, onBonusClaimed }:
     </div>
   )
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  DAY CIRCLE — Individual day in the 7-day streak calendar
-// ═══════════════════════════════════════════════════════════════════════════
 
 interface DayCircleProps {
   day: number
@@ -412,7 +657,6 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
       flex: '1 1 0',
       minWidth: 0,
     }}>
-      {/* Circle */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -457,7 +701,6 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
         )}
       </motion.div>
 
-      {/* Bonus amount label */}
       <span style={{
         fontFamily: "'Manrope', sans-serif",
         fontSize: 10,
@@ -475,10 +718,6 @@ const DayCircle = memo(function DayCircle({ day, bonus, isClaimed, isCurrent, is
     </div>
   )
 })
-
-// ═══════════════════════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
 
 function formatCooldown(nextClaimAt: string | null): string | null {
   if (!nextClaimAt) return null
