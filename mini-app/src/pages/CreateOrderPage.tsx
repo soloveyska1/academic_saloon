@@ -24,6 +24,7 @@ import {
   WIZARD_STEPS,
   DRAFT_KEY,
 } from '../components/order-wizard'
+import { FastComposer } from '../components/order-wizard/FastComposer'
 import homeStyles from './HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -51,7 +52,7 @@ const slideVariants = prefersReducedMotion
     }
 
 const FAST_WIZARD_STEPS = [
-  { num: 1, title: 'Быстрый запрос', subtitle: 'Тема, комментарий и файлы без выбора формата' },
+  { num: 1, title: 'Быстрый запрос', subtitle: 'Опишите задачу — менеджер уточнит формат' },
   { num: 2, title: 'Срок', subtitle: 'Когда нужен ответ?' },
 ]
 
@@ -175,6 +176,8 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const [requirements, setRequirements] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
   const [files, setFiles] = useState<File[]>([])
   const [deadline, setDeadline] = useState<string | null>(isUrgentMode ? 'today' : null)
+  // Fast mode: single composer text replaces subject + topic + requirements
+  const [composerText, setComposerText] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
 
   // Drafts per service type
   const { saveDraft, loadDraft, clearAllDrafts, hasDraft } = useDrafts({
@@ -310,7 +313,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 
   const selectedService = SERVICE_TYPES.find(s => s.id === serviceTypeId)
   const isExpressService = selectedService?.category === 'express'
-  const canStep1 = isFastMode ? subject.trim().length >= 2 : serviceTypeId !== null
+  const canStep1 = isFastMode ? (composerText.trim().length >= 2 || files.length > 0) : serviceTypeId !== null
   const canStep2 = isFastMode ? deadline !== null : (isExpressService ? true : subject.trim().length >= 2)
   const canStep3 = deadline !== null
   const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : canStep3
@@ -407,7 +410,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 
   const handleSubmit = useCallback(async (forceWithoutPromo: boolean = false) => {
     if (!serviceTypeId || !deadline) return
-    if (!isExpressService && !subject.trim()) return
+    if (!isFastMode && !isExpressService && !subject.trim()) return
 
     haptic('heavy')
     setSubmitting(true)
@@ -434,12 +437,25 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
       }
 
       setSubmittingLabel('Создаём заказ...')
+
+      // In fast mode, parse composerText: first line → subject, rest → description
+      let finalSubject = subject.trim()
+      let finalTopic = topic.trim()
+      let finalDescription = buildOrderDescription(requirements)
+
+      if (isFastMode) {
+        const lines = composerText.trim().split('\n')
+        finalSubject = lines[0]?.trim() || 'Быстрый запрос'
+        finalTopic = ''
+        finalDescription = lines.length > 1 ? lines.slice(1).join('\n').trim() : undefined
+      }
+
       const data: OrderCreateRequest = {
         work_type: serviceTypeId as WorkType,
-        subject: subject.trim() || (isExpressService ? 'Не указан' : ''),
-        topic: topic.trim() || undefined,
+        subject: finalSubject || (isExpressService ? 'Не указан' : ''),
+        topic: finalTopic || undefined,
         deadline,
-        description: buildOrderDescription(requirements),
+        description: finalDescription,
         promo_code: promoToUse,
       }
 
@@ -508,7 +524,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
         setStep(4)
       }
     }
-  }, [serviceTypeId, deadline, subject, topic, requirements, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, files])
+  }, [serviceTypeId, deadline, subject, topic, requirements, composerText, isFastMode, isExpressService, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, files])
 
   const handlePromoWarningContinue = useCallback(() => {
     setShowPromoWarning(false)
@@ -960,36 +976,14 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
               {isFastMode ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{
-                    padding: '16px 18px',
-                    borderRadius: 18,
-                    background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.04))',
-                    border: '1px solid rgba(59,130,246,0.18)',
-                  }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#dbeafe', marginBottom: 6 }}>
-                      Быстрый запрос для срочных случаев
-                    </div>
-                    <div style={{ fontSize: 13, color: '#93c5fd', lineHeight: 1.55 }}>
-                      Здесь можно сразу оставить тему, комментарий и файлы, если не хочется
-                      проходить полный выбор услуги. Формат работы менеджер уточнит после отправки.
-                    </div>
-                  </div>
-
-                  <RequirementsStep
-                    serviceTypeId={serviceTypeId}
-                    subject={subject}
-                    onSubjectChange={setSubject}
-                    topic={topic}
-                    onTopicChange={setTopic}
-                    requirements={requirements}
-                    onRequirementsChange={setRequirements}
-                    files={files}
-                    onFilesAdd={addFiles}
-                    onFileRemove={removeFile}
-                    disabled={submitting || isRevalidating}
-                  />
-                </div>
+                <FastComposer
+                  value={composerText}
+                  onChange={setComposerText}
+                  files={files}
+                  onFilesAdd={addFiles}
+                  onFileRemove={removeFile}
+                  disabled={submitting || isRevalidating}
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <ServiceTypeStep

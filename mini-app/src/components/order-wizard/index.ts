@@ -1,4 +1,5 @@
 // Order Wizard Components
+export { FastComposer } from './FastComposer'
 export { ServiceTypeStep } from './ServiceTypeStep'
 export { RequirementsStep } from './RequirementsStep'
 export { DeadlineStep } from './DeadlineStep'
