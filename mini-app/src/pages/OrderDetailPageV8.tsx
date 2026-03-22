@@ -306,8 +306,8 @@ function usePaymentCountdown(deadline: string | null, hoursLimit = 24): Countdow
       const progress = Math.max(0, Math.min(100, (diff / (hoursLimit * 60 * 60 * 1000)) * 100))
 
       const formatted = hours > 0
-        ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-        : `${minutes}:${seconds.toString().padStart(2, '0')}`
+        ? `${hours} ч ${minutes.toString().padStart(2, '0')} мин`
+        : `${minutes} мин ${seconds.toString().padStart(2, '0')} сек`
 
       return { hours, minutes, seconds, totalHours, urgency, formatted, progress }
     }
@@ -620,7 +620,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
               <div className="flex items-center justify-center gap-1.5 mb-1.5">
                 <Clock size={12} color={urgencyColor} />
                 <span className="text-[12px] font-semibold" style={{ color: urgencyColor }}>
-                  {paymentExpired ? 'Срок оплаты истёк' : `Оплатить до ${countdown.formatted}`}
+                  {paymentExpired ? 'Срок оплаты истёк' : `Осталось ${countdown.formatted}`}
                 </span>
               </div>
               {!paymentExpired && (
