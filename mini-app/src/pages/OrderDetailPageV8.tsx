@@ -46,12 +46,10 @@ import {
   Download,
   ChevronRight,
   X,
-  Zap,
   Eye,
   EyeOff,
   Check,
   Smartphone,
-  Star,
   ShieldCheck,
   Timer,
   Upload,
@@ -996,8 +994,6 @@ const PaymentSheet = memo(function PaymentSheet({
   // Card info from paymentInfo
   const cardNumber = paymentInfo?.card_number || '2200 0000 0000 0000'
   const cardHolder = paymentInfo?.card_holder || 'ПОЛУЧАТЕЛЬ'
-  const maskedCard = cardNumber.replace(/(\d{4})\s*(\d{4})\s*(\d{4})\s*(\d{4})/, '$1 •••• •••• $4')
-
   // Copy handler
   const handleCopy = useCallback(async (text: string, field: string) => {
     const copied = await copyTextSafely(text)
@@ -1029,6 +1025,93 @@ const PaymentSheet = memo(function PaymentSheet({
 
   if (!isOpen) return null
 
+  // Unified field renderer for card/SBP — tap-to-copy on entire row
+  const renderField = (label: string, value: string, fieldKey: string, options?: {
+    mono?: boolean
+    gold?: boolean
+    toggleVisibility?: boolean
+    isVisible?: boolean
+    onToggle?: () => void
+    large?: boolean
+  }) => (
+    <motion.button
+      whileTap={{ scale: 0.98 }}
+      onClick={() => handleCopy(value, fieldKey)}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        padding: '14px 0',
+        background: 'transparent',
+        border: 'none',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        cursor: 'pointer',
+        textAlign: 'left' as const,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>
+          {label}
+        </div>
+        <div
+          style={{
+            fontSize: options?.large ? 16 : 14,
+            fontWeight: options?.mono ? 600 : 500,
+            fontFamily: options?.mono ? "'JetBrains Mono', monospace" : 'inherit',
+            color: options?.gold ? '#E8D5A3' : 'rgba(255,255,255,0.85)',
+            letterSpacing: options?.mono ? '0.02em' : 'normal',
+          }}
+        >
+          {options?.toggleVisibility && !options.isVisible
+            ? value.replace(/(\d{4})\s*(\d{4})\s*(\d{4})\s*(\d{4})/, '$1 •••• •••• $4')
+            : value
+          }
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        {options?.toggleVisibility && (
+          <motion.div
+            whileTap={{ scale: 0.85 }}
+            onClick={(e) => { e.stopPropagation(); options.onToggle?.() }}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,255,255,0.04)',
+            }}
+          >
+            {options.isVisible
+              ? <EyeOff size={14} color="rgba(255,255,255,0.3)" />
+              : <Eye size={14} color="rgba(255,255,255,0.3)" />
+            }
+          </motion.div>
+        )}
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: copiedField === fieldKey ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.04)',
+            transition: 'background 0.2s',
+          }}
+        >
+          {copiedField === fieldKey
+            ? <Check size={14} color="rgba(34,197,94,0.8)" />
+            : <Copy size={14} color="rgba(255,255,255,0.25)" />
+          }
+        </div>
+      </div>
+    </motion.button>
+  )
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -1051,169 +1134,158 @@ const PaymentSheet = memo(function PaymentSheet({
               borderRadius: `${DS.radius['2xl']}px ${DS.radius['2xl']}px 0 0`,
             }}
           >
-            {/* Header */}
+            {/* ─── Header ─── */}
             <div
-              className="flex items-center justify-between px-4 py-5"
-              style={{ borderBottom: `1px solid ${DS.colors.border}` }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '20px 20px 16px',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+              }}
             >
               <div>
-                <h2 className="text-[18px] font-bold text-text-primary m-0 font-serif">
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.92)', margin: 0 }}>
                   Оплата
                 </h2>
-                <p className="text-[12px] text-text-muted m-0 mt-0.5">
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '2px 0 0' }}>
                   Заказ #{order.id}
                 </p>
               </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
-                className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
                 style={{
-                  background: DS.colors.bgElevated,
-                  border: `1px solid ${DS.colors.border}`,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  border: 'none',
                 }}
               >
-                <X size={18} color={DS.colors.textSecondary} />
+                <X size={18} color="rgba(255,255,255,0.4)" />
               </motion.button>
             </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            {/* ─── Scrollable Content ─── */}
+            <div className="flex-1 overflow-y-auto" style={{ padding: '16px 20px' }}>
 
-              {/* Step A: Payment Plan Selection */}
-              <div className="mb-6">
-                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-3">
-                  Шаг 1 · План оплаты
+              {/* ═══ Payment scheme toggle ═══ */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
+                  Сумма оплаты
                 </div>
 
-                {/* Full Payment Card */}
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setPaymentScheme('full')}
-                  className="w-full p-4 rounded-2xl cursor-pointer text-left mb-3"
-                  style={{
-                    background: paymentScheme === 'full'
-                      ? 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))'
-                      : DS.colors.bgElevated,
-                    border: `2px solid ${paymentScheme === 'full' ? DS.colors.gold : DS.colors.border}`,
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ border: `2px solid ${paymentScheme === 'full' ? DS.colors.gold : DS.colors.textMuted}` }}
-                      >
-                        {paymentScheme === 'full' && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-gold-400" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-[14px] font-semibold text-text-primary">
-                          100% Полная оплата
-                        </div>
-                        <div className="text-[11px] text-text-muted mt-0.5">
-                          Рекомендуем · Приоритет в работе
-                        </div>
-                      </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {/* Full */}
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setPaymentScheme('full')}
+                    style={{
+                      flex: 1,
+                      padding: '14px 16px',
+                      borderRadius: 16,
+                      cursor: 'pointer',
+                      textAlign: 'left' as const,
+                      background: paymentScheme === 'full'
+                        ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
+                        : 'rgba(255,255,255,0.02)',
+                      border: paymentScheme === 'full'
+                        ? '1.5px solid rgba(212,175,55,0.4)'
+                        : '1.5px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 600, color: paymentScheme === 'full' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
+                      Полная
                     </div>
-                    <div
-                      className="text-[15px] font-bold font-mono"
-                      style={{ color: paymentScheme === 'full' ? DS.colors.gold : DS.colors.textSecondary }}
-                    >
+                    <div style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: paymentScheme === 'full' ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
+                    }}>
                       {formatPrice(fullAmount)} ₽
                     </div>
-                  </div>
-                  {paymentScheme === 'full' && (
-                    <div
-                      className="flex gap-2 mt-3 pt-3"
-                      style={{ borderTop: `1px solid ${DS.colors.borderGold}` }}
-                    >
-                      <div className="px-2 py-1 rounded-lg bg-green-500/15 text-[11px] text-green-500">
-                        <Zap size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                        Быстрый старт
-                      </div>
-                      <div className="px-2 py-1 rounded-lg bg-gold-400/15 text-[11px] text-gold-400">
-                        <Star size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                        Приоритет
-                      </div>
-                    </div>
-                  )}
-                </motion.button>
+                  </motion.button>
 
-                {/* Half Payment Card */}
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setPaymentScheme('half')}
-                  className="w-full p-4 rounded-2xl cursor-pointer text-left"
-                  style={{
-                    background: paymentScheme === 'half'
-                      ? 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))'
-                      : DS.colors.bgElevated,
-                    border: `2px solid ${paymentScheme === 'half' ? DS.colors.info : DS.colors.border}`,
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ border: `2px solid ${paymentScheme === 'half' ? DS.colors.info : DS.colors.textMuted}` }}
-                      >
-                        {paymentScheme === 'half' && (
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: DS.colors.info }} />
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-[14px] font-semibold text-text-primary">
-                          50% Предоплата
-                        </div>
-                        <div className="text-[11px] text-text-muted mt-0.5">
-                          Остаток {formatPrice(remainingAfterHalf)} ₽ после готовности
-                        </div>
-                      </div>
+                  {/* Half */}
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setPaymentScheme('half')}
+                    style={{
+                      flex: 1,
+                      padding: '14px 16px',
+                      borderRadius: 16,
+                      cursor: 'pointer',
+                      textAlign: 'left' as const,
+                      background: paymentScheme === 'half'
+                        ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))'
+                        : 'rgba(255,255,255,0.02)',
+                      border: paymentScheme === 'half'
+                        ? '1.5px solid rgba(212,175,55,0.4)'
+                        : '1.5px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 600, color: paymentScheme === 'half' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
+                      50% аванс
                     </div>
-                    <div
-                      className="text-[15px] font-bold font-mono"
-                      style={{ color: paymentScheme === 'half' ? DS.colors.info : DS.colors.textSecondary }}
-                    >
+                    <div style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: paymentScheme === 'half' ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
+                    }}>
                       {formatPrice(halfAmount)} ₽
                     </div>
-                  </div>
-                </motion.button>
+                    {paymentScheme === 'half' && (
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+                        + {formatPrice(remainingAfterHalf)} ₽ потом
+                      </div>
+                    )}
+                  </motion.button>
+                </div>
               </div>
 
-              {/* Step B: Payment Method */}
-              <div className="mb-6">
-                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-3">
-                  Шаг 2 · Способ оплаты
+              {/* ═══ Payment method segmented control ═══ */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
+                  Способ оплаты
                 </div>
 
-                {/* Segmented Control */}
-                <div
-                  className="flex gap-1 p-1 rounded-xl"
-                  style={{ background: DS.colors.bgElevated }}
-                >
+                <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 14, background: 'rgba(255,255,255,0.03)' }}>
                   {(['online', 'card', 'sbp'] as PaymentMethod[]).map((method) => {
                     const isActive = paymentMethod === method
-                    const iconColor = isActive ? DS.colors.textPrimary : DS.colors.textMuted
                     const label = method === 'online' ? 'Онлайн' : method === 'card' ? 'Карта' : 'СБП'
                     const Icon = method === 'online' ? Globe : method === 'card' ? CreditCard : Smartphone
                     return (
                       <motion.button
                         key={method}
-                        whileTap={{ scale: 0.98 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => setPaymentMethod(method)}
-                        className="flex-1 py-3 px-2 rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
                         style={{
-                          background: isActive ? DS.colors.bgCard : 'transparent',
-                          border: isActive ? `1px solid ${DS.colors.borderLight}` : '1px solid transparent',
+                          flex: 1,
+                          padding: '10px 8px',
+                          borderRadius: 10,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          background: isActive ? 'rgba(212,175,55,0.1)' : 'transparent',
+                          border: isActive ? '1px solid rgba(212,175,55,0.2)' : '1px solid transparent',
+                          transition: 'all 0.2s',
                         }}
                       >
-                        <Icon size={15} color={iconColor} />
-                        <span
-                          className="text-[12px] font-semibold"
-                          style={{ color: isActive ? DS.colors.textPrimary : DS.colors.textMuted }}
-                        >
+                        <Icon size={14} color={isActive ? '#E8D5A3' : 'rgba(255,255,255,0.3)'} />
+                        <span style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: isActive ? '#E8D5A3' : 'rgba(255,255,255,0.35)',
+                        }}>
                           {label}
                         </span>
                       </motion.button>
@@ -1222,352 +1294,182 @@ const PaymentSheet = memo(function PaymentSheet({
                 </div>
               </div>
 
-              {/* Step C: Payment Details / Online */}
-              <div className="mb-6">
-                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-3">
-                  {paymentMethod === 'online' ? 'Шаг 3 · Оплата' : 'Шаг 3 · Реквизиты'}
-                </div>
-
+              {/* ═══ Payment details ═══ */}
+              <div style={{ marginBottom: 16 }}>
                 {paymentMethod === 'online' ? (
-                  <div
-                    className="p-5 rounded-2xl text-center"
-                    style={{
-                      background: DS.colors.bgElevated,
-                      border: `1px solid ${DS.colors.border}`,
-                    }}
-                  >
-                    <div
-                      className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
-                      style={{ background: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})` }}
-                    >
-                      <ShieldCheck size={28} color="var(--text-on-gold)" />
+                  /* ── Online: minimal, just amount + security note ── */
+                  <div style={{
+                    padding: '20px',
+                    borderRadius: 16,
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                      <ShieldCheck size={18} color="rgba(212,175,55,0.5)" />
+                      <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.45)' }}>
+                        Безопасная оплата через ЮKassa
+                      </span>
                     </div>
-                    <div className="text-[15px] font-bold text-text-primary mb-2">
-                      Безопасная оплата
-                    </div>
-                    <div className="text-[12px] text-text-muted mb-4 leading-[1.5]">
-                      Вы будете перенаправлены на страницу ЮKassa для ввода данных карты. Мы не храним данные вашей карты.
-                    </div>
-                    <div className="text-[16px] font-bold font-mono text-gold-400 mb-5">
+                    <div style={{
+                      fontSize: 28,
+                      fontWeight: 700,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: '#E8D5A3',
+                      letterSpacing: '-0.02em',
+                      marginBottom: 8,
+                    }}>
                       {formatPrice(todayAmount)} ₽
                     </div>
-                    <motion.button
-                      whileTap={onlinePaymentLoading ? undefined : { scale: 0.98 }}
-                      onClick={onlinePaymentLoading ? undefined : onOnlinePayment}
-                      disabled={onlinePaymentLoading}
-                      className="w-full py-4 px-5 rounded-2xl border-none flex items-center justify-center gap-2"
-                      style={{
-                        background: onlinePaymentLoading
-                          ? DS.colors.bgCard
-                          : `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
-                        cursor: onlinePaymentLoading ? 'wait' : 'pointer',
-                        boxShadow: onlinePaymentLoading ? 'none' : '0 8px 24px -4px rgba(212,175,55,0.4)',
-                      }}
-                    >
-                      {onlinePaymentLoading ? (
-                        <Loader2 size={20} color={DS.colors.textMuted} className="animate-spin" />
-                      ) : (
-                        <Globe size={20} color="var(--text-on-gold)" />
-                      )}
-                      <span
-                        className="text-[15px] font-bold"
-                        style={{ color: onlinePaymentLoading ? DS.colors.textMuted : 'var(--text-on-gold)' }}
-                      >
-                        {onlinePaymentLoading ? 'Создаём платёж...' : 'Перейти к оплате'}
-                      </span>
-                    </motion.button>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', lineHeight: 1.5 }}>
+                      Данные карты вводятся на стороне ЮKassa. Мы их не храним.
+                    </div>
                   </div>
                 ) : paymentMethod === 'card' ? (
-                  <div
-                    className="p-4 rounded-2xl"
-                    style={{
-                      background: DS.colors.bgElevated,
-                      border: `1px solid ${DS.colors.border}`,
-                    }}
-                  >
-                    {/* Card Number */}
-                    <div className="mb-4">
-                      <div className="text-[11px] text-text-muted mb-1">
-                        Номер карты
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 text-[15px] font-semibold font-mono text-text-primary tracking-[0.05em]">
-                          {cardNumberVisible ? cardNumber : maskedCard}
-                        </div>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => setCardNumberVisible(!cardNumberVisible)}
-                          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: DS.colors.bgCard,
-                            border: `1px solid ${DS.colors.border}`,
-                          }}
-                        >
-                          {cardNumberVisible ? (
-                            <EyeOff size={16} color={DS.colors.textSecondary} />
-                          ) : (
-                            <Eye size={16} color={DS.colors.textSecondary} />
-                          )}
-                        </motion.button>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleCopy(cardNumber, 'card')}
-                          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: copiedField === 'card' ? DS.colors.success : DS.colors.bgCard,
-                            border: `1px solid ${copiedField === 'card' ? DS.colors.success : DS.colors.border}`,
-                          }}
-                        >
-                          {copiedField === 'card' ? (
-                            <Check size={16} color={DS.colors.white} />
-                          ) : (
-                            <Copy size={16} color={DS.colors.textSecondary} />
-                          )}
-                        </motion.button>
-                      </div>
+                  /* ── Card: grouped fields ── */
+                  <div style={{
+                    borderRadius: 16,
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    padding: '0 16px',
+                  }}>
+                    {renderField('Номер карты', cardNumber, 'card', {
+                      mono: true,
+                      large: true,
+                      toggleVisibility: true,
+                      isVisible: cardNumberVisible,
+                      onToggle: () => setCardNumberVisible(!cardNumberVisible),
+                    })}
+                    {renderField('Получатель', cardHolder, 'holder')}
+                    {renderField('Сумма', `${formatPrice(todayAmount)} ₽`, 'amount', { mono: true, gold: true, large: true })}
+                    <div style={{ borderBottom: 'none' }}>
+                      {renderField('Комментарий к переводу', `Заказ #${order.id}`, 'comment')}
                     </div>
-
-                    {/* Card Holder */}
-                    <div className="mb-4">
-                      <div className="text-[11px] text-text-muted mb-1">
-                        Получатель
-                      </div>
-                      <div className="text-[14px] text-text-primary">
-                        {cardHolder}
-                      </div>
-                    </div>
-
-                    {/* Amount */}
-                    <div className="mb-4">
-                      <div className="text-[11px] text-text-muted mb-1">
-                        Сумма
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 text-[16px] font-bold font-mono text-gold-400">
-                          {formatPrice(todayAmount)} ₽
-                        </div>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleCopy(todayAmount.toString(), 'amount')}
-                          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: copiedField === 'amount' ? DS.colors.success : DS.colors.bgCard,
-                            border: `1px solid ${copiedField === 'amount' ? DS.colors.success : DS.colors.border}`,
-                          }}
-                        >
-                          {copiedField === 'amount' ? (
-                            <Check size={16} color={DS.colors.white} />
-                          ) : (
-                            <Copy size={16} color={DS.colors.textSecondary} />
-                          )}
-                        </motion.button>
-                      </div>
-                    </div>
-
-                    {/* Comment */}
-                    <div className="mb-4">
-                      <div className="text-[11px] text-text-muted mb-1">
-                        Комментарий к переводу
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 text-[14px] text-text-primary">
-                          Заказ #{order.id}
-                        </div>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleCopy(`Заказ #${order.id}`, 'comment')}
-                          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: copiedField === 'comment' ? DS.colors.success : DS.colors.bgCard,
-                            border: `1px solid ${copiedField === 'comment' ? DS.colors.success : DS.colors.border}`,
-                          }}
-                        >
-                          {copiedField === 'comment' ? (
-                            <Check size={16} color={DS.colors.white} />
-                          ) : (
-                            <Copy size={16} color={DS.colors.textSecondary} />
-                          )}
-                        </motion.button>
-                      </div>
-                    </div>
-
-                    {/* Copy All Button */}
-                    <motion.button
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleCopyAll}
-                      className="w-full py-3 px-4 rounded-xl cursor-pointer flex items-center justify-center gap-2"
-                      style={{
-                        background: copiedField === 'all' ? DS.colors.success : 'transparent',
-                        border: `1px solid ${copiedField === 'all' ? DS.colors.success : DS.colors.borderLight}`,
-                      }}
-                    >
-                      {copiedField === 'all' ? (
-                        <Check size={16} color={DS.colors.white} />
-                      ) : (
-                        <Copy size={16} color={DS.colors.textSecondary} />
-                      )}
-                      <span
-                        className="text-[12px] font-semibold"
-                        style={{ color: copiedField === 'all' ? DS.colors.white : DS.colors.textSecondary }}
-                      >
-                        Скопировать всё
-                      </span>
-                    </motion.button>
                   </div>
                 ) : (
-                  /* SBP Method - Phone Number */
-                  <div
-                    className="p-4 rounded-2xl"
-                    style={{
-                      background: DS.colors.bgElevated,
-                      border: `1px solid ${DS.colors.border}`,
-                    }}
-                  >
-                    {/* SBP Icon */}
-                    <div className="flex items-center justify-center mb-4">
-                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7B3FE4, #4F46E5)' }}>
-                        <Smartphone size={32} color={DS.colors.white} />
-                      </div>
-                    </div>
-
-                    <p className="text-[12px] text-text-secondary mb-4 text-center">
-                      Переведите по номеру телефона через СБП
-                    </p>
-
-                    {/* Phone Number */}
-                    <div className="mb-4">
-                      <div className="text-[11px] text-text-muted mb-1">
-                        Номер телефона
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 text-[16px] font-bold font-mono text-text-primary tracking-[0.02em]">
-                          {paymentInfo?.sbp_phone ? paymentInfo.sbp_phone.replace(/(\d)(\d{3})(\d{3})(\d{2})(\d{2})$/, '+7 ($1$2) $3-$4-$5') : '—'}
-                        </div>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleCopy(paymentInfo?.sbp_phone || '', 'sbp_phone')}
-                          className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: copiedField === 'sbp_phone' ? DS.colors.success : DS.colors.bgCard,
-                            border: `1px solid ${copiedField === 'sbp_phone' ? DS.colors.success : DS.colors.border}`,
-                          }}
-                        >
-                          {copiedField === 'sbp_phone' ? (
-                            <Check size={18} color={DS.colors.white} />
-                          ) : (
-                            <Copy size={18} color={DS.colors.textSecondary} />
-                          )}
-                        </motion.button>
-                      </div>
-                    </div>
-
-                    {/* Bank Name */}
-                    <div className="mb-4">
-                      <div className="text-[11px] text-text-muted mb-1">
-                        Банк получателя
-                      </div>
-                      <div className="text-[14px] text-text-primary">
-                        {paymentInfo?.sbp_bank || 'Банк получателя'}
-                      </div>
-                    </div>
-
-                    {/* Amount */}
-                    <div className="mb-4">
-                      <div className="text-[11px] text-text-muted mb-1">
-                        Сумма
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 text-[16px] font-bold font-mono text-gold-400">
-                          {formatPrice(todayAmount)} ₽
-                        </div>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleCopy(todayAmount.toString(), 'sbp_amount')}
-                          className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: copiedField === 'sbp_amount' ? DS.colors.success : DS.colors.bgCard,
-                            border: `1px solid ${copiedField === 'sbp_amount' ? DS.colors.success : DS.colors.border}`,
-                          }}
-                        >
-                          {copiedField === 'sbp_amount' ? (
-                            <Check size={18} color={DS.colors.white} />
-                          ) : (
-                            <Copy size={18} color={DS.colors.textSecondary} />
-                          )}
-                        </motion.button>
-                      </div>
-                    </div>
-
-                    {/* Comment */}
-                    <div>
-                      <div className="text-[11px] text-text-muted mb-1">
-                        Комментарий к переводу
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 text-[14px] text-text-primary">
-                          Заказ #{order.id}
-                        </div>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleCopy(`Заказ #${order.id}`, 'sbp_comment')}
-                          className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: copiedField === 'sbp_comment' ? DS.colors.success : DS.colors.bgCard,
-                            border: `1px solid ${copiedField === 'sbp_comment' ? DS.colors.success : DS.colors.border}`,
-                          }}
-                        >
-                          {copiedField === 'sbp_comment' ? (
-                            <Check size={18} color={DS.colors.white} />
-                          ) : (
-                            <Copy size={18} color={DS.colors.textSecondary} />
-                          )}
-                        </motion.button>
-                      </div>
+                  /* ── SBP: grouped fields ── */
+                  <div style={{
+                    borderRadius: 16,
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    padding: '0 16px',
+                  }}>
+                    {renderField(
+                      'Номер телефона',
+                      paymentInfo?.sbp_phone
+                        ? paymentInfo.sbp_phone.replace(/(\d)(\d{3})(\d{3})(\d{2})(\d{2})$/, '+7 ($1$2) $3-$4-$5')
+                        : '—',
+                      'sbp_phone',
+                      { mono: true, large: true }
+                    )}
+                    {renderField('Банк получателя', paymentInfo?.sbp_bank || '—', 'sbp_bank')}
+                    {renderField('Сумма', `${formatPrice(todayAmount)} ₽`, 'sbp_amount', { mono: true, gold: true, large: true })}
+                    <div style={{ borderBottom: 'none' }}>
+                      {renderField('Комментарий', `Заказ #${order.id}`, 'sbp_comment')}
                     </div>
                   </div>
+                )}
+
+                {/* Copy all for card/sbp */}
+                {paymentMethod !== 'online' && (
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleCopyAll}
+                    style={{
+                      width: '100%',
+                      marginTop: 8,
+                      padding: '12px 16px',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      background: copiedField === 'all' ? 'rgba(34,197,94,0.15)' : 'transparent',
+                      border: `1px solid ${copiedField === 'all' ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {copiedField === 'all'
+                      ? <Check size={14} color="rgba(34,197,94,0.8)" />
+                      : <Copy size={14} color="rgba(255,255,255,0.3)" />
+                    }
+                    <span style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: copiedField === 'all' ? 'rgba(34,197,94,0.8)' : 'rgba(255,255,255,0.35)',
+                    }}>
+                      Скопировать все реквизиты
+                    </span>
+                  </motion.button>
                 )}
               </div>
             </div>
 
-            {/* Footer with CTA — hidden for online payment (CTA is inside Step C) */}
-            {paymentMethod !== 'online' && (
-              <div
-                className="p-4"
+            {/* ─── Footer CTA (always visible) ─── */}
+            <div
+              style={{
+                padding: '16px 20px',
+                paddingBottom: 'max(env(safe-area-inset-bottom, 20px), 20px)',
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+                background: DS.colors.bgSurface,
+              }}
+            >
+              {!hasPaymentInfo && paymentMethod !== 'online' && (
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textAlign: 'center' as const, marginBottom: 12 }}>
+                  Реквизиты загружаются...
+                </div>
+              )}
+              <motion.button
+                whileTap={(!hasPaymentInfo && paymentMethod !== 'online') || onlinePaymentLoading ? undefined : { scale: 0.98 }}
+                onClick={
+                  paymentMethod === 'online'
+                    ? (onlinePaymentLoading ? undefined : onOnlinePayment)
+                    : (hasPaymentInfo ? onConfirmPayment : undefined)
+                }
+                disabled={paymentMethod === 'online' ? onlinePaymentLoading : !hasPaymentInfo}
                 style={{
-                  paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
-                  borderTop: `1px solid ${DS.colors.border}`,
-                  background: DS.colors.bgSurface,
+                  width: '100%',
+                  height: 52,
+                  borderRadius: 16,
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: (paymentMethod === 'online' ? !onlinePaymentLoading : hasPaymentInfo) ? 'pointer' : 'not-allowed',
+                  background: (paymentMethod === 'online' ? !onlinePaymentLoading : hasPaymentInfo)
+                    ? 'linear-gradient(135deg, #f0d35c, #D4AF37, #b48e26)'
+                    : 'rgba(255,255,255,0.05)',
+                  boxShadow: (paymentMethod === 'online' ? !onlinePaymentLoading : hasPaymentInfo)
+                    ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
+                    : 'none',
                 }}
               >
-                {!hasPaymentInfo && (
-                  <div className="mb-3 text-[12px] text-text-muted text-center">
-                    Реквизиты еще загружаются. Подождите пару секунд.
-                  </div>
+                {onlinePaymentLoading ? (
+                  <Loader2 size={20} color="rgba(255,255,255,0.4)" className="animate-spin" />
+                ) : paymentMethod === 'online' ? (
+                  <Globe size={18} color="#050507" />
+                ) : (
+                  <CheckCircle2 size={18} color={hasPaymentInfo ? '#050507' : 'rgba(255,255,255,0.3)'} />
                 )}
-                <motion.button
-                  whileTap={hasPaymentInfo ? { scale: 0.98 } : undefined}
-                  onClick={hasPaymentInfo ? onConfirmPayment : undefined}
-                  disabled={!hasPaymentInfo}
-                  className="w-full py-4 px-5 rounded-2xl flex items-center justify-center gap-2"
-                  style={{
-                    background: hasPaymentInfo
-                      ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
-                      : DS.colors.bgElevated,
-                    border: hasPaymentInfo ? 'none' : `1px solid ${DS.colors.border}`,
-                    cursor: hasPaymentInfo ? 'pointer' : 'not-allowed',
-                    boxShadow: hasPaymentInfo ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
-                  }}
-                >
-                  <CheckCircle2 size={20} color={hasPaymentInfo ? 'var(--text-on-gold)' : DS.colors.textMuted} />
-                  <span
-                    className="text-[15px] font-bold"
-                    style={{ color: hasPaymentInfo ? 'var(--text-on-gold)' : DS.colors.textMuted }}
-                  >
-                    Я оплатил(а)
-                  </span>
-                </motion.button>
-              </div>
-            )}
+                <span style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: onlinePaymentLoading
+                    ? 'rgba(255,255,255,0.4)'
+                    : (paymentMethod === 'online' ? !onlinePaymentLoading : hasPaymentInfo)
+                      ? '#050507'
+                      : 'rgba(255,255,255,0.3)',
+                }}>
+                  {onlinePaymentLoading
+                    ? 'Создаём платёж...'
+                    : paymentMethod === 'online'
+                      ? 'Перейти к оплате'
+                      : 'Подтвердить перевод'
+                  }
+                </span>
+              </motion.button>
+            </div>
           </motion.div>
         </motion.div>
       )}
@@ -1691,78 +1593,92 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/80 z-[400] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/70 z-[400] flex items-end justify-center"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 400 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[400px] max-h-[85vh] rounded-2xl overflow-hidden flex flex-col"
-            style={{ background: DS.colors.bgSurface }}
+            className="w-full max-w-[480px] max-h-[85vh] overflow-hidden flex flex-col"
+            style={{
+              background: DS.colors.bgSurface,
+              borderRadius: `${DS.radius['2xl']}px ${DS.radius['2xl']}px 0 0`,
+            }}
           >
-            {/* Header */}
-            <div
-              className="flex items-center justify-between p-5"
-              style={{ borderBottom: `1px solid ${DS.colors.border}` }}
-            >
+            {/* ─── Header ─── */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '20px 20px 16px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+            }}>
               <div>
-                <h2 className="text-[18px] font-bold text-text-primary m-0 font-serif">
-                  Подтверждение
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.92)', margin: 0 }}>
+                  Подтверждение оплаты
                 </h2>
-                <p className="text-[12px] text-text-muted m-0 mt-1">
-                  Проверьте данные перед отправкой
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '2px 0 0' }}>
+                  {formatPrice(paymentAmount)} ₽ · Заказ #{order.id}
                 </p>
               </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
-                className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
                 style={{
-                  background: DS.colors.bgElevated,
-                  border: `1px solid ${DS.colors.border}`,
+                  width: 36, height: 36, borderRadius: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', background: 'transparent', border: 'none',
                 }}
               >
-                <X size={18} color={DS.colors.textSecondary} />
+                <X size={18} color="rgba(255,255,255,0.4)" />
               </motion.button>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-5">
-              {/* Checklist */}
-              <div className="mb-6">
-                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-3">
-                  Чеклист подтверждения
+            {/* ─── Content ─── */}
+            <div className="flex-1 overflow-y-auto" style={{ padding: '16px 20px' }}>
+              {/* Checklist — simplified, compact */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
+                  Подтвердите
                 </div>
 
-                <div className="flex flex-col gap-2">
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
                   {checklist.map((item) => (
                     <motion.button
                       key={item.id}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => toggleItem(item.id)}
-                      className="w-full p-4 rounded-xl cursor-pointer flex items-center gap-3 text-left"
                       style={{
-                        background: item.checked
-                          ? 'rgba(34,197,94,0.1)'
-                          : DS.colors.bgElevated,
-                        border: `1px solid ${item.checked ? DS.colors.success + '40' : DS.colors.border}`,
+                        width: '100%',
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        textAlign: 'left' as const,
+                        background: item.checked ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${item.checked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                        transition: 'all 0.2s',
                       }}
                     >
-                      <div
-                        className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200"
-                        style={{
-                          background: item.checked ? DS.colors.success : 'transparent',
-                          border: `2px solid ${item.checked ? DS.colors.success : DS.colors.textMuted}`,
-                        }}
-                      >
-                        {item.checked && <Check size={14} color={DS.colors.white} />}
+                      <div style={{
+                        width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: item.checked ? 'rgba(34,197,94,0.9)' : 'transparent',
+                        border: `2px solid ${item.checked ? 'rgba(34,197,94,0.9)' : 'rgba(255,255,255,0.15)'}`,
+                        transition: 'all 0.2s',
+                      }}>
+                        {item.checked && <Check size={12} color="#fff" strokeWidth={3} />}
                       </div>
-                      <span
-                        className="text-[14px] flex-1"
-                        style={{ color: item.checked ? DS.colors.textPrimary : DS.colors.textSecondary }}
-                      >
+                      <span style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: item.checked ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.45)',
+                        flex: 1,
+                      }}>
                         {item.label}
                       </span>
                     </motion.button>
@@ -1770,115 +1686,134 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 </div>
               </div>
 
-              {/* Screenshot Upload (Optional) */}
-              <div>
-                <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.05em] mb-2">
-                  Скриншот оплаты (опционально)
+              {/* Screenshot Upload */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 8 }}>
+                  Скриншот оплаты
+                  <span style={{ fontWeight: 400, textTransform: 'none' as const, letterSpacing: 'normal' }}> — необязательно</span>
                 </div>
-                <p className="text-[12px] text-text-muted mb-3">
-                  Прикрепите для ускорения проверки
-                </p>
 
                 {screenshotPreview ? (
-                  <div
-                    className="relative rounded-2xl overflow-hidden"
-                    style={{ border: `1px solid ${DS.colors.border}` }}
-                  >
+                  <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <img
                       src={screenshotPreview}
-                      alt="Скриншот оплаты"
+                      alt="Скриншот"
                       loading="lazy"
-                      className="w-full max-h-[200px] object-cover"
+                      style={{ width: '100%', maxHeight: 180, objectFit: 'cover' as const }}
                     />
                     <motion.button
                       whileTap={{ scale: 0.9 }}
                       onClick={removeScreenshot}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/70 border-none flex items-center justify-center cursor-pointer"
+                      style={{
+                        position: 'absolute', top: 8, right: 8,
+                        width: 30, height: 30, borderRadius: 8,
+                        background: 'rgba(0,0,0,0.7)', border: 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
                     >
-                      <Trash2 size={16} color={DS.colors.error} />
+                      <Trash2 size={14} color="rgba(239,68,68,0.8)" />
                     </motion.button>
-                    <div className="absolute bottom-0 left-0 right-0 p-2" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
-                      <div className="flex items-center gap-2">
-                        <FileImage size={14} color={DS.colors.success} />
-                        <span className="text-[11px] text-text-secondary overflow-hidden text-ellipsis whitespace-nowrap">
-                          {screenshot?.name}
-                        </span>
-                      </div>
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      padding: '6px 10px',
+                      background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                      <FileImage size={12} color="rgba(34,197,94,0.7)" />
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                        {screenshot?.name}
+                      </span>
                     </div>
                   </div>
                 ) : (
-                  <label
-                    className="flex flex-col items-center justify-center p-5 rounded-2xl cursor-pointer transition-all duration-200"
-                    style={{
-                      background: DS.colors.bgElevated,
-                      border: `2px dashed ${DS.colors.border}`,
-                    }}
-                  >
+                  <label style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '14px 16px',
+                    borderRadius: 12,
+                    cursor: 'pointer',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleFileChange}
                       className="hidden"
                     />
-                    <Upload size={24} color={DS.colors.textMuted} />
-                    <span className="text-[12px] text-text-muted mt-2">
-                      Нажмите для загрузки
-                    </span>
-                    <span className="text-[11px] text-text-muted mt-1">
-                      PNG, JPG до 10 МБ
-                    </span>
+                    <Upload size={18} color="rgba(255,255,255,0.25)" />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.45)' }}>
+                        Загрузить скриншот
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
+                        PNG, JPG до 10 МБ
+                      </div>
+                    </div>
                   </label>
                 )}
               </div>
             </div>
 
-            {/* Footer */}
-            <div
-              className="p-5"
-              style={{
-                paddingBottom: 'max(env(safe-area-inset-bottom, 20px), 20px)',
-                borderTop: `1px solid ${DS.colors.border}`,
-                background: DS.colors.bgSurface,
-              }}
-            >
-              {/* Info note */}
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 mb-4">
-                <Timer size={16} color={DS.colors.cyan} className="shrink-0 mt-0.5" />
-                <span className="text-[12px] text-text-secondary leading-[1.4]">
-                  После отправки проверка займёт <strong style={{ color: DS.colors.cyan }}>5-15 минут</strong>
+            {/* ─── Footer ─── */}
+            <div style={{
+              padding: '16px 20px',
+              paddingBottom: 'max(env(safe-area-inset-bottom, 20px), 20px)',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              background: DS.colors.bgSurface,
+            }}>
+              {/* Timing note — gold palette, not cyan */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 14px', borderRadius: 10,
+                background: 'rgba(212,175,55,0.06)',
+                border: '1px solid rgba(212,175,55,0.1)',
+                marginBottom: 12,
+              }}>
+                <Timer size={14} color="rgba(212,175,55,0.5)" />
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>
+                  Проверка займёт <strong style={{ color: '#E8D5A3', fontWeight: 600 }}>5–15 минут</strong>
                 </span>
               </div>
 
-              {/* Submit Button */}
               <motion.button
                 whileTap={allChecked && !isSubmitting ? { scale: 0.98 } : undefined}
                 onClick={handleSubmit}
                 disabled={!allChecked || isSubmitting}
-                className="w-full py-4 px-5 rounded-2xl flex items-center justify-center gap-2"
                 style={{
-                  background: allChecked
-                    ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
-                    : DS.colors.bgElevated,
-                  border: allChecked ? 'none' : `1px solid ${DS.colors.border}`,
+                  width: '100%',
+                  height: 52,
+                  borderRadius: 16,
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
                   cursor: allChecked && !isSubmitting ? 'pointer' : 'not-allowed',
+                  background: allChecked
+                    ? 'linear-gradient(135deg, #f0d35c, #D4AF37, #b48e26)'
+                    : 'rgba(255,255,255,0.05)',
+                  boxShadow: allChecked
+                    ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
+                    : 'none',
                   opacity: isSubmitting ? 0.7 : 1,
-                  boxShadow: allChecked ? '0 8px 24px -4px rgba(212,175,55,0.4)' : 'none',
                 }}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 size={20} color="var(--text-on-gold)" className="animate-spin" />
-                    <span className="text-[15px] font-bold text-[var(--text-on-gold)]">
+                    <Loader2 size={18} color="#050507" className="animate-spin" />
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#050507' }}>
                       Отправка...
                     </span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck size={20} color={allChecked ? 'var(--text-on-gold)' : DS.colors.textMuted} />
-                    <span
-                      className="text-[15px] font-bold"
-                      style={{ color: allChecked ? 'var(--text-on-gold)' : DS.colors.textMuted }}
-                    >
+                    <ShieldCheck size={18} color={allChecked ? '#050507' : 'rgba(255,255,255,0.3)'} />
+                    <span style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: allChecked ? '#050507' : 'rgba(255,255,255,0.3)',
+                    }}>
                       Отправить на проверку
                     </span>
                   </>
