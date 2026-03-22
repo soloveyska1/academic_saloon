@@ -65,7 +65,7 @@ import {
   Package,
   Globe,
 } from 'lucide-react'
-import { Order, OrderStatus } from '../types'
+import { Order, OrderStatus, ChatMessage } from '../types'
 import {
   fetchOrderDetail,
   fetchPaymentInfo,
@@ -76,6 +76,7 @@ import {
   uploadChatFile,
   createOnlinePayment,
   cancelOrder,
+  fetchOrderMessages,
 } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
@@ -1995,22 +1996,65 @@ const FilesSection = memo(function FilesSection({
   onDownloadAll,
 }: FilesSectionProps) {
   const { haptic } = useTelegram()
+  const [chatFiles, setChatFiles] = useState<ChatMessage[]>([])
 
-  // Parse files from order — files_url is a Yandex.Disk folder link
+  // Fetch files from chat messages (admin-sent files)
+  useEffect(() => {
+    let cancelled = false
+    async function loadChatFiles() {
+      try {
+        const resp = await fetchOrderMessages(order.id)
+        if (!cancelled) {
+          const filesFromChat = resp.messages.filter(
+            (m) => m.file_url && m.sender_type === 'admin'
+          )
+          setChatFiles(filesFromChat)
+        }
+      } catch {
+        // silent
+      }
+    }
+    loadChatFiles()
+    return () => { cancelled = true }
+  }, [order.id, order.status])
+
+  // Build files list: files_url (Yandex.Disk folder) + individual chat files
   const workLabel = order.work_type_label || 'Работа'
-  const files: OrderFile[] = order.files_url
-    ? [
-        {
-          id: '1',
-          name: `${workLabel} — файлы`,
-          size: 0,
-          type: 'folder',
-          url: order.files_url,
-        },
-      ]
-    : []
+  const files: OrderFile[] = []
 
-  // Check if files are available based on status
+  // Add Yandex.Disk folder link if exists
+  if (order.files_url) {
+    files.push({
+      id: 'yadisk',
+      name: `${workLabel} — файлы`,
+      size: 0,
+      type: 'folder',
+      url: order.files_url,
+    })
+  }
+
+  // Add individual files from chat
+  chatFiles.forEach((msg) => {
+    if (msg.file_url) {
+      const ext = (msg.file_name || '').split('.').pop()?.toLowerCase() || ''
+      const fileType: OrderFile['type'] =
+        ['pdf'].includes(ext) ? 'pdf'
+        : ['doc', 'docx'].includes(ext) ? 'doc'
+        : ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image'
+        : ['zip', 'rar', '7z', 'tar'].includes(ext) ? 'archive'
+        : 'other'
+
+      files.push({
+        id: String(msg.id),
+        name: msg.file_name || 'Файл',
+        size: 0,
+        type: fileType,
+        url: msg.file_url,
+      })
+    }
+  })
+
+  // Check if files section should be visible
   const filesAvailable = ['completed', 'review', 'paid', 'paid_full', 'in_progress'].includes(order.status)
   const hasFiles = files.length > 0
 
