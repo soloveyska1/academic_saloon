@@ -9,6 +9,7 @@ UNIFIED HUB Architecture:
 """
 import logging
 import re
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 from html import escape
 from typing import Optional
@@ -109,6 +110,18 @@ def get_card_stage(status: str) -> dict:
         if status in stage_config["statuses"]:
             return {**stage_config, "name": stage_name}
     return {**CARD_STAGES["new"], "name": "new"}
+
+
+def _to_decimal(value: object) -> Decimal:
+    """Нормализует денежные значения перед арифметикой в карточках."""
+    if isinstance(value, Decimal):
+        return value
+    if value in (None, ""):
+        return Decimal("0")
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("0")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -341,8 +354,8 @@ def get_card_keyboard(
 
     # Получаем данные для расчётов
     payment_scheme = getattr(order, 'payment_scheme', None)
-    paid_amount = getattr(order, 'paid_amount', 0) or 0
-    final_price = getattr(order, 'final_price', 0) or 0
+    paid_amount = _to_decimal(getattr(order, 'paid_amount', 0))
+    final_price = _to_decimal(getattr(order, 'final_price', 0))
     is_half_paid = payment_scheme == 'half' and 0 < paid_amount < final_price
     is_fully_paid = paid_amount >= final_price
 
@@ -367,7 +380,7 @@ def get_card_keyboard(
 
     elif stage_name == "waiting":
         # ═══ ОЖИДАЕТ ОПЛАТЫ ═══
-        half_amount = int(final_price / 2) if final_price else 0
+        half_amount = int(final_price / Decimal("2")) if final_price else 0
 
         # Кнопки подтверждения оплаты
         buttons.append([
@@ -401,7 +414,7 @@ def get_card_keyboard(
 
     elif stage_name == "verification":
         # ═══ ПРОВЕРКА ОПЛАТЫ (клиент нажал "Я оплатил") ═══
-        half_amount = int(final_price / 2) if final_price else 0
+        half_amount = int(final_price / Decimal("2")) if final_price else 0
 
         buttons.append([
                 InlineKeyboardButton(
@@ -436,7 +449,7 @@ def get_card_keyboard(
 
         # Если предоплата 50% и нужна доплата
         if is_half_paid:
-            remaining = int(final_price - paid_amount)
+            remaining = int(max(final_price - paid_amount, Decimal("0")))
             buttons.append([
                 InlineKeyboardButton(
                     text=f"Запросить доплату ({remaining} ₽)",
@@ -468,7 +481,7 @@ def get_card_keyboard(
         # ═══ НА ПРОВЕРКЕ ═══
         # Если есть недоплата - сначала получить деньги
         if is_half_paid:
-            remaining = int(final_price - paid_amount)
+            remaining = int(max(final_price - paid_amount, Decimal("0")))
             buttons.append([
                 InlineKeyboardButton(
                     text=f"Запросить доплату ({remaining} ₽)",

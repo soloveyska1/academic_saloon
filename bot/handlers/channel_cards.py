@@ -5,6 +5,7 @@ Handlers для callback-действий в канале заказов.
 без перехода в личку бота.
 """
 import logging
+from decimal import Decimal, InvalidOperation
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -146,6 +147,18 @@ def build_payment_keyboard(order_id: int, final_price: float, bonus_used: float 
     )])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def _to_decimal(value: object) -> Decimal:
+    """Приводит денежные значения к Decimal для стабильной арифметики."""
+    if isinstance(value, Decimal):
+        return value
+    if value in (None, ""):
+        return Decimal("0")
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("0")
 
 
 async def send_payment_notification(
@@ -566,23 +579,23 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
         await callback.answer("Заказ не найден", show_alert=True)
         return
 
-    final_price = float(order.final_price or order.price or 0)
+    await callback.answer("Подтверждаю оплату...")
+
+    final_price = _to_decimal(order.final_price or order.price or 0)
 
     if payment_type == "half":
         # Предоплата 50%
-        half_amount = final_price / 2
+        half_amount = final_price / Decimal("2")
         order.status = OrderStatus.PAID.value  # В работу!
         order.paid_amount = half_amount
         order.payment_scheme = "half"
         extra_text = f"💰 Предоплата 50% ({int(half_amount)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
-        answer_text = f"💰 Предоплата {int(half_amount)} ₽ подтверждена"
     else:
         # Полная оплата
         order.status = OrderStatus.PAID_FULL.value
         order.paid_amount = final_price
         order.payment_scheme = "full"
         extra_text = f"✅ Полная оплата ({int(final_price)} ₽) — {datetime.now().strftime('%d.%m %H:%M')}"
-        answer_text = "✅ Оплата подтверждена"
 
     await session.commit()
 
@@ -601,7 +614,7 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     paid_formatted = format_price(int(order.paid_amount), False)
 
     if payment_type == "half":
-        remaining = int(final_price - order.paid_amount)
+        remaining = int(max(final_price - _to_decimal(order.paid_amount), Decimal("0")))
         user_text = f"""💰 <b>ПРЕДОПЛАТА ПОЛУЧЕНА!</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
@@ -654,8 +667,6 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
         )
     except Exception as ws_err:
         logger.debug(f"WebSocket notification failed: {ws_err}")
-
-    await callback.answer(answer_text, show_alert=True)
 
 
 # ══════════════════════════════════════════════════════════════
