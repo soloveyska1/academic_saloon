@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
@@ -134,6 +135,41 @@ def build_price_offer_text(
 {bonus_line}👉 <b>К оплате: <code>{final_price:.0f} ₽</code></b>
 
 <i>Выберите удобный формат оплаты ниже.</i>"""
+
+
+def _to_decimal(value: object, default: str = "0") -> Decimal:
+    """Best-effort Decimal conversion for payment math."""
+    if isinstance(value, Decimal):
+        return value
+    if value is None:
+        return Decimal(default)
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal(default)
+
+
+def get_order_final_price(order: Order) -> Decimal:
+    """
+    Safely resolve final price for an order.
+
+    Some legacy rows/handlers may leave numeric fields in an inconsistent state.
+    Payment callbacks must not crash because of that.
+    """
+    try:
+        final_price = order.final_price
+    except Exception as exc:
+        logger.warning(
+            "Failed to calculate final_price for order #%s, falling back to base price: %s",
+            order.id,
+            exc,
+        )
+        final_price = order.price
+
+    amount = _to_decimal(final_price)
+    if amount <= 0:
+        amount = _to_decimal(order.price)
+    return max(amount, Decimal("0"))
 
 
 # ══════════════════════════════════════════════════════════════
@@ -2569,12 +2605,12 @@ async def price_question_callback(callback: CallbackQuery, session: AsyncSession
 #                    СПОСОБЫ ОПЛАТЫ
 # ══════════════════════════════════════════════════════════════
 
-def get_payment_amount(order: Order) -> float:
+def get_payment_amount(order: Order) -> Decimal:
     """Получить сумму к оплате с учётом схемы и скидки промокода"""
-    # Use order.final_price which correctly applies discount and bonus
+    final_price = get_order_final_price(order)
     if order.payment_scheme == "half":
-        return order.final_price / 2
-    return order.final_price
+        return final_price / Decimal("2")
+    return final_price
 
 
 def get_payment_keyboard(order_id: int) -> InlineKeyboardMarkup:
@@ -2762,7 +2798,10 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
         return
 
     # Находим заказ
-    order_query = select(Order).where(Order.id == order_id)
+    order_query = select(Order).where(
+        Order.id == order_id,
+        Order.user_id == callback.from_user.id,
+    )
     order_result = await session.execute(order_query)
     order = order_result.scalar_one_or_none()
 
@@ -2774,6 +2813,19 @@ async def client_paid_callback(callback: CallbackQuery, session: AsyncSession, b
     if order.status in [OrderStatus.PAID.value, OrderStatus.PAID_FULL.value]:
         await callback.answer("✅ Этот заказ уже оплачен!", show_alert=True)
         return
+
+    if order.status == OrderStatus.VERIFICATION_PENDING.value:
+        await callback.answer("Платёж уже на проверке", show_alert=True)
+        return
+
+    if order.status not in [OrderStatus.WAITING_PAYMENT.value, OrderStatus.CONFIRMED.value]:
+        await callback.answer("Этот заказ сейчас нельзя подтвердить", show_alert=True)
+        return
+
+    # Legacy safety: if client reached this screen through an old message,
+    # keep the fallback method instead of failing on empty metadata later.
+    if not order.payment_method:
+        order.payment_method = "transfer"
 
     await callback.answer("Платёж отправлен на проверку...")
 
@@ -5391,8 +5443,15 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     await callback.answer("✅ Подтверждаем оплату...")
 
     # ═══ ОБНОВЛЯЕМ ЗАКАЗ ═══
-    order.status = OrderStatus.PAID.value
-    order.paid_amount = order.price / 2  # 50% аванс
+    scheme = order.payment_scheme or "half"
+    if not order.payment_scheme:
+        order.payment_scheme = scheme
+
+    payment_amount = get_payment_amount(order)
+    new_status = OrderStatus.PAID_FULL.value if scheme == "full" else OrderStatus.PAID.value
+
+    order.status = new_status
+    order.paid_amount = payment_amount
     await session.commit()
 
     # ═══ ОБНОВЛЯЕМ LIVE-КАРТОЧКУ В КАНАЛЕ ═══
@@ -5415,15 +5474,17 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     await ws_notify_order_update(
         telegram_id=order.user_id,
         order_id=order.id,
-        new_status=OrderStatus.PAID.value,
+        new_status=new_status,
         old_status=OrderStatus.VERIFICATION_PENDING.value,
     )
 
     # ═══ УВЕДОМЛЕНИЕ ПОЛЬЗОВАТЕЛЮ С КАРТИНКОЙ ═══
+    payment_line = "💰 Оплата получена" if scheme == "full" else "💰 Аванс получен"
+
     user_text = f"""🎉 <b>Оплата подтверждена</b>
 
 Заказ <b>#{order.id}</b> принят в работу.
-💰 Аванс получен: <b>{format_price(int(order.paid_amount))}</b>
+{payment_line}: <b>{format_price(int(order.paid_amount))}</b>
 
 Работа уже запущена. Когда появится следующий этап, мы сразу сообщим сюда.
 Следить за деталями можно в приложении."""
@@ -5456,11 +5517,13 @@ async def admin_verify_paid_callback(callback: CallbackQuery, session: AsyncSess
     # ═══ ОБНОВЛЯЕМ СООБЩЕНИЕ АДМИНА ═══
     work_label = WORK_TYPE_LABELS.get(WorkType(order.work_type), order.work_type) if order.work_type else "—"
 
+    admin_amount_label = "Оплата" if scheme == "full" else "Аванс"
+
     admin_text = f"""✅ <b>ОПЛАТА ПОДТВЕРЖДЕНА</b>
 
 📋 Заказ: <code>#{order.id}</code>
 📂 Тип: {work_label}
-💰 Аванс: <b>{format_price(int(order.paid_amount))}</b>
+💰 {admin_amount_label}: <b>{format_price(int(order.paid_amount))}</b>
 
 <i>Клиент уведомлён. Заказ в работе.</i>"""
 

@@ -174,6 +174,13 @@ async def confirm_payment_callback(callback: CallbackQuery, session: AsyncSessio
     await callback.answer("Платёж на проверке")
 
     # === UPDATE STATUS TO VERIFICATION_PENDING (NOT PAID!) ===
+    # Legacy bot flow here always means "manual advance in bot".
+    # Persist scheme explicitly so admin verification and live cards
+    # do not have to guess whether it is 50% or 100%.
+    if not order.payment_scheme:
+        order.payment_scheme = "half"
+    if not order.payment_method:
+        order.payment_method = "transfer"
     order.status = OrderStatus.VERIFICATION_PENDING.value
     await session.commit()
 
