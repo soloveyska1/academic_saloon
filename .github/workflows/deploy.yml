@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
-  repository_dispatch:
-    types: [auto-merge-complete]
   workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   test:
