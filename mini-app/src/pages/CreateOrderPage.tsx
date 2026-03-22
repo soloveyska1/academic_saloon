@@ -25,6 +25,8 @@ import {
   DRAFT_KEY,
 } from '../components/order-wizard'
 import { FastComposer } from '../components/order-wizard/FastComposer'
+import { PhotoTaskComposer } from '../components/order-wizard/PhotoTaskComposer'
+import { OtherComposer } from '../components/order-wizard/OtherComposer'
 import homeStyles from './HomePage.module.css'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -51,9 +53,19 @@ const slideVariants = prefersReducedMotion
       exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0 }),
     }
 
-const FAST_WIZARD_STEPS = [
+const FAST_STEPS_GENERIC = [
   { num: 1, title: 'Быстрый запрос', subtitle: 'Опишите задачу — менеджер уточнит формат' },
   { num: 2, title: 'Срок', subtitle: 'Когда нужен ответ?' },
+]
+
+const FAST_STEPS_PHOTO = [
+  { num: 1, title: 'Задача по фото', subtitle: 'Сфотографируйте или загрузите задание' },
+  { num: 2, title: 'Срок', subtitle: 'Когда нужен ответ?' },
+]
+
+const FAST_STEPS_OTHER = [
+  { num: 1, title: 'Ваша задача', subtitle: 'Расскажите, что нужно сделать' },
+  { num: 2, title: 'Срок', subtitle: 'Когда нужен результат?' },
 ]
 
 // Prefill data interface for Quick Reorder feature
@@ -167,7 +179,12 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const [direction, setDirection] = useState(0)
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const totalSteps = isFastMode ? 2 : 3
-  const stepConfig = isFastMode ? FAST_WIZARD_STEPS : WIZARD_STEPS
+  const fastStepConfig = preselectedType === 'photo_task'
+    ? FAST_STEPS_PHOTO
+    : preselectedType === 'other'
+      ? FAST_STEPS_OTHER
+      : FAST_STEPS_GENERIC
+  const stepConfig = isFastMode ? fastStepConfig : WIZARD_STEPS
 
   // Form data - initialize with prefill values if available
   const [serviceTypeId, setServiceTypeId] = useState<string | null>(preselectedType || (isFastMode ? 'other' : null))
@@ -178,6 +195,12 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
   const [deadline, setDeadline] = useState<string | null>(isUrgentMode ? 'today' : null)
   // Fast mode: single composer text replaces subject + topic + requirements
   const [composerText, setComposerText] = useState(isUrgentMode ? 'СРОЧНО! ' : '')
+  // Photo task: separate comment field
+  const [photoComment, setPhotoComment] = useState('')
+  // Other: help category tag
+  const [helpCategory, setHelpCategory] = useState('')
+  // Other: structured description
+  const [otherDescription, setOtherDescription] = useState('')
 
   // Drafts per service type
   const { saveDraft, loadDraft, clearAllDrafts, hasDraft } = useDrafts({
@@ -313,7 +336,12 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 
   const selectedService = SERVICE_TYPES.find(s => s.id === serviceTypeId)
   const isExpressService = selectedService?.category === 'express'
-  const canStep1 = isFastMode ? (composerText.trim().length >= 2 || files.length > 0) : serviceTypeId !== null
+  const canStep1Fast = preselectedType === 'photo_task'
+    ? files.length > 0  // photo_task: at least 1 photo
+    : preselectedType === 'other'
+      ? (subject.trim().length >= 2 || otherDescription.trim().length >= 2 || files.length > 0) // other: subject or description or file
+      : (composerText.trim().length >= 2 || files.length > 0)  // generic fast
+  const canStep1 = isFastMode ? canStep1Fast : serviceTypeId !== null
   const canStep2 = isFastMode ? deadline !== null : (isExpressService ? true : subject.trim().length >= 2)
   const canStep3 = deadline !== null
   const canProceed = step === 1 ? canStep1 : step === 2 ? canStep2 : canStep3
@@ -438,12 +466,26 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
 
       setSubmittingLabel('Создаём заказ...')
 
-      // In fast mode, parse composerText: first line → subject, rest → description
+      // In fast mode, map composer data to API fields
       let finalSubject = subject.trim()
       let finalTopic = topic.trim()
       let finalDescription = buildOrderDescription(requirements)
 
-      if (isFastMode) {
+      if (isFastMode && preselectedType === 'photo_task') {
+        // Photo task: subject from chips, comment as description
+        finalSubject = subject.trim() || 'Задача по фото'
+        finalTopic = ''
+        finalDescription = photoComment.trim() || undefined
+      } else if (isFastMode && preselectedType === 'other') {
+        // Other: structured subject + description + category tag
+        finalSubject = subject.trim() || 'Индивидуальный запрос'
+        finalTopic = ''
+        const parts: string[] = []
+        if (helpCategory) parts.push(`[Категория: ${helpCategory}]`)
+        if (otherDescription.trim()) parts.push(otherDescription.trim())
+        finalDescription = parts.length > 0 ? parts.join('\n') : undefined
+      } else if (isFastMode) {
+        // Generic fast mode: first line → subject, rest → description
         const lines = composerText.trim().split('\n')
         finalSubject = lines[0]?.trim() || 'Быстрый запрос'
         finalTopic = ''
@@ -524,7 +566,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
         setStep(4)
       }
     }
-  }, [serviceTypeId, deadline, subject, topic, requirements, composerText, isFastMode, isExpressService, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, files])
+  }, [serviceTypeId, deadline, subject, topic, requirements, composerText, photoComment, otherDescription, helpCategory, isFastMode, preselectedType, isExpressService, activePromo, revalidatePromo, haptic, hapticSuccess, hapticError, getBaseEstimate, clearPromo, clearAllDrafts, files])
 
   const handlePromoWarningContinue = useCallback(() => {
     setShowPromoWarning(false)
@@ -975,7 +1017,31 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
               exit="exit"
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
-              {isFastMode ? (
+              {isFastMode && preselectedType === 'photo_task' ? (
+                <PhotoTaskComposer
+                  files={files}
+                  onFilesAdd={addFiles}
+                  onFileRemove={removeFile}
+                  comment={photoComment}
+                  onCommentChange={setPhotoComment}
+                  subject={subject}
+                  onSubjectChange={setSubject}
+                  disabled={submitting || isRevalidating}
+                />
+              ) : isFastMode && preselectedType === 'other' ? (
+                <OtherComposer
+                  description={otherDescription}
+                  onDescriptionChange={setOtherDescription}
+                  subject={subject}
+                  onSubjectChange={setSubject}
+                  helpCategory={helpCategory}
+                  onHelpCategoryChange={setHelpCategory}
+                  files={files}
+                  onFilesAdd={addFiles}
+                  onFileRemove={removeFile}
+                  disabled={submitting || isRevalidating}
+                />
+              ) : isFastMode ? (
                 <FastComposer
                   value={composerText}
                   onChange={setComposerText}

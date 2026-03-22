@@ -1,5 +1,7 @@
 // Order Wizard Components
 export { FastComposer } from './FastComposer'
+export { PhotoTaskComposer } from './PhotoTaskComposer'
+export { OtherComposer } from './OtherComposer'
 export { ServiceTypeStep } from './ServiceTypeStep'
 export { RequirementsStep } from './RequirementsStep'
 export { DeadlineStep } from './DeadlineStep'
