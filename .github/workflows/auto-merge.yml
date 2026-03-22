@@ -81,15 +81,6 @@ jobs:
           git merge "origin/$BRANCH" --no-ff -m "Auto-merge: $BRANCH -> main"
           git push origin main
 
-      - name: Trigger deploy workflow
-        if: success()
-        run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/dispatches \
-            -d '{"event_type":"auto-merge-complete","client_payload":{"branch":"${{ github.ref_name }}"}}'
-
       - name: Send merge notification via SSH
         if: success()
         uses: appleboy/ssh-action@v1.0.3
