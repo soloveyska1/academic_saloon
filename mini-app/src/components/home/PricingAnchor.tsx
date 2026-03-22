@@ -3,50 +3,16 @@ import { motion } from 'framer-motion'
 import { FileText, BookOpen, GraduationCap, PenLine, ArrowRight } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PRICING ANCHOR — Psychology-backed price anchoring section.
-//  Shows "market price" crossed out + our price = perceived value.
-//  Research: price anchoring sets reference point, increases conversions.
-//  Each card navigable → create-order with prefilled work_type.
+//  PRICING ANCHOR — Price anchoring with market comparison.
+//  Unified card style. Compact 2-column grid.
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface PricingItem {
-  icon: typeof FileText
-  workType: string
-  workTypeKey: string
-  marketPrice: string
-  ourPrice: string
-}
-
-const PRICING_ITEMS: PricingItem[] = [
-  {
-    icon: PenLine,
-    workType: 'Реферат',
-    workTypeKey: 'referat',
-    marketPrice: '2 500',
-    ourPrice: 'от 990',
-  },
-  {
-    icon: FileText,
-    workType: 'Курсовая',
-    workTypeKey: 'kursovaya',
-    marketPrice: '8 000',
-    ourPrice: 'от 2 990',
-  },
-  {
-    icon: GraduationCap,
-    workType: 'Дипломная',
-    workTypeKey: 'diplomnaya',
-    marketPrice: '25 000',
-    ourPrice: 'от 9 990',
-  },
-  {
-    icon: BookOpen,
-    workType: 'Эссе',
-    workTypeKey: 'esse',
-    marketPrice: '3 000',
-    ourPrice: 'от 1 490',
-  },
-]
+const PRICING_ITEMS = [
+  { icon: PenLine, workType: 'Реферат', workTypeKey: 'referat', marketPrice: '2 500', ourPrice: 'от 990' },
+  { icon: FileText, workType: 'Курсовая', workTypeKey: 'kursovaya', marketPrice: '8 000', ourPrice: 'от 2 990' },
+  { icon: GraduationCap, workType: 'Дипломная', workTypeKey: 'diplomnaya', marketPrice: '25 000', ourPrice: 'от 9 990' },
+  { icon: BookOpen, workType: 'Эссе', workTypeKey: 'esse', marketPrice: '3 000', ourPrice: 'от 1 490' },
+] as const
 
 interface PricingAnchorProps {
   onNavigateToOrder: (workType: string) => void
@@ -64,28 +30,25 @@ export const PricingAnchor = memo(function PricingAnchor({
       transition={{ delay: 0.34 }}
       style={{ marginBottom: 24 }}
     >
-      {/* Section header */}
       <div
         style={{
-          fontFamily: "'Manrope', sans-serif",
           fontSize: 12,
           fontWeight: 600,
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
           color: 'var(--text-muted)',
-          marginBottom: 14,
+          marginBottom: 12,
           paddingLeft: 2,
         }}
       >
         Популярные работы
       </div>
 
-      {/* Price cards grid */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 12,
+          gap: 8,
         }}
       >
         {PRICING_ITEMS.map((item, i) => {
@@ -94,101 +57,89 @@ export const PricingAnchor = memo(function PricingAnchor({
             <motion.button
               key={item.workTypeKey}
               type="button"
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.38 + i * 0.06 }}
+              transition={{ delay: 0.38 + i * 0.05 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => {
                 haptic?.('light')
                 onNavigateToOrder(item.workTypeKey)
               }}
               style={{
-                padding: 20,
-                borderRadius: 16,
+                padding: 16,
+                borderRadius: 'var(--radius-md)',
                 background: 'rgba(12, 12, 10, 0.6)',
+                backdropFilter: 'blur(16px) saturate(140%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(140%)',
                 border: '1px solid rgba(255, 255, 255, 0.04)',
                 cursor: 'pointer',
                 appearance: 'none',
                 textAlign: 'left',
-                position: 'relative',
-                overflow: 'hidden',
               }}
             >
-              {/* Icon */}
               <div
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 12,
-                  background: 'rgba(201, 162, 39, 0.06)',
-                  border: '1px solid rgba(201, 162, 39, 0.08)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(201, 162, 39, 0.05)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: 12,
+                  marginBottom: 10,
                 }}
               >
-                <Icon size={16} color="var(--gold-400)" strokeWidth={1.8} />
+                <Icon size={15} color="var(--gold-400)" strokeWidth={1.8} />
               </div>
 
-              {/* Work type */}
               <div style={{
-                fontFamily: "'Manrope', sans-serif",
-                fontSize: 16,
+                fontFamily: 'var(--font-display)',
+                fontSize: 15,
                 fontWeight: 700,
                 color: 'var(--text-primary)',
-                marginBottom: 8,
+                marginBottom: 6,
                 lineHeight: 1.2,
               }}>
                 {item.workType}
               </div>
 
-              {/* Prices — anchor + real */}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                {/* Market price — crossed out */}
                 <span style={{
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 500,
                   color: 'var(--text-muted)',
                   textDecoration: 'line-through',
-                  textDecorationColor: 'var(--error-text)',
-                  opacity: 0.7,
+                  opacity: 0.6,
                 }}>
                   {item.marketPrice} ₽
                 </span>
-                {/* Our price */}
                 <span style={{
                   fontSize: 14,
                   fontWeight: 800,
                   color: 'var(--gold-400)',
-                  letterSpacing: '-0.01em',
                 }}>
                   {item.ourPrice} ₽
                 </span>
               </div>
 
-              {/* Arrow hint */}
-              <div style={{
-                position: 'absolute',
-                bottom: 16,
-                right: 14,
-                opacity: 0.3,
-              }}>
-                <ArrowRight size={14} color="var(--text-muted)" strokeWidth={2} />
-              </div>
+              <ArrowRight
+                size={13}
+                color="var(--text-muted)"
+                strokeWidth={2}
+                style={{ position: 'absolute', bottom: 14, right: 14, opacity: 0.25 }}
+              />
             </motion.button>
           )
         })}
       </div>
 
-      {/* Disclaimer */}
       <div style={{
-        marginTop: 10,
+        marginTop: 8,
         fontSize: 11,
         fontWeight: 500,
         color: 'var(--text-muted)',
         textAlign: 'center',
-        letterSpacing: '0.01em',
+        opacity: 0.6,
       }}>
         Точная цена — после оценки эксперта
       </div>
