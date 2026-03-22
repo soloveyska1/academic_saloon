@@ -342,11 +342,14 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
     setDeadline(value)
   }, [haptic])
 
-  const switchMode = useCallback((mode: 'full' | 'fast') => {
+  const switchMode = useCallback((mode: 'full' | 'fast', serviceId?: string) => {
     const params = new URLSearchParams(searchParams.toString())
 
     if (mode === 'fast') {
       params.set('mode', 'fast')
+      if (serviceId) {
+        params.set('type', serviceId)
+      }
     } else {
       params.delete('mode')
     }
@@ -992,7 +995,7 @@ export function CreateOrderPage({ user = null }: CreateOrderPageProps) {
                   <ServiceTypeStep
                     selected={serviceTypeId}
                     onSelect={handleServiceTypeSelect}
-                    onUrgentRequest={() => switchMode('fast')}
+                    onUrgentRequest={(serviceId) => switchMode('fast', serviceId)}
                   />
                 </div>
               )}
