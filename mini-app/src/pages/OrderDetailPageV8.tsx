@@ -939,6 +939,7 @@ const StickyActionBar = memo(function StickyActionBar({
           <ButtonIcon
             size={20}
             className={variant === 'verification' ? 'animate-spin' : ''}
+            style={variant === 'verification' ? { animation: 'spin 1s linear infinite' } : undefined}
           />
           {config.buttonText}
         </motion.button>
@@ -1898,7 +1899,7 @@ const VerificationPendingBanner = memo(function VerificationPendingBanner({
           background: 'rgba(212,175,55,0.08)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Loader2 size={18} color="rgba(212,175,55,0.6)" className="animate-spin" />
+          <Loader2 size={18} color="rgba(212,175,55,0.6)" className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)', marginBottom: 3 }}>
@@ -2330,6 +2331,15 @@ export function OrderDetailPageV8() {
     })
     return unsubscribe
   }, [orderId, isValidOrderId, addMessageHandler, loadOrder])
+
+  // Auto-poll during verification_pending (every 15s)
+  useEffect(() => {
+    if (order?.status !== 'verification_pending') return
+    const interval = setInterval(() => {
+      loadOrder()
+    }, 15_000)
+    return () => clearInterval(interval)
+  }, [order?.status, loadOrder])
 
   // Handlers
   const handleBack = useCallback(() => {
