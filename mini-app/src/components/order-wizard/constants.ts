@@ -14,7 +14,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'masters',
     label: 'Магистерская диссертация',
-    description: 'От плана до защиты. С научной новизной',
+    description: 'Доведём до защиты. Научная новизна есть',
     price: 'от 60 000 ₽',
     priceNum: 60000,
     icon: GraduationCap,
@@ -36,7 +36,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'coursework',
     label: 'Курсовая работа',
-    description: 'Теория + исследование. Под ваш ВУЗ',
+    description: 'Под требования вашего ВУЗа и кафедры',
     price: 'от 14 000 ₽',
     priceNum: 14000,
     icon: BookOpen,
@@ -57,7 +57,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'essay',
     label: 'Эссе',
-    description: 'Сильные аргументы, ноль воды',
+    description: 'Аргументы вместо воды. Сдашь сразу',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: PenTool,
@@ -67,7 +67,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'presentation',
     label: 'Презентация',
-    description: 'Слайды + речь. Готов к выступлению',
+    description: 'Слайды + речь. Выступишь уверенно',
     price: 'от 7 000 ₽',
     priceNum: 7000,
     icon: Presentation,
@@ -78,7 +78,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'control',
     label: 'Контрольная работа',
-    description: 'Решение + оформление по методичке',
+    description: 'Всё решено и оформлено по методичке',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: ClipboardCheck,
@@ -88,7 +88,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'independent',
     label: 'Самостоятельная работа',
-    description: 'Чётко по методичке преподавателя',
+    description: 'По методичке вашего преподавателя',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: Scroll,
@@ -98,7 +98,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'report',
     label: 'Реферат',
-    description: 'По ГОСТу. Готовый к сдаче',
+    description: 'Оформлен по ГОСТу. Бери и сдавай',
     price: 'от 2 500 ₽',
     priceNum: 2500,
     icon: FileText,
@@ -118,7 +118,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   {
     id: 'other',
     label: 'Другое',
-    description: 'Любая задача — подберём автора',
+    description: 'Опишите задачу — подберём автора',
     price: 'индивидуально',
     priceNum: 0,
     icon: HelpCircle,
