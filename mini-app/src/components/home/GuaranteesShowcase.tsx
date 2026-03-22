@@ -3,40 +3,32 @@ import { motion } from 'framer-motion'
 import { ShieldCheck, RefreshCcw, EyeOff, Banknote } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  GUARANTEES SHOWCASE — Fear-eliminating section.
-//  Research-backed: loss-aversion framing converts better.
-//  Each card title is what the student WON'T lose/risk.
-//  "Не потеряете деньги" > "Оплата по согласию"
+//  GUARANTEES — Loss-aversion framing.
+//  Unified card style. 2-column grid. No decorative bloat.
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface GuaranteeItem {
-  icon: typeof ShieldCheck
-  title: string
-  description: string
-}
-
-const GUARANTEES: GuaranteeItem[] = [
+const GUARANTEES = [
   {
     icon: RefreshCcw,
     title: 'Не примут? Исправим.',
-    description: 'Три раунда доработок включены. Правки — пока преподаватель не примет.',
+    description: '3 раунда правок включены.',
   },
   {
     icon: ShieldCheck,
     title: 'Не копипаст.',
-    description: 'Каждая работа с нуля. Проверяем сами — от 82% уникальности по Antiplagiat.',
+    description: 'С нуля. От 82% уникальности.',
   },
   {
     icon: Banknote,
-    title: 'Не потеряете деньги.',
-    description: 'Оплата только после согласования объёма, сроков и стоимости. Гарантия возврата.',
+    title: 'Деньги не пропадут.',
+    description: 'Оплата после согласования.',
   },
   {
     icon: EyeOff,
-    title: 'Не узнает никто.',
-    description: 'Полная конфиденциальность. Данные не передаются. О заказе знаете только вы.',
+    title: 'Никто не узнает.',
+    description: 'Полная конфиденциальность.',
   },
-]
+] as const
 
 export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
   return (
@@ -44,7 +36,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.30 }}
-      style={{ marginBottom: 20 }}
+      style={{ marginBottom: 24 }}
     >
       {/* Section header */}
       <div
@@ -52,18 +44,13 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          marginBottom: 16,
+          marginBottom: 12,
           paddingLeft: 2,
         }}
       >
-        <ShieldCheck
-          size={13}
-          color="var(--gold-400)"
-          strokeWidth={2}
-        />
+        <ShieldCheck size={12} color="var(--gold-400)" strokeWidth={2} />
         <span
           style={{
-            fontFamily: "'Manrope', sans-serif",
             fontSize: 12,
             fontWeight: 600,
             letterSpacing: '0.06em',
@@ -71,16 +58,15 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
             color: 'var(--text-muted)',
           }}
         >
-          Наши гарантии
+          Гарантии
         </span>
       </div>
 
-      {/* Grid of guarantee cards — 2 columns */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 12,
+          gap: 8,
         }}
       >
         {GUARANTEES.map((g, i) => {
@@ -88,60 +74,40 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
           return (
             <motion.div
               key={g.title}
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ delay: 0.34 + i * 0.06 }}
+              transition={{ delay: 0.34 + i * 0.05 }}
               style={{
-                padding: 20,
-                borderRadius: 16,
+                padding: 16,
+                borderRadius: 'var(--radius-md)',
                 background: 'rgba(12, 12, 10, 0.6)',
+                backdropFilter: 'blur(16px) saturate(140%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(140%)',
                 border: '1px solid rgba(255, 255, 255, 0.04)',
-                position: 'relative',
-                overflow: 'hidden',
               }}
             >
-              {/* Top accent line */}
-              <div
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: '15%',
-                  right: '15%',
-                  height: 1,
-                  background: 'linear-gradient(90deg, transparent, var(--border-gold), transparent)',
-                }}
-              />
-
               <div
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 12,
-                  background: 'rgba(201, 162, 39, 0.06)',
-                  border: '1px solid rgba(201, 162, 39, 0.08)',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(201, 162, 39, 0.05)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: 12,
+                  marginBottom: 10,
                 }}
               >
-                <Icon
-                  size={17}
-                  color="var(--gold-400)"
-                  strokeWidth={1.8}
-                />
+                <Icon size={16} color="var(--gold-400)" strokeWidth={1.8} />
               </div>
               <div
                 style={{
-                  fontFamily: "'Manrope', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   fontSize: 14,
                   fontWeight: 700,
                   color: 'var(--text-primary)',
                   lineHeight: 1.3,
-                  letterSpacing: '-0.01em',
-                  marginBottom: 6,
+                  marginBottom: 4,
                 }}
               >
                 {g.title}
@@ -151,7 +117,7 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
                   fontSize: 12,
                   fontWeight: 500,
                   color: 'var(--text-secondary)',
-                  lineHeight: 1.5,
+                  lineHeight: 1.45,
                 }}
               >
                 {g.description}
@@ -160,7 +126,6 @@ export const GuaranteesShowcase = memo(function GuaranteesShowcase() {
           )
         })}
       </div>
-
     </motion.div>
   )
 })

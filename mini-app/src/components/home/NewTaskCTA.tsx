@@ -9,9 +9,9 @@ interface NewTaskCTAProps {
 }
 
 const PROOF_ITEMS = [
-  { icon: Star, label: '4.8 · 2 400+ оценок' },
-  { icon: Shield, label: '82%+ уникальности' },
-  { icon: Clock, label: '3 правки бесплатно' },
+  { icon: Star, text: '4.8 · 2 400+' },
+  { icon: Shield, text: '82%+ оригинал' },
+  { icon: Clock, text: '3 правки' },
 ] as const
 
 export const NewTaskCTA = memo(function NewTaskCTA({
@@ -33,27 +33,27 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         style={{
           position: 'relative',
           width: '100%',
-          padding: '32px 20px 24px',
-          borderRadius: 24,
-          marginBottom: 24,
-          background: 'var(--surface-base, rgba(12,12,10,0.95))',
-          border: '1px solid rgba(201, 162, 39, 0.10)',
-          boxShadow: '0 8px 24px -6px rgba(0, 0, 0, 0.4)',
+          padding: '28px 20px 24px',
+          borderRadius: 'var(--radius-lg)',
+          marginBottom: 16,
+          background: 'rgba(12, 12, 10, 0.85)',
+          backdropFilter: 'blur(16px) saturate(140%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+          border: '1px solid rgba(201, 162, 39, 0.08)',
           overflow: 'hidden',
         }}
       >
-        {/* Subtle top-right gold ambient */}
+        {/* Subtle ambient glow — top-right only */}
         <div
           aria-hidden="true"
           style={{
             position: 'absolute',
-            top: -40,
-            right: -20,
-            width: 160,
-            height: 160,
+            top: -60,
+            right: -30,
+            width: 180,
+            height: 180,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(201,162,39,0.06) 0%, transparent 70%)',
-            filter: 'blur(24px)',
+            background: 'radial-gradient(circle, rgba(201,162,39,0.04) 0%, transparent 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -67,70 +67,68 @@ export const NewTaskCTA = memo(function NewTaskCTA({
               letterSpacing: '0.12em',
               textTransform: 'uppercase' as const,
               color: 'var(--text-muted)',
-              marginBottom: 16,
+              marginBottom: 14,
             }}
           >
-            Академический Салон · с 2020 года
+            Академический Салон
           </div>
 
           {/* Headline */}
           <h1
             style={{
-              fontFamily: "'Manrope', sans-serif",
-              fontSize: 'clamp(28px, 7vw, 36px)',
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(26px, 7vw, 34px)',
               fontWeight: 800,
-              lineHeight: 1.05,
+              lineHeight: 1.08,
               letterSpacing: '-0.03em',
               color: 'var(--text-primary)',
-              marginBottom: 12,
+              marginBottom: 10,
             }}
           >
             Учись спокойно.{'\n'}Мы сделаем.
           </h1>
 
-          {/* Subhead with price anchor */}
+          {/* Subhead */}
           <p
             style={{
               color: 'var(--text-secondary)',
               fontSize: 14,
               fontWeight: 500,
               lineHeight: 1.5,
-              marginBottom: 20,
+              marginBottom: 16,
               maxWidth: 300,
             }}
           >
             Курсовые, дипломы, рефераты и ещё 15+ видов работ.{' '}
             <span style={{ color: 'var(--gold-400)', fontWeight: 700 }}>
-              От 990 ₽.
+              От 990 ₽
             </span>
           </p>
 
-          {/* Proof strip — compact, one line each */}
+          {/* Proof strip — compact inline badges */}
           <div
             style={{
               display: 'flex',
-              gap: 8,
-              marginBottom: 24,
-              flexWrap: 'wrap',
+              gap: 6,
+              marginBottom: 20,
             }}
           >
             {PROOF_ITEMS.map((p) => {
               const Icon = p.icon
               return (
                 <div
-                  key={p.label}
+                  key={p.text}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    background: 'rgba(201, 162, 39, 0.06)',
-                    border: '1px solid rgba(201, 162, 39, 0.08)',
+                    gap: 4,
+                    padding: '5px 8px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(201, 162, 39, 0.05)',
                   }}
                 >
                   <Icon
-                    size={12}
+                    size={11}
                     color="var(--gold-400)"
                     strokeWidth={2.2}
                   />
@@ -139,11 +137,10 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                       fontSize: 11,
                       fontWeight: 600,
                       color: 'var(--text-secondary)',
-                      letterSpacing: '-0.01em',
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {p.label}
+                    {p.text}
                   </span>
                 </div>
               )
@@ -158,38 +155,37 @@ export const NewTaskCTA = memo(function NewTaskCTA({
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
+              justifyContent: 'center',
+              gap: 10,
               width: '100%',
-              minHeight: 52,
-              padding: '12px 14px 12px 20px',
-              borderRadius: 14,
-              background: 'linear-gradient(135deg, var(--gold-500) 0%, var(--gold-400) 50%, var(--gold-300) 100%)',
+              height: 52,
+              padding: '0 20px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'linear-gradient(135deg, var(--gold-600) 0%, var(--gold-400) 50%, var(--gold-300) 100%)',
               border: 'none',
-              boxShadow: '0 4px 16px rgba(201, 162, 39, 0.2)',
+              boxShadow: '0 4px 16px rgba(201, 162, 39, 0.15)',
               color: 'var(--text-on-gold)',
-              fontFamily: "'Manrope', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: 15,
               fontWeight: 700,
               letterSpacing: '-0.01em',
-              textAlign: 'left' as const,
               cursor: 'pointer',
               appearance: 'none' as const,
             }}
           >
-            <span>Рассчитать стоимость</span>
-            <ArrowRight size={18} strokeWidth={2.5} />
+            Рассчитать стоимость
+            <ArrowRight size={17} strokeWidth={2.5} />
           </motion.button>
 
           {/* Micro-reassurance */}
           <div
             style={{
-              marginTop: 12,
+              marginTop: 10,
               fontSize: 11,
               color: 'var(--text-muted)',
               fontWeight: 500,
               textAlign: 'center' as const,
-              letterSpacing: '0.01em',
+              opacity: 0.7,
             }}
           >
             Бесплатно · без предоплаты · ответ за 5 мин
@@ -208,11 +204,12 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         position: 'relative',
         width: '100%',
         padding: 20,
-        borderRadius: 16,
-        marginBottom: 16,
-        background: 'var(--surface-base, rgba(12,12,10,0.95))',
-        border: '1px solid rgba(201, 162, 39, 0.08)',
-        boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.3)',
+        borderRadius: 'var(--radius-md)',
+        marginBottom: 12,
+        background: 'rgba(12, 12, 10, 0.85)',
+        backdropFilter: 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+        border: '1px solid rgba(201, 162, 39, 0.06)',
       }}
     >
       <motion.button
@@ -236,8 +233,8 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         <div style={{ flex: 1 }}>
           <div
             style={{
-              fontFamily: "'Manrope', sans-serif",
-              fontSize: 18,
+              fontFamily: 'var(--font-display)',
+              fontSize: 17,
               fontWeight: 800,
               lineHeight: 1.2,
               letterSpacing: '-0.02em',
@@ -259,13 +256,12 @@ export const NewTaskCTA = memo(function NewTaskCTA({
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
-            background: 'linear-gradient(135deg, var(--gold-500), var(--gold-400))',
+            borderRadius: 'var(--radius-sm)',
+            background: 'linear-gradient(135deg, var(--gold-600), var(--gold-400))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            boxShadow: '0 4px 12px rgba(201, 162, 39, 0.15)',
           }}
         >
           <ArrowRight size={18} color="var(--text-on-gold)" strokeWidth={2.5} />

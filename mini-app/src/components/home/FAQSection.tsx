@@ -3,42 +3,35 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { HelpCircle, ChevronDown } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  FAQ SECTION — Progressive disclosure accordion.
-//  Addresses the top 5 objections students have before ordering.
-//  Research: collapsible FAQs reduce scroll fatigue, increase conversions.
-//  Each answer is short, reassuring, and action-oriented.
+//  FAQ — Accordion with unified card style.
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface FAQItem {
-  question: string
-  answer: string
-}
-
-const FAQ_ITEMS: FAQItem[] = [
+const FAQ_ITEMS = [
   {
     question: 'Это безопасно? Никто не узнает?',
-    answer: 'Полная конфиденциальность. Мы не храним ваши данные после выполнения заказа, не передаём третьим лицам. О вашем обращении знаете только вы.',
+    answer: 'Полная конфиденциальность. Данные не передаём третьим лицам. О заказе знаете только вы.',
   },
   {
-    question: 'Что если преподаватель не примет работу?',
-    answer: 'Три раунда правок включены в стоимость. Если работу не приняли — дорабатываем бесплатно, пока не примут. Гарантия возврата средств, если мы не выполним условия.',
+    question: 'Что если преподаватель не примет?',
+    answer: '3 правки включены. Дорабатываем бесплатно, пока не примут. Гарантия возврата.',
   },
   {
     question: 'Как происходит оплата?',
-    answer: 'Сначала обсуждаем объём, сроки и стоимость. Вы платите только после полного согласования деталей. Никаких скрытых доплат.',
+    answer: 'Сначала обсуждаем объём, сроки и стоимость. Платите только после согласования.',
   },
   {
-    question: 'Сколько ждать готовую работу?',
-    answer: 'Зависит от типа: реферат — от 1 дня, курсовая — от 3 дней, дипломная — от 7 дней. Срочные заказы — от 24 часов с доплатой.',
+    question: 'Сколько ждать?',
+    answer: 'Реферат — от 1 дня, курсовая — от 3, дипломная — от 7. Срочные — от 24 часов.',
   },
   {
-    question: 'А антиплагиат покажет заимствования?',
-    answer: 'Все работы пишутся с нуля экспертами. Средняя уникальность — от 82% по Antiplagiat. Рекомендуем проверять самостоятельно, чтобы система не запомнила текст раньше сдачи.',
+    question: 'А антиплагиат?',
+    answer: 'Пишем с нуля. Средняя уникальность — от 82% по Antiplagiat.',
   },
-]
+] as const
 
-function FAQAccordionItem({ item, isOpen, onToggle }: {
-  item: FAQItem
+function FAQAccordionItem({ question, answer, isOpen, onToggle }: {
+  question: string
+  answer: string
   isOpen: boolean
   onToggle: () => void
 }) {
@@ -47,23 +40,24 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
   return (
     <div
       style={{
-        borderRadius: 16,
-        background: isOpen ? 'rgba(201, 162, 39, 0.06)' : 'rgba(12, 12, 10, 0.6)',
-        border: `1px solid ${isOpen ? 'rgba(201, 162, 39, 0.08)' : 'rgba(255, 255, 255, 0.04)'}`,
+        borderRadius: 'var(--radius-md)',
+        background: isOpen ? 'rgba(201, 162, 39, 0.04)' : 'rgba(12, 12, 10, 0.6)',
+        backdropFilter: 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+        border: `1px solid ${isOpen ? 'rgba(201, 162, 39, 0.06)' : 'rgba(255, 255, 255, 0.04)'}`,
         overflow: 'hidden',
         transition: 'background 0.2s, border-color 0.2s',
       }}
     >
-      <motion.button
+      <button
         type="button"
-        whileTap={{ scale: 0.97 }}
         onClick={onToggle}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 12,
           width: '100%',
-          padding: '20px',
+          padding: 16,
           background: 'none',
           border: 'none',
           cursor: 'pointer',
@@ -73,27 +67,23 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
       >
         <span style={{
           flex: 1,
-          fontFamily: "'Manrope', sans-serif",
+          fontFamily: 'var(--font-display)',
           fontSize: 14,
-          fontWeight: 700,
+          fontWeight: 600,
           color: isOpen ? 'var(--gold-400)' : 'var(--text-primary)',
           lineHeight: 1.4,
           transition: 'color 0.2s',
         }}>
-          {item.question}
+          {question}
         </span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: shouldReduceMotion ? 0 : 0.25 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
           style={{ flexShrink: 0 }}
         >
-          <ChevronDown
-            size={16}
-            color="var(--text-muted)"
-            strokeWidth={2}
-          />
+          <ChevronDown size={15} color="var(--text-muted)" strokeWidth={2} />
         </motion.div>
-      </motion.button>
+      </button>
 
       <AnimatePresence>
         {isOpen && (
@@ -101,17 +91,17 @@ function FAQAccordionItem({ item, isOpen, onToggle }: {
             initial={shouldReduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={shouldReduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '0 20px 20px',
-              fontSize: 14,
+              padding: '0 16px 16px',
+              fontSize: 13,
               fontWeight: 500,
               color: 'var(--text-secondary)',
-              lineHeight: 1.6,
+              lineHeight: 1.55,
             }}>
-              {item.answer}
+              {answer}
             </div>
           </motion.div>
         )}
@@ -134,24 +124,18 @@ export const FAQSection = memo(function FAQSection() {
       transition={{ delay: 0.38 }}
       style={{ marginBottom: 24 }}
     >
-      {/* Section header */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          marginBottom: 14,
+          marginBottom: 12,
           paddingLeft: 2,
         }}
       >
-        <HelpCircle
-          size={13}
-          color="var(--gold-400)"
-          strokeWidth={2}
-        />
+        <HelpCircle size={12} color="var(--gold-400)" strokeWidth={2} />
         <span
           style={{
-            fontFamily: "'Manrope', sans-serif",
             fontSize: 12,
             fontWeight: 600,
             letterSpacing: '0.06em',
@@ -163,12 +147,12 @@ export const FAQSection = memo(function FAQSection() {
         </span>
       </div>
 
-      {/* Accordion items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {FAQ_ITEMS.map((item, i) => (
           <FAQAccordionItem
             key={i}
-            item={item}
+            question={item.question}
+            answer={item.answer}
             isOpen={openIndex === i}
             onToggle={() => handleToggle(i)}
           />

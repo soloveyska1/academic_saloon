@@ -2,10 +2,8 @@ import { memo, useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  TRUST STATS STRIP — Impressive metrics with count-up animation.
-//  Numbers that build confidence: completed orders, rating, response time.
-//  Rating 4.8 (not 4.9/5.0 — research: imperfect scores more believable).
-//  No borders, no cards. Just powerful data floating on void.
+//  TRUST STATS STRIP — 3 metrics with count-up.
+//  Compact horizontal strip, unified with design system.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface StatConfig {
@@ -17,12 +15,11 @@ interface StatConfig {
 }
 
 const STATS: StatConfig[] = [
-  { value: 2400, suffix: '+', prefix: '', label: 'работ сдано', decimals: 0 },
-  { value: 4.8, suffix: '', prefix: '★ ', label: 'оценка клиентов', decimals: 1 },
-  { value: 98, suffix: '%', prefix: '', label: 'сдано в срок', decimals: 0 },
+  { value: 2400, suffix: '+', prefix: '', label: 'работ', decimals: 0 },
+  { value: 4.8, suffix: '', prefix: '★ ', label: 'рейтинг', decimals: 1 },
+  { value: 98, suffix: '%', prefix: '', label: 'в срок', decimals: 0 },
 ]
 
-/** Animated counter that counts up from 0 to target */
 function AnimatedCounter({ target, decimals, duration = 1.6 }: {
   target: number
   decimals: number
@@ -37,11 +34,8 @@ function AnimatedCounter({ target, decimals, duration = 1.6 }: {
       if (!startTime.current) startTime.current = timestamp
       const elapsed = timestamp - startTime.current
       const progress = Math.min(elapsed / (duration * 1000), 1)
-
-      // Ease out cubic for satisfying deceleration
       const eased = 1 - Math.pow(1 - progress, 3)
       setValue(eased * target)
-
       if (progress < 1) {
         frameRef.current = requestAnimationFrame(animate)
       }
@@ -67,37 +61,32 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.10 }}
       style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 16,
-        padding: '24px 0',
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '20px 0',
         marginBottom: 8,
-        position: 'relative',
       }}
     >
       {STATS.map((stat, i) => (
-        <motion.div
+        <div
           key={stat.label}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.16 + i * 0.08 }}
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            flex: 1,
             position: 'relative',
           }}
         >
-          {/* Number */}
           <div
             style={{
-              fontFamily: "'Manrope', sans-serif",
-              fontSize: 24,
+              fontFamily: 'var(--font-display)',
+              fontSize: 22,
               fontWeight: 800,
               letterSpacing: '-0.03em',
-              color: 'var(--gold-200)',
+              color: 'var(--text-primary)',
               lineHeight: 1,
-              marginBottom: 6,
+              marginBottom: 4,
             }}
           >
             {stat.prefix}
@@ -105,35 +94,32 @@ export const TrustStatsStrip = memo(function TrustStatsStrip() {
             {stat.suffix}
           </div>
 
-          {/* Label */}
           <span
             style={{
-              fontFamily: "'Manrope', sans-serif",
               fontSize: 11,
-              fontWeight: 600,
+              fontWeight: 500,
               color: 'var(--text-muted)',
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
             }}
           >
             {stat.label}
           </span>
 
-          {/* Divider between stats */}
+          {/* Subtle divider */}
           {i < STATS.length - 1 && (
             <div
               aria-hidden="true"
               style={{
                 position: 'absolute',
                 right: 0,
-                top: '15%',
-                height: '70%',
+                top: '10%',
+                height: '80%',
                 width: 1,
-                background: 'linear-gradient(180deg, transparent, var(--border-gold), transparent)',
+                background: 'rgba(255, 255, 255, 0.06)',
               }}
             />
           )}
-        </motion.div>
+        </div>
       ))}
     </motion.div>
   )

@@ -933,7 +933,7 @@ body::after {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPOGRAPHY — EDITORIAL LUXURY (Magazine-style)
-   Cinzel for display, Manrope for body — Never pure white/black text
+   Manrope for display, Inter for body — Never pure white/black text
    ═══════════════════════════════════════════════════════════════════════════ */
 
 h1, h2, h3, h4, h5, h6 {
@@ -945,7 +945,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-  font-family: var(--font-serif);  /* Cinzel for hero titles */
+  font-family: var(--font-serif);  /* Manrope for hero titles */
   font-size: 28px;
   line-height: 1.1;
   font-weight: 700;
@@ -953,7 +953,7 @@ h1 {
 }
 
 h2 {
-  font-family: var(--font-serif);  /* Cinzel */
+  font-family: var(--font-serif);  /* Manrope */
   font-size: 22px;
   line-height: 1.15;
   font-weight: 600;
@@ -973,7 +973,7 @@ h4 {
   font-weight: 600;
 }
 
-/* Premium Balance/Number Display — Cinzel for big figures */
+/* Premium Balance/Number Display — Manrope for big figures */
 .display-number {
   font-family: var(--font-serif);
   font-weight: 700;

@@ -1,15 +1,11 @@
-import { memo, useRef, useState } from 'react'
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  TESTIMONIALS — Social proof that sells.
-//  Research-backed changes:
-//    - Mixed ratings (not all 5★ — perfect scores look fake)
-//    - Outcome badges on each card ("Уникальность 87%", "Защитил на отлично")
-//    - Aggregate: "4.8 из 5 · 2400+ отзывов"
-//    - Viewport-aware autoplay (pause when out of view / on touch)
-//    - Specific, measurable results in every testimonial
+//  TESTIMONIALS — Static cards, no carousel.
+//  Mixed ratings (not all 5★ — perfect scores look fake).
+//  Outcome badges on each card for scanning.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface Testimonial {
@@ -27,7 +23,7 @@ const TESTIMONIALS: Testimonial[] = [
     university: 'ВШЭ',
     workType: 'Курсовая',
     stars: 5,
-    text: 'Сделали курсовую за 4 дня. Проверила сама — уникальность 87%. Преподаватель принял с первого раза.',
+    text: 'Сделали за 4 дня. Уникальность 87%. Преподаватель принял с первого раза.',
     outcome: 'Уникальность 87%',
   },
   {
@@ -35,7 +31,7 @@ const TESTIMONIALS: Testimonial[] = [
     university: 'МГУ',
     workType: 'Дипломная',
     stars: 5,
-    text: 'Боялся доверять, но рискнул — и не пожалел. Работа на высшем уровне, защитил на отлично.',
+    text: 'Работа на высшем уровне. Защитил на отлично. Рекомендую.',
     outcome: 'Защитил на отлично',
   },
   {
@@ -43,24 +39,8 @@ const TESTIMONIALS: Testimonial[] = [
     university: 'РУДН',
     workType: 'Эссе',
     stars: 4,
-    text: 'Заказывала эссе срочно, за 24 часа. Всё было готово вовремя. Тема раскрыта хорошо, одна мелкая правка — и сдала.',
-    outcome: 'Готово за 24 часа',
-  },
-  {
-    name: 'Максим Р.',
-    university: 'РАНХиГС',
-    workType: 'Отчёт по практике',
-    stars: 5,
-    text: 'Третий раз заказываю. Менеджер всегда на связи, все доработки бесплатно. Лучший сервис для студентов.',
-    outcome: 'Постоянный клиент',
-  },
-  {
-    name: 'Софья Л.',
-    university: 'СПбГУ',
-    workType: 'Реферат',
-    stars: 4,
-    text: 'Удобный сервис — описала требования, оплатила после согласования. Реферат пришёл раньше дедлайна. В паре мест упростила бы формулировки, но в целом отлично.',
-    outcome: 'Раньше дедлайна',
+    text: 'Заказывала срочно, за 24 часа. Всё готово вовремя. Одна правка — и сдала.',
+    outcome: 'Готово за 24ч',
   },
 ]
 
@@ -70,9 +50,9 @@ function StarRating({ count }: { count: number }) {
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
-          size={11}
-          fill={i < count ? 'var(--gold-400)' : 'var(--surface-hover)'}
-          color={i < count ? 'var(--gold-400)' : 'var(--surface-hover)'}
+          size={10}
+          fill={i < count ? 'var(--gold-400)' : 'rgba(255,255,255,0.06)'}
+          color={i < count ? 'var(--gold-400)' : 'rgba(255,255,255,0.06)'}
           strokeWidth={0}
         />
       ))}
@@ -81,13 +61,8 @@ function StarRating({ count }: { count: number }) {
 }
 
 export const TestimonialsSection = memo(function TestimonialsSection() {
-  const [activeIndex, setActiveIndex] = useState(0)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const sectionRef = useRef<HTMLDivElement>(null)
-
   return (
     <motion.div
-      ref={sectionRef}
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.22 }}
@@ -99,19 +74,14 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 14,
+          marginBottom: 12,
           paddingLeft: 2,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Quote
-            size={13}
-            color="var(--gold-400)"
-            strokeWidth={2}
-          />
+          <Quote size={12} color="var(--gold-400)" strokeWidth={2} />
           <span
             style={{
-              fontFamily: "'Manrope', sans-serif",
               fontSize: 12,
               fontWeight: 600,
               letterSpacing: '0.06em',
@@ -119,177 +89,86 @@ export const TestimonialsSection = memo(function TestimonialsSection() {
               color: 'var(--text-muted)',
             }}
           >
-            Отзывы клиентов
+            Отзывы
           </span>
         </div>
-
-        {/* Aggregate rating with count */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <Star size={12} fill="var(--gold-400)" color="var(--gold-400)" strokeWidth={0} />
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: 'var(--gold-400)',
-              fontFamily: "'Manrope', sans-serif",
-            }}
-          >
-            4.8
-          </span>
-          <span style={{
-            fontSize: 11,
-            fontWeight: 500,
-            color: 'var(--text-muted)',
-          }}>
-            · 2 400+
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Star size={11} fill="var(--gold-400)" color="var(--gold-400)" strokeWidth={0} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold-400)' }}>4.8</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)' }}>· 2 400+</span>
         </div>
       </div>
 
-      {/* Testimonial cards — horizontal scroll */}
-      <div
-        ref={scrollRef}
-        style={{
-          display: 'flex',
-          gap: 12,
-          overflowX: 'auto',
-          margin: '0 -20px',
-          padding: '0 20px 8px',
-          scrollSnapType: 'x mandatory',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-      >
-        {TESTIMONIALS.map((t, i) => {
-          return (
-            <motion.div
-              key={t.name}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 + i * 0.06 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setActiveIndex(i)}
-              style={{
-                minWidth: 270,
-                maxWidth: 300,
-                padding: '20px',
-                borderRadius: 16,
-                background: 'rgba(12, 12, 10, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.04)',
-                scrollSnapAlign: 'start',
-                flexShrink: 0,
-                cursor: 'pointer',
-              }}
-            >
-              {/* Outcome badge — the hook */}
-              <div
+      {/* Static testimonial cards — vertical stack */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {TESTIMONIALS.map((t, i) => (
+          <motion.div
+            key={t.name}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 + i * 0.06 }}
+            style={{
+              padding: 16,
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(12, 12, 10, 0.6)',
+              backdropFilter: 'blur(16px) saturate(140%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+              border: '1px solid rgba(255, 255, 255, 0.04)',
+            }}
+          >
+            {/* Top row: outcome badge + stars */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '4px 10px',
-                  borderRadius: 12,
-                  background: 'rgba(201, 162, 39, 0.06)',
-                  border: '1px solid rgba(201, 162, 39, 0.08)',
-                  marginBottom: 10,
-                }}
-              >
-                <span style={{
                   fontSize: 11,
                   fontWeight: 700,
                   color: 'var(--gold-400)',
-                  letterSpacing: '0.01em',
-                }}>
-                  ✓ {t.outcome}
-                </span>
-              </div>
-
-              {/* Stars */}
-              <div style={{ marginBottom: 10 }}>
-                <StarRating count={t.stars} />
-              </div>
-
-              {/* Quote text */}
-              <p
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.6,
-                  marginBottom: 16,
-                  fontStyle: 'italic',
+                  padding: '3px 8px',
+                  borderRadius: 8,
+                  background: 'rgba(201, 162, 39, 0.05)',
                 }}
               >
-                &laquo;{t.text}&raquo;
-              </p>
+                ✓ {t.outcome}
+              </span>
+              <StarRating count={t.stars} />
+            </div>
 
-              {/* Author */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {/* Avatar placeholder */}
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: 'var(--gold-glass-subtle)',
-                    border: '1px solid var(--border-gold)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--gold-400)',
-                    fontFamily: "'Manrope', sans-serif",
-                  }}
-                >
-                  {t.name.charAt(0)}
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: 'var(--text-primary)',
-                      marginBottom: 2,
-                    }}
-                  >
-                    {t.name}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 500,
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    {t.workType} · {t.university}
-                  </div>
-                </div>
+            {/* Quote */}
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.55,
+                marginBottom: 10,
+              }}
+            >
+              «{t.text}»
+            </p>
+
+            {/* Author — compact */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: 'rgba(201, 162, 39, 0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'var(--gold-400)',
+                }}
+              >
+                {t.name.charAt(0)}
               </div>
-            </motion.div>
-          )
-        })}
-      </div>
-
-      {/* Pagination dots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12 }}>
-        {TESTIMONIALS.map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{
-              width: i === activeIndex ? 16 : 6,
-              background: i === activeIndex
-                ? 'var(--gold-400)'
-                : 'var(--surface-active)',
-            }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            onClick={() => setActiveIndex(i)}
-            style={{
-              height: 6,
-              borderRadius: 3,
-              cursor: 'pointer',
-            }}
-          />
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+                {t.name} · {t.workType} · {t.university}
+              </span>
+            </div>
+          </motion.div>
         ))}
       </div>
     </motion.div>

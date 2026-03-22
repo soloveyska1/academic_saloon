@@ -77,7 +77,6 @@ export function HomePage({ user, onRefresh }: Props) {
   // Referral copy state
   const [referralCopied, setReferralCopied] = useState(false)
 
-  // Ref for hero CTA — StickyBottomCTA shows when hero exits viewport
   const heroCTARef = useRef<HTMLElement>(null)
 
   // Secret admin activation (5 quick taps on logo badge)
@@ -184,7 +183,7 @@ export function HomePage({ user, onRefresh }: Props) {
       role="main"
       data-scroll-container="true"
       className={`${s.container} bg-void relative`}
-      style={{ paddingBottom: isNewUser ? 160 : 100, overflowY: 'auto', height: '100vh' }}>
+      style={{ paddingBottom: 100, overflowY: 'auto', height: '100vh' }}>
       <PullIndicator />
       {/* Premium Background */}
       <div className="page-background fixed inset-0 z-0" aria-hidden="true">
@@ -256,6 +255,9 @@ export function HomePage({ user, onRefresh }: Props) {
 
             {/* 8. FAQ — Objection handler */}
             <FAQSection />
+
+            {/* 9. Footer CTA — Repeat conversion point */}
+            <StickyBottomCTA onClick={handleNewOrder} />
           </>
         ) : (
           /* ═══════════════════════════════════════════════════════════════════
@@ -428,13 +430,7 @@ export function HomePage({ user, onRefresh }: Props) {
 
     </main>
 
-      {/* Sticky Bottom CTA — New users only, appears after hero exits viewport */}
-      {isNewUser && (
-        <StickyBottomCTA
-          onClick={handleNewOrder}
-          heroRef={heroCTARef as React.RefObject<HTMLElement>}
-        />
-      )}
+      {/* Footer CTA moved inline into new-user flow above */}
 
       {/* Welcome tour — only for new users, shown once */}
       <AnimatePresence>

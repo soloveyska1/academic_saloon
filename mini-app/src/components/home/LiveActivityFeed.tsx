@@ -2,10 +2,8 @@ import { memo, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  LIVE ACTIVITY FEED — Real-time social proof ticker.
-//  Compact single-line rotating notifications.
-//  Time-aware, deterministic content (same events within a day).
-//  Research: real-time social proof = +98% conversion lift.
+//  LIVE ACTIVITY FEED — Compact social proof ticker.
+//  Deterministic daily shuffle. Unified card style.
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface ActivityEvent {
@@ -15,7 +13,6 @@ interface ActivityEvent {
   timeAgo: string
 }
 
-// Events pool — deterministically selected based on day seed
 const ALL_EVENTS: ActivityEvent[] = [
   { name: 'Мария', action: 'оформила заказ', workType: 'курсовая', timeAgo: '2 мин' },
   { name: 'Алексей', action: 'получил работу', workType: 'дипломная', timeAgo: '5 мин' },
@@ -29,7 +26,6 @@ const ALL_EVENTS: ActivityEvent[] = [
   { name: 'Никита', action: 'оформил заказ', workType: 'реферат', timeAgo: '35 мин' },
 ]
 
-/** Deterministic daily shuffle — same order all day, changes tomorrow */
 function shuffleForDay(events: ActivityEvent[]): ActivityEvent[] {
   const now = new Date()
   const seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
@@ -63,96 +59,57 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
         padding: '10px 14px',
-        marginBottom: 16,
-        borderRadius: 12,
-        background: 'rgba(12, 12, 10, 0.6)',
-        border: '1px solid rgba(255, 255, 255, 0.04)',
-        minHeight: 38,
+        marginBottom: 8,
+        borderRadius: 'var(--radius-sm)',
+        background: 'rgba(12, 12, 10, 0.5)',
+        border: '1px solid rgba(255, 255, 255, 0.03)',
+        minHeight: 36,
       }}
     >
-      {/* Live indicator dot */}
+      {/* Live dot */}
       <div style={{ position: 'relative', flexShrink: 0, width: 6, height: 6 }}>
-        <div
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: 'var(--success-text)',
-          }}
-        />
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success-text)' }} />
         {!shouldReduceMotion && (
           <motion.div
-            animate={{ scale: [1, 2.2, 1], opacity: [0.6, 0, 0.6] }}
+            animate={{ scale: [1, 2, 1], opacity: [0.5, 0, 0.5] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: '50%',
-              background: 'var(--success-text)',
-            }}
+            style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'var(--success-text)' }}
           />
         )}
       </div>
 
-      {/* Event text — rotating */}
+      {/* Event text */}
       <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeIndex}
-            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
-            transition={{ duration: 0.25 }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -5 }}
+            transition={{ duration: 0.2 }}
             style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: 0,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              fontSize: 12,
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
             }}
           >
-            <span style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-            }}>
-              {event.name} {event.action}
-            </span>
-            <span style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-            }}>
-              {' — '}
-            </span>
-            <span style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: 'var(--gold-400)',
-            }}>
-              {event.workType}
-            </span>
+            {event.name} {event.action} — <span style={{ fontWeight: 600, color: 'var(--gold-400)' }}>{event.workType}</span>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Time ago */}
-      <span style={{
-        fontSize: 10,
-        fontWeight: 500,
-        color: 'var(--text-muted)',
-        flexShrink: 0,
-        whiteSpace: 'nowrap',
-      }}>
+      <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--text-muted)', flexShrink: 0, opacity: 0.7 }}>
         {event.timeAgo}
       </span>
     </motion.div>
