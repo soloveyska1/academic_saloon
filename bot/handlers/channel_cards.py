@@ -600,15 +600,25 @@ async def card_confirm_payment(callback: CallbackQuery, session: AsyncSession, b
     await session.commit()
 
     # UNIFIED HUB: Обновляем название топика
-    await update_topic_name(bot, session, order, user)
+    try:
+        await update_topic_name(bot, session, order, user)
+    except Exception as e:
+        logger.exception(f"Failed to update topic name after payment confirmation for order #{order.id}: {e}")
 
     # Обновляем карточку
-    await update_card_status(
-        bot, order, session,
-        client_username=user.username if user else None,
-        client_name=user.fullname if user else None,
-        extra_text=extra_text
-    )
+    try:
+        await update_card_status(
+            bot, order, session,
+            client_username=user.username if user else None,
+            client_name=user.fullname if user else None,
+            extra_text=extra_text
+        )
+    except Exception as e:
+        logger.exception(f"Failed to update live card after payment confirmation for order #{order.id}: {e}")
+        try:
+            await callback.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
 
     # ═══ УВЕДОМЛЕНИЕ КЛИЕНТУ ═══
     paid_formatted = format_price(int(order.paid_amount), False)
