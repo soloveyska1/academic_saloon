@@ -59,12 +59,12 @@ export const StickyBottomCTA = memo(function StickyBottomCTA({ onClick, heroRef 
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           style={{
             position: 'fixed',
-            bottom: 0,
+            bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
             left: 0,
             right: 0,
             zIndex: 800,
             padding: '12px 20px',
-            paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+            paddingBottom: 12,
             background: 'linear-gradient(180deg, transparent 0%, var(--bg-void) 30%)',
           }}
         >
