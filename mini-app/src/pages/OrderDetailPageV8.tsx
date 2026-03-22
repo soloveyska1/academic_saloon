@@ -1583,6 +1583,9 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
     }
   }
 
+  const checkedCount = checklist.filter(i => i.checked).length
+  const totalCount = checklist.length
+
   if (!isOpen) return null
 
   return (
@@ -1599,12 +1602,12 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+            transition={{ type: 'spring', damping: 34, stiffness: 380 }}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-[480px] max-h-[85vh] overflow-hidden flex flex-col"
             style={{
               background: DS.colors.bgSurface,
-              borderRadius: `${DS.radius['2xl']}px ${DS.radius['2xl']}px 0 0`,
+              borderRadius: '20px 20px 0 0',
             }}
           >
             {/* ─── Header ─── */}
@@ -1612,14 +1615,14 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '20px 20px 16px',
+              padding: '18px 20px 14px',
               borderBottom: '1px solid rgba(255,255,255,0.06)',
             }}>
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.92)', margin: 0 }}>
+                <h2 style={{ fontSize: 17, fontWeight: 600, color: 'rgba(255,255,255,0.88)', margin: 0, letterSpacing: '-0.01em' }}>
                   Подтверждение оплаты
                 </h2>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '2px 0 0' }}>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: '3px 0 0' }}>
                   {formatPrice(paymentAmount)} ₽ · Заказ #{order.id}
                 </p>
               </div>
@@ -1627,57 +1630,73 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
                 style={{
-                  width: 36, height: 36, borderRadius: 12,
+                  width: 32, height: 32, borderRadius: 10,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', background: 'transparent', border: 'none',
                 }}
               >
-                <X size={18} color="rgba(255,255,255,0.4)" />
+                <X size={16} color="rgba(255,255,255,0.3)" />
               </motion.button>
             </div>
 
             {/* ─── Content ─── */}
-            <div className="flex-1 overflow-y-auto" style={{ padding: '16px 20px' }}>
-              {/* Checklist — simplified, compact */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 12 }}>
-                  Подтвердите
+            <div className="flex-1 overflow-y-auto" style={{ padding: '14px 20px' }}>
+              {/* Checklist — single grouped surface */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.01em', marginBottom: 8 }}>
+                  Проверьте перед отправкой
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-                  {checklist.map((item) => (
+                <div style={{
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  background: 'rgba(255,255,255,0.025)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}>
+                  {checklist.map((item, idx) => (
                     <motion.button
                       key={item.id}
-                      whileTap={{ scale: 0.98 }}
+                      whileTap={{ scale: 0.99 }}
                       onClick={() => toggleItem(item.id)}
                       style={{
                         width: '100%',
                         padding: '12px 14px',
-                        borderRadius: 12,
+                        borderRadius: 0,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 10,
                         textAlign: 'left' as const,
-                        background: item.checked ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.02)',
-                        border: `1px solid ${item.checked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                        transition: 'all 0.2s',
+                        background: item.checked ? 'rgba(34,197,94,0.05)' : 'transparent',
+                        border: 'none',
+                        borderBottom: idx < totalCount - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                        transition: 'background 0.2s',
                       }}
                     >
+                      {/* Rounded-square checkbox */}
                       <div style={{
-                        width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+                        width: 20, height: 20, borderRadius: 6, flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: item.checked ? 'rgba(34,197,94,0.9)' : 'transparent',
-                        border: `2px solid ${item.checked ? 'rgba(34,197,94,0.9)' : 'rgba(255,255,255,0.15)'}`,
-                        transition: 'all 0.2s',
+                        border: `1.5px solid ${item.checked ? 'rgba(34,197,94,0.9)' : 'rgba(255,255,255,0.18)'}`,
+                        transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
                       }}>
-                        {item.checked && <Check size={12} color="#fff" strokeWidth={3} />}
+                        {item.checked && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                          >
+                            <Check size={11} color="#fff" strokeWidth={2.5} />
+                          </motion.div>
+                        )}
                       </div>
                       <span style={{
                         fontSize: 13,
                         fontWeight: 500,
-                        color: item.checked ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.45)',
+                        color: item.checked ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)',
                         flex: 1,
+                        transition: 'color 0.2s',
                       }}>
                         {item.label}
                       </span>
@@ -1686,33 +1705,33 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                 </div>
               </div>
 
-              {/* Screenshot Upload */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', textTransform: 'uppercase' as const, marginBottom: 8 }}>
-                  Скриншот оплаты
-                  <span style={{ fontWeight: 400, textTransform: 'none' as const, letterSpacing: 'normal' }}> — необязательно</span>
+              {/* Screenshot Upload — visually demoted */}
+              <div style={{ marginBottom: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>
+                  Скриншот оплаты{' '}
+                  <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.2)' }}>(необязательно)</span>
                 </div>
 
                 {screenshotPreview ? (
-                  <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <img
                       src={screenshotPreview}
                       alt="Скриншот"
                       loading="lazy"
-                      style={{ width: '100%', maxHeight: 180, objectFit: 'cover' as const }}
+                      style={{ width: '100%', maxHeight: 160, objectFit: 'cover' as const }}
                     />
                     <motion.button
                       whileTap={{ scale: 0.9 }}
                       onClick={removeScreenshot}
                       style={{
                         position: 'absolute', top: 8, right: 8,
-                        width: 30, height: 30, borderRadius: 8,
+                        width: 28, height: 28, borderRadius: 7,
                         background: 'rgba(0,0,0,0.7)', border: 'none',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer',
                       }}
                     >
-                      <Trash2 size={14} color="rgba(239,68,68,0.8)" />
+                      <Trash2 size={13} color="rgba(239,68,68,0.8)" />
                     </motion.button>
                     <div style={{
                       position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -1720,20 +1739,20 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                       background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
                       display: 'flex', alignItems: 'center', gap: 6,
                     }}>
-                      <FileImage size={12} color="rgba(34,197,94,0.7)" />
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                      <FileImage size={11} color="rgba(34,197,94,0.7)" />
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                         {screenshot?.name}
                       </span>
                     </div>
                   </div>
                 ) : (
                   <label style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '14px 16px',
-                    borderRadius: 12,
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '10px 14px',
+                    borderRadius: 10,
                     cursor: 'pointer',
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'transparent',
+                    border: '1px dashed rgba(255,255,255,0.08)',
                   }}>
                     <input
                       type="file"
@@ -1741,12 +1760,12 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                       onChange={handleFileChange}
                       className="hidden"
                     />
-                    <Upload size={18} color="rgba(255,255,255,0.25)" />
+                    <Upload size={16} color="rgba(255,255,255,0.2)" />
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.45)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)' }}>
                         Загрузить скриншот
                       </div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', marginTop: 1 }}>
                         PNG, JPG до 10 МБ
                       </div>
                     </div>
@@ -1757,48 +1776,66 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
 
             {/* ─── Footer ─── */}
             <div style={{
-              padding: '16px 20px',
+              padding: '14px 20px',
               paddingBottom: 'max(env(safe-area-inset-bottom, 20px), 20px)',
               borderTop: '1px solid rgba(255,255,255,0.06)',
               background: DS.colors.bgSurface,
             }}>
-              {/* Timing note — gold palette, not cyan */}
+              {/* Timing note */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '10px 14px', borderRadius: 10,
-                background: 'rgba(212,175,55,0.06)',
-                border: '1px solid rgba(212,175,55,0.1)',
-                marginBottom: 12,
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 12px', borderRadius: 8,
+                background: 'rgba(212,175,55,0.04)',
+                border: '1px solid rgba(212,175,55,0.06)',
+                marginBottom: 10,
               }}>
-                <Timer size={14} color="rgba(212,175,55,0.5)" />
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>
-                  Проверка займёт <strong style={{ color: '#E8D5A3', fontWeight: 600 }}>5–15 минут</strong>
+                <Timer size={13} color="rgba(212,175,55,0.45)" />
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+                  Проверка займёт <strong style={{ color: 'rgba(228,213,163,0.85)', fontWeight: 600 }}>5–15 минут</strong>
                 </span>
               </div>
 
+              {/* CTA — progressive reveal as checkboxes are ticked */}
               <motion.button
                 whileTap={allChecked && !isSubmitting ? { scale: 0.98 } : undefined}
                 onClick={handleSubmit}
                 disabled={!allChecked || isSubmitting}
+                animate={allChecked ? { scale: [1, 1.02, 1] } : undefined}
                 style={{
                   width: '100%',
-                  height: 52,
-                  borderRadius: 16,
-                  border: 'none',
+                  height: 50,
+                  borderRadius: 14,
+                  border: allChecked ? 'none' : `1px solid rgba(212,175,55,${0.06 + 0.04 * checkedCount})`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
+                  position: 'relative' as const,
+                  overflow: 'hidden',
                   cursor: allChecked && !isSubmitting ? 'pointer' : 'not-allowed',
                   background: allChecked
                     ? 'linear-gradient(135deg, #f0d35c, #D4AF37, #b48e26)'
-                    : 'rgba(255,255,255,0.05)',
+                    : `rgba(212,175,55,${0.03 + 0.02 * checkedCount})`,
                   boxShadow: allChecked
-                    ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
+                    ? '0 4px 20px -4px rgba(212,175,55,0.35), inset 0 1px 0 rgba(255,255,255,0.2)'
                     : 'none',
                   opacity: isSubmitting ? 0.7 : 1,
+                  transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
               >
+                {/* Progress bar — fills as checks accumulate */}
+                {!allChecked && checkedCount > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    height: 2,
+                    width: `${(checkedCount / totalCount) * 100}%`,
+                    background: 'linear-gradient(90deg, rgba(212,175,55,0.3), rgba(212,175,55,0.5))',
+                    borderRadius: 1,
+                    transition: 'width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  }} />
+                )}
                 {isSubmitting ? (
                   <>
                     <Loader2 size={18} color="#050507" className="animate-spin" />
@@ -1808,11 +1845,12 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
                   </>
                 ) : (
                   <>
-                    <ShieldCheck size={18} color={allChecked ? '#050507' : 'rgba(255,255,255,0.3)'} />
+                    <ShieldCheck size={17} color={allChecked ? '#050507' : `rgba(212,175,55,${0.2 + 0.1 * checkedCount})`} />
                     <span style={{
                       fontSize: 15,
                       fontWeight: 700,
-                      color: allChecked ? '#050507' : 'rgba(255,255,255,0.3)',
+                      color: allChecked ? '#050507' : `rgba(212,175,55,${0.2 + 0.1 * checkedCount})`,
+                      transition: 'color 0.35s',
                     }}>
                       Отправить на проверку
                     </span>
