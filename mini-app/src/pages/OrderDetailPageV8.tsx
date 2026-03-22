@@ -2017,17 +2017,20 @@ const FilesSection = memo(function FilesSection({
   if (!filesAvailable && !hasFiles) return null
 
   return (
-    <div className="mx-4 mb-4">
+    <div style={{ padding: '0 20px', marginBottom: 16 }}>
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <FileText size={18} color={DS.colors.gold} />
-          <span className="text-[15px] font-bold text-text-primary">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <FileText size={16} color="rgba(212,175,55,0.5)" />
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
             Файлы
           </span>
           {hasFiles && (
-            <span className="px-2 py-1 rounded-lg bg-gold-400/15 text-[11px] font-semibold text-gold-400"
-            >
+            <span style={{
+              padding: '2px 8px', borderRadius: 6,
+              background: 'rgba(212,175,55,0.1)',
+              fontSize: 11, fontWeight: 600, color: '#E8D5A3',
+            }}>
               {files.length}
             </span>
           )}
@@ -2036,90 +2039,98 @@ const FilesSection = memo(function FilesSection({
         {hasFiles && files.length > 1 && (
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              haptic?.('light')
-              onDownloadAll()
+            onClick={() => { haptic?.('light'); onDownloadAll() }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '6px 12px', borderRadius: 10,
+              background: 'transparent', cursor: 'pointer',
+              border: '1px solid rgba(212,175,55,0.15)',
             }}
-            className="flex items-center gap-1 px-3 py-2 rounded-xl bg-transparent cursor-pointer"
-            style={{ border: `1px solid ${DS.colors.borderGold}` }}
           >
-            <Download size={14} color={DS.colors.gold} />
-            <span className="text-[12px] text-gold-400">
-              Скачать всё
-            </span>
+            <Download size={13} color="rgba(212,175,55,0.6)" />
+            <span style={{ fontSize: 12, color: '#E8D5A3' }}>Скачать всё</span>
           </motion.button>
         )}
       </div>
 
-      {/* Files List */}
-      <div
-        className="p-4 rounded-[20px]"
-        style={{
-          background: DS.colors.bgCard,
-          border: `1px solid ${DS.colors.border}`,
-        }}
-      >
-        {hasFiles ? (
-          <div className="flex flex-col gap-2">
-            {files.map((file) => {
-              const FileIcon = getFileIcon(file.type)
-              const fileColor = getFileColor(file.type)
-
-              return (
-                <motion.button
-                  key={file.id}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    haptic?.('light')
-                    onDownloadFile(file)
-                  }}
-                  className="w-full p-3 rounded-2xl cursor-pointer flex items-center gap-3 text-left"
-                  style={{
-                    background: DS.colors.bgElevated,
-                    border: `1px solid ${DS.colors.border}`,
-                  }}
-                >
-                  {/* File Icon */}
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: `${fileColor}15` }}
-                  >
-                    <FileIcon size={22} color={fileColor} />
+      {hasFiles ? (
+        /* File rows */
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+          {files.map((file) => {
+            const FileIcon = getFileIcon(file.type)
+            const fileColor = getFileColor(file.type)
+            return (
+              <motion.button
+                key={file.id}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => { haptic?.('light'); onDownloadFile(file) }}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: 14,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  textAlign: 'left' as const,
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: `${fileColor}15`, flexShrink: 0,
+                }}>
+                  <FileIcon size={20} color={fileColor} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                    {file.name}
                   </div>
-
-                  {/* File Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-semibold text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
-                      {file.name}
-                    </div>
-                    <div className="text-[11px] text-text-muted mt-0.5">
-                      {file.type === 'folder' ? 'Яндекс.Диск' : formatFileSize(file.size)}
-                    </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+                    {file.type === 'folder' ? 'Яндекс.Диск' : formatFileSize(file.size)}
                   </div>
-
-                  {/* Download Icon */}
-                  <div className="w-9 h-9 rounded-lg bg-gold-400/10 flex items-center justify-center shrink-0">
-                    <Download size={18} color={DS.colors.gold} />
-                  </div>
-                </motion.button>
-              )
-            })}
+                </div>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  background: 'rgba(212,175,55,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Download size={16} color="rgba(212,175,55,0.6)" />
+                </div>
+              </motion.button>
+            )
+          })}
+        </div>
+      ) : (
+        /* Compact empty state — not a huge centered card */
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 16px',
+          borderRadius: 14,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.04)',
+        }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'rgba(255,255,255,0.04)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <FileText size={18} color="rgba(255,255,255,0.2)" />
           </div>
-        ) : (
-          /* Empty State */
-          <div className="flex flex-col items-center p-5 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
-              <FileText size={28} color={DS.colors.textMuted} />
-            </div>
-            <p className="text-[14px] text-text-secondary m-0 mb-1">
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>
               Файлы появятся здесь
-            </p>
-            <p className="text-[12px] text-text-muted m-0">
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>
               После выполнения работы
-            </p>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 })
@@ -2327,14 +2338,16 @@ export function OrderDetailPageV8() {
         loadOrder()
       } else if (message.type === 'order_update' && (message as Record<string, unknown>).order_id === orderId) {
         loadOrder()
+      } else if (message.type === 'file_delivery' && (message as Record<string, unknown>).order_id === orderId) {
+        loadOrder()
       }
     })
     return unsubscribe
   }, [orderId, isValidOrderId, addMessageHandler, loadOrder])
 
-  // Auto-poll during verification_pending (every 15s)
+  // Auto-poll during verification_pending or review (every 15s)
   useEffect(() => {
-    if (order?.status !== 'verification_pending') return
+    if (order?.status !== 'verification_pending' && order?.status !== 'review') return
     const interval = setInterval(() => {
       loadOrder()
     }, 15_000)

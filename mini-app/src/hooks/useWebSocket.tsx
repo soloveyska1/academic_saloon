@@ -94,6 +94,7 @@ interface UseWebSocketOptions {
   onProgressUpdate?: (msg: ProgressUpdateMessage) => void
   onNotification?: (msg: NotificationMessage) => void
   onRefresh?: (msg: RefreshMessage) => void
+  onFileDelivery?: (msg: FileDeliveryMessage) => void
   onConnect?: () => void
   onDisconnect?: () => void
   autoReconnect?: boolean
@@ -119,6 +120,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     onProgressUpdate,
     onNotification,
     onRefresh,
+    onFileDelivery,
     onConnect,
     onDisconnect,
     autoReconnect = true,
@@ -143,6 +145,7 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
     onProgressUpdate,
     onNotification,
     onRefresh,
+    onFileDelivery,
     onConnect,
     onDisconnect,
   })
@@ -155,10 +158,11 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
       onProgressUpdate,
       onNotification,
       onRefresh,
+      onFileDelivery,
       onConnect,
       onDisconnect,
     }
-  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onNotification, onRefresh, onConnect, onDisconnect])
+  }, [onOrderUpdate, onBalanceUpdate, onProgressUpdate, onNotification, onRefresh, onFileDelivery, onConnect, onDisconnect])
 
   // Add message handler
   const addMessageHandler = useCallback((handler: MessageHandler) => {
@@ -201,6 +205,9 @@ export function useWebSocket(telegramId: number | null, options: UseWebSocketOpt
           break
         case 'refresh':
           handlers.onRefresh?.(message as RefreshMessage)
+          break
+        case 'file_delivery':
+          handlers.onFileDelivery?.(message as FileDeliveryMessage)
           break
         case 'ping':
           // Respond to server ping
