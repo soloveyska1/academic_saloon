@@ -38,6 +38,9 @@ import {
   Copy,
   MessageCircle,
   HelpCircle,
+  Edit3,
+  CheckCheck,
+  AlertTriangle,
   Clock,
   CreditCard,
   CheckCircle2,
@@ -77,6 +80,8 @@ import {
   createOnlinePayment,
   cancelOrder,
   fetchOrderMessages,
+  requestRevision,
+  confirmWorkCompletion,
 } from '../api/userApi'
 import { useTelegram } from '../hooks/useUserData'
 import { useWebSocketContext } from '../hooks/useWebSocket'
@@ -765,7 +770,7 @@ const HeroSummary = memo(function HeroSummary({ order, countdown }: HeroSummaryP
 //                              STICKY ACTION BAR
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type ActionBarVariant = 'payment' | 'verification' | 'work' | 'review' | 'completed' | 'cancelled'
+type ActionBarVariant = 'payment' | 'verification' | 'work' | 'review' | 'completed' | 'cancelled' | 'revision_in_progress'
 
 interface StickyActionBarProps {
   order: Order
@@ -774,6 +779,8 @@ interface StickyActionBarProps {
   onPaymentClick: () => void
   onContactManager: () => void
   onDownloadFiles: () => void
+  onAcceptWork: () => void
+  onRequestRevision: () => void
 }
 
 const StickyActionBar = memo(function StickyActionBar({
@@ -783,13 +790,16 @@ const StickyActionBar = memo(function StickyActionBar({
   onPaymentClick,
   onContactManager,
   onDownloadFiles,
+  onAcceptWork,
+  onRequestRevision,
 }: StickyActionBarProps) {
   // Determine variant based on order status
   const getVariant = (): ActionBarVariant => {
     if (['cancelled', 'rejected'].includes(order.status)) return 'cancelled'
     if (['waiting_payment', 'confirmed'].includes(order.status)) return 'payment'
     if (order.status === 'verification_pending') return 'verification'
-    if (['paid', 'paid_full', 'in_progress', 'revision'].includes(order.status)) return 'work'
+    if (order.status === 'revision') return 'revision_in_progress'
+    if (['paid', 'paid_full', 'in_progress'].includes(order.status)) return 'work'
     if (order.status === 'review') return 'review'
     if (order.status === 'completed') return 'completed'
     return 'work'
@@ -858,12 +868,12 @@ const StickyActionBar = memo(function StickyActionBar({
     },
     review: {
       showAmount: false,
-      buttonText: 'Проверить работу',
+      buttonText: '__split__', // special marker for split buttons
       buttonIcon: CheckCircle2,
       buttonColor: 'var(--text-on-gold)',
       buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
       disabled: false,
-      onClick: onContactManager,
+      onClick: onAcceptWork,
     },
     completed: {
       showAmount: false,
@@ -873,6 +883,15 @@ const StickyActionBar = memo(function StickyActionBar({
       buttonBg: `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`,
       disabled: !order.files_url,
       onClick: onDownloadFiles,
+    },
+    revision_in_progress: {
+      showAmount: false,
+      buttonText: `На доработке · правка ${(order.revision_count || 0)}/3`,
+      buttonIcon: Edit3,
+      buttonColor: '#E8D5A3',
+      buttonBg: 'rgba(212,175,55,0.08)',
+      disabled: true,
+      onClick: () => {},
     },
     cancelled: {
       showAmount: false,
@@ -888,9 +907,133 @@ const StickyActionBar = memo(function StickyActionBar({
   const config = variantConfig[variant]
   const ButtonIcon = config.buttonIcon
 
+  const revisionCount = order.revision_count || 0
+  const freeRevisionsLeft = Math.max(0, 3 - revisionCount)
+
   // Don't show for cancelled/rejected and statuses without real CTA
-  // Only show for: payment, verification, review, completed
   if (['cancelled', 'work'].includes(variant)) return null
+
+  // Review state: split into two buttons (Accept + Request Revision) (Accept + Request Revision)
+  if (variant === 'review') {
+    const needsSecondPayment = order.payment_scheme === 'half'
+      && (order.paid_amount || 0) < (order.final_price || 0)
+
+    return (
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="fixed bottom-0 left-0 right-0 z-[90] pt-3 px-4 backdrop-blur-[12px]"
+        style={{
+          paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)',
+          background: 'linear-gradient(180deg, transparent 0%, var(--bg-void) 20%, var(--bg-void) 100%)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="max-w-[480px] mx-auto">
+          {/* Revision counter */}
+          {revisionCount > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 6, marginBottom: 8,
+            }}>
+              <Edit3 size={12} color="rgba(212,175,55,0.5)" />
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
+                {freeRevisionsLeft > 0
+                  ? `Использовано ${revisionCount}/3 бесплатных правок`
+                  : 'Бесплатные правки исчерпаны'
+                }
+              </span>
+            </div>
+          )}
+
+          {/* Half-payment notice */}
+          {needsSecondPayment && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 12px', borderRadius: 8, marginBottom: 8,
+              background: 'rgba(212,175,55,0.06)',
+              border: '1px solid rgba(212,175,55,0.1)',
+            }}>
+              <AlertTriangle size={13} color="rgba(212,175,55,0.5)" />
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                Для получения полной работы оплатите оставшиеся{' '}
+                <strong style={{ color: '#E8D5A3' }}>
+                  {formatPrice(Math.max(0, (order.final_price || 0) - (order.paid_amount || 0)))} ₽
+                </strong>
+              </span>
+            </div>
+          )}
+
+          {/* Split buttons */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {/* Request Revision */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onRequestRevision}
+              style={{
+                flex: '0 0 auto',
+                height: 50,
+                padding: '0 16px',
+                borderRadius: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                cursor: 'pointer',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.6)',
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              <Edit3 size={16} />
+              Правки
+            </motion.button>
+
+            {/* Accept Work */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={needsSecondPayment ? onPaymentClick : onAcceptWork}
+              style={{
+                flex: 1,
+                height: 50,
+                borderRadius: 14,
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                cursor: 'pointer',
+                background: needsSecondPayment
+                  ? `linear-gradient(135deg, ${DS.colors.goldLight}, ${DS.colors.gold})`
+                  : 'linear-gradient(135deg, rgba(34,197,94,0.8), rgba(22,163,74,0.9))',
+                boxShadow: needsSecondPayment
+                  ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
+                  : '0 4px 16px -2px rgba(34,197,94,0.25), inset 0 1px 0 rgba(255,255,255,0.1)',
+                color: '#fff',
+                fontSize: 15,
+                fontWeight: 700,
+              }}
+            >
+              {needsSecondPayment ? (
+                <>
+                  <CreditCard size={18} />
+                  Оплатить и получить
+                </>
+              ) : (
+                <>
+                  <CheckCheck size={18} />
+                  Принять работу
+                </>
+              )}
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div
@@ -927,12 +1070,12 @@ const StickyActionBar = memo(function StickyActionBar({
             flex: config.showAmount ? '1 1 auto' : '1 1 100%',
             background: config.buttonBg,
             border: variant === 'work' ? `1px solid ${DS.colors.borderLight}`
-              : variant === 'verification' ? '1px solid rgba(212,175,55,0.12)'
+              : variant === 'verification' || variant === 'revision_in_progress' ? '1px solid rgba(212,175,55,0.12)'
               : 'none',
             color: config.buttonColor,
             cursor: config.disabled ? 'default' : 'pointer',
-            opacity: config.disabled && variant !== 'verification' ? 0.6 : 1,
-            boxShadow: ['payment', 'review', 'completed'].includes(variant)
+            opacity: config.disabled && variant !== 'verification' && variant !== 'revision_in_progress' ? 0.6 : 1,
+            boxShadow: ['payment', 'completed'].includes(variant)
               ? '0 4px 16px -2px rgba(212,175,55,0.3), 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)'
               : 'none',
           }}
@@ -1872,6 +2015,235 @@ const ConfirmPaymentModal = memo(function ConfirmPaymentModal({
 // TrustSection removed — trust info moved to PaymentSheet context
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//                              REVISION REQUEST SHEET
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface RevisionRequestSheetProps {
+  isOpen: boolean
+  onClose: () => void
+  order: Order
+  onSubmit: (message: string) => Promise<void>
+}
+
+const RevisionRequestSheet = memo(function RevisionRequestSheet({
+  isOpen,
+  onClose,
+  order,
+  onSubmit,
+}: RevisionRequestSheetProps) {
+  const [message, setMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { haptic } = useTelegram()
+  const { showToast } = useToast()
+  useModalRegistration(isOpen, 'revision-request-sheet')
+
+  const revisionCount = order.revision_count || 0
+  const freeLeft = Math.max(0, 3 - revisionCount)
+  const isPaid = revisionCount >= 3
+
+  useEffect(() => {
+    if (isOpen) {
+      setMessage('')
+      setIsSubmitting(false)
+    }
+  }, [isOpen])
+
+  const handleSubmit = async () => {
+    if (!message.trim()) {
+      haptic?.('warning')
+      showToast({ type: 'info', title: 'Опишите, что нужно исправить' })
+      return
+    }
+    haptic?.('medium')
+    setIsSubmitting(true)
+    try {
+      await onSubmit(message.trim())
+      onClose()
+    } catch (err) {
+      haptic?.('error')
+      showToast({
+        type: 'error',
+        title: 'Ошибка',
+        message: err instanceof Error ? err.message : 'Попробуйте ещё раз',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-black/70 z-[300] flex items-end justify-center"
+        >
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 34, stiffness: 380 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[480px] overflow-hidden flex flex-col"
+            style={{
+              background: DS.colors.bgSurface,
+              borderRadius: '20px 20px 0 0',
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '18px 20px 14px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div>
+                <h2 style={{ fontSize: 17, fontWeight: 600, color: 'rgba(255,255,255,0.88)', margin: 0 }}>
+                  Запрос правок
+                </h2>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: '3px 0 0' }}>
+                  {isPaid ? 'Платная правка' : `${freeLeft} бесплатных осталось`}
+                </p>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                style={{
+                  width: 32, height: 32, borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', background: 'transparent', border: 'none',
+                }}
+              >
+                <X size={16} color="rgba(255,255,255,0.3)" />
+              </motion.button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '16px 20px' }}>
+              {/* Revision counter visual */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16,
+              }}>
+                {[1, 2, 3].map((n) => (
+                  <div
+                    key={n}
+                    style={{
+                      width: 32, height: 4, borderRadius: 2,
+                      background: n <= revisionCount
+                        ? 'rgba(212,175,55,0.5)'
+                        : 'rgba(255,255,255,0.08)',
+                      flex: 1,
+                      transition: 'background 0.3s',
+                    }}
+                  />
+                ))}
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>
+                  {revisionCount}/3
+                </span>
+              </div>
+
+              {/* Paid revision warning */}
+              {isPaid && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+                  background: 'rgba(239,68,68,0.08)',
+                  border: '1px solid rgba(239,68,68,0.15)',
+                }}>
+                  <AlertTriangle size={14} color="rgba(239,68,68,0.6)" />
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
+                    Бесплатные правки исчерпаны. Стоимость правки будет рассчитана менеджером.
+                  </span>
+                </div>
+              )}
+
+              {/* Text input */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>
+                  Опишите, что нужно исправить
+                </div>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Например: изменить формулировку в разделе 2, добавить ссылку на источник..."
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.85)',
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    resize: 'vertical' as const,
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>
+                Текстовое описание правок ускорит работу
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '14px 20px',
+              paddingBottom: 'max(env(safe-area-inset-bottom, 20px), 20px)',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <motion.button
+                whileTap={!isSubmitting && message.trim() ? { scale: 0.98 } : undefined}
+                onClick={handleSubmit}
+                disabled={isSubmitting || !message.trim()}
+                style={{
+                  width: '100%',
+                  height: 50,
+                  borderRadius: 14,
+                  border: message.trim() ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: !isSubmitting && message.trim() ? 'pointer' : 'not-allowed',
+                  background: message.trim()
+                    ? 'linear-gradient(135deg, #f0d35c, #D4AF37, #b48e26)'
+                    : 'rgba(255,255,255,0.04)',
+                  boxShadow: message.trim()
+                    ? '0 4px 16px -2px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
+                    : 'none',
+                  opacity: isSubmitting ? 0.7 : 1,
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={18} color="#050507" className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#050507' }}>Отправка...</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit3 size={17} color={message.trim() ? '#050507' : 'rgba(255,255,255,0.3)'} />
+                    <span style={{ fontSize: 15, fontWeight: 700, color: message.trim() ? '#050507' : 'rgba(255,255,255,0.3)' }}>
+                      Отправить на доработку
+                    </span>
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //                              VERIFICATION PENDING BANNER
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -2311,6 +2683,7 @@ export function OrderDetailPageV8() {
   const [paymentSheetOpen, setPaymentSheetOpen] = useState(false)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [onlinePaymentLoading, setOnlinePaymentLoading] = useState(false)
+  const [revisionSheetOpen, setRevisionSheetOpen] = useState(false)
 
   // Parse order ID
   const orderId = id ? parseInt(id, 10) : NaN
@@ -2422,6 +2795,43 @@ export function OrderDetailPageV8() {
       navigate(`/order/${order.id}/chat`)
     }
   }, [haptic, navigate, order?.id])
+
+  const handleAcceptWork = useCallback(async () => {
+    if (!order) return
+    haptic?.('medium')
+    try {
+      await confirmWorkCompletion(order.id)
+      showToast({ type: 'success', title: 'Работа принята!' })
+      loadOrder()
+    } catch (err) {
+      haptic?.('error')
+      showToast({
+        type: 'error',
+        title: 'Ошибка',
+        message: err instanceof Error ? err.message : 'Попробуйте ещё раз',
+      })
+    }
+  }, [order, haptic, showToast, loadOrder])
+
+  const handleRequestRevision = useCallback(() => {
+    haptic?.('light')
+    setRevisionSheetOpen(true)
+  }, [haptic])
+
+  const handleSubmitRevision = useCallback(async (message: string) => {
+    if (!order) return
+    const result = await requestRevision(order.id, message)
+    if (result.success) {
+      showToast({
+        type: 'success',
+        title: result.is_paid ? 'Платная правка отправлена' : 'Правки отправлены',
+        message: `Правка ${result.revision_count}/3`,
+      })
+      loadOrder()
+    } else {
+      throw new Error(result.message)
+    }
+  }, [order, showToast, loadOrder])
 
   const handleOpenFAQ = useCallback(() => {
     haptic?.('light')
@@ -2977,8 +3387,18 @@ export function OrderDetailPageV8() {
           onPaymentClick={handlePaymentClick}
           onContactManager={handleContactManager}
           onDownloadFiles={handleDownloadFiles}
+          onAcceptWork={handleAcceptWork}
+          onRequestRevision={handleRequestRevision}
         />
       </SectionErrorBoundary>
+
+      {/* Revision Request Sheet */}
+      <RevisionRequestSheet
+        isOpen={revisionSheetOpen}
+        onClose={() => setRevisionSheetOpen(false)}
+        order={order}
+        onSubmit={handleSubmitRevision}
+      />
 
       {/* Confirm Payment Modal */}
       <SectionErrorBoundary
