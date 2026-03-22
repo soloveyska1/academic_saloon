@@ -8,6 +8,8 @@ export { DeadlineStep } from './DeadlineStep'
 export { EstimateCard } from './EstimateCard'
 export { FloatingCtaDock } from './FloatingCtaDock'
 export { PromoWarningModal } from './PromoWarningModal'
+export { SuccessScreen } from './SuccessScreen'
+export type { SuccessScreenResult } from './SuccessScreen'
 // Hooks
 export { useDrafts } from './useDrafts'
 export {
