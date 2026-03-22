@@ -2684,6 +2684,7 @@ export function OrderDetailPageV8() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [onlinePaymentLoading, setOnlinePaymentLoading] = useState(false)
   const [revisionSheetOpen, setRevisionSheetOpen] = useState(false)
+  const [acceptWorkConfirmOpen, setAcceptWorkConfirmOpen] = useState(false)
 
   // Parse order ID
   const orderId = id ? parseInt(id, 10) : NaN
@@ -2796,9 +2797,15 @@ export function OrderDetailPageV8() {
     }
   }, [haptic, navigate, order?.id])
 
-  const handleAcceptWork = useCallback(async () => {
+  const handleAcceptWork = useCallback(() => {
+    haptic?.('light')
+    setAcceptWorkConfirmOpen(true)
+  }, [haptic])
+
+  const handleConfirmAcceptWork = useCallback(async () => {
     if (!order) return
     haptic?.('medium')
+    setAcceptWorkConfirmOpen(false)
     try {
       await confirmWorkCompletion(order.id)
       showToast({ type: 'success', title: 'Работа принята!' })
@@ -3399,6 +3406,77 @@ export function OrderDetailPageV8() {
         order={order}
         onSubmit={handleSubmitRevision}
       />
+
+      {/* Accept Work Confirmation */}
+      <AnimatePresence>
+        {acceptWorkConfirmOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setAcceptWorkConfirmOpen(false)}
+            className="fixed inset-0 bg-black/70 z-[400] flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: 340,
+                borderRadius: 20,
+                background: DS.colors.bgSurface,
+                padding: 24,
+                textAlign: 'center' as const,
+              }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: 14, margin: '0 auto 16px',
+                background: 'rgba(34,197,94,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <CheckCheck size={24} color="rgba(34,197,94,0.8)" />
+              </div>
+              <h3 style={{ fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.9)', margin: '0 0 8px' }}>
+                Принять работу?
+              </h3>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, margin: '0 0 20px' }}>
+                Вы подтверждаете, что работа выполнена. После подтверждения заказ будет завершён.
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setAcceptWorkConfirmOpen(false)}
+                  style={{
+                    flex: 1, height: 44, borderRadius: 12,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Назад
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleConfirmAcceptWork}
+                  style={{
+                    flex: 1, height: 44, borderRadius: 12, border: 'none',
+                    background: 'linear-gradient(135deg, rgba(34,197,94,0.8), rgba(22,163,74,0.9))',
+                    boxShadow: '0 4px 12px -2px rgba(34,197,94,0.25)',
+                    color: '#fff',
+                    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Принять
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Confirm Payment Modal */}
       <SectionErrorBoundary
