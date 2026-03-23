@@ -273,7 +273,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
                 color: 'rgba(255,255,255,0.56)',
               }}
             >
-              Без звонков · всё в чате
+              Работа, оплата и файлы в одном окне
             </div>
           </div>
 

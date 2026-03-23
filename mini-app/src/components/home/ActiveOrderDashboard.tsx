@@ -276,6 +276,24 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              right: 6,
+              top: -8,
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 110,
+              lineHeight: 0.84,
+              color: 'rgba(212,175,55,0.05)',
+              letterSpacing: '-0.08em',
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
+          >
+            #{activeOrder.id}
+          </div>
+
+          <div
             style={{
               display: 'flex',
               alignItems: 'flex-start',
@@ -367,69 +385,65 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                   textTransform: 'uppercase',
                 }}
               >
-                Заказ #{activeOrder.id}
+                #{activeOrder.id}
               </div>
             </div>
           </div>
 
           <div
             style={{
-              padding: '18px 18px 16px',
-              borderRadius: 24,
-              background: financeHero.accent
-                ? 'linear-gradient(180deg, rgba(212,175,55,0.10) 0%, rgba(255,255,255,0.03) 100%)'
-                : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${financeHero.accent ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.05)'}`,
-              marginBottom: 16,
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1.2fr) minmax(116px, 0.8fr)',
+              gap: 16,
+              padding: '16px 0 18px',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              marginBottom: 18,
             }}
           >
             <div
               style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 12,
-                marginBottom: 14,
+                minWidth: 0,
               }}
             >
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.34)',
-                    marginBottom: 8,
-                  }}
-                >
-                  {financeHero.eyebrow}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-display, 'Playfair Display', serif)",
-                    fontSize: 34,
-                    lineHeight: 0.92,
-                    letterSpacing: '-0.05em',
-                    color: financeHero.accent ? 'var(--gold-300)' : 'var(--text-primary)',
-                    marginBottom: 6,
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {financeHero.value}
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 1.45,
-                    color: 'var(--text-secondary)',
-                    maxWidth: 300,
-                  }}
-                >
-                  {financeHero.supporting}
-                </div>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.34)',
+                  marginBottom: 8,
+                }}
+              >
+                {financeHero.eyebrow}
               </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 42,
+                  lineHeight: 0.9,
+                  letterSpacing: '-0.06em',
+                  color: financeHero.accent ? 'var(--gold-300)' : 'var(--text-primary)',
+                  marginBottom: 8,
+                  wordBreak: 'break-word',
+                }}
+              >
+                {financeHero.value}
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  color: 'var(--text-secondary)',
+                  maxWidth: 300,
+                }}
+              >
+                {financeHero.supporting}
+              </div>
+            </div>
 
+            <div style={{ minWidth: 0 }}>
               {hasPartialPayment && (
                 <div
                   style={{
@@ -441,27 +455,21 @@ export const ActiveOrderDashboard = memo(function ActiveOrderDashboard({
                     fontWeight: 700,
                     color: 'var(--gold-300)',
                     whiteSpace: 'nowrap',
-                    flexShrink: 0,
+                    display: 'inline-flex',
+                    marginBottom: 12,
                   }}
                 >
                   Аванс внесён
                 </div>
               )}
-            </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 12,
-              }}
-            >
               {financeHero.details.map((item) => (
                 <div
                   key={item.label}
                   style={{
                     minWidth: 0,
                     paddingTop: 12,
+                    marginTop: 12,
                     borderTop: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >

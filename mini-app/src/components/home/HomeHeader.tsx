@@ -55,7 +55,7 @@ export const HomeHeader = memo(function HomeHeader({
     return null
   }, [summary, isNewUser, ordersCount])
 
-  const controlItems = useMemo(() => {
+  const summaryItems = useMemo(() => {
     if (!summary || isNewUser) return []
 
     return [
@@ -65,14 +65,12 @@ export const HomeHeader = memo(function HomeHeader({
         accent: true,
       },
       {
-        label: summary.activeOrders > 0 ? 'В работе' : 'Оформлено',
-        value: summary.activeOrders > 0
-          ? `${summary.activeOrders} ${summary.activeOrders === 1 ? 'заказ' : summary.activeOrders < 5 ? 'заказа' : 'заказов'}`
-          : `${ordersCount} ${ordersCount === 1 ? 'заказ' : ordersCount < 5 ? 'заказа' : 'заказов'}`,
+        label: 'Кэшбэк',
+        value: `${summary.cashback}%`,
         accent: false,
       },
     ]
-  }, [summary, isNewUser, ordersCount])
+  }, [summary, isNewUser])
 
   return (
     <motion.header
@@ -126,9 +124,29 @@ export const HomeHeader = memo(function HomeHeader({
               alignItems: 'flex-start',
               justifyContent: 'space-between',
               gap: 14,
-              marginBottom: !isNewUser && controlItems.length > 0 ? 18 : 0,
+              marginBottom: !isNewUser && summaryItems.length > 0 ? 18 : 0,
             }}
           >
+            {!isNewUser && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  right: 26,
+                  top: 30,
+                  fontFamily: "var(--font-display, 'Playfair Display', serif)",
+                  fontSize: 128,
+                  lineHeight: 0.82,
+                  color: 'rgba(212,175,55,0.05)',
+                  letterSpacing: '-0.08em',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                }}
+              >
+                {(firstName && firstName.trim().length > 0 ? firstName : 'S').charAt(0)}
+              </div>
+            )}
+
             <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
               <div
                 className={s.avatarContainer}
@@ -223,44 +241,13 @@ export const HomeHeader = memo(function HomeHeader({
                 {!isNewUser && (
                   <div
                     style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: 8,
                       marginTop: 8,
+                      width: 48,
+                      height: 2,
+                      borderRadius: 999,
+                      background: 'linear-gradient(90deg, rgba(212,175,55,0.9), rgba(212,175,55,0.12))',
                     }}
-                  >
-                    {user.rank.is_max && (
-                      <div
-                        style={{
-                          padding: '7px 11px',
-                          borderRadius: 999,
-                          background: 'rgba(212,175,55,0.08)',
-                          border: '1px solid rgba(212,175,55,0.14)',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          lineHeight: 1,
-                          color: 'var(--gold-300)',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Премиум-клуб
-                      </div>
-                    )}
-
-                    {!user.rank.is_max && summary && summary.cashback > 0 && (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          lineHeight: 1.35,
-                          color: 'rgba(255,255,255,0.58)',
-                        }}
-                      >
-                        Кэшбэк {summary.cashback}%
-                      </div>
-                    )}
-                  </div>
+                  />
                 )}
 
                 {!isNewUser && activityLine && (
@@ -309,28 +296,30 @@ export const HomeHeader = memo(function HomeHeader({
             )}
           </div>
 
-          {!isNewUser && controlItems.length > 0 && (
+          {!isNewUser && summaryItems.length > 0 && (
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
                 gap: 0,
-                borderRadius: 22,
+                padding: '10px 12px',
+                borderRadius: 999,
                 overflow: 'hidden',
                 background: 'rgba(255,255,255,0.03)',
                 border: '1px solid rgba(255,255,255,0.05)',
               }}
             >
-              {controlItems.map((item, index) => (
+              {summaryItems.map((item, index) => (
                 <div
                   key={item.label}
                   style={{
                     minWidth: 0,
-                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '4px 12px',
                     borderLeft: index === 0 ? 'none' : '1px solid rgba(255,255,255,0.05)',
-                    background: item.accent
-                      ? 'linear-gradient(180deg, rgba(212,175,55,0.06) 0%, rgba(255,255,255,0.02) 100%)'
-                      : 'transparent',
                   }}
                 >
                   <div
@@ -348,7 +337,7 @@ export const HomeHeader = memo(function HomeHeader({
 
                   <div
                     style={{
-                      fontSize: 17,
+                      fontSize: 15,
                       fontWeight: 700,
                       lineHeight: 1.2,
                       letterSpacing: '-0.03em',
