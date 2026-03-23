@@ -205,7 +205,7 @@ export const NewTaskCTA = memo(function NewTaskCTA({
         width: '100%',
         padding: 22,
         borderRadius: 28,
-        marginBottom: 12,
+        marginBottom: 0,
         background: 'linear-gradient(160deg, rgba(26, 20, 11, 0.96) 0%, rgba(14, 14, 15, 0.96) 46%, rgba(8, 8, 10, 1) 100%)',
         backdropFilter: 'blur(16px) saturate(140%)',
         WebkitBackdropFilter: 'blur(16px) saturate(140%)',

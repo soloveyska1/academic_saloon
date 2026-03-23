@@ -53,116 +53,166 @@ export const QuickReorderCard = memo(function QuickReorderCard({
       style={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 16,
-        background: 'linear-gradient(135deg, rgba(201,162,39,0.06) 0%, rgba(12, 12, 10, 0.6) 60%, rgba(201,162,39,0.04) 100%)',
-        border: '1px solid rgba(255,255,255,0.04)',
+        borderRadius: 28,
+        padding: 22,
+        marginBottom: 0,
+        background: 'linear-gradient(160deg, rgba(25, 21, 13, 0.96) 0%, rgba(13, 13, 14, 0.97) 46%, rgba(8, 8, 10, 1) 100%)',
+        border: '1px solid rgba(212,175,55,0.10)',
         backdropFilter: 'blur(16px) saturate(140%)',
         WebkitBackdropFilter: 'blur(16px) saturate(140%)',
         cursor: 'pointer',
+        boxShadow: '0 24px 44px -34px rgba(0, 0, 0, 0.82)',
       }}
     >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: -56,
+          right: -24,
+          width: 160,
+          height: 160,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(212,175,55,0.14) 0%, rgba(212,175,55,0.04) 30%, transparent 72%)',
+          pointerEvents: 'none',
+        }}
+      />
+
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Header */}
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'space-between',
-            marginBottom: 12,
+            gap: 12,
+            marginBottom: 16,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 12,
-                background: 'var(--gold-glass-medium)',
-                border: '1px solid var(--border-gold)',
+                width: 36,
+                height: 36,
+                borderRadius: 14,
+                background: 'rgba(212,175,55,0.10)',
+                border: '1px solid rgba(212,175,55,0.16)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Copy size={14} color="var(--gold-400)" strokeWidth={1.5} />
+              <Copy size={16} color="var(--gold-300)" strokeWidth={1.8} />
             </div>
             <span
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: '0.1em',
-                color: 'var(--text-muted)',
+                letterSpacing: '0.12em',
+                color: 'rgba(212,175,55,0.72)',
+                textTransform: 'uppercase',
               }}
             >
-              БЫСТРЫЙ ЗАКАЗ
+              Повтор
             </span>
           </div>
 
-          <motion.div
+          <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
-              padding: '4px 10px',
-              background: 'var(--gold-glass-subtle)',
-              borderRadius: 16,
-              border: '1px solid var(--border-gold)',
+              gap: 6,
+              padding: '8px 12px',
+              background: 'rgba(255,255,255,0.04)',
+              borderRadius: 999,
+              border: '1px solid rgba(255,255,255,0.06)',
             }}
           >
             <span
               style={{
                 fontSize: 11,
-                fontWeight: 600,
-                background: 'var(--gold-metallic)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                fontWeight: 700,
+                color: 'var(--gold-300)',
               }}
             >
-              Повторить
+              1 касание
             </span>
-            <ArrowRight size={12} color="var(--gold-400)" strokeWidth={1.5} />
-          </motion.div>
+          </div>
         </div>
 
-        {/* Order info */}
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 18 }}>
           <div
             style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              marginBottom: 4,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'rgba(212,175,55,0.68)',
+              marginBottom: 8,
             }}
           >
             {workTypeLabel}
           </div>
           <div
             style={{
-              fontSize: 12,
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 28,
+              lineHeight: 0.95,
+              letterSpacing: '-0.05em',
+              color: 'var(--text-primary)',
+              marginBottom: 8,
             }}
           >
-            <span>{subject}</span>
+            Повторить похожую работу
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.45,
+              color: 'var(--text-secondary)',
+              maxWidth: 320,
+            }}
+          >
+            {subject}
           </div>
         </div>
 
-        {/* Hint */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            fontSize: 11,
-            color: 'var(--text-muted)',
+            justifyContent: 'space-between',
+            gap: 12,
           }}
         >
-          <Clock size={11} strokeWidth={1.5} />
-          <span>Создать похожий заказ в 1 клик</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <Clock size={13} strokeWidth={1.7} color="var(--gold-300)" />
+            <span>Параметры подтянутся автоматически</span>
+          </div>
+
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 18,
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.96), rgba(245,225,160,0.84))',
+              color: 'var(--text-on-gold)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 18px 28px -20px rgba(212, 175, 55, 0.48)',
+            }}
+          >
+            <ArrowRight size={18} strokeWidth={2.2} />
+          </div>
         </div>
       </div>
     </motion.div>

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useMemo, useState, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { UserData } from '../types'
 import { useTelegram } from '../hooks/useUserData'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
@@ -52,55 +52,6 @@ interface Props {
 }
 
 import s from './HomePage.module.css'
-
-function SectionFrame({
-  eyebrow,
-  title,
-  children,
-}: {
-  eyebrow?: string
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      style={{ marginBottom: 18 }}
-    >
-      <div style={{ padding: '0 4px', marginBottom: 10 }}>
-        {eyebrow && (
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'rgba(212, 175, 55, 0.72)',
-              marginBottom: 6,
-            }}
-          >
-            {eyebrow}
-          </div>
-        )}
-        <div
-          style={{
-            fontFamily: "var(--font-display, 'Playfair Display', serif)",
-            fontSize: 24,
-            fontWeight: 700,
-            lineHeight: 0.95,
-            letterSpacing: '-0.04em',
-            color: 'var(--text-primary)',
-          }}
-        >
-          {title}
-        </div>
-      </div>
-      {children}
-    </motion.section>
-  )
-}
 
 export function HomePage({ user, onRefresh }: Props) {
   const navigate = useNavigate()
@@ -225,6 +176,8 @@ export function HomePage({ user, onRefresh }: Props) {
     return 'idle' as const
   }, [isNewUser, activeOrders, user])
 
+  const shouldShowDailyBonus = Boolean(user?.daily_luck_available)
+
   if (!user) return null
 
   return (
@@ -344,12 +297,18 @@ export function HomePage({ user, onRefresh }: Props) {
 
                 <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
                   <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                  <DailyBonusCard
-                    variant="compact"
-                    dailyAvailable={user.daily_luck_available ?? false}
-                    streak={user.daily_bonus_streak || 0}
+                  <QuickActionsRow
+                    onNavigate={navigate}
+                    onOpenModal={(modal: ModalName) => {
+                      if (modal === 'cashback') actions.openModal('cashback')
+                      else if (modal === 'guarantees') actions.openModal('guarantees')
+                    }}
+                    onOpenUrgentSheet={() => {
+                      haptic('medium')
+                      actions.openModal('urgentSheet')
+                    }}
                     haptic={haptic}
-                    onBonusClaimed={handleBonusClaimed}
+                    cashbackPercent={user.rank.cashback}
                   />
                 </div>
               </>
@@ -367,12 +326,18 @@ export function HomePage({ user, onRefresh }: Props) {
                     />
                   )}
                   <NewTaskCTA onClick={handleNewOrder} variant="repeat-order" />
-                  <DailyBonusCard
-                    variant="compact"
-                    dailyAvailable={user.daily_luck_available ?? false}
-                    streak={user.daily_bonus_streak || 0}
+                  <QuickActionsRow
+                    onNavigate={navigate}
+                    onOpenModal={(modal: ModalName) => {
+                      if (modal === 'cashback') actions.openModal('cashback')
+                      else if (modal === 'guarantees') actions.openModal('guarantees')
+                    }}
+                    onOpenUrgentSheet={() => {
+                      haptic('medium')
+                      actions.openModal('urgentSheet')
+                    }}
                     haptic={haptic}
-                    onBonusClaimed={handleBonusClaimed}
+                    cashbackPercent={user.rank.cashback}
                   />
                 </div>
               </>
@@ -390,35 +355,22 @@ export function HomePage({ user, onRefresh }: Props) {
                       haptic={haptic}
                     />
                   )}
-                  <DailyBonusCard
-                    variant="compact"
-                    dailyAvailable={user.daily_luck_available ?? false}
-                    streak={user.daily_bonus_streak || 0}
+                  <QuickActionsRow
+                    onNavigate={navigate}
+                    onOpenModal={(modal: ModalName) => {
+                      if (modal === 'cashback') actions.openModal('cashback')
+                      else if (modal === 'guarantees') actions.openModal('guarantees')
+                    }}
+                    onOpenUrgentSheet={() => {
+                      haptic('medium')
+                      actions.openModal('urgentSheet')
+                    }}
                     haptic={haptic}
-                    onBonusClaimed={handleBonusClaimed}
+                    cashbackPercent={user.rank.cashback}
                   />
                 </div>
               </>
             )}
-
-            {/* ── SHARED: Quick tools, gamification, promo, referral ── */}
-            <SectionFrame
-              title="Сервисы"
-            >
-              <QuickActionsRow
-                onNavigate={navigate}
-                onOpenModal={(modal: ModalName) => {
-                  if (modal === 'cashback') actions.openModal('cashback')
-                  else if (modal === 'guarantees') actions.openModal('guarantees')
-                }}
-                onOpenUrgentSheet={() => {
-                  haptic('medium')
-                  actions.openModal('urgentSheet')
-                }}
-                haptic={haptic}
-                cashbackPercent={user.rank.cashback}
-              />
-            </SectionFrame>
 
             <LoungeVault
               rank={user.rank}
@@ -431,6 +383,16 @@ export function HomePage({ user, onRefresh }: Props) {
               onShowQR={() => { haptic('light'); actions.openModal('qr') }}
               onTelegramShare={handleTelegramShare}
             />
+
+            {shouldShowDailyBonus && (
+              <DailyBonusCard
+                variant="compact"
+                dailyAvailable={user.daily_luck_available ?? false}
+                streak={user.daily_bonus_streak || 0}
+                haptic={haptic}
+                onBonusClaimed={handleBonusClaimed}
+              />
+            )}
 
           </>
         )}

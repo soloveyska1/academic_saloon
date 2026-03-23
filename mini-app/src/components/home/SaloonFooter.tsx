@@ -46,7 +46,7 @@ export const SaloonFooter = memo(function SaloonFooter() {
           letterSpacing: '0.10em',
           fontWeight: 500,
         }}>
-          EST. 2020
+          с 2020
         </span>
       </div>
 

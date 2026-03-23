@@ -56,7 +56,7 @@ export const QuickActionsRow = memo(function QuickActionsRow({
         display: 'grid',
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
         gap: 12,
-        marginBottom: 18,
+        marginBottom: 0,
       }}
     >
       {actions.map((action, index) => {

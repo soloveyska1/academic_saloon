@@ -91,9 +91,9 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         alignItems: 'center',
         gap: 12,
         width: '100%',
-        padding: '16px 20px',
-        marginBottom: 12,
-        borderRadius: 16,
+        padding: '14px 16px',
+        marginBottom: 14,
+        borderRadius: 22,
         background: config.gradient,
         border: `1px solid ${config.border}`,
         cursor: 'pointer',
@@ -101,14 +101,31 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         textAlign: 'left',
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: '0 18px 30px -26px rgba(0, 0, 0, 0.72)',
       }}
     >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: -38,
+          right: -18,
+          width: 120,
+          height: 120,
+          borderRadius: '50%',
+          background: config.urgency === 'critical'
+            ? 'radial-gradient(circle, rgba(239,68,68,0.12) 0%, transparent 72%)'
+            : 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 72%)',
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* Icon */}
       <div
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 12,
+          width: 40,
+          height: 40,
+          borderRadius: 14,
           background: config.iconBg,
           border: `1px solid ${config.iconBorder}`,
           display: 'flex',
@@ -126,7 +143,7 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
       </div>
 
       {/* Text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         <div
           style={{
             fontSize: 13,
@@ -150,16 +167,21 @@ export const BonusExpiryAlert = memo(function BonusExpiryAlert({
         </div>
       </div>
 
-      {/* Arrow */}
       <div
         style={{
-          fontSize: 14,
+          padding: '8px 10px',
+          borderRadius: 999,
+          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(255,255,255,0.04)',
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
           color: config.iconColor,
-          opacity: 0.6,
           flexShrink: 0,
         }}
       >
-        →
+        Открыть
       </div>
     </motion.button>
   )
